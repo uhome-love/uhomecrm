@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Bloco 5 — Meus resultados</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background:#0A0E1A; color:#E5E7EB; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif; }
+  .card { background:#111827; border:1px solid #1F2937; border-radius:14px; }
+  .pill { border-radius:999px; padding:3px 10px; font-size:11px; font-weight:600; }
+  .chip { border:1px solid #1F2937; border-radius:999px; padding:6px 12px; font-size:12px; color:#CBD5E1; }
+  .chip-sel { background:#4969FF1A; border-color:#4969FF; color:#C7D2FE; }
+  .kpi { background:#0B1220; border:1px solid #1F2937; border-radius:12px; padding:14px; }
+  .kpi-num { font-size:26px; font-weight:700; letter-spacing:-0.02em; }
+  .bar { height:6px; background:#1F2937; border-radius:999px; overflow:hidden; }
+  .bar > span { display:block; height:100%; background:#4969FF; }
+  .row:hover { background:#0F1626; }
+  .dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
+</style>
+</head>
+<body class="p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <header class="flex items-center justify-between">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-indigo-400/80">Oferta Ativa · Fase 5 · Bloco 5</div>
+        <h1 class="text-2xl font-semibold mt-1">Meus resultados — histórico e desempenho</h1>
+        <p class="text-slate-400 text-sm mt-1">Aba pessoal. Mostra pro corretor o que ele fez, quanto rendeu e onde ele acerta mais. Sem ranking público — foco no próprio jogo.</p>
+      </div>
+      <span class="pill" style="background:#4969FF1A; color:#C7D2FE; border:1px solid #4969FF66;">Mockup — não é código</span>
+    </header>
+
+    <!-- Filtro de período -->
+    <div class="flex items-center gap-2">
+      <button class="chip">Hoje</button>
+      <button class="chip chip-sel">Últimos 7 dias</button>
+      <button class="chip">Este mês</button>
+      <button class="chip">Últimos 30d</button>
+      <div class="flex-1"></div>
+      <div class="text-xs text-slate-400">Período · 17 → 23 jul · comparado ao anterior</div>
+    </div>
+
+    <!-- KPIs pessoais -->
+    <div class="grid grid-cols-4 gap-3">
+      <div class="kpi">
+        <div class="text-xs uppercase tracking-wider text-slate-500">Ligações</div>
+        <div class="kpi-num mt-1">248</div>
+        <div class="text-[11px] text-emerald-400 mt-1">▲ 34 vs 7d anteriores</div>
+      </div>
+      <div class="kpi">
+        <div class="text-xs uppercase tracking-wider text-slate-500">Atendidas</div>
+        <div class="kpi-num mt-1">92 <span class="text-sm text-slate-400 font-normal">(37%)</span></div>
+        <div class="text-[11px] text-emerald-400 mt-1">▲ 4pp de atendimento</div>
+      </div>
+      <div class="kpi">
+        <div class="text-xs uppercase tracking-wider text-slate-500">Aproveitados</div>
+        <div class="kpi-num mt-1">18 <span class="text-sm text-slate-400 font-normal">(7,3%)</span></div>
+        <div class="text-[11px] text-slate-500 mt-1">= mesma taxa do período anterior</div>
+      </div>
+      <div class="kpi">
+        <div class="text-xs uppercase tracking-wider text-slate-500">Visitas agendadas</div>
+        <div class="kpi-num mt-1">6</div>
+        <div class="text-[11px] text-emerald-400 mt-1">▲ 2 vs 7d anteriores</div>
+      </div>
+    </div>
+
+    <!-- Funil pessoal -->
+    <section class="card p-6">
+      <h2 class="text-lg font-semibold mb-4">Seu funil da Oferta Ativa</h2>
+      <div class="space-y-3">
+        <div>
+          <div class="flex items-center justify-between text-sm mb-1"><span>Ligações discadas</span><span class="text-slate-400">248</span></div>
+          <div class="bar"><span style="width:100%"></span></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between text-sm mb-1"><span>Atendidas</span><span class="text-slate-400">92 · 37%</span></div>
+          <div class="bar"><span style="width:37%"></span></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between text-sm mb-1"><span>Aproveitados (lead pro pipeline)</span><span class="text-slate-400">18 · 7,3%</span></div>
+          <div class="bar"><span style="width:7.3%; background:#10B981"></span></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between text-sm mb-1"><span>Visita agendada</span><span class="text-slate-400">6 · 2,4%</span></div>
+          <div class="bar"><span style="width:2.4%; background:#F59E0B"></span></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between text-sm mb-1"><span>Visita realizada</span><span class="text-slate-400">3 · 1,2%</span></div>
+          <div class="bar"><span style="width:1.2%; background:#EF4444"></span></div>
+        </div>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-4">Comparativo com a média da equipe é opcional — mostrado só se você ativar em Configurações.</div>
+    </section>
+
+    <!-- Onde você acerta mais + horário quente -->
+    <div class="grid grid-cols-2 gap-4">
+      <section class="card p-6">
+        <h3 class="text-base font-semibold mb-3">🎯 Onde você acerta mais</h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between text-sm">
+            <div><span class="dot" style="background:#10B981"></span> <span class="ml-2">Caiz Downtown</span></div>
+            <div class="text-slate-400">14% aproveitamento · 62 ligações</div>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <div><span class="dot" style="background:#4969FF"></span> <span class="ml-2">Elleve</span></div>
+            <div class="text-slate-400">9% aproveitamento · 44 ligações</div>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <div><span class="dot" style="background:#F59E0B"></span> <span class="ml-2">Vivance</span></div>
+            <div class="text-slate-400">4% aproveitamento · 71 ligações</div>
+          </div>
+          <div class="flex items-center justify-between text-sm text-slate-400">
+            <div><span class="dot" style="background:#6B7280"></span> <span class="ml-2">Alta Vista</span></div>
+            <div>2% aproveitamento · 71 ligações</div>
+          </div>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-4">Sugestão HOMI: gastar mais tempo em Caiz Downtown — seu aproveitamento lá é 3× a média das outras bases.</div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-base font-semibold mb-3">⏰ Seu horário mais quente</h3>
+        <div class="grid grid-cols-6 gap-1 items-end h-32">
+          <div class="bg-indigo-900/60 rounded" style="height:20%"></div>
+          <div class="bg-indigo-700/70 rounded" style="height:35%"></div>
+          <div class="bg-indigo-500 rounded" style="height:78%"></div>
+          <div class="bg-indigo-600 rounded" style="height:55%"></div>
+          <div class="bg-indigo-400 rounded" style="height:100%"></div>
+          <div class="bg-indigo-800/70 rounded" style="height:40%"></div>
+        </div>
+        <div class="grid grid-cols-6 gap-1 text-[10px] text-slate-500 mt-1 text-center">
+          <div>9h</div><div>10h</div><div>11h</div><div>14h</div><div>16h</div><div>18h</div>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-4">Você agenda mais visitas entre <span class="text-slate-200">16h e 17h</span>. Vale reservar esse bloco pra ligações-chave.</div>
+      </section>
+    </div>
+
+    <!-- Histórico detalhado -->
+    <section class="card p-0 overflow-hidden">
+      <div class="p-5 border-b flex items-center justify-between" style="border-color:#1F2937;">
+        <div>
+          <h2 class="text-lg font-semibold">🕘 Histórico de ligações</h2>
+          <p class="text-xs text-slate-400 mt-1">Últimas 30 · filtrar por resultado</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="chip chip-sel">Todos</button>
+          <button class="chip">Aproveitado</button>
+          <button class="chip">Sem interesse</button>
+          <button class="chip">Não atendeu</button>
+        </div>
+      </div>
+      <div class="divide-y" style="border-color:#1F2937;">
+        <div class="row px-5 py-3 flex items-center gap-4 text-sm">
+          <span class="text-xs text-slate-500 w-16">Hoje 14:22</span>
+          <span class="pill" style="background:#10B98122; color:#6EE7B7;">✓ Aproveitado</span>
+          <div class="flex-1">Tamires L. · Caiz Downtown <span class="text-slate-500 text-xs">· "quer 2 dorms, renda ok"</span></div>
+          <button class="chip">Abrir lead</button>
+        </div>
+        <div class="row px-5 py-3 flex items-center gap-4 text-sm">
+          <span class="text-xs text-slate-500 w-16">Hoje 13:48</span>
+          <span class="pill" style="background:#F59E0B22; color:#FCD34D;">📌 Retorno agendado</span>
+          <div class="flex-1">Carla D. · Alta Vista <span class="text-slate-500 text-xs">· "voltar hoje 17:30"</span></div>
+          <button class="chip">Ver retorno</button>
+        </div>
+        <div class="row px-5 py-3 flex items-center gap-4 text-sm">
+          <span class="text-xs text-slate-500 w-16">Hoje 13:31</span>
+          <span class="pill" style="background:#6B728033; color:#CBD5E1;">📵 Não atendeu</span>
+          <div class="flex-1">Roberto A. · Vivance</div>
+          <span class="text-[11px] text-slate-500">liberado em 7d</span>
+        </div>
+        <div class="row px-5 py-3 flex items-center gap-4 text-sm">
+          <span class="text-xs text-slate-500 w-16">Hoje 11:07</span>
+          <span class="pill" style="background:#EF444422; color:#FCA5A5;">✕ Descartado</span>
+          <div class="flex-1">João P. · Elleve <span class="text-slate-500 text-xs">· "sem interesse — mudou de cidade"</span></div>
+          <span class="text-[11px] text-slate-500">permanente</span>
+        </div>
+        <div class="row px-5 py-3 flex items-center gap-4 text-sm">
+          <span class="text-xs text-slate-500 w-16">Ontem 17:10</span>
+          <span class="pill" style="background:#4969FF22; color:#C7D2FE;">🏠 Visita agendada</span>
+          <div class="flex-1">Andrea S. · Caiz Downtown <span class="text-slate-500 text-xs">· "sábado 10h"</span></div>
+          <button class="chip">Abrir visita</button>
+        </div>
+      </div>
+      <div class="px-5 py-3 text-xs text-slate-400 flex items-center justify-between">
+        <span>Mostrando 5 de 248</span>
+        <button class="chip">Ver todos · exportar CSV</button>
+      </div>
+    </section>
+
+    <footer class="text-xs text-slate-500 pt-2">
+      Bloco 5 de 5 · Fase 5 completa. Próximo passo: plano técnico consolidado dos 5 blocos.
+    </footer>
+  </div>
+</body>
+</html>
