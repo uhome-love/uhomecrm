@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Bloco 3 — Cooldown 7d + Motivos estruturados</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background:#0A0E1A; color:#E5E7EB; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif; }
+  .card { background:#111827; border:1px solid #1F2937; border-radius:14px; }
+  .chip { border:1px solid #1F2937; border-radius:999px; padding:6px 12px; font-size:12px; }
+  .chip-sel { background:#4969FF1A; border-color:#4969FF; color:#C7D2FE; }
+  .pill { border-radius:999px; padding:3px 10px; font-size:11px; font-weight:600; }
+  .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#0B1220; border:1px solid #1F2937; color:#94A3B8; border-radius:6px; padding:1px 6px; font-size:11px; }
+</style>
+</head>
+<body class="p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <header class="flex items-center justify-between">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-indigo-400/80">Oferta Ativa · Fase 5 · Bloco 3</div>
+        <h1 class="text-2xl font-semibold mt-1">Cooldown de 7 dias + Motivos estruturados de rejeição</h1>
+        <p class="text-slate-400 text-sm mt-1">Impede que o mesmo lead seja ligado por vários corretores em janela curta e transforma o resultado da ligação em dado estruturado (aprendizado da base).</p>
+      </div>
+      <span class="pill" style="background:#4969FF1A; color:#C7D2FE; border:1px solid #4969FF66;">Mockup — não é código</span>
+    </header>
+
+    <!-- BLOCO A: Como o cooldown aparece pro corretor -->
+    <section class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">A. Cooldown 7 dias — como aparece dentro da base</h2>
+        <span class="text-xs text-slate-400">Regra: um lead ligado (qualquer resultado que não seja "Aproveitado") fica invisível 7 dias para toda a equipe.</span>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <!-- Lead disponível -->
+        <div class="card p-4" style="border-color:#1F2937;">
+          <div class="flex items-center justify-between mb-2">
+            <span class="pill" style="background:#10B98122; color:#6EE7B7;">Disponível</span>
+            <span class="text-[11px] text-slate-500">HOMI 82</span>
+          </div>
+          <div class="font-medium">Ana Paula S.</div>
+          <div class="text-xs text-slate-400 mt-1">Último contato: 42 dias atrás</div>
+          <button class="mt-3 w-full py-2 rounded-lg text-sm" style="background:#4969FF; color:#fff;">📞 Ligar</button>
+        </div>
+
+        <!-- Lead em cooldown -->
+        <div class="card p-4 opacity-70" style="border-color:#1F2937;">
+          <div class="flex items-center justify-between mb-2">
+            <span class="pill" style="background:#F59E0B22; color:#FCD34D;">⏳ Em espera · 5d</span>
+            <span class="text-[11px] text-slate-500">HOMI 74</span>
+          </div>
+          <div class="font-medium">Bruno M.</div>
+          <div class="text-xs text-slate-400 mt-1">Ligado há 2 dias — Não atendeu</div>
+          <div class="text-[11px] text-slate-500 mt-1">Liberado em 5 dias</div>
+          <button disabled class="mt-3 w-full py-2 rounded-lg text-sm" style="background:#1F2937; color:#64748B;">🔒 Bloqueado</button>
+        </div>
+
+        <!-- Reservado pra mim -->
+        <div class="card p-4" style="border-color:#4969FF66;">
+          <div class="flex items-center justify-between mb-2">
+            <span class="pill" style="background:#4969FF22; color:#C7D2FE;">📌 Meu retorno</span>
+            <span class="text-[11px] text-slate-500">HOMI 88</span>
+          </div>
+          <div class="font-medium">Carla D.</div>
+          <div class="text-xs text-slate-400 mt-1">Pediu retorno amanhã 14h</div>
+          <button class="mt-3 w-full py-2 rounded-lg text-sm" style="background:#4969FF; color:#fff;">📞 Ligar agora</button>
+        </div>
+      </div>
+
+      <div class="mt-4 text-xs text-slate-400 flex flex-wrap gap-4">
+        <span>🔓 Exceção 1: Gestor pode liberar manualmente antes dos 7d.</span>
+        <span>🔓 Exceção 2: O próprio corretor que ligou pode retornar sem cooldown.</span>
+        <span>🔓 Exceção 3: Mutirão ao vivo ignora o cooldown (base quinta/sexta).</span>
+      </div>
+    </section>
+
+    <!-- BLOCO B: Modal pós-ligação com motivos estruturados -->
+    <section class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">B. Pós-ligação — resultado estruturado</h2>
+        <span class="text-xs text-slate-400">Substitui o campo livre atual. Vira dado agregado por base.</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-6">
+        <!-- Passo 1: resultado -->
+        <div class="card p-5" style="background:#0B1220;">
+          <div class="text-xs uppercase tracking-wider text-slate-500 mb-3">Passo 1 · Como foi a ligação?</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="chip text-left" style="border-color:#10B98166; color:#6EE7B7;">✅ Aproveitado <span class="block text-[10px] text-slate-400 mt-0.5">vira lead no pipeline</span></button>
+            <button class="chip chip-sel text-left">📵 Não atendeu <span class="block text-[10px] text-slate-400 mt-0.5">cooldown 7d</span></button>
+            <button class="chip text-left">🗣️ Atendeu — sem interesse agora <span class="block text-[10px] text-slate-400 mt-0.5">cooldown 30d</span></button>
+            <button class="chip text-left">❌ Descartar definitivamente <span class="block text-[10px] text-slate-400 mt-0.5">nunca mais</span></button>
+          </div>
+
+          <div class="mt-5 text-xs uppercase tracking-wider text-slate-500 mb-2">Passo 2 · Motivo (obrigatório)</div>
+          <div class="flex flex-wrap gap-2">
+            <button class="chip">Caixa postal</button>
+            <button class="chip chip-sel">Chamou e não atendeu</button>
+            <button class="chip">Número desligado</button>
+            <button class="chip">Não é a pessoa</button>
+            <button class="chip">Ocupado</button>
+          </div>
+
+          <div class="mt-5 text-xs uppercase tracking-wider text-slate-500 mb-2">Observação (opcional)</div>
+          <textarea class="w-full rounded-lg p-3 text-sm" style="background:#0A0E1A; border:1px solid #1F2937; color:#E5E7EB;" rows="2" placeholder="Livre — não obrigatório"></textarea>
+
+          <button class="mt-4 w-full py-2.5 rounded-lg text-sm font-semibold" style="background:#4969FF; color:#fff;">Salvar e ir pro próximo <span class="kbd ml-2">Enter</span></button>
+        </div>
+
+        <!-- Motivos por resultado -->
+        <div class="space-y-3">
+          <div class="card p-4">
+            <div class="text-sm font-semibold mb-2" style="color:#6EE7B7;">✅ Aproveitado</div>
+            <div class="text-xs text-slate-400">Motivos: <span class="text-slate-200">Interessado em imóvel · Quer visita · Vai comprar em X meses · Investidor</span></div>
+          </div>
+          <div class="card p-4">
+            <div class="text-sm font-semibold mb-2" style="color:#FCD34D;">📵 Não atendeu</div>
+            <div class="text-xs text-slate-400">Motivos: <span class="text-slate-200">Caixa postal · Chamou e não atendeu · Ocupado · Número desligado · Não é a pessoa</span></div>
+          </div>
+          <div class="card p-4">
+            <div class="text-sm font-semibold mb-2" style="color:#93C5FD;">🗣️ Sem interesse agora</div>
+            <div class="text-xs text-slate-400">Motivos: <span class="text-slate-200">Já comprou · Momento ruim · Sem grana · Buscando outro perfil · Longe demais</span></div>
+          </div>
+          <div class="card p-4">
+            <div class="text-sm font-semibold mb-2" style="color:#FCA5A5;">❌ Descartar definitivamente</div>
+            <div class="text-xs text-slate-400">Motivos: <span class="text-slate-200">Errou o número · Não quer mais ser contatado · Concorrente · Spam</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO C: agregado que a gestão passa a enxergar -->
+    <section class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">C. O que a gestão passa a enxergar (por base)</h2>
+        <span class="text-xs text-slate-400">Dado estruturado vira insight — sem depender de texto livre.</span>
+      </div>
+
+      <div class="grid grid-cols-4 gap-4">
+        <div class="card p-4">
+          <div class="text-xs text-slate-400">Aproveitamento</div>
+          <div class="text-2xl font-semibold mt-1" style="color:#6EE7B7;">18%</div>
+          <div class="text-[11px] text-slate-500 mt-1">89 de 502 ligados</div>
+        </div>
+        <div class="card p-4">
+          <div class="text-xs text-slate-400">Não atende</div>
+          <div class="text-2xl font-semibold mt-1" style="color:#FCD34D;">54%</div>
+          <div class="text-[11px] text-slate-500 mt-1">principal: caixa postal</div>
+        </div>
+        <div class="card p-4">
+          <div class="text-xs text-slate-400">Sem interesse agora</div>
+          <div class="text-2xl font-semibold mt-1" style="color:#93C5FD;">21%</div>
+          <div class="text-[11px] text-slate-500 mt-1">principal: já comprou</div>
+        </div>
+        <div class="card p-4">
+          <div class="text-xs text-slate-400">Descarte definitivo</div>
+          <div class="text-2xl font-semibold mt-1" style="color:#FCA5A5;">7%</div>
+          <div class="text-[11px] text-slate-500 mt-1">principal: errou o número</div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-xs text-slate-400">
+        Ganhos práticos: identificar bases exauridas, motivos recorrentes de descarte, e ajustar campanhas / disparadores de reengajamento com base em dado real.
+      </div>
+    </section>
+
+    <footer class="text-xs text-slate-500 pt-2">
+      Bloco 3 de 5 · Após aprovação seguimos pro Bloco 4 (Reservados — meus retornos e leads separados) e Bloco 5 (Meus resultados — histórico do corretor).
+    </footer>
+  </div>
+</body>
+</html>
