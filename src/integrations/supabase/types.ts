@@ -5312,6 +5312,51 @@ export type Database = {
           },
         ]
       }
+      oferta_ativa_cooldowns: {
+        Row: {
+          cooldown_ate: string | null
+          created_at: string
+          criado_por: string
+          id: string
+          lista_id: string | null
+          motivo: string | null
+          mutirao_bypass: boolean
+          observacao: string | null
+          pipeline_lead_id: string
+          resultado: string
+          sessao_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cooldown_ate?: string | null
+          created_at?: string
+          criado_por: string
+          id?: string
+          lista_id?: string | null
+          motivo?: string | null
+          mutirao_bypass?: boolean
+          observacao?: string | null
+          pipeline_lead_id: string
+          resultado: string
+          sessao_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cooldown_ate?: string | null
+          created_at?: string
+          criado_por?: string
+          id?: string
+          lista_id?: string | null
+          motivo?: string | null
+          mutirao_bypass?: boolean
+          observacao?: string | null
+          pipeline_lead_id?: string
+          resultado?: string
+          sessao_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       oferta_ativa_fila: {
         Row: {
           balde: string
@@ -12367,6 +12412,10 @@ export type Database = {
         Returns: boolean
       }
       oa_ao_vivo_my_profile_id: { Args: never; Returns: string }
+      oferta_ativa_esta_em_cooldown: {
+        Args: { p_corretor_id: string; p_pipeline_lead_id: string }
+        Returns: boolean
+      }
       oferta_ativa_lock_next_lead: {
         Args: {
           p_corretor_id: string
