@@ -274,6 +274,31 @@ Deno.serve(async (req) => {
       await admin.from("oferta_ativa_fila").delete().eq("id", fila_id);
     }
 
+    // ─── 3b) Cooldown global (oferta_ativa_cooldowns) — Onda 2 ───
+    // mutirao_bypass=true → Mutirão ao vivo ignora este cooldown; só o fluxo de base respeita.
+    try {
+      const ttlDays = COOLDOWN_TTL_DAYS[resultado];
+      if (ttlDays !== 0 && ttlDays !== undefined) {
+        const cooldownAte =
+          ttlDays === null
+            ? null
+            : new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString();
+        await admin.from("oferta_ativa_cooldowns").insert({
+          pipeline_lead_id,
+          cooldown_ate: cooldownAte,
+          resultado,
+          motivo: motivo_perda ?? null,
+          observacao: observacao ?? null,
+          criado_por: meuProfileId,
+          mutirao_bypass: true, // sessão de mutirão ativa
+          sessao_id,
+        });
+      }
+    } catch (e) {
+      console.warn("[registrar-resultado] cooldown insert falhou (não crítico):", (e as Error).message);
+    }
+
+
     // ─── 4) Pulse events (celebrações) ───
     // Só publica evento para resultados relevantes; pular não vira feed.
     if (resultado === "aproveitado" || resultado === "visita_agendada") {
