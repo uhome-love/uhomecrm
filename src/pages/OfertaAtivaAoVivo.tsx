@@ -68,13 +68,14 @@ export default function OfertaAtivaAoVivo() {
   );
 
   const Tabs = (
-    <div className="flex flex-wrap justify-end px-4 pt-3 gap-2">
+    <div className="flex flex-wrap justify-end px-4 pt-3 gap-2 overflow-x-auto">
       {tab("corretor", "Como corretor")}
       {isManagerish && tab("painel", "Painel Ao Vivo")}
       {isManagerish && (
         <Button
           size="sm"
           variant="outline"
+          className="shrink-0"
           onClick={() => window.open(`/placar-tv`, "_blank")}
         >
           📺 Placar TV
