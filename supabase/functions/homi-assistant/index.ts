@@ -8,14 +8,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { loadEnterpriseKnowledge, formatForAssistant, createServiceClient } from "../_shared/enterprise-knowledge.ts";
 import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
-import {
-  searchMetodoUhome,
-  formatMetodoBlock,
-  METODO_REGRAS_INVIOLAVEIS,
-  METODO_FORMATO_3_PARTES,
-  METODO_LINHAS_VERMELHAS,
-} from "../_shared/homi-knowledge.ts";
-
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -43,7 +35,7 @@ serve(async (req) => {
     const infoEmpreendimento = formatForAssistant(knowledge, empreendimento || "");
 
     const isGerente = role === "gerente";
-    let systemPrompt = isGerente
+    const systemPrompt = isGerente
       ? `Você é o HOMI, o assistente de gestão comercial da Uhome.
 Você está ajudando um GERENTE DE EQUIPE a criar materiais para seu time de corretores.
 Seu papel é gerar scripts, mensagens, quebras de objeção e materiais de treinamento práticos.
@@ -661,24 +653,76 @@ Você é o cérebro comercial da Uhome.
 Seu objetivo final: criar corretores consultivos, rápidos, persuasivos e focados em VISITA.
 
 ═══════════════════════════════════════
-FORMATO DA RESPOSTA — MÉTODO UHOME (obrigatório e único)
+FORMATO DA RESPOSTA (CONDICIONAL POR TIPO DE AÇÃO)
 ═══════════════════════════════════════
 
-Toda resposta ao corretor segue as TRÊS PARTES do Método Uhome, nesta ordem exata, sempre com estes títulos literais em markdown:
+IMPORTANTE: O formato depende do tipo de ação solicitada. Escolha o formato correto:
 
-## Leitura
-(1 linha: em que etapa do método o lead está e qual é o obstáculo real.)
+### FORMATO WHATSAPP (usar quando a ação envolve mensagem WhatsApp, primeiro contato, reengajamento, responder cliente)
+Use APENAS este formato — NÃO adicione script de ligação, alerta ou próxima ação:
 
-## Mensagem pronta
-(Para copiar e colar. Tom Uhome: "tu" gaúcho, curta — 3 a 4 linhas — uma ideia por vez, terminando em pergunta ou convite. Quando fizer sentido, incluir uma "Alternativa" logo abaixo, com 2 a 3 linhas em ângulo diferente.)
+## 💬 Mensagem WhatsApp
+(MÁXIMO 3 LINHAS CURTAS. Termina com pergunta. Natural e direto.)
 
-## Por quê
-(1 linha: qual técnica do método está sendo usada e qual é o próximo passo esperado no funil.)
+## 🔄 Versão Alternativa
+(MÁXIMO 3 LINHAS CURTAS com tom diferente. Indique: [Curiosidade], [Prova Social], [Oportunidade] ou [Humor Leve].)
 
-REGRAS DESTE FORMATO:
-- NUNCA usar os títulos antigos "Análise da Objeção", "Análise da Situação", "Resposta Sugerida", "Versão Alternativa" isolada, "Alerta de Abordagem", "Próxima Ação", "Script de Ligação" como seções principais. Estão substituídos pelas três partes acima.
-- Se a ação for "script_ligacao", encaixar o mini-script (formato Corretor/Cliente, 4 a 6 trocas curtas) DENTRO de "Mensagem pronta". As partes "Leitura" e "Por quê" continuam obrigatórias.
-- Se a ação for gerar somente uma mensagem pura pra copiar e colar (usuário pede explicitamente "só a mensagem", "apenas o texto"), aí sim entrega só a mensagem, sem as três partes.`;
+## 💡 Qual usar
+(1 frase explicando quando usar cada versão.)
+
+### FORMATO LIGAÇÃO (usar quando a ação é script de ligação)
+Use APENAS este formato:
+
+## 📞 Script de Ligação
+
+**Corretor:** "fala de abertura"
+
+**Cliente:** (possível resposta)
+
+**Corretor:** "desenvolvimento"
+
+**Cliente:** (possível resposta)
+
+**Corretor:** "convite para visita"
+
+MÁXIMO 5-6 trocas. Cada fala do corretor em NO MÁXIMO 2 linhas.
+
+## 💡 Dicas
+(2-3 bullet points curtos sobre tom e timing.)
+
+### FORMATO OBJEÇÃO (usar quando a ação é quebrar objeção)
+Use APENAS este formato:
+
+## 🧠 Análise da Objeção
+(1-2 frases: o que o cliente realmente quer dizer.)
+
+## 💬 Resposta Sugerida
+(MÁXIMO 3 linhas. Natural e empática.)
+
+## 🔄 Versão Alternativa
+(MÁXIMO 3 linhas com ângulo diferente.)
+
+### FORMATO COMPLETO (usar APENAS para análise consultiva, preparar proposta, vitrine, perguntas abertas da IA)
+
+## 🧠 Análise da Situação
+(MÁXIMO 2 frases.)
+
+## 💬 Mensagem WhatsApp
+(MÁXIMO 3 LINHAS CURTAS. Termina com pergunta.)
+
+## 🔄 Versão Alternativa
+(MÁXIMO 3 LINHAS CURTAS.)
+
+## 📞 Script de Ligação
+(Formato Corretor/Cliente. MÁXIMO 5-6 trocas.)
+
+## ⚠️ Alerta de Abordagem
+(Erro detectado ou "✅ Abordagem adequada para o momento.")
+
+## 🎯 Próxima Ação
+(3-4 bullet points curtos.)
+
+REGRA: Escolha o formato baseado na ação. NUNCA use formato completo quando o corretor quer apenas uma mensagem WhatsApp.`;
 
     // ── Inject format-only prefix when prompt contains explicit format instructions ──
     const promptText = objetivo || "";
@@ -820,15 +864,6 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     } catch (e) {
       console.error("materiais context skipped:", e);
     }
-
-    // ── HOMI ↔ Método Uhome: retrieval + contrato de operação + linhas vermelhas ──
-    const metodoQuery = [acao, empreendimento, situacao, mensagem_cliente].filter(Boolean).join(" | ").slice(0, 500);
-    const metodoChunks = await searchMetodoUhome(supabase, metodoQuery, 4);
-    const metodoBlock = formatMetodoBlock(metodoChunks);
-    const metodoContrato = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMÉTODO UHOME — CONTRATO DE OPERAÇÃO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${METODO_FORMATO_3_PARTES}\n\n${METODO_REGRAS_INVIOLAVEIS}\n\n${METODO_LINHAS_VERMELHAS}`;
-    systemPrompt = systemPrompt + metodoContrato + metodoBlock;
-
-
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

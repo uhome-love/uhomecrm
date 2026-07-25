@@ -2,13 +2,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireApiKey, callAI, withCorsAndErrorHandling } from "../_shared/ai-helpers.ts";
 import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
-import {
-  searchMetodoUhome,
-  formatMetodoBlock,
-  METODO_REGRAS_INVIOLAVEIS,
-  METODO_LINHAS_VERMELHAS,
-} from "../_shared/homi-knowledge.ts";
-
 
 Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
   // JWT validation
@@ -482,26 +475,14 @@ Responda APENAS com JSON válido, sem markdown, sem explicação:
   }
   const materiaisBlock = formatMateriaisBlock(materiaisSuggestions);
 
-  // ── HOMI ↔ Método Uhome: retrieval semântico em homi_chunks ──
-  const metodoQuery = `${etapa} | ${ultima_mensagem}`.slice(0, 500);
-  const metodoChunks = await searchMetodoUhome(sbAdmin, metodoQuery, 4);
-  const metodoBlock = formatMetodoBlock(metodoChunks);
-
-  // Bloco de regras invioláveis + linhas vermelhas (redundância proposital
-  // com os chunks — precisa estar SEMPRE no prompt, independente do retrieval).
-  // Nota: homi-copilot retorna JSON estruturado, por isso o "formato 3 partes"
-  // vira mapeamento para os campos JSON abaixo, em vez de literal.
-  const metodoSystem = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMÉTODO UHOME — CONTRATO DE OPERAÇÃO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${METODO_REGRAS_INVIOLAVEIS}\n\n${METODO_LINHAS_VERMELHAS}\n\nREGRAS ESPECÍFICAS DE APLICAÇÃO (obrigatórias em toda sugestão):\n\n1) PREÇO DE UNIDADE ESPECÍFICA SEM O DADO EM MÃOS.\nNunca inventar número. Escolher UM dos dois caminhos, conforme o caso:\n(a) Se o valor é obtível (unidade estável, dá pra consultar) → usar a frase de contorno "Solicitei os valores, já te envio." + pergunta/convite.\n(b) Se o dado é volátil (unidades vendendo, tabela mudando) → usar a honestidade do Caso 6, com DUAS PARTES OBRIGATÓRIAS na mesma mensagem:\n   • admitir COM O MOTIVO ("agora não vou saber te dizer exatamente, porque algumas já foram vendidas e não quero te passar uma ideia e depois chegar lá e não ter mais")\n   • + o convite ("o ideal é ir ver mesmo") com opção concreta de horário.\nContornar direto pela visita SEM a admissão explicada é resposta incompleta — a honestidade É a técnica de fechamento, não um preâmbulo.\n\n2) PÓS-VISITA.\nQuando a visita já aconteceu (o lead diz que gostou, que "foi ótima", ou pergunta "e agora?"), PROIBIDO perguntar "o que achou?", "o que mais gostou?" ou similares. Puxar direto a PONTE DE CRÉDITO: análise, simulação, documentos, reserva da unidade. As três opcoes_resposta devem TODAS avançar para a ponte de crédito — nenhuma pode pedir feedback.\n\nMAPEAMENTO PARA A RESPOSTA JSON DESTE ENDPOINT:\n- "Leitura" (Método) → campo "briefing"\n- "Mensagem pronta" (Método) → campos "sugestao_resposta" e "opcoes_resposta"\n- "Por quê / próximo passo" (Método) → campo "proxima_acao"\nAplique as REGRAS INVIOLÁVEIS, as LINHAS VERMELHAS e as REGRAS ESPECÍFICAS a TODA sugestão gerada.`;
-
   const apiKey = requireApiKey();
   const raw = await callAI(apiKey, [
-    { role: "user", content: prompt + metodoSystem + metodoBlock + materiaisBlock },
+    { role: "user", content: prompt + materiaisBlock },
   ], {
     model: "google/gemini-2.5-flash",
     fnName: "homi-copilot",
     temperature: 0.4,
   });
-
 
   // Parse JSON from response (strip markdown fences if present)
   let cleaned = raw.trim();
