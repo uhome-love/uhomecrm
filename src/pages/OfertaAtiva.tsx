@@ -7,6 +7,7 @@ import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import OAObservabilityPanel from "@/components/oferta-ativa/OAObservabilityPanel";
 import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
+import ReservadosPanel from "@/components/oferta-ativa/ReservadosPanel";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
