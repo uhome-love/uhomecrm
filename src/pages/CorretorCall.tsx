@@ -8,12 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, X, ChevronRight, Loader2, Pencil } from "lucide-react";
+import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, X, ChevronRight, Loader2, Pencil, Layers, Bookmark, BarChart3 } from "lucide-react";
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
+import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
+import ReservadosPanel from "@/components/oferta-ativa/ReservadosPanel";
+import MeusResultadosPanel from "@/components/oferta-ativa/MeusResultadosPanel";
 import ArenaSessionSummary, { type ArenaSessionData } from "@/components/oferta-ativa/ArenaSessionSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLevel, getNextLevel, getLevelProgress } from "@/lib/gamification";
@@ -611,14 +614,23 @@ export default function CorretorCall() {
       <div className="flex-1 min-h-0 overflow-auto px-4 py-3 relative z-10">
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="inline-flex h-9 mb-3 rounded-lg p-0.5" style={{ background: "var(--arena-tab-bg)" }}>
-              <TabsTrigger value="call" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }} data-active-style>
+            <TabsList className="inline-flex h-9 mb-3 rounded-lg p-0.5 flex-wrap" style={{ background: "var(--arena-tab-bg)" }}>
+              <TabsTrigger value="call" className="gap-1.5 px-3 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }} data-active-style>
                 <Phone className="h-3.5 w-3.5" /> Arena
               </TabsTrigger>
-              <TabsTrigger value="aproveitados" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
+              <TabsTrigger value="bases" className="gap-1.5 px-3 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
+                <Layers className="h-3.5 w-3.5" /> Bases
+              </TabsTrigger>
+              <TabsTrigger value="reservados" className="gap-1.5 px-3 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
+                <Bookmark className="h-3.5 w-3.5" /> Reservados
+              </TabsTrigger>
+              <TabsTrigger value="aproveitados" className="gap-1.5 px-3 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
                 <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
               </TabsTrigger>
-              <TabsTrigger value="ranking" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
+              <TabsTrigger value="resultados" className="gap-1.5 px-3 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
+                <BarChart3 className="h-3.5 w-3.5" /> Meus resultados
+              </TabsTrigger>
+              <TabsTrigger value="ranking" className="gap-1.5 px-3 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
                 <Trophy className="h-3.5 w-3.5" /> Ranking
               </TabsTrigger>
             </TabsList>
@@ -626,8 +638,17 @@ export default function CorretorCall() {
             <TabsContent value="call" className="mt-0">
               <CorretorListSelection />
             </TabsContent>
+            <TabsContent value="bases" className="mt-0">
+              <BasesAtivasGrid />
+            </TabsContent>
+            <TabsContent value="reservados" className="mt-0">
+              <ReservadosPanel />
+            </TabsContent>
             <TabsContent value="aproveitados" className="mt-0">
               <AproveitadosPanel />
+            </TabsContent>
+            <TabsContent value="resultados" className="mt-0">
+              <MeusResultadosPanel />
             </TabsContent>
             <TabsContent value="ranking" className="mt-0">
               <RankingPanel />
