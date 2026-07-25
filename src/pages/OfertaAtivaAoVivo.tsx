@@ -61,6 +61,7 @@ export default function OfertaAtivaAoVivo() {
       key={v}
       size="sm"
       variant={view === v ? "default" : "outline"}
+      className="shrink-0"
       onClick={() => setView(v)}
     >
       {label}
