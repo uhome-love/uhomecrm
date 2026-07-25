@@ -1044,6 +1044,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             { key: "agendar", label: "📅 Agendar Visita", bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", color: "#FCD34D", hoverBg: "rgba(245,158,11,0.3)" },
             { key: "nao_atendeu", label: "🔴 Não Atendeu", bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)", color: "#FCA5A5", hoverBg: "rgba(239,68,68,0.3)" },
             { key: "sem_interesse", label: "⏭️ Sem Interesse", bg: "rgba(107,114,128,0.15)", border: "rgba(107,114,128,0.4)", color: "#9CA3AF", hoverBg: "rgba(107,114,128,0.3)" },
+            { key: "descarte_definitivo", label: "❌ Descarte definitivo", bg: "rgba(190,18,60,0.15)", border: "rgba(190,18,60,0.4)", color: "#FDA4AF", hoverBg: "rgba(190,18,60,0.3)" },
           ].map(r => (
             <button
               key={r.key}
@@ -1062,6 +1063,41 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           ))}
         </div>
 
+        {/* Motivo estruturado (obrigatório para nao_atendeu / sem_interesse / descarte_definitivo) */}
+        {selectedResult && ["nao_atendeu", "sem_interesse", "descarte_definitivo"].includes(selectedResult) && (() => {
+          const metaKey = selectedResult === "descarte_definitivo" ? "descarte_definitivo" : selectedResult;
+          const meta = getResultadoMeta(metaKey);
+          if (!meta) return null;
+          return (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: "var(--arena-text-muted)" }}>
+                Motivo <span className="rounded px-1.5 py-0.5 text-[9px] font-bold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>obrigatório</span>
+                <span className="ml-auto rounded px-1.5 py-0.5 text-[9px]" style={{ background: "var(--arena-subtle-bg)", color: "var(--arena-text-subtle)" }}>{meta.cooldownLabel}</span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {meta.motivos.map((m) => {
+                  const active = selectedMotivo === m;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setSelectedMotivo(m)}
+                      className="rounded-full border px-2.5 py-1 text-[11px] transition-colors"
+                      style={{
+                        background: active ? "rgba(96,165,250,0.15)" : "transparent",
+                        borderColor: active ? "#60A5FA" : "var(--arena-card-border)",
+                        color: active ? "#93C5FD" : "var(--arena-text-muted)",
+                      }}
+                    >
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <Textarea
           placeholder="📝 Observação (opcional)..."
           value={inlineObs}
@@ -1076,7 +1112,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             variant="ghost"
             className="flex-1 text-muted-foreground hover:text-foreground hover:bg-accent"
             style={{ height: 44, border: "1px solid rgba(255,255,255,0.08)" }}
-            onClick={() => { setShowResultPopup(false); setSelectedResult(null); }}
+            onClick={() => { setShowResultPopup(false); setSelectedResult(null); setSelectedMotivo(null); }}
           >
             Cancelar
           </Button>
@@ -1084,7 +1120,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             <Button
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-foreground font-semibold"
               style={{ height: 44 }}
-              disabled={submitting}
+              disabled={submitting || (["nao_atendeu","sem_interesse","descarte_definitivo"].includes(selectedResult) && !selectedMotivo)}
               onClick={handlePopupConfirm}
             >
               {submitting ? "Registrando..." : "Confirmar e Próximo →"}
