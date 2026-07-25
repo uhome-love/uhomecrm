@@ -131,6 +131,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [inlineObs, setInlineObs] = useState("");
   const [showResultPopup, setShowResultPopup] = useState(false);
   const [selectedResult, setSelectedResult] = useState<string | null>(null);
+  const [selectedMotivo, setSelectedMotivo] = useState<string | null>(null);
   const [objAccordionOpen, setObjAccordionOpen] = useState(false);
 
   // Mobile tab
