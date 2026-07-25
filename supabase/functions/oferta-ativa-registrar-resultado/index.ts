@@ -24,6 +24,7 @@ const PONTOS: Record<string, number> = {
   pulado: 0,
   nao_atendeu: 1,
   sem_interesse: 1,
+  descarte_definitivo: 1, // Onda 2 · Bloco 3 — encerra o lead na base
   aproveitado: 4,
   visita_agendada: 10,
 };
