@@ -43,7 +43,7 @@ serve(async (req) => {
     const infoEmpreendimento = formatForAssistant(knowledge, empreendimento || "");
 
     const isGerente = role === "gerente";
-    const systemPrompt = isGerente
+    let systemPrompt = isGerente
       ? `Você é o HOMI, o assistente de gestão comercial da Uhome.
 Você está ajudando um GERENTE DE EQUIPE a criar materiais para seu time de corretores.
 Seu papel é gerar scripts, mensagens, quebras de objeção e materiais de treinamento práticos.
