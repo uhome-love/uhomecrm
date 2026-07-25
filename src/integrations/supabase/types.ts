@@ -12465,6 +12465,20 @@ export type Database = {
         Returns: string
       }
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
+      match_homi_chunks: {
+        Args: {
+          filter_category?: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          document_id: string
+          id: string
+          metadata: Json
+          similarity: number
+        }[]
+      }
       match_materiais: {
         Args: { match_count?: number; query_embedding: string }
         Returns: {
