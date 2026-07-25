@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
           pipeline_lead_id,
           cooldown_ate: cooldownAte,
           resultado,
-          motivo: motivo_perda ?? null,
+          motivo: motivoFinal,
           observacao: observacao ?? null,
           criado_por: meuProfileId,
           mutirao_bypass: true, // sessão de mutirão ativa
