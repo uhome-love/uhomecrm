@@ -24,6 +24,7 @@ const PONTOS: Record<string, number> = {
   pulado: 0,
   nao_atendeu: 1,
   sem_interesse: 1,
+  descarte_definitivo: 1, // Onda 2 · Bloco 3 — encerra o lead na base
   aproveitado: 4,
   visita_agendada: 10,
 };
@@ -61,15 +62,19 @@ Deno.serve(async (req) => {
       resultado,
       observacao,
       motivo_perda,
+      motivo_estruturado, // Onda 2 · Bloco 3 — alias vindo do PosLigacaoDialog
       visita_payload,
     } = body ?? {};
+
+    // Unifica motivo (motivo_estruturado tem prioridade quando enviado pelo dialog novo)
+    const motivoFinal: string | null = motivo_estruturado ?? motivo_perda ?? null;
 
     if (!sessao_id || !fila_id || !pipeline_lead_id || !resultado) {
       return errorResponse("sessao_id, fila_id, pipeline_lead_id, resultado required", 400);
     }
     if (!(resultado in PONTOS)) return errorResponse("resultado inválido", 400);
-    if (resultado === "sem_interesse" && !motivo_perda) {
-      return errorResponse("motivo_perda obrigatório para sem_interesse", 400);
+    if ((resultado === "sem_interesse" || resultado === "descarte_definitivo") && !motivoFinal) {
+      return errorResponse("motivo obrigatório para este resultado", 400);
     }
     if (resultado === "visita_agendada" && !visita_payload) {
       return errorResponse("visita_payload obrigatório para visita_agendada", 400);
@@ -128,7 +133,7 @@ Deno.serve(async (req) => {
         corretor_id: meuProfileId,
         resultado,
         observacao: observacao ?? null,
-        motivo_perda: motivo_perda ?? null,
+        motivo_perda: motivoFinal,
         pontos,
       })
       .select("id")
@@ -192,7 +197,7 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", fila_id);
-    } else if (resultado === "sem_interesse") {
+    } else if (resultado === "sem_interesse" || resultado === "descarte_definitivo") {
       await admin.from("oferta_ativa_fila").delete().eq("id", fila_id);
     } else if (resultado === "aproveitado" || resultado === "visita_agendada") {
       const targetStage = resultado === "visita_agendada" ? VISITA_STAGE_ID : NOVO_LEAD_STAGE_ID;
@@ -287,7 +292,7 @@ Deno.serve(async (req) => {
           pipeline_lead_id,
           cooldown_ate: cooldownAte,
           resultado,
-          motivo: motivo_perda ?? null,
+          motivo: motivoFinal,
           observacao: observacao ?? null,
           criado_por: meuProfileId,
           mutirao_bypass: true, // sessão de mutirão ativa
