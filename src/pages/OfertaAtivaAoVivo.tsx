@@ -44,10 +44,11 @@ export default function OfertaAtivaAoVivo() {
       ? "corretor"
       : raw;
 
-  const setView = (v: View) => setParams((p) => {
-    if (v === "corretor" && !isManagerish) p.delete("view");
-    else p.set("view", v);
-    return p;
+  const setView = (v: View) => setParams((prev) => {
+    const next = new URLSearchParams(prev);
+    if (v === "corretor" && !isManagerish) next.delete("view");
+    else next.set("view", v);
+    return next;
   });
 
   // Placar TV (fullscreen dedicado, sem chrome)
