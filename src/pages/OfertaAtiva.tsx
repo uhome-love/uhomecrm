@@ -1,72 +1,127 @@
 import { useState } from "react";
-import { Phone } from "lucide-react";
+import { Phone, Settings2, Bookmark, BarChart3, Layers } from "lucide-react";
 import ImportListPanel from "@/components/oferta-ativa/ImportListPanel";
 import CampaignManager from "@/components/oferta-ativa/CampaignManager";
 import TemplateManager from "@/components/oferta-ativa/TemplateManager";
 import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel";
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import OAObservabilityPanel from "@/components/oferta-ativa/OAObservabilityPanel";
+import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 
-const ADMIN_TABS = [
-  { label: "Live",       value: "live"      },
-  { label: "Ranking",    value: "ranking"   },
-  { label: "Radar",      value: "radar"     },
-  { label: "Importar",   value: "importar"  },
-  { label: "Campanhas",  value: "campanhas" },
-  { label: "Templates",  value: "templates" },
+const TABS = [
+  { label: "Bases ativas",    value: "bases"       },
+  { label: "Reservados",      value: "reservados"  },
+  { label: "Meus resultados", value: "resultados"  },
+  { label: "Configurações",   value: "config"      },
 ];
 
-const GESTOR_TABS = [
-  { label: "Live",    value: "live"    },
-  { label: "Ranking", value: "ranking" },
+const CONFIG_SUB_TABS_ADMIN = [
+  { label: "Live",       value: "live",      icon: <Phone size={14} /> },
+  { label: "Ranking",    value: "ranking",   icon: <BarChart3 size={14} /> },
+  { label: "Radar",      value: "radar",     icon: <Layers size={14} /> },
+  { label: "Importar",   value: "importar",  icon: <Settings2 size={14} /> },
+  { label: "Campanhas",  value: "campanhas", icon: <Settings2 size={14} /> },
+  { label: "Templates",  value: "templates", icon: <Settings2 size={14} /> },
+];
+
+const CONFIG_SUB_TABS_GESTOR = [
+  { label: "Live",    value: "live",    icon: <Phone size={14} /> },
+  { label: "Ranking", value: "ranking", icon: <BarChart3 size={14} /> },
 ];
 
 export default function OfertaAtiva() {
   const { isAdmin, isGestor, isCorretor } = useUserRole();
-  const [activeTab, setActiveTab] = useState("live");
+  const [activeTab, setActiveTab] = useState("bases");
+  const [configSub, setConfigSub] = useState("live");
 
   if (isCorretor && !isGestor && !isAdmin) {
     return <Navigate to="/corretor" replace />;
   }
 
-  // Gestor only sees Live + Ranking
-  if (!isAdmin) {
-    return (
-      <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
-        <PageHeader
-          title="Oferta ativa"
-          subtitle="Acompanhe a performance dos seus corretores em tempo real"
-          icon={<Phone size={18} strokeWidth={1.5} />}
-          tabs={GESTOR_TABS}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-        {activeTab === "live" && <PerformanceLivePanel teamOnly />}
-        {activeTab === "ranking" && <RankingOfertaAtiva />}
-      </div>
-    );
-  }
+  const subTabs = isAdmin ? CONFIG_SUB_TABS_ADMIN : CONFIG_SUB_TABS_GESTOR;
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
       <PageHeader
         title="Oferta ativa"
-        subtitle="Importação de listas, campanhas e templates de scripts"
+        subtitle="Bases inteligentes, reservados e desempenho da equipe"
         icon={<Phone size={18} strokeWidth={1.5} />}
-        tabs={ADMIN_TABS}
+        tabs={TABS}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
 
-      {activeTab === "live" && <PerformanceLivePanel />}
-      {activeTab === "ranking" && <RankingOfertaAtiva />}
-      {activeTab === "radar" && <OAObservabilityPanel />}
-      {activeTab === "importar" && <ImportListPanel />}
-      {activeTab === "campanhas" && <CampaignManager />}
-      {activeTab === "templates" && <TemplateManager />}
+      {activeTab === "bases" && <BasesAtivasGrid />}
+
+      {activeTab === "reservados" && (
+        <ComingSoon
+          icon={<Bookmark size={22} />}
+          title="Reservados"
+          desc="Aqui você vai ver os leads que separou e seus retornos agendados. Chega na próxima onda."
+        />
+      )}
+
+      {activeTab === "resultados" && (
+        <ComingSoon
+          icon={<BarChart3 size={22} />}
+          title="Meus resultados"
+          desc="Seu funil pessoal de ligações, aproveitamento por empreendimento e histórico. Em construção."
+        />
+      )}
+
+      {activeTab === "config" && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {subTabs.map((t) => {
+              const active = configSub === t.value;
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => setConfigSub(t.value)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card hover:bg-muted border-border text-muted-foreground"
+                  }`}
+                >
+                  {t.icon}
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {configSub === "live"       && <PerformanceLivePanel teamOnly={!isAdmin} />}
+          {configSub === "ranking"    && <RankingOfertaAtiva />}
+          {configSub === "radar"      && isAdmin && <OAObservabilityPanel />}
+          {configSub === "importar"   && isAdmin && <ImportListPanel />}
+          {configSub === "campanhas"  && isAdmin && <CampaignManager />}
+          {configSub === "templates"  && isAdmin && <TemplateManager />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ComingSoon({
+  icon,
+  title,
+  desc,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="rounded-xl border bg-card p-10 text-center space-y-2">
+      <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+        {icon}
+      </div>
+      <h3 className="text-base font-semibold">{title}</h3>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto">{desc}</p>
     </div>
   );
 }
