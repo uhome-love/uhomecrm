@@ -44,10 +44,11 @@ export default function OfertaAtivaAoVivo() {
       ? "corretor"
       : raw;
 
-  const setView = (v: View) => setParams((p) => {
-    if (v === "corretor" && !isManagerish) p.delete("view");
-    else p.set("view", v);
-    return p;
+  const setView = (v: View) => setParams((prev) => {
+    const next = new URLSearchParams(prev);
+    if (v === "corretor" && !isManagerish) next.delete("view");
+    else next.set("view", v);
+    return next;
   });
 
   // Placar TV (fullscreen dedicado, sem chrome)
@@ -60,6 +61,7 @@ export default function OfertaAtivaAoVivo() {
       key={v}
       size="sm"
       variant={view === v ? "default" : "outline"}
+      className="shrink-0"
       onClick={() => setView(v)}
     >
       {label}
@@ -67,13 +69,14 @@ export default function OfertaAtivaAoVivo() {
   );
 
   const Tabs = (
-    <div className="flex flex-wrap justify-end px-4 pt-3 gap-2">
+    <div className="flex flex-wrap justify-end px-4 pt-3 gap-2 overflow-x-auto">
       {tab("corretor", "Como corretor")}
       {isManagerish && tab("painel", "Painel Ao Vivo")}
       {isManagerish && (
         <Button
           size="sm"
           variant="outline"
+          className="shrink-0"
           onClick={() => window.open(`/placar-tv`, "_blank")}
         >
           📺 Placar TV
