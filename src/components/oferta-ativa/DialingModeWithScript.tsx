@@ -609,6 +609,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const handlePopupResult = (resultado: string) => {
     if (!lead) return;
     setSelectedResult(resultado);
+    setSelectedMotivo(null);
     if (resultado === "com_interesse" || resultado === "agendar") {
       setShowResultPopup(false);
       if (!actionTaken) {
@@ -622,18 +623,31 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   const handlePopupConfirm = () => {
     if (!lead || !selectedResult) return;
+    // Motivo estruturado obrigatório para nao_atendeu / sem_interesse / descarte_definitivo
+    const requiresMotivo = selectedResult === "nao_atendeu" || selectedResult === "sem_interesse" || selectedResult === "descarte_definitivo";
+    if (requiresMotivo && !selectedMotivo) {
+      toast.error("Selecione o motivo");
+      return;
+    }
     if (!actionTaken) {
       setActionTaken("ligacao");
       setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
     }
+    const obs = inlineObs.trim();
+    const motivoPrefix = selectedMotivo ? `[${selectedMotivo}] ` : "";
     const feedbackMap: Record<string, string> = {
-      nao_atendeu: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Não atendeu a ligação",
-      sem_interesse: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Sem interesse no momento",
-      numero_errado: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Número errado/inválido",
+      nao_atendeu: `${motivoPrefix}${obs || "Não atendeu a ligação"}`,
+      sem_interesse: `${motivoPrefix}${obs || "Sem interesse no momento"}`,
+      descarte_definitivo: `[DESCARTE DEFINITIVO] ${motivoPrefix}${obs || "Retirar do sistema"}`,
+      numero_errado: obs || "Número errado/inválido",
     };
+    const mapped = selectedResult === "descarte_definitivo" ? "sem_interesse" : selectedResult;
+    const feedback = feedbackMap[selectedResult] || obs || selectedResult;
+    const retirar = selectedResult === "descarte_definitivo";
     setShowResultPopup(false);
     setSelectedResult(null);
-    handleResultSubmit(selectedResult, feedbackMap[selectedResult] || inlineObs.trim() || selectedResult);
+    setSelectedMotivo(null);
+    handleResultSubmit(mapped, feedback, false, undefined, retirar);
   };
 
   // Inline result (quick buttons in right column)
