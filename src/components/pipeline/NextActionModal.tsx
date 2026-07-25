@@ -229,15 +229,12 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
         {/* Dynamic form */}
         <div className="space-y-3 pt-1">
           {selected === "tarefa" && currentStageTipo === "visita" && (
-            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
-              <p className="font-semibold mb-1">Etapa Visita — tarefas são automáticas</p>
-              <p className="text-[11px] leading-snug opacity-90">
-                Nesta etapa o sistema gera confirmação, remarcação e feedback automaticamente conforme o status da visita. Não crie tarefas manuais aqui.
-              </p>
+            <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-[11px] leading-snug text-primary">
+              🏠 <strong>Etapa Visita:</strong> confirmação, remarcação e feedback são criadas automaticamente pela Agenda conforme o status da visita. Use aqui para contatos e follow-ups manuais.
             </div>
           )}
 
-          {selected === "tarefa" && currentStageTipo !== "visita" && (
+          {selected === "tarefa" && (
             <>
               {presets.length > 0 ? (
                 <div>
