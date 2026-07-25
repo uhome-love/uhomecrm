@@ -62,15 +62,19 @@ Deno.serve(async (req) => {
       resultado,
       observacao,
       motivo_perda,
+      motivo_estruturado, // Onda 2 · Bloco 3 — alias vindo do PosLigacaoDialog
       visita_payload,
     } = body ?? {};
+
+    // Unifica motivo (motivo_estruturado tem prioridade quando enviado pelo dialog novo)
+    const motivoFinal: string | null = motivo_estruturado ?? motivo_perda ?? null;
 
     if (!sessao_id || !fila_id || !pipeline_lead_id || !resultado) {
       return errorResponse("sessao_id, fila_id, pipeline_lead_id, resultado required", 400);
     }
     if (!(resultado in PONTOS)) return errorResponse("resultado inválido", 400);
-    if (resultado === "sem_interesse" && !motivo_perda) {
-      return errorResponse("motivo_perda obrigatório para sem_interesse", 400);
+    if ((resultado === "sem_interesse" || resultado === "descarte_definitivo") && !motivoFinal) {
+      return errorResponse("motivo obrigatório para este resultado", 400);
     }
     if (resultado === "visita_agendada" && !visita_payload) {
       return errorResponse("visita_payload obrigatório para visita_agendada", 400);
