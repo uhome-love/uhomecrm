@@ -5901,6 +5901,77 @@ export type Database = {
           },
         ]
       }
+      oferta_ativa_reservados: {
+        Row: {
+          agendado_para: string | null
+          corretor_id: string
+          created_at: string
+          devolvido_at: string | null
+          devolvido_motivo: string | null
+          id: string
+          lista_id: string | null
+          observacao: string | null
+          pipeline_lead_id: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          agendado_para?: string | null
+          corretor_id: string
+          created_at?: string
+          devolvido_at?: string | null
+          devolvido_motivo?: string | null
+          id?: string
+          lista_id?: string | null
+          observacao?: string | null
+          pipeline_lead_id: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          agendado_para?: string | null
+          corretor_id?: string
+          created_at?: string
+          devolvido_at?: string | null
+          devolvido_motivo?: string | null
+          id?: string
+          lista_id?: string | null
+          observacao?: string | null
+          pipeline_lead_id?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_reservados_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_listas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_reservados_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "v_oa_lista_potencial"
+            referencedColumns: ["lista_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_reservados_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_reservados_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+        ]
+      }
       oferta_ativa_sessoes: {
         Row: {
           config: Json
