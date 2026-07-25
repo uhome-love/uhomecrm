@@ -58,12 +58,7 @@ export default function OfertaAtiva() {
       {activeTab === "bases" && <BasesAtivasGrid />}
 
       {activeTab === "reservados" && (
-        <ComingSoon
-          icon={<Bookmark size={22} />}
-          title="Reservados"
-          desc="Aqui você vai ver os leads que separou e seus retornos agendados. Chega na próxima onda."
-        />
-      )}
+      {activeTab === "reservados" && <ReservadosPanel />}
 
       {activeTab === "resultados" && (
         <ComingSoon
