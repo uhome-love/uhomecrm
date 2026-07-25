@@ -14,6 +14,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireApiKey, callAI } from "../_shared/ai-helpers.ts";
 import { loadEnterpriseKnowledge, formatForList } from "../_shared/enterprise-knowledge.ts";
+import {
+  searchMetodoUhome,
+  formatMetodoBlock,
+  METODO_INSTRUCAO_ATENDIMENTO_DIRETO,
+  METODO_LINHAS_VERMELHAS,
+} from "../_shared/homi-knowledge.ts";
+
 
 const META_API_BASE = "https://graph.facebook.com/v21.0";
 
@@ -53,11 +60,21 @@ Deno.serve(async (req) => {
       const knowledge = await loadEnterpriseKnowledge(supabase);
       const empreendimentosList = formatForList(knowledge);
 
+      // ── HOMI ↔ Método Uhome: retrieval (fala com CLIENTE, sem formato de 3 partes) ──
+      const metodoChunks = await searchMetodoUhome(supabase, mensagem, 4);
+      const metodoBlock = formatMetodoBlock(metodoChunks);
+
       const systemPrompt = `Você é a HOMI, assistente virtual da UHome Imóveis, a principal assessoria imobiliária de Porto Alegre/RS.
 
 PERSONALIDADE: Simpática, profissional, empática. Use emojis com moderação (1-2 por mensagem). Linguagem natural e acolhedora.
 
 OBJETIVO: Dar as boas-vindas ao lead que acabou de entrar em contato pelo WhatsApp. Fazer uma saudação personalizada e mostrar que a UHome pode ajudá-lo.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${METODO_INSTRUCAO_ATENDIMENTO_DIRETO}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${METODO_LINHAS_VERMELHAS}
 
 REGRAS IMPORTANTES:
 - NÃO prometa tempo específico de resposta do corretor (não diga "em X minutos")
@@ -69,7 +86,7 @@ REGRAS IMPORTANTES:
 - Use o primeiro nome do lead quando disponível
 
 EMPREENDIMENTOS DISPONÍVEIS:
-${empreendimentosList}`;
+${empreendimentosList}${metodoBlock}`;
 
       const userMessage = nome_contato
         ? `Lead "${nome_contato}" enviou a seguinte mensagem pelo WhatsApp: "${mensagem}"`
@@ -84,6 +101,7 @@ ${empreendimentosList}`;
         temperature: 0.7,
         maxTokens: 300,
       });
+
     }
 
     if (!respostaIA.trim()) {

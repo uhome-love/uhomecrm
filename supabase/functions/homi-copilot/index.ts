@@ -2,6 +2,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireApiKey, callAI, withCorsAndErrorHandling } from "../_shared/ai-helpers.ts";
 import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
+import {
+  searchMetodoUhome,
+  formatMetodoBlock,
+  METODO_REGRAS_INVIOLAVEIS,
+  METODO_LINHAS_VERMELHAS,
+} from "../_shared/homi-knowledge.ts";
+
 
 Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
   // JWT validation
@@ -475,14 +482,26 @@ Responda APENAS com JSON válido, sem markdown, sem explicação:
   }
   const materiaisBlock = formatMateriaisBlock(materiaisSuggestions);
 
+  // ── HOMI ↔ Método Uhome: retrieval semântico em homi_chunks ──
+  const metodoQuery = `${etapa} | ${ultima_mensagem}`.slice(0, 500);
+  const metodoChunks = await searchMetodoUhome(sbAdmin, metodoQuery, 4);
+  const metodoBlock = formatMetodoBlock(metodoChunks);
+
+  // Bloco de regras invioláveis + linhas vermelhas (redundância proposital
+  // com os chunks — precisa estar SEMPRE no prompt, independente do retrieval).
+  // Nota: homi-copilot retorna JSON estruturado, por isso o "formato 3 partes"
+  // vira mapeamento para os campos JSON abaixo, em vez de literal.
+  const metodoSystem = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMÉTODO UHOME — CONTRATO DE OPERAÇÃO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${METODO_REGRAS_INVIOLAVEIS}\n\n${METODO_LINHAS_VERMELHAS}\n\nMAPEAMENTO PARA A RESPOSTA JSON DESTE ENDPOINT:\n- "Leitura" (Método) → campo "briefing"\n- "Mensagem pronta" (Método) → campos "sugestao_resposta" e "opcoes_resposta"\n- "Por quê / próximo passo" (Método) → campo "proxima_acao"\nAplique as REGRAS INVIOLÁVEIS e as LINHAS VERMELHAS a TODA sugestão gerada.`;
+
   const apiKey = requireApiKey();
   const raw = await callAI(apiKey, [
-    { role: "user", content: prompt + materiaisBlock },
+    { role: "user", content: prompt + metodoSystem + metodoBlock + materiaisBlock },
   ], {
     model: "google/gemini-2.5-flash",
     fnName: "homi-copilot",
     temperature: 0.4,
   });
+
 
   // Parse JSON from response (strip markdown fences if present)
   let cleaned = raw.trim();

@@ -8,6 +8,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { loadEnterpriseKnowledge, formatForAssistant, createServiceClient } from "../_shared/enterprise-knowledge.ts";
 import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
+import {
+  searchMetodoUhome,
+  formatMetodoBlock,
+  METODO_REGRAS_INVIOLAVEIS,
+  METODO_FORMATO_3_PARTES,
+  METODO_LINHAS_VERMELHAS,
+} from "../_shared/homi-knowledge.ts";
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -35,7 +43,7 @@ serve(async (req) => {
     const infoEmpreendimento = formatForAssistant(knowledge, empreendimento || "");
 
     const isGerente = role === "gerente";
-    const systemPrompt = isGerente
+    let systemPrompt = isGerente
       ? `Você é o HOMI, o assistente de gestão comercial da Uhome.
 Você está ajudando um GERENTE DE EQUIPE a criar materiais para seu time de corretores.
 Seu papel é gerar scripts, mensagens, quebras de objeção e materiais de treinamento práticos.
@@ -864,6 +872,15 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     } catch (e) {
       console.error("materiais context skipped:", e);
     }
+
+    // ── HOMI ↔ Método Uhome: retrieval + contrato de operação + linhas vermelhas ──
+    const metodoQuery = [acao, empreendimento, situacao, mensagem_cliente].filter(Boolean).join(" | ").slice(0, 500);
+    const metodoChunks = await searchMetodoUhome(supabase, metodoQuery, 4);
+    const metodoBlock = formatMetodoBlock(metodoChunks);
+    const metodoContrato = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMÉTODO UHOME — CONTRATO DE OPERAÇÃO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${METODO_FORMATO_3_PARTES}\n\n${METODO_REGRAS_INVIOLAVEIS}\n\n${METODO_LINHAS_VERMELHAS}`;
+    systemPrompt = systemPrompt + metodoContrato + metodoBlock;
+
+
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
