@@ -1,119 +1,105 @@
-# Plano: Distribuição 1 a 1 por Produto na Roleta
+# Plano técnico consolidado — Fase 5 Oferta Ativa (5 blocos)
 
-## Regra de negócio aprovada
+Este plano cobre a implementação real no CRM dos 5 mockups aprovados. Feito em ondas pequenas e validáveis (mockup → plano → build → validar ao vivo, uma onda por vez). Nada aqui é implementado antes da sua aprovação.
 
-- A roleta distribui **por produto/alocação**.
-- **Só recebe leads** quem estiver: (a) credenciado e aprovado no turno, (b) ativo na roleta (`cd.na_roleta = true`), (c) alocado ao `empreendimento_canonico_id` do lead.
-- Dentro de cada produto, os corretores elegíveis recebem leads de forma **igualitária 1 a 1** (menor número de leads daquele produto no turno primeiro; desempate por LRU/última distribuição).
-- **Se nenhum corretor estiver alocado/ativo para o produto**, o lead **NÃO** cai no pool geral. Ele vai para **fila CEO** (`aceite_status = 'pendente_distribuicao'`, `motivo_pendencia = 'sem_alocado_produto'`) para distribuição manual pela gestão.
-- Presença por credenciamento continua sendo a porta de entrada (`roleta_credenciamentos` + `roleta_fila`); a alocação define quem pode receber de cada produto.
+## Visão geral das ondas
 
-## Problemas atuais confirmados na auditoria
+```text
+Onda 1  Rebranding de abas + Índice de Potencial          (Bloco 1)
+Onda 2  Cooldown 7d + Motivos estruturados                (Bloco 3 - base do resto)
+Onda 3  Reservados: Meus retornos + Separados por mim     (Bloco 4)
+Onda 4  Modo Concentração dentro da base                  (Bloco 2)
+Onda 5  Meus resultados (aba pessoal)                     (Bloco 5)
+```
 
-1. **Duplicatas em `roleta_fila`**: corretores aparecem 2 a 4 vezes para a mesma (`data`, `janela`). A função `distribuir_lead_atomico` usa `DISTINCT ON (corretor_id)` que pega uma linha arbitrária, então os campos `leads_recebidos` e `ultima_distribuicao_at` podem estar inconsistentes.
-2. **Fairness não é por produto**: a contagem `recebidos_no_turno` na RPC é por `segmento_id`, não por `empreendimento_canonico_id`. Um corretor pode receber vários leads de produtos diferentes dentro do mesmo segmento e ainda ser considerado "igual".
-3. **Fallback para pool geral quando produto não tem alocado**: hoje, se `v_alocacao_match_count = 0`, a RPC desliga o filtro de alocação e distribui para qualquer corretor do segmento. Isso viola a regra "só quem está alocado recebe".
-4. **Desbalanceamento real**: nos últimos 30 dias, Adriana Kaiser recebeu 2,43x a média e Guilherme Dias 1 lead. A combinação de duplicatas + contagem por segmento + fallback geral concentra leads em corretores de produtos de alto volume.
+Ordem trocada de propósito: Bloco 3 vai antes do 2 e do 4 porque cooldown e motivos são pré-requisito lógico de "Separar pra mim", "Retornos" e do Modo Concentração.
 
-## Solução técnica
+---
 
-### Fase 1 — Corrigir a estrutura da fila (DDL + backfill)
+## Onda 1 — Rebranding + Índice de Potencial
 
-1. **Consolidar `roleta_fila` para uma linha por (`corretor_id`, `data`, `janela`)**
-   - Migration para criar tabela temporária consolidada, somar `leads_recebidos`, manter `ultima_distribuicao_at` mais recente e priorizar `ativo = true`.
-   - Truncar `roleta_fila` e re-inserir os dados consolidados.
-   - Adicionar **constraint UNIQUE (`corretor_id`, `data`, `janela`)**.
+- `src/pages/OfertaAtiva.tsx`: renomear tabs para **Bases Ativas · Reservados · Meus resultados · Configurações** (mantém rota `/oferta-ativa`, aba default `bases`). Admin ganha ainda Radar / Importar / Campanhas / Templates dentro de "Configurações".
+- Novo componente `src/components/oferta-ativa/BasesAtivasGrid.tsx` substituindo o grid atual, com cards mostrando: nome do empreendimento, total de leads, "ligados hoje pela equipe", "% aproveitamento histórico" e selo **🎯 Alto / ⚡ Bom / 📞 Padrão** + selo opcional **"Base da semana"**.
+- Cálculo do Índice de Potencial: view `v_oa_lista_potencial` (empreendimento → volume disponível + taxa de aproveitamento últimos 90d). Selo é derivado no SQL, sem estado no front.
+- Selo manual "Base da semana": flag booleana `is_base_semana` em `oferta_ativa_listas`, editável só por admin/gestor na aba Configurações.
+- Nada de temperatura ("fria/morna/quente") em lugar nenhum da UI.
 
-2. **Atualizar funções que escrevem na fila**
-   - `roleta_marcar_presenca`: usar `ON CONFLICT (corretor_id, data, janela) DO UPDATE` para ativar/desativar em vez de inserir nova linha.
-   - `credenciar_por_alocacao`: a aprovação (`aprovarCredenciamento`) deve fazer `INSERT ... ON CONFLICT ... DO UPDATE`.
-   - `roleta-shift-cleanup` (edge function): no fim do turno, desativar (`ativo = false`) a linha consolidada, não criar nova linha.
+## Onda 2 — Cooldown 7d + Motivos estruturados
 
-3. **Sincronizar `corretor_disponibilidade.na_roleta`**
-   - Garantir que a flag reflita a existência de fila ativa (`ativo = true`) para a janela atual.
+- Nova tabela `oferta_ativa_cooldowns` (lead_id, cooldown_ate, resultado, motivo, criado_por, mutirao_bypass boolean). RLS: leitura por todos autenticados, escrita pela edge function.
+- Migração de dados: se hoje existe cooldown implícito por `data_ultimo_contato`, backfill respeitando 7d.
+- Edge function `oferta-ativa-registrar-resultado` (existente): passa a gravar em `oferta_ativa_cooldowns` com regra por resultado:
+  - Aproveitado → sai da fila da OA (já é assim).
+  - Não atendeu → cooldown 7d.
+  - Sem interesse agora → cooldown 30d + opção de virar Reservado (Onda 3).
+  - Descartar definitivo → cooldown permanente (leaves list).
+- `oferta_ativa_lock_next_lead` já ignora leads em cooldown; ajuste explícito para checar `cooldown_ate > now()`.
+- UI: componente `PosLigacaoDialog.tsx` novo (2 passos: resultado → motivos-chip por resultado + obs opcional). Substitui o popup atual em `LeadCard.tsx` (Mutirão) e no fluxo de call fora do mutirão.
+- Exceções ao cooldown:
+  - Gestor libera manual: botão em `LeadCard` restrito a role gestor/admin.
+  - Próprio corretor pode reentrar antes do prazo: check por `criado_por = auth.uid()`.
+  - Mutirão ao vivo: flag `mutirao_bypass` respeitada pela função de próximo lead **só durante sessão ativa**.
+- Painel de gestão por base: novo bloco em `OAObservabilityPanel.tsx` com % por resultado e motivo top.
 
-### Fase 2 — Refatorar `distribuir_lead_atomico` para fairness por produto
+## Onda 3 — Reservados
 
-4. **Agrupar fila por corretor antes do sorteio**
-   - Substituir o `DISTINCT ON (corretor_id)` atual por uma CTE que agrega `roleta_fila` por `corretor_id`:
-     - `leads_recebidos_hoje` = SUM(`leads_recebidos`) das linhas ativas daquele corretor hoje.
-     - `ultima_distribuicao_at` = MAX entre as linhas ativas (NULL se nunca recebeu).
-   - Filtrar apenas `ativo = true` e `rc.status = 'aprovado'` e `cd.na_roleta = true`.
+- Nova tabela `oferta_ativa_reservados` (lead_id, corretor_id, tipo `retorno|separado`, agendado_para nullable, criado_at, devolvido_at nullable). RLS: corretor só vê os seus; gestor vê da equipe.
+- Regra de limite: 20 "separados" por corretor. Enforced via constraint parcial + validação na edge function `oferta-ativa-reservar`.
+- Cron diário `oferta-ativa-devolucao-automatica`: devolve à base itens `separado` com >30d sem contato (aviso em 25d via notificação).
+- UI: nova página/aba `src/pages/OfertaAtivaReservados.tsx` com 3 sub-abas (📌 Meus retornos · 🔖 Separados por mim · ⏰ Vencidos). Ligar/Reagendar/Devolver por linha.
+- Integrações:
+  - PosLigacaoDialog em "Sem interesse agora + agendar retorno" cria linha `tipo=retorno`.
+  - Botão 🔖 Separar pra mim adicionado ao card do lead dentro da base.
 
-5. **Contar recebidos por produto**
-   - Criar CTE `recebidos_por_produto` que conta, para cada corretor, quantos leads daquele `empreendimento_canonico_id` ele recebeu naquele turno no dia (usando `distribuicao_historico` ou `roleta_distribuicoes`).
-   - Esse será o **critério principal** de fairness 1 a 1.
+## Onda 4 — Modo Concentração
 
-6. **Novo algoritmo de escolha**
-   - Pool A: corretores alocados ao produto (`v_emp_canonico_id = ANY(ca.empreendimentos)`) **E** elegíveis no turno (`ativo`, `na_roleta`, `rc.status = 'aprovado'`).
-   - Se Pool A não for vazio:
-     - Escolher quem tiver menos `recebidos_por_produto` no produto/turno.
-     - Empate = `ultima_distribuicao_at` mais antiga (NULLS FIRST).
-     - Novo empate = `leads_recebidos_hoje` total menor.
-     - Empate final = `fila_id`.
-   - Se Pool A for vazio:
-     - Lead vai para **fila CEO**: `UPDATE pipeline_leads SET aceite_status = 'pendente_distribuicao', motivo_pendencia = 'sem_alocado_produto'`.
-     - Retornar `success = false, reason = 'sem_alocado_produto'`.
+- Toggle "⚡ Modo Concentração" no header da base (`BaseDetailScreen.tsx` novo, extraindo lógica atual da listagem interna).
+- Modal tela-cheia `ConcentracaoScreen.tsx` reusando peças do Mutirão (`LeadCard`, prefetch, atalhos). Meta padrão 20 leads/sessão, editável.
+- Reuso 100% da RPC `oferta_ativa_lock_next_lead` + `oferta-ativa-registrar-resultado`; nada de nova infra de fila.
+- Barra de sessão persistida em `sessionStorage` por `profileId` (padrão do projeto).
+- Atalhos: Espaço = ligar, 1–4 = resultado, S = pular. Componente `useFocusKeyboardShortcuts` já existe — estender.
 
-7. **Atualizar após distribuição**
-   - Incrementar `leads_recebidos` e `ultima_distribuicao_at` na linha consolidada da janela do corretor escolhido.
-   - Gravar em `distribuicao_historico` e `roleta_distribuicoes` com `empreendimento_canonico_id` e `pool = 'alocado'` para auditoria.
+## Onda 5 — Meus resultados
 
-8. **Configuração de rollback (feature flag)**
-   - Adicionar `roleta_config.fairness_produto = true` (default true). Se desligado, volta ao comportamento atual (fallback geral). Isso permite rollback rápido em caso de emergência.
+- Nova aba `Meus resultados` na `OfertaAtiva.tsx` (visível a todos os corretores).
+- Página `src/pages/OfertaAtivaMeusResultados.tsx` com:
+  - 4 KPIs comparados vs período anterior — filtro Hoje/7d/Mês/30d.
+  - Funil pessoal (5 etapas) via view `v_oa_funil_corretor`.
+  - "Onde você acerta mais": ranking por empreendimento com % aproveitamento.
+  - Heatmap por hora do dia (view `v_oa_horario_corretor`).
+  - Histórico últimas 30 ligações + filtro por resultado + export CSV.
+- Sem ranking público aqui — o Placar/Painel ao Vivo continua sendo o palco público. Comparativo com média da equipe é opcional em Configurações (default off).
 
-### Fase 3 — Auditoria e transparência
+---
 
-9. **Estender `distribuicao_historico`**
-   - Adicionar colunas: `empreendimento_canonico_id`, `pool` ('alocado'|'segmento'|'geral'), `recebidos_no_turno_produto`, `pool_size`.
-   - Preencher na RPC para auditoria exata.
+## Migrations previstas (agrupadas por onda, respeitando 2/dia)
 
-10. **Melhorar `get_distribuicao_performance`**
-    - Adicionar seção "por produto" com distribuições, aceites e leads pendentes por `empreendimento_canonico_id`.
-    - Adicionar alerta de desbalanceamento por produto (ex: corretor com >2x a média dos co-alocados no produto).
+- Onda 1: `oferta_ativa_listas.is_base_semana` + `v_oa_lista_potencial`.
+- Onda 2: tabela `oferta_ativa_cooldowns` + policies + ajuste RPC `oferta_ativa_lock_next_lead`.
+- Onda 3: tabela `oferta_ativa_reservados` + policies + cron devolução.
+- Onda 4: nenhuma migration (reuso puro).
+- Onda 5: views `v_oa_funil_corretor` e `v_oa_horario_corretor`.
 
-11. **Criar/expandir painel de auditoria da roleta**
-    - Reutilizar `DistributionDashboard.tsx` ou criar nova rota `/roleta/auditoria`.
-    - Mostrar:
-      - Leads distribuídos hoje por corretor × produto.
-      - Corretores alocados a cada produto e quantos leads receberam no turno.
-      - Alerta de desbalanceamento por produto.
-      - Leads pendentes na fila CEO (`sem_alocado_produto`).
+Toda migration inclui `GRANT` para `authenticated` + `service_role` conforme regra do projeto. Nenhuma migration mistura DDL com dados críticos.
 
-### Fase 4 — Front-end e edge functions
+## Regras que serão respeitadas
 
-12. **Atualizar `supabase/functions/distribute-lead/index.ts`**
-    - Nenhuma mudança de interface esperada; garantir que continue chamando `distribuir_lead_atomico` e logue `reason` quando for `sem_alocado_produto`.
+- **Mockup → plano aprovado → build → validação ao vivo**, uma onda por vez. Nada de mexer nas 5 ondas juntas.
+- Zero quebra dos fluxos vigentes: Mutirão Inteligente, Roleta, PDN, Pipeline continuam funcionando sem alteração de contrato.
+- Sem `as any`, sem componentes >300 linhas, sem arquivos >500 linhas (páginas novas já quebradas em subcomponentes).
+- Timezone BRT em todas as datas de cooldown, retorno e KPIs.
+- ID convention: leads e corretores continuam via `auth.users.id` nas tabelas OA (mantém padrão atual do módulo).
 
-13. **Atualizar `_shared/roleta-distribution.ts`**
-    - Adicionar log de `pool` e `usou_filtro_alocacao` no resultado.
+## Validação ao vivo por onda
 
-14. **Atualizar `DistributionDashboard.tsx`**
-    - Exibir o novo bloco "por produto" com os dados da RPC estendida.
+Cada onda só é declarada pronta após o teste ponta-a-ponta que você faz comigo no preview (lead de teste, cancelar ao final). Nunca reporto pronto só pelo build.
 
-## Backfill e limpeza
+## O que **não** entra nesta fase
 
-15. **Consolidar `roleta_fila` atual**
-    - Migration de consolidação para hoje e, se possível, últimos 7 dias (afeta LRU).
-    - Garantir que `corretor_disponibilidade.na_roleta` reflita a existência de fila ativa.
+- Ranking público dentro de "Meus resultados" (só o Placar TV segue público).
+- Automação de reengajamento a partir de cooldown expirado (fica pro futuro, o disparador de reengajamento continua com a lógica atual).
+- Mudança na lógica do mutirão de sexta / disparador — só os nomes/listas já foram ajustados na fase anterior.
 
-16. **Auditar leads pendentes na fila CEO**
-    - Verificar leads com `aceite_status = 'pendente_distribuicao'` e ajustar motivo para `sem_alocado_produto` quando for o caso.
+---
 
-## Critérios de pronto
-
-- [ ] Cada corretor aparece no máximo 1 vez na `roleta_fila` por (`data`, `janela`).
-- [ ] A RPC escolhe corretor com base em `recebidos_no_turno` **por produto** entre os alocados ao produto e ativos na roleta.
-- [ ] Se todos os alocados ao produto já receberam o mesmo número de leads no turno, o próximo lead vai para quem está esperando há mais tempo.
-- [ ] Se nenhum corretor alocado estiver ativo para o produto, o lead vai para fila CEO (`sem_alocado_produto`) — não cai no pool geral.
-- [ ] `distribuicao_historico` registra `empreendimento_canonico_id` e `pool` para cada distribuição.
-- [ ] Painel de auditoria mostra desbalanceamento por produto e fila CEO.
-- [ ] Teste ao vivo: 6 leads de Casa Tua com 3 corretores alocados presentes → cada um recebe 2 leads (±1) no turno.
-- [ ] Teste ao vivo: lead de produto sem alocados → aparece na fila CEO.
-- [ ] Nenhuma regressão no fluxo de aceite/rejeição/timeout.
-
-## Decisão confirmada
-
-Você aprovou: **1 a 1 por produto, só para alocados ativos no turno; se não houver alocado, vai para fila CEO.**
-
-Assim que aprovar este plano técnico, inicio a Fase 1 (DDL de consolidação da fila).
+**Próximo passo:** você aprova esse plano consolidado e eu começo pela **Onda 1 (Rebranding + Índice de Potencial)** — que é a mais leve e visualmente confirma a nova identidade da Oferta Ativa. Ao final da Onda 1 validamos ao vivo antes de partir pra Onda 2.
