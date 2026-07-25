@@ -14,6 +14,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireApiKey, callAI } from "../_shared/ai-helpers.ts";
 import { loadEnterpriseKnowledge, formatForList } from "../_shared/enterprise-knowledge.ts";
+import {
+  searchMetodoUhome,
+  formatMetodoBlock,
+  METODO_INSTRUCAO_ATENDIMENTO_DIRETO,
+  METODO_LINHAS_VERMELHAS,
+} from "../_shared/homi-knowledge.ts";
+
 
 const META_API_BASE = "https://graph.facebook.com/v21.0";
 
