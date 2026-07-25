@@ -540,18 +540,16 @@ export function CompletionForm(props: CompletionFormProps) {
               )}
             </div>
           </div>
-        ) : stageTipo === "visita" ? (
-          /* VISITA (tipo real do stage no banco) — fluxo fixo: próxima tarefa vem da Agenda. */
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-            <div className="text-[11px] text-foreground leading-snug">
-              <strong>Etapa Visita</strong> — a próxima tarefa é criada
-              automaticamente pela Agenda de Visitas (confirmação D-1,
-              reagendar após no-show, feedback após realizada). Basta concluir.
-            </div>
-          </div>
         ) : (
           <>
+            {stageTipo === "visita" && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                <div className="text-[11px] text-foreground leading-snug">
+                  🏠 <strong>Etapa Visita:</strong> confirmação, remarcação e feedback são criadas automaticamente pela Agenda. Use aqui para contatos e follow-ups manuais.
+                </div>
+              </div>
+            )}
             {/* Divisor: "Como prosseguir?" */}
             <div className="flex items-center gap-2 pt-1">
               <div className="flex-1 h-px bg-border/60" />
