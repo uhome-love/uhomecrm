@@ -1205,6 +1205,13 @@ export type Database = {
             referencedRelation: "oferta_ativa_listas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "coaching_sessions_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "v_oa_lista_potencial"
+            referencedColumns: ["lista_id"]
+          },
         ]
       }
       cobrancas_enviadas: {
@@ -5296,6 +5303,13 @@ export type Database = {
             referencedRelation: "oferta_ativa_listas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "oa_events_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "v_oa_lista_potencial"
+            referencedColumns: ["lista_id"]
+          },
         ]
       }
       oferta_ativa_fila: {
@@ -5532,6 +5546,13 @@ export type Database = {
             referencedRelation: "oferta_ativa_listas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "oferta_ativa_leads_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "v_oa_lista_potencial"
+            referencedColumns: ["lista_id"]
+          },
         ]
       }
       oferta_ativa_ligacoes: {
@@ -5618,6 +5639,7 @@ export type Database = {
           empreendimento: string
           empreendimento_canonico_id: string | null
           id: string
+          is_base_semana: boolean
           max_tentativas: number
           nome: string
           origem: string | null
@@ -5636,6 +5658,7 @@ export type Database = {
           empreendimento: string
           empreendimento_canonico_id?: string | null
           id?: string
+          is_base_semana?: boolean
           max_tentativas?: number
           nome: string
           origem?: string | null
@@ -5654,6 +5677,7 @@ export type Database = {
           empreendimento?: string
           empreendimento_canonico_id?: string | null
           id?: string
+          is_base_semana?: boolean
           max_tentativas?: number
           nome?: string
           origem?: string | null
@@ -5963,6 +5987,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oferta_ativa_listas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_tentativas_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "v_oa_lista_potencial"
+            referencedColumns: ["lista_id"]
           },
         ]
       }
@@ -11196,6 +11227,39 @@ export type Database = {
           tipo: string | null
         }
         Relationships: []
+      }
+      v_oa_lista_potencial: {
+        Row: {
+          aproveitados_90d: number | null
+          empreendimento: string | null
+          empreendimento_canonico_id: string | null
+          is_base_semana: boolean | null
+          ligados_hoje: number | null
+          lista_id: string | null
+          na_fila: number | null
+          nome: string | null
+          pct_aproveitamento_90d: number | null
+          potencial: string | null
+          segmento_id: string | null
+          tentativas_90d: number | null
+          total_leads: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_listas_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_listas_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_pipeline_ativo_contatos: {
         Row: {
