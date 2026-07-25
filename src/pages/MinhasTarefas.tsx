@@ -396,7 +396,7 @@ export default function MinhasTarefas() {
       const { data } = await supabase
         .from("pipeline_stages")
         .select("id, tipo")
-        .in("tipo", ["qualificacao", "aquecimento", "negociacao"]);
+        .in("tipo", ["qualificacao", "aquecimento", "negociacao", "visita"]);
       return (data || []).map((s: any) => s.id as string);
     },
     staleTime: 5 * 60 * 1000,
@@ -727,7 +727,7 @@ export default function MinhasTarefas() {
 
   const handleCriarTarefa = async () => {
     if (!user || !selectedLeadId || !novoData) return;
-    if (stageTipoSelecionado === "visita") { toast.error("Etapa Visita: tarefas são automáticas. Não crie tarefa manual."); return; }
+    // Etapa Visita: manuais são permitidos (agenda cria as automáticas em paralelo).
     if (isTaskDateTooFar(novoData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
     const { error } = await supabase.from("pipeline_tarefas").insert({
       pipeline_lead_id: selectedLeadId,
@@ -1104,7 +1104,12 @@ export default function MinhasTarefas() {
             </div>
 
 
-            {/* Presets contextuais por etapa (Qualificação / Aquecimento / Negociação) */}
+            {/* Presets contextuais por etapa (Qualificação / Aquecimento / Negociação / Visita) */}
+            {selectedLeadId && stageTipoSelecionado === "visita" && (
+              <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[11px] leading-snug text-primary">
+                🏠 <strong>Etapa Visita:</strong> confirmação, remarcação e feedback são criadas automaticamente pela Agenda. Use aqui para contatos e follow-ups manuais.
+              </div>
+            )}
             {selectedLeadId && presetsDisponiveis.length > 0 && (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">

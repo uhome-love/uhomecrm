@@ -1,105 +1,52 @@
-# Plano técnico consolidado — Fase 5 Oferta Ativa (5 blocos)
+# Habilitar tarefas manuais na etapa Visita (auditoria ponta a ponta)
 
-Este plano cobre a implementação real no CRM dos 5 mockups aprovados. Feito em ondas pequenas e validáveis (mockup → plano → build → validar ao vivo, uma onda por vez). Nada aqui é implementado antes da sua aprovação.
+## Auditoria — todos os pontos de criação de tarefa hoje
 
-## Visão geral das ondas
+| # | Ponto de entrada | Arquivo / linha | Estado atual na etapa Visita |
+|---|---|---|---|
+| 1 | Botão "Nova tarefa" no drawer do lead | `drawer/DrawerTasksTab.tsx:134,202` | ✅ Já libera manual + banner informativo (ok) |
+| 2 | Popup "Próxima Ação" (card no topo do drawer + pós-conclusão) | `NextActionModal.tsx:231-238` | 🔒 Bloqueia com alerta âmbar "Não crie tarefas manuais aqui" |
+| 3 | Página `/tarefas` — botão "Nova tarefa" (busca de lead) | `MinhasTarefas.tsx:393-403` | 🔒 Visita não entra em `elegibleStageIds` (só qualif/aquec/negociacao), então o lead nem aparece no autocomplete |
+| 4 | Página `/tarefas` — submit final | `MinhasTarefas.tsx:730` | 🔒 `toast.error("Etapa Visita: tarefas são automáticas...")` |
+| 5 | Popup de conclusão de tarefa (`CompletionForm`) → "Agendar próxima tarefa" | `CompletionForm.tsx:543-552` | 🔒 Substitui form por card informativo "próxima tarefa vem da Agenda" |
+| 6 | `TaskCompletionDialog` na Visita | `TaskCompletionDialog.tsx:249-270` | ✅ Correto: força `VisitaCompletionFlow` **quando existe tarefa `visita_auto` pendente**. Não deve ser tocado — é o fluxo fixo pós-visita e não impede criação manual por outros caminhos |
+| 7 | Preset canônico de Visita | `taskPresets.ts:177-215` (`VISITA_PRESETS`) | ✅ Já existe: Ligar / WhatsApp / Enviar material / Follow-up + Outro |
+| 8 | `visita_auto_tarefas()` trigger (agenda D-1, no-show +48h, feedback +24h) | Backend | ✅ Cria tarefas com `origem='visita_auto'` — reconciliação só toca essas; manuais não sofrem interferência |
 
-```text
-Onda 1  Rebranding de abas + Índice de Potencial          (Bloco 1)
-Onda 2  Cooldown 7d + Motivos estruturados                (Bloco 3 - base do resto)
-Onda 3  Reservados: Meus retornos + Separados por mim     (Bloco 4)
-Onda 4  Modo Concentração dentro da base                  (Bloco 2)
-Onda 5  Meus resultados (aba pessoal)                     (Bloco 5)
-```
+## Mudanças propostas (só destravar #2, #3, #4, #5)
 
-Ordem trocada de propósito: Bloco 3 vai antes do 2 e do 4 porque cooldown e motivos são pré-requisito lógico de "Separar pra mim", "Retornos" e do Modo Concentração.
+### 1. `src/components/pipeline/NextActionModal.tsx`
+- Remover o bloqueio `currentStageTipo === "visita"` (linhas ~231-238).
+- Renderizar o mesmo bloco de presets/free-mode das outras etapas. `getPresetsForStage("visita")` já devolve `VISITA_PRESETS`.
+- Acima dos presets, quando Visita, exibir aviso **informativo, não bloqueante** (mesmo tom do drawer):
+  > 🏠 Etapa Visita: confirmação, remarcação e feedback são criadas automaticamente pela Agenda conforme o status da visita. Use aqui para contatos e follow-ups manuais.
 
----
+### 2. `src/pages/MinhasTarefas.tsx`
+- Linha 399: adicionar `"visita"` ao `.in("tipo", [...])` de `elegibleStageIds` para o autocomplete listar leads em Visita.
+- Linha 730: remover o early-return com toast. Deixar seguir o fluxo normal de insert.
+- No card "Sugestão de próxima tarefa" (linha ~1111), quando `stageTipoSelecionado === "visita"`, mostrar o mesmo aviso informativo acima dos presets.
 
-## Onda 1 — Rebranding + Índice de Potencial
+### 3. `src/components/pipeline/task-completion/CompletionForm.tsx`
+- Linha 543: remover o ramo `stageTipo === "visita"` que troca o form por card informativo.
+- Deixar cair no ramo `else` padrão — `getPresetsForStage("visita")` traz os pills e habilita "Agendar" manualmente.
+- Acima do bloco "Como prosseguir?", exibir aviso informativo (mesma redação do drawer) quando `stageTipo === "visita"`.
 
-- `src/pages/OfertaAtiva.tsx`: renomear tabs para **Bases Ativas · Reservados · Meus resultados · Configurações** (mantém rota `/oferta-ativa`, aba default `bases`). Admin ganha ainda Radar / Importar / Campanhas / Templates dentro de "Configurações".
-- Novo componente `src/components/oferta-ativa/BasesAtivasGrid.tsx` substituindo o grid atual, com cards mostrando: nome do empreendimento, total de leads, "ligados hoje pela equipe", "% aproveitamento histórico" e selo **🎯 Alto / ⚡ Bom / 📞 Padrão** + selo opcional **"Base da semana"**.
-- Cálculo do Índice de Potencial: view `v_oa_lista_potencial` (empreendimento → volume disponível + taxa de aproveitamento últimos 90d). Selo é derivado no SQL, sem estado no front.
-- Selo manual "Base da semana": flag booleana `is_base_semana` em `oferta_ativa_listas`, editável só por admin/gestor na aba Configurações.
-- Nada de temperatura ("fria/morna/quente") em lugar nenhum da UI.
+### 4. Nada mais precisa mudar
+- `DrawerTasksTab.tsx`: já ok.
+- `TaskCompletionDialog.tsx`: não mexer — `VisitaCompletionFlow` só é acionado quando existe uma `visita_auto` pendente sendo concluída; tarefas manuais não caem nesse ramo, pois são concluídas pelo fluxo padrão.
+- Triggers/backend: nada muda. Manuais têm origem diferente de `visita_auto` e não são canceladas por reconciliação.
 
-## Onda 2 — Cooldown 7d + Motivos estruturados
+## Validação ponta a ponta (com lead de teste em etapa Visita)
 
-- Nova tabela `oferta_ativa_cooldowns` (lead_id, cooldown_ate, resultado, motivo, criado_por, mutirao_bypass boolean). RLS: leitura por todos autenticados, escrita pela edge function.
-- Migração de dados: se hoje existe cooldown implícito por `data_ultimo_contato`, backfill respeitando 7d.
-- Edge function `oferta-ativa-registrar-resultado` (existente): passa a gravar em `oferta_ativa_cooldowns` com regra por resultado:
-  - Aproveitado → sai da fila da OA (já é assim).
-  - Não atendeu → cooldown 7d.
-  - Sem interesse agora → cooldown 30d + opção de virar Reservado (Onda 3).
-  - Descartar definitivo → cooldown permanente (leaves list).
-- `oferta_ativa_lock_next_lead` já ignora leads em cooldown; ajuste explícito para checar `cooldown_ate > now()`.
-- UI: componente `PosLigacaoDialog.tsx` novo (2 passos: resultado → motivos-chip por resultado + obs opcional). Substitui o popup atual em `LeadCard.tsx` (Mutirão) e no fluxo de call fora do mutirão.
-- Exceções ao cooldown:
-  - Gestor libera manual: botão em `LeadCard` restrito a role gestor/admin.
-  - Próprio corretor pode reentrar antes do prazo: check por `criado_por = auth.uid()`.
-  - Mutirão ao vivo: flag `mutirao_bypass` respeitada pela função de próximo lead **só durante sessão ativa**.
-- Painel de gestão por base: novo bloco em `OAObservabilityPanel.tsx` com % por resultado e motivo top.
+1. **Drawer → Nova tarefa** → salvar preset "Ligar para confirmar" — confirmar criação e cancelar.
+2. **Drawer → concluir uma tarefa manual** → popup `CompletionForm` → escolher "Agendar" → pills de Visita aparecem → salvar → confirmar.
+3. **Drawer → concluir uma tarefa `visita_auto`** → deve continuar abrindo `VisitaCompletionFlow` (não regredir esse caminho).
+4. **Card "Próxima Ação" (topo do drawer)** → registrar ação → escolher "Agendar nova tarefa" → confirmar que os pills de Visita aparecem sem alerta bloqueante.
+5. **`/tarefas` → "Nova tarefa"** → digitar nome do lead em Visita → confirmar que aparece no autocomplete → escolher preset → salvar.
+6. **Mover lead para "visita marcada / realizada / no-show"** → confirmar que `visita_auto_tarefas()` continua criando as tarefas automáticas, sem duplicar nem cancelar as manuais criadas nos passos anteriores.
+7. Todos os testes com lead de teste; cancelar/apagar as tarefas criadas ao final.
 
-## Onda 3 — Reservados
-
-- Nova tabela `oferta_ativa_reservados` (lead_id, corretor_id, tipo `retorno|separado`, agendado_para nullable, criado_at, devolvido_at nullable). RLS: corretor só vê os seus; gestor vê da equipe.
-- Regra de limite: 20 "separados" por corretor. Enforced via constraint parcial + validação na edge function `oferta-ativa-reservar`.
-- Cron diário `oferta-ativa-devolucao-automatica`: devolve à base itens `separado` com >30d sem contato (aviso em 25d via notificação).
-- UI: nova página/aba `src/pages/OfertaAtivaReservados.tsx` com 3 sub-abas (📌 Meus retornos · 🔖 Separados por mim · ⏰ Vencidos). Ligar/Reagendar/Devolver por linha.
-- Integrações:
-  - PosLigacaoDialog em "Sem interesse agora + agendar retorno" cria linha `tipo=retorno`.
-  - Botão 🔖 Separar pra mim adicionado ao card do lead dentro da base.
-
-## Onda 4 — Modo Concentração
-
-- Toggle "⚡ Modo Concentração" no header da base (`BaseDetailScreen.tsx` novo, extraindo lógica atual da listagem interna).
-- Modal tela-cheia `ConcentracaoScreen.tsx` reusando peças do Mutirão (`LeadCard`, prefetch, atalhos). Meta padrão 20 leads/sessão, editável.
-- Reuso 100% da RPC `oferta_ativa_lock_next_lead` + `oferta-ativa-registrar-resultado`; nada de nova infra de fila.
-- Barra de sessão persistida em `sessionStorage` por `profileId` (padrão do projeto).
-- Atalhos: Espaço = ligar, 1–4 = resultado, S = pular. Componente `useFocusKeyboardShortcuts` já existe — estender.
-
-## Onda 5 — Meus resultados
-
-- Nova aba `Meus resultados` na `OfertaAtiva.tsx` (visível a todos os corretores).
-- Página `src/pages/OfertaAtivaMeusResultados.tsx` com:
-  - 4 KPIs comparados vs período anterior — filtro Hoje/7d/Mês/30d.
-  - Funil pessoal (5 etapas) via view `v_oa_funil_corretor`.
-  - "Onde você acerta mais": ranking por empreendimento com % aproveitamento.
-  - Heatmap por hora do dia (view `v_oa_horario_corretor`).
-  - Histórico últimas 30 ligações + filtro por resultado + export CSV.
-- Sem ranking público aqui — o Placar/Painel ao Vivo continua sendo o palco público. Comparativo com média da equipe é opcional em Configurações (default off).
-
----
-
-## Migrations previstas (agrupadas por onda, respeitando 2/dia)
-
-- Onda 1: `oferta_ativa_listas.is_base_semana` + `v_oa_lista_potencial`.
-- Onda 2: tabela `oferta_ativa_cooldowns` + policies + ajuste RPC `oferta_ativa_lock_next_lead`.
-- Onda 3: tabela `oferta_ativa_reservados` + policies + cron devolução.
-- Onda 4: nenhuma migration (reuso puro).
-- Onda 5: views `v_oa_funil_corretor` e `v_oa_horario_corretor`.
-
-Toda migration inclui `GRANT` para `authenticated` + `service_role` conforme regra do projeto. Nenhuma migration mistura DDL com dados críticos.
-
-## Regras que serão respeitadas
-
-- **Mockup → plano aprovado → build → validação ao vivo**, uma onda por vez. Nada de mexer nas 5 ondas juntas.
-- Zero quebra dos fluxos vigentes: Mutirão Inteligente, Roleta, PDN, Pipeline continuam funcionando sem alteração de contrato.
-- Sem `as any`, sem componentes >300 linhas, sem arquivos >500 linhas (páginas novas já quebradas em subcomponentes).
-- Timezone BRT em todas as datas de cooldown, retorno e KPIs.
-- ID convention: leads e corretores continuam via `auth.users.id` nas tabelas OA (mantém padrão atual do módulo).
-
-## Validação ao vivo por onda
-
-Cada onda só é declarada pronta após o teste ponta-a-ponta que você faz comigo no preview (lead de teste, cancelar ao final). Nunca reporto pronto só pelo build.
-
-## O que **não** entra nesta fase
-
-- Ranking público dentro de "Meus resultados" (só o Placar TV segue público).
-- Automação de reengajamento a partir de cooldown expirado (fica pro futuro, o disparador de reengajamento continua com a lógica atual).
-- Mudança na lógica do mutirão de sexta / disparador — só os nomes/listas já foram ajustados na fase anterior.
-
----
-
-**Próximo passo:** você aprova esse plano consolidado e eu começo pela **Onda 1 (Rebranding + Índice de Potencial)** — que é a mais leve e visualmente confirma a nova identidade da Oferta Ativa. Ao final da Onda 1 validamos ao vivo antes de partir pra Onda 2.
+## Fora de escopo
+- Triggers de agenda de visita.
+- `VisitaCompletionFlow` e seus subtipos.
+- Qualquer outra etapa (Qualif, Aquec, Negociação, Sem Contato).
