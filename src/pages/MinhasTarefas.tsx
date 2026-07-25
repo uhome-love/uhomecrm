@@ -1104,7 +1104,12 @@ export default function MinhasTarefas() {
             </div>
 
 
-            {/* Presets contextuais por etapa (Qualificação / Aquecimento / Negociação) */}
+            {/* Presets contextuais por etapa (Qualificação / Aquecimento / Negociação / Visita) */}
+            {selectedLeadId && stageTipoSelecionado === "visita" && (
+              <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[11px] leading-snug text-primary">
+                🏠 <strong>Etapa Visita:</strong> confirmação, remarcação e feedback são criadas automaticamente pela Agenda. Use aqui para contatos e follow-ups manuais.
+              </div>
+            )}
             {selectedLeadId && presetsDisponiveis.length > 0 && (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">
