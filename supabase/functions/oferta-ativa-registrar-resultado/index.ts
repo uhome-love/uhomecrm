@@ -6,8 +6,19 @@ import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared
 import { requireAuth } from "../_shared/auth.ts";
 import { reactivateLead, VISITA_STAGE_ID, NOVO_LEAD_STAGE_ID } from "../_shared/reactivateLead.ts";
 
-// Cooldown do "não atendeu" — 2h (era 1h)
+// Cooldown do "não atendeu" — 2h (era 1h) — Mutirão interno (fila.cooldown_ate)
 const COOLDOWN_MS_NAO_ATENDEU = 2 * 60 * 60 * 1000;
+
+// Onda 2 — TTL global de cooldown (oferta_ativa_cooldowns) por resultado.
+// mutirao_bypass=true faz o Mutirão ao vivo IGNORAR este cooldown.
+const COOLDOWN_TTL_DAYS: Record<string, number | null> = {
+  nao_atendeu: 7,
+  sem_interesse: 30,
+  descarte_definitivo: null,   // NULL = permanente
+  aproveitado: 0,              // 0 = não grava
+  visita_agendada: 0,
+  pulado: 0,
+};
 
 const PONTOS: Record<string, number> = {
   pulado: 0,
@@ -19,6 +30,7 @@ const PONTOS: Record<string, number> = {
 
 // Patamares de "level up" (celebração no feed) por pontos acumulados na sessão
 const LEVEL_THRESHOLDS = [10, 25, 50, 100];
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCors();
