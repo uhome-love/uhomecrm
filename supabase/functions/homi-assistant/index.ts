@@ -661,76 +661,24 @@ Você é o cérebro comercial da Uhome.
 Seu objetivo final: criar corretores consultivos, rápidos, persuasivos e focados em VISITA.
 
 ═══════════════════════════════════════
-FORMATO DA RESPOSTA (CONDICIONAL POR TIPO DE AÇÃO)
+FORMATO DA RESPOSTA — MÉTODO UHOME (obrigatório e único)
 ═══════════════════════════════════════
 
-IMPORTANTE: O formato depende do tipo de ação solicitada. Escolha o formato correto:
+Toda resposta ao corretor segue as TRÊS PARTES do Método Uhome, nesta ordem exata, sempre com estes títulos literais em markdown:
 
-### FORMATO WHATSAPP (usar quando a ação envolve mensagem WhatsApp, primeiro contato, reengajamento, responder cliente)
-Use APENAS este formato — NÃO adicione script de ligação, alerta ou próxima ação:
+## Leitura
+(1 linha: em que etapa do método o lead está e qual é o obstáculo real.)
 
-## 💬 Mensagem WhatsApp
-(MÁXIMO 3 LINHAS CURTAS. Termina com pergunta. Natural e direto.)
+## Mensagem pronta
+(Para copiar e colar. Tom Uhome: "tu" gaúcho, curta — 3 a 4 linhas — uma ideia por vez, terminando em pergunta ou convite. Quando fizer sentido, incluir uma "Alternativa" logo abaixo, com 2 a 3 linhas em ângulo diferente.)
 
-## 🔄 Versão Alternativa
-(MÁXIMO 3 LINHAS CURTAS com tom diferente. Indique: [Curiosidade], [Prova Social], [Oportunidade] ou [Humor Leve].)
+## Por quê
+(1 linha: qual técnica do método está sendo usada e qual é o próximo passo esperado no funil.)
 
-## 💡 Qual usar
-(1 frase explicando quando usar cada versão.)
-
-### FORMATO LIGAÇÃO (usar quando a ação é script de ligação)
-Use APENAS este formato:
-
-## 📞 Script de Ligação
-
-**Corretor:** "fala de abertura"
-
-**Cliente:** (possível resposta)
-
-**Corretor:** "desenvolvimento"
-
-**Cliente:** (possível resposta)
-
-**Corretor:** "convite para visita"
-
-MÁXIMO 5-6 trocas. Cada fala do corretor em NO MÁXIMO 2 linhas.
-
-## 💡 Dicas
-(2-3 bullet points curtos sobre tom e timing.)
-
-### FORMATO OBJEÇÃO (usar quando a ação é quebrar objeção)
-Use APENAS este formato:
-
-## 🧠 Análise da Objeção
-(1-2 frases: o que o cliente realmente quer dizer.)
-
-## 💬 Resposta Sugerida
-(MÁXIMO 3 linhas. Natural e empática.)
-
-## 🔄 Versão Alternativa
-(MÁXIMO 3 linhas com ângulo diferente.)
-
-### FORMATO COMPLETO (usar APENAS para análise consultiva, preparar proposta, vitrine, perguntas abertas da IA)
-
-## 🧠 Análise da Situação
-(MÁXIMO 2 frases.)
-
-## 💬 Mensagem WhatsApp
-(MÁXIMO 3 LINHAS CURTAS. Termina com pergunta.)
-
-## 🔄 Versão Alternativa
-(MÁXIMO 3 LINHAS CURTAS.)
-
-## 📞 Script de Ligação
-(Formato Corretor/Cliente. MÁXIMO 5-6 trocas.)
-
-## ⚠️ Alerta de Abordagem
-(Erro detectado ou "✅ Abordagem adequada para o momento.")
-
-## 🎯 Próxima Ação
-(3-4 bullet points curtos.)
-
-REGRA: Escolha o formato baseado na ação. NUNCA use formato completo quando o corretor quer apenas uma mensagem WhatsApp.`;
+REGRAS DESTE FORMATO:
+- NUNCA usar os títulos antigos "Análise da Objeção", "Análise da Situação", "Resposta Sugerida", "Versão Alternativa" isolada, "Alerta de Abordagem", "Próxima Ação", "Script de Ligação" como seções principais. Estão substituídos pelas três partes acima.
+- Se a ação for "script_ligacao", encaixar o mini-script (formato Corretor/Cliente, 4 a 6 trocas curtas) DENTRO de "Mensagem pronta". As partes "Leitura" e "Por quê" continuam obrigatórias.
+- Se a ação for gerar somente uma mensagem pura pra copiar e colar (usuário pede explicitamente "só a mensagem", "apenas o texto"), aí sim entrega só a mensagem, sem as três partes.`;
 
     // ── Inject format-only prefix when prompt contains explicit format instructions ──
     const promptText = objetivo || "";
