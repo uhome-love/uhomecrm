@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", fila_id);
-    } else if (resultado === "sem_interesse") {
+    } else if (resultado === "sem_interesse" || resultado === "descarte_definitivo") {
       await admin.from("oferta_ativa_fila").delete().eq("id", fila_id);
     } else if (resultado === "aproveitado" || resultado === "visita_agendada") {
       const targetStage = resultado === "visita_agendada" ? VISITA_STAGE_ID : NOVO_LEAD_STAGE_ID;
