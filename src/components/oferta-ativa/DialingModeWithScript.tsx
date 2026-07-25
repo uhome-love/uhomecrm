@@ -30,6 +30,7 @@ import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import { useIsMobile } from "@/hooks/use-mobile";
 import HomiObjectionHelper from "./HomiObjectionHelper";
 import FichaRapida from "./FichaRapida";
+import { getResultadoMeta } from "@/lib/motivosLigacao";
 
 /** Format Brazilian phone */
 function formatPhone(phone: string): string {
@@ -130,6 +131,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [inlineObs, setInlineObs] = useState("");
   const [showResultPopup, setShowResultPopup] = useState(false);
   const [selectedResult, setSelectedResult] = useState<string | null>(null);
+  const [selectedMotivo, setSelectedMotivo] = useState<string | null>(null);
   const [objAccordionOpen, setObjAccordionOpen] = useState(false);
 
   // Mobile tab
@@ -607,6 +609,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const handlePopupResult = (resultado: string) => {
     if (!lead) return;
     setSelectedResult(resultado);
+    setSelectedMotivo(null);
     if (resultado === "com_interesse" || resultado === "agendar") {
       setShowResultPopup(false);
       if (!actionTaken) {
@@ -620,18 +623,31 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   const handlePopupConfirm = () => {
     if (!lead || !selectedResult) return;
+    // Motivo estruturado obrigatório para nao_atendeu / sem_interesse / descarte_definitivo
+    const requiresMotivo = selectedResult === "nao_atendeu" || selectedResult === "sem_interesse" || selectedResult === "descarte_definitivo";
+    if (requiresMotivo && !selectedMotivo) {
+      toast.error("Selecione o motivo");
+      return;
+    }
     if (!actionTaken) {
       setActionTaken("ligacao");
       setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
     }
+    const obs = inlineObs.trim();
+    const motivoPrefix = selectedMotivo ? `[${selectedMotivo}] ` : "";
     const feedbackMap: Record<string, string> = {
-      nao_atendeu: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Não atendeu a ligação",
-      sem_interesse: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Sem interesse no momento",
-      numero_errado: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Número errado/inválido",
+      nao_atendeu: `${motivoPrefix}${obs || "Não atendeu a ligação"}`,
+      sem_interesse: `${motivoPrefix}${obs || "Sem interesse no momento"}`,
+      descarte_definitivo: `[DESCARTE DEFINITIVO] ${motivoPrefix}${obs || "Retirar do sistema"}`,
+      numero_errado: obs || "Número errado/inválido",
     };
+    const mapped = selectedResult === "descarte_definitivo" ? "sem_interesse" : selectedResult;
+    const feedback = feedbackMap[selectedResult] || obs || selectedResult;
+    const retirar = selectedResult === "descarte_definitivo";
     setShowResultPopup(false);
     setSelectedResult(null);
-    handleResultSubmit(selectedResult, feedbackMap[selectedResult] || inlineObs.trim() || selectedResult);
+    setSelectedMotivo(null);
+    handleResultSubmit(mapped, feedback, false, undefined, retirar);
   };
 
   // Inline result (quick buttons in right column)
@@ -1028,6 +1044,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             { key: "agendar", label: "📅 Agendar Visita", bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", color: "#FCD34D", hoverBg: "rgba(245,158,11,0.3)" },
             { key: "nao_atendeu", label: "🔴 Não Atendeu", bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)", color: "#FCA5A5", hoverBg: "rgba(239,68,68,0.3)" },
             { key: "sem_interesse", label: "⏭️ Sem Interesse", bg: "rgba(107,114,128,0.15)", border: "rgba(107,114,128,0.4)", color: "#9CA3AF", hoverBg: "rgba(107,114,128,0.3)" },
+            { key: "descarte_definitivo", label: "❌ Descarte definitivo", bg: "rgba(190,18,60,0.15)", border: "rgba(190,18,60,0.4)", color: "#FDA4AF", hoverBg: "rgba(190,18,60,0.3)" },
           ].map(r => (
             <button
               key={r.key}
@@ -1046,6 +1063,41 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           ))}
         </div>
 
+        {/* Motivo estruturado (obrigatório para nao_atendeu / sem_interesse / descarte_definitivo) */}
+        {selectedResult && ["nao_atendeu", "sem_interesse", "descarte_definitivo"].includes(selectedResult) && (() => {
+          const metaKey = selectedResult === "descarte_definitivo" ? "descarte_definitivo" : selectedResult;
+          const meta = getResultadoMeta(metaKey);
+          if (!meta) return null;
+          return (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: "var(--arena-text-muted)" }}>
+                Motivo <span className="rounded px-1.5 py-0.5 text-[9px] font-bold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>obrigatório</span>
+                <span className="ml-auto rounded px-1.5 py-0.5 text-[9px]" style={{ background: "var(--arena-subtle-bg)", color: "var(--arena-text-subtle)" }}>{meta.cooldownLabel}</span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {meta.motivos.map((m) => {
+                  const active = selectedMotivo === m;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setSelectedMotivo(m)}
+                      className="rounded-full border px-2.5 py-1 text-[11px] transition-colors"
+                      style={{
+                        background: active ? "rgba(96,165,250,0.15)" : "transparent",
+                        borderColor: active ? "#60A5FA" : "var(--arena-card-border)",
+                        color: active ? "#93C5FD" : "var(--arena-text-muted)",
+                      }}
+                    >
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <Textarea
           placeholder="📝 Observação (opcional)..."
           value={inlineObs}
@@ -1060,7 +1112,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             variant="ghost"
             className="flex-1 text-muted-foreground hover:text-foreground hover:bg-accent"
             style={{ height: 44, border: "1px solid rgba(255,255,255,0.08)" }}
-            onClick={() => { setShowResultPopup(false); setSelectedResult(null); }}
+            onClick={() => { setShowResultPopup(false); setSelectedResult(null); setSelectedMotivo(null); }}
           >
             Cancelar
           </Button>
@@ -1068,7 +1120,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             <Button
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-foreground font-semibold"
               style={{ height: 44 }}
-              disabled={submitting}
+              disabled={submitting || (["nao_atendeu","sem_interesse","descarte_definitivo"].includes(selectedResult) && !selectedMotivo)}
               onClick={handlePopupConfirm}
             >
               {submitting ? "Registrando..." : "Confirmar e Próximo →"}
