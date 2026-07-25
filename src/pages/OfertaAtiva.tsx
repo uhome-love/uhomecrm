@@ -57,7 +57,6 @@ export default function OfertaAtiva() {
 
       {activeTab === "bases" && <BasesAtivasGrid />}
 
-      {activeTab === "reservados" && (
       {activeTab === "reservados" && <ReservadosPanel />}
 
       {activeTab === "resultados" && (
