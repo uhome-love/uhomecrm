@@ -2,6 +2,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireApiKey, callAI, withCorsAndErrorHandling } from "../_shared/ai-helpers.ts";
 import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
+import {
+  searchMetodoUhome,
+  formatMetodoBlock,
+  METODO_REGRAS_INVIOLAVEIS,
+  METODO_LINHAS_VERMELHAS,
+} from "../_shared/homi-knowledge.ts";
+
 
 Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
   // JWT validation
