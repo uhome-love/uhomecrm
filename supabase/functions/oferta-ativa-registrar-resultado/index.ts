@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
         corretor_id: meuProfileId,
         resultado,
         observacao: observacao ?? null,
-        motivo_perda: motivo_perda ?? null,
+        motivo_perda: motivoFinal,
         pontos,
       })
       .select("id")
