@@ -873,6 +873,15 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
       console.error("materiais context skipped:", e);
     }
 
+    // ── HOMI ↔ Método Uhome: retrieval + contrato de operação + linhas vermelhas ──
+    const metodoQuery = [acao, empreendimento, situacao, mensagem_cliente].filter(Boolean).join(" | ").slice(0, 500);
+    const metodoChunks = await searchMetodoUhome(supabase, metodoQuery, 4);
+    const metodoBlock = formatMetodoBlock(metodoChunks);
+    const metodoContrato = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMÉTODO UHOME — CONTRATO DE OPERAÇÃO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${METODO_FORMATO_3_PARTES}\n\n${METODO_REGRAS_INVIOLAVEIS}\n\n${METODO_LINHAS_VERMELHAS}`;
+    systemPrompt = systemPrompt + metodoContrato + metodoBlock;
+
+
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
