@@ -30,6 +30,7 @@ import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import { useIsMobile } from "@/hooks/use-mobile";
 import HomiObjectionHelper from "./HomiObjectionHelper";
 import FichaRapida from "./FichaRapida";
+import { getResultadoMeta } from "@/lib/motivosLigacao";
 
 /** Format Brazilian phone */
 function formatPhone(phone: string): string {
