@@ -396,7 +396,7 @@ export default function MinhasTarefas() {
       const { data } = await supabase
         .from("pipeline_stages")
         .select("id, tipo")
-        .in("tipo", ["qualificacao", "aquecimento", "negociacao"]);
+        .in("tipo", ["qualificacao", "aquecimento", "negociacao", "visita"]);
       return (data || []).map((s: any) => s.id as string);
     },
     staleTime: 5 * 60 * 1000,
