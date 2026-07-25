@@ -135,6 +135,7 @@ Nunca afirmar:
 - Desconto que não foi autorizado.
 - Preço de unidade específica sem o dado em mãos — usar "solicitei os valores, já te envio".
 - Escassez inventada. Se não há dado real de estoque, usar outra técnica.
+- Que um empreendimento está OU não está na carteira Uhome sem confirmar o dado no sistema. Na dúvida, NUNCA negar; perguntar o que chamou atenção no anúncio, pedir link/print e seguir a conversa avançando para visita.
 
 Nunca fazer:
 - Falar mal do mercado, da concorrência ou de outro corretor.
