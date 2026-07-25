@@ -8,6 +8,7 @@ import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import OAObservabilityPanel from "@/components/oferta-ativa/OAObservabilityPanel";
 import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
 import ReservadosPanel from "@/components/oferta-ativa/ReservadosPanel";
+import MeusResultadosPanel from "@/components/oferta-ativa/MeusResultadosPanel";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -59,13 +60,7 @@ export default function OfertaAtiva() {
 
       {activeTab === "reservados" && <ReservadosPanel />}
 
-      {activeTab === "resultados" && (
-        <ComingSoon
-          icon={<BarChart3 size={22} />}
-          title="Meus resultados"
-          desc="Seu funil pessoal de ligações, aproveitamento por empreendimento e histórico. Em construção."
-        />
-      )}
+      {activeTab === "resultados" && <MeusResultadosPanel />}
 
       {activeTab === "config" && (
         <div className="space-y-4">
