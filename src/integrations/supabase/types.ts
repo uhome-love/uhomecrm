@@ -12667,7 +12667,13 @@ export type Database = {
           total: number
         }[]
       }
+      reengajamento_pick_next_run: { Args: never; Returns: string }
       reengajamento_resumo_hoje: { Args: never; Returns: Json }
+      reengajamento_run_bump_enviados: {
+        Args: { p_run_id: string }
+        Returns: number
+      }
+      reengajamento_worker_sweep_stale: { Args: never; Returns: number }
       registrar_faltas_sabado: { Args: { p_data?: string }; Returns: number }
       registrar_material_recente: {
         Args: { _acao?: string; _material_id: string }
