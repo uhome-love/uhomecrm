@@ -14,6 +14,7 @@ import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner
 import PeriodFilter, { buildRange, type PeriodRange } from "@/components/central-nutricao/PeriodFilter";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useReengajamentoDispatch } from "@/hooks/useReengajamentoDispatch";
+import MotorTab from "@/components/central-nutricao/motor/MotorTab";
 
 
 export default function CentralNutricaoPage() {
@@ -62,12 +63,15 @@ export default function CentralNutricaoPage() {
       <LiveDispatchBanner />
 
       <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-3 md:grid-cols-5 h-auto md:h-11">
+        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-3 md:grid-cols-6 h-auto md:h-11">
           <TabsTrigger value="disparo" className="gap-2 text-sm">
             <Send className="h-4 w-4" /> Disparo manual
           </TabsTrigger>
           <TabsTrigger value="nutricao" className="gap-2 text-sm">
             <Sprout className="h-4 w-4" /> Nutrição
+          </TabsTrigger>
+          <TabsTrigger value="motor" className="gap-2 text-sm">
+            <Cpu className="h-4 w-4" /> Motor
           </TabsTrigger>
           <TabsTrigger value="aovivo" className="gap-2 text-sm">
             <Activity className="h-4 w-4" /> Ao vivo
@@ -90,7 +94,12 @@ export default function CentralNutricaoPage() {
           <NutricaoTab />
         </TabsContent>
 
-        {/* Aba 3: Ao vivo + resultado */}
+        {/* Aba 3: Motor (saúde + warm-up + fila + controles) */}
+        <TabsContent value="motor" className="mt-0 space-y-4">
+          <MotorTab />
+        </TabsContent>
+
+        {/* Aba 4: Ao vivo + resultado */}
         <TabsContent value="aovivo" className="mt-0 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <PeriodFilter value={period} onChange={setPeriod} />
