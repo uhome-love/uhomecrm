@@ -11781,36 +11781,21 @@ export type Database = {
         }
         Returns: Json
       }
-      finalizar_tentativa_v2:
-        | {
-            Args: {
-              p_canal: string
-              p_corretor_id: string
-              p_empreendimento?: string
-              p_feedback: string
-              p_idempotency_key?: string
-              p_lead_id: string
-              p_lista_id?: string
-              p_resultado: string
-              p_visita_marcada?: boolean
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_canal: string
-              p_corretor_id: string
-              p_empreendimento?: string
-              p_feedback: string
-              p_idempotency_key?: string
-              p_interesse_tipo?: string
-              p_lead_id: string
-              p_lista_id?: string
-              p_resultado: string
-              p_visita_marcada?: boolean
-            }
-            Returns: Json
-          }
+      finalizar_tentativa_v2: {
+        Args: {
+          p_canal: string
+          p_corretor_id: string
+          p_empreendimento?: string
+          p_feedback: string
+          p_idempotency_key?: string
+          p_interesse_tipo?: string
+          p_lead_id: string
+          p_lista_id?: string
+          p_resultado: string
+          p_visita_marcada?: boolean
+        }
+        Returns: Json
+      }
       finalizar_trabalho_corretor: {
         Args: { p_user_id: string }
         Returns: Json
