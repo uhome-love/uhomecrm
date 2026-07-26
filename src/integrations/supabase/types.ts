@@ -4838,6 +4838,7 @@ export type Database = {
           data_assinatura: string | null
           documentacao_situacao: string | null
           empreendimento: string | null
+          empreendimento_canonico_id: string | null
           equipe_gerente_auth_id: string | null
           fase: string | null
           fase_changed_at: string | null
@@ -4875,6 +4876,7 @@ export type Database = {
           data_assinatura?: string | null
           documentacao_situacao?: string | null
           empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
           equipe_gerente_auth_id?: string | null
           fase?: string | null
           fase_changed_at?: string | null
@@ -4912,6 +4914,7 @@ export type Database = {
           data_assinatura?: string | null
           documentacao_situacao?: string | null
           empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
           equipe_gerente_auth_id?: string | null
           fase?: string | null
           fase_changed_at?: string | null
@@ -4955,6 +4958,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_descartes_recentes_90d"
             referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "negocios_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -10108,6 +10118,7 @@ export type Database = {
           created_by: string
           data_visita: string
           empreendimento: string | null
+          empreendimento_canonico_id: string | null
           gerente_id: string | null
           google_event_id: string | null
           google_event_link: string | null
@@ -10152,6 +10163,7 @@ export type Database = {
           created_by: string
           data_visita: string
           empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
           gerente_id?: string | null
           google_event_id?: string | null
           google_event_link?: string | null
@@ -10196,6 +10208,7 @@ export type Database = {
           created_by?: string
           data_visita?: string
           empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
           gerente_id?: string | null
           google_event_id?: string | null
           google_event_link?: string | null
@@ -10228,6 +10241,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "visitas_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "visitas_lead_id_fkey"
             columns: ["lead_id"]
