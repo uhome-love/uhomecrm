@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      _pilot_backfill_2026_07_26: {
+        Row: {
+          complexidade_after: number | null
+          complexidade_before: number | null
+          emp_canonico_after: string | null
+          emp_canonico_before: string | null
+          empreendimento: string | null
+          id: string
+          oportunidade_after: number | null
+          oportunidade_before: number | null
+        }
+        Insert: {
+          complexidade_after?: number | null
+          complexidade_before?: number | null
+          emp_canonico_after?: string | null
+          emp_canonico_before?: string | null
+          empreendimento?: string | null
+          id: string
+          oportunidade_after?: number | null
+          oportunidade_before?: number | null
+        }
+        Update: {
+          complexidade_after?: number | null
+          complexidade_before?: number | null
+          emp_canonico_after?: string | null
+          emp_canonico_before?: string | null
+          empreendimento?: string | null
+          id?: string
+          oportunidade_after?: number | null
+          oportunidade_before?: number | null
+        }
+        Relationships: []
+      }
       academia_aulas: {
         Row: {
           conteudo: Json | null
