@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Send, Activity, Settings, Sprout, History, CheckCircle2 } from "lucide-react";
+import { RefreshCw, Send, Activity, Settings, Sprout, History, CheckCircle2, Cpu } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DisparoCustomizadoCard from "@/components/central-nutricao/DisparoCustomizadoCard";
