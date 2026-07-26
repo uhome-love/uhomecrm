@@ -8402,10 +8402,13 @@ export type Database = {
           retry_max_tentativas: number
           throttle_level: number
           throttle_updated_at: string | null
+          ultimo_envio_at: string | null
           updated_at: string
           validar_numero: boolean
           warmup_incremento_pct: number
           warmup_inicial: number
+          warmup_pausado_ate: string | null
+          warmup_started_at: string | null
           wave2_min_dias_apos_wave1: number | null
         }
         Insert: {
@@ -8442,10 +8445,13 @@ export type Database = {
           retry_max_tentativas?: number
           throttle_level?: number
           throttle_updated_at?: string | null
+          ultimo_envio_at?: string | null
           updated_at?: string
           validar_numero?: boolean
           warmup_incremento_pct?: number
           warmup_inicial?: number
+          warmup_pausado_ate?: string | null
+          warmup_started_at?: string | null
           wave2_min_dias_apos_wave1?: number | null
         }
         Update: {
@@ -8482,10 +8488,13 @@ export type Database = {
           retry_max_tentativas?: number
           throttle_level?: number
           throttle_updated_at?: string | null
+          ultimo_envio_at?: string | null
           updated_at?: string
           validar_numero?: boolean
           warmup_incremento_pct?: number
           warmup_inicial?: number
+          warmup_pausado_ate?: string | null
+          warmup_started_at?: string | null
           wave2_min_dias_apos_wave1?: number | null
         }
         Relationships: []
@@ -8735,6 +8744,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reengajamento_worker_heartbeat: {
+        Row: {
+          id: string
+          last_batch_size: number | null
+          last_error: string | null
+          last_reason: string | null
+          last_run_at: string | null
+          last_sent: number | null
+          last_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          last_batch_size?: number | null
+          last_error?: string | null
+          last_reason?: string | null
+          last_run_at?: string | null
+          last_sent?: number | null
+          last_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          last_batch_size?: number | null
+          last_error?: string | null
+          last_reason?: string | null
+          last_run_at?: string | null
+          last_sent?: number | null
+          last_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       referral_config: {
         Row: {
@@ -11604,6 +11646,7 @@ export type Database = {
       }
       can_access_lead: { Args: { p_lead_id: string }; Returns: boolean }
       can_access_negocio: { Args: { p_negocio_id: string }; Returns: boolean }
+      cap_do_dia: { Args: never; Returns: number }
       check_descartes_excessivos: { Args: never; Returns: undefined }
       check_phone_duplicate: {
         Args: { p_telefone: string }
@@ -11763,6 +11806,7 @@ export type Database = {
           visitas_semana: number
         }[]
       }
+      enviados_hoje_reengajamento: { Args: never; Returns: number }
       escalonar_notificacoes_leads: { Args: never; Returns: number }
       expirar_aceites_roleta: { Args: never; Returns: Json }
       fetch_next_lead: {
@@ -12623,7 +12667,13 @@ export type Database = {
           total: number
         }[]
       }
+      reengajamento_pick_next_run: { Args: never; Returns: string }
       reengajamento_resumo_hoje: { Args: never; Returns: Json }
+      reengajamento_run_bump_enviados: {
+        Args: { p_run_id: string }
+        Returns: number
+      }
+      reengajamento_worker_sweep_stale: { Args: never; Returns: number }
       registrar_faltas_sabado: { Args: { p_data?: string }; Returns: number }
       registrar_material_recente: {
         Args: { _acao?: string; _material_id: string }
