@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { resolveFormName } from "@/lib/metaFormIdMap";
 import { toast } from "sonner";
+import { EditarVendaDrawer } from "@/components/vendas/EditarVendaDrawer";
 
 const formatCurrency = (v: number) => fmtMoney(v, "short");
 const formatVgvExact = (v: number) => fmtMoney(v, "exact");
