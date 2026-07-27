@@ -450,10 +450,14 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
       // MIGRATED: Use auth_user_id for negocios instead of profile_id lookup
       const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
-        supabase.from("visitas").select("id, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
-        supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
+        supabase.from("visitas").select("id, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
+        supabase.from("visitas").select("id, status, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
         supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "ganho").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
       ]);
+      // Excluir backfills de conciliação (origem 'backfill_*') dos placares diários/janela
+      const filterNoBackfill = (rows: any[] | null) => (rows || []).filter(r => !String(r?.origem || "").startsWith("backfill_"));
+      const visMarcadasClean = filterNoBackfill(allVisMarcadas);
+      const visRealizadasClean = filterNoBackfill(allVisRealizadas);
 
       // Paginated tentativas
       let allTent: any[] = [];
