@@ -38,14 +38,15 @@ interface Props {
 export function PdnRegredirDialog({ row, onClose, onConfirm }: Props) {
   const grupoAtual = row?.grupo ?? null;
 
-  const opcoes = useMemo<PdnGrupo[]>(() => {
-    if (!grupoAtual) return [];
-    const idx = ORDER.indexOf(grupoAtual);
+  const opcoes = useMemo<PdnDestino[]>(() => {
+    if (!grupoAtual || grupoAtual === "caidos") return [];
+    const idx = ORDER.indexOf(grupoAtual as PdnDestino);
     if (idx <= 0) return [];
     return ORDER.slice(0, idx).reverse(); // etapa imediatamente anterior primeiro
   }, [grupoAtual]);
 
-  const [destino, setDestino] = useState<PdnGrupo | null>(null);
+  const [destino, setDestino] = useState<PdnDestino | null>(null);
+
   const [motivo, setMotivo] = useState("");
 
   useEffect(() => {
