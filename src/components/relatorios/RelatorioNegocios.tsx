@@ -32,6 +32,7 @@ interface NegocioRender {
   empreendimento: string;
   corretor: string;
   fase: string;
+  status: string;
   faseLabel: string;
   vgv: number;
   data: string;
