@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -192,6 +192,10 @@ export function usePdn(mes: string) {
   >([]);
   const [loadingDeals, setLoadingDeals] = useState(true);
   const [loadingEntries, setLoadingEntries] = useState(true);
+  // Marca que já concluímos o 1º load — refreshes seguintes rodam silenciosamente,
+  // sem piscar a UI com o spinner de tela cheia (evita o "refresh infinito" no PDN).
+  const dealsLoadedOnceRef = useRef(false);
+  const entriesLoadedOnceRef = useRef(false);
   // Escopo de corretores resolvido (auth ids). undefined = ainda não resolvido; null = todos.
   const [scopeAuthIds, setScopeAuthIds] = useState<string[] | null | undefined>(undefined);
   const [vendasMes, setVendasMes] = useState<VendaMes[]>([]);
@@ -199,7 +203,7 @@ export function usePdn(mes: string) {
   // ── Overlay do gerente (pdn_entries) ─────────────────────────────────────────
   const loadEntries = useCallback(async () => {
     if (!user) return;
-    setLoadingEntries(true);
+    if (!entriesLoadedOnceRef.current) setLoadingEntries(true);
     const { data, error } = await supabase
       .from("pdn_entries")
       .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao, caiu, motivo_queda, proxima_acao_data, prioridade, risco_manual, risco_motivo, oculto, grupo_override, corretor_avisado_em, corretor_avisado_etapa, updated_at")
@@ -207,10 +211,12 @@ export function usePdn(mes: string) {
     if (error) {
       console.error("Erro ao carregar PDN:", error);
       setLoadingEntries(false);
+      entriesLoadedOnceRef.current = true;
       return;
     }
     setEntries((data || []) as PdnEntry[]);
     setLoadingEntries(false);
+    entriesLoadedOnceRef.current = true;
   }, [user]);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
@@ -218,7 +224,7 @@ export function usePdn(mes: string) {
   // ── Fonte única: pipeline_leads (Em Negociação / Contrato / Ganho) ───────────
   const loadDeals = useCallback(async () => {
     if (!user) return;
-    setLoadingDeals(true);
+    if (!dealsLoadedOnceRef.current) setLoadingDeals(true);
 
     // Escopo de corretores (auth ids)
     let corretorAuthIds: string[] | null = null; // null = admin/diretor/CEO (todas as equipes)
@@ -246,6 +252,7 @@ export function usePdn(mes: string) {
     if (stageIds.length === 0) {
       setDeals([]);
       setLoadingDeals(false);
+      dealsLoadedOnceRef.current = true;
       return;
     }
 
@@ -256,13 +263,14 @@ export function usePdn(mes: string) {
       .eq("arquivado", false)
       .limit(2000);
     if (corretorAuthIds) {
-      if (corretorAuthIds.length === 0) { setDeals([]); setLoadingDeals(false); return; }
+      if (corretorAuthIds.length === 0) { setDeals([]); setLoadingDeals(false); dealsLoadedOnceRef.current = true; return; }
       leadQuery = leadQuery.in("corretor_id", corretorAuthIds);
     }
     const { data: leads, error: leadErr } = await leadQuery;
     if (leadErr) {
       console.error("Erro ao carregar pipeline do PDN:", leadErr);
       setLoadingDeals(false);
+      dealsLoadedOnceRef.current = true;
       return;
     }
 
@@ -316,6 +324,7 @@ export function usePdn(mes: string) {
     });
     setDeals(dealRows);
     setLoadingDeals(false);
+    dealsLoadedOnceRef.current = true;
   }, [user, isAdmin, isGestor, isDiretor]);
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
@@ -767,7 +776,7 @@ export function usePdn(mes: string) {
   }, [saveOverride]);
 
   // ── Mudar etapa no PDN — AGORA sincroniza com o pipeline real ────────────────
-  const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnGrupo) => {
+  const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnGrupo, opts?: { motivo?: string }) => {
     if (grupo === "caidos") { await saveOverride(row, { caiu: true }); return; }
     if (row.isManual && row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update({ situacao: grupo, caiu: false }).eq("id", row.overrideId);
@@ -777,7 +786,7 @@ export function usePdn(mes: string) {
     }
     // Linha do pipeline (ou só com negocio_id): escreve NO pipeline real + alinha overlay
     if (row.pipelineLeadId || row.negocioId) {
-      const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null);
+      const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
       if (!result) return;
       // Sincroniza a pdn_entry existente com a nova etapa e garante o vínculo com o lead real
       if (row.overrideId) {

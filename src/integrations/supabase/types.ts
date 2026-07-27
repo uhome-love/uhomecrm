@@ -4883,6 +4883,7 @@ export type Database = {
           lead_id_match_metodo: string | null
           lead_id_match_score: number | null
           lead_id_proposto: string | null
+          motivo_queda: string | null
           negociacao_contra_proposta: string | null
           negociacao_pendencia: string | null
           negociacao_situacao: string | null
@@ -4922,6 +4923,7 @@ export type Database = {
           lead_id_match_metodo?: string | null
           lead_id_match_score?: number | null
           lead_id_proposto?: string | null
+          motivo_queda?: string | null
           negociacao_contra_proposta?: string | null
           negociacao_pendencia?: string | null
           negociacao_situacao?: string | null
@@ -4961,6 +4963,7 @@ export type Database = {
           lead_id_match_metodo?: string | null
           lead_id_match_score?: number | null
           lead_id_proposto?: string | null
+          motivo_queda?: string | null
           negociacao_contra_proposta?: string | null
           negociacao_pendencia?: string | null
           negociacao_situacao?: string | null

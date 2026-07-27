@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { usePdn, PDN_GRUPOS, type PdnGrupo, type PdnRow } from "@/hooks/usePdn";
 import { usePdnLive } from "@/hooks/pdn/usePdnLive";
 
@@ -39,6 +39,7 @@ import { MoneyInput } from "@/components/pdn/MoneyInput";
 import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
+import { PdnRegredirDialog } from "@/components/pdn/PdnRegredirDialog";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
 
@@ -315,6 +316,7 @@ export default function PdnGestor() {
   });
   const [quedaRow, setQuedaRow] = useState<PdnRow | null>(null);
   const [selectedRow, setSelectedRow] = useState<PdnRow | null>(null);
+  const [regredirRow, setRegredirRow] = useState<{ row: PdnRow; destino: PdnGrupo } | null>(null);
   // Padrão por dispositivo: mobile→kanban (foco em 1 coluna), desktop→planilha (densidade p/ gestão).
   // Preferência persistida separadamente para cada form factor.
   const [view, setView] = useState<PdnView>(() => {
@@ -340,6 +342,23 @@ export default function PdnGestor() {
   };
   // Realtime: assina mudanças no pipeline e recarrega o PDN (debounced 800ms).
   usePdnLive(() => { refreshAll(); });
+
+  // Wrapper: se for regressão (destino aparece antes do atual em PDN_GRUPOS) e não
+  // for "caidos", abre o diálogo dedicado para capturar motivo antes de mover.
+  // Progressões seguem direto pelo hook.
+  const handleMudarEtapa = useCallback((row: PdnRow, destino: PdnGrupo) => {
+    if (destino === "caidos") { mudarEtapa(row, destino); return; }
+    const order = PDN_GRUPOS.map(g => g.key);
+    const iAtual = order.indexOf(row.grupo);
+    const iDest = order.indexOf(destino);
+    if (iDest >= 0 && iAtual >= 0 && iDest < iAtual) {
+      setRegredirRow({ row, destino });
+      return;
+    }
+    mudarEtapa(row, destino);
+  }, [mudarEtapa]);
+
+
 
 
   // Visibilidade de colunas (planilha) — persistida por device.
@@ -647,7 +666,7 @@ export default function PdnGestor() {
           onRemove={handleRemove}
           onQueda={setQuedaRow}
           onReativar={reativarQueda}
-          onMudarEtapa={mudarEtapa}
+          onMudarEtapa={handleMudarEtapa}
           onLimparEtapa={limparEtapaOverride}
           onAvisar={avisarCorretor}
           onAdd={addManualRow}
@@ -679,7 +698,7 @@ export default function PdnGestor() {
                 onRemove={handleRemove}
                 onQueda={setQuedaRow}
                 onReativar={reativarQueda}
-                onMudarEtapa={mudarEtapa}
+                onMudarEtapa={handleMudarEtapa}
                 onAvisar={avisarCorretor}
                 onOpenRow={setSelectedRow}
                 visibleCols={visibleCols}
@@ -714,6 +733,16 @@ export default function PdnGestor() {
         }}
       />
 
+      <PdnRegredirDialog
+        row={regredirRow?.row ?? null}
+        onClose={() => setRegredirRow(null)}
+        onConfirm={(destino, motivo) => {
+          if (!regredirRow) return;
+          mudarEtapa(regredirRow.row, destino, { motivo });
+          setRegredirRow(null);
+        }}
+      />
+
       <PdnLeadDrawer
         row={selectedRow ? (filtered.find(r => r.id === selectedRow.id) ?? selectedRow) : null}
         onClose={() => setSelectedRow(null)}
@@ -722,7 +751,7 @@ export default function PdnGestor() {
         onRemove={handleRemove}
         onQueda={setQuedaRow}
         onReativar={reativarQueda}
-        onMudarEtapa={mudarEtapa}
+        onMudarEtapa={handleMudarEtapa}
         onLimparEtapa={limparEtapaOverride}
         onAvisar={avisarCorretor}
       />
@@ -1041,11 +1070,7 @@ function GrupoBloco({
                                 size="icon"
                                 className="h-7 w-7 text-muted-foreground hover:text-amber-600"
                                 title={`Regredir para ${GRUPO_LABEL_UI[prev!]} (avisa o corretor)`}
-                                onClick={() => {
-                                  if (window.confirm(`Regredir ${r.nome} de "${GRUPO_LABEL_UI[r.grupo]}" para "${GRUPO_LABEL_UI[prev!]}"?\n\nO corretor será notificado da mudança.`)) {
-                                    onMudarEtapa(r, prev!);
-                                  }
-                                }}
+                                onClick={() => onMudarEtapa(r, prev!)}
                               >
                                 <Undo2 className="h-3.5 w-3.5" />
                               </Button>
@@ -1144,11 +1169,7 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-amber-600"
                 title={`Regredir para ${GRUPO_LABEL_UI[prev]}`}
-                onClick={() => {
-                  if (window.confirm(`Regredir ${r.nome} de "${GRUPO_LABEL_UI[r.grupo]}" para "${GRUPO_LABEL_UI[prev]}"?\n\nO corretor será notificado.`)) {
-                    onMudarEtapa(r, prev);
-                  }
-                }}
+                onClick={() => onMudarEtapa(r, prev)}
               >
                 <Undo2 className="h-3.5 w-3.5" />
               </Button>
