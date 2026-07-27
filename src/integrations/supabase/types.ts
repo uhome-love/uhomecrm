@@ -6662,6 +6662,24 @@ export type Database = {
           },
         ]
       }
+      perf_thresholds: {
+        Row: {
+          atualizado_em: string
+          chave: string
+          valor: Json
+        }
+        Insert: {
+          atualizado_em?: string
+          chave: string
+          valor: Json
+        }
+        Update: {
+          atualizado_em?: string
+          chave?: string
+          valor?: Json
+        }
+        Relationships: []
+      }
       perfil_interesse: {
         Row: {
           alerta_ativo: boolean | null
@@ -12624,6 +12642,7 @@ export type Database = {
           segmento_nome: string
         }[]
       }
+      perf_atividade_humana: { Args: { p_tipo: string }; Returns: boolean }
       presenca_role_scope: { Args: { _user_id: string }; Returns: string }
       processar_cadencia_sem_contato: {
         Args: never
