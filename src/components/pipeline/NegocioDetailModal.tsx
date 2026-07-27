@@ -630,7 +630,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 <CalendarDays className="h-3.5 w-3.5" /> 📅 Reunião
               </Button>
 
-              {/* Solicitar Pagadoria — only shows on fase 'contrato' or 'ganho' */}
+              {/* Solicitar Pagadoria — visível em fase 'em_negociacao' ou 'ganho' */}
               {(fullNeg.fase === "em_negociacao" || fullNeg.fase === "ganho") && (
                 <Button
                   variant="outline"
