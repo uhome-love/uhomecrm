@@ -612,6 +612,7 @@ export default function VendasRealizadas() {
   ];
 
   return (
+    <>
     <div className="bg-background p-4 sm:p-6 -m-6 min-h-full space-y-4">
       {/* ═══════ HEADER ═══════ */}
       <div className="flex items-center gap-3 flex-wrap">
