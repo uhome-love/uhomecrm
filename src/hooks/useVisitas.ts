@@ -551,13 +551,35 @@ export function useVisitas(filters?: {
         try {
           const { data: leadAtual } = await supabase
             .from("pipeline_leads")
-            .select("flag_status")
+            .select("flag_status, stage_id, pipeline_stages!inner(tipo)")
             .eq("id", visita.pipeline_lead_id)
             .maybeSingle();
           const oldFlags = ((leadAtual as any)?.flag_status as Record<string, any>) || {};
+          const currentTipo = ((leadAtual as any)?.pipeline_stages?.tipo as string | undefined) || "";
+
+          const updatePayload: Record<string, any> = {
+            flag_status: { ...oldFlags, status_visita: novoSub },
+          };
+
+          // Regra fixa: visita realizada → lead vai para Pós-Visita para
+          // alinhamento corretor+gerente antes de virar negócio.
+          if (newStatus === "realizada" && currentTipo === "visita") {
+            const { data: posVisitaStage } = await supabase
+              .from("pipeline_stages")
+              .select("id")
+              .eq("pipeline_tipo", "leads")
+              .eq("tipo", "pos_visita")
+              .maybeSingle();
+            if (posVisitaStage?.id) {
+              updatePayload.stage_id = posVisitaStage.id;
+              updatePayload.stage_changed_at = new Date().toISOString();
+              updatePayload.ultima_acao_at = new Date().toISOString();
+            }
+          }
+
           await supabase
             .from("pipeline_leads")
-            .update({ flag_status: { ...oldFlags, status_visita: novoSub } } as any)
+            .update(updatePayload as any)
             .eq("id", visita.pipeline_lead_id);
           queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] });
           queryClient.invalidateQueries({ queryKey: ["pipeline"] });
@@ -587,8 +609,8 @@ export function useVisitas(filters?: {
       }
 
       if (newStatus === "realizada" && visita?.pipeline_lead_id) {
-        toast("✅ Visita realizada!", {
-          description: "Quando o cliente evoluir, arraste o lead para 'Em Negociação' no Pipeline.",
+        toast("✅ Visita realizada — lead em Pós-Visita", {
+          description: "Alinhe com o gerente se evolui para Em Negociação ou regride.",
           duration: 5000,
         });
       }
