@@ -122,7 +122,8 @@ export default function PlacarDoDia() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const prevTotais = useRef({});
-  const prevStatusPorId = useRef({});
+  const prevMarcadasIds = useRef(new Set());
+  const prevRealizadasIds = useRef(new Set());
   const [flashEquipe, setFlashEquipe] = useState(null);
   const [floatEquipe, setFloatEquipe] = useState(null);
   const [ranking, setRanking] = useState([]);
@@ -184,7 +185,8 @@ export default function PlacarDoDia() {
       if (pErr) throw pErr;
 
       const membros = (payload as any)?.membros ?? [];
-      const todasVisitas = (payload as any)?.visitas ?? [];
+      const visitasMarcadas = (payload as any)?.visitas_marcadas ?? (payload as any)?.visitas ?? [];
+      const visitasRealizadas = (payload as any)?.visitas_realizadas ?? [];
 
       const equipeIds: Record<string, string[]> = emptyPorEquipe();
       const nomeMap: Record<string, string> = {};
@@ -196,7 +198,7 @@ export default function PlacarDoDia() {
         if (m.user_id) nomeMap[m.user_id] = m.nome;
       });
       // Fallback: o RPC já traz corretor_nome em cada visita
-      todasVisitas.forEach((v: any) => {
+      visitasMarcadas.forEach((v: any) => {
         if (v.corretor_id && v.corretor_nome && !nomeMap[v.corretor_id]) {
           nomeMap[v.corretor_id] = v.corretor_nome;
         }
@@ -205,7 +207,7 @@ export default function PlacarDoDia() {
       const novosDados = emptyPorEquipe();
       const ultimaPorEquipe = {};
       for (const [key, userIds] of Object.entries(equipeIds)) {
-        const visitasEquipe = todasVisitas.filter(v => userIds.includes(v.corretor_id));
+        const visitasEquipe = visitasMarcadas.filter(v => userIds.includes(v.corretor_id));
         novosDados[key] = visitasEquipe;
 
         if (visitasEquipe.length > 0) {
@@ -231,31 +233,35 @@ export default function PlacarDoDia() {
         prevTotais.current[key] = novoTotal;
       }
 
-      // Detecção de eventos por transição de status (marcada nova / realizada)
-      const isFirstStatusLoad = Object.keys(prevStatusPorId.current).length === 0;
+      // A RPC entrega eventos canônicos separados; não inferimos realização pelo status atual.
+      const isFirstEventLoad = prevMarcadasIds.current.size === 0 && prevRealizadasIds.current.size === 0;
       const equipeDeUser = (uid) =>
         Object.entries(equipeIds).find(([, ids]) => ids.includes(uid))?.[0];
       const eventos = [];
-      todasVisitas.forEach((v) => {
-        const prevStatus = prevStatusPorId.current[v.id];
-        if (!isFirstStatusLoad) {
+      visitasMarcadas.forEach((v) => {
+        if (!isFirstEventLoad && !prevMarcadasIds.current.has(v.id)) {
           const nomeCompleto = nomeMap[v.corretor_id] || v.corretor_nome || "—";
           const primeiroNome = nomeCompleto.split(" ")[0];
           const corEquipe = EQUIPES.find(e => e.id === equipeDeUser(v.corretor_id))?.cor || "#F59E0B";
-          if (v.status === "realizada" && prevStatus !== "realizada") {
-            eventos.push({ tipo: "realizada", nome: primeiroNome, cliente: v.nome_cliente || null, empreendimento: v.empreendimento || null, cor: corEquipe });
-          } else if (prevStatus === undefined) {
-            eventos.push({ tipo: "marcada", nome: primeiroNome, cliente: v.nome_cliente || null, empreendimento: v.empreendimento || null, cor: corEquipe });
-          }
+          eventos.push({ tipo: "marcada", nome: primeiroNome, cliente: v.nome_cliente || null, empreendimento: v.empreendimento || null, cor: corEquipe });
         }
-        prevStatusPorId.current[v.id] = v.status;
       });
+      visitasRealizadas.forEach((v) => {
+        if (!isFirstEventLoad && !prevRealizadasIds.current.has(v.id)) {
+          const nomeCompleto = nomeMap[v.corretor_id] || v.corretor_nome || "—";
+          const primeiroNome = nomeCompleto.split(" ")[0];
+          const corEquipe = EQUIPES.find(e => e.id === equipeDeUser(v.corretor_id))?.cor || "#F59E0B";
+          eventos.push({ tipo: "realizada", nome: primeiroNome, cliente: v.nome_cliente || null, empreendimento: v.empreendimento || null, cor: corEquipe });
+        }
+      });
+      prevMarcadasIds.current = new Set(visitasMarcadas.map(v => v.id));
+      prevRealizadasIds.current = new Set(visitasRealizadas.map(v => v.id));
       if (eventos.length > 0) {
         announcementQueue.current.push(...eventos);
       }
 
       const contagemPorUser = {};
-      todasVisitas.forEach((v) => {
+      visitasMarcadas.forEach((v) => {
         contagemPorUser[v.corretor_id] = (contagemPorUser[v.corretor_id] || 0) + 1;
       });
       const equipeDoUser = (uid) =>
@@ -272,8 +278,8 @@ export default function PlacarDoDia() {
 
 
       // Feed últimas visitas with client name
-      const feedVisitas = [...todasVisitas]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      const feedVisitas = [...visitasMarcadas]
+        .sort((a, b) => new Date(b.evento_em ?? b.created_at).getTime() - new Date(a.evento_em ?? a.created_at).getTime())
         .slice(0, 10)
         .map(v => {
           const equipe = Object.entries(equipeIds).find(([, ids]) => ids.includes(v.corretor_id))?.[0];
@@ -283,7 +289,7 @@ export default function PlacarDoDia() {
             cliente: v.nome_cliente || "—",
             empreendimento: v.empreendimento || null,
             dataVisita: v.data_visita || null,
-            hora: new Date(v.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }),
+            hora: new Date(v.evento_em ?? v.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }),
             equipe,
           };
         });
