@@ -6,7 +6,10 @@ import { toast } from "sonner";
 import {
   syncPipelineStageFromPdn, syncNegocioVgvFromPdn,
   discardLeadFromPdn, inactivateLeadFromPdn,
+  type PdnDestino,
 } from "@/lib/pdnSyncEngine";
+export type { PdnDestino };
+
 
 // ─── Grupos / status do PDN ──────────────────────────────────────────────────
 export type PdnGrupo = "visita_realizada" | "em_negociacao" | "contrato" | "ganho" | "caidos";
@@ -776,9 +779,14 @@ export function usePdn(mes: string) {
   }, [saveOverride]);
 
   // ── Mudar etapa no PDN — AGORA sincroniza com o pipeline real ────────────────
-  const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnGrupo, opts?: { motivo?: string }) => {
+  const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnDestino | "caidos", opts?: { motivo?: string }) => {
     if (grupo === "caidos") { await saveOverride(row, { caiu: true }); return; }
+    const isPreVisita = grupo === "qualificacao" || grupo === "aquecimento";
     if (row.isManual && row.overrideId) {
+      if (isPreVisita) {
+        toast.error("Linha manual não pode ser regredida para etapa fora do PDN.");
+        return;
+      }
       const { error } = await supabase.from("pdn_entries").update({ situacao: grupo, caiu: false }).eq("id", row.overrideId);
       if (error) { toast.error("Erro ao salvar"); return; }
       await loadEntries();
@@ -788,8 +796,9 @@ export function usePdn(mes: string) {
     if (row.pipelineLeadId || row.negocioId) {
       const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
       if (!result) return;
-      // Sincroniza a pdn_entry existente com a nova etapa e garante o vínculo com o lead real
-      if (row.overrideId) {
+      // Sincroniza a pdn_entry existente com a nova etapa e garante o vínculo com o lead real.
+      // Regressão p/ qualificacao/aquecimento tira o lead do escopo PDN — não escreve situacao inválida.
+      if (row.overrideId && !isPreVisita) {
         const patch: Record<string, unknown> = {
           situacao: grupo,
           grupo_override: null,
@@ -809,9 +818,11 @@ export function usePdn(mes: string) {
       await Promise.all([loadDeals(), loadEntries()]);
       return;
     }
-    // Fallback (sem pipeline): grava overlay
+    // Fallback (sem pipeline): grava overlay (apenas grupos PDN válidos)
+    if (isPreVisita) return;
     await saveOverride(row, { grupoOverride: grupo === row.grupoOrigem ? null : grupo, caiu: false });
   }, [saveOverride, loadEntries, loadDeals, user?.id]);
+
 
   // ── Descartar (reengajável) via PDN → altera lead real ────────────────────────
   const descartarLead = useCallback(async (row: PdnRow, motivo: string) => {

@@ -10,8 +10,17 @@ import { supabase } from "@/integrations/supabase/client";
 import type { PdnGrupo, PdnRow } from "@/hooks/usePdn";
 import { toast } from "sonner";
 
-// PDN grupo → tipo de pipeline_stages
-const GRUPO_TO_STAGE_TIPO: Record<Exclude<PdnGrupo, "caidos">, string> = {
+// Destinos válidos p/ regressão via PDN — inclui etapas pré-visita
+// que não são grupos do PDN mas são stages reais do pipeline.
+export type PdnDestino =
+  | Exclude<PdnGrupo, "caidos">
+  | "qualificacao"
+  | "aquecimento";
+
+// PDN destino → tipo de pipeline_stages
+const GRUPO_TO_STAGE_TIPO: Record<PdnDestino, string> = {
+  qualificacao: "qualificacao",
+  aquecimento: "aquecimento",
   visita_realizada: "visita",
   em_negociacao: "proposta",
   contrato: "contrato_gerado",
@@ -19,19 +28,22 @@ const GRUPO_TO_STAGE_TIPO: Record<Exclude<PdnGrupo, "caidos">, string> = {
 };
 
 // PDN grupo → fase canônica do negócio (pós-consolidação 07/2026).
-const GRUPO_TO_FASE: Partial<Record<PdnGrupo, string>> = {
+const GRUPO_TO_FASE: Partial<Record<PdnDestino, string>> = {
   em_negociacao: "em_negociacao",
   contrato: "contrato",
   ganho: "ganho",
 };
 
-const GRUPO_LABEL: Record<PdnGrupo, string> = {
+const GRUPO_LABEL: Record<PdnDestino | "caidos", string> = {
+  qualificacao: "Qualificação",
+  aquecimento: "Aquecimento",
   visita_realizada: "Visita Realizada",
   em_negociacao: "Em Negociação",
   contrato: "Contrato",
   ganho: "Ganho",
   caidos: "Caídos",
 };
+
 
 async function notifyBroker(
   row: PdnRow,
@@ -84,7 +96,7 @@ async function resolvePipelineLeadId(row: PdnRow): Promise<string | null> {
 // ── 1) Sincroniza etapa PDN → pipeline_leads + negocios ──────────────────────
 export async function syncPipelineStageFromPdn(
   row: PdnRow,
-  grupo: Exclude<PdnGrupo, "caidos">,
+  grupo: PdnDestino,
   userId: string | null,
   opts?: { motivo?: string },
 ): Promise<{ negocioId: string | null; pipelineLeadId: string | null } | null> {
@@ -95,6 +107,7 @@ export async function syncPipelineStageFromPdn(
   }
   const nowIso = new Date().toISOString();
   const stageTipo = GRUPO_TO_STAGE_TIPO[grupo];
+
 
   // resolve stage_id destino
   const { data: stageRow, error: stageErr } = await supabase
@@ -127,7 +140,10 @@ export async function syncPipelineStageFromPdn(
   // A trigger BEFORE UPDATE `trg_clear_negocio_on_stage_regress` limpa
   // NEW.negocio_id e arquiva o negócio automaticamente.
   const destinoOrdem = (stageRow as any).ordem as number | null;
-  const isRegressao = grupo === "visita_realizada" && destinoOrdem != null && destinoOrdem < 5;
+  const isRegressao =
+    (grupo === "visita_realizada" || grupo === "qualificacao" || grupo === "aquecimento") &&
+    destinoOrdem != null && destinoOrdem < 5;
+
 
   const updatePayload: Record<string, unknown> = {
     ultima_acao_at: nowIso,

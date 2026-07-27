@@ -7,8 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Undo2 } from "lucide-react";
 import type { PdnGrupo, PdnRow } from "@/hooks/usePdn";
+import type { PdnDestino } from "@/lib/pdnSyncEngine";
 
-const GRUPO_LABEL: Record<PdnGrupo, string> = {
+const GRUPO_LABEL: Record<PdnDestino | "caidos", string> = {
+  qualificacao: "Qualificação",
+  aquecimento: "Aquecimento",
   visita_realizada: "Visita Realizada",
   em_negociacao: "Em Negociação",
   contrato: "Contrato",
@@ -17,13 +20,14 @@ const GRUPO_LABEL: Record<PdnGrupo, string> = {
 };
 
 // Ordem canônica ascendente. Só regride PARA etapas anteriores à atual.
-const ORDER: PdnGrupo[] = ["visita_realizada", "em_negociacao", "contrato", "ganho"];
+const ORDER: PdnDestino[] = ["qualificacao", "aquecimento", "visita_realizada", "em_negociacao", "contrato", "ganho"];
 
 interface Props {
   row: PdnRow | null;
   onClose: () => void;
-  onConfirm: (grupoDestino: PdnGrupo, motivo: string) => void;
+  onConfirm: (grupoDestino: PdnDestino, motivo: string) => void;
 }
+
 
 /**
  * Diálogo de regressão de etapa no PDN.
@@ -34,14 +38,15 @@ interface Props {
 export function PdnRegredirDialog({ row, onClose, onConfirm }: Props) {
   const grupoAtual = row?.grupo ?? null;
 
-  const opcoes = useMemo<PdnGrupo[]>(() => {
-    if (!grupoAtual) return [];
-    const idx = ORDER.indexOf(grupoAtual);
+  const opcoes = useMemo<PdnDestino[]>(() => {
+    if (!grupoAtual || grupoAtual === "caidos") return [];
+    const idx = ORDER.indexOf(grupoAtual as PdnDestino);
     if (idx <= 0) return [];
     return ORDER.slice(0, idx).reverse(); // etapa imediatamente anterior primeiro
   }, [grupoAtual]);
 
-  const [destino, setDestino] = useState<PdnGrupo | null>(null);
+  const [destino, setDestino] = useState<PdnDestino | null>(null);
+
   const [motivo, setMotivo] = useState("");
 
   useEffect(() => {
