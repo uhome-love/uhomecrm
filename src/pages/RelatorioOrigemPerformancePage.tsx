@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { FileDown, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import RelatorioOrigemPerformance from "@/components/relatorios/RelatorioOrigemPerformance";
 import type { ReportFilters } from "@/components/relatorios/reportUtils";
+import { formatBRT } from "@/lib/brtTime";
 
 const PILLS: Array<{ id: string; label: string }> = [
   { id: "hoje", label: "Hoje" },
@@ -10,14 +13,17 @@ const PILLS: Array<{ id: string; label: string }> = [
 ];
 
 /**
- * Relatório de Performance por Origem — página dedicada, somente leitura.
- * Cruza origem/campanha/conjunto/criativo/plataforma com qualidade (por exclusão),
- * visita, venda e tempo até 1º contato. Não altera nenhum dado do CRM.
+ * Dados Anúncios — dashboard de rastreamento de mídia paga.
+ * Cruza campanha/conjunto/criativo/formulário/plataforma com qualidade,
+ * visita, venda e tempo até 1º contato. Somente leitura.
+ * Export PDF em A4 paisagem via html2canvas + jsPDF.
  */
-export default function RelatorioOrigemPerformancePage() {
+export default function DadosAnunciosPage() {
   const [periodo, setPeriodo] = useState<string>("mes");
   const [de, setDe] = useState<string>("");
   const [ate, setAte] = useState<string>("");
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const filters: ReportFilters = {
     periodo,
@@ -26,6 +32,83 @@ export default function RelatorioOrigemPerformancePage() {
     equipe: "",
     corretor: "",
     segmento: "",
+  };
+
+  const exportPdf = async () => {
+    const target = contentRef.current;
+    if (!target) return;
+    setExportingPdf(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(target, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+      });
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+      const A4_W = 297;
+      const A4_H = 210;
+      const MARGIN = 10;
+      const contentW = A4_W - MARGIN * 2;
+      const contentH = A4_H - MARGIN * 2 - 8; // leave room for header/footer
+
+      // Cover
+      pdf.setFontSize(20);
+      pdf.setTextColor(20);
+      pdf.text("Dados Anúncios", MARGIN, 25);
+      pdf.setFontSize(11);
+      pdf.setTextColor(90);
+      const periodoLabel = periodo === "custom" && de && ate
+        ? `${de} → ${ate}`
+        : PILLS.find((p) => p.id === periodo)?.label ?? periodo;
+      pdf.text(`Período: ${periodoLabel}`, MARGIN, 34);
+      pdf.text(`Gerado em: ${formatBRT(new Date(), "dd/MM/yyyy HH:mm")} (BRT)`, MARGIN, 41);
+      pdf.setDrawColor(220);
+      pdf.line(MARGIN, 46, A4_W - MARGIN, 46);
+      pdf.setFontSize(9);
+      pdf.setTextColor(140);
+      pdf.text("Uhome Sales · Rastreamento de mídia paga", MARGIN, A4_H - 6);
+
+      // Slice canvas into landscape pages
+      const pxPerMm = canvas.width / contentW;
+      const sliceHpx = Math.floor(contentH * pxPerMm);
+      let offset = 0;
+      while (offset < canvas.height) {
+        const sliceH = Math.min(sliceHpx, canvas.height - offset);
+        const slice = document.createElement("canvas");
+        slice.width = canvas.width;
+        slice.height = sliceH;
+        const ctx = slice.getContext("2d");
+        if (!ctx) break;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, slice.width, slice.height);
+        ctx.drawImage(canvas, 0, offset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+
+        pdf.addPage();
+        const imgH = sliceH / pxPerMm;
+        pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", MARGIN, MARGIN, contentW, imgH);
+        offset += sliceH;
+      }
+
+      const total = pdf.getNumberOfPages();
+      for (let i = 1; i <= total; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(9);
+        pdf.setTextColor(140);
+        pdf.text(`Página ${i} de ${total}`, A4_W - MARGIN, A4_H - 6, { align: "right" });
+      }
+
+      pdf.save(`dados-anuncios-${formatBRT(new Date(), "yyyy-MM-dd-HHmm")}.pdf`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao gerar PDF");
+    } finally {
+      setExportingPdf(false);
+    }
   };
 
   return (
@@ -59,8 +142,21 @@ export default function RelatorioOrigemPerformancePage() {
             <input type="date" value={ate} onChange={(e) => setAte(e.target.value)} style={{ border: "0.5px solid #e5e7eb", borderRadius: 8, padding: "5px 8px", fontSize: 12 }} />
           </div>
         )}
+        <button
+          onClick={exportPdf}
+          disabled={exportingPdf}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: "#111827", color: "#fff", border: "none",
+            borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: exportingPdf ? "wait" : "pointer",
+            opacity: exportingPdf ? 0.6 : 1,
+          }}
+        >
+          {exportingPdf ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
+          PDF A4 paisagem
+        </button>
       </div>
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: 16 }} ref={contentRef}>
         <RelatorioOrigemPerformance filters={filters} userRole="admin" />
       </div>
     </div>
