@@ -16,13 +16,13 @@ export type ResultadoVisita =
   | "continuar_visitando";
 
 export const RESULTADO_OPTIONS: { value: ResultadoVisita; label: string; emoji: string; desc: string }[] = [
-  { value: "gostou_quer_proposta", label: "Quer proposta", emoji: "🔥", desc: "→ Em Negociação" },
-  { value: "continuar_visitando", label: "Continuar visitando", emoji: "🏠", desc: "Visitar mais imóveis" },
-  { value: "quer_ver_outro", label: "Ver outras opções", emoji: "🔎", desc: "→ Qualificação" },
-  { value: "gostou_vai_pensar", label: "Vai pensar", emoji: "🤔", desc: "→ Aquecimento" },
-  { value: "nao_gostou", label: "Não gostou", emoji: "👎", desc: "→ Descarte" },
+  { value: "gostou_quer_proposta", label: "Quer proposta", emoji: "🔥", desc: "→ Pós-Visita (alinhar c/ gerente)" },
+  { value: "continuar_visitando", label: "Continuar visitando", emoji: "🏠", desc: "→ Pós-Visita" },
+  { value: "quer_ver_outro", label: "Ver outras opções", emoji: "🔎", desc: "→ Pós-Visita" },
+  { value: "gostou_vai_pensar", label: "Vai pensar", emoji: "🤔", desc: "→ Pós-Visita" },
+  { value: "nao_gostou", label: "Não gostou", emoji: "👎", desc: "→ Pós-Visita (descarte sugerido)" },
   { value: "reagendar", label: "Reagendar", emoji: "🔄", desc: "→ Visita marcada" },
-  { value: "nao_compareceu", label: "Não compareceu", emoji: "👻", desc: "→ No-show" },
+  { value: "nao_compareceu", label: "Não compareceu", emoji: "👻", desc: "→ Aquecimento" },
 ];
 
 export const RESULTADO_LABELS: Record<string, string> = Object.fromEntries(
