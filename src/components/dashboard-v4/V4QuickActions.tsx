@@ -22,7 +22,7 @@ const toneMap = {
 } as const;
 
 const baseActions: ActionDef[] = [
-  { label: "Pipeline Negócios", to: "/negocios", icon: Briefcase, tone: "success" },
+  { label: "Pipeline Negócios", to: "/pipeline-leads", icon: Briefcase, tone: "success" },
   { label: "Pipeline Leads", to: "/pipeline", icon: Users, tone: "primary" },
   { label: "Oferta Ativa", to: "/oferta-ativa", icon: Megaphone, tone: "warning" },
 ];
