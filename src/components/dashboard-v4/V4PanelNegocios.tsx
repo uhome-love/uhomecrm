@@ -13,11 +13,11 @@ interface Props {
   gestorId: string | undefined;
 }
 
+// Fases canônicas do RPC get_dashboard_gerente_v4_dia (emite em_negociacao e contrato — WIP apenas).
 const BORDER_BY_FASE: Record<string, string> = {
-  novo_negocio: "border-l-slate-400",
-  proposta: "border-l-indigo-500",
-  negociacao: "border-l-amber-500",
-  documentacao: "border-l-emerald-500",
+  em_negociacao: "border-l-amber-500",
+  contrato: "border-l-purple-500",
+  ganho: "border-l-emerald-500",
 };
 
 const formatVgvShort = (v: number) => fmtMoney(v, "short");

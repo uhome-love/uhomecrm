@@ -45,7 +45,6 @@ type SortDir = "asc" | "desc";
 
 function faseToStatus(fase: string): string {
   if (fase === "ganho") return "Confirmada";
-  if (fase === "distrato") return "Caiu";
   return fase;
 }
 

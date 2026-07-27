@@ -40,14 +40,11 @@ interface NegocioRender {
 type SortCol = "cliente" | "empreendimento" | "corretor" | "faseLabel" | "vgv" | "data";
 type SortDir = "asc" | "desc";
 
+// Fases canônicas (pós-consolidação 07/2026). Perdido vive em `status`, não em `fase`.
 const FASES: Array<{ fase: string; label: string; color: string; bg: string }> = [
-  { fase: "em_negociacao", label: "Novo negócio", color: "#1e40af", bg: "#dbeafe" },
-  { fase: "em_negociacao", label: "Proposta", color: "#92400e", bg: "#fef3c7" },
-  { fase: "em_negociacao", label: "Negociação", color: "#9a3412", bg: "#fed7aa" },
-  { fase: "em_negociacao", label: "Documentação", color: "#5b21b6", bg: "#ede9fe" },
-  { fase: "ganho", label: "Vendido", color: "#065f46", bg: "#d1fae5" },
-  { fase: "perdido", label: "Perdido", color: "#991b1b", bg: "#fee2e2" },
-  { fase: "distrato", label: "Caiu", color: "#6b7280", bg: "#f3f4f6" },
+  { fase: "em_negociacao", label: "Em Negociação", color: "#92400e", bg: "#fef3c7" },
+  { fase: "contrato", label: "Contrato", color: "#5b21b6", bg: "#ede9fe" },
+  { fase: "ganho", label: "Ganho", color: "#065f46", bg: "#d1fae5" },
 ];
 
 const FASE_MAP = new Map(FASES.map((f) => [f.fase, f]));
@@ -87,7 +84,7 @@ export default function RelatorioNegocios({ filters }: Props) {
       let rows = await fetchAllRows<NegocioRow>((from, to) => {
         let q = supabase
           .from("negocios")
-          .select("id, empreendimento, fase, vgv_final, vgv_estimado, data_assinatura, corretor_id, pipeline_lead_id, nome_cliente, created_at, fase_changed_at")
+          .select("id, empreendimento, fase, status, vgv_final, vgv_estimado, data_assinatura, corretor_id, pipeline_lead_id, nome_cliente, created_at, fase_changed_at")
           .gte("created_at", s.toISOString())
           .lte("created_at", e.toISOString());
         if (corretorProfileId) q = q.eq("corretor_id", corretorProfileId);
@@ -135,6 +132,7 @@ export default function RelatorioNegocios({ filters }: Props) {
           empreendimento: r.empreendimento || "—",
           corretor: r.corretor_id ? nameMap.get(r.corretor_id) || "—" : "—",
           fase: r.fase,
+          status: (r as any).status || "ativo",
           faseLabel: f?.label || r.fase,
           vgv: Math.round(r.vgv_final ?? r.vgv_estimado ?? 0),
           data: r.data_assinatura || r.created_at.slice(0, 10),
@@ -153,9 +151,10 @@ export default function RelatorioNegocios({ filters }: Props) {
   }, [startDate, endDate, prev.startDate, prev.endDate, filters.corretor, filters.equipe, filters.segmento]);
 
   const total = negocios.length;
-  const ativos = negocios.filter((n) => !["ganho", "perdido", "distrato"].includes(n.fase)).length;
+  // "Ativos" = WIP no board (não ganhos, não perdidos/arquivados).
+  const ativos = negocios.filter((n) => n.status === "ativo" && n.fase !== "ganho").length;
   const vendidos = negocios.filter((n) => n.fase === "ganho").length;
-  const vgvPipeline = negocios.filter((n) => !["ganho", "perdido", "distrato"].includes(n.fase)).reduce((a, n) => a + n.vgv, 0);
+  const vgvPipeline = negocios.filter((n) => n.status === "ativo" && n.fase !== "ganho").reduce((a, n) => a + n.vgv, 0);
 
   function pctVar(curr: number, prev2: number): string {
     if (prev2 === 0 && curr === 0) return "";
