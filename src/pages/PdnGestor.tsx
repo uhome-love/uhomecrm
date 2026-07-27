@@ -735,11 +735,10 @@ export default function PdnGestor() {
 
       <PdnRegredirDialog
         row={regredirRow?.row ?? null}
-        destino={regredirRow?.destino ?? null}
         onClose={() => setRegredirRow(null)}
-        onConfirm={(motivo) => {
+        onConfirm={(destino, motivo) => {
           if (!regredirRow) return;
-          mudarEtapa(regredirRow.row, regredirRow.destino, { motivo });
+          mudarEtapa(regredirRow.row, destino, { motivo });
           setRegredirRow(null);
         }}
       />
