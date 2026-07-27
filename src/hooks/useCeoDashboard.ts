@@ -450,10 +450,14 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
       // MIGRATED: Use auth_user_id for negocios instead of profile_id lookup
       const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
-        supabase.from("visitas").select("id, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
-        supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
+        supabase.from("visitas").select("id, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
+        supabase.from("visitas").select("id, status, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
         supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "ganho").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
       ]);
+      // Excluir backfills de conciliação (origem 'backfill_*') dos placares diários/janela
+      const filterNoBackfill = (rows: any[] | null) => (rows || []).filter(r => !String(r?.origem || "").startsWith("backfill_"));
+      const visMarcadasClean = filterNoBackfill(allVisMarcadas);
+      const visRealizadasClean = filterNoBackfill(allVisRealizadas);
 
       // Paginated tentativas
       let allTent: any[] = [];
@@ -479,8 +483,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const tent = allTent.filter(t => t.corretor_id === uid);
           const lig = tent.length;
           const aprov = tent.filter(t => t.resultado === "com_interesse").length;
-          const vm = (allVisMarcadas || []).filter(v => v.corretor_id === uid).length;
-          const vr = (allVisRealizadas || []).filter(v => v.corretor_id === uid && v.status === "realizada").length;
+          const vm = visMarcadasClean.filter(v => v.corretor_id === uid).length;
+          const vr = visRealizadasClean.filter(v => v.corretor_id === uid && v.status === "realizada").length;
           // MIGRATED: Use auth_user_id directly (no profile_id conversion needed)
           const neg = (allNeg || []).filter(n => n.auth_user_id === uid);
           const prop = neg.filter(n => n.fase === "em_negociacao" || n.fase === "em_negociacao").length;
@@ -513,8 +517,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const startTs = `${range.start}T00:00:00`;
       const endTs = `${range.end}T23:59:59`;
       const [{ data: visMarcadas }, { data: visRealizadas }] = await Promise.all([
-        supabase.from("visitas").select("empreendimento").gte("created_at", startTs).lte("created_at", endTs).not("status", "eq", "cancelada"),
-        supabase.from("visitas").select("empreendimento").gte("data_visita", range.start).lte("data_visita", range.end).eq("status", "realizada"),
+        supabase.from("visitas").select("empreendimento").gte("created_at", startTs).lte("created_at", endTs).not("status", "eq", "cancelada").not("origem", "like", "backfill_%"),
+        supabase.from("visitas").select("empreendimento").gte("data_visita", range.start).lte("data_visita", range.end).eq("status", "realizada").not("origem", "like", "backfill_%"),
       ]);
       const empMap = new Map<string, { marcadas: number; realizadas: number }>();
       for (const v of (visMarcadas || [])) {
@@ -545,7 +549,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       // NOTE: leads counts (marketing / OA / enviadosRoleta) come from pipelineData
       // to guarantee identical classification with charts. Here we only fetch ancillary KPIs.
       const [{ count: visitasCriadasCount }, { count: novoInteresseCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
-        supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada"),
+        supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada").not("origem", "like", "backfill_%"),
         supabase.from("campaign_clicks").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).eq("lead_action", "updated"),
         supabase.from("roleta_credenciamentos").select("corretor_id").eq("data", hoje).in("status", ["aprovado", "saiu"]),
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
