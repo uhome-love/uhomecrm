@@ -37,6 +37,7 @@ interface VendaRow {
   fase: string | null;
   created_at: string | null;
   pipeline_lead_id: string | null;
+  observacoes: string | null;
 }
 
 interface PartnerInfo {
