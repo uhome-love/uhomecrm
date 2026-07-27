@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { resolveFormName } from "@/lib/metaFormIdMap";
 import { toast } from "sonner";
+import { EditarVendaDrawer } from "@/components/vendas/EditarVendaDrawer";
 
 const formatCurrency = (v: number) => fmtMoney(v, "short");
 const formatVgvExact = (v: number) => fmtMoney(v, "exact");
@@ -37,6 +38,7 @@ interface VendaRow {
   fase: string | null;
   created_at: string | null;
   pipeline_lead_id: string | null;
+  observacoes: string | null;
 }
 
 interface PartnerInfo {
@@ -222,6 +224,7 @@ export default function VendasRealizadas() {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [periodMode, setPeriodMode] = useState<"mes" | "ano">("mes");
   const [activeTab, setActiveTab] = useState<"vendas" | "origens">("vendas");
+  const [editingVenda, setEditingVenda] = useState<VendaRow | null>(null);
 
   const mesStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
 
@@ -250,7 +253,7 @@ export default function VendasRealizadas() {
       let extraPartnerRows: VendaRow[] = [];
 
       let query = supabase.from("negocios")
-        .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
+        .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
         .eq("fase", "vendido")
         .gte("data_assinatura", dateRange.start)
         .lte("data_assinatura", dateRange.end)
@@ -264,7 +267,7 @@ export default function VendasRealizadas() {
         const partnerDealIds = (partnerDeals || []).map(d => d.id as string);
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
-            .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
+            .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
             .in("id", partnerDealIds).eq("fase", "vendido");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
@@ -287,7 +290,7 @@ export default function VendasRealizadas() {
 
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
-            .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
+            .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
             .in("id", partnerDealIds).eq("fase", "vendido");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
@@ -475,6 +478,16 @@ export default function VendasRealizadas() {
   // Dono (auth id) de cada venda
   const ownerAuthId = (v: VendaRow): string | null => (v.corretor_id ? profileIdToAuthId[v.corretor_id] || null : null);
 
+  // Pode editar? admin/gestor sempre; corretor só se for dono ou parceiro.
+  const canEditVenda = (v: VendaRow): boolean => {
+    if (isAdmin || isGestor) return true;
+    if (!user) return false;
+    const oid = ownerAuthId(v);
+    if (oid && oid === user.id) return true;
+    const parceria = v.pipeline_lead_id ? parceriaPartners[v.pipeline_lead_id] : null;
+    return !!(parceria?.auth_user_ids.includes(user.id));
+  };
+
   // Faturamento (soma das comissões visíveis no período)
   const faturamento = useMemo(() => {
     let total = 0;
@@ -599,6 +612,7 @@ export default function VendasRealizadas() {
   ];
 
   return (
+    <>
     <div className="bg-background p-4 sm:p-6 -m-6 min-h-full space-y-4">
       {/* ═══════ HEADER ═══════ */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -767,7 +781,8 @@ export default function VendasRealizadas() {
                           const comissaoVal = oid ? (comissaoMap[`${v.id}:${oid}`] ?? null) : null;
                           return (
                             <motion.tr key={v.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.02 * i }}
-                              className="border-b border-border/20 hover:bg-accent/40 transition-colors">
+                              onClick={() => setEditingVenda(v)}
+                              className="group border-b border-border/20 hover:bg-accent/40 transition-colors cursor-pointer">
                               <td className="py-3 px-3">
                                 <div className="flex items-center gap-2">
                                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 shrink-0"><CheckCircle className="h-3.5 w-3.5" /></div>
@@ -826,7 +841,7 @@ export default function VendasRealizadas() {
                               <td className="py-3 px-3 text-center">
                                 <span className="text-xs text-muted-foreground">{v.data_assinatura ? format(new Date(v.data_assinatura + "T12:00:00"), "dd/MM/yy") : "—"}</span>
                               </td>
-                              <td className="py-3 px-3 text-right">
+                              <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
                                 <ComissaoCell value={comissaoVal} editable={editable} onSave={(val) => saveComissao(v.id, val)} />
                               </td>
                             </motion.tr>
@@ -854,7 +869,7 @@ export default function VendasRealizadas() {
                     const editable = !!oid && oid === user?.id;
                     const comissaoVal = oid ? (comissaoMap[`${v.id}:${oid}`] ?? null) : null;
                     return (
-                      <div key={v.id} className="rounded-[10px] border border-border bg-accent/20 p-3">
+                      <div key={v.id} onClick={() => setEditingVenda(v)} className="rounded-[10px] border border-border bg-accent/20 p-3 cursor-pointer active:bg-accent/40">
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 shrink-0"><CheckCircle className="h-3 w-3" /></div>
@@ -870,7 +885,9 @@ export default function VendasRealizadas() {
                             {(isAdmin || isGestor) && corr && <span className="text-[11px] text-muted-foreground truncate">{corr.nome.split(" ")[0]}</span>}
                             <span className="text-[10px] text-muted-foreground">{v.data_assinatura ? format(new Date(v.data_assinatura + "T12:00:00"), "dd/MM/yy") : "—"}</span>
                           </div>
-                          <ComissaoCell value={comissaoVal} editable={editable} onSave={(val) => saveComissao(v.id, val)} compact />
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <ComissaoCell value={comissaoVal} editable={editable} onSave={(val) => saveComissao(v.id, val)} compact />
+                          </div>
                         </div>
                       </div>
                     );
@@ -977,5 +994,13 @@ export default function VendasRealizadas() {
         </div>
       )}
     </div>
+
+    <EditarVendaDrawer
+      open={!!editingVenda}
+      onOpenChange={(o) => { if (!o) setEditingVenda(null); }}
+      venda={editingVenda}
+      canEdit={!!editingVenda && canEditVenda(editingVenda)}
+    />
+    </>
   );
 }
