@@ -174,6 +174,7 @@ export function getLeadSubstatusBadge(
     case "visita": {
       const map: Record<string, SubstatusBadge> = {
         marcada: { label: "📅 Visita marcada", className: PILL.indigo },
+        confirmada: { label: "✅ Confirmada", className: PILL.emerald },
         realizada: { label: "✅ Visita realizada", className: PILL.emerald },
         pos_visita: { label: "📋 Pós-visita", className: PILL.purple },
         no_show: { label: "👻 No-show", className: PILL.red },
@@ -252,7 +253,9 @@ export const AQUECIMENTO_SUBSTATUS: SubstatusOption[] = [
 /** Etapa Visita → flag_status.status_visita (sincronizado com a agenda) */
 export const VISITA_SUBSTATUS: SubstatusOption[] = [
   { value: "marcada", label: "📅 Visita marcada" },
+  { value: "confirmada", label: "✅ Confirmada" },
   { value: "realizada", label: "✅ Visita realizada" },
+  { value: "reagendada", label: "🔁 Reagendada" },
   { value: "no_show", label: "👻 No-show" },
 ];
 

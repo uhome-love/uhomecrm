@@ -40,6 +40,7 @@ import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { PdnRegredirDialog } from "@/components/pdn/PdnRegredirDialog";
+import { ConferenciaVisitasMes } from "@/components/pdn/ConferenciaVisitasMes";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
 
@@ -566,12 +567,12 @@ export default function PdnGestor() {
         onExport={exportCSV}
       />
 
-      {view !== "meta" && (
+      {view !== "meta" && view !== "visitas" && (
         <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
       )}
 
-      {/* Toolbar unificada — só faz sentido em Planilha/Kanban (não em Meta) */}
-      {view !== "meta" && (
+      {/* Toolbar unificada — só faz sentido em Planilha/Kanban (não em Meta/Visitas) */}
+      {view !== "meta" && view !== "visitas" && (
         <PdnToolbar
           filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
           setFilters={(patch) => {
@@ -650,6 +651,11 @@ export default function PdnGestor() {
         </div>
       ) : view === "meta" ? (
         <PdnMetaMes mes={mes} rows={rows} />
+      ) : view === "visitas" ? (
+        <ConferenciaVisitasMes mes={mes} onOpenLead={(leadId) => {
+          const r = [...rows, ...hiddenRows].find(x => x.pipelineLeadId === leadId);
+          if (r) setSelectedRow(r);
+        }} />
       ) : view === "arquivados" ? (
         <ArquivadosView
           hiddenRows={hiddenRows}
