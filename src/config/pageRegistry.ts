@@ -142,6 +142,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/scripts":               { key: "scripts",              label: "Scripts",             icon: "Lightbulb" },
   "/relatorios":            { key: "relatorios",           label: "Relatórios 1:1",      icon: "FileText",      roles: ["gestor", "admin", "diretor"] },
   "/ranking":               { key: "ranking",              label: "Performance",         icon: "Star" },
+  "/performance":           { key: "ranking",              label: "Performance",         icon: "Star" },
   "/meu-time":              { key: "meu-time",             label: "Meu Time",            icon: "Users",         roles: ["gestor", "admin", "diretor"] },
   "/oferta-ativa":          { key: "oferta-ativa",         label: "Oferta Ativa",        icon: "Phone" },
   "/oferta-ativa-ao-vivo":  { key: "oferta-ativa-ao-vivo", label: "Mutirão Inteligente", icon: "Radio",         noPadding: true },

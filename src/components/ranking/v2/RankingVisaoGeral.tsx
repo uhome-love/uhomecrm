@@ -1,23 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Eye, Briefcase, TrendingUp, Loader2, Trophy, Medal, Award } from "lucide-react";
+import { Eye, Briefcase, TrendingUp, Loader2, Trophy, Medal, Award } from "lucide-react";
 import { fmtMoney } from "@/lib/fmtMoney";
-import { fetchAllRankings, type RankingFilters } from "@/hooks/useRankingsData";
+import type { RankingFilters } from "@/hooks/useRankingsData";
+import { usePerformanceDashboard } from "@/hooks/usePerformance";
+import { useEquipeUserIds, applyEquipeFilter } from "@/hooks/usePerformanceEquipeFilter";
 import DiagnosticoResumoCard from "./DiagnosticoResumoCard";
 
-/** Animated count-up number */
 function CountUp({ value, format }: { value: number; format?: (n: number) => string }) {
   const [display, setDisplay] = useState(0);
   const raf = useRef<number>();
   useEffect(() => {
     const start = performance.now();
-    const from = 0;
     const dur = 700;
     const tick = (t: number) => {
       const p = Math.min((t - start) / dur, 1);
       const eased = 1 - Math.pow(1 - p, 3);
-      setDisplay(from + (value - from) * eased);
+      setDisplay(value * eased);
       if (p < 1) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
@@ -39,12 +38,8 @@ export default function RankingVisaoGeral({
   filters: RankingFilters;
   currentUserId?: string;
 }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ["ranking-visao-geral", filters],
-    queryFn: () => fetchAllRankings(filters),
-    staleTime: 60_000,
-    refetchInterval: 60_000, // atualização sutil ao vivo
-  });
+  const { data, isLoading } = usePerformanceDashboard(filters.start, filters.end);
+  const { data: equipeIds } = useEquipeUserIds(filters.equipeId);
 
   if (isLoading || !data) {
     return (
@@ -54,27 +49,27 @@ export default function RankingVisaoGeral({
     );
   }
 
-  const totalLeads = data.presencas.reduce((s, r) => s + (r.leads_recebidos || 0), 0);
-  const totalVisitas = data.visitas.reduce((s, r) => s + (r.realizadas || 0), 0);
-  const totalAssinados = data.negocios.reduce((s, r) => s + (r.assinados || 0), 0);
-  const totalVgv = data.negocios.reduce((s, r) => s + (r.vgv_assinado || 0), 0);
+  const ranking = applyEquipeFilter(data.ranking, filters.equipeId ? equipeIds : undefined);
+
+  const totalVisitas = ranking.reduce((s, r) => s + (r.qtd_visitas_realizadas || 0), 0);
+  const totalGanhos = ranking.reduce((s, r) => s + (r.qtd_ganho || 0), 0);
+  const totalVgv = ranking.reduce((s, r) => s + (r.vgv_vendido || 0), 0);
 
   const cards = [
-    { label: "Leads recebidos", value: totalLeads, icon: Users, color: "text-blue-600", bg: "from-blue-500/10" },
     { label: "Visitas realizadas", value: totalVisitas, icon: Eye, color: "text-amber-600", bg: "from-amber-500/10" },
-    { label: "Negócios assinados", value: totalAssinados, icon: Briefcase, color: "text-emerald-600", bg: "from-emerald-500/10" },
+    { label: "Negócios ganhos", value: totalGanhos, icon: Briefcase, color: "text-emerald-600", bg: "from-emerald-500/10" },
     { label: "VGV assinado", value: totalVgv, icon: TrendingUp, color: "text-primary", bg: "from-primary/10", money: true },
   ];
 
-  const podium = [...data.negocios]
-    .filter((r) => r.vgv_assinado > 0)
-    .sort((a, b) => b.vgv_assinado - a.vgv_assinado)
+  const podium = [...ranking]
+    .filter((r) => r.vgv_vendido > 0)
+    .sort((a, b) => b.vgv_vendido - a.vgv_vendido)
     .slice(0, 5);
 
   return (
     <div className="space-y-5">
-      <DiagnosticoResumoCard inicio={filters.start} fim={filters.end} />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <DiagnosticoResumoCard inicio={filters.start} fim={filters.end} equipeId={filters.equipeId} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {cards.map((c, i) => (
           <motion.div
             key={c.label}
@@ -102,10 +97,10 @@ export default function RankingVisaoGeral({
           <ul className="space-y-2">
             {podium.map((r, i) => {
               const m = MEDAL[i];
-              const isMe = currentUserId && r.user_id === currentUserId;
+              const isMe = currentUserId && r.auth_user_id === currentUserId;
               return (
                 <motion.li
-                  key={r.user_id}
+                  key={r.auth_user_id}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: i * 0.06 }}
@@ -119,7 +114,7 @@ export default function RankingVisaoGeral({
                   <span className="flex-1 truncate text-sm font-medium text-foreground">
                     {r.nome}{isMe && <span className="text-primary text-xs ml-1">(você)</span>}
                   </span>
-                  <span className="text-sm font-semibold text-foreground tabular-nums">{fmtMoney(r.vgv_assinado, "short")}</span>
+                  <span className="text-sm font-semibold text-foreground tabular-nums">{fmtMoney(r.vgv_vendido, "short")}</span>
                 </motion.li>
               );
             })}

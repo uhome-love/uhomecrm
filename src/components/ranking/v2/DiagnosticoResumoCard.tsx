@@ -1,5 +1,6 @@
 import { AlertTriangle, Clock, XCircle, Layers, PhoneOff, TrendingDown, CalendarX } from "lucide-react";
 import { usePerformanceDashboard, type PerfSeveridade } from "@/hooks/usePerformance";
+import { useEquipeUserIds, applyEquipeFilterDiagnostico } from "@/hooks/usePerformanceEquipeFilter";
 
 const META: Record<PerfSeveridade, { label: string; icon: any; tone: string }> = {
   sla_vermelho:        { label: "SLA vermelho",        icon: Clock,       tone: "text-red-600 bg-red-500/10 border-red-500/30" },
@@ -27,23 +28,29 @@ function detalhe(sev: PerfSeveridade, ctx: any): string {
   }
 }
 
-export default function DiagnosticoResumoCard({ inicio, fim }: { inicio?: string; fim?: string }) {
+export default function DiagnosticoResumoCard({ inicio, fim, equipeId }: { inicio?: string; fim?: string; equipeId?: string }) {
   const { data, isLoading } = usePerformanceDashboard(inicio, fim);
+  const { data: equipeIds } = useEquipeUserIds(equipeId);
 
   if (isLoading || !data) return null;
-  if (!data.diagnostico || data.diagnostico.length === 0) return null;
+  const diagnostico = applyEquipeFilterDiagnostico(
+    data.diagnostico,
+    data.ranking,
+    equipeId ? equipeIds : undefined,
+  );
+  if (!diagnostico || diagnostico.length === 0) return null;
 
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
       <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
-        Diagnóstico · Top {data.diagnostico.length}
+        Diagnóstico · Top {diagnostico.length}
         <span className="text-xs font-normal text-muted-foreground ml-auto">
           Sinais que exigem atenção neste período
         </span>
       </h3>
       <ul className="space-y-2">
-        {data.diagnostico.map((d) => {
+        {diagnostico.map((d) => {
           const m = META[d.severidade];
           const Icon = m.icon;
           return (
