@@ -12838,6 +12838,10 @@ export type Database = {
               isSetofReturn: true
             }
           }
+      rpc_perf_dashboard: {
+        Args: { p_fim?: string; p_inicio?: string }
+        Returns: Json
+      }
       rpc_placar_do_dia: { Args: never; Returns: Json }
       rpc_placar_mutirao: { Args: { p_sessao_id?: string }; Returns: Json }
       set_corretor_alocacao: {
