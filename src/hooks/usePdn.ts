@@ -163,10 +163,10 @@ interface PipelineDeal {
   dataAssinatura: string | null;
   primeiraVendaEm: string | null; // 1ª entrada na etapa de venda (histórico) — fallback estável
   observacoesNegocio: string;
-  negocioVendido: boolean; // negocios.fase === 'vendido' (fonte de Vendas Realizadas)
+  negocioVendido: boolean; // negocios.fase === 'ganho' (fonte de Vendas Realizadas)
 }
 
-// Venda do mês (negocios.fase='vendido') — usada como fallback para o PDN mostrar
+// Venda do mês (negocios.fase='ganho') — usada como fallback para o PDN mostrar
 // SEMPRE como Ganho, mesmo que a etapa do lead no pipeline esteja atrasada ou o lead
 // esteja arquivado. Garante PDN Ganho == Vendas Realizadas.
 interface VendaMes {
@@ -311,7 +311,7 @@ export function usePdn(mes: string) {
         dataAssinatura: n?.data_assinatura || null,
         primeiraVendaEm: primeiraVendaByLead[l.id] || null,
         observacoesNegocio: n?.observacoes || "",
-        negocioVendido: n?.fase === "vendido",
+        negocioVendido: n?.fase === "ganho",
       };
     });
     setDeals(dealRows);
@@ -320,7 +320,7 @@ export function usePdn(mes: string) {
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
 
-  // ── Vendas do mês (negocios.fase='vendido') — garante PDN Ganho == Vendas Realizadas ──
+  // ── Vendas do mês (negocios.fase='ganho') — garante PDN Ganho == Vendas Realizadas ──
   // Cobre casos onde o lead está arquivado ou com etapa atrasada no pipeline.
   useEffect(() => {
     if (!user || scopeAuthIds === undefined) return;
@@ -331,7 +331,7 @@ export function usePdn(mes: string) {
       const { data: negs, error } = await supabase
         .from("negocios")
         .select("id, pipeline_lead_id, nome_cliente, empreendimento, vgv_final, vgv_estimado, data_assinatura, observacoes, fase, status")
-        .eq("fase", "vendido")
+        .eq("fase", "ganho")
         .neq("status", "perdido")
         .gte("data_assinatura", inicio)
         .lte("data_assinatura", fim)
@@ -517,7 +517,7 @@ export function usePdn(mes: string) {
       });
     }
 
-    // Fallback: vendas do mês (negocios.fase='vendido') cujo lead está arquivado ou
+    // Fallback: vendas do mês (negocios.fase='ganho') cujo lead está arquivado ou
     // com etapa atrasada e portanto NÃO veio em `deals`. Garante PDN Ganho == Vendas Realizadas.
     const negocioIdsNoOut = new Set(out.map(r => r.negocioId).filter(Boolean) as string[]);
     for (const vd of vendasMes) {

@@ -2,7 +2,7 @@
 // NegocioCard — Card específico de negócio (coluna "Negócio Criado")
 //
 // Visual roxo distintivo (border-left 4px + bg sutil violeta).
-// Badge VENDIDO (verde) quando fase = 'vendido'; AGUARDANDO (âmbar) demais.
+// Badge VENDIDO (verde) quando fase = 'ganho'; AGUARDANDO (âmbar) demais.
 // Click → abre drawer do lead (regra "Tudo no Lead").
 // ─────────────────────────────────────────────────────────────────
 
@@ -37,7 +37,7 @@ const NegocioCard = memo(function NegocioCard({
   onClick,
   onDragStart,
 }: NegocioCardProps) {
-  const isVendido = negocio?.fase === "vendido";
+  const isVendido = negocio?.fase === "ganho";
   const faseInfo = NEGOCIOS_FASES.find((f) => f.key === negocio?.fase);
   const faseLabel = faseInfo?.label ?? "Aguardando";
   const vgv = negocio?.vgv_final ?? negocio?.vgv_estimado ?? 0;

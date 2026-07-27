@@ -90,7 +90,7 @@ export default function ManagerKpiDetailDialog({ open, onOpenChange, type, label
         .from("negocios")
         .select("id, corretor_id, auth_user_id, nome_cliente, fase, vgv_estimado, vgv_final, empreendimento, pipeline_lead_id, created_at")
         .or(teamUserIds.map(id => `corretor_id.eq.${id},auth_user_id.eq.${id}`).join(","))
-        .in("fase", ["assinado", "vendido"])
+        .in("fase", ["ganho"])
         .gte("created_at", `${start}T00:00:00`)
         .lte("created_at", `${end}T23:59:59`)
         .order("created_at", { ascending: false })

@@ -108,7 +108,7 @@ export default function TabEmpresa() {
       const { data: negocios } = await supabase
         .from("negocios")
         .select("auth_user_id, vgv_estimado, vgv_final, fase")
-        .in("fase", ["novo_negocio", "proposta", "negociacao", "documentacao"])
+        .in("fase", ["em_negociacao"])
         .in("auth_user_id", allUserIds);
 
       const negMap: Record<string, { count: number; vgv: number }> = {};

@@ -124,14 +124,14 @@ export function useForecast(): ForecastData {
 
       for (const p of gPdn) {
         const fase = p.fase || "";
-        if (fase === "proposta" || fase === "negociacao" || fase === "documentacao" || fase === "vendido") {
+        if (fase === "em_negociacao" || fase === "em_negociacao" || fase === "em_negociacao" || fase === "ganho") {
           propostas_reais += 1;
         }
-        if (fase === "vendido") {
+        if (fase === "ganho") {
           vendas_reais += 1;
           vgv_real += Number(p.vgv_final ?? p.vgv_estimado ?? 0);
         }
-        if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") {
+        if (fase === "em_negociacao" || fase === "em_negociacao" || fase === "em_negociacao") {
           vgv_gerado += Number(p.vgv_estimado ?? 0);
         }
       }

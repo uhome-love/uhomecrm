@@ -144,7 +144,7 @@ async function ensureNegocio(ctx: RouteLeadContext, negocioIdAtual: string | nul
           gerente_id: profileMap.get(ctx.gerenteId || ctx.userId) || null,
           empreendimento: ctx.empreendimento || null,
           telefone: ctx.telefone || null,
-          fase: "proposta",
+          fase: "em_negociacao",
           origem: "pipeline_convertido",
           vgv_estimado: ctx.valorEstimado || null,
         } as any)

@@ -40,7 +40,7 @@ export default function AddNegocioDialog({ open, onOpenChange, onCreated }: Prop
     telefone: "",
     empreendimento: "",
     corretor_id: "",
-    fase: "novo_negocio",
+    fase: "em_negociacao",
     vgv_estimado: "",
     observacoes: "",
   });
@@ -98,7 +98,7 @@ export default function AddNegocioDialog({ open, onOpenChange, onCreated }: Prop
       if (error) throw error;
 
       toast.success("✅ Negócio criado com sucesso!");
-      setForm({ nome_cliente: "", telefone: "", empreendimento: "", corretor_id: "", fase: "novo_negocio", vgv_estimado: "", observacoes: "" });
+      setForm({ nome_cliente: "", telefone: "", empreendimento: "", corretor_id: "", fase: "em_negociacao", vgv_estimado: "", observacoes: "" });
       onOpenChange(false);
       onCreated?.();
     } catch (err: any) {

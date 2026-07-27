@@ -70,11 +70,11 @@ const COR_ETAPA: Record<string, string> = {
 const ETAPAS_ESCURAS = new Set(["Aquecimento", "Visita", "Pós-Visita", "Negócio Criado"]);
 
 const ETAPAS_NEGOCIO: Array<{ fase: string; label: string; cor: string }> = [
-  { fase: "novo_negocio", label: "Novo Negócio", cor: "#fef3c7" },
-  { fase: "proposta", label: "Proposta", cor: "#fde68a" },
-  { fase: "negociacao", label: "Em Negociação", cor: "#fbbf24" },
-  { fase: "documentacao", label: "Documentação", cor: "#f59e0b" },
-  { fase: "vendido", label: "Venda Realizada", cor: "#10b981" },
+  { fase: "em_negociacao", label: "Novo Negócio", cor: "#fef3c7" },
+  { fase: "em_negociacao", label: "Proposta", cor: "#fde68a" },
+  { fase: "em_negociacao", label: "Em Negociação", cor: "#fbbf24" },
+  { fase: "em_negociacao", label: "Documentação", cor: "#f59e0b" },
+  { fase: "ganho", label: "Venda Realizada", cor: "#10b981" },
   { fase: "perdido", label: "Perdido", cor: "#fca5a5" },
 ];
 
@@ -208,8 +208,8 @@ export default function RelatorioConversao({ filters }: RelatorioConversaoProps)
   const taxaLeadVisita = totalLeads > 0 ? (visitaPlus / totalLeads) * 100 : 0;
   const taxaLeadVenda = totalLeads > 0 ? (negocioCriado / totalLeads) * 100 : 0;
 
-  const negociosAtivos = negocios.filter((n) => n.fase !== "novo_negocio").length;
-  const vendaRealizada = negocios.filter((n) => n.fase === "vendido").length;
+  const negociosAtivos = negocios.filter((n) => n.fase !== "em_negociacao").length;
+  const vendaRealizada = negocios.filter((n) => n.fase === "ganho").length;
   const taxaNegocioVenda = negociosAtivos > 0 ? (vendaRealizada / negociosAtivos) * 100 : 0;
 
   const gargalos = useMemo(() => {

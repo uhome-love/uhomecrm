@@ -124,7 +124,7 @@ export function useNegocioActions(reload?: () => void | Promise<void>) {
       if (data.fields.imovel) updates.empreendimento = data.fields.imovel;
       if (data.fields.empreendimento) updates.empreendimento = data.fields.empreendimento;
       if (data.fields.unidade) updates.unidade = data.fields.unidade;
-      if (data.fase === "vendido") {
+      if (data.fase === "ganho") {
         // Ganho: VGV assinado alimenta vgv_final (fonte canônica de Vendas Realizadas / PDN)
         if (data.fields.vgv) updates.vgv_final = parseFloat(data.fields.vgv);
       } else {
