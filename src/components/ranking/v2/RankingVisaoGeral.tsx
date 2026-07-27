@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Users, Eye, Briefcase, TrendingUp, Loader2, Trophy, Medal, Award } from "lucide-react";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { fetchAllRankings, type RankingFilters } from "@/hooks/useRankingsData";
+import DiagnosticoResumoCard from "./DiagnosticoResumoCard";
 
 /** Animated count-up number */
 function CountUp({ value, format }: { value: number; format?: (n: number) => string }) {
@@ -72,6 +73,7 @@ export default function RankingVisaoGeral({
 
   return (
     <div className="space-y-5">
+      <DiagnosticoResumoCard inicio={filters.start} fim={filters.end} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {cards.map((c, i) => (
           <motion.div
