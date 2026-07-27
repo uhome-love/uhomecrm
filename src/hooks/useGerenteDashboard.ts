@@ -181,7 +181,7 @@ export function useGerenteDashboard(period: Period) {
       ]);
 
       // Negocios ativos (operational detail, keep direct query)
-      const { data: negocios } = await supabase.from("negocios").select("fase, vgv_estimado").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato")');
+      const { data: negocios } = await supabase.from("negocios").select("fase, vgv_estimado").eq("gerente_id", profileId!).eq("status", "ativo");
       const negociosAtivos = negocios?.length || 0;
       const vgvTotal = (negocios || []).reduce((s, n) => s + Number(n.vgv_estimado || 0), 0);
 
@@ -218,7 +218,7 @@ export function useGerenteDashboard(period: Period) {
         supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, pontos").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("corretor_id").eq("gerente_id", user!.id).gte("data_visita", start).lte("data_visita", end),
         supabase.from("corretor_disponibilidade").select("user_id, status").in("user_id", teamUserIds),
-        supabase.from("negocios").select("corretor_id").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato")'),
+        supabase.from("negocios").select("corretor_id").eq("gerente_id", profileId!).eq("status", "ativo"),
       ]);
 
       // Also get today's calls for activity status
@@ -290,7 +290,7 @@ export function useGerenteDashboard(period: Period) {
       }
 
       const cutoff48h = new Date(now.getTime() - 48 * 3600 * 1000).toISOString();
-      const { count: negParados } = await supabase.from("negocios").select("id", { count: "exact", head: true }).eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","ganho")').lt("updated_at", cutoff48h);
+      const { count: negParados } = await supabase.from("negocios").select("id", { count: "exact", head: true }).eq("gerente_id", profileId!).eq("status", "ativo").neq("fase", "ganho").lt("updated_at", cutoff48h);
       if ((negParados || 0) > 0) alerts.push({ id: "negocios_parados", type: "warning", icon: "💼", label: "negócios sem atualização >48h", count: negParados || 0, route: "/pipeline-negocios" });
 
       const { data: tentHoje } = await supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`);
@@ -319,7 +319,7 @@ export function useGerenteDashboard(period: Period) {
       if (teamUserIds.length === 0) return [];
       const { data: stages } = await supabase.from("pipeline_stages").select("id, tipo, nome, ordem").eq("ativo", true).eq("pipeline_tipo", "leads").order("ordem");
       const { data: leads } = await supabase.from("pipeline_leads").select("stage_id").in("corretor_id", teamUserIds);
-      const { data: negocios } = await supabase.from("negocios").select("fase").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato")');
+      const { data: negocios } = await supabase.from("negocios").select("fase").eq("gerente_id", profileId!).eq("status", "ativo");
 
       const stageCounts: Record<string, number> = {};
       (leads || []).forEach(l => { stageCounts[l.stage_id] = (stageCounts[l.stage_id] || 0) + 1; });
@@ -351,7 +351,7 @@ export function useGerenteDashboard(period: Period) {
   const { data: negociosAcao } = useQuery({
     queryKey: ["gerente-negocios-acao-v2", user?.id, profileId],
     queryFn: async () => {
-      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","ganho")').order("updated_at", { ascending: true }).limit(5);
+      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).eq("status", "ativo").neq("fase", "ganho").order("updated_at", { ascending: true }).limit(5);
       if (!data) return [];
       const corrIds = [...new Set(data.map(n => n.corretor_id).filter(Boolean))];
       const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds as string[]) : { data: [] };
@@ -377,7 +377,7 @@ export function useGerenteDashboard(period: Period) {
   const { data: negociosQuentes } = useQuery({
     queryKey: ["gerente-negocios-quentes", user?.id, profileId],
     queryFn: async () => {
-      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","ganho")');
+      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).eq("status", "ativo").neq("fase", "ganho");
       if (!data || data.length === 0) return [];
       const corrIds = [...new Set(data.map(n => n.corretor_id).filter(Boolean))];
       const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds as string[]) : { data: [] };
@@ -446,12 +446,12 @@ export function useGerenteDashboard(period: Period) {
           .select("id, fase_changed_at, fase")
           .eq("gerente_id", profileId!)
           .gte("fase_changed_at", `${weekStart}T00:00:00-03:00`)
-          .not("fase", "in", '("perdido","cancelado","distrato")'),
+          .eq("status", "ativo"),
         // Perdidos este mês
         supabase.from("negocios")
           .select("id, vgv_estimado, fase_changed_at")
           .eq("gerente_id", profileId!)
-          .in("fase", ["perdido", "cancelado", "distrato"])
+          .eq("status", "perdido")
           .gte("fase_changed_at", `${monthStart}T00:00:00-03:00`),
         // Em contrato com data_assinatura
         supabase.from("negocios")

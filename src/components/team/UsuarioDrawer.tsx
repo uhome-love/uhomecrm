@@ -65,9 +65,9 @@ export default function UsuarioDrawer({ user, open, onOpenChange, onSaved, onReq
       const [leads, negA, negB, tar, aud] = await Promise.all([
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).eq("corretor_id", user.user_id),
         user.profile_id
-          ? supabase.from("negocios").select("id", { count: "exact", head: true }).eq("corretor_id", user.profile_id).neq("fase", "ganho").neq("fase", "perdido")
+          ? supabase.from("negocios").select("id", { count: "exact", head: true }).eq("corretor_id", user.profile_id).neq("fase", "ganho").neq("status", "perdido")
           : Promise.resolve({ count: 0 } as any),
-        supabase.from("negocios").select("id", { count: "exact", head: true }).eq("auth_user_id", user.user_id).neq("fase", "ganho").neq("fase", "perdido"),
+        supabase.from("negocios").select("id", { count: "exact", head: true }).eq("auth_user_id", user.user_id).neq("fase", "ganho").neq("status", "perdido"),
         supabase.from("pipeline_tarefas").select("id", { count: "exact", head: true }).eq("responsavel_id", user.user_id).eq("concluida", false),
         supabase.from("audit_log").select("acao, descricao, created_at").eq("chave_unica", user.user_id).eq("modulo", "usuarios").order("created_at", { ascending: false }).limit(20),
       ]);

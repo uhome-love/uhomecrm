@@ -57,7 +57,7 @@ export default function SaudeOperacao() {
       .select("updated_at, fase")
       .eq("status", "ativo")
       .neq("fase", "ganho")
-      .neq("fase", "distrato");
+      .neq("status", "perdido");
     const now = new Date();
     const parados = (negociosAtivos || []).filter(p => differenceInDays(now, new Date(p.updated_at)) > 10).length;
     const paradosNivel: Nivel = parados === 0 ? "bom" : parados <= 3 ? "atencao" : "critico";
