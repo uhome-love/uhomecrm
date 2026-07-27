@@ -77,9 +77,11 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
 
     const q1: any = fetchAllRows((from, to) => supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, canal").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`).range(from, to)).then(data => ({ data, error: null }));
     const q2: any = supabase.from("pipeline_leads").select("corretor_id, stage_id").in("corretor_id", teamUserIds).limit(5000);
-    const q3: any = supabase.from("negocios").select("corretor_id, fase, vgv_estimado, vgv_final, nome_cliente, updated_at, fase_changed_at, empreendimento").in("corretor_id", teamUserIds).not("fase", "in", "(perdido,cancelado)");
+    // Status é fonte canônica para lost/cancelado (pós-consolidação 07/2026).
+    const q3: any = supabase.from("negocios").select("corretor_id, fase, vgv_estimado, vgv_final, nome_cliente, updated_at, fase_changed_at, empreendimento").in("corretor_id", teamUserIds).eq("status", "ativo");
     const q4: any = supabase.from("visitas").select("corretor_id, status, empreendimento, hora_visita").in("corretor_id", teamUserIds).eq("data_visita", dateStr);
-    const q5: any = supabase.from("negocios").select("id, nome_cliente, fase, corretor_id, vgv_estimado, updated_at, fase_changed_at, empreendimento").in("corretor_id", teamUserIds).not("fase", "in", "(perdido,cancelado,assinado,vendido)").order("updated_at", { ascending: true }).limit(50);
+    // Aging list = WIP apenas (exclui ganho e não-ativos).
+    const q5: any = supabase.from("negocios").select("id, nome_cliente, fase, corretor_id, vgv_estimado, updated_at, fase_changed_at, empreendimento").in("corretor_id", teamUserIds).eq("status", "ativo").neq("fase", "ganho").order("updated_at", { ascending: true }).limit(50);
     const q6: any = supabase.from("pipeline_leads").select("id, corretor_id, nome, created_at, stage_id").in("corretor_id", teamUserIds).lt("created_at", new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()).limit(50);
 
     const [r1, r2, r3, r4, r5, r6] = await Promise.all([q1, q2, q3, q4, q5, q6]);

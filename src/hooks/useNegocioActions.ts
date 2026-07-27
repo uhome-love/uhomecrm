@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import { type Negocio, NEGOCIOS_FASES, NEGOCIO_FASE_PERDIDO } from "@/hooks/useNegocios";
 import { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
 import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
+import { FASE_EM_NEGOCIACAO, FASE_CONTRATO, FASE_GANHO } from "@/lib/negocioFase";
 
-// Fases que abrem o popup de transição (coleta de dados) antes de mover
-const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "perdido"];
+// Fases que abrem o popup de transição (coleta de dados) antes de mover.
+// Canônicas + "perdido" (status, disparado como pseudo-fase pelo botão de queda).
+const PHASES_WITH_POPUP = [FASE_EM_NEGOCIACAO, FASE_CONTRATO, FASE_GANHO, "perdido"];
 
 export interface CelebrationData {
   nomeCliente: string;
@@ -44,7 +46,7 @@ export function useNegocioActions(reload?: () => void | Promise<void>) {
         fase: novaFase,
         updated_at: new Date().toISOString(),
       };
-      if (novaFase === "vendido") {
+      if (novaFase === FASE_GANHO) {
         updatePayload.data_assinatura =
           dataAssinatura ||
           new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -69,7 +71,7 @@ export function useNegocioActions(reload?: () => void | Promise<void>) {
         duration: 3000,
       });
 
-      if (novaFase === "vendido") {
+      if (novaFase === FASE_GANHO) {
         await onNegocioAssinado({
           negocioId: negocio.id,
           pipelineLeadId: negocio.pipeline_lead_id || negocio.lead_id || undefined,

@@ -711,12 +711,14 @@ export function usePipeline(
     // O negócio agora vive como etapas reais do pipeline de leads. Cada etapa de
     // negócio mapeia para uma fase da tabela `negocios` (fonte para VGV, PDN,
     // celebração de venda via realtime e pós-venda).
+    // Mapa canônico stage.tipo → negocios.fase (pós-consolidação 07/2026).
+    // As 3 fases reais são: em_negociacao | contrato | ganho.
     const DEAL_STAGE_FASE: Record<string, string> = {
-      convertido: "novo_negocio",
-      proposta: "proposta",
-      documentacao: "negociacao",       // Aprovação / Documentação
-      contrato_gerado: "documentacao",  // Contrato Gerado
-      venda: "vendido",
+      convertido: "em_negociacao",
+      proposta: "em_negociacao",
+      documentacao: "em_negociacao",   // Aprovação / Documentação continuam em Negociação
+      contrato_gerado: "contrato",
+      venda: "ganho",
     };
     const dealFase = newStage ? DEAL_STAGE_FASE[newStage.tipo] : undefined;
 
@@ -781,7 +783,7 @@ export function usePipeline(
           }
 
           const faseUpdate: Record<string, any> = { fase: dealFase, updated_at: now };
-          if (dealFase === "vendido") {
+          if (dealFase === "ganho") {
             faseUpdate.status = "ativo";
             faseUpdate.data_assinatura = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
           }
@@ -796,7 +798,7 @@ export function usePipeline(
           } as any).then(() => {}, () => {});
 
           // Venda fechada → cria pipeline_lead em pós-vendas (guardado contra duplicidade)
-          if (dealFase === "vendido") {
+          if (dealFase === "ganho") {
             const { data: existingPv } = await supabase
               .from("pipeline_leads")
               .select("id")

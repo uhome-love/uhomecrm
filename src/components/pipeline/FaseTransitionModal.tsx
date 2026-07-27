@@ -147,7 +147,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
           data_assinatura: contDataAssinatura,
         },
       });
-    } else if (targetFase === "vendido") {
+    } else if (targetFase === "vendido" || targetFase === "ganho") {
       onConfirm({
         fase: "ganho",
         fields: {
@@ -261,7 +261,8 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
           </>
         );
 
-      case "vendido": {
+      case "vendido":
+      case "ganho": {
         const vgvNum = rawToNumber(assVgv);
         const MIN_VGV = 1000;
         const MAX_VGV = 999_999_999;

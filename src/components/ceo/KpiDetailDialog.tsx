@@ -39,13 +39,16 @@ interface RowData {
   leadId?: string;
 }
 
+// Mapa KPI → fases canônicas. Após a consolidação (07/2026), propostas /
+// negociação / documentação viraram uma única fase "em_negociacao" e
+// assinados/vgv_assinado viraram "ganho".
 const NEGOCIO_FASES: Record<string, string[]> = {
   negocios: [],
-  propostas: ["proposta"],
-  negociacao: ["negociacao"],
-  contratos: ["documentacao", "contrato"],
-  assinados: ["assinado", "vendido"],
-  vgv_assinado: ["assinado", "vendido"],
+  propostas: ["em_negociacao"],
+  negociacao: ["em_negociacao"],
+  contratos: ["contrato"],
+  assinados: ["ganho"],
+  vgv_assinado: ["ganho"],
 };
 
 export default function KpiDetailDialog({ open, onOpenChange, type, label, dateRange }: Props) {

@@ -78,7 +78,7 @@ const ETAPAS_NEGOCIO: Array<{ fase: string; label: string; cor: string }> = [
   { fase: "perdido", label: "Perdido", cor: "#fca5a5" },
 ];
 
-const FASES_ESCURAS = new Set(["negociacao", "documentacao", "vendido"]);
+const FASES_ESCURAS = new Set(["em_negociacao", "contrato", "ganho"]);
 
 export default function RelatorioConversao({ filters }: RelatorioConversaoProps) {
   const [loading, setLoading] = useState(true);
