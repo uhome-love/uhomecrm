@@ -733,6 +733,17 @@ export default function PdnGestor() {
         }}
       />
 
+      <PdnRegredirDialog
+        row={regredirRow?.row ?? null}
+        destino={regredirRow?.destino ?? null}
+        onClose={() => setRegredirRow(null)}
+        onConfirm={(motivo) => {
+          if (!regredirRow) return;
+          mudarEtapa(regredirRow.row, regredirRow.destino, { motivo });
+          setRegredirRow(null);
+        }}
+      />
+
       <PdnLeadDrawer
         row={selectedRow ? (filtered.find(r => r.id === selectedRow.id) ?? selectedRow) : null}
         onClose={() => setSelectedRow(null)}
