@@ -80,14 +80,14 @@ type KpiFilter = null | "ganho" | "contrato" | "risco" | "negociacao";
 
 // Regressão de etapa PDN: qual é a etapa anterior de cada grupo (null = não pode regredir)
 const PREV_GRUPO: Record<PdnGrupo, PdnGrupo | null> = {
-  visita_realizada: null,
-  em_negociacao: "visita_realizada",
+  pos_visita: null,
+  em_negociacao: "pos_visita",
   contrato: "em_negociacao",
   ganho: "contrato",
   caidos: null,
 };
 const GRUPO_LABEL_UI: Record<PdnGrupo, string> = {
-  visita_realizada: "Visita Realizada",
+  pos_visita: "Pós-Visita",
   em_negociacao: "Em Negociação",
   contrato: "Contrato",
   ganho: "Ganho",
@@ -466,7 +466,7 @@ export default function PdnGestor() {
     return PDN_GRUPOS.map(g => g.key);
   }, [kpiFilter]);
 
-  const visitasMes = useMemo(() => rows.filter(r => r.grupoOrigem === "visita_realizada").length, [rows]);
+  const visitasMes = useMemo(() => rows.filter(r => r.grupoOrigem === "pos_visita").length, [rows]);
 
   function toggleKpi(k: Exclude<KpiFilter, null>) { setKpiFilter(prev => (prev === k ? null : k)); }
 
@@ -685,7 +685,7 @@ export default function PdnGestor() {
                 rows={groupRows}
                 collapsed={collapsed.has(g.key)}
                 onToggleCollapse={() => toggleCollapse(g.key)}
-                extraLabel={g.key === "visita_realizada" ? `${visitasMes} no mês` : undefined}
+                extraLabel={g.key === "pos_visita" ? `${visitasMes} no mês` : undefined}
                 sortKey={sortKey}
                 sortDir={sortDir}
                 onSort={toggleSort}

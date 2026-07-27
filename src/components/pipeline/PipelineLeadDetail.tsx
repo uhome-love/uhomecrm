@@ -91,13 +91,13 @@ interface Props {
 
 // Mapa grupo do PDN → nome do stage ativo no board do pipeline
 const PDN_GRUPO_STAGE_NOME: Record<string, string> = {
-  visita_realizada: "Visita",
+  pos_visita: "Pós-Visita",
   em_negociacao: "Em Negociação",
   contrato: "Contrato",
   ganho: "Ganho",
 };
 const PDN_GRUPO_LABEL: Record<string, string> = {
-  visita_realizada: "Visita Realizada",
+  pos_visita: "Pós-Visita",
   em_negociacao: "Em Negociação",
   contrato: "Contrato",
   ganho: "Ganho",

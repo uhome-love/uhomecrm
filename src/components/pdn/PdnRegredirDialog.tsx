@@ -12,7 +12,7 @@ import type { PdnDestino } from "@/lib/pdnSyncEngine";
 const GRUPO_LABEL: Record<PdnDestino | "caidos", string> = {
   qualificacao: "Qualificação",
   aquecimento: "Aquecimento",
-  visita_realizada: "Visita Realizada",
+  pos_visita: "Pós-Visita",
   em_negociacao: "Em Negociação",
   contrato: "Contrato",
   ganho: "Ganho",
@@ -20,7 +20,7 @@ const GRUPO_LABEL: Record<PdnDestino | "caidos", string> = {
 };
 
 // Ordem canônica ascendente. Só regride PARA etapas anteriores à atual.
-const ORDER: PdnDestino[] = ["qualificacao", "aquecimento", "visita_realizada", "em_negociacao", "contrato", "ganho"];
+const ORDER: PdnDestino[] = ["qualificacao", "aquecimento", "pos_visita", "em_negociacao", "contrato", "ganho"];
 
 interface Props {
   row: PdnRow | null;

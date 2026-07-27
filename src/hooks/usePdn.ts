@@ -12,19 +12,19 @@ export type { PdnDestino };
 
 
 // ─── Grupos / status do PDN ──────────────────────────────────────────────────
-export type PdnGrupo = "visita_realizada" | "em_negociacao" | "contrato" | "ganho" | "caidos";
+export type PdnGrupo = "pos_visita" | "em_negociacao" | "contrato" | "ganho" | "caidos";
 
 export const PDN_GRUPOS: { key: PdnGrupo; label: string; cor: string }[] = [
-  { key: "visita_realizada", label: "Visita Realizada", cor: "#10B981" },
+  { key: "pos_visita", label: "Pós-Visita", cor: "#06B6D4" },
   { key: "em_negociacao", label: "Em Negociação", cor: "#EC4899" },
-  { key: "contrato", label: "Contrato", cor: "#06B6D4" },
+  { key: "contrato", label: "Contrato", cor: "#0891B2" },
   { key: "ganho", label: "Ganho", cor: "#22C55E" },
   { key: "caidos", label: "Caídos", cor: "#EF4444" },
 ];
 
 // Probabilidade ponderada por grupo (para forecast)
 const PROB_POR_GRUPO: Record<PdnGrupo, number> = {
-  visita_realizada: 0.2,
+  pos_visita: 0.2,
   em_negociacao: 0.5,
   contrato: 0.8,
   ganho: 1,
@@ -33,19 +33,20 @@ const PROB_POR_GRUPO: Record<PdnGrupo, number> = {
 
 // Etapas do pipeline (pipeline_stages.tipo) → grupo do PDN
 const STAGE_TIPO_TO_GRUPO: Record<string, PdnGrupo> = {
+  pos_visita: "pos_visita",
   proposta: "em_negociacao",
   contrato_gerado: "contrato",
   venda: "ganho",
 };
 
-const GRUPO_KEYS: PdnGrupo[] = ["visita_realizada", "em_negociacao", "contrato", "ganho", "caidos"];
+const GRUPO_KEYS: PdnGrupo[] = ["pos_visita", "em_negociacao", "contrato", "ganho", "caidos"];
 
 // Normaliza qualquer código de situação (inclui formatos legados) para um grupo do PDN.
 function normalizeGrupo(situacao: string | null | undefined): PdnGrupo {
   const s = (situacao || "").toLowerCase().trim();
   if (GRUPO_KEYS.includes(s as PdnGrupo)) return s as PdnGrupo;
   switch (s) {
-    case "visita": return "visita_realizada";
+    case "visita_realizada": case "visita": return "pos_visita";
     case "proposta": return "em_negociacao";
     case "gerado": case "em_confeccao": case "contrato_gerado": return "contrato";
     case "assinado": case "venda": case "vendido": return "ganho";
@@ -55,7 +56,7 @@ function normalizeGrupo(situacao: string | null | undefined): PdnGrupo {
 }
 
 const GRUPO_LABEL: Record<PdnGrupo, string> = {
-  visita_realizada: "Visita Realizada",
+  pos_visita: "Pós-Visita",
   em_negociacao: "Em Negociação",
   contrato: "Contrato",
   ganho: "Ganho",
@@ -247,7 +248,7 @@ export function usePdn(mes: string) {
     const { data: stages } = await supabase
       .from("pipeline_stages")
       .select("id, tipo")
-      .in("tipo", ["proposta", "contrato_gerado", "venda"]);
+      .in("tipo", ["pos_visita", "proposta", "contrato_gerado", "venda"]);
     const stageGrupo: Record<string, PdnGrupo> = {};
     for (const s of stages || []) stageGrupo[(s as any).id] = STAGE_TIPO_TO_GRUPO[(s as any).tipo];
     const stageIds = Object.keys(stageGrupo);
@@ -586,7 +587,7 @@ export function usePdn(mes: string) {
       const equipe = (v.corretorAuthId && equipeByAuthId[v.corretorAuthId]) || ov?.equipe || "—";
       const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
       const caiu = !!ov?.caiu;
-      const grupoBase = grupoOverride ?? "visita_realizada";
+      const grupoBase = grupoOverride ?? "pos_visita";
       out.push({
         id: `visita-${v.id}`,
         negocioId: null,
@@ -594,9 +595,9 @@ export function usePdn(mes: string) {
         corretorAuthId: v.corretorAuthId,
         overrideId: ov?.id ?? null,
         grupo: caiu ? "caidos" : grupoBase,
-        grupoOrigem: "visita_realizada",
+        grupoOrigem: "pos_visita",
         grupoOverride,
-        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== "visita_realizada",
+        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== "pos_visita",
         nome: v.nome,
         data: v.data,
         empreendimento: ov?.empreendimento || v.empreendimento,
@@ -913,7 +914,7 @@ export function usePdn(mes: string) {
   // ── Totais / resumo (não conta caídos no VGV/forecast) ───────────────────────
   const resumo = useMemo(() => {
     const byGrupo: Record<PdnGrupo, { count: number; vgv: number }> = {
-      visita_realizada: { count: 0, vgv: 0 },
+      pos_visita: { count: 0, vgv: 0 },
       em_negociacao: { count: 0, vgv: 0 },
       contrato: { count: 0, vgv: 0 },
       ganho: { count: 0, vgv: 0 },

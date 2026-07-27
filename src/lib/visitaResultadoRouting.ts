@@ -26,16 +26,33 @@ interface RouteRule {
   flags?: Record<string, string>;
 }
 
-// Mapa resultado → destino no pipeline. "continuar_visitando" e "reagendar"
-// mantêm o lead na Visita (não evolui). Só "quer proposta" cria negócio.
+// Mapa resultado → destino no pipeline. Regra fixa: TODA visita realizada passa
+// obrigatoriamente por "Pós-Visita" antes de evoluir para negócio (definição
+// conjunta corretor+gerente). Só "reagendar" e "nao_compareceu" (que não realizaram)
+// fogem à regra.
 const ROUTES: Record<ResultadoVisita, RouteRule> = {
-  gostou_quer_proposta: { destinoTipo: "proposta", flags: { status_negociacao: "proposta_enviada" } },
-  gostou_vai_pensar: { destinoTipo: "aquecimento", flags: { prazo: "30" } },
-  nao_gostou: { destinoTipo: "descarte" },
-  nao_compareceu: { destinoTipo: null, flags: { status_visita: "no_show" } },
+  gostou_quer_proposta: {
+    destinoTipo: "pos_visita",
+    flags: { status_visita: "realizada", status_negociacao: "proposta_solicitada", interesse: "alto" },
+  },
+  gostou_vai_pensar: {
+    destinoTipo: "pos_visita",
+    flags: { status_visita: "realizada", interesse: "medio" },
+  },
+  nao_gostou: {
+    destinoTipo: "pos_visita",
+    flags: { status_visita: "realizada", interesse: "baixo", descarte_sugerido: "sim" },
+  },
+  quer_ver_outro: {
+    destinoTipo: "pos_visita",
+    flags: { status_visita: "realizada", precisa_novas_opcoes: "sim" },
+  },
+  continuar_visitando: {
+    destinoTipo: "pos_visita",
+    flags: { status_visita: "realizada" },
+  },
+  nao_compareceu: { destinoTipo: "aquecimento", flags: { status_visita: "no_show" } },
   reagendar: { destinoTipo: null, flags: { status_visita: "reagendada" } },
-  quer_ver_outro: { destinoTipo: "qualificacao", flags: { status_atendimento: "busca" } },
-  continuar_visitando: { destinoTipo: null, flags: { status_visita: "realizada" } },
 };
 
 /**
@@ -84,10 +101,10 @@ export async function routeLeadAfterVisita(ctx: RouteLeadContext): Promise<boole
     }
   }
 
-  // 2) Se for "quer proposta", garante o negócio (mesma lógica do board)
-  if (rule.destinoTipo === "proposta") {
-    await ensureNegocio(ctx, (leadAtual as any)?.negocio_id || null);
-  }
+  // Negócio só é criado quando o lead sai de Pós-Visita para Em Negociação
+  // (arrasto manual do corretor após alinhamento com o gerente). Nada a fazer aqui.
+
+
 
   const { error } = await supabase
     .from("pipeline_leads")
@@ -113,50 +130,3 @@ export async function routeLeadAfterVisita(ctx: RouteLeadContext): Promise<boole
   return true;
 }
 
-/** Cria o negócio vinculado ao lead se ainda não existir (FK usa profiles.id). */
-async function ensureNegocio(ctx: RouteLeadContext, negocioIdAtual: string | null): Promise<void> {
-  try {
-    let negocioId = negocioIdAtual;
-    if (!negocioId) {
-      const { data: existing } = await supabase
-        .from("negocios")
-        .select("id")
-        .eq("pipeline_lead_id", ctx.pipelineLeadId)
-        .limit(1)
-        .maybeSingle();
-      negocioId = (existing?.id as string | undefined) || null;
-    }
-
-    if (!negocioId) {
-      const ids = [ctx.corretorId, ctx.gerenteId || ctx.userId].filter(Boolean) as string[];
-      const { data: profileRows } = await supabase
-        .from("profiles")
-        .select("id, user_id")
-        .in("user_id", ids);
-      const profileMap = new Map((profileRows || []).map((p) => [p.user_id, p.id]));
-
-      const { data: negocio } = await supabase
-        .from("negocios")
-        .insert({
-          nome_cliente: ctx.nome || "Sem nome",
-          pipeline_lead_id: ctx.pipelineLeadId,
-          corretor_id: ctx.corretorId ? profileMap.get(ctx.corretorId) || null : null,
-          gerente_id: profileMap.get(ctx.gerenteId || ctx.userId) || null,
-          empreendimento: ctx.empreendimento || null,
-          telefone: ctx.telefone || null,
-          fase: "em_negociacao",
-          origem: "pipeline_convertido",
-          vgv_estimado: ctx.valorEstimado || null,
-        } as any)
-        .select("id")
-        .single();
-      negocioId = (negocio?.id as string | undefined) || null;
-    }
-
-    if (negocioId && !negocioIdAtual) {
-      await supabase.from("pipeline_leads").update({ negocio_id: negocioId } as any).eq("id", ctx.pipelineLeadId);
-    }
-  } catch (e) {
-    console.error("[routeLeadAfterVisita] erro ao garantir negócio:", e);
-  }
-}

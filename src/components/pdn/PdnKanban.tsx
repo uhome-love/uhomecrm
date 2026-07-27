@@ -12,7 +12,7 @@ import { publicarNoLead } from "./drawer/publish";
 
 // Probabilidade ponderada por grupo (mesmo peso usado em usePdn — mantém consistência).
 const PROB_POR_GRUPO: Record<PdnGrupo, number> = {
-  visita_realizada: 0.2,
+  pos_visita: 0.2,
   em_negociacao: 0.5,
   contrato: 0.8,
   ganho: 1,

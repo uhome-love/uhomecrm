@@ -47,7 +47,7 @@ interface PipelineBoardProps {
 const HIDDEN_STAGE_TIPOS = new Set([
   "descarte", "caiu", "venda",
   "contato_inicial", "busca", "possibilidade_visita", "visita_marcada",
-  "visita_realizada", "pos_visita", "convertido", "documentacao", "negociacao",
+  "visita_realizada", "convertido", "documentacao", "negociacao",
   "boas_vindas", "envio_oportunidades", "atualizacao_bem_estar", "indicacoes",
 ]);
 
