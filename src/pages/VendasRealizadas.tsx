@@ -251,7 +251,7 @@ export default function VendasRealizadas() {
       let extraPartnerRows: VendaRow[] = [];
 
       let query = supabase.from("negocios")
-        .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
+        .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
         .eq("fase", "vendido")
         .gte("data_assinatura", dateRange.start)
         .lte("data_assinatura", dateRange.end)
@@ -265,7 +265,7 @@ export default function VendasRealizadas() {
         const partnerDealIds = (partnerDeals || []).map(d => d.id as string);
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
-            .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
+            .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
             .in("id", partnerDealIds).eq("fase", "vendido");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
@@ -288,7 +288,7 @@ export default function VendasRealizadas() {
 
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
-            .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
+            .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
             .in("id", partnerDealIds).eq("fase", "vendido");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
