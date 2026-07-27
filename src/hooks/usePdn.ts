@@ -579,51 +579,12 @@ export function usePdn(mes: string) {
     }
 
 
-    // Visitas realizadas (sem negócio ativo) — já filtradas pelo mês na consulta
-    for (const v of visitasReal) {
-      if (v.temNegocio) continue;
-      const ov = v.leadId ? overrideByLead[v.leadId] : undefined;
-      const corretor = (v.corretorAuthId && nameByAuthId[v.corretorAuthId]) || ov?.corretor || "—";
-      const equipe = (v.corretorAuthId && equipeByAuthId[v.corretorAuthId]) || ov?.equipe || "—";
-      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
-      const caiu = !!ov?.caiu;
-      const grupoBase = grupoOverride ?? "pos_visita";
-      out.push({
-        id: `visita-${v.id}`,
-        negocioId: null,
-        pipelineLeadId: v.leadId,
-        corretorAuthId: v.corretorAuthId,
-        overrideId: ov?.id ?? null,
-        grupo: caiu ? "caidos" : grupoBase,
-        grupoOrigem: "pos_visita",
-        grupoOverride,
-        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== "pos_visita",
-        nome: v.nome,
-        data: v.data,
-        empreendimento: ov?.empreendimento || v.empreendimento,
-        vgv: Number(ov?.vgv ?? 0) || 0,
-        situacaoLabel: GRUPO_LABEL[grupoBase],
-        corretor,
-        equipe,
-        status: ov?.status || "",
-        observacoes: ov?.observacoes || "",
-        proximaAcao: ov?.proxima_acao || "",
-        caiu,
-        motivoQueda: ov?.motivo_queda || "",
-        diasParado: 0,
-        emRisco: !caiu && !!ov?.risco_manual,
-        isManual: false,
-        proximaAcaoData: ov?.proxima_acao_data || "",
-        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
-        riscoManual: !!ov?.risco_manual,
-        riscoMotivo: ov?.risco_motivo || "",
-        proximaAcaoVencida: !caiu && isVencida(ov?.proxima_acao_data || ""),
-        novoDesdeOntem: isNovoDesdeOntem(v.data),
-        oculto: !!ov?.oculto,
-        avisadoEm: ov?.corretor_avisado_em ?? null,
-        avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-      });
-    }
+    // NOTA: Visitas realizadas do mês NÃO geram mais linhas próprias no PDN Pós-Visita.
+    // A fonte única do grupo Pós-Visita é `pipeline_leads` em stage `pos_visita` (via `deals` acima).
+    // Para conferência de visitas do mês (incluindo as que já avançaram/regrediram/caíram),
+    // use a aba "Conferência de Visitas" (useConferenciaVisitas). Isso elimina duplicações e
+    // reflete no PDN só o que o gestor precisa acompanhar operacionalmente.
+
 
     // Linhas manuais (sem vínculo com pipeline)
     for (const m of manualRows) {
