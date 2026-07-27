@@ -300,8 +300,10 @@ Deno.serve(async (req) => {
     let formName = v("form_name", "formName", "formulario");
     let adName = v("ad_name", "adName", "adId");
     let adsetName = v("adset_name", "adsetName", "adgroupId");
+    let adsetId = v("adset_id", "adsetId", "adgroup_id");
+    let adId = v("ad_id");
     let propertyCode = v("property_code", "propertyCode", "codigo_imovel");
-    const metaFormId = v("formId");
+    const metaFormId = v("formId", "form_id");
     let externalLeadId = v("lead_id", "leadId", "meta_lead_id", "leadgen_id", "id");
 
     // Extract property code from "imovel_referencia" field (e.g. "18273-BT - Venda")
