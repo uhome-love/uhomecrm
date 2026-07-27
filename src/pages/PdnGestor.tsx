@@ -39,6 +39,7 @@ import { MoneyInput } from "@/components/pdn/MoneyInput";
 import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
+import { PdnRegredirDialog } from "@/components/pdn/PdnRegredirDialog";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
 
