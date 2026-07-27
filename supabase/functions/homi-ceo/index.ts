@@ -341,39 +341,41 @@ function getWeekStart(dateStr: string): string {
 function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members: any[]): string {
   if (!pdn.length) return "Nenhum negócio registrado este mês.";
   const total = pdn.length;
-  const novo = pdn.filter(p => p.fase === "novo_negocio").length;
-  const proposta = pdn.filter(p => ["proposta", "negociacao", "documentacao"].includes(p.fase)).length;
-  const assinado = pdn.filter(p => p.fase === "vendido").length;
+  // Fases canônicas (pós-consolidação 07/2026): em_negociacao | contrato | ganho.
+  // "Perdido" vive em coluna status, não em fase.
+  const emNegociacao = pdn.filter(p => p.fase === "em_negociacao" && p.status !== "perdido").length;
+  const contrato = pdn.filter(p => p.fase === "contrato" && p.status !== "perdido").length;
+  const ganho = pdn.filter(p => p.fase === "ganho").length;
   const perdido = pdn.filter(p => p.status === "perdido").length;
-  const vgvAssinado = pdn.filter(p => p.fase === "vendido").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
-  const vgvProjetado = pdn.filter(p => ["proposta", "negociacao", "documentacao", "vendido"].includes(p.fase)).reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvAssinado = pdn.filter(p => p.fase === "ganho").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvProjetado = pdn.filter(p => ["em_negociacao", "contrato", "ganho"].includes(p.fase) && p.status !== "perdido").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
   let summary = `- Total negócios: ${total}
-- Novo: ${novo} | Proposta: ${proposta} | Assinado: ${assinado} | Perdido: ${perdido}
+- Em Negociação: ${emNegociacao} | Contrato: ${contrato} | Ganho: ${ganho} | Perdido: ${perdido}
 - VGV Assinado: R$ ${(vgvAssinado / 1000).toFixed(0)}k
 - VGV Projetado: R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
 
   // Per gerente
-  const byGerente: Record<string, { total: number; assinado: number; vgv: number }> = {};
+  const byGerente: Record<string, { total: number; ganho: number; vgv: number }> = {};
   pdn.forEach(p => {
     const gId = p.gerente_id;
     if (!gId) return;
-    if (!byGerente[gId]) byGerente[gId] = { total: 0, assinado: 0, vgv: 0 };
+    if (!byGerente[gId]) byGerente[gId] = { total: 0, ganho: 0, vgv: 0 };
     byGerente[gId].total++;
-    if (p.fase === "vendido") {
-      byGerente[gId].assinado++;
+    if (p.fase === "ganho") {
+      byGerente[gId].ganho++;
       byGerente[gId].vgv += Number(p.vgv_final || p.vgv_estimado || 0);
     }
   });
   summary += "\n- Por gerente:";
   Object.entries(byGerente).forEach(([gId, s]) => {
-    summary += `\n  • ${managerMap[gId] || gId}: ${s.total} neg. | ${s.assinado} assinados | R$ ${(s.vgv / 1000).toFixed(0)}k`;
+    summary += `\n  • ${managerMap[gId] || gId}: ${s.total} neg. | ${s.ganho} ganhos | R$ ${(s.vgv / 1000).toFixed(0)}k`;
   });
 
-  // Stale deals
+  // Stale deals (WIP parados há +5 dias)
   const now = Date.now();
   const stale = pdn.filter(p => {
-    if (p.fase === "vendido" || p.status === "perdido") return false;
+    if (p.fase === "ganho" || p.status === "perdido") return false;
     return (now - new Date(p.updated_at).getTime()) > 5 * 24 * 60 * 60 * 1000;
   });
   if (stale.length > 0) {
@@ -451,12 +453,12 @@ function buildPerManagerBreakdown(
     const teamCpIds = checkpoints.filter(c => c.gerente_id === gId).map(c => c.id);
     const teamCpLines = cpLines.filter(l => teamCpIds.includes(l.checkpoint_id));
 
-    const pdnAssinado = teamPdn.filter(p => p.fase === "assinado");
-    const vgv = pdnAssinado.reduce((s: number, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+    const pdnGanho = teamPdn.filter(p => p.fase === "ganho");
+    const vgv = pdnGanho.reduce((s: number, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
     const totalLig = teamCpLines.reduce((s: number, l: any) => s + (l.real_ligacoes || 0), 0);
 
     return `\n🏷️ ${name} (${teamMembers.length} corretores)
-  Negócios: ${teamPdn.length} neg. | ${pdnAssinado.length} assinados | VGV R$ ${(vgv / 1000).toFixed(0)}k
+  Negócios: ${teamPdn.length} neg. | ${pdnGanho.length} ganhos | VGV R$ ${(vgv / 1000).toFixed(0)}k
   Checkpoint hoje: ${teamCpLines.length} preenchidos | ${totalLig} ligações
   Visitas semana: ${teamVisitas.length}
   Corretores: ${teamMembers.map(m => m.nome).join(", ")}`;
