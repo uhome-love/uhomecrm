@@ -1,69 +1,65 @@
-## Diagnóstico (confirmado no banco)
+## Diagnóstico confirmado
 
-O placar do dia mostrou **25 marcadas / 22 realizadas** para hoje (27/07/2026), quando só existiam **3 visitas reais**.
+- O placar mostrado em `/placar-do-dia` não usa o dashboard CEO nem `_kpi_team_window_core`; ele chama `rpc_placar_do_dia()` a cada 15 segundos (`src/pages/PlacarDoDia.tsx:180-311`).
+- A RPC seleciona toda visita cujo registro foi **criado hoje** (`visitas.created_at`), sem excluir `origem='backfill_pos_visita'`. Por isso, alterar `data_visita` dos 22 registros para 26/07 não retirou nenhum deles do placar.
+- Os 22 registros continuam sendo devolvidos pela RPC como `status='realizada'`, somados ao time Bruno e exibidos no feed “Últimas visitas”. Não é cache: a tela recarrega a resposta incorreta do banco a cada 15 segundos.
+- A correção anterior de `data_visita` foi inválida: todos os 22 ficaram artificialmente em 26/07 às 10:00. Não há histórico individual confiável que prove essa data ou hora. `pipeline_historico` está vazio para os 22; `stage_changed_at` foi sobrescrito pela migração; as tarefas iguais de 20/07 foram geradas em lote e também não comprovam a realização da visita.
+- O backfill ainda criou efeitos derivados: 22 eventos `visita_criada`, 22 eventos `data_alterada` e tarefas de feedback ligadas aos registros sintéticos.
+- A origem estrutural foi movimentar/importar leads como “Visita Realizada” sem uma visita real registrada. O trigger novo `trg_pos_visita_garante_visita_fn` ainda tenta resolver isso criando uma visita automática com `CURRENT_DATE` e hora `10:00`, portanto pode repetir o problema.
 
-Consulta em `visitas` revelou:
-- **22 registros** criados hoje às `17:03:09.271196+00`, todos com:
-  - `data_visita = 2026-07-27` (hoje)
-  - `hora_visita = 10:00:00`
-  - `status = 'realizada'`
-  - `origem = 'backfill_pos_visita'`
-  - `observacoes` começando com "Backfill 27/07/2026: registro retroativo criado para consistência…"
+## Plano de correção
 
-Esses 22 vieram do **backfill de conciliação de Pós-Visita** que rodei na etapa anterior (leads que estavam em Pós-Visita via `flag_status.status_visita='realizada'` mas sem registro na agenda). O backfill usou `CURRENT_DATE` como `data_visita`, o que era errado — deveria ter usado a data real em que o lead entrou em Pós-Visita.
+### 1. Corrigir a fonte canônica do Placar do Dia
 
-Efeito colateral: **todo placar diário de visitas** (CEO, Gerente, Ranking) que filtra por `data_visita = hoje` está inflado por esses 22.
+Atualizar `rpc_placar_do_dia()` para manter a regra comercial informada:
 
-## Correção proposta
+- **Visitas marcadas hoje:** registros reais criados hoje, excluindo qualquer origem técnica/sintética (`backfill_%` e `auto_stage_move`).
+- Retornar separadamente as marcações reais e as realizações do dia, em vez de misturar todos os status em uma única lista.
+- **Visitas realizadas hoje:** contar uma transição real de status para `realizada` registrada em `visita_eventos` no dia BRT; não usar criação de backfill nem `data_visita` inventada.
+- Manter nome, empreendimento, corretor e timestamps necessários para ranking, feed e anúncios.
+- Ajustar `PlacarDoDia.tsx` para consumir os conjuntos/campos explícitos da RPC, preservando a aparência atual e eliminando a ambiguidade entre “marcada” e “realizada”.
 
-### 1. Migration — reverter `data_visita` dos 22 backfills para a data real
-Para cada visita com `origem='backfill_pos_visita'` criada hoje:
-- Buscar o `stage_changed_at` do respectivo `pipeline_lead_id` (quando ele entrou em Pós-Visita).
-- Se existir e for anterior a hoje: `UPDATE visitas SET data_visita = stage_changed_at::date` (mantendo `hora_visita`).
-- Fallback: se `stage_changed_at` for de hoje/futuro ou nulo, usar `updated_at::date - 1 dia` do lead (ainda melhor que hoje).
-- **Não deletar** os registros — a Conferência de Visitas do mês depende deles e a observação de backfill fica preservada como auditoria.
+Resultado esperado para 27/07 com os dados atuais: o placar deixa de mostrar os 22 backfills imediatamente após o poll; as marcações reais vêm somente dos registros manuais do dia pertencentes aos times ativos.
 
-### 2. Blindar cálculos diários contra backfills futuros
-Adicionar filtro `origem <> 'backfill_pos_visita'` (ou padrão excluir backfills) nos KPIs de "hoje" para não contaminar contadores mesmo se um novo backfill ocorrer com data errada. Locais confirmados:
-- `src/hooks/useCeoDashboard.ts` (fonte dos `kpis.visitasMarcadas`, `visitasRealizadas`, `noShows`, `totalVisitasCriadas` do card "Agenda de Visitas").
-- Verificar e ajustar (se houver o mesmo padrão) em: `src/hooks/useCorretorKpisConquistas.ts`, `src/components/ranking/v2/RankingVisitas.tsx`, `src/components/checkpoint/CheckpointVisaoGeralTab.tsx`, `src/hooks/useRelatorioExecutivo.ts`.
+### 2. Remover integralmente os 22 backfills artificiais
 
-Regra: os placares de **hoje/dia** excluem backfills. Os relatórios de **mês** (Conferência de Visitas, PDN mensal) mantêm os backfills, pois representam visitas reais que aconteceram em algum momento.
+Como aprovado, executar uma limpeza cirúrgica restrita a `origem='backfill_pos_visita'` e ao lote criado em 27/07/2026:
 
-### 3. Validação ponta a ponta após o fix
-- Contar novamente `visitas` de hoje: deve retornar **3** (as reais).
-- Abrir `/ceo` → card "Agenda de Visitas" deve mostrar números de hoje reais (~3).
-- Abrir `/pdn` → aba **Conferência de Visitas** (mês) deve continuar mostrando ~128 visitas do mês, agora com os 22 distribuídos nas datas reais.
-- Abrir 2-3 leads do bucket "Em Pós-Visita" e confirmar que a visita associada mostra a data reconstituída (não hoje).
-- Sanidade: `/agenda-visitas` do gestor não deve exibir todos os 22 concentrados no dia de hoje.
+1. Registrar antes da remoção uma evidência de auditoria agregada com IDs e motivo da reversão.
+2. Remover tarefas automáticas cujo `origem_ref` aponta diretamente para os 22 IDs sintéticos.
+3. Remover os respectivos registros de `visita_eventos`.
+4. Remover os 22 registros de `visitas`.
+5. Remover tarefas de feedback que foram criadas exclusivamente como efeito desse lote, identificadas por timestamp/origem e lead, sem tocar tarefas humanas ou anteriores.
+6. Não alterar `pipeline_leads.stage_id`, `flag_status`, negócios ou visitas reais. Os leads permanecem em Pós-Visita para revisão operacional, mas não haverá uma visita falsa sustentando essa etapa.
 
-### 4. Regra permanente
-Registrar em memória: **backfill de visitas NUNCA pode usar `CURRENT_DATE` como `data_visita`**. Sempre reconstituir da fonte (stage_changed_at, primeira ocorrência da flag, etc.). Origem `backfill_*` fica excluída de todo cálculo de "hoje".
+A remoção de dados será feita pela operação de dados apropriada, não por migration DDL.
 
-## Detalhes técnicos
+### 3. Eliminar a causa estrutural
 
-**SQL do fix (a rodar via migration):**
-```sql
-UPDATE public.visitas v
-SET data_visita = COALESCE(
-      NULLIF(pl.stage_changed_at::date, CURRENT_DATE),
-      (pl.updated_at::date - INTERVAL '1 day')::date,
-      (CURRENT_DATE - INTERVAL '1 day')
-    )
-FROM public.pipeline_leads pl
-WHERE v.pipeline_lead_id = pl.id
-  AND v.origem = 'backfill_pos_visita'
-  AND v.created_at::date = DATE '2026-07-27'
-  AND v.data_visita = DATE '2026-07-27';
-```
+Substituir o comportamento de `trg_pos_visita_garante_visita_fn`:
 
-**Filtro nos hooks (padrão):**
-```ts
-.eq(...).neq("origem", "backfill_pos_visita")
-```
-ou (preferido) `.not("origem", "like", "backfill_%")` para pegar qualquer backfill futuro.
+- Ao entrar em Pós-Visita sem visita real, **não criar** uma visita com data/hora inventadas.
+- Bloquear a movimentação automática quando ela deveria vir de uma visita, ou sinalizar a inconsistência para correção, conforme o caminho da movimentação.
+- Criar uma tarefa de pendência para o responsável registrar/agendar corretamente a visita, sem poluir `visitas`, agenda, PDN ou métricas.
+- Garantir que o fluxo oficial continue sendo: visita existente → status `realizada` → trigger move para Pós-Visita.
+- Manter idempotência para não duplicar tarefas/alertas.
 
-## Escopo desta correção
-- Sim: reverter as 22 datas, blindar KPIs do dia, validar placares.
-- Não: mexer nos triggers `trg_visita_realizada_move_pos_visita` / `trg_visita_sync_flag_status` (funcionam certo — o problema foi o backfill que rodou uma vez).
-- Não: deletar os registros de backfill (perderia rastreabilidade dos leads em Pós-Visita).
+### 4. Auditar todos os caminhos de movimentação
+
+- Enumerar as RPCs, triggers e ações do frontend que movem lead para Pós-Visita.
+- Garantir que nenhuma rota faça update direto e silencioso sem registrar `pipeline_historico`.
+- Validar que importações legadas com texto “Etapa Jetimob: Visita Realizada” não sejam convertidas em visita real sem data comprovada.
+- Levantar outros leads, inclusive arquivados, com Pós-Visita/flag realizada e sem visita real; apenas reportar os casos adicionais nesta fase, sem fabricar novos registros.
+
+### 5. Validação ponta a ponta
+
+Após as alterações:
+
+- Banco: confirmar zero registros `backfill_pos_visita`, zero eventos/tarefas órfãos do lote e preservação das visitas manuais reais.
+- Placar: abrir `/placar-do-dia`, aguardar dois ciclos de 15 segundos e confirmar que os 22 nomes desapareceram da contagem, ranking e feed.
+- Agenda: validar 27/07 e 26/07 sem concentração artificial.
+- CEO: confrontar cards de marcadas/realizadas com consultas BRT e eventos reais.
+- PDN/Conferência de Visitas: confirmar que o total mensal cai em 22, pois esses registros não tinham evidência de visita real.
+- Pós-Visita: abrir leads de teste sem alterar dados reais e confirmar que permanecem na etapa, mas sem visita falsa; validar a pendência operacional.
+- Fluxo real com lead de teste: marcar visita, confirmar/realizar, verificar sincronização de flag, movimento para Pós-Visita, tarefas e atualização única do placar.
+- Revisar o diff e registrar a regra permanente: backfill nunca cria visita sem data/hora comprovadas; origens técnicas nunca entram em placares operacionais.
