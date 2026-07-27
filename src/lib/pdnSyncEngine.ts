@@ -140,7 +140,10 @@ export async function syncPipelineStageFromPdn(
   // A trigger BEFORE UPDATE `trg_clear_negocio_on_stage_regress` limpa
   // NEW.negocio_id e arquiva o negócio automaticamente.
   const destinoOrdem = (stageRow as any).ordem as number | null;
-  const isRegressao = grupo === "visita_realizada" && destinoOrdem != null && destinoOrdem < 5;
+  const isRegressao =
+    (grupo === "visita_realizada" || grupo === "qualificacao" || grupo === "aquecimento") &&
+    destinoOrdem != null && destinoOrdem < 5;
+
 
   const updatePayload: Record<string, unknown> = {
     ultima_acao_at: nowIso,
