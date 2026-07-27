@@ -12,7 +12,7 @@ interface VendaEvent {
 
 /**
  * Global hook that listens to realtime changes on the negocios table.
- * Triggers a celebration toast when a deal moves to "assinado" or "vendido".
+ * Triggers a celebration toast when a deal moves to fase "ganho".
  */
 export function useVendaRealtimeNotification() {
   const { user } = useAuth();
@@ -35,7 +35,7 @@ export function useVendaRealtimeNotification() {
           const newRow = payload.new as any;
           const oldRow = payload.old as any;
 
-          // Only trigger when fase changes TO vendido
+          // Only trigger when fase changes TO ganho
           if (newRow?.fase !== "ganho") return;
           if (oldRow?.fase === newRow?.fase) return;
 

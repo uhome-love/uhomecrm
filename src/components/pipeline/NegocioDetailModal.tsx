@@ -174,7 +174,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
   const [imovelVgv, setImovelVgv] = useState("");
   const [imovelObs, setImovelObs] = useState("");
 
-  // Data de assinatura (editável quando vendido)
+  // Data de assinatura (editável quando fase='ganho')
   const [dataAssinaturaEdit, setDataAssinaturaEdit] = useState("");
   const [savingDataAss, setSavingDataAss] = useState(false);
 
@@ -583,7 +583,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
               )}
             </div>
 
-            {/* Data de Assinatura — editável quando vendido */}
+            {/* Data de Assinatura — editável quando fase='ganho' */}
             {fullNeg.fase === "ganho" && (
               <div className="flex items-center gap-2 flex-wrap bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
                 <CalendarDays className="h-4 w-4 text-emerald-600 shrink-0" />

@@ -150,11 +150,11 @@ export function useLeadIntelligence(periodo: string) {
   };
   const isVenda = (l: LeadIntelData) => {
     const s = stageMap.get(l.stage_id);
-    return s && ["venda", "assinado"].includes(s.tipo);
+    return s && s.tipo === "venda";
   };
   const isProposta = (l: LeadIntelData) => {
     const s = stageMap.get(l.stage_id);
-    return s && ["proposta", "negociacao"].includes(s.tipo);
+    return s && ["proposta", "contrato_gerado"].includes(s.tipo);
   };
 
   // KPIs
