@@ -74,27 +74,33 @@ export default function PipelineKanban() {
   // Diretoria enxerga o escritório inteiro, como o CEO (visão de oversight).
   // isCeoView unifica admin (CEO) + diretor para escopo e visões globais.
   const isCeoView = isAdmin || isDiretor;
-  const { data: gestorTeamUserIds } = useQuery({
+  // ⚠️ queryFn retorna ARRAY (não Set): o PersistQueryClient serializa a cache
+  // como JSON no IndexedDB — um Set volta como `{}` no reload e quebra `.has()`
+  // no bundle minificado ("G.has is not a function"). Materializamos o Set em
+  // useMemo, fora da cache persistida.
+  const { data: gestorTeamUserIdsArr } = useQuery({
     queryKey: ["pipeline-gestor-team", gestorFilter],
-    queryFn: async () => {
+    queryFn: async (): Promise<string[] | null> => {
       if (!isCeoView || gestorFilter === "todos") return null;
       const { data } = await supabase
         .from("team_members")
         .select("user_id")
         .eq("gerente_id", gestorFilter)
         .eq("status", "ativo");
-      return new Set((data || []).map((r: any) => r.user_id).filter(Boolean) as string[]);
+      return (data || []).map((r: any) => r.user_id).filter(Boolean) as string[];
     },
     enabled: isCeoView && gestorFilter !== "todos",
     staleTime: 5 * 60 * 1000,
   });
-  // Quando CEO escolhe um gestor específico, materializa array pra passar
-  // como scope server-side ao usePipeline. Mantém key estável (sort+join).
+  const gestorTeamUserIds = useMemo<Set<string> | null>(
+    () => (gestorTeamUserIdsArr ? new Set(gestorTeamUserIdsArr) : null),
+    [gestorTeamUserIdsArr],
+  );
   const pipelineScopeCorretorIds = useMemo<string[] | null>(() => {
     if (!isCeoView || gestorFilter === "todos") return null;
-    if (!gestorTeamUserIds) return []; // ainda carregando lista → não traz nada
-    return Array.from(gestorTeamUserIds);
-  }, [isCeoView, gestorFilter, gestorTeamUserIds]);
+    if (!gestorTeamUserIdsArr) return [];
+    return gestorTeamUserIdsArr;
+  }, [isCeoView, gestorFilter, gestorTeamUserIdsArr]);
   const pipeline = usePipeline("leads", { scopeCorretorIds: pipelineScopeCorretorIds, realtime: !(isAdmin || isGestor) });
   const { user: authUser, loading: authLoading } = useAuth();
   // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
