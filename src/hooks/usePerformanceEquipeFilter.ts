@@ -11,13 +11,16 @@ export function useEquipeUserIds(equipeId?: string) {
   return useQuery({
     queryKey: ["equipe-user-ids", equipeId],
     enabled: !!equipeId,
-    queryFn: async (): Promise<Set<string>> => {
+    // ⚠️ Retorna ARRAY (não Set) — a cache do react-query é persistida em IDB
+    // como JSON pelo PersistQueryClient; um Set volta como `{}` e quebra
+    // `.has()` no bundle minificado. Materializamos Set nos helpers abaixo.
+    queryFn: async (): Promise<string[]> => {
       const { data } = await supabase
         .from("team_members")
         .select("user_id")
         .eq("status", "ativo")
         .eq("gerente_id", equipeId!);
-      return new Set((data || []).map((r) => r.user_id).filter(Boolean) as string[]);
+      return (data || []).map((r) => r.user_id).filter(Boolean) as string[];
     },
     staleTime: 5 * 60_000,
   });
@@ -25,23 +28,25 @@ export function useEquipeUserIds(equipeId?: string) {
 
 export function applyEquipeFilter<T extends { auth_user_id: string }>(
   rows: T[] | undefined,
-  ids: Set<string> | undefined,
+  ids: string[] | undefined,
 ): T[] {
   if (!rows) return [];
   if (!ids) return rows;
-  return rows.filter((r) => ids.has(r.auth_user_id));
+  const set = new Set(ids);
+  return rows.filter((r) => set.has(r.auth_user_id));
 }
 
 /** Filtra também o diagnóstico (que traz profile_id, não auth_user_id). */
 export function applyEquipeFilterDiagnostico(
   rows: PerfDiagnosticoItem[] | undefined,
   ranking: PerfRankingItem[] | undefined,
-  ids: Set<string> | undefined,
+  ids: string[] | undefined,
 ): PerfDiagnosticoItem[] {
   if (!rows) return [];
   if (!ids || !ranking) return rows;
+  const allowed = new Set(ids);
   const allowedProfileIds = new Set(
-    ranking.filter((r) => ids.has(r.auth_user_id)).map((r) => r.profile_id),
+    ranking.filter((r) => allowed.has(r.auth_user_id)).map((r) => r.profile_id),
   );
   return rows.filter((r) => allowedProfileIds.has(r.profile_id));
 }
