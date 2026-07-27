@@ -566,12 +566,12 @@ export default function PdnGestor() {
         onExport={exportCSV}
       />
 
-      {view !== "meta" && (
+      {view !== "meta" && view !== "visitas" && (
         <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
       )}
 
-      {/* Toolbar unificada — só faz sentido em Planilha/Kanban (não em Meta) */}
-      {view !== "meta" && (
+      {/* Toolbar unificada — só faz sentido em Planilha/Kanban (não em Meta/Visitas) */}
+      {view !== "meta" && view !== "visitas" && (
         <PdnToolbar
           filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
           setFilters={(patch) => {
