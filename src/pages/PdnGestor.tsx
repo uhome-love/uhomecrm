@@ -316,6 +316,7 @@ export default function PdnGestor() {
   });
   const [quedaRow, setQuedaRow] = useState<PdnRow | null>(null);
   const [selectedRow, setSelectedRow] = useState<PdnRow | null>(null);
+  const [regredirRow, setRegredirRow] = useState<{ row: PdnRow; destino: PdnGrupo } | null>(null);
   // Padrão por dispositivo: mobile→kanban (foco em 1 coluna), desktop→planilha (densidade p/ gestão).
   // Preferência persistida separadamente para cada form factor.
   const [view, setView] = useState<PdnView>(() => {
