@@ -125,6 +125,7 @@ const App = () => (
               <Route path="/links-site" element={<Navigate to="/imoveis?view=links" replace />} />
               <Route path="/disponibilidade" element={<Navigate to="/roleta" replace />} />
               <Route path="/pipeline-negocios" element={<Navigate to="/pipeline-leads" replace />} />
+              <Route path="/negocios" element={<Navigate to="/pipeline-leads" replace />} />
 
               {/* All authenticated routes — rendered via Chrome-style tab system */}
               <Route path="/*" element={

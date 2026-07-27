@@ -141,7 +141,7 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
       newAlerts.push({ id: "leads-sem-contato", type: "danger", icon: "🚨", message: `${leadsSemContatoList.length} leads sem contato há mais de 48h`, action: { label: "Ver Pipeline", route: "/pipeline-leads" } });
     }
     if (parados.length > 0) {
-      newAlerts.push({ id: "negocios-parados", type: "warning", icon: "⏸️", message: `${parados.length} negócios parados há 5+ dias (VGV: ${fmtCurrency(parados.reduce((s, n) => s + Number(n.vgv_estimado || 0), 0))})`, action: { label: "Ver Negócios", route: "/negocios" } });
+      newAlerts.push({ id: "negocios-parados", type: "warning", icon: "⏸️", message: `${parados.length} negócios parados há 5+ dias (VGV: ${fmtCurrency(parados.reduce((s, n) => s + Number(n.vgv_estimado || 0), 0))})`, action: { label: "Ver no PDN", route: "/pdn" } });
     }
 
     setAlerts(newAlerts);
@@ -436,8 +436,8 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
               <span className="font-semibold text-foreground">Negócios Parados ({negociosParados.length})</span>
               <span className="text-[10px] text-muted-foreground">5+ dias sem movimentação</span>
             </div>
-            <Button variant="ghost" size="sm" className="text-[10px] h-6 gap-1" onClick={() => navigate("/negocios")}>
-              Ver Negócios <ExternalLink size={10} />
+            <Button variant="ghost" size="sm" className="text-[10px] h-6 gap-1" onClick={() => navigate("/pdn")}>
+              Ver no PDN <ExternalLink size={10} />
             </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5 p-2.5">

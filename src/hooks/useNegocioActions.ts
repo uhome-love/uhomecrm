@@ -23,7 +23,7 @@ export interface TransitionTarget {
 }
 
 /**
- * Encapsula a gestão de fases de UM negócio (fora do board de MeusNegocios):
+ * Encapsula a gestão de fases de UM negócio dentro do drawer do lead:
  * mover fase, popup de transição, celebração de venda e atualização.
  * Usado no drawer do lead (aba Negócio) — regra "Tudo no Lead".
  *

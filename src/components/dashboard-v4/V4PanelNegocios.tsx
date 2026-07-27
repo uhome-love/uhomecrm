@@ -84,7 +84,7 @@ export function V4PanelNegocios({ gestorId }: Props) {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-foreground">Negócios em andamento</h3>
         <Link
-          to="/negocios"
+          to="/pipeline-leads"
           className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
         >
           Ver pipeline <ArrowRight className="h-3 w-3" />
