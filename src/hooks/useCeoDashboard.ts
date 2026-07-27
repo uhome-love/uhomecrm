@@ -517,8 +517,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const startTs = `${range.start}T00:00:00`;
       const endTs = `${range.end}T23:59:59`;
       const [{ data: visMarcadas }, { data: visRealizadas }] = await Promise.all([
-        supabase.from("visitas").select("empreendimento").gte("created_at", startTs).lte("created_at", endTs).not("status", "eq", "cancelada"),
-        supabase.from("visitas").select("empreendimento").gte("data_visita", range.start).lte("data_visita", range.end).eq("status", "realizada"),
+        supabase.from("visitas").select("empreendimento").gte("created_at", startTs).lte("created_at", endTs).not("status", "eq", "cancelada").not("origem", "like", "backfill_%"),
+        supabase.from("visitas").select("empreendimento").gte("data_visita", range.start).lte("data_visita", range.end).eq("status", "realizada").not("origem", "like", "backfill_%"),
       ]);
       const empMap = new Map<string, { marcadas: number; realizadas: number }>();
       for (const v of (visMarcadas || [])) {
