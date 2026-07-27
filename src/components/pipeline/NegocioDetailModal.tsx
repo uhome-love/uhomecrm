@@ -267,8 +267,12 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
       stage_changed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     } as any).eq("id", fullNeg.pipeline_lead_id);
-    // Move negócio to distrato
-    onMoveFase(negocio.id, "distrato");
+    // Arquiva o negócio (regressão ≠ perdido). Mantém a fase canônica atual
+    // para preservar histórico; usa status='arquivado' para sair dos boards ativos.
+    await supabase.from("negocios").update({
+      status: "arquivado",
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", negocio.id);
     // Log activity
     await supabase.from("negocios_atividades").insert({
       negocio_id: negocio.id,
