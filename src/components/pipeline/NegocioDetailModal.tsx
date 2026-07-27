@@ -368,7 +368,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
       empreendimento: contEmpreendimento || fullNeg.empreendimento,
       vgv_final: contVgv ? parseCurrencyToNumber(contVgv) : fullNeg.vgv_final,
     } as any);
-    onMoveFase(negocio.id, "documentacao");
+    onMoveFase(negocio.id, "contrato");
     setContratoPopup(false);
     toast.success("📝 Contrato enviado → Coluna Contrato Gerado");
     const { data } = await supabase.from("negocios_atividades").select("*").eq("negocio_id", negocio.id).order("created_at", { ascending: false }).limit(50);
@@ -630,7 +630,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 <CalendarDays className="h-3.5 w-3.5" /> 📅 Reunião
               </Button>
 
-              {/* Solicitar Pagadoria — only shows on "documentacao" or "vendido" phase */}
+              {/* Solicitar Pagadoria — only shows on fase 'contrato' or 'ganho' */}
               {(fullNeg.fase === "em_negociacao" || fullNeg.fase === "ganho") && (
                 <Button
                   variant="outline"
