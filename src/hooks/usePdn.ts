@@ -192,6 +192,10 @@ export function usePdn(mes: string) {
   >([]);
   const [loadingDeals, setLoadingDeals] = useState(true);
   const [loadingEntries, setLoadingEntries] = useState(true);
+  // Marca que já concluímos o 1º load — refreshes seguintes rodam silenciosamente,
+  // sem piscar a UI com o spinner de tela cheia (evita o "refresh infinito" no PDN).
+  const dealsLoadedOnceRef = useRef(false);
+  const entriesLoadedOnceRef = useRef(false);
   // Escopo de corretores resolvido (auth ids). undefined = ainda não resolvido; null = todos.
   const [scopeAuthIds, setScopeAuthIds] = useState<string[] | null | undefined>(undefined);
   const [vendasMes, setVendasMes] = useState<VendaMes[]>([]);
@@ -199,7 +203,7 @@ export function usePdn(mes: string) {
   // ── Overlay do gerente (pdn_entries) ─────────────────────────────────────────
   const loadEntries = useCallback(async () => {
     if (!user) return;
-    setLoadingEntries(true);
+    if (!entriesLoadedOnceRef.current) setLoadingEntries(true);
     const { data, error } = await supabase
       .from("pdn_entries")
       .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao, caiu, motivo_queda, proxima_acao_data, prioridade, risco_manual, risco_motivo, oculto, grupo_override, corretor_avisado_em, corretor_avisado_etapa, updated_at")
@@ -207,10 +211,12 @@ export function usePdn(mes: string) {
     if (error) {
       console.error("Erro ao carregar PDN:", error);
       setLoadingEntries(false);
+      entriesLoadedOnceRef.current = true;
       return;
     }
     setEntries((data || []) as PdnEntry[]);
     setLoadingEntries(false);
+    entriesLoadedOnceRef.current = true;
   }, [user]);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
