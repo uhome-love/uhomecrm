@@ -174,6 +174,7 @@ export function getLeadSubstatusBadge(
     case "visita": {
       const map: Record<string, SubstatusBadge> = {
         marcada: { label: "📅 Visita marcada", className: PILL.indigo },
+        confirmada: { label: "✅ Confirmada", className: PILL.emerald },
         realizada: { label: "✅ Visita realizada", className: PILL.emerald },
         pos_visita: { label: "📋 Pós-visita", className: PILL.purple },
         no_show: { label: "👻 No-show", className: PILL.red },
