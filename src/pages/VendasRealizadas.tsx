@@ -884,7 +884,9 @@ export default function VendasRealizadas() {
                             {(isAdmin || isGestor) && corr && <span className="text-[11px] text-muted-foreground truncate">{corr.nome.split(" ")[0]}</span>}
                             <span className="text-[10px] text-muted-foreground">{v.data_assinatura ? format(new Date(v.data_assinatura + "T12:00:00"), "dd/MM/yy") : "—"}</span>
                           </div>
-                          <ComissaoCell value={comissaoVal} editable={editable} onSave={(val) => saveComissao(v.id, val)} compact />
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <ComissaoCell value={comissaoVal} editable={editable} onSave={(val) => saveComissao(v.id, val)} compact />
+                          </div>
                         </div>
                       </div>
                     );
