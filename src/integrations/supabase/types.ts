@@ -7078,6 +7078,9 @@ export type Database = {
           aceite_expira_em: string | null
           aceite_status: string
           aceito_em: string | null
+          ad_format: string | null
+          ad_id: string | null
+          adset_id: string | null
           ai_replied: boolean | null
           anuncio: string | null
           arquivado: boolean
@@ -7107,6 +7110,8 @@ export type Database = {
           estagnado_prazo_em: string | null
           faixa_valor: string | null
           flag_status: Json | null
+          form_id: string | null
+          form_name: string | null
           forma_pagamento: string | null
           formulario: string | null
           gerente_id: string | null
@@ -7138,6 +7143,7 @@ export type Database = {
           origem: string | null
           origem_detalhe: string | null
           origem_ref: string | null
+          placement: string | null
           plataforma: string | null
           prazo_decisao: string | null
           primeiro_contato_em: string | null
@@ -7178,6 +7184,9 @@ export type Database = {
           aceite_expira_em?: string | null
           aceite_status?: string
           aceito_em?: string | null
+          ad_format?: string | null
+          ad_id?: string | null
+          adset_id?: string | null
           ai_replied?: boolean | null
           anuncio?: string | null
           arquivado?: boolean
@@ -7207,6 +7216,8 @@ export type Database = {
           estagnado_prazo_em?: string | null
           faixa_valor?: string | null
           flag_status?: Json | null
+          form_id?: string | null
+          form_name?: string | null
           forma_pagamento?: string | null
           formulario?: string | null
           gerente_id?: string | null
@@ -7238,6 +7249,7 @@ export type Database = {
           origem?: string | null
           origem_detalhe?: string | null
           origem_ref?: string | null
+          placement?: string | null
           plataforma?: string | null
           prazo_decisao?: string | null
           primeiro_contato_em?: string | null
@@ -7278,6 +7290,9 @@ export type Database = {
           aceite_expira_em?: string | null
           aceite_status?: string
           aceito_em?: string | null
+          ad_format?: string | null
+          ad_id?: string | null
+          adset_id?: string | null
           ai_replied?: boolean | null
           anuncio?: string | null
           arquivado?: boolean
@@ -7307,6 +7322,8 @@ export type Database = {
           estagnado_prazo_em?: string | null
           faixa_valor?: string | null
           flag_status?: Json | null
+          form_id?: string | null
+          form_name?: string | null
           forma_pagamento?: string | null
           formulario?: string | null
           gerente_id?: string | null
@@ -7338,6 +7355,7 @@ export type Database = {
           origem?: string | null
           origem_detalhe?: string | null
           origem_ref?: string | null
+          placement?: string | null
           plataforma?: string | null
           prazo_decisao?: string | null
           primeiro_contato_em?: string | null
