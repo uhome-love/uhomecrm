@@ -483,8 +483,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const tent = allTent.filter(t => t.corretor_id === uid);
           const lig = tent.length;
           const aprov = tent.filter(t => t.resultado === "com_interesse").length;
-          const vm = (allVisMarcadas || []).filter(v => v.corretor_id === uid).length;
-          const vr = (allVisRealizadas || []).filter(v => v.corretor_id === uid && v.status === "realizada").length;
+          const vm = visMarcadasClean.filter(v => v.corretor_id === uid).length;
+          const vr = visRealizadasClean.filter(v => v.corretor_id === uid && v.status === "realizada").length;
           // MIGRATED: Use auth_user_id directly (no profile_id conversion needed)
           const neg = (allNeg || []).filter(n => n.auth_user_id === uid);
           const prop = neg.filter(n => n.fase === "em_negociacao" || n.fase === "em_negociacao").length;
