@@ -666,7 +666,7 @@ export default function PdnGestor() {
           onRemove={handleRemove}
           onQueda={setQuedaRow}
           onReativar={reativarQueda}
-          onMudarEtapa={mudarEtapa}
+          onMudarEtapa={handleMudarEtapa}
           onLimparEtapa={limparEtapaOverride}
           onAvisar={avisarCorretor}
           onAdd={addManualRow}
@@ -698,7 +698,7 @@ export default function PdnGestor() {
                 onRemove={handleRemove}
                 onQueda={setQuedaRow}
                 onReativar={reativarQueda}
-                onMudarEtapa={mudarEtapa}
+                onMudarEtapa={handleMudarEtapa}
                 onAvisar={avisarCorretor}
                 onOpenRow={setSelectedRow}
                 visibleCols={visibleCols}
@@ -741,7 +741,7 @@ export default function PdnGestor() {
         onRemove={handleRemove}
         onQueda={setQuedaRow}
         onReativar={reativarQueda}
-        onMudarEtapa={mudarEtapa}
+        onMudarEtapa={handleMudarEtapa}
         onLimparEtapa={limparEtapaOverride}
         onAvisar={avisarCorretor}
       />
