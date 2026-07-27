@@ -343,6 +343,23 @@ export default function PdnGestor() {
   // Realtime: assina mudanças no pipeline e recarrega o PDN (debounced 800ms).
   usePdnLive(() => { refreshAll(); });
 
+  // Wrapper: se for regressão (destino aparece antes do atual em PDN_GRUPOS) e não
+  // for "caidos", abre o diálogo dedicado para capturar motivo antes de mover.
+  // Progressões seguem direto pelo hook.
+  const handleMudarEtapa = useCallback((row: PdnRow, destino: PdnGrupo) => {
+    if (destino === "caidos") { mudarEtapa(row, destino); return; }
+    const order = PDN_GRUPOS.map(g => g.key);
+    const iAtual = order.indexOf(row.grupo);
+    const iDest = order.indexOf(destino);
+    if (iDest >= 0 && iAtual >= 0 && iDest < iAtual) {
+      setRegredirRow({ row, destino });
+      return;
+    }
+    mudarEtapa(row, destino);
+  }, [mudarEtapa]);
+
+
+
 
   // Visibilidade de colunas (planilha) — persistida por device.
   const COLS_KEY = `pdn:cols:v1:${isMobile ? "mobile" : "desktop"}`;
