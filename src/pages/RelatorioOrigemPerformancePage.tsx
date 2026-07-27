@@ -32,8 +32,8 @@ export default function RelatorioOrigemPerformancePage() {
     <div style={{ height: "100vh", overflowY: "auto", background: "#f0f0f5" }}>
       <div style={{ background: "#fff", borderBottom: "0.5px solid #e5e7eb", padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div style={{ marginRight: "auto" }}>
-          <h1 style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Performance por Origem</h1>
-          <p style={{ fontSize: 12, color: "#6b7280" }}>Qualidade de lead por campanha, conjunto, criativo, plataforma e corretor</p>
+          <h1 style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Dados Anúncios</h1>
+          <p style={{ fontSize: 12, color: "#6b7280" }}>Rastreamento completo: campanha, conjunto, criativo, formulário, plataforma e conversões</p>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {PILLS.map((p) => (
