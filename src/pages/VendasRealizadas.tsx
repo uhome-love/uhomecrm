@@ -478,6 +478,16 @@ export default function VendasRealizadas() {
   // Dono (auth id) de cada venda
   const ownerAuthId = (v: VendaRow): string | null => (v.corretor_id ? profileIdToAuthId[v.corretor_id] || null : null);
 
+  // Pode editar? admin/gestor sempre; corretor só se for dono ou parceiro.
+  const canEditVenda = (v: VendaRow): boolean => {
+    if (isAdmin || isGestor) return true;
+    if (!user) return false;
+    const oid = ownerAuthId(v);
+    if (oid && oid === user.id) return true;
+    const parceria = v.pipeline_lead_id ? parceriaPartners[v.pipeline_lead_id] : null;
+    return !!(parceria?.auth_user_ids.includes(user.id));
+  };
+
   // Faturamento (soma das comissões visíveis no período)
   const faturamento = useMemo(() => {
     let total = 0;
