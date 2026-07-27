@@ -67,9 +67,10 @@ export function useEditarVenda() {
         if (changes.length > 0) {
           await supabase.from("negocios_atividades").insert({
             negocio_id: p.id,
-            user_id: user?.id ?? null,
+            created_by: user?.id ?? null,
             tipo: "edicao_manual",
-            descricao: `Edição manual em Vendas Realizadas — ${changes.join(" | ")}`,
+            titulo: "Edição em Vendas Realizadas",
+            descricao: changes.join(" | "),
           } as never);
         }
       } catch (e) {
