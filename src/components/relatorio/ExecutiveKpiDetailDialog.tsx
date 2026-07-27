@@ -132,7 +132,7 @@ export default function ExecutiveKpiDetailDialog({ open, onOpenChange, type, lab
       let q = supabase.from("negocios").select("id, corretor_id, auth_user_id, nome_cliente, fase, empreendimento, pipeline_lead_id, created_at")
         .gte("created_at", tsStart).lte("created_at", tsEnd)
         .order("created_at", { ascending: false }).limit(5000);
-      if (type === "negociosGerados") q = q.in("fase", ["proposta", "negociacao", "documentacao", "assinado", "vendido"]);
+      if (type === "negociosGerados") q = q.in("fase", ["em_negociacao", "ganho"]);
       if (scopeProfileIds) {
         const orParts = [
           ...scopeProfileIds.map(id => `corretor_id.eq.${id}`),
@@ -153,7 +153,7 @@ export default function ExecutiveKpiDetailDialog({ open, onOpenChange, type, lab
 
     } else if (type === "negociosAssinados" || type === "vgvTotal") {
       let q = supabase.from("negocios").select("id, corretor_id, auth_user_id, nome_cliente, fase, vgv_estimado, vgv_final, empreendimento, pipeline_lead_id, data_assinatura")
-        .in("fase", ["assinado", "vendido"])
+        .in("fase", ["ganho"])
         .gte("data_assinatura", start).lte("data_assinatura", end)
         .order("data_assinatura", { ascending: false }).limit(5000);
       if (scopeProfileIds) {

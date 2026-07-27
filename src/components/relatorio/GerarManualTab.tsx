@@ -181,16 +181,16 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
       const visitasNoShow = visitas.filter(v => v.status === "no_show").length;
 
       // Deal metrics — use fase and date filters
-      const negociosAtivos = negocios.filter(n => n.fase && !["perdido", "cancelado", "distrato", "vendido", "assinado"].includes(n.fase)).length;
-      const propostas = negocios.filter(n => n.fase && ["proposta", "negociacao", "documentacao"].includes(n.fase)).length;
+      const negociosAtivos = negocios.filter(n => n.fase && !["perdido", "cancelado", "distrato", "ganho"].includes(n.fase)).length;
+      const propostas = negocios.filter(n => n.fase && ["em_negociacao"].includes(n.fase)).length;
       const vendasPeriodo = negocios.filter(n =>
-        n.fase && ["vendido", "assinado"].includes(n.fase) &&
+        n.fase && ["ganho"].includes(n.fase) &&
         n.data_assinatura && n.data_assinatura >= dataInicio && n.data_assinatura <= dataFim
       );
       const vendas = vendasPeriodo.length;
       const perdidos = negocios.filter(n => n.fase && ["perdido", "cancelado", "distrato"].includes(n.fase)).length;
       const vgvAndamento = negocios
-        .filter(n => n.fase && !["perdido", "cancelado", "distrato", "vendido", "assinado"].includes(n.fase))
+        .filter(n => n.fase && !["perdido", "cancelado", "distrato", "ganho"].includes(n.fase))
         .reduce((s, n) => s + (Number(n.vgv_estimado) || 0), 0);
       const vgvGerado = negocios
         .filter(n => n.fase && !["perdido", "cancelado", "distrato"].includes(n.fase))

@@ -580,7 +580,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
             </div>
 
             {/* Data de Assinatura — editável quando vendido */}
-            {fullNeg.fase === "vendido" && (
+            {fullNeg.fase === "ganho" && (
               <div className="flex items-center gap-2 flex-wrap bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
                 <CalendarDays className="h-4 w-4 text-emerald-600 shrink-0" />
                 <Label className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">Data da Venda:</Label>
@@ -627,7 +627,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
               </Button>
 
               {/* Solicitar Pagadoria — only shows on "documentacao" or "vendido" phase */}
-              {(fullNeg.fase === "documentacao" || fullNeg.fase === "vendido") && (
+              {(fullNeg.fase === "em_negociacao" || fullNeg.fase === "ganho") && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -987,22 +987,22 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
 
           {/* ════════ FOOTER ════════ */}
           <div className="shrink-0 border-t border-border/50 px-6 py-3 flex items-center gap-2">
-            {fullNeg.fase === "documentacao" && (
+            {fullNeg.fase === "em_negociacao" && (
               <Button className="gap-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => { onMoveFase(negocio.id, "vendido"); onOpenChange(false); }}>
                 🏆 Marcar como VENDIDO
               </Button>
             )}
-            {fullNeg.fase === "proposta" && (
-              <Button variant="outline" className="gap-1 text-xs border-amber-300 text-amber-700" onClick={() => { onMoveFase(negocio.id, "negociacao"); set("fase", "negociacao"); }}>
+            {fullNeg.fase === "em_negociacao" && (
+              <Button variant="outline" className="gap-1 text-xs border-amber-300 text-amber-700" onClick={() => { onMoveFase(negocio.id, "em_negociacao"); set("fase", "em_negociacao"); }}>
                 🤝 → Negociação
               </Button>
             )}
-            {fullNeg.fase === "negociacao" && (
-              <Button variant="outline" className="gap-1 text-xs border-purple-300 text-purple-700" onClick={() => { onMoveFase(negocio.id, "documentacao"); set("fase", "documentacao"); }}>
+            {fullNeg.fase === "em_negociacao" && (
+              <Button variant="outline" className="gap-1 text-xs border-purple-300 text-purple-700" onClick={() => { onMoveFase(negocio.id, "em_negociacao"); set("fase", "em_negociacao"); }}>
                 📄 → Contrato Gerado
               </Button>
             )}
-            {fullNeg.pipeline_lead_id && fullNeg.fase !== "vendido" && fullNeg.fase !== "distrato" && (
+            {fullNeg.pipeline_lead_id && fullNeg.fase !== "ganho" && fullNeg.fase !== "distrato" && (
               <Button variant="outline" className="gap-1 text-xs border-destructive/30 text-destructive" onClick={() => setRegressOpen(true)}>
                 🔄 Regredir para Pipeline
               </Button>

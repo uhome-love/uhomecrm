@@ -41,11 +41,11 @@ type SortCol = "cliente" | "empreendimento" | "corretor" | "faseLabel" | "vgv" |
 type SortDir = "asc" | "desc";
 
 const FASES: Array<{ fase: string; label: string; color: string; bg: string }> = [
-  { fase: "novo_negocio", label: "Novo negócio", color: "#1e40af", bg: "#dbeafe" },
-  { fase: "proposta", label: "Proposta", color: "#92400e", bg: "#fef3c7" },
-  { fase: "negociacao", label: "Negociação", color: "#9a3412", bg: "#fed7aa" },
-  { fase: "documentacao", label: "Documentação", color: "#5b21b6", bg: "#ede9fe" },
-  { fase: "vendido", label: "Vendido", color: "#065f46", bg: "#d1fae5" },
+  { fase: "em_negociacao", label: "Novo negócio", color: "#1e40af", bg: "#dbeafe" },
+  { fase: "em_negociacao", label: "Proposta", color: "#92400e", bg: "#fef3c7" },
+  { fase: "em_negociacao", label: "Negociação", color: "#9a3412", bg: "#fed7aa" },
+  { fase: "em_negociacao", label: "Documentação", color: "#5b21b6", bg: "#ede9fe" },
+  { fase: "ganho", label: "Vendido", color: "#065f46", bg: "#d1fae5" },
   { fase: "perdido", label: "Perdido", color: "#991b1b", bg: "#fee2e2" },
   { fase: "distrato", label: "Caiu", color: "#6b7280", bg: "#f3f4f6" },
 ];
@@ -153,9 +153,9 @@ export default function RelatorioNegocios({ filters }: Props) {
   }, [startDate, endDate, prev.startDate, prev.endDate, filters.corretor, filters.equipe, filters.segmento]);
 
   const total = negocios.length;
-  const ativos = negocios.filter((n) => !["vendido", "perdido", "distrato"].includes(n.fase)).length;
-  const vendidos = negocios.filter((n) => n.fase === "vendido").length;
-  const vgvPipeline = negocios.filter((n) => !["vendido", "perdido", "distrato"].includes(n.fase)).reduce((a, n) => a + n.vgv, 0);
+  const ativos = negocios.filter((n) => !["ganho", "perdido", "distrato"].includes(n.fase)).length;
+  const vendidos = negocios.filter((n) => n.fase === "ganho").length;
+  const vgvPipeline = negocios.filter((n) => !["ganho", "perdido", "distrato"].includes(n.fase)).reduce((a, n) => a + n.vgv, 0);
 
   function pctVar(curr: number, prev2: number): string {
     if (prev2 === 0 && curr === 0) return "";

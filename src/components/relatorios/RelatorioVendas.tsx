@@ -44,7 +44,7 @@ type SortDir = "asc" | "desc";
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function faseToStatus(fase: string): string {
-  if (fase === "vendido") return "Confirmada";
+  if (fase === "ganho") return "Confirmada";
   if (fase === "distrato") return "Caiu";
   return fase;
 }
@@ -186,7 +186,7 @@ export default function RelatorioVendas({ filters }: RelatorioVendasProps) {
         let q = supabase
           .from("negocios")
           .select("id, empreendimento, fase, vgv_final, vgv_estimado, data_assinatura, corretor_id, pipeline_lead_id, created_at")
-          .eq("fase", "vendido")
+          .eq("fase", "ganho")
           .gte("data_assinatura", sISO)
           .lte("data_assinatura", eISO);
         if (corretorProfileId) q = q.eq("corretor_id", corretorProfileId);

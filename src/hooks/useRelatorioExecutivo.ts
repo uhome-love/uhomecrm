@@ -260,10 +260,10 @@ export function useRelatorioExecutivo(period: PeriodRange) {
 
       // Negócios assinados (by data_assinatura within period)
       let negAssinadosQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, data_assinatura, lead_id")
-        .in("fase", ["assinado", "vendido"])
+        .in("fase", ["ganho"])
         .gte("data_assinatura", dStart).lte("data_assinatura", dEnd).limit(10000);
       let prevNegAssinadosQ = supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, data_assinatura")
-        .in("fase", ["assinado", "vendido"])
+        .in("fase", ["ganho"])
         .gte("data_assinatura", pdStart).lte("data_assinatura", pdEnd).limit(10000);
 
       // Negocios uses corretor_id (profile_id) and auth_user_id
@@ -371,7 +371,7 @@ export function useRelatorioExecutivo(period: PeriodRange) {
 
       const negCriados = (negData || []).length;
       const negGerados = (negData || []).filter(n => 
-        ["proposta", "negociacao", "documentacao", "assinado", "vendido"].includes(n.fase || "")
+        ["em_negociacao", "ganho"].includes(n.fase || "")
       ).length;
       // Assinados & VGV: use data_assinatura-based queries
       const negAssinados = (negAssinadosData || []).length;
@@ -380,7 +380,7 @@ export function useRelatorioExecutivo(period: PeriodRange) {
 
       const prevNegCriados = (prevNegData || []).length;
       const prevNegGerados = (prevNegData || []).filter(n => 
-        ["proposta", "negociacao", "documentacao", "assinado", "vendido"].includes(n.fase || "")
+        ["em_negociacao", "ganho"].includes(n.fase || "")
       ).length;
       const prevNegAssinados = (prevNegAssinadosData || []).length;
       const prevVgv = (prevNegAssinadosData || [])

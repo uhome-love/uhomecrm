@@ -112,8 +112,8 @@ export const VISITA_STATUS_NO_SHOW = 'no_show' as const;
 export const PRESENCA_VALID = ['presente', 'home_office', 'externo'] as const;
 export const DISPONIBILIDADE_ONLINE = ['online', 'na_empresa', 'disponivel', 'em_pausa', 'em_visita'] as const;
 
-export const NEGOCIO_FASES_PROPOSTA = ['proposta', 'negociacao', 'documentacao'] as const;
-export const NEGOCIO_FASES_ASSINADO = ['vendido'] as const;
+export const NEGOCIO_FASES_PROPOSTA = ['em_negociacao', 'em_negociacao', 'em_negociacao'] as const;
+export const NEGOCIO_FASES_ASSINADO = ['ganho'] as const;
 export const NEGOCIO_FASES_PERDIDO = ['perdido', 'cancelado', 'distrato'] as const;
 
 /**

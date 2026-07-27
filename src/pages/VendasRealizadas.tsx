@@ -254,7 +254,7 @@ export default function VendasRealizadas() {
 
       let query = supabase.from("negocios")
         .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
-        .eq("fase", "vendido")
+        .eq("fase", "ganho")
         .gte("data_assinatura", dateRange.start)
         .lte("data_assinatura", dateRange.end)
         .order("data_assinatura", { ascending: false });
@@ -262,13 +262,13 @@ export default function VendasRealizadas() {
       if (!isAdmin && !isGestor && profileId) {
         query = query.eq("corretor_id", profileId);
         const { data: partnerDeals } = await supabase.from("v_kpi_negocios")
-          .select("id").eq("auth_user_id", user!.id).eq("fase", "vendido")
+          .select("id").eq("auth_user_id", user!.id).eq("fase", "ganho")
           .gte("data_assinatura", dateRange.start).lte("data_assinatura", dateRange.end).eq("is_parceria", true);
         const partnerDealIds = (partnerDeals || []).map(d => d.id as string);
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
             .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
-            .in("id", partnerDealIds).eq("fase", "vendido");
+            .in("id", partnerDealIds).eq("fase", "ganho");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
       } else if (isGestor && !isAdmin) {
@@ -282,7 +282,7 @@ export default function VendasRealizadas() {
         if (profileId && !teamProfileIds.includes(profileId)) teamProfileIds.push(profileId);
 
         const { data: partnerDeals } = await supabase.from("v_kpi_negocios")
-          .select("id").in("auth_user_id", allTeamAuthIds).eq("fase", "vendido")
+          .select("id").in("auth_user_id", allTeamAuthIds).eq("fase", "ganho")
           .gte("data_assinatura", dateRange.start).lte("data_assinatura", dateRange.end).eq("is_parceria", true);
         const partnerDealIds = (partnerDeals || []).map(d => d.id as string);
 
@@ -291,7 +291,7 @@ export default function VendasRealizadas() {
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
             .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
-            .in("id", partnerDealIds).eq("fase", "vendido");
+            .in("id", partnerDealIds).eq("fase", "ganho");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
       }

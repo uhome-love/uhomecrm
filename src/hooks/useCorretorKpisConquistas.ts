@@ -2,7 +2,7 @@
  * useCorretorKpisConquistas — KPIs de resultado do mês BRT atual.
  *
  *   - visitasRealizadas: visitas.status='realizada' no mês BRT corrente
- *   - vendas: negocios.fase='vendido' com data_assinatura no mês BRT corrente
+ *   - vendas: negocios.fase='ganho' com data_assinatura no mês BRT corrente
  *             ⚠️ negocios.corretor_id = profiles.id (pitfall conhecido)
  *   - visitasProximas7d: visitas.status IN ('marcada','confirmada','reagendada')
  *                       nos próximos 7 dias BRT (subtítulo do card Agenda)
@@ -65,7 +65,7 @@ export function useCorretorKpisConquistas() {
             .from("negocios")
             .select("id", { count: "exact", head: true })
             .eq("corretor_id", profileId)
-            .eq("fase", "vendido")
+            .eq("fase", "ganho")
             .gte("data_assinatura", inicioMes)
         : Promise.resolve({ count: 0, error: null } as any);
 

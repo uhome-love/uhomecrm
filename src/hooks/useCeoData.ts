@@ -174,12 +174,12 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     // Fetch split-attributed deals from canonical view
     // assinado/vendido by data_assinatura, proposta/negociacao/documentacao by data_criacao
     let negAssinadoQuery = supabase.from("v_kpi_negocios").select("id, auth_user_id, vgv_efetivo, fase, fator_split, is_parceria, pipeline_lead_id, equipe_gerente_auth_id")
-      .in("fase", ["assinado", "vendido"])
+      .in("fase", ["ganho"])
       .gte("data_assinatura", dateRange.start)
       .lte("data_assinatura", dateRange.end);
     
     let negPropostaQuery = supabase.from("v_kpi_negocios").select("id, auth_user_id, vgv_efetivo, fase, fator_split, is_parceria, pipeline_lead_id")
-      .in("fase", ["proposta", "negociacao", "documentacao"])
+      .in("fase", ["em_negociacao"])
       .gte("data_criacao", `${mesKey}-01`)
       .lte("data_criacao", `${mesKey}-31`);
     
@@ -206,7 +206,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
       const vgv = Number(p.vgv_efetivo || 0);
 
       // Gerente-level ASSINADO pela equipe dona da venda (independente da equipe atual)
-      if (fase === "assinado" || fase === "vendido") {
+      if (fase === "ganho" || fase === "ganho") {
         const eqId = (p as any).equipe_gerente_auth_id as string | null;
         if (eqId) assinadoByEquipe.set(eqId, (assinadoByEquipe.get(eqId) || 0) + vgv);
       }
@@ -217,16 +217,16 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
       const gId = agg.gerente_id;
 
       // Assign split-aware VGV directly to corretor (VGV do corretor preservado)
-      if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") {
+      if (fase === "em_negociacao" || fase === "em_negociacao" || fase === "em_negociacao") {
         agg.real_vgv_gerado += vgv;
       }
-      if (fase === "assinado" || fase === "vendido") {
+      if (fase === "ganho" || fase === "ganho") {
         agg.real_vgv_assinado += vgv;
       }
 
       // Aggregate gerado + propostas at gerente level (equipe atual)
       const curr = pdnByGerente.get(gId) || { gerado: 0, propostas_count: 0 };
-      if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") {
+      if (fase === "em_negociacao" || fase === "em_negociacao" || fase === "em_negociacao") {
         curr.gerado += vgv;
         // Count unique deals for propostas (partnership deals appear twice in view)
         if (!gerenteDealIds.has(gId)) gerenteDealIds.set(gId, new Set());

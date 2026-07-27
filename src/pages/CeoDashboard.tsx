@@ -316,7 +316,7 @@ export default function CeoDashboard() {
   const totalVisitas = kpis.visitasMarcadas + kpis.visitasRealizadas + kpis.noShows;
   const totalNeg = negocioFases.reduce((a: number, f: any) => a + f.count, 0);
   const negTotalVgv = negocioFases.reduce((a: number, f: any) => a + f.vgv, 0);
-  const contratoGerado = negocioFases.find((f: any) => f.fase === "documentacao");
+  const contratoGerado = negocioFases.find((f: any) => f.fase === "em_negociacao");
   const vgvContrato = contratoGerado?.vgv || 0;
   const countContrato = contratoGerado?.count || 0;
   const leadsDistribuidos = enviadosRoleta;

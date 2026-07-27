@@ -173,7 +173,7 @@ export async function syncPipelineStageFromPdn(
         gerente_id: gerenteProfileId,
         empreendimento: row.empreendimento && row.empreendimento !== "—" ? row.empreendimento : null,
         vgv_estimado: row.vgv || null,
-        fase: GRUPO_TO_FASE[grupo] || "proposta",
+        fase: GRUPO_TO_FASE[grupo] || "em_negociacao",
         origem: "pdn_gestor",
         status: "ativo",
       } as any)

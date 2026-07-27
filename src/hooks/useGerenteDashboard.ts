@@ -290,7 +290,7 @@ export function useGerenteDashboard(period: Period) {
       }
 
       const cutoff48h = new Date(now.getTime() - 48 * 3600 * 1000).toISOString();
-      const { count: negParados } = await supabase.from("negocios").select("id", { count: "exact", head: true }).eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")').lt("updated_at", cutoff48h);
+      const { count: negParados } = await supabase.from("negocios").select("id", { count: "exact", head: true }).eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","ganho")').lt("updated_at", cutoff48h);
       if ((negParados || 0) > 0) alerts.push({ id: "negocios_parados", type: "warning", icon: "💼", label: "negócios sem atualização >48h", count: negParados || 0, route: "/pipeline-negocios" });
 
       const { data: tentHoje } = await supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`);
@@ -351,7 +351,7 @@ export function useGerenteDashboard(period: Period) {
   const { data: negociosAcao } = useQuery({
     queryKey: ["gerente-negocios-acao-v2", user?.id, profileId],
     queryFn: async () => {
-      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")').order("updated_at", { ascending: true }).limit(5);
+      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","ganho")').order("updated_at", { ascending: true }).limit(5);
       if (!data) return [];
       const corrIds = [...new Set(data.map(n => n.corretor_id).filter(Boolean))];
       const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds as string[]) : { data: [] };
@@ -377,7 +377,7 @@ export function useGerenteDashboard(period: Period) {
   const { data: negociosQuentes } = useQuery({
     queryKey: ["gerente-negocios-quentes", user?.id, profileId],
     queryFn: async () => {
-      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")');
+      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","ganho")');
       if (!data || data.length === 0) return [];
       const corrIds = [...new Set(data.map(n => n.corretor_id).filter(Boolean))];
       const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds as string[]) : { data: [] };
@@ -413,7 +413,7 @@ export function useGerenteDashboard(period: Period) {
       const { data } = await supabase.from("negocios")
         .select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor, fase_changed_at")
         .eq("gerente_id", profileId!)
-        .in("fase", ["proposta", "negociacao", "documentacao"])
+        .in("fase", ["em_negociacao"])
         .order("updated_at", { ascending: false })
         .limit(30);
       if (!data) return { proposta: [], negociacao: [], documentacao: [] };
@@ -422,9 +422,9 @@ export function useGerenteDashboard(period: Period) {
       const nameMap = Object.fromEntries((profs || []).map(p => [p.user_id, p.nome]));
       const map = (n: any) => ({ id: n.id, nome_cliente: n.nome_cliente || "Cliente", empreendimento: n.empreendimento || "—", vgv: Number(n.vgv_estimado || 0), fase: n.fase, corretor_nome: n.corretor_id ? (nameMap[n.corretor_id] || "Corretor") : "—", unidade: n.unidade || "", proposta_valor: Number(n.proposta_valor || 0), fase_changed_at: n.fase_changed_at });
       return {
-        proposta: data.filter(n => n.fase === "proposta").map(map),
-        negociacao: data.filter(n => n.fase === "negociacao").map(map),
-        documentacao: data.filter(n => n.fase === "documentacao").map(map),
+        proposta: data.filter(n => n.fase === "em_negociacao").map(map),
+        negociacao: data.filter(n => n.fase === "em_negociacao").map(map),
+        documentacao: data.filter(n => n.fase === "em_negociacao").map(map),
       };
     },
     enabled: !!user && !!profileId,
@@ -457,7 +457,7 @@ export function useGerenteDashboard(period: Period) {
         supabase.from("negocios")
           .select("id, data_assinatura, nome_cliente")
           .eq("gerente_id", profileId!)
-          .in("fase", ["documentacao", "assinado"])
+          .in("fase", ["em_negociacao", "ganho"])
           .not("data_assinatura", "is", null),
       ]);
 

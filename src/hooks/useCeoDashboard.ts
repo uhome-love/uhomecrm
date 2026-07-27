@@ -407,7 +407,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       for (const n of (negocios || [])) {
         const uid = n.auth_user_id;
         if (!uid) continue;
-        if (n.fase !== "vendido") continue;
+        if (n.fase !== "ganho") continue;
         corrMap.set(uid, (corrMap.get(uid) || 0) + (n.vgv_final || n.vgv_estimado || 0));
       }
       const corrIds = [...corrMap.keys()];
@@ -452,7 +452,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
         supabase.from("visitas").select("id, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
-        supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "vendido").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
+        supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "ganho").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
       ]);
 
       // Paginated tentativas
@@ -483,7 +483,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const vr = (allVisRealizadas || []).filter(v => v.corretor_id === uid && v.status === "realizada").length;
           // MIGRATED: Use auth_user_id directly (no profile_id conversion needed)
           const neg = (allNeg || []).filter(n => n.auth_user_id === uid);
-          const prop = neg.filter(n => n.fase === "proposta" || n.fase === "negociacao").length;
+          const prop = neg.filter(n => n.fase === "em_negociacao" || n.fase === "em_negociacao").length;
           const vgv = neg.reduce((s: number, n: any) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
           corretoresAll.push({

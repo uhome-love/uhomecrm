@@ -120,7 +120,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
   const handleConfirm = () => {
     if (targetFase === "proposta") {
       onConfirm({
-        fase: "proposta",
+        fase: "em_negociacao",
         fields: {
           imovel: propImovel,
           valor_imovel: rawToNumber(propValorImovel),
@@ -131,13 +131,13 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
       });
     } else if (targetFase === "negociacao") {
       onConfirm({
-        fase: "negociacao",
+        fase: "em_negociacao",
         fields: { valor_proposta_cliente: rawToNumber(negValorProposta), valor_contra_proposta: rawToNumber(negContraProposta), observacoes: negObs },
       });
     } else if (targetFase === "documentacao") {
       const taxa = contTaxa === "custom" ? contTaxaCustom : contTaxa;
       onConfirm({
-        fase: "documentacao",
+        fase: "em_negociacao",
         fields: {
           imovel: contImovel,
           unidade: contUnidade,
@@ -149,7 +149,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
       });
     } else if (targetFase === "vendido") {
       onConfirm({
-        fase: "vendido",
+        fase: "ganho",
         fields: {
           tipo_assinatura: assDigital,
           ato_pago: assAtoPago,

@@ -120,8 +120,8 @@ export default function FunilContent() {
 
     const pdn_negocios = (negs || []).length;
     const pdn_vgv = (negs || []).reduce((sum: number, p: any) => sum + Number(p.vgv_final || p.vgv_estimado || 0), 0);
-    const vgv_gerado = (negs || []).filter((p: any) => ["proposta", "negociacao", "documentacao"].includes(p.fase)).reduce((s: number, p: any) => s + Number(p.vgv_estimado || 0), 0);
-    const vgv_assinado = (negs || []).filter((p: any) => p.fase === "vendido").reduce((s: number, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+    const vgv_gerado = (negs || []).filter((p: any) => ["em_negociacao"].includes(p.fase)).reduce((s: number, p: any) => s + Number(p.vgv_estimado || 0), 0);
+    const vgv_assinado = (negs || []).filter((p: any) => p.fase === "ganho").reduce((s: number, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
     totals.vgv_gerado = vgv_gerado;
     totals.vgv_assinado = vgv_assinado;
 
@@ -138,8 +138,8 @@ export default function FunilContent() {
       const match = Object.entries(by_corretor).find(([_, c]) => c.nome === corretorName);
       if (match) {
         const fase = p.fase || "";
-        if (["proposta", "negociacao", "documentacao"].includes(fase)) match[1].vgv_gerado += Number(p.vgv_estimado || 0);
-        if (fase === "vendido") match[1].vgv_assinado += Number(p.vgv_final || p.vgv_estimado || 0);
+        if (["em_negociacao"].includes(fase)) match[1].vgv_gerado += Number(p.vgv_estimado || 0);
+        if (fase === "ganho") match[1].vgv_assinado += Number(p.vgv_final || p.vgv_estimado || 0);
       }
     }
 
