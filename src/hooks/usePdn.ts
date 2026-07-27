@@ -224,7 +224,7 @@ export function usePdn(mes: string) {
   // ── Fonte única: pipeline_leads (Em Negociação / Contrato / Ganho) ───────────
   const loadDeals = useCallback(async () => {
     if (!user) return;
-    setLoadingDeals(true);
+    if (!dealsLoadedOnceRef.current) setLoadingDeals(true);
 
     // Escopo de corretores (auth ids)
     let corretorAuthIds: string[] | null = null; // null = admin/diretor/CEO (todas as equipes)
@@ -252,6 +252,7 @@ export function usePdn(mes: string) {
     if (stageIds.length === 0) {
       setDeals([]);
       setLoadingDeals(false);
+      dealsLoadedOnceRef.current = true;
       return;
     }
 
@@ -262,13 +263,14 @@ export function usePdn(mes: string) {
       .eq("arquivado", false)
       .limit(2000);
     if (corretorAuthIds) {
-      if (corretorAuthIds.length === 0) { setDeals([]); setLoadingDeals(false); return; }
+      if (corretorAuthIds.length === 0) { setDeals([]); setLoadingDeals(false); dealsLoadedOnceRef.current = true; return; }
       leadQuery = leadQuery.in("corretor_id", corretorAuthIds);
     }
     const { data: leads, error: leadErr } = await leadQuery;
     if (leadErr) {
       console.error("Erro ao carregar pipeline do PDN:", leadErr);
       setLoadingDeals(false);
+      dealsLoadedOnceRef.current = true;
       return;
     }
 
@@ -322,6 +324,7 @@ export function usePdn(mes: string) {
     });
     setDeals(dealRows);
     setLoadingDeals(false);
+    dealsLoadedOnceRef.current = true;
   }, [user, isAdmin, isGestor, isDiretor]);
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
