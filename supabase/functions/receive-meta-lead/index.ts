@@ -222,7 +222,9 @@ Deno.serve(async (req) => {
           field_data: lead.field_data || [],
           campaign_id: lead.campaign_id,
           campaign_name: lead.campaign_name,
+          adset_id: lead.adset_id,
           adset_name: lead.adset_name,
+          ad_id: lead.ad_id,
           ad_name: lead.ad_name,
           formId: lead.form_id,
           form_name: lead.form_name,
@@ -298,8 +300,10 @@ Deno.serve(async (req) => {
     let formName = v("form_name", "formName", "formulario");
     let adName = v("ad_name", "adName", "adId");
     let adsetName = v("adset_name", "adsetName", "adgroupId");
+    let adsetId = v("adset_id", "adsetId", "adgroup_id");
+    let adId = v("ad_id");
     let propertyCode = v("property_code", "propertyCode", "codigo_imovel");
-    const metaFormId = v("formId");
+    const metaFormId = v("formId", "form_id");
     let externalLeadId = v("lead_id", "leadId", "meta_lead_id", "leadgen_id", "id");
 
     // Extract property code from "imovel_referencia" field (e.g. "18273-BT - Venda")
@@ -822,8 +826,12 @@ Deno.serve(async (req) => {
         campanha: campaignName || (message ? message.slice(0, 100) : null),
         campanha_id: campaignId || null,
         conjunto_anuncio: adsetName || null,
+        adset_id: adsetId || null,
         anuncio: adName || null,
+        ad_id: adId || null,
         formulario: formName || null,
+        form_id: metaFormId || null,
+        form_name: formName || null,
         plataforma: platform || null,
         observacoes: obsText,
         corretor_id: atribuicaoDiretaBruno ? corretorDiretoId : null,

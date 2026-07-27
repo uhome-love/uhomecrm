@@ -4375,6 +4375,144 @@ export type Database = {
           },
         ]
       }
+      marketing_entries_ad: {
+        Row: {
+          ad_format: string | null
+          ad_id: string
+          ad_name: string | null
+          adset_id: string
+          adset_name: string | null
+          campaign_id: string
+          campaign_name: string | null
+          cliques: number | null
+          cpc: number | null
+          cpl: number | null
+          created_at: string
+          creative_type: string | null
+          ctr: number | null
+          date_start: string
+          date_stop: string
+          id: string
+          impressoes: number | null
+          leads: number | null
+          platform_position: string | null
+          publisher_platform: string | null
+          spend: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ad_format?: string | null
+          ad_id: string
+          ad_name?: string | null
+          adset_id: string
+          adset_name?: string | null
+          campaign_id: string
+          campaign_name?: string | null
+          cliques?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          creative_type?: string | null
+          ctr?: number | null
+          date_start: string
+          date_stop: string
+          id?: string
+          impressoes?: number | null
+          leads?: number | null
+          platform_position?: string | null
+          publisher_platform?: string | null
+          spend?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ad_format?: string | null
+          ad_id?: string
+          ad_name?: string | null
+          adset_id?: string
+          adset_name?: string | null
+          campaign_id?: string
+          campaign_name?: string | null
+          cliques?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          creative_type?: string | null
+          ctr?: number | null
+          date_start?: string
+          date_stop?: string
+          id?: string
+          impressoes?: number | null
+          leads?: number | null
+          platform_position?: string | null
+          publisher_platform?: string | null
+          spend?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      marketing_entries_adset: {
+        Row: {
+          adset_id: string
+          adset_name: string | null
+          campaign_id: string
+          campaign_name: string | null
+          cliques: number | null
+          cpc: number | null
+          cpl: number | null
+          created_at: string
+          ctr: number | null
+          date_start: string
+          date_stop: string
+          id: string
+          impressoes: number | null
+          leads: number | null
+          spend: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          adset_id: string
+          adset_name?: string | null
+          campaign_id: string
+          campaign_name?: string | null
+          cliques?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          ctr?: number | null
+          date_start: string
+          date_stop: string
+          id?: string
+          impressoes?: number | null
+          leads?: number | null
+          spend?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          adset_id?: string
+          adset_name?: string | null
+          campaign_id?: string
+          campaign_name?: string | null
+          cliques?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          ctr?: number | null
+          date_start?: string
+          date_stop?: string
+          id?: string
+          impressoes?: number | null
+          leads?: number | null
+          spend?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       marketing_reports: {
         Row: {
           canal: string
@@ -7078,6 +7216,9 @@ export type Database = {
           aceite_expira_em: string | null
           aceite_status: string
           aceito_em: string | null
+          ad_format: string | null
+          ad_id: string | null
+          adset_id: string | null
           ai_replied: boolean | null
           anuncio: string | null
           arquivado: boolean
@@ -7107,6 +7248,8 @@ export type Database = {
           estagnado_prazo_em: string | null
           faixa_valor: string | null
           flag_status: Json | null
+          form_id: string | null
+          form_name: string | null
           forma_pagamento: string | null
           formulario: string | null
           gerente_id: string | null
@@ -7138,6 +7281,7 @@ export type Database = {
           origem: string | null
           origem_detalhe: string | null
           origem_ref: string | null
+          placement: string | null
           plataforma: string | null
           prazo_decisao: string | null
           primeiro_contato_em: string | null
@@ -7178,6 +7322,9 @@ export type Database = {
           aceite_expira_em?: string | null
           aceite_status?: string
           aceito_em?: string | null
+          ad_format?: string | null
+          ad_id?: string | null
+          adset_id?: string | null
           ai_replied?: boolean | null
           anuncio?: string | null
           arquivado?: boolean
@@ -7207,6 +7354,8 @@ export type Database = {
           estagnado_prazo_em?: string | null
           faixa_valor?: string | null
           flag_status?: Json | null
+          form_id?: string | null
+          form_name?: string | null
           forma_pagamento?: string | null
           formulario?: string | null
           gerente_id?: string | null
@@ -7238,6 +7387,7 @@ export type Database = {
           origem?: string | null
           origem_detalhe?: string | null
           origem_ref?: string | null
+          placement?: string | null
           plataforma?: string | null
           prazo_decisao?: string | null
           primeiro_contato_em?: string | null
@@ -7278,6 +7428,9 @@ export type Database = {
           aceite_expira_em?: string | null
           aceite_status?: string
           aceito_em?: string | null
+          ad_format?: string | null
+          ad_id?: string | null
+          adset_id?: string | null
           ai_replied?: boolean | null
           anuncio?: string | null
           arquivado?: boolean
@@ -7307,6 +7460,8 @@ export type Database = {
           estagnado_prazo_em?: string | null
           faixa_valor?: string | null
           flag_status?: Json | null
+          form_id?: string | null
+          form_name?: string | null
           forma_pagamento?: string | null
           formulario?: string | null
           gerente_id?: string | null
@@ -7338,6 +7493,7 @@ export type Database = {
           origem?: string | null
           origem_detalhe?: string | null
           origem_ref?: string | null
+          placement?: string | null
           plataforma?: string | null
           prazo_decisao?: string | null
           primeiro_contato_em?: string | null
@@ -11460,6 +11616,35 @@ export type Database = {
           lead_id: string | null
           ref_id: string | null
           tipo: string | null
+        }
+        Relationships: []
+      }
+      v_meta_lead_performance: {
+        Row: {
+          ad_format: string | null
+          ad_id: string | null
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          cliques: number | null
+          cpl_real: number | null
+          custo_por_venda: number | null
+          custo_por_visita: number | null
+          descartes: number | null
+          dia: string | null
+          empreendimento: string | null
+          impressoes: number | null
+          leads: number | null
+          leads_ativos: number | null
+          plataforma: string | null
+          platform_position: string | null
+          publisher_platform: string | null
+          spend: number | null
+          vendas: number | null
+          visitas: number | null
+          visitas_realizadas: number | null
         }
         Relationships: []
       }
