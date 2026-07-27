@@ -4375,6 +4375,144 @@ export type Database = {
           },
         ]
       }
+      marketing_entries_ad: {
+        Row: {
+          ad_format: string | null
+          ad_id: string
+          ad_name: string | null
+          adset_id: string
+          adset_name: string | null
+          campaign_id: string
+          campaign_name: string | null
+          cliques: number | null
+          cpc: number | null
+          cpl: number | null
+          created_at: string
+          creative_type: string | null
+          ctr: number | null
+          date_start: string
+          date_stop: string
+          id: string
+          impressoes: number | null
+          leads: number | null
+          platform_position: string | null
+          publisher_platform: string | null
+          spend: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ad_format?: string | null
+          ad_id: string
+          ad_name?: string | null
+          adset_id: string
+          adset_name?: string | null
+          campaign_id: string
+          campaign_name?: string | null
+          cliques?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          creative_type?: string | null
+          ctr?: number | null
+          date_start: string
+          date_stop: string
+          id?: string
+          impressoes?: number | null
+          leads?: number | null
+          platform_position?: string | null
+          publisher_platform?: string | null
+          spend?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ad_format?: string | null
+          ad_id?: string
+          ad_name?: string | null
+          adset_id?: string
+          adset_name?: string | null
+          campaign_id?: string
+          campaign_name?: string | null
+          cliques?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          creative_type?: string | null
+          ctr?: number | null
+          date_start?: string
+          date_stop?: string
+          id?: string
+          impressoes?: number | null
+          leads?: number | null
+          platform_position?: string | null
+          publisher_platform?: string | null
+          spend?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      marketing_entries_adset: {
+        Row: {
+          adset_id: string
+          adset_name: string | null
+          campaign_id: string
+          campaign_name: string | null
+          cliques: number | null
+          cpc: number | null
+          cpl: number | null
+          created_at: string
+          ctr: number | null
+          date_start: string
+          date_stop: string
+          id: string
+          impressoes: number | null
+          leads: number | null
+          spend: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          adset_id: string
+          adset_name?: string | null
+          campaign_id: string
+          campaign_name?: string | null
+          cliques?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          ctr?: number | null
+          date_start: string
+          date_stop: string
+          id?: string
+          impressoes?: number | null
+          leads?: number | null
+          spend?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          adset_id?: string
+          adset_name?: string | null
+          campaign_id?: string
+          campaign_name?: string | null
+          cliques?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          ctr?: number | null
+          date_start?: string
+          date_stop?: string
+          id?: string
+          impressoes?: number | null
+          leads?: number | null
+          spend?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       marketing_reports: {
         Row: {
           canal: string
@@ -11478,6 +11616,35 @@ export type Database = {
           lead_id: string | null
           ref_id: string | null
           tipo: string | null
+        }
+        Relationships: []
+      }
+      v_meta_lead_performance: {
+        Row: {
+          ad_format: string | null
+          ad_id: string | null
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          cliques: number | null
+          cpl_real: number | null
+          custo_por_venda: number | null
+          custo_por_visita: number | null
+          descartes: number | null
+          dia: string | null
+          empreendimento: string | null
+          impressoes: number | null
+          leads: number | null
+          leads_ativos: number | null
+          plataforma: string | null
+          platform_position: string | null
+          publisher_platform: string | null
+          spend: number | null
+          vendas: number | null
+          visitas: number | null
+          visitas_realizadas: number | null
         }
         Relationships: []
       }
