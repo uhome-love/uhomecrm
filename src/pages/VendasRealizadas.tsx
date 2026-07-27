@@ -993,5 +993,13 @@ export default function VendasRealizadas() {
         </div>
       )}
     </div>
+
+    <EditarVendaDrawer
+      open={!!editingVenda}
+      onOpenChange={(o) => { if (!o) setEditingVenda(null); }}
+      venda={editingVenda}
+      canEdit={!!editingVenda && canEditVenda(editingVenda)}
+    />
+    </>
   );
 }
