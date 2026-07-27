@@ -86,6 +86,7 @@ export async function syncPipelineStageFromPdn(
   row: PdnRow,
   grupo: Exclude<PdnGrupo, "caidos">,
   userId: string | null,
+  opts?: { motivo?: string },
 ): Promise<{ negocioId: string | null; pipelineLeadId: string | null } | null> {
   const pipelineLeadId = await resolvePipelineLeadId(row);
   if (!pipelineLeadId) {
@@ -198,6 +199,19 @@ export async function syncPipelineStageFromPdn(
     if (negUpdErr) console.warn("[pdnSync] update negócio falhou (não bloqueia)", negUpdErr);
   }
 
+  // 1.b) Se é regressão com motivo informado, grava motivo_queda no negócio
+  //      ANTES do UPDATE do pipeline_lead — assim o trigger
+  //      trg_pdn_mirror_negocio (AFTER UPDATE em negocios, disparado pelo
+  //      trg_clear_negocio_on_stage_regress) já enxerga o motivo final.
+  const motivoRegressao = (opts?.motivo || "").trim();
+  if (isRegressao && negocioId && motivoRegressao) {
+    const { error: motivoErr } = await supabase
+      .from("negocios")
+      .update({ motivo_queda: motivoRegressao, updated_at: nowIso } as any)
+      .eq("id", negocioId);
+    if (motivoErr) console.warn("[pdnSync] motivo_queda no negócio falhou (não bloqueia)", motivoErr);
+  }
+
   // 2) Update pipeline_lead — o trigger trg_clear_negocio_on_stage_regress
   //    zera NEW.negocio_id e arquiva o negócio quando é regressão.
   console.info("[pdnSync] atualizando lead", { pipelineLeadId, grupo, isRegressao, updatePayload });
@@ -222,6 +236,8 @@ export async function syncPipelineStageFromPdn(
 
   // 3) Histórico de movimentação
   if (updatePayload.stage_id && oldStageId) {
+    const obsBase = `Movido pelo gestor via PDN: ${GRUPO_LABEL[grupo]}${isRegressao ? " (regressão)" : ""}`;
+    const obs = motivoRegressao ? `${obsBase} — motivo: ${motivoRegressao}` : obsBase;
     supabase
       .from("pipeline_historico")
       .insert({
@@ -229,17 +245,24 @@ export async function syncPipelineStageFromPdn(
         stage_anterior_id: oldStageId,
         stage_novo_id: stageRow.id,
         movido_por: userId,
-        observacao: `Movido pelo gestor via PDN: ${GRUPO_LABEL[grupo]}${isRegressao ? " (regressão)" : ""}`,
+        observacao: obs,
       } as any)
       .then(() => undefined, () => undefined);
   }
 
   // 4) Notificação automática para o corretor
+  const titulo = isRegressao
+    ? `PDN: etapa regredida para ${GRUPO_LABEL[grupo]}`
+    : `PDN: etapa alterada para ${GRUPO_LABEL[grupo]}`;
+  const mensagemBase = isRegressao
+    ? `Gestor regrediu ${row.nome} para "${GRUPO_LABEL[grupo]}".`
+    : `Gestor moveu ${row.nome} para "${GRUPO_LABEL[grupo]}".`;
+  const mensagem = motivoRegressao ? `${mensagemBase} Motivo: ${motivoRegressao}` : mensagemBase;
   await notifyBroker(
     { ...row, pipelineLeadId, negocioId },
-    `PDN: etapa alterada para ${GRUPO_LABEL[grupo]}`,
-    `Gestor moveu ${row.nome} para "${GRUPO_LABEL[grupo]}".`,
-    "pdn_etapa",
+    titulo,
+    mensagem,
+    isRegressao ? "pdn_regressao" : "pdn_etapa",
   );
 
   toast.success(`${row.nome}: pipeline atualizado para ${GRUPO_LABEL[grupo]}`);

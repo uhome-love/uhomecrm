@@ -767,7 +767,7 @@ export function usePdn(mes: string) {
   }, [saveOverride]);
 
   // ── Mudar etapa no PDN — AGORA sincroniza com o pipeline real ────────────────
-  const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnGrupo) => {
+  const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnGrupo, opts?: { motivo?: string }) => {
     if (grupo === "caidos") { await saveOverride(row, { caiu: true }); return; }
     if (row.isManual && row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update({ situacao: grupo, caiu: false }).eq("id", row.overrideId);
@@ -777,7 +777,7 @@ export function usePdn(mes: string) {
     }
     // Linha do pipeline (ou só com negocio_id): escreve NO pipeline real + alinha overlay
     if (row.pipelineLeadId || row.negocioId) {
-      const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null);
+      const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
       if (!result) return;
       // Sincroniza a pdn_entry existente com a nova etapa e garante o vínculo com o lead real
       if (row.overrideId) {
