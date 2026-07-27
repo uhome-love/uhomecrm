@@ -988,21 +988,16 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
           {/* ════════ FOOTER ════════ */}
           <div className="shrink-0 border-t border-border/50 px-6 py-3 flex items-center gap-2">
             {fullNeg.fase === "em_negociacao" && (
-              <Button className="gap-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => { onMoveFase(negocio.id, "vendido"); onOpenChange(false); }}>
-                🏆 Marcar como VENDIDO
+              <Button className="gap-2 text-xs bg-purple-600 hover:bg-purple-700" onClick={() => { onMoveFase(negocio.id, "contrato"); set("fase", "contrato"); }}>
+                📄 Avançar para Contrato
               </Button>
             )}
-            {fullNeg.fase === "em_negociacao" && (
-              <Button variant="outline" className="gap-1 text-xs border-amber-300 text-amber-700" onClick={() => { onMoveFase(negocio.id, "em_negociacao"); set("fase", "em_negociacao"); }}>
-                🤝 → Negociação
+            {fullNeg.fase === "contrato" && (
+              <Button className="gap-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => { onMoveFase(negocio.id, "ganho"); onOpenChange(false); }}>
+                🏆 Marcar como GANHO
               </Button>
             )}
-            {fullNeg.fase === "em_negociacao" && (
-              <Button variant="outline" className="gap-1 text-xs border-purple-300 text-purple-700" onClick={() => { onMoveFase(negocio.id, "em_negociacao"); set("fase", "em_negociacao"); }}>
-                📄 → Contrato Gerado
-              </Button>
-            )}
-            {fullNeg.pipeline_lead_id && fullNeg.fase !== "ganho" && fullNeg.fase !== "distrato" && (
+            {fullNeg.pipeline_lead_id && fullNeg.fase !== "ganho" && (
               <Button variant="outline" className="gap-1 text-xs border-destructive/30 text-destructive" onClick={() => setRegressOpen(true)}>
                 🔄 Regredir para Pipeline
               </Button>

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
+import { FASE_EM_NEGOCIACAO, FASE_CONTRATO, FASE_GANHO } from "@/lib/negocioFase";
 
 export interface Negocio {
   id: string;
@@ -33,12 +34,12 @@ export interface CorretorInfo {
   equipe: string | null;
 }
 
+// Fases canônicas (pós-consolidação 07/2026). Ver src/lib/negocioFase.ts.
+// Status separado ('ativo'|'perdido'|'arquivado') vive em coluna própria.
 export const NEGOCIOS_FASES = [
-  { key: "novo_negocio", label: "Novo Negócio", cor: "#0EA5E9", icon: "" },
-  { key: "proposta", label: "Proposta", cor: "#4969FF", icon: "" },
-  { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "" },
-  { key: "documentacao", label: "Contrato Gerado", cor: "#8B5CF6", icon: "" },
-  { key: "vendido", label: "Ganho / Assinado", cor: "#22C55E", icon: "🏆" },
+  { key: FASE_EM_NEGOCIACAO, label: "Em Negociação", cor: "#F59E0B", icon: "🤝" },
+  { key: FASE_CONTRATO, label: "Contrato", cor: "#8B5CF6", icon: "📄" },
+  { key: FASE_GANHO, label: "Ganho", cor: "#22C55E", icon: "🏆" },
 ] as const;
 
 // Negócio perdido/caído — fica fora do board ativo, em base separada (aba "Caídos")
@@ -232,8 +233,8 @@ export function useNegocios() {
     ));
 
     const updatePayload: Record<string, any> = { fase: novaFase, updated_at: new Date().toISOString() };
-    // Always set data_assinatura when moving to vendido (negócio fechado)
-    if (novaFase === "vendido") {
+    // Always set data_assinatura when moving to GANHO (negócio fechado)
+    if (novaFase === FASE_GANHO) {
       updatePayload.data_assinatura = dataAssinatura || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     }
     // Perdido/caído sai do board ativo (status perdido)

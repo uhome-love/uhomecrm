@@ -18,11 +18,11 @@ const GRUPO_TO_STAGE_TIPO: Record<Exclude<PdnGrupo, "caidos">, string> = {
   ganho: "venda",
 };
 
-// PDN grupo → fase do negócio
+// PDN grupo → fase canônica do negócio (pós-consolidação 07/2026).
 const GRUPO_TO_FASE: Partial<Record<PdnGrupo, string>> = {
-  em_negociacao: "proposta",
+  em_negociacao: "em_negociacao",
   contrato: "contrato",
-  ganho: "vendido",
+  ganho: "ganho",
 };
 
 const GRUPO_LABEL: Record<PdnGrupo, string> = {

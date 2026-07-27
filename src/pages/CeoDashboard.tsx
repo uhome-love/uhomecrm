@@ -316,7 +316,8 @@ export default function CeoDashboard() {
   const totalVisitas = kpis.visitasMarcadas + kpis.visitasRealizadas + kpis.noShows;
   const totalNeg = negocioFases.reduce((a: number, f: any) => a + f.count, 0);
   const negTotalVgv = negocioFases.reduce((a: number, f: any) => a + f.vgv, 0);
-  const contratoGerado = negocioFases.find((f: any) => f.fase === "em_negociacao");
+  // "Contrato" = fase canônica intermediária (contrato gerado/em assinatura)
+  const contratoGerado = negocioFases.find((f: any) => f.fase === "contrato");
   const vgvContrato = contratoGerado?.vgv || 0;
   const countContrato = contratoGerado?.count || 0;
   const leadsDistribuidos = enviadosRoleta;
@@ -325,17 +326,18 @@ export default function CeoDashboard() {
   const funnelTotal = pipelineStages.reduce((a, s) => a + s.count, 0) || 1;
   const funnelColors = ["#4969FF","#6366f1","#6B84FF","#a5b4fc","#c7d2fe","#22c55e","#ef4444","#10b981","#f59e0b"];
 
-  // Negocio funnel order
-  const negFunnelOrder = ["novo_negocio","proposta","negociacao","documentacao","assinado","vendido","distrato"];
+  // Funil de negócios — 3 fases canônicas (pós-consolidação 07/2026).
+  // "Perdido" vive em coluna status, não em fase, portanto fora deste funil.
+  const negFunnelOrder = ["em_negociacao", "contrato", "ganho"];
   const negFunnelLabels: Record<string,string> = {
-    novo_negocio:"Novo Negócio", proposta:"Proposta", negociacao:"Negociação",
-    documentacao:"Contrato Gerado", assinado:"Assinado",
-    vendido:"Vendido", distrato:"Caiu"
+    em_negociacao: "Em Negociação",
+    contrato: "Contrato",
+    ganho: "Ganho",
   };
   const negFunnelColors: Record<string,string> = {
-    novo_negocio:"#0EA5E9", proposta:"#4969FF", negociacao:"#F59E0B",
-    documentacao:"#8B5CF6", assinado:"#22C55E",
-    vendido:"#16A34A", distrato:"#EF4444"
+    em_negociacao: "#F59E0B",
+    contrato: "#8B5CF6",
+    ganho: "#22C55E",
   };
 
   if (loading && !profile) return <CeoDashboardSkeleton />;
