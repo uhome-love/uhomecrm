@@ -49,6 +49,9 @@ export function PdnHeader({
           <Button variant={view === "meta" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("meta")}>
             <Target className="mr-1.5 h-4 w-4" /> Meta
           </Button>
+          <Button variant={view === "visitas" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("visitas")}>
+            <CalendarCheck className="mr-1.5 h-4 w-4" /> Conferência de Visitas
+          </Button>
           <Button variant={view === "arquivados" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("arquivados")}>
             <Archive className="mr-1.5 h-4 w-4" /> Arquivados
           </Button>
