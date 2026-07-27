@@ -1,0 +1,1 @@
+ALTER FUNCTION public.rpc_perf_dashboard(date, date) VOLATILE;
