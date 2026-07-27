@@ -3,10 +3,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  ClipboardList, Download, LayoutGrid, RefreshCw, Table as TableIcon, Target, Archive,
+  ClipboardList, Download, LayoutGrid, RefreshCw, Table as TableIcon, Target, Archive, CalendarCheck,
 } from "lucide-react";
 
-export type PdnView = "planilha" | "kanban" | "meta" | "arquivados";
+export type PdnView = "planilha" | "kanban" | "meta" | "arquivados" | "visitas";
 
 export function PdnHeader({
   mes, monthOptions, onChangeMes,
