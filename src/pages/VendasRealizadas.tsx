@@ -868,7 +868,7 @@ export default function VendasRealizadas() {
                     const editable = !!oid && oid === user?.id;
                     const comissaoVal = oid ? (comissaoMap[`${v.id}:${oid}`] ?? null) : null;
                     return (
-                      <div key={v.id} className="rounded-[10px] border border-border bg-accent/20 p-3">
+                      <div key={v.id} onClick={() => setEditingVenda(v)} className="rounded-[10px] border border-border bg-accent/20 p-3 cursor-pointer active:bg-accent/40">
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 shrink-0"><CheckCircle className="h-3 w-3" /></div>
