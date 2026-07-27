@@ -652,7 +652,7 @@ export default function PdnGestor() {
         <PdnMetaMes mes={mes} rows={rows} />
       ) : view === "visitas" ? (
         <ConferenciaVisitasMes mes={mes} onOpenLead={(leadId) => {
-          const r = allRows.find(x => x.pipelineLeadId === leadId);
+          const r = [...rows, ...hiddenRows].find(x => x.pipelineLeadId === leadId);
           if (r) setSelectedRow(r);
         }} />
       ) : view === "arquivados" ? (
