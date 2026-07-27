@@ -40,6 +40,7 @@ import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { PdnRegredirDialog } from "@/components/pdn/PdnRegredirDialog";
+import { ConferenciaVisitasMes } from "@/components/pdn/ConferenciaVisitasMes";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
 
