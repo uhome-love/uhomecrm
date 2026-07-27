@@ -537,56 +537,15 @@ export function useVisitas(filters?: {
     if (result) {
       toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`);
 
-      // Sincroniza o substatus da etapa Visita no card do lead automaticamente.
+      // A sincronização de flag_status.status_visita e o auto-move para Pós-Visita
+      // agora são feitos pelos triggers do banco (trg_visita_sync_flag_status +
+      // trg_visita_realizada_move_pos_visita). Só invalidamos os caches aqui.
       const visita = visitas.find((v) => v.id === id);
-      const subMap: Partial<Record<VisitaStatus, string>> = {
-        marcada: "marcada",
-        confirmada: "marcada",
-        realizada: "realizada",
-        reagendada: "reagendada",
-        no_show: "no_show",
-      };
-      const novoSub = subMap[newStatus];
-      if (visita?.pipeline_lead_id && novoSub) {
-        try {
-          const { data: leadAtual } = await supabase
-            .from("pipeline_leads")
-            .select("flag_status, stage_id, pipeline_stages!inner(tipo)")
-            .eq("id", visita.pipeline_lead_id)
-            .maybeSingle();
-          const oldFlags = ((leadAtual as any)?.flag_status as Record<string, any>) || {};
-          const currentTipo = ((leadAtual as any)?.pipeline_stages?.tipo as string | undefined) || "";
-
-          const updatePayload: Record<string, any> = {
-            flag_status: { ...oldFlags, status_visita: novoSub },
-          };
-
-          // Regra fixa: visita realizada → lead vai para Pós-Visita para
-          // alinhamento corretor+gerente antes de virar negócio.
-          if (newStatus === "realizada" && currentTipo === "visita") {
-            const { data: posVisitaStage } = await supabase
-              .from("pipeline_stages")
-              .select("id")
-              .eq("pipeline_tipo", "leads")
-              .eq("tipo", "pos_visita")
-              .maybeSingle();
-            if (posVisitaStage?.id) {
-              updatePayload.stage_id = posVisitaStage.id;
-              updatePayload.stage_changed_at = new Date().toISOString();
-              updatePayload.ultima_acao_at = new Date().toISOString();
-            }
-          }
-
-          await supabase
-            .from("pipeline_leads")
-            .update(updatePayload as any)
-            .eq("id", visita.pipeline_lead_id);
-          queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] });
-          queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-        } catch (e) {
-          console.error("Erro ao sincronizar substatus de visita:", e);
-        }
+      if (visita?.pipeline_lead_id) {
+        queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] });
+        queryClient.invalidateQueries({ queryKey: ["pipeline"] });
       }
+
 
       // Histórico padronizado da visita (realizada / no-show / reagendada).
       const eventoMap: Partial<Record<VisitaStatus, "realizada" | "no_show" | "reagendada">> = {
