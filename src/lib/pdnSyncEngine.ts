@@ -96,7 +96,7 @@ async function resolvePipelineLeadId(row: PdnRow): Promise<string | null> {
 // ── 1) Sincroniza etapa PDN → pipeline_leads + negocios ──────────────────────
 export async function syncPipelineStageFromPdn(
   row: PdnRow,
-  grupo: Exclude<PdnGrupo, "caidos">,
+  grupo: PdnDestino,
   userId: string | null,
   opts?: { motivo?: string },
 ): Promise<{ negocioId: string | null; pipelineLeadId: string | null } | null> {
@@ -107,6 +107,7 @@ export async function syncPipelineStageFromPdn(
   }
   const nowIso = new Date().toISOString();
   const stageTipo = GRUPO_TO_STAGE_TIPO[grupo];
+
 
   // resolve stage_id destino
   const { data: stageRow, error: stageErr } = await supabase
