@@ -6,7 +6,10 @@ import { toast } from "sonner";
 import {
   syncPipelineStageFromPdn, syncNegocioVgvFromPdn,
   discardLeadFromPdn, inactivateLeadFromPdn,
+  type PdnDestino,
 } from "@/lib/pdnSyncEngine";
+export type { PdnDestino };
+
 
 // ─── Grupos / status do PDN ──────────────────────────────────────────────────
 export type PdnGrupo = "visita_realizada" | "em_negociacao" | "contrato" | "ganho" | "caidos";
