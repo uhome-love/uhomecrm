@@ -840,7 +840,7 @@ export default function VendasRealizadas() {
                               <td className="py-3 px-3 text-center">
                                 <span className="text-xs text-muted-foreground">{v.data_assinatura ? format(new Date(v.data_assinatura + "T12:00:00"), "dd/MM/yy") : "—"}</span>
                               </td>
-                              <td className="py-3 px-3 text-right">
+                              <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
                                 <ComissaoCell value={comissaoVal} editable={editable} onSave={(val) => saveComissao(v.id, val)} />
                               </td>
                             </motion.tr>
