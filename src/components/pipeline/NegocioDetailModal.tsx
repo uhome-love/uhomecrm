@@ -174,7 +174,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
   const [imovelVgv, setImovelVgv] = useState("");
   const [imovelObs, setImovelObs] = useState("");
 
-  // Data de assinatura (editável quando vendido)
+  // Data de assinatura (editável quando fase='ganho')
   const [dataAssinaturaEdit, setDataAssinaturaEdit] = useState("");
   const [savingDataAss, setSavingDataAss] = useState(false);
 
@@ -267,8 +267,12 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
       stage_changed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     } as any).eq("id", fullNeg.pipeline_lead_id);
-    // Move negócio to distrato
-    onMoveFase(negocio.id, "distrato");
+    // Arquiva o negócio (regressão ≠ perdido). Mantém a fase canônica atual
+    // para preservar histórico; usa status='arquivado' para sair dos boards ativos.
+    await supabase.from("negocios").update({
+      status: "arquivado",
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", negocio.id);
     // Log activity
     await supabase.from("negocios_atividades").insert({
       negocio_id: negocio.id,
@@ -364,7 +368,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
       empreendimento: contEmpreendimento || fullNeg.empreendimento,
       vgv_final: contVgv ? parseCurrencyToNumber(contVgv) : fullNeg.vgv_final,
     } as any);
-    onMoveFase(negocio.id, "documentacao");
+    onMoveFase(negocio.id, "contrato");
     setContratoPopup(false);
     toast.success("📝 Contrato enviado → Coluna Contrato Gerado");
     const { data } = await supabase.from("negocios_atividades").select("*").eq("negocio_id", negocio.id).order("created_at", { ascending: false }).limit(50);
@@ -579,7 +583,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
               )}
             </div>
 
-            {/* Data de Assinatura — editável quando vendido */}
+            {/* Data de Assinatura — editável quando fase='ganho' */}
             {fullNeg.fase === "ganho" && (
               <div className="flex items-center gap-2 flex-wrap bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
                 <CalendarDays className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -626,7 +630,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 <CalendarDays className="h-3.5 w-3.5" /> 📅 Reunião
               </Button>
 
-              {/* Solicitar Pagadoria — only shows on "documentacao" or "vendido" phase */}
+              {/* Solicitar Pagadoria — visível em fase 'em_negociacao' ou 'ganho' */}
               {(fullNeg.fase === "em_negociacao" || fullNeg.fase === "ganho") && (
                 <Button
                   variant="outline"

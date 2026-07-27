@@ -23,11 +23,11 @@ interface Props {
   onCreated?: () => void;
 }
 
+// Fases canônicas de negocios (pós-consolidação 07/2026). Ver src/lib/negocioFase.ts.
 const FASES = [
-  { value: "novo_negocio", label: "🆕 Novo Negócio" },
-  { value: "proposta", label: "📋 Proposta" },
-  { value: "negociacao", label: "🤝 Negociação" },
-  { value: "documentacao", label: "📄 Documentação" },
+  { value: "em_negociacao", label: "🤝 Em Negociação" },
+  { value: "contrato", label: "📄 Contrato" },
+  { value: "ganho", label: "🏆 Ganho" },
 ];
 
 export default function AddNegocioDialog({ open, onOpenChange, onCreated }: Props) {

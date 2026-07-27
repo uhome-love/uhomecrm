@@ -245,24 +245,26 @@ function buildPdnSummary(pdn: any[]): string {
   if (!pdn.length) return "Nenhum negócio registrado este mês.";
 
   const total = pdn.length;
-  const novo = pdn.filter(p => p.fase === "novo_negocio").length;
-  const proposta = pdn.filter(p => p.fase === "proposta" || p.fase === "negociacao" || p.fase === "documentacao").length;
-  const assinado = pdn.filter(p => p.fase === "vendido").length;
+  // Fases canônicas (pós-consolidação 07/2026): em_negociacao | contrato | ganho.
+  // "Perdido" vive em coluna status, não em fase.
+  const emNegociacao = pdn.filter(p => p.fase === "em_negociacao" && p.status !== "perdido").length;
+  const contrato = pdn.filter(p => p.fase === "contrato" && p.status !== "perdido").length;
+  const ganho = pdn.filter(p => p.fase === "ganho").length;
   const perdido = pdn.filter(p => p.status === "perdido").length;
 
-  const vgvAssinado = pdn.filter(p => p.fase === "vendido").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
-  const vgvProjetado = pdn.filter(p => ["proposta", "negociacao", "documentacao", "vendido"].includes(p.fase)).reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvAssinado = pdn.filter(p => p.fase === "ganho").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvProjetado = pdn.filter(p => ["em_negociacao", "contrato", "ganho"].includes(p.fase) && p.status !== "perdido").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
-  // Stale deals (no update in 5+ days)
+  // Stale deals (WIP parados há +5 dias)
   const now = Date.now();
   const stale = pdn.filter(p => {
-    if (p.fase === "vendido" || p.status === "perdido") return false;
+    if (p.fase === "ganho" || p.status === "perdido") return false;
     const lastUpdate = new Date(p.updated_at).getTime();
     return (now - lastUpdate) > 5 * 24 * 60 * 60 * 1000;
   });
 
   let summary = `- Total negócios: ${total}
-- Novo: ${novo} | Proposta: ${proposta} | Assinado: ${assinado} | Perdido: ${perdido}
+- Em Negociação: ${emNegociacao} | Contrato: ${contrato} | Ganho: ${ganho} | Perdido: ${perdido}
 - VGV Assinado: R$ ${(vgvAssinado / 1000).toFixed(0)}k
 - VGV Projetado: R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
 

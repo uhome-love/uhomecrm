@@ -328,12 +328,13 @@ export function useGerenteDashboard(period: Period) {
         .filter(s => s.tipo !== "descarte" && s.tipo !== "convertido")
         .map(s => ({ key: s.tipo, label: s.nome, count: stageCounts[s.id] || 0, pct: 0 }));
 
-      const negFases = ["proposta", "negociacao", "assinado"];
+      // Funil comercial — 3 fases canônicas de negocios (pós-consolidação 07/2026).
       const negCounts: Record<string, number> = {};
       (negocios || []).forEach(n => { negCounts[n.fase] = (negCounts[n.fase] || 0) + 1; });
       funnelStages.push({ key: "negocio", label: "Negócio", count: Object.values(negCounts).reduce((a, b) => a + b, 0), pct: 0 });
-      funnelStages.push({ key: "proposta", label: "Proposta", count: negCounts["proposta"] || 0, pct: 0 });
-      funnelStages.push({ key: "assinado", label: "Assinado", count: (negCounts["assinado"] || 0) + (negCounts["vendido"] || 0), pct: 0 });
+      funnelStages.push({ key: "em_negociacao", label: "Em Negociação", count: negCounts["em_negociacao"] || 0, pct: 0 });
+      funnelStages.push({ key: "contrato", label: "Contrato", count: negCounts["contrato"] || 0, pct: 0 });
+      funnelStages.push({ key: "ganho", label: "Ganho", count: negCounts["ganho"] || 0, pct: 0 });
 
       for (let i = 1; i < funnelStages.length; i++) {
         funnelStages[i].pct = funnelStages[i - 1].count > 0 ? Math.round((funnelStages[i].count / funnelStages[i - 1].count) * 100) : 0;
