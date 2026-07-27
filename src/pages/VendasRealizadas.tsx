@@ -224,6 +224,7 @@ export default function VendasRealizadas() {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [periodMode, setPeriodMode] = useState<"mes" | "ano">("mes");
   const [activeTab, setActiveTab] = useState<"vendas" | "origens">("vendas");
+  const [editingVenda, setEditingVenda] = useState<VendaRow | null>(null);
 
   const mesStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
 
