@@ -780,7 +780,8 @@ export default function VendasRealizadas() {
                           const comissaoVal = oid ? (comissaoMap[`${v.id}:${oid}`] ?? null) : null;
                           return (
                             <motion.tr key={v.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.02 * i }}
-                              className="border-b border-border/20 hover:bg-accent/40 transition-colors">
+                              onClick={() => setEditingVenda(v)}
+                              className="group border-b border-border/20 hover:bg-accent/40 transition-colors cursor-pointer">
                               <td className="py-3 px-3">
                                 <div className="flex items-center gap-2">
                                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 shrink-0"><CheckCircle className="h-3.5 w-3.5" /></div>
