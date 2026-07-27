@@ -21,7 +21,7 @@ export type PdnDestino =
 const GRUPO_TO_STAGE_TIPO: Record<PdnDestino, string> = {
   qualificacao: "qualificacao",
   aquecimento: "aquecimento",
-  visita_realizada: "visita",
+  pos_visita: "pos_visita",
   em_negociacao: "proposta",
   contrato: "contrato_gerado",
   ganho: "venda",
@@ -37,7 +37,7 @@ const GRUPO_TO_FASE: Partial<Record<PdnDestino, string>> = {
 const GRUPO_LABEL: Record<PdnDestino | "caidos", string> = {
   qualificacao: "Qualificação",
   aquecimento: "Aquecimento",
-  visita_realizada: "Visita Realizada",
+  pos_visita: "Pós-Visita",
   em_negociacao: "Em Negociação",
   contrato: "Contrato",
   ganho: "Ganho",
@@ -136,13 +136,13 @@ export async function syncPipelineStageFromPdn(
   const isArquivado = !!(leadAtual as any).arquivado;
   let negocioId = (leadAtual as any).negocio_id as string | null;
 
-  // Detecta regressão para etapa anterior ao "Em Negociação" (ordem<5).
+  // Detecta regressão para etapa anterior ao "Em Negociação" (ordem<6 após inserção de Pós-Visita).
   // A trigger BEFORE UPDATE `trg_clear_negocio_on_stage_regress` limpa
   // NEW.negocio_id e arquiva o negócio automaticamente.
   const destinoOrdem = (stageRow as any).ordem as number | null;
   const isRegressao =
-    (grupo === "visita_realizada" || grupo === "qualificacao" || grupo === "aquecimento") &&
-    destinoOrdem != null && destinoOrdem < 5;
+    (grupo === "pos_visita" || grupo === "qualificacao" || grupo === "aquecimento") &&
+    destinoOrdem != null && destinoOrdem < 6;
 
 
   const updatePayload: Record<string, unknown> = {
@@ -159,8 +159,8 @@ export async function syncPipelineStageFromPdn(
     updatePayload.motivo_descarte = null;
     updatePayload.tipo_descarte = null;
   }
-  // Flag específica p/ visita realizada
-  if (grupo === "visita_realizada") {
+  // Flag específica p/ Pós-Visita (mantém rastro de que houve visita).
+  if (grupo === "pos_visita") {
     const flag = { ...(((leadAtual as any).flag_status as Record<string, unknown>) || {}) };
     flag.status_visita = "realizada";
     updatePayload.flag_status = flag;
