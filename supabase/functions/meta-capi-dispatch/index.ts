@@ -105,7 +105,11 @@ Deno.serve(async (req) => {
     }
 
     // Failure: bump attempts / mark failed
-    const errMsg = json?.error?.message ?? text.slice(0, 500);
+    console.error("META CAPI ERROR — full response:", res.status, text.slice(0, 2000));
+    console.error("META CAPI ERROR — first payload event:", JSON.stringify(data[0]).slice(0, 1000));
+    const errObj = json?.error ?? {};
+    const errMsg = [errObj.message, errObj.error_user_title, errObj.error_user_msg, `subcode=${errObj.error_subcode}`, `code=${errObj.code}`]
+      .filter(Boolean).join(" | ") || text.slice(0, 500);
     await supabase.rpc("mark_meta_capi_failed", {
       _event_ids: eventIds,
       _error: errMsg,
