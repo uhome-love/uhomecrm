@@ -11961,6 +11961,14 @@ export type Database = {
           variaveis: Json
         }[]
       }
+      claim_meta_capi_batch: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          event_id: string
+          payload: Json
+        }[]
+      }
       claim_reengajamento_dispatch_queue: {
         Args: { p_batch_size: number; p_run_id: string; p_worker_id: string }
         Returns: {
@@ -12809,6 +12817,14 @@ export type Database = {
         Returns: string
       }
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
+      mark_meta_capi_failed: {
+        Args: { _error: string; _event_ids: string[]; _max_attempts?: number }
+        Returns: undefined
+      }
+      mark_meta_capi_sent: {
+        Args: { _event_ids: string[]; _fbtrace_id: string }
+        Returns: undefined
+      }
       match_homi_chunks: {
         Args: {
           filter_category?: string
