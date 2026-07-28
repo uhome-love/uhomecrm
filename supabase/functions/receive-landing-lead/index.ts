@@ -361,6 +361,10 @@ Deno.serve(async (req) => {
         corretor_id: null,
         aceite_status: "pendente_distribuicao",
         prioridade_lead: "media",
+        fbc,
+        fbp,
+        client_user_agent: clientUserAgent,
+        event_source_url: eventSourceUrl,
       })
       .select("id")
       .single();
