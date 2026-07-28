@@ -1,65 +1,119 @@
-## Diagnóstico confirmado
 
-- O placar mostrado em `/placar-do-dia` não usa o dashboard CEO nem `_kpi_team_window_core`; ele chama `rpc_placar_do_dia()` a cada 15 segundos (`src/pages/PlacarDoDia.tsx:180-311`).
-- A RPC seleciona toda visita cujo registro foi **criado hoje** (`visitas.created_at`), sem excluir `origem='backfill_pos_visita'`. Por isso, alterar `data_visita` dos 22 registros para 26/07 não retirou nenhum deles do placar.
-- Os 22 registros continuam sendo devolvidos pela RPC como `status='realizada'`, somados ao time Bruno e exibidos no feed “Últimas visitas”. Não é cache: a tela recarrega a resposta incorreta do banco a cada 15 segundos.
-- A correção anterior de `data_visita` foi inválida: todos os 22 ficaram artificialmente em 26/07 às 10:00. Não há histórico individual confiável que prove essa data ou hora. `pipeline_historico` está vazio para os 22; `stage_changed_at` foi sobrescrito pela migração; as tarefas iguais de 20/07 foram geradas em lote e também não comprovam a realização da visita.
-- O backfill ainda criou efeitos derivados: 22 eventos `visita_criada`, 22 eventos `data_alterada` e tarefas de feedback ligadas aos registros sintéticos.
-- A origem estrutural foi movimentar/importar leads como “Visita Realizada” sem uma visita real registrada. O trigger novo `trg_pos_visita_garante_visita_fn` ainda tenta resolver isso criando uma visita automática com `CURRENT_DATE` e hora `10:00`, portanto pode repetir o problema.
+# Integração Meta CAPI (Conversions API)
 
-## Plano de correção
+Objetivo: quando um lead avança no CRM, o Meta recebe o evento correspondente (com email+telefone hasheados + `lead_id` do Meta quando existir) para otimizar campanhas e alimentar o Gerenciador de Eventos.
 
-### 1. Corrigir a fonte canônica do Placar do Dia
+---
 
-Atualizar `rpc_placar_do_dia()` para manter a regra comercial informada:
+## 1. Antes de começar (Fase 0 — validação de credenciais)
 
-- **Visitas marcadas hoje:** registros reais criados hoje, excluindo qualquer origem técnica/sintética (`backfill_%` e `auto_stage_move`).
-- Retornar separadamente as marcações reais e as realizações do dia, em vez de misturar todos os status em uma única lista.
-- **Visitas realizadas hoje:** contar uma transição real de status para `realizada` registrada em `visita_eventos` no dia BRT; não usar criação de backfill nem `data_visita` inventada.
-- Manter nome, empreendimento, corretor e timestamps necessários para ranking, feed e anúncios.
-- Ajustar `PlacarDoDia.tsx` para consumir os conjuntos/campos explícitos da RPC, preservando a aparência atual e eliminando a ambiguidade entre “marcada” e “realizada”.
+Você disse que "acha" que já configurou. Vou:
+1. Verificar em `integration_settings` se existe `meta_capi_dataset_id` e `meta_capi_access_token` — se sim, testo com uma chamada `POST /{dataset_id}/events?test_event_code=TEST123` (evento fake, não conta como conversão).
+2. Se estiver faltando, peço via `add_secret` (`META_CAPI_DATASET_ID`, `META_CAPI_ACCESS_TOKEN`). O Dataset ID é o mesmo do Pixel (Gerenciador de Eventos → Configurações → ID do conjunto de dados). O token é gerado em "Gerar token de acesso".
 
-Resultado esperado para 27/07 com os dados atuais: o placar deixa de mostrar os 22 backfills imediatamente após o poll; as marcações reais vêm somente dos registros manuais do dia pertencentes aos times ativos.
+Só sigo pras próximas fases depois de você confirmar o "OK conectado".
 
-### 2. Remover integralmente os 22 backfills artificiais
+---
 
-Como aprovado, executar uma limpeza cirúrgica restrita a `origem='backfill_pos_visita'` e ao lote criado em 27/07/2026:
+## 2. Mapa de eventos (o que dispara pro Meta)
 
-1. Registrar antes da remoção uma evidência de auditoria agregada com IDs e motivo da reversão.
-2. Remover tarefas automáticas cujo `origem_ref` aponta diretamente para os 22 IDs sintéticos.
-3. Remover os respectivos registros de `visita_eventos`.
-4. Remover os 22 registros de `visitas`.
-5. Remover tarefas de feedback que foram criadas exclusivamente como efeito desse lote, identificadas por timestamp/origem e lead, sem tocar tarefas humanas ou anteriores.
-6. Não alterar `pipeline_leads.stage_id`, `flag_status`, negócios ou visitas reais. Os leads permanecem em Pós-Visita para revisão operacional, mas não haverá uma visita falsa sustentando essa etapa.
+| Estágio no CRM | event_name Meta | Dado extra |
+|---|---|---|
+| Entra em **Qualificação** | `Lead` | — |
+| **Visita marcada** (visitas.status='marcada') | `Schedule` | data da visita |
+| **Visita realizada** | `ViewContent` (`content_type=visita_realizada`) | empreendimento |
+| Entra em **Em Negociação** | `SubmitApplication` | — |
+| Entra em **Contrato** | `AddPaymentInfo` | — |
+| **Ganho** (negocios.fase='ganho') | `Purchase` | `value` = VGV, `currency` = BRL |
 
-A remoção de dados será feita pela operação de dados apropriada, não por migration DDL.
+Todos custom_data marcam `event_source: "crm"` e `lead_event_source: "uhome"` (exatamente como sua carga de referência).
 
-### 3. Eliminar a causa estrutural
+---
 
-Substituir o comportamento de `trg_pos_visita_garante_visita_fn`:
+## 3. Arquitetura
 
-- Ao entrar em Pós-Visita sem visita real, **não criar** uma visita com data/hora inventadas.
-- Bloquear a movimentação automática quando ela deveria vir de uma visita, ou sinalizar a inconsistência para correção, conforme o caminho da movimentação.
-- Criar uma tarefa de pendência para o responsável registrar/agendar corretamente a visita, sem poluir `visitas`, agenda, PDN ou métricas.
-- Garantir que o fluxo oficial continue sendo: visita existente → status `realizada` → trigger move para Pós-Visita.
-- Manter idempotência para não duplicar tarefas/alertas.
+```text
+pipeline_leads / negocios / visitas
+        │  (trigger AFTER UPDATE)
+        ▼
+ meta_capi_queue  ── status: pending | sent | failed | skipped
+        │
+        │  cron 5min  +  trigger dispara edge fn imediato via pg_net
+        ▼
+ edge fn: meta-capi-dispatch
+        │  batch 100 eventos → POST graph.facebook.com/v21.0/{dataset_id}/events
+        ▼
+   marca sent/failed + guarda fbtrace_id
+```
 
-### 4. Auditar todos os caminhos de movimentação
+**Dedup total**: cada evento tem `event_id = md5(lead_id||event_name||stage_entered_at)` — se o mesmo evento for enfileirado duas vezes (por trigger e backfill, ou por retry), o Meta descarta a duplicata. Zero risco de contar 2x.
 
-- Enumerar as RPCs, triggers e ações do frontend que movem lead para Pós-Visita.
-- Garantir que nenhuma rota faça update direto e silencioso sem registrar `pipeline_historico`.
-- Validar que importações legadas com texto “Etapa Jetimob: Visita Realizada” não sejam convertidas em visita real sem data comprovada.
-- Levantar outros leads, inclusive arquivados, com Pós-Visita/flag realizada e sem visita real; apenas reportar os casos adicionais nesta fase, sem fabricar novos registros.
+---
 
-### 5. Validação ponta a ponta
+## 4. Fases
 
-Após as alterações:
+### Fase 1 — Fundação (backend)
+- Migration: cria `meta_capi_queue` (event_id PK, lead_id, event_name, event_time, payload jsonb, status, attempts, last_error, fbtrace_id, sent_at) + índices.
+- Migration: função `enqueue_meta_capi_event(lead_id, event_name, event_time)` que monta o payload (hash SHA-256 de email/telefone, inclui `lead_id` do Meta quando `pipeline_leads.meta_lead_id` existir, adiciona `fbc`/`fbp` se disponíveis).
+- Migration: triggers em `pipeline_leads` (stage_id change), `visitas` (status change), `negocios` (fase change) → chamam `enqueue_meta_capi_event`.
+- Migration: `check_can_send_meta_capi(lead_id)` — só enfileira se lead tem origem Meta OU tem email/telefone válido (Meta não usa PII sem consentimento fora do escopo do ad, mas o match funciona com hash de qualquer forma).
 
-- Banco: confirmar zero registros `backfill_pos_visita`, zero eventos/tarefas órfãos do lote e preservação das visitas manuais reais.
-- Placar: abrir `/placar-do-dia`, aguardar dois ciclos de 15 segundos e confirmar que os 22 nomes desapareceram da contagem, ranking e feed.
-- Agenda: validar 27/07 e 26/07 sem concentração artificial.
-- CEO: confrontar cards de marcadas/realizadas com consultas BRT e eventos reais.
-- PDN/Conferência de Visitas: confirmar que o total mensal cai em 22, pois esses registros não tinham evidência de visita real.
-- Pós-Visita: abrir leads de teste sem alterar dados reais e confirmar que permanecem na etapa, mas sem visita falsa; validar a pendência operacional.
-- Fluxo real com lead de teste: marcar visita, confirmar/realizar, verificar sincronização de flag, movimento para Pós-Visita, tarefas e atualização única do placar.
-- Revisar o diff e registrar a regra permanente: backfill nunca cria visita sem data/hora comprovadas; origens técnicas nunca entram em placares operacionais.
+### Fase 2 — Motor de envio
+- Edge function `meta-capi-dispatch` (pública, HMAC/cron secret):
+  - `claim` até 100 eventos `pending` (FOR UPDATE SKIP LOCKED).
+  - POST batch pro Graph API v21.0.
+  - Sucesso → `status='sent'`, salva `fbtrace_id`.
+  - Falha → `attempts++`, retry até 5, depois `status='failed'`.
+- Cron `*/5 * * * *` chama o dispatcher.
+- Trigger no INSERT em `meta_capi_queue` dispara `pg_net` para o dispatcher (real-time, sem esperar 5min).
+
+### Fase 3 — Backfill seguro
+Análise: **backfill é seguro** por causa do `event_id` único. Zero duplicação.
+- Meta usa eventos com `event_time` até **7 dias no passado** pra otimização de campanha.
+- Eventos entre 7d e 90d ainda aparecem no Gerenciador de Eventos e alimentam analytics, mas não otimizam entrega.
+
+Recomendação:
+- **Backfill automático 7 dias** — ganho real de atribuição, sem risco.
+- Backfill 90 dias opcional, só se você quiser o histórico completo no Gerenciador de Eventos (marco no relatório: "eventos históricos, sem impacto em otimização").
+
+Script one-shot que enfileira todos os eventos elegíveis dos últimos 7d (executo depois que Fase 2 estiver validada com 10 eventos ao vivo).
+
+### Fase 4 — UI de monitoramento
+- Nova aba **"Meta CAPI"** em `/integracoes`:
+  - Cards: eventos enviados 24h / falhas 24h / último envio / status conexão.
+  - Tabela últimos 50 eventos (event_name, lead, status, fbtrace_id, erro).
+  - Botão "Enviar evento de teste" (`test_event_code=TEST_UHOME`) que aparece no Gerenciador de Eventos → Test Events em 30s.
+  - Botão "Rodar backfill 7d" (desabilitado até Fase 3 estar validada).
+
+---
+
+## 5. Validação de cada fase (regra fixa do fundador)
+
+Cada fase termina com:
+1. Diff revisado + printscreens do preview.
+2. Teste ao vivo: você aciona (ex: mover um lead teste pra Qualificação) → confirmamos no Gerenciador de Eventos da Meta em **Test Events** (usando `test_event_code`) antes de habilitar em produção.
+3. Só depois libero a próxima fase.
+
+Nada dispara pra Meta produção sem que Test Events valide primeiro.
+
+---
+
+## 6. Detalhes técnicos (para referência)
+
+- Endpoint: `POST https://graph.facebook.com/v21.0/{DATASET_ID}/events`
+- Auth: `?access_token={TOKEN}` (server-side, nunca frontend)
+- Hash: SHA-256 lowercase trim de email; telefone só dígitos com DDI (55…) antes do hash
+- Campos user_data: `em`, `ph`, `lead_id` (numérico do Meta, quando origem for ad Meta), `fbc` (`fb.1.{timestamp}.{fbclid}`), `fbp`, `client_ip_address`, `client_user_agent` (só se capturados no site)
+- `action_source`: `"system_generated"` (bate com sua carga de referência)
+- Retry backoff exponencial: 1min, 5min, 15min, 1h, 6h
+- Rate limit Meta: 100k eventos/hora por dataset — muito acima do nosso volume
+
+---
+
+## 7. O que NÃO faço nessa entrega
+- Não mexo em nenhum edge function existente (`receive-meta-lead`, `meta-ads-sync`, etc.).
+- Não altero nenhuma tela do pipeline nem trigger de negócio existente.
+- Não envio dados sem hash.
+- Não crio nada que não passe pelo Test Events antes de ir pra produção.
+
+Pronto pra começar pela **Fase 0** (checar credenciais) assim que você aprovar o plano.
