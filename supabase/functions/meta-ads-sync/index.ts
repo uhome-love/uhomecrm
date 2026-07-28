@@ -191,8 +191,7 @@ Deno.serve(async (req) => {
     const since = body.since || new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const until = body.until || now.toISOString().split("T")[0];
 
-    // Service role for writing marketing_entries_* (bypass RLS)
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // Service role client already created above as `admin`
 
     // ─── 1. Campaign-level (legacy marketing_entries) ───
     const [campaigns, campaignInsights] = await Promise.all([
