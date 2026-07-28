@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       status: res.status,
       response: (() => { try { return JSON.parse(body); } catch { return body; } })(),
       instructions: res.ok
-        ? "Abra Meta Events Manager → Test Events → informe o code TEST_UHOME. O evento 'Lead' deve aparecer em ~30s."
+        ? "Abra Meta Events Manager → Testar eventos → o evento 'Lead' deve aparecer em ~30s (code TEST16747)."
         : "Falha na autenticação/dataset. Revise META_DATASET_ID e META_CAPI_TOKEN.",
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
