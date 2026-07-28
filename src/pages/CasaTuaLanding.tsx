@@ -18,6 +18,9 @@ export default function CasaTuaLanding() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
+  // Captura ?fbclid=... no primeiro pageview (para Meta CAPI Match Quality)
+  useEffect(() => { captureFbclid(); }, []);
+
   const utm_source = params.get("utm_source") || params.get("origem") || "campanha_email_whatsapp";
   const utm_medium = params.get("utm_medium") || "landing";
   const utm_campaign = params.get("utm_campaign") || "casa_tua_abril_2026";
