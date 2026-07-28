@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
         cliques: parseInt(insight.clicks) || 0,
         leads_gerados: leads,
         conversoes: 0,
-        cpl,
+        // cpl: generated column — do NOT insert
         cpc: parseFloat(insight.cpc) || 0,
         ctr: parseFloat(insight.ctr) || 0,
         visitas: 0,
