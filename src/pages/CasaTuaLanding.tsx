@@ -38,6 +38,7 @@ export default function CasaTuaLanding() {
 
     setSending(true);
     try {
+      const metaCtx = getMetaContext();
       const res = await fetch(EDGE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: ANON_KEY },
@@ -53,6 +54,12 @@ export default function CasaTuaLanding() {
           utm_medium,
           utm_campaign,
           message: "Interesse via landing page campanha abril",
+          // Meta CAPI Match Quality
+          fbc: metaCtx.fbc,
+          fbp: metaCtx.fbp,
+          fbclid: metaCtx.fbclid,
+          user_agent: metaCtx.user_agent,
+          event_source_url: metaCtx.event_source_url,
         }),
       });
       const data = await res.json();
