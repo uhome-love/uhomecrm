@@ -11821,6 +11821,7 @@ export type Database = {
     }
     Functions: {
       _capi_normalize_phone: { Args: { p_phone: string }; Returns: string }
+      _capi_set_cron_secret: { Args: { _secret: string }; Returns: undefined }
       _capi_sha256: { Args: { p_input: string }; Returns: string }
       _central_origem: { Args: { p_origem: string }; Returns: string }
       _central_segmento: {
@@ -11959,6 +11960,14 @@ export type Database = {
           nome: string
           status: string
           variaveis: Json
+        }[]
+      }
+      claim_meta_capi_batch: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          event_id: string
+          payload: Json
         }[]
       }
       claim_reengajamento_dispatch_queue: {
@@ -12809,6 +12818,14 @@ export type Database = {
         Returns: string
       }
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
+      mark_meta_capi_failed: {
+        Args: { _error: string; _event_ids: string[]; _max_attempts?: number }
+        Returns: undefined
+      }
+      mark_meta_capi_sent: {
+        Args: { _event_ids: string[]; _fbtrace_id: string }
+        Returns: undefined
+      }
       match_homi_chunks: {
         Args: {
           filter_category?: string
