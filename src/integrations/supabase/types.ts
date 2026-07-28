@@ -12101,15 +12101,26 @@ export type Database = {
           visitas_semana: number
         }[]
       }
-      enqueue_meta_capi_event: {
-        Args: {
-          p_custom_data?: Json
-          p_event_name: string
-          p_event_time?: string
-          p_lead_id: string
-        }
-        Returns: string
-      }
+      enqueue_meta_capi_event:
+        | {
+            Args: {
+              p_custom_data?: Json
+              p_event_name: string
+              p_event_time?: string
+              p_lead_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_custom_data?: Json
+              p_event_name: string
+              p_event_time?: string
+              p_lead_event_source?: string
+              p_lead_id: string
+            }
+            Returns: string
+          }
       enviados_hoje_reengajamento: { Args: never; Returns: number }
       escalonar_notificacoes_leads: { Args: never; Returns: number }
       expirar_aceites_roleta: { Args: never; Returns: Json }
