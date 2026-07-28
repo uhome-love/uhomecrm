@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.enqueue_meta_capi_event(uuid, text, timestamp with time zone, jsonb);

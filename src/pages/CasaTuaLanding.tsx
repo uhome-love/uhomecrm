@@ -3,7 +3,8 @@
  * Envia o lead para receive-landing-lead → CRM/Roleta.
  */
 import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
-import { useState } from "react";
+import { captureFbclid, getMetaContext } from "@/lib/metaTracking";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Loader2, Home, CheckCircle, MapPin, Gift, AlertTriangle } from "lucide-react";
 
@@ -16,6 +17,9 @@ export default function CasaTuaLanding() {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+
+  // Captura ?fbclid=... no primeiro pageview (para Meta CAPI Match Quality)
+  useEffect(() => { captureFbclid(); }, []);
 
   const utm_source = params.get("utm_source") || params.get("origem") || "campanha_email_whatsapp";
   const utm_medium = params.get("utm_medium") || "landing";
@@ -34,6 +38,7 @@ export default function CasaTuaLanding() {
 
     setSending(true);
     try {
+      const metaCtx = getMetaContext();
       const res = await fetch(EDGE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: ANON_KEY },
@@ -49,6 +54,12 @@ export default function CasaTuaLanding() {
           utm_medium,
           utm_campaign,
           message: "Interesse via landing page campanha abril",
+          // Meta CAPI Match Quality
+          fbc: metaCtx.fbc,
+          fbp: metaCtx.fbp,
+          fbclid: metaCtx.fbclid,
+          user_agent: metaCtx.user_agent,
+          event_source_url: metaCtx.event_source_url,
         }),
       });
       const data = await res.json();
