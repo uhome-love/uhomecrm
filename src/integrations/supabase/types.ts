@@ -4934,6 +4934,48 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_capi_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_id: string
+          event_name: string
+          event_time: string
+          fbtrace_id: string | null
+          last_error: string | null
+          lead_id: string | null
+          payload: Json
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_id: string
+          event_name: string
+          event_time?: string
+          fbtrace_id?: string | null
+          last_error?: string | null
+          lead_id?: string | null
+          payload: Json
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_id?: string
+          event_name?: string
+          event_time?: string
+          fbtrace_id?: string | null
+          last_error?: string | null
+          lead_id?: string | null
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       meta_form_names: {
         Row: {
           created_at: string
@@ -11778,6 +11820,8 @@ export type Database = {
       }
     }
     Functions: {
+      _capi_normalize_phone: { Args: { p_phone: string }; Returns: string }
+      _capi_sha256: { Args: { p_input: string }; Returns: string }
       _central_origem: { Args: { p_origem: string }; Returns: string }
       _central_segmento: {
         Args: { p_emp: string; p_seg: string }
@@ -12047,6 +12091,15 @@ export type Database = {
           presencas_semana: number
           visitas_semana: number
         }[]
+      }
+      enqueue_meta_capi_event: {
+        Args: {
+          p_custom_data?: Json
+          p_event_name: string
+          p_event_time?: string
+          p_lead_id: string
+        }
+        Returns: string
       }
       enviados_hoje_reengajamento: { Args: never; Returns: number }
       escalonar_notificacoes_leads: { Args: never; Returns: number }
