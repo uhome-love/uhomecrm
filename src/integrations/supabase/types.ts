@@ -7268,6 +7268,7 @@ export type Database = {
           campanha: string | null
           campanha_id: string | null
           capi_enviado_at: string | null
+          client_user_agent: string | null
           complexidade_score: number
           conjunto_anuncio: string | null
           conversation_window_until: string | null
@@ -7288,7 +7289,10 @@ export type Database = {
           estagnado_aviso2_em: string | null
           estagnado_em: string | null
           estagnado_prazo_em: string | null
+          event_source_url: string | null
           faixa_valor: string | null
+          fbc: string | null
+          fbp: string | null
           flag_status: Json | null
           form_id: string | null
           form_name: string | null
@@ -7374,6 +7378,7 @@ export type Database = {
           campanha?: string | null
           campanha_id?: string | null
           capi_enviado_at?: string | null
+          client_user_agent?: string | null
           complexidade_score?: number
           conjunto_anuncio?: string | null
           conversation_window_until?: string | null
@@ -7394,7 +7399,10 @@ export type Database = {
           estagnado_aviso2_em?: string | null
           estagnado_em?: string | null
           estagnado_prazo_em?: string | null
+          event_source_url?: string | null
           faixa_valor?: string | null
+          fbc?: string | null
+          fbp?: string | null
           flag_status?: Json | null
           form_id?: string | null
           form_name?: string | null
@@ -7480,6 +7488,7 @@ export type Database = {
           campanha?: string | null
           campanha_id?: string | null
           capi_enviado_at?: string | null
+          client_user_agent?: string | null
           complexidade_score?: number
           conjunto_anuncio?: string | null
           conversation_window_until?: string | null
@@ -7500,7 +7509,10 @@ export type Database = {
           estagnado_aviso2_em?: string | null
           estagnado_em?: string | null
           estagnado_prazo_em?: string | null
+          event_source_url?: string | null
           faixa_valor?: string | null
+          fbc?: string | null
+          fbp?: string | null
           flag_status?: Json | null
           form_id?: string | null
           form_name?: string | null
