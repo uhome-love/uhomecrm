@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
         },
       },
     ],
-    test_event_code: "TEST_UHOME",
+    test_event_code: "TEST16747",
   };
 
   const url = `https://graph.facebook.com/v21.0/${datasetId}/events?access_token=${token}`;
