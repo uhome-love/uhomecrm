@@ -128,6 +128,19 @@ Deno.serve(async (req) => {
     const utmMedium = body.utm_medium || "";
     const utmCampaign = body.utm_campaign || "";
 
+    // ── Meta CAPI Match Quality: browser context ──
+    let fbc: string | null = (body.fbc || "").toString().trim() || null;
+    const fbp: string | null = (body.fbp || "").toString().trim() || null;
+    const fbclid: string | null = (body.fbclid || "").toString().trim() || null;
+    // Build fbc from fbclid if not provided
+    if (!fbc && fbclid) {
+      fbc = `fb.1.${Date.now()}.${fbclid}`;
+    }
+    const clientUserAgent: string | null =
+      (body.user_agent || body.client_user_agent || req.headers.get("user-agent") || "").toString().trim() || null;
+    const eventSourceUrl: string | null =
+      (body.event_source_url || body.page_url || "").toString().trim() || null;
+
     if (!name && !telefone) {
       L.warn("Validation failed — missing name and phone", { source, body: { name: body.name, phone: body.phone } });
       return new Response(
