@@ -175,7 +175,7 @@ export default function CentralPerformance() {
         </div>
 
         {/* Content */}
-        <div className={cn(tab === "visao" || tab === "ranking" ? "p-6 md:p-8 bg-muted/20" : "")}>
+        <div className={cn(tab === "visao" || tab === "ranking" || tab === "origem" ? "p-6 md:p-8 bg-muted/20" : "")}>
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
             {tab === "visao" && (
               <PerfVisaoGeral
