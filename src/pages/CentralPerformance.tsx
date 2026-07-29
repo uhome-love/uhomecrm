@@ -17,17 +17,21 @@ import { useMetasSSOT, usePaceMes } from "@/hooks/useMetasSSOT";
 import RankingFilters from "@/components/ranking/v2/RankingFilters";
 import PerfVisaoGeral from "@/components/performance/PerfVisaoGeral";
 import PerfRanking from "@/components/performance/PerfRanking";
+import PerfOrigem from "@/components/performance/PerfOrigem";
+import { useMetricasOrigem } from "@/hooks/useMetricasOrigem";
 import CorretorProgresso from "@/pages/CorretorProgresso";
 import RelatorioCorretor from "@/pages/RelatorioCorretor";
 
-type TabKey = "visao" | "ranking" | "progresso" | "relatorio";
+type TabKey = "visao" | "ranking" | "origem" | "progresso" | "relatorio";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "visao", label: "Visão Geral" },
   { key: "ranking", label: "Ranking" },
+  { key: "origem", label: "Origem" },
   { key: "progresso", label: "Meu Progresso" },
   { key: "relatorio", label: "Relatório 1:1" },
 ];
+
 
 export default function CentralPerformance() {
   const { user } = useAuthUser();
