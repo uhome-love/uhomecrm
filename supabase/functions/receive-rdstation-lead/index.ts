@@ -451,6 +451,8 @@ async function processLead(
       corretor_id: null,
       aceite_status: "pendente_distribuicao",
       prioridade_lead: message && message.length > 10 ? "alta" : "media",
+      client_user_agent: clientUserAgent,
+      client_ip_address: clientIpAddress,
     })
     .select("id")
     .single();
