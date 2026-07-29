@@ -810,8 +810,18 @@ Deno.serve(async (req) => {
         source: platform || null,
       });
     }
+    if (!email) {
+      console.warn("[CAPI match-quality] Lead sem email", {
+        receiver: "receive-meta-lead",
+        produto: empreendimento || null,
+        origem: platform || "meta_ads",
+        campaign_id: campaignId || null,
+        form_name: formName || null,
+      });
+    }
 
     // ── Insert lead ──
+
     const { data: insertedLead, error: insertError } = await supabase
       .from("pipeline_leads")
       .insert({
