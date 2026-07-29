@@ -381,6 +381,7 @@ Deno.serve(async (req) => {
         fbc,
         fbp,
         client_user_agent: clientUserAgent,
+        client_ip_address: clientIpAddress,
         event_source_url: eventSourceUrl,
       })
       .select("id")
