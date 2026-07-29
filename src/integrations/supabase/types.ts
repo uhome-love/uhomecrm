@@ -13649,6 +13649,28 @@ export type Database = {
               isSetofReturn: true
             }
           }
+      rpc_metricas: {
+        Args: {
+          p_end: string
+          p_gerente_id?: string
+          p_incluir_inativos?: boolean
+          p_start: string
+          p_user_id?: string
+        }
+        Returns: {
+          corretor_ativo: boolean
+          corretor_auth_id: string
+          corretor_nome: string
+          equipe: string
+          gerente_auth_id: string
+          leads_recebidos: number
+          vendas: number
+          vgv_assinado: number
+          visitas_marcadas: number
+          visitas_no_show: number
+          visitas_realizadas: number
+        }[]
+      }
       rpc_perf_dashboard: {
         Args: { p_fim?: string; p_inicio?: string }
         Returns: Json
