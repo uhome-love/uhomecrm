@@ -857,6 +857,8 @@ Deno.serve(async (req) => {
         distribuido_em: atribuicaoDiretaBruno ? new Date().toISOString() : undefined,
         prioridade_lead: message && message.length > 10 ? "alta" : "media",
         meta_lead_id: externalLeadId || null,
+        client_user_agent: clientUserAgent,
+        client_ip_address: clientIpAddress,
       })
       .select("id")
       .single();
