@@ -138,6 +138,11 @@ Deno.serve(async (req) => {
     }
     const clientUserAgent: string | null =
       (body.user_agent || body.client_user_agent || req.headers.get("user-agent") || "").toString().trim() || null;
+    // Meta CAPI: client IP (plain text, não hasheado). Primeiro IP de x-forwarded-for
+    // (chain proxy), fallback para x-real-ip. Deno.serve não expõe req.socket.
+    const xff = req.headers.get("x-forwarded-for") || "";
+    const clientIpAddress: string | null =
+      (body.client_ip_address || xff.split(",")[0] || req.headers.get("x-real-ip") || "").toString().trim() || null;
     const eventSourceUrl: string | null =
       (body.event_source_url || body.page_url || "").toString().trim() || null;
 
@@ -376,6 +381,7 @@ Deno.serve(async (req) => {
         fbc,
         fbp,
         client_user_agent: clientUserAgent,
+        client_ip_address: clientIpAddress,
         event_source_url: eventSourceUrl,
       })
       .select("id")

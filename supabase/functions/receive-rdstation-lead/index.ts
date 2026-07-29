@@ -89,6 +89,13 @@ Deno.serve(async (req) => {
   };
 
   try {
+    // Meta CAPI Match Quality: IP + User Agent (plain text)
+    const _xff = req.headers.get("x-forwarded-for") || "";
+    const clientIpAddress: string | null =
+      (_xff.split(",")[0] || req.headers.get("x-real-ip") || "").trim() || null;
+    const clientUserAgent: string | null =
+      (req.headers.get("user-agent") || "").trim() || null;
+
     const body = await req.json();
     L.info("Raw body received", { hasLeads: !!body.leads, keys: Object.keys(body).slice(0, 10) });
 
@@ -129,7 +136,7 @@ Deno.serve(async (req) => {
 
     for (const lead of leads) {
       try {
-        const result = await processLead(lead, supabase, supabaseUrl, serviceKey, traceId, L, logOps);
+        const result = await processLead(lead, supabase, supabaseUrl, serviceKey, traceId, L, logOps, clientIpAddress, clientUserAgent);
         results.push(result);
       } catch (err) {
         L.error("Error processing lead", { lead_email: lead.email }, err);
@@ -155,7 +162,9 @@ async function processLead(
   lead: any, supabase: any, supabaseUrl: string, serviceKey: string,
   traceId: string,
   L: { info: Function; warn: Function; error: Function },
-  logOps: Function
+  logOps: Function,
+  clientIpAddress: string | null,
+  clientUserAgent: string | null
 ) {
   // ── Debug: log all lead keys to find phone field ──
   L.info("Lead raw keys", { keys: Object.keys(lead), sample: JSON.stringify(lead).slice(0, 1500) });
@@ -442,6 +451,8 @@ async function processLead(
       corretor_id: null,
       aceite_status: "pendente_distribuicao",
       prioridade_lead: message && message.length > 10 ? "alta" : "media",
+      client_user_agent: clientUserAgent,
+      client_ip_address: clientIpAddress,
     })
     .select("id")
     .single();

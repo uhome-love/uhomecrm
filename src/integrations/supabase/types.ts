@@ -7268,6 +7268,7 @@ export type Database = {
           campanha: string | null
           campanha_id: string | null
           capi_enviado_at: string | null
+          client_ip_address: string | null
           client_user_agent: string | null
           complexidade_score: number
           conjunto_anuncio: string | null
@@ -7378,6 +7379,7 @@ export type Database = {
           campanha?: string | null
           campanha_id?: string | null
           capi_enviado_at?: string | null
+          client_ip_address?: string | null
           client_user_agent?: string | null
           complexidade_score?: number
           conjunto_anuncio?: string | null
@@ -7488,6 +7490,7 @@ export type Database = {
           campanha?: string | null
           campanha_id?: string | null
           capi_enviado_at?: string | null
+          client_ip_address?: string | null
           client_user_agent?: string | null
           complexidade_score?: number
           conjunto_anuncio?: string | null
