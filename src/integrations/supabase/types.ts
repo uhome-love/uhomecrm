@@ -13026,6 +13026,15 @@ export type Database = {
         Args: { p_corretor_id: string }
         Returns: string[]
       }
+      resolve_empreendimento_canonico: {
+        Args: {
+          p_campanha: string
+          p_empreendimento: string
+          p_form_id: string
+          p_form_name: string
+        }
+        Returns: string
+      }
       resolve_managed_brokers: {
         Args: { _gestor: string }
         Returns: {
