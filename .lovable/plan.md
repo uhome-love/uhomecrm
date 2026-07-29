@@ -1,65 +1,63 @@
 
-# Meta CAPI · Match Quality 4.4 → 6.0+
+# Auditoria da Central de Performance — visão de diretor
 
-Objetivo: enriquecer `user_data` de todos os eventos (Lead, Schedule, ViewContent, Purchase) com nome, sobrenome, cidade, UF e país hasheados em SHA-256, mantendo email/telefone/lead_id/fbc/fbp já enviados. E adicionar log de diagnóstico quando lead chegar sem email.
+Validei ao vivo em `/performance` (logado como Lucas · Admin/CEO) e li o código das 4 abas + o backend SSOT. Abaixo o diagnóstico bloco a bloco e o que falta para virar "produto de ponta".
 
-## Onde o CAPI é montado hoje
+## O que está sólido
+- Números vêm de fonte única (`rpc_metricas` → `v_fato_venda/visita/lead`), com rateio 50/50 e equipe histórica de desligados.
+- Visão Geral carrega em ~2s: VGV R$ 4,7M (−17,0%), 9 vendas (ticket R$ 527k), 167 visitas (no-show 42%), 1.307 leads / 31 corretores, evolução 6 meses e funil 12,8% / 5,4%.
+- Sem erros de runtime (só warnings de ref pré-existentes do App).
 
-`user_data` é construído **inteiramente em Postgres**, na função `public.enqueue_meta_capi_event` (última versão em `supabase/migrations/20260728171543_...sql`). A edge `meta-capi-dispatch/index.ts` só lê `payload` da fila `meta_capi_queue` e faz POST — não monta `user_data`. Portanto os campos novos entram numa migration que substitui `enqueue_meta_capi_event`.
+## Problemas encontrados (aba por aba)
 
-Os `console.warn` de lead sem email vão nos 4 receivers que fazem insert em `pipeline_leads`:
-- `supabase/functions/receive-meta-lead/index.ts`
-- `supabase/functions/receive-landing-lead/index.ts`
-- `supabase/functions/receive-rdstation-lead/index.ts`
-- `supabase/functions/receive-imovelweb-lead/index.ts`
+**Visão Geral**
+1. As barrinhas dos 4 KPIs são decorativas e enganosas: usam fórmulas arbitrárias (`vendas × 10`, `conversão × 5`). Um card de diretoria não pode ter gauge sem denominador real.
+2. Não existe **meta**. O CRM já tem `ceo_metas_mensais` (10 registros, jul/26), `empresa_metas_mensais` e `corretor_metas_mensais` — nada disso aparece. Sem meta não há leitura de "estamos bem ou mal".
+3. Nenhum KPI é clicável: não dá para saber quem são as 9 vendas, as 167 visitas ou os 70 no-shows.
+4. Falta a leitura de **negócio**: no-show 42% é o maior vazamento do mês e está escondido como legenda cinza.
+5. O card "Top Corretores" fica com ~500px de vazio embaixo (a coluna estica com o gráfico).
+6. Sem corte por **origem/campanha/empreendimento**, embora `v_fato_lead` já traga origem, campanha, conjunto, anúncio e empreendimento canônico.
 
-## Mudança 1 — Enriquecer user_data (migration)
+**Ranking**
+7. Tabela sem busca, sem posição vs. mês anterior, sem taxas de conversão por linha (lead→visita, visita→venda) e sem meta individual — é um extrato, não um ranking de gestão.
+8. Nenhuma linha é clicável (sem drill-down por corretor).
+9. 7 colunas fixas quebram no mobile (você está em 440px de viewport) — só rola horizontal.
+10. O card "Equipes" mostra só VGV; falta produtividade por cabeça (VGV/corretor, visitas/corretor).
 
-Nova versão de `enqueue_meta_capi_event` faz:
+**Meu Progresso**
+11. É a tela de gamificação do corretor colada dentro da central: para Admin/CEO aparece "0 pts · Iniciante", missões 0/30 e conquistas todas bloqueadas — ruído puro para gestão.
+12. Ignora o filtro de período do header (é sempre "hoje") e traz título próprio ("Progresso do Dia"), quebrando a hierarquia visual.
 
-1. Buscar também `nome`, `empreendimento` do lead.
-2. **fn / ln** — a partir de `nome`: `unaccent(lower(trim(nome)))`, split em primeiro token vs. resto; se resto vazio, `ln` fica omitido.
-3. **country** — sempre `sha256('br')`.
-4. **ct / st** — resolvidos por empreendimento canônico via join `empreendimento_aliases` → `empreendimentos_canonicos`. Como hoje não temos coluna `cidade/uf` nesses catálogos, usar fallback fixo **Porto Alegre / RS** (99% do estoque). Deixar CTE `v_empreendimento_geo` (mapa nome→cidade,uf) inline na função, começando com regra padrão `('*', 'porto alegre', 'rs')`; overrides futuros por empreendimento entram só editando essa CTE — sem nova tabela agora.
-5. **zp** — omitido (não capturamos CEP).
-6. Todos os valores hasheados via `_capi_sha256`, que já normaliza (lower + trim). Adicionar `unaccent` no helper `_capi_sha256` (ou fazer o unaccent antes de chamar) para garantir remoção de acentos em `nome` e `cidade`. Email já entra em lowercase (helper), telefone já é E.164 (`_capi_normalize_phone`).
-7. Só adiciona chave ao `v_user_data` quando o hash resultante não é nulo (mesmo padrão atual).
+**Relatório 1:1**
+13. Header duplicado ("Relatório 1:1 por Corretor") + abas dentro de abas — três níveis de navegação na mesma tela.
+14. **Risco de divergência de dados**: as métricas do 1:1 vêm de `v_checkpoint_lines_canonical` (preenchimento manual do checkpoint), não do SSOT. O mesmo corretor pode ter VGV diferente na aba Ranking e no relatório 1:1 — exatamente o problema que a fonte única veio matar.
+15. O filtro de período/equipe do header some nessa aba, sem explicação.
 
-O payload final passa a incluir, além de `em`/`ph`/`lead_id`/`fbc`/`fbp`/`client_user_agent` atuais:
-```
-"fn": ["<sha256>"], "ln": ["<sha256>"],
-"ct": ["<sha256>"], "st": ["<sha256>"],
-"country": ["<sha256>"]
-```
+## Plano proposto (4 fases, uma por vez, com validação no preview)
 
-Nenhum trigger muda — todos continuam chamando `enqueue_meta_capi_event(...)` com a mesma assinatura.
+**Fase A — Verdade e confiança (maior impacto)**
+- Trocar as barras decorativas dos KPIs por **progresso real contra meta** do mês (meta empresa/equipe/corretor conforme o filtro ativo), com ritmo esperado do mês ("no pace"): pace = dias úteis decorridos / dias úteis do mês.
+- Card de meta no topo: Realizado x Meta x Faltam x Projeção de fechamento.
+- Alinhar o Relatório 1:1 ao SSOT: métricas reais (visitas, vendas, VGV, leads) vindas de `rpc_metricas`, mantendo do checkpoint só o que não existe no SSOT (ligações, presença, propostas), com rótulo de origem em cada linha.
 
-## Mudança 2 — Log de lead sem email (4 receivers)
+**Fase B — Drill-down e diagnóstico**
+- KPIs e linhas do ranking clicáveis → painel lateral com a lista real (vendas, visitas, no-shows, leads) e link para o lead/negócio.
+- Bloco "Onde estamos perdendo": no-show, leads sem visita, tempo médio lead→visita e lead→venda, com o corte por equipe.
+- Funil de conversão por **origem/campanha/empreendimento** (dados já existem em `v_fato_lead`), respondendo "qual campanha vira venda".
 
-Em cada um dos 4 receivers, logo após determinar `email` e `empreendimento`/`origem` e antes do insert em `pipeline_leads`, adicionar:
+**Fase C — Ranking de gestão**
+- Colunas de conversão por linha, delta de posição vs. mês anterior, % da meta, busca por nome, e ordenação asc/desc.
+- Card Equipes com VGV/corretor e visitas/corretor.
+- Versão mobile em cards (sem scroll horizontal).
 
-```ts
-if (!email) {
-  console.warn("[CAPI match-quality] Lead sem email", {
-    receiver: "receive-meta-lead", // ajustado por arquivo
-    produto: empreendimento || null,
-    origem: source || platform || "desconhecida",
-    campaign_id: campaignId || null,
-    form_name: formName || null,
-  });
-}
-```
+**Fase D — Coerência das abas**
+- "Meu Progresso" passa a ser sensível ao papel: corretor vê gamificação; gestor/CEO vê o próprio painel de time (ou a aba fica oculta para admin).
+- Remover headers internos duplicados de Progresso e 1:1; período e equipe passam a valer nas 4 abas.
+- Export: CSV já existe; incluir PDF executivo do mês (mesma identidade do relatório 1:1).
 
-Sem mudar fluxo — só warn. Vai para `edge_function_logs` e alimenta o painel `/admin/ingestao`.
+## Notas técnicas
+- Nada aqui exige migration nova para as Fases A–C, exceto se você quiser meta por equipe (hoje há meta por empresa, por CEO e por corretor; meta por equipe teria de ser derivada da soma dos corretores ou de uma tabela nova).
+- Todo cálculo continua passando por `metricasSSOT.ts` / `rpc_metricas`; nenhum componente vai consultar `negocios`/`visitas` direto.
+- Arquivos afetados: `src/components/performance/*`, `src/pages/CentralPerformance.tsx`, `src/hooks/useMetricasSSOT.ts` (+ novo hook de metas), `src/pages/RelatorioCorretor.tsx`.
 
-## Validação
-
-1. Rodar `SELECT public.enqueue_meta_capi_event('<lead-com-nome-completo>', 'Lead', now());` e inspecionar `payload->'user_data'` — deve conter `fn`, `ln`, `ct`, `st`, `country` (hashes 64 chars).
-2. Disparar `meta-capi-dispatch` com `test_event_code=TEST16747` e confirmar no Meta Events Manager que "Parâmetros correspondentes" agora lista Nome, Sobrenome, Cidade, Estado, País.
-3. Forçar um lead sintético sem email pelo `receive-landing-lead` e ver o warn em `edge_function_logs`.
-4. Aguardar 24-48h e ver Match Quality subir de 4.4 para 6.0+.
-
-## Fora de escopo (fica para depois)
-
-- Captura de CEP nas landings (traria `zp`, +~1 ponto).
-- Coluna real `cidade/uf` em `empreendimentos_canonicos` — só necessário quando começarmos vendas fora de Porto Alegre.
+Sugiro começar pela **Fase A** (meta + pace + 1:1 no SSOT), que é onde a página deixa de ser "relatório" e vira instrumento de decisão.
