@@ -3688,6 +3688,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lead_progressao_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
+          },
+          {
             foreignKeyName: "lead_progressao_visita_id_fkey"
             columns: ["visita_id"]
             isOneToOne: false
@@ -5226,6 +5233,13 @@ export type Database = {
             referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "negocios_atividades_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
+          },
         ]
       }
       negocios_tarefas: {
@@ -5284,6 +5298,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "negocios"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negocios_tarefas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
           },
         ]
       }
@@ -6581,6 +6602,13 @@ export type Database = {
             referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pagadoria_solicitacoes_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
+          },
         ]
       }
       pagadorias: {
@@ -6842,6 +6870,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "negocios"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
           },
         ]
       }
@@ -7601,6 +7636,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "negocios"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_leads_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
           },
           {
             foreignKeyName: "pipeline_leads_produto_id_fkey"
@@ -10238,6 +10280,13 @@ export type Database = {
             referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "venda_comissoes_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
+          },
         ]
       }
       visita_amanha_config: {
@@ -10594,6 +10643,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "negocios"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
           },
           {
             foreignKeyName: "visitas_pipeline_lead_id_fkey"
@@ -11487,6 +11543,36 @@ export type Database = {
             columns: ["segmento_id"]
             isOneToOne: false
             referencedRelation: "pipeline_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_fato_venda: {
+        Row: {
+          conta_como_venda: boolean | null
+          corretor_auth_id: string | null
+          corretor_nome: string | null
+          data_assinatura: string | null
+          em_parceria: boolean | null
+          empreendimento: string | null
+          empreendimento_canonico_id: string | null
+          equipe: string | null
+          gerente_auth_id: string | null
+          mes_ref: string | null
+          negocio_id: string | null
+          nome_cliente: string | null
+          participacao: number | null
+          pipeline_lead_id: string | null
+          qtd_participantes: number | null
+          valor_negocio: number | null
+          vgv_rateado: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negocios_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
             referencedColumns: ["id"]
           },
         ]
