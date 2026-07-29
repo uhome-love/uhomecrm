@@ -12,6 +12,8 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useMetricasSSOT } from "@/hooks/useMetricasSSOT";
 import { useEvolucaoSSOT } from "@/hooks/useEvolucaoSSOT";
+import { useMetasSSOT, usePaceMes } from "@/hooks/useMetasSSOT";
+
 import RankingFilters from "@/components/ranking/v2/RankingFilters";
 import PerfVisaoGeral from "@/components/performance/PerfVisaoGeral";
 import PerfRanking from "@/components/performance/PerfRanking";
@@ -51,6 +53,9 @@ export default function CentralPerformance() {
 
   const { linhas, isLoading } = useMetricasSSOT(filtro);
   const { pontos, isLoading: evolucaoLoading } = useEvolucaoSSOT({ referencia, meses, gerenteId });
+  const { data: metas, isLoading: metasLoading } = useMetasSSOT(referencia, gerenteId);
+  const { data: pace } = usePaceMes(referencia);
+
 
   const periodoLabel = useMemo(() => {
     const label = format(referencia, "MMMM 'de' yyyy", { locale: ptBR });
@@ -170,8 +175,12 @@ export default function CentralPerformance() {
                 meses={meses}
                 onMesesChange={setMeses}
                 onVerRanking={() => setTab("ranking")}
+                metas={metas}
+                pace={pace}
+                metasLoading={metasLoading}
               />
             )}
+
             {tab === "ranking" && <PerfRanking linhas={linhas} loading={isLoading} />}
             {tab === "progresso" && <CorretorProgresso />}
             {tab === "relatorio" && <RelatorioCorretor />}

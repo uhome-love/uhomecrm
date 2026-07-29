@@ -2,9 +2,11 @@ import { useMemo } from "react";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { somarMetricas, type MetricaCorretor } from "@/lib/metricasSSOT";
 import PerfKpiCard from "./PerfKpiCard";
+import PerfMetaCard from "./PerfMetaCard";
 import PerfEvolucao from "./PerfEvolucao";
 import PerfTopCorretores from "./PerfTopCorretores";
 import type { PontoEvolucao } from "@/hooks/useEvolucaoSSOT";
+import type { MetasMes, PaceMes } from "@/hooks/useMetasSSOT";
 
 interface Props {
   linhas: MetricaCorretor[];
@@ -14,9 +16,23 @@ interface Props {
   meses: number;
   onMesesChange: (n: number) => void;
   onVerRanking: () => void;
+  metas?: MetasMes;
+  pace?: PaceMes;
+  metasLoading?: boolean;
 }
 
-export default function PerfVisaoGeral({ linhas, loading, pontos, evolucaoLoading, meses, onMesesChange, onVerRanking }: Props) {
+export default function PerfVisaoGeral({
+  linhas,
+  loading,
+  pontos,
+  evolucaoLoading,
+  meses,
+  onMesesChange,
+  onVerRanking,
+  metas,
+  pace,
+  metasLoading,
+}: Props) {
   const t = useMemo(() => somarMetricas(linhas), [linhas]);
 
   const anterior = pontos.length > 1 ? pontos[pontos.length - 2] : null;
@@ -24,42 +40,76 @@ export default function PerfVisaoGeral({ linhas, loading, pontos, evolucaoLoadin
 
   const convVisita = t.leads_recebidos > 0 ? (t.visitas_realizadas / t.leads_recebidos) * 100 : 0;
   const convVenda = t.visitas_realizadas > 0 ? (t.vendas / t.visitas_realizadas) * 100 : 0;
-  const maxVgv = Math.max(1, ...pontos.map((p) => p.vgv));
+
+  /** progresso real contra meta (0-100). Sem meta cadastrada → barra vazia + hint explícito. */
+  const pctMeta = (real: number, meta?: number) => (meta && meta > 0 ? (real / meta) * 100 : 0);
+  const hintMeta = (real: number, meta?: number, fmt: (n: number) => string = String) =>
+    meta && meta > 0 ? `${((real / meta) * 100).toFixed(0)}% de ${fmt(meta)}` : "sem meta";
+
+  const noShowPct = t.visitas_realizadas + t.visitas_no_show > 0
+    ? (t.visitas_no_show / (t.visitas_realizadas + t.visitas_no_show)) * 100
+    : 0;
 
   return (
     <div className="space-y-6">
+      <PerfMetaCard realizado={t.vgv_assinado} metas={metas} pace={pace} loading={loading || metasLoading} />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <PerfKpiCard
           label="VGV assinado"
           value={fmtMoney(t.vgv_assinado, "short")}
-          hint={deltaVgv !== null ? `${deltaVgv >= 0 ? "+" : ""}${deltaVgv.toFixed(1)}%` : undefined}
+          hint={deltaVgv !== null ? `${deltaVgv >= 0 ? "+" : ""}${deltaVgv.toFixed(1)}% vs mês anterior` : undefined}
           hintTone={deltaVgv !== null && deltaVgv >= 0 ? "success" : "muted"}
-          progress={(t.vgv_assinado / maxVgv) * 100}
+          progress={pctMeta(t.vgv_assinado, metas?.meta_vgv)}
           loading={loading}
         />
         <PerfKpiCard
           label="Vendas"
           value={String(t.vendas)}
-          hint={t.vendas > 0 ? `ticket ${fmtMoney(t.vgv_assinado / t.vendas, "short")}` : undefined}
-          progress={Math.min(100, t.vendas * 10)}
+          hint={
+            metas?.meta_vendas
+              ? hintMeta(t.vendas, metas.meta_vendas)
+              : t.vendas > 0
+                ? `ticket ${fmtMoney(t.vgv_assinado / t.vendas, "short")}`
+                : undefined
+          }
+          progress={pctMeta(t.vendas, metas?.meta_vendas)}
           barClass="bg-success"
           loading={loading}
         />
         <PerfKpiCard
           label="Visitas realizadas"
           value={String(t.visitas_realizadas)}
-          hint={`no-show ${t.visitas_realizadas + t.visitas_no_show > 0 ? ((t.visitas_no_show / (t.visitas_realizadas + t.visitas_no_show)) * 100).toFixed(0) : 0}%`}
-          progress={t.visitas_marcadas > 0 ? (t.visitas_realizadas / t.visitas_marcadas) * 100 : 0}
+          hint={hintMeta(t.visitas_realizadas, metas?.meta_visitas_realizadas)}
+          progress={pctMeta(t.visitas_realizadas, metas?.meta_visitas_realizadas)}
           loading={loading}
         />
         <PerfKpiCard
           label="Leads recebidos"
           value={t.leads_recebidos.toLocaleString("pt-BR")}
-          hint={`${t.corretores} corretores`}
-          progress={Math.min(100, convVisita * 5)}
+          hint={hintMeta(t.leads_recebidos, metas?.meta_leads, (n) => n.toLocaleString("pt-BR"))}
+          progress={pctMeta(t.leads_recebidos, metas?.meta_leads)}
           loading={loading}
         />
       </div>
+
+      {noShowPct > 0 && (
+        <div className="bg-card border border-border rounded-xl px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Maior vazamento do período</span>
+            <p className="text-sm text-foreground mt-1">
+              <strong className="tabular-nums">{t.visitas_no_show}</strong> no-shows em{" "}
+              <strong className="tabular-nums">{t.visitas_marcadas}</strong> visitas marcadas
+            </p>
+          </div>
+          <span
+            className={`text-2xl font-bold tabular-nums ${noShowPct >= 30 ? "text-destructive" : "text-foreground"}`}
+          >
+            {noShowPct.toFixed(0)}%
+          </span>
+        </div>
+      )}
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
