@@ -13671,6 +13671,18 @@ export type Database = {
           visitas_realizadas: number
         }[]
       }
+      rpc_metricas_origem: {
+        Args: { p_end: string; p_gerente_id?: string; p_start: string }
+        Returns: {
+          campanha: string
+          leads: number
+          origem: string
+          vendas: number
+          vgv_assinado: number
+          visitas_marcadas: number
+          visitas_realizadas: number
+        }[]
+      }
       rpc_perf_dashboard: {
         Args: { p_fim?: string; p_inicio?: string }
         Returns: Json

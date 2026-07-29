@@ -94,7 +94,7 @@ const emptyMetricas: Metricas = {
   vgv_assinado: { meta: 0, real: 0 },
 };
 
-export default function RelatorioCorretor() {
+export default function RelatorioCorretor({ hideHeader = false }: { hideHeader?: boolean } = {}) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("rascunhos");
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -434,14 +434,17 @@ export default function RelatorioCorretor() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">
-          Relatório <span className="text-primary">1:1 por Corretor</span>
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gere relatórios de performance individuais com IA para reuniões one-a-one
-        </p>
-      </div>
+      {!hideHeader && (
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Relatório <span className="text-primary">1:1 por Corretor</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gere relatórios de performance individuais com IA para reuniões one-a-one
+          </p>
+        </div>
+      )}
+
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-auto">

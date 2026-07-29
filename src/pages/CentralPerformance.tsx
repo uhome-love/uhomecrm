@@ -17,17 +17,21 @@ import { useMetasSSOT, usePaceMes } from "@/hooks/useMetasSSOT";
 import RankingFilters from "@/components/ranking/v2/RankingFilters";
 import PerfVisaoGeral from "@/components/performance/PerfVisaoGeral";
 import PerfRanking from "@/components/performance/PerfRanking";
+import PerfOrigem from "@/components/performance/PerfOrigem";
+import { useMetricasOrigem } from "@/hooks/useMetricasOrigem";
 import CorretorProgresso from "@/pages/CorretorProgresso";
 import RelatorioCorretor from "@/pages/RelatorioCorretor";
 
-type TabKey = "visao" | "ranking" | "progresso" | "relatorio";
+type TabKey = "visao" | "ranking" | "origem" | "progresso" | "relatorio";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "visao", label: "Visão Geral" },
   { key: "ranking", label: "Ranking" },
+  { key: "origem", label: "Origem" },
   { key: "progresso", label: "Meu Progresso" },
   { key: "relatorio", label: "Relatório 1:1" },
 ];
+
 
 export default function CentralPerformance() {
   const { user } = useAuthUser();
@@ -55,6 +59,13 @@ export default function CentralPerformance() {
   const { pontos, isLoading: evolucaoLoading } = useEvolucaoSSOT({ referencia, meses, gerenteId });
   const { data: metas, isLoading: metasLoading } = useMetasSSOT(referencia, gerenteId);
   const { data: pace } = usePaceMes(referencia);
+  const { data: dadosOrigem = [], isLoading: origemLoading } = useMetricasOrigem(
+    filtro.start,
+    filtro.end,
+    gerenteId,
+    tab === "origem"
+  );
+
 
 
   const periodoLabel = useMemo(() => {
@@ -122,7 +133,7 @@ export default function CentralPerformance() {
             </nav>
           </div>
 
-          {(tab === "visao" || tab === "ranking") && (
+          {(tab === "visao" || tab === "ranking" || tab === "origem") && (
             <div className="flex flex-wrap items-center justify-between gap-3 mt-6">
               <div className="flex items-center gap-2">
                 <button
@@ -164,7 +175,7 @@ export default function CentralPerformance() {
         </div>
 
         {/* Content */}
-        <div className={cn(tab === "visao" || tab === "ranking" ? "p-6 md:p-8 bg-muted/20" : "")}>
+        <div className={cn(tab === "visao" || tab === "ranking" || tab === "origem" ? "p-6 md:p-8 bg-muted/20" : "")}>
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
             {tab === "visao" && (
               <PerfVisaoGeral
@@ -182,8 +193,10 @@ export default function CentralPerformance() {
             )}
 
             {tab === "ranking" && <PerfRanking linhas={linhas} loading={isLoading} />}
+            {tab === "origem" && <PerfOrigem dados={dadosOrigem} loading={origemLoading} />}
             {tab === "progresso" && <CorretorProgresso />}
-            {tab === "relatorio" && <RelatorioCorretor />}
+            {tab === "relatorio" && <RelatorioCorretor hideHeader />}
+
           </motion.div>
         </div>
       </div>

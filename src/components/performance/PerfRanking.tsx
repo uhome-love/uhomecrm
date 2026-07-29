@@ -2,28 +2,40 @@ import { useMemo, useState } from "react";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { agruparPorEquipe, type MetricaCorretor } from "@/lib/metricasSSOT";
 import { cn } from "@/lib/utils";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Search } from "lucide-react";
 
-type Coluna = "vgv_assinado" | "vendas" | "visitas_realizadas" | "leads_recebidos";
+type Coluna = "vgv_assinado" | "vendas" | "visitas_realizadas" | "leads_recebidos" | "conversao";
 
 interface Props {
   linhas: MetricaCorretor[];
   loading?: boolean;
+  onSelectCorretor?: (linha: MetricaCorretor) => void;
 }
 
 const COLS: { key: Coluna; label: string }[] = [
   { key: "leads_recebidos", label: "Leads" },
   { key: "visitas_realizadas", label: "Visitas" },
+  { key: "conversao", label: "Conv." },
   { key: "vendas", label: "Vendas" },
   { key: "vgv_assinado", label: "VGV assinado" },
 ];
 
-export default function PerfRanking({ linhas, loading }: Props) {
+const conv = (l: MetricaCorretor) => (l.visitas_realizadas > 0 ? (l.vendas / l.visitas_realizadas) * 100 : 0);
+const valor = (l: MetricaCorretor, c: Coluna) => (c === "conversao" ? conv(l) : (l[c] as number));
+
+export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props) {
   const [ordem, setOrdem] = useState<Coluna>("vgv_assinado");
+  const [busca, setBusca] = useState("");
+
+  const filtradas = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    if (!q) return linhas;
+    return linhas.filter((l) => (l.corretor_nome || "").toLowerCase().includes(q) || (l.equipe || "").toLowerCase().includes(q));
+  }, [linhas, busca]);
 
   const ordenadas = useMemo(
-    () => [...linhas].sort((a, b) => (b[ordem] as number) - (a[ordem] as number)),
-    [linhas, ordem]
+    () => [...filtradas].sort((a, b) => valor(b, ordem) - valor(a, ordem)),
+    [filtradas, ordem]
   );
   const equipes = useMemo(() => agruparPorEquipe(linhas), [linhas]);
   const maxVgv = Math.max(1, ...equipes.map((e) => e.totais.vgv_assinado));
@@ -31,17 +43,54 @@ export default function PerfRanking({ linhas, loading }: Props) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 bg-card border border-border rounded-xl overflow-hidden">
-        <div className="p-6 pb-4 flex items-center justify-between">
+        <div className="p-6 pb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="font-bold text-lg text-foreground">Ranking de corretores</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Parcerias rateadas 50/50 · desligados mantêm histórico</p>
           </div>
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <ArrowUpDown className="h-3 w-3" /> ordenar
-          </span>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar corretor ou equipe"
+              className="h-8 w-full sm:w-56 pl-8 pr-3 text-xs rounded-lg bg-muted/60 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile: cards */}
+        <div className="md:hidden px-4 pb-4 space-y-2">
+          {loading && Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 rounded-lg bg-muted animate-pulse" />)}
+          {!loading && ordenadas.length === 0 && (
+            <p className="py-8 text-center text-sm text-muted-foreground">Nenhum dado no período selecionado.</p>
+          )}
+          {!loading &&
+            ordenadas.map((l, i) => (
+              <button
+                key={l.corretor_auth_id}
+                onClick={() => onSelectCorretor?.(l)}
+                className="w-full text-left rounded-lg border border-border p-3 hover:border-primary/40 transition-colors"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className={cn("text-xs font-bold tabular-nums", i === 0 ? "text-primary" : "text-muted-foreground")}>{i + 1}</span>
+                    <span className="font-semibold text-sm text-foreground truncate">{l.corretor_nome || "Sem nome"}</span>
+                    {!l.corretor_ativo && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">inativo</span>
+                    )}
+                  </span>
+                  <span className="text-sm font-bold tabular-nums text-foreground shrink-0">{fmtMoney(l.vgv_assinado, "short")}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1.5">
+                  {l.equipe || "—"} · {l.leads_recebidos} leads · {l.visitas_realizadas} visitas · {l.vendas} vendas · {conv(l).toFixed(1)}% conv.
+                </p>
+              </button>
+            ))}
+        </div>
+
+        {/* Desktop: tabela */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border bg-muted/40">
@@ -52,9 +101,10 @@ export default function PerfRanking({ linhas, loading }: Props) {
                   <th key={c.key} className="text-right font-semibold py-2.5 pr-6 last:pr-6">
                     <button
                       onClick={() => setOrdem(c.key)}
-                      className={cn("hover:text-foreground transition-colors", ordem === c.key && "text-primary")}
+                      className={cn("hover:text-foreground transition-colors inline-flex items-center gap-1", ordem === c.key && "text-primary")}
                     >
                       {c.label}
+                      {ordem === c.key && <ArrowUpDown className="h-3 w-3" />}
                     </button>
                   </th>
                 ))}
@@ -64,7 +114,7 @@ export default function PerfRanking({ linhas, loading }: Props) {
               {loading &&
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-border last:border-0">
-                    <td colSpan={7} className="py-3 px-6">
+                    <td colSpan={8} className="py-3 px-6">
                       <div className="h-5 rounded bg-muted animate-pulse" />
                     </td>
                   </tr>
@@ -72,7 +122,7 @@ export default function PerfRanking({ linhas, loading }: Props) {
 
               {!loading && ordenadas.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
                     Nenhum dado no período selecionado.
                   </td>
                 </tr>
@@ -80,7 +130,14 @@ export default function PerfRanking({ linhas, loading }: Props) {
 
               {!loading &&
                 ordenadas.map((l, i) => (
-                  <tr key={l.corretor_auth_id} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
+                  <tr
+                    key={l.corretor_auth_id}
+                    onClick={() => onSelectCorretor?.(l)}
+                    className={cn(
+                      "border-b border-border last:border-0 hover:bg-muted/40 transition-colors",
+                      onSelectCorretor && "cursor-pointer"
+                    )}
+                  >
                     <td className={cn("py-3 pl-6 font-bold tabular-nums", i === 0 ? "text-primary" : "text-muted-foreground")}>{i + 1}</td>
                     <td className="py-3 font-semibold text-foreground">
                       {l.corretor_nome || "Sem nome"}
@@ -91,6 +148,7 @@ export default function PerfRanking({ linhas, loading }: Props) {
                     <td className="py-3 text-muted-foreground">{l.equipe || "—"}</td>
                     <td className="py-3 text-right tabular-nums">{l.leads_recebidos}</td>
                     <td className="py-3 text-right tabular-nums">{l.visitas_realizadas}</td>
+                    <td className="py-3 text-right tabular-nums text-muted-foreground">{conv(l).toFixed(1)}%</td>
                     <td className="py-3 text-right tabular-nums">{l.vendas}</td>
                     <td className="py-3 pr-6 text-right font-bold tabular-nums text-foreground">{fmtMoney(l.vgv_assinado, "short")}</td>
                   </tr>
