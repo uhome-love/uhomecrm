@@ -11835,6 +11835,7 @@ export type Database = {
       _capi_normalize_phone: { Args: { p_phone: string }; Returns: string }
       _capi_set_cron_secret: { Args: { _secret: string }; Returns: undefined }
       _capi_sha256: { Args: { p_input: string }; Returns: string }
+      _capi_sha256_norm: { Args: { p_input: string }; Returns: string }
       _central_origem: { Args: { p_origem: string }; Returns: string }
       _central_segmento: {
         Args: { p_emp: string; p_seg: string }
