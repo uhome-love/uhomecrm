@@ -193,8 +193,10 @@ export default function CentralPerformance() {
             )}
 
             {tab === "ranking" && <PerfRanking linhas={linhas} loading={isLoading} />}
+            {tab === "origem" && <PerfOrigem dados={dadosOrigem} loading={origemLoading} />}
             {tab === "progresso" && <CorretorProgresso />}
-            {tab === "relatorio" && <RelatorioCorretor />}
+            {tab === "relatorio" && <RelatorioCorretor hideHeader />}
+
           </motion.div>
         </div>
       </div>
