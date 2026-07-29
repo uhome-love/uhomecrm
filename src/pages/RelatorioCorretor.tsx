@@ -94,7 +94,7 @@ const emptyMetricas: Metricas = {
   vgv_assinado: { meta: 0, real: 0 },
 };
 
-export default function RelatorioCorretor() {
+export default function RelatorioCorretor({ hideHeader = false }: { hideHeader?: boolean } = {}) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("rascunhos");
   const [team, setTeam] = useState<TeamMember[]>([]);
