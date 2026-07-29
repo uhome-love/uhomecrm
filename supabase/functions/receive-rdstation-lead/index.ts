@@ -89,6 +89,13 @@ Deno.serve(async (req) => {
   };
 
   try {
+    // Meta CAPI Match Quality: IP + User Agent (plain text)
+    const _xff = req.headers.get("x-forwarded-for") || "";
+    const clientIpAddress: string | null =
+      (_xff.split(",")[0] || req.headers.get("x-real-ip") || "").trim() || null;
+    const clientUserAgent: string | null =
+      (req.headers.get("user-agent") || "").trim() || null;
+
     const body = await req.json();
     L.info("Raw body received", { hasLeads: !!body.leads, keys: Object.keys(body).slice(0, 10) });
 
