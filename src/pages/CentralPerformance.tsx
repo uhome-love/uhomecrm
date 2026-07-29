@@ -59,6 +59,13 @@ export default function CentralPerformance() {
   const { pontos, isLoading: evolucaoLoading } = useEvolucaoSSOT({ referencia, meses, gerenteId });
   const { data: metas, isLoading: metasLoading } = useMetasSSOT(referencia, gerenteId);
   const { data: pace } = usePaceMes(referencia);
+  const { data: dadosOrigem = [], isLoading: origemLoading } = useMetricasOrigem(
+    filtro.start,
+    filtro.end,
+    gerenteId,
+    tab === "origem"
+  );
+
 
 
   const periodoLabel = useMemo(() => {
