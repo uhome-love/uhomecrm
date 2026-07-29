@@ -12,6 +12,8 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useMetricasSSOT } from "@/hooks/useMetricasSSOT";
 import { useEvolucaoSSOT } from "@/hooks/useEvolucaoSSOT";
+import { useMetasSSOT, usePaceMes } from "@/hooks/useMetasSSOT";
+
 import RankingFilters from "@/components/ranking/v2/RankingFilters";
 import PerfVisaoGeral from "@/components/performance/PerfVisaoGeral";
 import PerfRanking from "@/components/performance/PerfRanking";
