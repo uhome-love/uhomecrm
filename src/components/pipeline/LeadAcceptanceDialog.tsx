@@ -133,21 +133,17 @@ export default function LeadAcceptanceDialog({ lead, open, onClose, onResult }: 
           </div>
         )}
 
-        {/* Lead info */}
+        {/* Lead info — PII mascarada até o corretor aceitar */}
         <div className="space-y-2 border rounded-lg p-3 bg-muted/30">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{lead.nome}</span>
+            <span className="font-medium">{firstName(lead.nome)}</span>
             <Badge variant={lead.prioridade_lead === "alta" ? "destructive" : "secondary"} className="text-[10px]">
               {lead.prioridade_lead === "alta" ? "PRIORIDADE ALTA" : "NORMAL"}
             </Badge>
           </div>
-          {lead.telefone && (
-            <p className="text-sm text-muted-foreground">📞 {lead.telefone}</p>
-          )}
-          {lead.email && (
-            <p className="text-sm text-muted-foreground">✉️ {lead.email}</p>
-          )}
+          <p className="text-sm text-muted-foreground font-mono select-none">📞 {maskPhone(lead.telefone)}</p>
+          <p className="text-sm text-muted-foreground font-mono select-none">✉️ {maskEmail(lead.email)}</p>
           {lead.empreendimento && (
             <div className="flex items-center gap-1 text-sm">
               <Building2 className="h-3.5 w-3.5 text-primary" />
@@ -158,8 +154,12 @@ export default function LeadAcceptanceDialog({ lead, open, onClose, onResult }: 
             <p className="text-xs text-muted-foreground">Origem: {lead.origem}</p>
           )}
           {lead.observacoes && (
-            <p className="text-xs text-muted-foreground italic border-t pt-1 mt-1">"{lead.observacoes}"</p>
+            <p className="text-xs text-muted-foreground italic border-t pt-1 mt-1">{maskObservacoes(lead.observacoes)}</p>
           )}
+          <div className="flex items-center gap-1.5 text-[11px] text-amber-600 border-t pt-2 mt-1">
+            <Lock className="h-3 w-3" />
+            <span>Contato completo liberado após aceitar o lead.</span>
+          </div>
         </div>
 
         {mode === "initial" ? (
