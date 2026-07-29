@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Link, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { firstName, maskPhone, maskEmail, maskObservacoes } from "@/lib/leadMask";
 
 interface AcceptedLeadHistory {
   id: string;
@@ -196,14 +197,15 @@ function LeadPopupCard({ lead, onResult, total, current }: { lead: PendingLead; 
             </div>
           )}
 
-          {/* Lead details */}
+          {/* Lead details — PII mascarada até aceitar */}
           <div className="text-center space-y-1">
             <div className="flex items-center justify-center gap-2">
               <User className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-xl font-bold">{lead.nome}</h2>
+              <h2 className="text-xl font-bold">{firstName(lead.nome)}</h2>
             </div>
-            {lead.telefone && (
-              <p className="text-sm text-muted-foreground font-mono">📞 {lead.telefone}</p>
+            <p className="text-sm text-muted-foreground font-mono select-none">📞 {maskPhone(lead.telefone)}</p>
+            {lead.email && (
+              <p className="text-sm text-muted-foreground font-mono select-none">✉️ {maskEmail(lead.email)}</p>
             )}
           </div>
 
@@ -227,14 +229,9 @@ function LeadPopupCard({ lead, onResult, total, current }: { lead: PendingLead; 
             )}
           </div>
 
-          {lead.observacoes && !propertyCode && (
-            <p className="text-xs text-muted-foreground italic text-center bg-muted/50 rounded-lg p-2">
-              "{lead.observacoes}"
-            </p>
-          )}
-          {lead.observacoes && propertyCode && (
-            <p className="text-xs text-muted-foreground italic text-center bg-muted/50 rounded-lg p-2">
-              "{lead.observacoes.replace(/\s*\|\s*Cód\.?\s*Imóvel:\s*\S+/i, '').trim()}"
+          {lead.observacoes && (
+            <p className="text-xs text-amber-600 italic text-center bg-amber-500/10 rounded-lg p-2 flex items-center justify-center gap-1.5">
+              🔒 {maskObservacoes(lead.observacoes)}
             </p>
           )}
 
