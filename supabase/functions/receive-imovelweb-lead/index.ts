@@ -134,6 +134,13 @@ Deno.serve(async (req) => {
     supabase.from("ops_events").insert({ fn: "receive-imovelweb-lead", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
   };
 
+  // Meta CAPI Match Quality: IP + User Agent (plain text)
+  const _xff = req.headers.get("x-forwarded-for") || "";
+  const clientIpAddress: string | null =
+    (_xff.split(",")[0] || req.headers.get("x-real-ip") || "").trim() || null;
+  const clientUserAgent: string | null =
+    (req.headers.get("user-agent") || "").trim() || null;
+
   try {
     const body = await req.json();
     L.info("Raw body received", { keys: Object.keys(body) });
