@@ -54,7 +54,8 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "central-dados": lazyRetry(() => import("@/pages/CentralDados")),
   scripts: lazyRetry(() => import("@/pages/ScriptsGenerator")),
   relatorios: lazyRetry(() => import("@/pages/RelatorioCorretor")),
-  ranking: lazyRetry(() => import("@/pages/RankingEquipe")),
+  ranking: lazyRetry(() => import("@/pages/CentralPerformance")),
+  "ranking-legado": lazyRetry(() => import("@/pages/RankingEquipe")),
   "meu-time": lazyRetry(() => import("@/pages/MeuTime")),
   "oferta-ativa": lazyRetry(() => import("@/pages/OfertaAtiva")),
   "oferta-ativa-ao-vivo": lazyRetry(() => import("@/pages/OfertaAtivaAoVivo")),
@@ -143,6 +144,8 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/relatorios":            { key: "relatorios",           label: "Relatórios 1:1",      icon: "FileText",      roles: ["gestor", "admin", "diretor"] },
   "/ranking":               { key: "ranking",              label: "Performance",         icon: "Star" },
   "/performance":           { key: "ranking",              label: "Performance",         icon: "Star" },
+  "/performance-legado":    { key: "ranking-legado",       label: "Performance (legado)", icon: "Star",         roles: ["admin"] },
+
   "/meu-time":              { key: "meu-time",             label: "Meu Time",            icon: "Users",         roles: ["gestor", "admin", "diretor"] },
   "/oferta-ativa":          { key: "oferta-ativa",         label: "Oferta Ativa",        icon: "Phone" },
   "/oferta-ativa-ao-vivo":  { key: "oferta-ativa-ao-vivo", label: "Mutirão Inteligente", icon: "Radio",         noPadding: true },
