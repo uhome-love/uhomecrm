@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Check, X, Phone, MessageCircle, Clock, AlertTriangle, Building2, User } from "lucide-react";
+import { Check, X, Phone, MessageCircle, Clock, AlertTriangle, Building2, User, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { firstName, maskPhone, maskEmail, maskObservacoes } from "@/lib/leadMask";
 
 interface PendingLead {
   id: string;
