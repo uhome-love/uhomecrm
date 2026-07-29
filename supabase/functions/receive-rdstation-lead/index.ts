@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
 
     for (const lead of leads) {
       try {
-        const result = await processLead(lead, supabase, supabaseUrl, serviceKey, traceId, L, logOps);
+        const result = await processLead(lead, supabase, supabaseUrl, serviceKey, traceId, L, logOps, clientIpAddress, clientUserAgent);
         results.push(result);
       } catch (err) {
         L.error("Error processing lead", { lead_email: lead.email }, err);
