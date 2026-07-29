@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Link, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { firstName, maskPhone, maskEmail, maskObservacoes } from "@/lib/leadMask";
 
 interface AcceptedLeadHistory {
   id: string;
