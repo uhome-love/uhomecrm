@@ -414,7 +414,18 @@ async function processLead(
     L.warn("Registry upsert warn", { dedupRegistryId }, registryError);
   }
 
+  if (!email) {
+    console.warn("[CAPI match-quality] Lead sem email", {
+      receiver: "receive-rdstation-lead",
+      produto: empreendimento || null,
+      origem: "rdstation",
+      campaign_id: null,
+      form_name: lastConversion?.conversion_identifier || null,
+    });
+  }
+
   // ── Insert lead ──
+
   const { data: insertedLead, error: insertError } = await supabase
     .from("pipeline_leads")
     .insert({
