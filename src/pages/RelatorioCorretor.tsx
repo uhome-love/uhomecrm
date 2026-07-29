@@ -19,6 +19,8 @@ import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
 import GerarManualTab from "@/components/relatorio/GerarManualTab";
 import { formatBRT } from "@/lib/brtTime";
+import { fetchMetricas, somarMetricas } from "@/lib/metricasSSOT";
+
 
 interface TeamMember { id: string; nome: string; user_id: string | null; }
 
@@ -176,11 +178,28 @@ export default function RelatorioCorretor() {
     m.presenca.meta = presencaDias;
     m.presenca.real = presencaPresente;
 
+    // ── Fonte única (SSOT): visitas e VGV assinado vêm de rpc_metricas,
+    // nunca do preenchimento manual do checkpoint. Ligações/presença/propostas
+    // seguem do checkpoint (não existem no SSOT).
+    const authId = team.find((t) => t.id === corretorId)?.user_id;
+    if (authId) {
+      try {
+        const ssot = await fetchMetricas({ start: dataInicio, end: dataFim, userId: authId });
+        const tot = somarMetricas(ssot);
+        m.visitas_marcadas.real = tot.visitas_marcadas;
+        m.visitas_realizadas.real = tot.visitas_realizadas;
+        m.vgv_assinado.real = tot.vgv_assinado;
+      } catch (e) {
+        console.warn("[Relatorio 1:1] falha ao buscar SSOT, mantendo checkpoint", e);
+      }
+    }
+
     setMetricas(m);
     setLoadingMetricas(false);
-  }, [user, corretorId, dataInicio, dataFim]);
+  }, [user, corretorId, dataInicio, dataFim, team]);
 
   useEffect(() => { loadMetricas(); }, [loadMetricas]);
+
 
   // Load history
   const loadHistorico = useCallback(async () => {
