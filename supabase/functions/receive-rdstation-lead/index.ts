@@ -162,7 +162,9 @@ async function processLead(
   lead: any, supabase: any, supabaseUrl: string, serviceKey: string,
   traceId: string,
   L: { info: Function; warn: Function; error: Function },
-  logOps: Function
+  logOps: Function,
+  clientIpAddress: string | null,
+  clientUserAgent: string | null
 ) {
   // ── Debug: log all lead keys to find phone field ──
   L.info("Lead raw keys", { keys: Object.keys(lead), sample: JSON.stringify(lead).slice(0, 1500) });
