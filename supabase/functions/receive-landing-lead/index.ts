@@ -344,6 +344,18 @@ Deno.serve(async (req) => {
     const campanha = body.campaign_name || source || "Landing Page";
     const plataforma = body.platform || "Landing Page";
 
+    if (!email) {
+      console.warn("[CAPI match-quality] Lead sem email", {
+        receiver: "receive-landing-lead",
+        produto: empreendimento || null,
+        origem: source || plataforma || "desconhecida",
+        campaign_id: campaignId || null,
+        form_name: body.form_name || null,
+      });
+    }
+
+
+
     const { data: insertedLead, error: insertError } = await supabase
       .from("pipeline_leads")
       .insert({

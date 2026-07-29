@@ -439,7 +439,18 @@ Deno.serve(async (req) => {
     if (email) obsLines.push(`E-mail: ${email}`);
     const obsText = obsLines.join("\n");
 
+    if (!email) {
+      console.warn("[CAPI match-quality] Lead sem email", {
+        receiver: "receive-imovelweb-lead",
+        produto: empreendimento || null,
+        origem: "imovelweb",
+        campaign_id: null,
+        form_name: codigoAnuncio || null,
+      });
+    }
+
     // ── Insert lead ──
+
     const { data: insertedLead, error: insertError } = await supabase
       .from("pipeline_leads")
       .insert({
