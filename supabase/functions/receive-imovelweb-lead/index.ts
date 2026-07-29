@@ -475,6 +475,8 @@ Deno.serve(async (req) => {
         corretor_id: null,
         aceite_status: "pendente_distribuicao",
         prioridade_lead: mensagem && mensagem.length > 10 ? "alta" : "media",
+        client_user_agent: clientUserAgent,
+        client_ip_address: clientIpAddress,
       })
       .select("id")
       .single();
