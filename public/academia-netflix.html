@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Mockup · Academia Uhome (Netflix Style)</title>
+<style>
+  :root{
+    --bg:#0A0E1A; --card:#121826; --line:rgba(255,255,255,.08);
+    --txt:#F5F6FA; --mut:#8C93A8; --ind:#4969FF; --em:#22C55E; --am:#F59E0B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,'Segoe UI',Inter,sans-serif;padding:28px 34px 60px}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+  h1{font-size:24px;font-weight:900;letter-spacing:-.4px}
+  .sub{color:var(--mut);font-size:13px;margin-top:3px}
+  .btn{background:var(--ind);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+  /* tabs */
+  .tabs{display:flex;gap:6px;background:#0F1420;border:1px solid var(--line);border-radius:12px;padding:5px;width:max-content;margin-bottom:22px}
+  .tab{padding:8px 16px;border-radius:9px;font-size:13px;color:var(--mut);cursor:pointer}
+  .tab.on{background:var(--ind);color:#fff;font-weight:700}
+  /* hero */
+  .hero{position:relative;height:280px;border-radius:18px;overflow:hidden;border:1px solid var(--line);margin-bottom:12px;
+        background:linear-gradient(115deg,#1e3a5f 0%,#0e7490 55%,#0b3b52 100%)}
+  .hero:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,10,20,.92) 0%,rgba(6,10,20,.55) 48%,rgba(6,10,20,0) 78%)}
+  .hero .in{position:relative;z-index:2;padding:30px 34px;height:100%;display:flex;flex-direction:column;justify-content:center;max-width:640px}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:rgba(73,105,255,.22);border:1px solid rgba(73,105,255,.45);
+        color:#B9C6FF;font-size:11px;font-weight:800;letter-spacing:.6px;padding:5px 10px;border-radius:999px;width:max-content}
+  .hero h2{font-size:32px;font-weight:900;margin:12px 0 8px;letter-spacing:-.6px}
+  .hero p{color:#C7CEDF;font-size:14px;line-height:1.5}
+  .meta{display:flex;gap:16px;color:#9AA4BC;font-size:12.5px;margin:14px 0 16px}
+  .bar{height:6px;border-radius:99px;background:rgba(255,255,255,.15);width:320px;overflow:hidden;margin-bottom:6px}
+  .bar i{display:block;height:100%;background:var(--em);border-radius:99px}
+  .row-btn{display:flex;gap:10px;margin-top:8px}
+  /* stats strip */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 26px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .stat b{display:block;font-size:22px;font-weight:900}
+  .stat span{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+  /* carousel */
+  .sect{margin-bottom:30px}
+  .sect h3{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .sect h3 em{font-style:normal;color:var(--mut);font-size:12px;font-weight:500}
+  .rail{display:flex;gap:14px;overflow:hidden;padding-bottom:4px}
+  .ct{position:relative;min-width:250px;height:158px;border-radius:14px;overflow:hidden;border:1px solid var(--line);cursor:pointer}
+  .ct .g{position:absolute;inset:0}
+  .ct .ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.05) 62%)}
+  .ct .c{position:absolute;inset:0;padding:13px;display:flex;flex-direction:column;justify-content:space-between}
+  .ct .ic{font-size:30px}
+  .ct h4{font-size:14px;font-weight:800;line-height:1.25}
+  .ct .m{font-size:11px;color:rgba(255,255,255,.72);margin-top:4px;display:flex;gap:10px}
+  .mini{height:4px;border-radius:99px;background:rgba(255,255,255,.22);margin-top:8px;overflow:hidden}
+  .mini i{display:block;height:100%;background:var(--em)}
+  .tag{position:absolute;top:10px;right:10px;font-size:10px;font-weight:800;padding:4px 8px;border-radius:99px}
+  .tag.new{background:var(--ind);color:#fff}
+  .tag.ok{background:rgba(34,197,94,.9);color:#04240f}
+  .tag.lock{background:rgba(255,255,255,.12);color:#C9D0E0;border:1px solid var(--line)}
+  .locked{opacity:.45}
+  .note{margin-top:26px;border:1px dashed var(--line);border-radius:12px;padding:14px 16px;color:var(--mut);font-size:12.5px;line-height:1.7}
+  .note b{color:var(--txt)}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div>
+      <h1>🎓 Academia Uhome</h1>
+      <div class="sub">Sua jornada de conhecimento · nível <b style="color:#F59E0B">📚 Praticante</b></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn ghost">📜 Meus certificados</button>
+      <button class="btn">⚙️ Gerenciar</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on">Trilhas</div>
+    <div class="tab">Meu progresso</div>
+    <div class="tab">Certificados</div>
+    <div class="tab">Gerenciar <span style="opacity:.6">(gestor)</span></div>
+  </div>
+
+  <!-- HERO: continue de onde parou -->
+  <div class="hero">
+    <div class="in">
+      <span class="pill">▶ CONTINUE DE ONDE PAROU</span>
+      <h2>Treinamento do Sistema</h2>
+      <p>Aula 4 de 9 — “Pipeline de Leads: etapas, substatus e tarefas automáticas”.</p>
+      <div class="meta"><span>⏱️ 12 min restantes</span><span>⭐ 30 XP</span><span>🖥️ Treinamento do Sistema</span></div>
+      <div class="bar"><i style="width:44%"></i></div>
+      <div style="font-size:12px;color:#9AA4BC">44% concluído</div>
+      <div class="row-btn">
+        <button class="btn">▶ Continuar aula</button>
+        <button class="btn ghost">Ver trilha completa</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b>12/34</b><span>Aulas concluídas</span></div>
+    <div class="stat"><b style="color:var(--am)">240</b><span>XP acumulado</span></div>
+    <div class="stat"><b style="color:var(--em)">2</b><span>Trilhas concluídas</span></div>
+    <div class="stat"><b>1</b><span>Certificados</span></div>
+  </div>
+
+  <!-- RAIL 1 -->
+  <div class="sect">
+    <h3>▶️ Continue assistindo <em>trilhas iniciadas</em></h3>
+    <div class="rail">
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#1e3a5f,#0e7490)"></div><div class="ov"></div>
+        <span class="tag new">44%</span>
+        <div class="c"><div class="ic">🖥️</div><div><h4>Treinamento do Sistema</h4><div class="m"><span>9 aulas</span><span>⭐ 90 XP</span></div><div class="mini"><i style="width:44%"></i></div></div></div></div>
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#b45309,#f97316)"></div><div class="ov"></div>
+        <span class="tag new">20%</span>
+        <div class="c"><div class="ic">📞</div><div><h4>Técnicas de Vendas</h4><div class="m"><span>10 aulas</span><span>⭐ 120 XP</span></div><div class="mini"><i style="width:20%"></i></div></div></div></div>
+    </div>
+  </div>
+
+  <!-- RAIL 2 -->
+  <div class="sect">
+    <h3>🏢 Empreendimentos <em>conheça o produto</em></h3>
+    <div class="rail">
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#047857,#10b981)"></div><div class="ov"></div>
+        <div class="c"><div class="ic">🏠</div><div><h4>The Arch</h4><div class="m"><span>5 aulas</span><span>⭐ 50 XP</span></div></div></div></div>
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#065f46,#34d399)"></div><div class="ov"></div>
+        <span class="tag ok">✅ Concluída</span>
+        <div class="c"><div class="ic">🏢</div><div><h4>Botanique</h4><div class="m"><span>4 aulas</span><span>⭐ 40 XP</span></div><div class="mini"><i style="width:100%"></i></div></div></div></div>
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#0f766e,#5eead4)"></div><div class="ov"></div>
+        <div class="c"><div class="ic">🌇</div><div><h4>Skyline Residence</h4><div class="m"><span>6 aulas</span><span>⭐ 60 XP</span></div></div></div></div>
+      <div class="ct locked"><div class="g" style="background:linear-gradient(135deg,#334155,#0f172a)"></div><div class="ov"></div>
+        <span class="tag lock">🔒 Em breve</span>
+        <div class="c"><div class="ic">🏗️</div><div><h4>Novos lançamentos</h4><div class="m"><span>—</span></div></div></div></div>
+    </div>
+  </div>
+
+  <!-- RAIL 3 -->
+  <div class="sect">
+    <h3>💬 Objeções e Scripts <em>o que falar em cada situação</em></h3>
+    <div class="rail">
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#6d28d9,#ec4899)"></div><div class="ov"></div>
+        <span class="tag new">NOVO</span>
+        <div class="c"><div class="ic">🎯</div><div><h4>Quebra de objeções</h4><div class="m"><span>8 aulas</span><span>⭐ 80 XP</span></div></div></div></div>
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"></div><div class="ov"></div>
+        <div class="c"><div class="ic">💬</div><div><h4>Scripts de WhatsApp</h4><div class="m"><span>6 aulas</span><span>⭐ 60 XP</span></div></div></div></div>
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#4338ca,#818cf8)"></div><div class="ov"></div>
+        <div class="c"><div class="ic">☎️</div><div><h4>Primeira ligação</h4><div class="m"><span>4 aulas</span><span>⭐ 40 XP</span></div></div></div></div>
+    </div>
+  </div>
+
+  <!-- RAIL 4 -->
+  <div class="sect">
+    <h3>⚙️ Processos Uhome <em>como a casa funciona</em></h3>
+    <div class="rail">
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#334155,#3b82f6)"></div><div class="ov"></div>
+        <div class="c"><div class="ic">⚙️</div><div><h4>Roleta e aceite de leads</h4><div class="m"><span>5 aulas</span><span>⭐ 50 XP</span></div></div></div></div>
+      <div class="ct"><div class="g" style="background:linear-gradient(135deg,#1e293b,#60a5fa)"></div><div class="ov"></div>
+        <span class="tag ok">✅ Concluída</span>
+        <div class="c"><div class="ic">📄</div><div><h4>Documentação e contrato</h4><div class="m"><span>3 aulas</span><span>⭐ 30 XP</span></div><div class="mini"><i style="width:100%"></i></div></div></div></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>O que muda nesta Fase 5</b><br>
+    1. Hero “Continue de onde parou” ocupando o topo (play direto na próxima aula).<br>
+    2. Grade única vira <b>carrosséis por categoria</b> (Continue assistindo · Empreendimentos · Objeções e Scripts · Processos · Técnicas de Vendas).<br>
+    3. Faixa de estatísticas (aulas, XP, trilhas, certificados) substitui o card “Seu progresso”.<br>
+    4. <b>Hub único /academia com abas</b>: Trilhas · Meu progresso · Certificados · Gerenciar (gestor/admin) — <code>/academia/gerenciar</code> vira redirect para <code>/academia?tab=gerenciar</code>.<br>
+    5. Selos: <b>NOVO</b> (7 dias), <b>% em andamento</b>, <b>✅ Concluída</b>, <b>🔒 Em breve</b>. Nenhuma mudança de dados/backend — só apresentação.
+  </div>
+</body>
+</html>
