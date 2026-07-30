@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { fmtMoney } from "@/lib/fmtMoney";
@@ -26,38 +25,29 @@ import type { MetricaCorretor } from "@/lib/metricasSSOT";
 import CorretorProgresso from "@/pages/CorretorProgresso";
 import RelatorioCorretor from "@/pages/RelatorioCorretor";
 
-type TabKey = "visao" | "ranking" | "origem" | "progresso" | "relatorio";
+export type PerfTab = "visao" | "ranking" | "origem" | "progresso" | "relatorio-1a1";
 
-const TAB_LABELS: Record<TabKey, string> = {
-  visao: "Visão Geral",
-  ranking: "Ranking",
-  origem: "Origem",
-  progresso: "Meu Progresso",
-  relatorio: "Relatório 1:1",
-};
+const COM_FILTROS: PerfTab[] = ["visao", "ranking", "origem"];
 
-const COM_FILTROS: TabKey[] = ["visao", "ranking", "origem"];
+interface Props {
+  /** Seção ativa — controlada pela Central de Relatórios (URL `?secao=`). */
+  tab: PerfTab;
+  /** Navegação entre seções (ex.: "ver ranking" na Visão Geral). */
+  onNavigate?: (tab: PerfTab) => void;
+}
 
-export default function CentralPerformance() {
+/**
+ * PerformanceHub — corpo da antiga Central de Performance.
+ *
+ * Fonte única: `rpc_metricas` (SSOT). Não renderiza título nem navegação:
+ * o shell (`src/pages/CentralRelatorios.tsx`) é dono da navegação por URL.
+ */
+export default function PerformanceHub({ tab, onNavigate }: Props) {
   const { user } = useAuthUser();
-  const { isAdmin, isGestor, isDiretor, isCorretor, loading: rolesLoading } = useUserRole();
+  const { isAdmin, isGestor, isDiretor, isCorretor } = useUserRole();
 
   /** corretor puro: sem visão de gestão — só a própria performance */
-  const soCorretor = isCorretor && !isGestor && !isAdmin;
-
-  const tabs = useMemo<TabKey[]>(
-    () =>
-      soCorretor
-        ? ["progresso", "visao", "relatorio"]
-        : ["visao", "ranking", "origem", "progresso", "relatorio"],
-    [soCorretor]
-  );
-
-  const [tab, setTab] = useState<TabKey>("visao");
-  useEffect(() => {
-    if (rolesLoading) return;
-    setTab(soCorretor ? "progresso" : "visao");
-  }, [soCorretor, rolesLoading]);
+  const soCorretor = isCorretor && !isGestor && !isAdmin && !isDiretor;
 
   const [periodo, setPeriodo] = useState<PeriodoState>({ tipo: "mes", offset: 0 });
   const [meses, setMeses] = useState(6);
@@ -152,90 +142,56 @@ export default function CentralPerformance() {
   const mostraFiltros = COM_FILTROS.includes(tab);
 
   return (
-    <div className="-m-6 min-h-full bg-background p-4 md:p-8">
-      <div className="mx-auto w-full max-w-7xl bg-card border border-border rounded-xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        {/* Header */}
-        <div className="px-4 md:px-8 pt-6 md:pt-8 pb-5 border-b border-border">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Central de Performance</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {soCorretor
-                  ? "Seus números, missões do dia e relatório 1:1"
-                  : "Fonte única de verdade · VGV, visitas e leads em tempo real"}
-              </p>
-            </div>
-
-            <nav className="flex bg-muted/60 p-1 rounded-xl border border-border overflow-x-auto scrollbar-hide">
-              {tabs.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={cn(
-                    "px-3.5 md:px-5 py-2 text-sm rounded-lg whitespace-nowrap transition-colors",
-                    tab === t
-                      ? "bg-card shadow-sm text-primary font-semibold"
-                      : "text-muted-foreground hover:text-foreground font-medium"
-                  )}
-                >
-                  {t === "visao" && soCorretor ? "Minha Performance" : TAB_LABELS[t]}
-                </button>
-              ))}
-            </nav>
+    <div className="flex flex-col gap-5">
+      {mostraFiltros && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <PerfPeriodoSelector estado={periodo} resolvido={p} onChange={setPeriodo} />
+            {!isLoading && (
+              <span className="text-xs font-medium text-muted-foreground hidden sm:inline">
+                {fmtMoney(totalVgv, "short")} no período
+              </span>
+            )}
           </div>
 
-          {mostraFiltros && (
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-5">
-              <div className="flex items-center gap-3 flex-wrap">
-                <PerfPeriodoSelector estado={periodo} resolvido={p} onChange={setPeriodo} />
-                {!isLoading && (
-                  <span className="text-xs font-medium text-muted-foreground hidden sm:inline">
-                    {fmtMoney(totalVgv, "short")} no período
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <RankingFilters equipeId={gerenteId} onEquipeChange={setGerenteId} showEquipe={isAdmin || isDiretor} />
-                <Button size="sm" variant="outline" className="gap-2 text-xs h-8" onClick={exportar} disabled={isLoading}>
-                  <Download className="h-3.5 w-3.5" /> Exportar CSV
-                </Button>
-              </div>
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <RankingFilters equipeId={gerenteId} onEquipeChange={setGerenteId} showEquipe={isAdmin || isDiretor} />
+            <Button size="sm" variant="outline" className="gap-2 text-xs h-8" onClick={exportar} disabled={isLoading}>
+              <Download className="h-3.5 w-3.5" /> Exportar CSV
+            </Button>
+          </div>
         </div>
+      )}
 
-        {/* Content */}
-        <div className="p-4 md:p-8 bg-muted/20">
-          <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-            {tab === "visao" && (
-              <PerfVisaoGeral
-                linhas={linhas}
-                linhasAnterior={linhasAnterior}
-                prevLabel={p.prevLabel}
-                loading={isLoading}
-                pontos={pontos}
-                evolucaoLoading={evolucaoLoading}
-                meses={meses}
-                onMesesChange={setMeses}
-                onVerRanking={() => setTab("ranking")}
-                metas={metas}
-                pace={pace}
-                metasLoading={metasLoading}
-                onDrilldown={setDrilldown}
-                mostrarRanking={!soCorretor}
-              />
-            )}
+      <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+        {tab === "visao" && (
+          <PerfVisaoGeral
+            linhas={linhas}
+            linhasAnterior={linhasAnterior}
+            prevLabel={p.prevLabel}
+            loading={isLoading}
+            pontos={pontos}
+            evolucaoLoading={evolucaoLoading}
+            meses={meses}
+            onMesesChange={setMeses}
+            onVerRanking={() => onNavigate?.("ranking")}
+            metas={metas}
+            pace={pace}
+            metasLoading={metasLoading}
+            onDrilldown={setDrilldown}
+            mostrarRanking={!soCorretor}
+          />
+        )}
 
-            {tab === "ranking" && (
-              <PerfRanking linhas={linhas} loading={isLoading} onSelectCorretor={setCorretorSel} />
-            )}
-            {tab === "origem" && <PerfOrigem dados={dadosOrigem} loading={origemLoading} start={filtro.start} end={filtro.end} />}
-            {tab === "progresso" && <CorretorProgresso embedded />}
-            {tab === "relatorio" && <RelatorioCorretor hideHeader />}
-          </motion.div>
-        </div>
-      </div>
+        {tab === "ranking" && (
+          <PerfRanking linhas={linhas} loading={isLoading} onSelectCorretor={setCorretorSel} />
+        )}
+        {tab === "origem" && (
+          <PerfOrigem dados={dadosOrigem} loading={origemLoading} start={filtro.start} end={filtro.end} />
+        )}
+        {tab === "progresso" && <CorretorProgresso embedded />}
+        {tab === "relatorio-1a1" && <RelatorioCorretor hideHeader />}
+      </motion.div>
 
       <PerfDrilldownSheet
         open={!!drilldown}

@@ -36,7 +36,10 @@ const PILLS: Array<{ id: CentralPeriodo; label: string }> = [
 interface Props {
   state: CentralUrlState;
   onChange: (patch: Partial<CentralUrlState>) => void;
+  /** Oculta o bloco de título (usado quando o shell já exibe o cabeçalho). */
+  hideTitle?: boolean;
 }
+
 
 function fmtRange(start: string, end: string): string {
   const s = new Date(`${start}T00:00:00`);
@@ -47,7 +50,7 @@ function fmtRange(start: string, end: string): string {
   return `${format(s, "d MMM", { locale: ptBR })} – ${format(e, "d MMM", { locale: ptBR })}`;
 }
 
-export function CentralHeader({ state, onChange }: Props) {
+export function CentralHeader({ state, onChange, hideTitle = false }: Props) {
   const { isAdmin } = useUserRole();
   const { data: equipes = [] } = useEquipesDisponiveis();
   const s = getSection(state.secao);
@@ -66,9 +69,16 @@ export function CentralHeader({ state, onChange }: Props) {
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background supports-[backdrop-filter]:bg-background/90 supports-[backdrop-filter]:backdrop-blur">
-      <div className="flex flex-col gap-3 px-4 py-3.5 sm:px-6">
+    <header
+      className={cn(
+        hideTitle
+          ? "border-b border-border bg-transparent"
+          : "sticky top-0 z-20 border-b border-border bg-background supports-[backdrop-filter]:bg-background/90 supports-[backdrop-filter]:backdrop-blur"
+      )}
+    >
+      <div className={cn("flex flex-col gap-3", hideTitle ? "pb-3" : "px-4 py-3.5 sm:px-6")}>
         {/* Linha 1 — identidade + ações */}
+        {!hideTitle && (
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -93,6 +103,8 @@ export function CentralHeader({ state, onChange }: Props) {
             <span className="hidden sm:inline">Exportar PDF</span>
           </Button>
         </div>
+        )}
+
 
         {/* Linha 2 — período + equipe */}
         <div className="flex flex-wrap items-center gap-2">
@@ -145,7 +157,17 @@ export function CentralHeader({ state, onChange }: Props) {
               </Select>
             </div>
           )}
+
+          {hideTitle && (
+            <div className={cn(isAdmin ? "" : "ml-auto")}>
+              <Button variant="outline" size="sm" onClick={handleExport} className="h-8 shrink-0 text-xs">
+                <Download className="h-3.5 w-3.5 sm:mr-2" />
+                <span className="hidden sm:inline">Exportar PDF</span>
+              </Button>
+            </div>
+          )}
         </div>
+
       </div>
     </header>
   );

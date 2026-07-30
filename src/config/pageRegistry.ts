@@ -54,7 +54,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "central-dados": lazyRetry(() => import("@/pages/CentralDados")),
   scripts: lazyRetry(() => import("@/pages/ScriptsGenerator")),
   relatorios: lazyRetry(() => import("@/pages/RelatorioCorretor")),
-  ranking: lazyRetry(() => import("@/pages/CentralPerformance")),
+  // "ranking" (Central de Performance) foi absorvido pela Central de Relatórios — ver "report-center".
   "ranking-legado": lazyRetry(() => import("@/pages/RankingEquipe")),
   "meu-time": lazyRetry(() => import("@/pages/MeuTime")),
   "oferta-ativa": lazyRetry(() => import("@/pages/OfertaAtiva")),
@@ -116,7 +116,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "rh-sala-reuniao": lazyRetry(() => import("@/pages/RhSalaReuniao")),
   "import-brevo": lazyRetry(() => import("@/pages/ImportBrevoContacts")),
   "gestao-whatsapp": lazyRetry(() => import("@/pages/GestaoWhatsAppDashboard")),
-  "report-center": lazyRetry(() => import("@/pages/CentralRelatoriosV2")),
+  "report-center": lazyRetry(() => import("@/pages/CentralRelatorios")),
   materiais: lazyRetry(() => import("@/pages/MateriaisPage")),
   "materiais-analytics": lazyRetry(() => import("@/pages/MateriaisAnalytics")),
   integracoes: lazyRetry(() => import("@/pages/IntegracoesPage")),
@@ -142,8 +142,8 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/central-dados":         { key: "central-dados",        label: "Central Dados",       icon: "Database",      roles: ["gestor", "admin", "diretor"] },
   "/scripts":               { key: "scripts",              label: "Scripts",             icon: "Lightbulb" },
   "/relatorios":            { key: "relatorios",           label: "Relatórios 1:1",      icon: "FileText",      roles: ["gestor", "admin", "diretor"] },
-  "/ranking":               { key: "ranking",              label: "Performance",         icon: "Star" },
-  "/performance":           { key: "ranking",              label: "Performance",         icon: "Star" },
+  // "/ranking" e "/performance" → redirect para /central-relatorios (App.tsx)
+
   "/performance-legado":    { key: "ranking-legado",       label: "Performance (legado)", icon: "Star",         roles: ["admin"] },
 
   "/meu-time":              { key: "meu-time",             label: "Meu Time",            icon: "Users",         roles: ["gestor", "admin", "diretor"] },
