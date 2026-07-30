@@ -707,12 +707,12 @@ Deno.serve(async (req) => {
           .upsert({ jetimob_lead_id: dedupRegistryId, telefone }, { onConflict: "jetimob_lead_id" });
       } catch (e) { L.warn("Dedup registry upsert warn (reactivation/phone)", { dedupRegistryId }, e); }
 
-      // BLOCO 4b: lead descartado/arquivado reativado por novo touch
+      // BLOCO 4b: lead ATIVO recebeu novo interesse (segue com o mesmo corretor)
       logOps("info", "business", "lead_dedup_reactivated", {
-        reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse",
+        reason: "lead_ativo_recebeu_novo_interesse",
         lead_id: existing.id,
         corretor_id: existing.corretor_id,
-        was_discarded: isDiscarded,
+        was_discarded: false,
         telefone_anon: await anonPhone(telefone),
       });
       return new Response(
