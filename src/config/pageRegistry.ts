@@ -136,7 +136,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/backoffice":            { key: "backoffice",           label: "Dashboard BO",        icon: "LayoutGrid",    closable: false, roles: ["backoffice", "admin"] },
   "/rh":                    { key: "rh",                   label: "Dashboard RH",        icon: "LayoutGrid",    closable: false, roles: ["rh", "admin"] },
   "/central-do-gerente":    { key: "checkpoint",           label: "Central Gerente",     icon: "CheckCircle",   roles: ["gestor", "admin", "diretor"] },
-  "/scripts":               { key: "scripts",              label: "Scripts",             icon: "Lightbulb" },
   "/relatorios":            { key: "relatorios",           label: "Relatórios 1:1",      icon: "FileText",      roles: ["gestor", "admin", "diretor"] },
   // "/ranking" e "/performance" → redirect para /central-relatorios (App.tsx)
 
@@ -167,7 +166,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/homi":                  { key: "homi",                 label: "HOMI",                icon: "Bot" },
   "/homi-gerente":          { key: "homi-gerente",         label: "HOMI Gerente",        icon: "Bot",           roles: ["gestor", "admin", "diretor"] },
   "/homi-ceo":              { key: "homi-ceo",             label: "HOMI CEO",            icon: "Bot",           roles: ["admin"] },
-  "/homi/base-conhecimento":{ key: "base-conhecimento",    label: "Base HOMI",           icon: "BookOpen",      roles: ["admin", "gestor"] },
   // "/pipeline-negocios" desativado — negócios agora vivem no Pipeline de Leads (lente Negócios). Redirect em App.tsx.
   "/vendas-realizadas":     { key: "vendas-realizadas",    label: "Vendas",              icon: "TrendingUp" },
   

@@ -8,7 +8,7 @@ import MarketplaceScriptsContent from "@/components/scripts/MarketplaceScriptsCo
 import { useUserRole } from "@/hooks/useUserRole";
 const homiMascot = "/images/homi-mascot-official.png";
 
-export default function ScriptsGenerator() {
+export default function ScriptsGenerator({ showHeader = true }: { showHeader?: boolean } = {}) {
   const { isGestor, isAdmin } = useUserRole();
   const isManager = isGestor || isAdmin;
   const [activeTab, setActiveTab] = useState(isManager ? "time" : "meus");
@@ -18,16 +18,18 @@ export default function ScriptsGenerator() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-black text-gray-900" style={{ fontSize: 28 }}>
-          📋 Scripts & Follow Ups
-        </h1>
-        <p className="text-gray-500 mt-1" style={{ fontSize: 14 }}>
-          {isManager
-            ? "Gerencie os scripts do time, sua biblioteca pessoal e o marketplace do time"
-            : "Scripts do time, sua biblioteca pessoal e o marketplace"}
-        </p>
-      </div>
+      {showHeader && (
+        <div>
+          <h1 className="font-black text-gray-900" style={{ fontSize: 28 }}>
+            📋 Scripts & Follow Ups
+          </h1>
+          <p className="text-gray-500 mt-1" style={{ fontSize: 14 }}>
+            {isManager
+              ? "Gerencie os scripts do time, sua biblioteca pessoal e o marketplace do time"
+              : "Scripts do time, sua biblioteca pessoal e o marketplace"}
+          </p>
+        </div>
+      )}
 
       {isManager && (
         <div
