@@ -1,79 +1,49 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useAcademia, CATEGORIAS, NIVEL_CONFIG, TIPO_CONFIG, type Trilha, type Aula } from "@/hooks/useAcademia";
+import { useAcademia, type Trilha, type Aula } from "@/hooks/useAcademia";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, GripVertical, Upload, Users } from "lucide-react";
+import { Loader2, Plus, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { TrilhaCapaUpload } from "@/components/academia/TrilhaCapaUpload";
+import { ModuloRow } from "@/components/academia/gerenciar/ModuloRow";
+import { ModuloDialog, MODULO_FORM_VAZIO, type ModuloForm } from "@/components/academia/gerenciar/ModuloDialog";
+import { AulaDialog, AULA_FORM_VAZIO, type AulaForm } from "@/components/academia/gerenciar/AulaDialog";
+import { QuizDialog, type QuizQuestion } from "@/components/academia/gerenciar/QuizDialog";
 
 export default function AcademiaGerenciarPage({ showHeader = true }: { showHeader?: boolean } = {}) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { trilhas, aulas, createTrilha, updateTrilha, deleteTrilha, createAula, updateAula, deleteAula, loading } = useAcademia();
 
-  const [trilhaDialogOpen, setTrilhaDialogOpen] = useState(false);
+  const [expandido, setExpandido] = useState<string | null>(null);
+  const [moduloDialogOpen, setModuloDialogOpen] = useState(false);
   const [aulaDialogOpen, setAulaDialogOpen] = useState(false);
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
-  const [editTrilha, setEditTrilha] = useState<Trilha | null>(null);
+  const [editModulo, setEditModulo] = useState<Trilha | null>(null);
   const [editAula, setEditAula] = useState<Aula | null>(null);
-  const [selectedTrilhaId, setSelectedTrilhaId] = useState<string | null>(null);
+  const [moduloAtivoId, setModuloAtivoId] = useState<string | null>(null);
+  const [quizAulaId, setQuizAulaId] = useState<string | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
 
-  // Trilha form
-  const [trilhaForm, setTrilhaForm] = useState({
-    titulo: "", descricao: "", categoria: "tecnicas_vendas", nivel: "iniciante",
-    publicada: false, visibilidade: "todos", thumbnail_url: "",
-  });
+  const [moduloForm, setModuloForm] = useState<ModuloForm>(MODULO_FORM_VAZIO);
+  const [aulaForm, setAulaForm] = useState<AulaForm>(AULA_FORM_VAZIO);
 
-  // Aula form
-  const [aulaForm, setAulaForm] = useState({
-    titulo: "", descricao: "", tipo: "youtube", duracao_minutos: 10, xp_recompensa: 10, ordem: 1,
-    youtube_url: "", vimeo_url: "", conteudo_html: "",
-  });
-
-  // Quiz questions for quiz type
-  const [quizQuestions, setQuizQuestions] = useState<{ pergunta: string; opcoes: { text: string; correct: boolean }[]; explicacao: string }[]>([]);
-  const [editQuizAulaId, setEditQuizAulaId] = useState<string | null>(null);
-
-  // File upload states
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [uploadingPdf, setUploadingPdf] = useState(false);
-  const [uploadedPath, setUploadedPath] = useState<string | null>(null);
-
-  // Engagement stats per trilha
   const [engagementMap, setEngagementMap] = useState<Record<string, { iniciaram: number; concluiram: number; mediaProgresso: number }>>({});
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("academia_progresso")
-        .select("trilha_id, status, corretor_id");
+      const { data } = await supabase.from("academia_progresso").select("trilha_id, status, corretor_id");
       if (!data || data.length === 0) return;
-
       const map: Record<string, { users: Set<string>; concluded: Set<string>; total: number; doneCount: number }> = {};
       for (const row of data) {
         const tid = row.trilha_id;
         if (!tid) continue;
         if (!map[tid]) map[tid] = { users: new Set(), concluded: new Set(), total: 0, doneCount: 0 };
-        const uid = row.corretor_id || (row as any).auth_user_id || "anon";
+        const uid = row.corretor_id || "anon";
         map[tid].users.add(uid);
         map[tid].total++;
-        if (row.status === "concluida") {
-          map[tid].concluded.add(uid);
-          map[tid].doneCount++;
-        }
+        if (row.status === "concluida") { map[tid].concluded.add(uid); map[tid].doneCount++; }
       }
-
-      const result: typeof engagementMap = {};
+      const result: Record<string, { iniciaram: number; concluiram: number; mediaProgresso: number }> = {};
       for (const [tid, v] of Object.entries(map)) {
         result[tid] = {
           iniciaram: v.users.size,
@@ -85,36 +55,80 @@ export default function AcademiaGerenciarPage({ showHeader = true }: { showHeade
     })();
   }, [trilhas]);
 
-  const selectedTrilhaAulas = aulas.filter(a => a.trilha_id === selectedTrilhaId).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  const modulos = useMemo(
+    () => [...trilhas].sort((a, b) => (a.ordem || 0) - (b.ordem || 0)),
+    [trilhas]
+  );
 
-  // Save trilha
-  const handleSaveTrilha = useCallback(async () => {
-    if (!trilhaForm.titulo.trim()) { toast.error("Título obrigatório"); return; }
-    if (editTrilha) {
-      await updateTrilha(editTrilha.id, {
-        titulo: trilhaForm.titulo, descricao: trilhaForm.descricao || null,
-        categoria: trilhaForm.categoria, nivel: trilhaForm.nivel,
-        publicada: trilhaForm.publicada, thumbnail_url: trilhaForm.thumbnail_url || null,
-      } as any);
+  const aulasDoModulo = useCallback(
+    (id: string) => aulas.filter(a => a.trilha_id === id).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)),
+    [aulas]
+  );
+
+  // ── Módulos ──
+  const abrirNovoModulo = () => {
+    setEditModulo(null);
+    setModuloForm(MODULO_FORM_VAZIO);
+    setModuloDialogOpen(true);
+  };
+
+  const abrirEditarModulo = (m: Trilha) => {
+    setEditModulo(m);
+    setModuloForm({
+      titulo: m.titulo, descricao: m.descricao || "", categoria: m.categoria || "tecnicas_vendas",
+      nivel: m.nivel || "iniciante", publicada: m.publicada ?? false,
+      visibilidade: (m as any).visibilidade || "todos", thumbnail_url: m.thumbnail_url || "",
+    });
+    setModuloDialogOpen(true);
+  };
+
+  const salvarModulo = useCallback(async () => {
+    if (!moduloForm.titulo.trim()) { toast.error("Título obrigatório"); return; }
+    const payload: any = {
+      titulo: moduloForm.titulo,
+      descricao: moduloForm.descricao || null,
+      categoria: moduloForm.categoria,
+      nivel: moduloForm.nivel,
+      publicada: moduloForm.publicada,
+      visibilidade: moduloForm.visibilidade,
+      thumbnail_url: moduloForm.thumbnail_url || null,
+    };
+    if (editModulo) {
+      await updateTrilha(editModulo.id, payload);
     } else {
-      const created = await createTrilha({
-        titulo: trilhaForm.titulo, descricao: trilhaForm.descricao || null,
-        categoria: trilhaForm.categoria, nivel: trilhaForm.nivel,
-        publicada: trilhaForm.publicada, thumbnail_url: trilhaForm.thumbnail_url || null,
-      } as any);
-      if (created) setSelectedTrilhaId(created.id);
+      const criado = await createTrilha(payload);
+      if (criado) setExpandido(criado.id);
     }
-    setTrilhaDialogOpen(false);
-    setEditTrilha(null);
-  }, [trilhaForm, editTrilha, createTrilha, updateTrilha]);
+    setModuloDialogOpen(false);
+    setEditModulo(null);
+  }, [moduloForm, editModulo, createTrilha, updateTrilha]);
 
-  // Save aula
-  const handleSaveAula = useCallback(async () => {
-    if (!aulaForm.titulo.trim() || !selectedTrilhaId) { toast.error("Título e trilha obrigatórios"); return; }
+  // ── Aulas ──
+  const abrirNovaAula = (moduloId: string) => {
+    setModuloAtivoId(moduloId);
+    setEditAula(null);
+    setAulaForm({ ...AULA_FORM_VAZIO, ordem: aulasDoModulo(moduloId).length + 1 });
+    setAulaDialogOpen(true);
+  };
+
+  const abrirEditarAula = (a: Aula) => {
+    const c = a.conteudo as any;
+    setModuloAtivoId(a.trilha_id);
+    setEditAula(a);
+    setAulaForm({
+      titulo: a.titulo, descricao: a.descricao || "", tipo: a.tipo,
+      duracao_minutos: a.duracao_minutos || 10, xp_recompensa: a.xp_recompensa || 10, ordem: a.ordem || 1,
+      youtube_url: c?.url || "", vimeo_url: c?.url || "", conteudo_html: c?.html || "",
+      storage_bucket: c?.storage_bucket || "", storage_key: c?.storage_key || "",
+    });
+    setAulaDialogOpen(true);
+  };
+
+  const salvarAula = useCallback(async () => {
+    if (!aulaForm.titulo.trim() || !moduloAtivoId) { toast.error("Título e módulo obrigatórios"); return; }
 
     let conteudo: any = null;
     let youtubeId: string | null = null;
-    let conteudoUrl: string | null = null;
 
     if (aulaForm.tipo === "youtube" && aulaForm.youtube_url) {
       const match = aulaForm.youtube_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
@@ -122,123 +136,51 @@ export default function AcademiaGerenciarPage({ showHeader = true }: { showHeade
       conteudo = { url: aulaForm.youtube_url };
     } else if (aulaForm.tipo === "vimeo" && aulaForm.vimeo_url) {
       conteudo = { url: aulaForm.vimeo_url };
-    } else if (aulaForm.tipo === "video_upload" && uploadedPath) {
-      conteudo = { storage_path: uploadedPath };
-    } else if (aulaForm.tipo === "pdf" && uploadedPath) {
-      conteudo = { storage_path: uploadedPath };
+    } else if ((aulaForm.tipo === "video_upload" || aulaForm.tipo === "pdf") && aulaForm.storage_key) {
+      conteudo = { storage_bucket: aulaForm.storage_bucket, storage_key: aulaForm.storage_key };
     } else if (aulaForm.tipo === "texto") {
       conteudo = { html: aulaForm.conteudo_html };
     }
 
     const payload: any = {
-      trilha_id: selectedTrilhaId,
-      titulo: aulaForm.titulo, descricao: aulaForm.descricao || null,
-      tipo: aulaForm.tipo, conteudo, youtube_id: youtubeId, conteudo_url: conteudoUrl,
-      duracao_minutos: aulaForm.duracao_minutos, xp_recompensa: aulaForm.xp_recompensa,
+      trilha_id: moduloAtivoId,
+      titulo: aulaForm.titulo,
+      descricao: aulaForm.descricao || null,
+      tipo: aulaForm.tipo,
+      conteudo,
+      youtube_id: youtubeId,
+      duracao_minutos: aulaForm.duracao_minutos,
+      xp_recompensa: aulaForm.xp_recompensa,
       ordem: aulaForm.ordem,
     };
 
     if (editAula) {
       await updateAula(editAula.id, payload);
     } else {
-      const created = await createAula(payload);
-      // If quiz type, open quiz editor
-      if (created && aulaForm.tipo === "quiz") {
-        setEditQuizAulaId(created.id);
+      const criada = await createAula(payload);
+      if (criada && aulaForm.tipo === "quiz") {
+        setQuizAulaId(criada.id);
         setQuizQuestions([]);
         setQuizDialogOpen(true);
       }
     }
     setAulaDialogOpen(false);
     setEditAula(null);
-    setUploadedPath(null);
-  }, [aulaForm, editAula, selectedTrilhaId, uploadedPath, createAula, updateAula]);
+  }, [aulaForm, editAula, moduloAtivoId, createAula, updateAula]);
 
-  // File upload handler
-  const handleFileUpload = async (file: File, bucket: string) => {
-    const isVideo = bucket === "academia-videos";
-    if (isVideo) setUploadingVideo(true); else setUploadingPdf(true);
+  const moverAula = useCallback(async (a: Aula, dir: -1 | 1) => {
+    const lista = aulasDoModulo(a.trilha_id!);
+    const idx = lista.findIndex(x => x.id === a.id);
+    const alvo = lista[idx + dir];
+    if (!alvo) return;
+    await Promise.all([
+      updateAula(a.id, { ordem: idx + 1 + dir } as any),
+      updateAula(alvo.id, { ordem: idx + 1 } as any),
+    ]);
+  }, [aulasDoModulo, updateAula]);
 
-    const ext = file.name.split(".").pop();
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { data, error } = await supabase.storage.from(bucket).upload(path, file);
-    if (error) {
-      toast.error("Erro no upload: " + error.message);
-    } else {
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
-      setUploadedPath(urlData.publicUrl);
-      toast.success("Upload concluído!");
-    }
-    if (isVideo) setUploadingVideo(false); else setUploadingPdf(false);
-  };
-
-  // Save quiz questions
-  const handleSaveQuiz = useCallback(async () => {
-    if (!editQuizAulaId) return;
-    // Delete existing questions
-    await supabase.from("academia_quiz").delete().eq("aula_id", editQuizAulaId);
-    // Insert new ones
-    for (let i = 0; i < quizQuestions.length; i++) {
-      const q = quizQuestions[i];
-      await supabase.from("academia_quiz").insert({
-        aula_id: editQuizAulaId,
-        pergunta: q.pergunta,
-        opcoes: { options: q.opcoes },
-        explicacao: q.explicacao || null,
-        ordem: i + 1,
-      });
-    }
-    toast.success("Quiz salvo!");
-    setQuizDialogOpen(false);
-    setEditQuizAulaId(null);
-  }, [quizQuestions, editQuizAulaId]);
-
-  const addQuizQuestion = () => {
-    setQuizQuestions(prev => [...prev, {
-      pergunta: "",
-      opcoes: [{ text: "", correct: true }, { text: "", correct: false }, { text: "", correct: false }, { text: "", correct: false }],
-      explicacao: "",
-    }]);
-  };
-
-  const openEditTrilha = (t: Trilha) => {
-    setEditTrilha(t);
-    setTrilhaForm({
-      titulo: t.titulo, descricao: t.descricao || "", categoria: t.categoria || "tecnicas_vendas",
-      nivel: t.nivel || "iniciante", publicada: t.publicada ?? false,
-      visibilidade: (t as any).visibilidade || "todos", thumbnail_url: t.thumbnail_url || "",
-    });
-    setTrilhaDialogOpen(true);
-  };
-
-  const openNewTrilha = () => {
-    setEditTrilha(null);
-    setTrilhaForm({ titulo: "", descricao: "", categoria: "tecnicas_vendas", nivel: "iniciante", publicada: false, visibilidade: "todos", thumbnail_url: "" });
-    setTrilhaDialogOpen(true);
-  };
-
-  const openEditAula = (a: Aula) => {
-    setEditAula(a);
-    const conteudo = a.conteudo as any;
-    setAulaForm({
-      titulo: a.titulo, descricao: a.descricao || "", tipo: a.tipo,
-      duracao_minutos: a.duracao_minutos || 10, xp_recompensa: a.xp_recompensa || 10, ordem: a.ordem || 1,
-      youtube_url: conteudo?.url || "", vimeo_url: conteudo?.url || "",
-      conteudo_html: conteudo?.html || "",
-    });
-    setUploadedPath(conteudo?.storage_path || null);
-    setAulaDialogOpen(true);
-  };
-
-  const openNewAula = () => {
-    setEditAula(null);
-    setAulaForm({ titulo: "", descricao: "", tipo: "youtube", duracao_minutos: 10, xp_recompensa: 10, ordem: selectedTrilhaAulas.length + 1, youtube_url: "", vimeo_url: "", conteudo_html: "" });
-    setUploadedPath(null);
-    setAulaDialogOpen(true);
-  };
-
-  const openQuizEditor = async (aulaId: string) => {
-    setEditQuizAulaId(aulaId);
+  const abrirQuiz = useCallback(async (aulaId: string) => {
+    setQuizAulaId(aulaId);
     const { data } = await supabase.from("academia_quiz").select("*").eq("aula_id", aulaId).order("ordem");
     setQuizQuestions((data || []).map((q: any) => ({
       pergunta: q.pergunta,
@@ -246,14 +188,14 @@ export default function AcademiaGerenciarPage({ showHeader = true }: { showHeade
       explicacao: q.explicacao || "",
     })));
     setQuizDialogOpen(true);
-  };
+  }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
         {showHeader && (
           <>
@@ -264,336 +206,70 @@ export default function AcademiaGerenciarPage({ showHeader = true }: { showHeade
           </>
         )}
         <div className="ml-auto">
-          <Button onClick={openNewTrilha} className="gap-1.5"><Plus className="h-4 w-4" /> Nova Trilha</Button>
+          <Button onClick={abrirNovoModulo} className="gap-1.5"><Plus className="h-4 w-4" /> Novo módulo</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Trilhas list */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground px-1">Trilhas ({trilhas.length})</h3>
-          {trilhas.map(t => {
-            const cat = CATEGORIAS.find(c => c.key === t.categoria);
-            const eng = engagementMap[t.id];
-            const progressColor = eng
-              ? eng.mediaProgresso >= 70 ? "bg-emerald-500" : eng.mediaProgresso >= 30 ? "bg-amber-500" : "bg-destructive"
-              : "bg-muted";
-            return (
-              <button
-                key={t.id}
-                onClick={() => setSelectedTrilhaId(t.id)}
-                className={cn(
-                  "w-full text-left p-3 rounded-lg border transition-all",
-                  selectedTrilhaId === t.id ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-accent/40"
-                )}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium truncate flex-1">{t.titulo}</span>
-                  {!t.publicada && <EyeOff className="h-3 w-3 text-muted-foreground" />}
-                </div>
-                <div className="flex items-center gap-2">
-                  {cat && <Badge className={cn("text-[9px]", cat.color)}>{cat.label.split(" ")[0]}</Badge>}
-                  <Badge variant="secondary" className="text-[9px]">{t.nivel || "iniciante"}</Badge>
-                  {!t.publicada && <Badge variant="destructive" className="text-[8px] px-1.5 py-0">Oculta para corretores</Badge>}
-                  <span className="text-[10px] text-muted-foreground ml-auto">{t.xp_total || 0} XP</span>
-                </div>
+      <p className="text-xs text-muted-foreground">
+        Crie um módulo, abra ele e arraste os vídeos para dentro — cada vídeo vira uma aula na sequência.
+        Módulos em rascunho não aparecem para os corretores.
+      </p>
 
-                {/* Engagement stats */}
-                {eng ? (
-                  <div className="mt-2 space-y-1">
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      {eng.concluiram} concluíram · {eng.mediaProgresso}% média · {eng.iniciaram} iniciaram
-                    </p>
-                    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
-                      <div className={cn("h-full rounded-full transition-all", progressColor)} style={{ width: `${eng.mediaProgresso}%` }} />
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground/50 mt-2">Sem engajamento ainda</p>
-                )}
+      <div className="space-y-2">
+        {modulos.map((m, i) => (
+          <ModuloRow
+            key={m.id}
+            modulo={m}
+            index={i}
+            aulas={aulasDoModulo(m.id)}
+            expanded={expandido === m.id}
+            engagement={engagementMap[m.id]}
+            onToggle={() => setExpandido(prev => (prev === m.id ? null : m.id))}
+            onEdit={() => abrirEditarModulo(m)}
+            onDelete={() => { if (confirm("Excluir módulo e todas as aulas?")) deleteTrilha(m.id); }}
+            onTogglePublicar={() => updateTrilha(m.id, { publicada: !m.publicada } as any)}
+            onNovaAula={() => abrirNovaAula(m.id)}
+            onEditAula={abrirEditarAula}
+            onDeleteAula={a => { if (confirm("Excluir aula?")) deleteAula(a.id); }}
+            onMoveAula={moverAula}
+            onQuiz={abrirQuiz}
+            onCreateAula={createAula}
+          />
+        ))}
 
-                <div className="flex items-center gap-1 mt-2" onClick={e => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5" onClick={() => openEditTrilha(t)}>
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5" onClick={async () => {
-                    await updateTrilha(t.id, { publicada: !t.publicada } as any);
-                  }}>
-                    {t.publicada ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 text-destructive" onClick={() => {
-                    if (confirm("Excluir trilha e todas as aulas?")) deleteTrilha(t.id);
-                  }}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Aulas for selected trilha */}
-        <div className="md:col-span-2">
-          {selectedTrilhaId ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-muted-foreground">Aulas ({selectedTrilhaAulas.length})</h3>
-                <Button size="sm" onClick={openNewAula} className="gap-1"><Plus className="h-3 w-3" /> Aula</Button>
-              </div>
-              {selectedTrilhaAulas.map((a, idx) => {
-                const tipoInfo = TIPO_CONFIG[a.tipo] || TIPO_CONFIG.youtube;
-                return (
-                  <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                    <span className="text-xs text-muted-foreground font-bold w-6">{idx + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium truncate">{a.titulo}</span>
-                        <Badge variant="secondary" className="text-[9px]">{tipoInfo.emoji} {tipoInfo.label}</Badge>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground">{a.duracao_minutos}min · {a.xp_recompensa} XP</span>
-                    </div>
-                    {a.tipo === "quiz" && (
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => openQuizEditor(a.id)}>
-                        ❓ Quiz
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="sm" className="h-6 px-1.5" onClick={() => openEditAula(a)}>
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-destructive" onClick={() => {
-                      if (confirm("Excluir aula?")) deleteAula(a.id);
-                    }}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                );
-              })}
-              {selectedTrilhaAulas.length === 0 && (
-                <div className="text-center py-10 text-muted-foreground text-sm">Nenhuma aula. Clique em "+ Aula" para criar.</div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-20 text-muted-foreground text-sm">Selecione uma trilha para gerenciar suas aulas.</div>
-          )}
-        </div>
+        {modulos.length === 0 && (
+          <div className="text-center py-16 text-sm text-muted-foreground border border-dashed border-border rounded-xl">
+            Nenhum módulo ainda. Clique em "Novo módulo" para começar.
+          </div>
+        )}
       </div>
 
-      {/* Trilha Dialog */}
-      <Dialog open={trilhaDialogOpen} onOpenChange={setTrilhaDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editTrilha ? "Editar Trilha" : "Nova Trilha"}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label>Título</Label><Input value={trilhaForm.titulo} onChange={e => setTrilhaForm(p => ({ ...p, titulo: e.target.value }))} /></div>
-            <div><Label>Descrição</Label><Textarea value={trilhaForm.descricao} onChange={e => setTrilhaForm(p => ({ ...p, descricao: e.target.value }))} rows={3} /></div>
-            <TrilhaCapaUpload value={trilhaForm.thumbnail_url} onChange={(url) => setTrilhaForm(p => ({ ...p, thumbnail_url: url }))} />
-            <div><Label>Ou cole a URL da capa</Label><Input value={trilhaForm.thumbnail_url} onChange={e => setTrilhaForm(p => ({ ...p, thumbnail_url: e.target.value }))} placeholder="https://..." /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Categoria</Label>
-                <Select value={trilhaForm.categoria} onValueChange={v => setTrilhaForm(p => ({ ...p, categoria: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIAS.map(c => <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div><Label>Nível</Label>
-                <Select value={trilhaForm.nivel} onValueChange={v => setTrilhaForm(p => ({ ...p, nivel: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="iniciante">Iniciante</SelectItem>
-                    <SelectItem value="intermediario">Intermediário</SelectItem>
-                    <SelectItem value="avancado">Avançado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Visibilidade</Label>
-                <Select value={trilhaForm.visibilidade} onValueChange={v => setTrilhaForm(p => ({ ...p, visibilidade: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="corretores">Só Corretores</SelectItem>
-                    <SelectItem value="gerentes">Só Gerentes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2 pt-6">
-                <Switch checked={trilhaForm.publicada} onCheckedChange={v => setTrilhaForm(p => ({ ...p, publicada: v }))} />
-                <Label>Publicada</Label>
-              </div>
-            </div>
-          </div>
-          <DialogFooter><Button onClick={handleSaveTrilha}>Salvar</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ModuloDialog
+        open={moduloDialogOpen}
+        onOpenChange={setModuloDialogOpen}
+        form={moduloForm}
+        setForm={fn => setModuloForm(fn)}
+        isEdit={!!editModulo}
+        onSave={salvarModulo}
+      />
 
-      {/* Aula Dialog */}
-      <Dialog open={aulaDialogOpen} onOpenChange={setAulaDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editAula ? "Editar Aula" : "Nova Aula"}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label>Título</Label><Input value={aulaForm.titulo} onChange={e => setAulaForm(p => ({ ...p, titulo: e.target.value }))} /></div>
-            <div><Label>Descrição</Label><Textarea value={aulaForm.descricao} onChange={e => setAulaForm(p => ({ ...p, descricao: e.target.value }))} rows={2} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Tipo</Label>
-                <Select value={aulaForm.tipo} onValueChange={v => setAulaForm(p => ({ ...p, tipo: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="youtube">▶️ YouTube</SelectItem>
-                    <SelectItem value="vimeo">▶️ Vimeo</SelectItem>
-                    <SelectItem value="video_upload">▶️ Upload Vídeo</SelectItem>
-                    <SelectItem value="pdf">📄 PDF</SelectItem>
-                    <SelectItem value="texto">📝 Texto</SelectItem>
-                    <SelectItem value="quiz">❓ Quiz</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div><Label>Ordem</Label><Input type="number" value={aulaForm.ordem} onChange={e => setAulaForm(p => ({ ...p, ordem: parseInt(e.target.value) || 1 }))} /></div>
-            </div>
+      <AulaDialog
+        open={aulaDialogOpen}
+        onOpenChange={setAulaDialogOpen}
+        form={aulaForm}
+        setForm={fn => setAulaForm(fn)}
+        isEdit={!!editAula}
+        moduloId={moduloAtivoId}
+        onSave={salvarAula}
+      />
 
-            {/* Type-specific fields */}
-            {aulaForm.tipo === "youtube" && (
-              <div><Label>URL do YouTube</Label><Input value={aulaForm.youtube_url} onChange={e => setAulaForm(p => ({ ...p, youtube_url: e.target.value }))} placeholder="https://youtube.com/watch?v=..." /></div>
-            )}
-            {aulaForm.tipo === "vimeo" && (
-              <div><Label>URL do Vimeo</Label><Input value={aulaForm.vimeo_url} onChange={e => setAulaForm(p => ({ ...p, vimeo_url: e.target.value }))} placeholder="https://vimeo.com/..." /></div>
-            )}
-            {aulaForm.tipo === "video_upload" && (
-              <div>
-                <Label>Upload de Vídeo</Label>
-                <div className="mt-1 border-2 border-dashed border-border rounded-lg p-4 text-center">
-                  {uploadedPath ? (
-                    <p className="text-xs text-emerald-600">✅ Vídeo enviado</p>
-                  ) : (
-                    <>
-                      <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0], "academia-videos")}
-                        className="text-xs"
-                      />
-                      {uploadingVideo && <Loader2 className="h-4 w-4 animate-spin mx-auto mt-2" />}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-            {aulaForm.tipo === "pdf" && (
-              <div>
-                <Label>Upload de PDF</Label>
-                <div className="mt-1 border-2 border-dashed border-border rounded-lg p-4 text-center">
-                  {uploadedPath ? (
-                    <p className="text-xs text-emerald-600">✅ PDF enviado</p>
-                  ) : (
-                    <>
-                      <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0], "academia-pdfs")}
-                        className="text-xs"
-                      />
-                      {uploadingPdf && <Loader2 className="h-4 w-4 animate-spin mx-auto mt-2" />}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-            {aulaForm.tipo === "texto" && (
-              <div>
-                <Label>Conteúdo (HTML)</Label>
-                <Textarea
-                  value={aulaForm.conteudo_html}
-                  onChange={e => setAulaForm(p => ({ ...p, conteudo_html: e.target.value }))}
-                  rows={8}
-                  placeholder="<h2>Título</h2><p>Conteúdo da aula...</p>"
-                />
-              </div>
-            )}
-            {aulaForm.tipo === "quiz" && !editAula && (
-              <p className="text-xs text-muted-foreground">Após criar a aula, use o botão "❓ Quiz" para adicionar perguntas.</p>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Duração (min)</Label><Input type="number" value={aulaForm.duracao_minutos} onChange={e => setAulaForm(p => ({ ...p, duracao_minutos: parseInt(e.target.value) || 10 }))} /></div>
-              <div><Label>XP Recompensa</Label><Input type="number" value={aulaForm.xp_recompensa} onChange={e => setAulaForm(p => ({ ...p, xp_recompensa: parseInt(e.target.value) || 10 }))} /></div>
-            </div>
-          </div>
-          <DialogFooter><Button onClick={handleSaveAula}>Salvar</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Quiz Editor Dialog */}
-      <Dialog open={quizDialogOpen} onOpenChange={setQuizDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>❓ Editor de Quiz</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            {quizQuestions.map((q, qi) => (
-              <div key={qi} className="border border-border rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="font-bold">Pergunta {qi + 1}</Label>
-                  <Button variant="ghost" size="sm" className="h-6 text-destructive" onClick={() => {
-                    setQuizQuestions(prev => prev.filter((_, i) => i !== qi));
-                  }}><Trash2 className="h-3 w-3" /></Button>
-                </div>
-                <Input
-                  value={q.pergunta}
-                  onChange={e => {
-                    const updated = [...quizQuestions];
-                    updated[qi].pergunta = e.target.value;
-                    setQuizQuestions(updated);
-                  }}
-                  placeholder="Digite a pergunta..."
-                />
-                {q.opcoes.map((opt, oi) => (
-                  <div key={oi} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name={`q-${qi}`}
-                      checked={opt.correct}
-                      onChange={() => {
-                        const updated = [...quizQuestions];
-                        updated[qi].opcoes = updated[qi].opcoes.map((o, i) => ({ ...o, correct: i === oi }));
-                        setQuizQuestions(updated);
-                      }}
-                      className="shrink-0"
-                    />
-                    <Input
-                      value={opt.text}
-                      onChange={e => {
-                        const updated = [...quizQuestions];
-                        updated[qi].opcoes[oi].text = e.target.value;
-                        setQuizQuestions(updated);
-                      }}
-                      placeholder={`Alternativa ${oi + 1}`}
-                      className="flex-1"
-                    />
-                  </div>
-                ))}
-                <div>
-                  <Label className="text-xs text-muted-foreground">Explicação (opcional)</Label>
-                  <Input
-                    value={q.explicacao}
-                    onChange={e => {
-                      const updated = [...quizQuestions];
-                      updated[qi].explicacao = e.target.value;
-                      setQuizQuestions(updated);
-                    }}
-                    placeholder="Por que esta é a resposta correta?"
-                  />
-                </div>
-              </div>
-            ))}
-            <Button variant="outline" onClick={addQuizQuestion} className="w-full gap-1.5">
-              <Plus className="h-4 w-4" /> Adicionar Pergunta
-            </Button>
-          </div>
-          <DialogFooter><Button onClick={handleSaveQuiz}>Salvar Quiz ({quizQuestions.length} perguntas)</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <QuizDialog
+        open={quizDialogOpen}
+        onOpenChange={setQuizDialogOpen}
+        aulaId={quizAulaId}
+        questions={quizQuestions}
+        setQuestions={setQuizQuestions}
+      />
     </div>
   );
 }
