@@ -157,7 +157,17 @@ export function CentralHeader({ state, onChange, hideTitle = false }: Props) {
               </Select>
             </div>
           )}
+
+          {hideTitle && (
+            <div className={cn(isAdmin ? "" : "ml-auto")}>
+              <Button variant="outline" size="sm" onClick={handleExport} className="h-8 shrink-0 text-xs">
+                <Download className="h-3.5 w-3.5 sm:mr-2" />
+                <span className="hidden sm:inline">Exportar PDF</span>
+              </Button>
+            </div>
+          )}
         </div>
+
       </div>
     </header>
   );
