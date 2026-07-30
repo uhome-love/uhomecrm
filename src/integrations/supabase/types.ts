@@ -11932,6 +11932,7 @@ export type Database = {
       }
       v_fato_visita: {
         Row: {
+          conta_a_realizar: boolean | null
           conta_marcada: boolean | null
           conta_no_show: boolean | null
           conta_realizada: boolean | null
@@ -13666,6 +13667,8 @@ export type Database = {
           leads_recebidos: number
           vendas: number
           vgv_assinado: number
+          visitas_a_realizar: number
+          visitas_agendadas: number
           visitas_marcadas: number
           visitas_no_show: number
           visitas_realizadas: number
