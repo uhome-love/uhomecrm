@@ -297,18 +297,26 @@ Deno.serve(async (req) => {
         }
 
         const todayStamp = new Date().toISOString().slice(0, 10);
-        const interestLabel = empreendimento || existing.empreendimento || "mesmo imóvel";
-        const prevObs = existing.observacoes || "";
-        const separator = prevObs ? "\n---\n" : "";
-        const newObs = `${prevObs}${separator}[NOVO INTERESSE ${todayStamp}] ${interestLabel} (ImovelWeb)${codigoAnuncio ? ` | Cód: ${codigoAnuncio}` : ""}${mensagem ? ` — "${mensagem}"` : ""}`;
 
         const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
         const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
 
-        const updatePayload: Record<string, unknown> = {
-          updated_at: new Date().toISOString(),
-          observacoes: newObs,
-        };
+        const novoInteresse = buildNovoInteresseUpdate({
+          empreendimentoNovo: empreendimento,
+          empreendimentoAtual: existing.empreendimento,
+          observacoesAtuais: existing.observacoes,
+          origemLabel: "ImovelWeb",
+          origem: "imovelweb",
+          campos: {
+            campanha: "ImovelWeb",
+            origem_detalhe: codigoAnuncio ? `Anúncio: ${codigoAnuncio}` : null,
+            plataforma: "ImovelWeb",
+          },
+          mensagem: mensagem || null,
+          sufixo: codigoAnuncio ? `| Cód: ${codigoAnuncio}` : null,
+        });
+        const interestLabel = novoInteresse.interesseLabel;
+        const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
 
         await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
 
