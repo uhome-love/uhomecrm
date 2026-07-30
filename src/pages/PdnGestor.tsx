@@ -498,11 +498,12 @@ export default function PdnGestor() {
     saveOverride(row, patch);
   };
 
-  // Remover da planilha: linha manual = exclui de vez; negócio do pipeline = oculta (overlay), sem tocar no pipeline.
+  // Não existe mais "remover da planilha": o PDN espelha o pipeline.
+  // A saída de um negócio acontece via queda/descarte real no lead.
   const handleRemove = (row: PdnRow) => {
-    if (row.isManual && row.overrideId) deleteRow(row.overrideId);
-    else ocultarRow(row);
+    setQuedaRow(row);
   };
+
 
 
   // Resumo por corretor, agrupado por equipe (ignora o filtro de corretor p/ manter todos clicáveis)
