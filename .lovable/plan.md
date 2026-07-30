@@ -1,45 +1,71 @@
-## Validação da Fase A (feita agora, ao vivo)
+## Auditoria — Central de Performance (`/performance`)
 
-| Aba | Resultado |
-|---|---|
-| Visão Geral | Meta do mês R$ 4,7M de R$ 8,3M (57%), ritmo esperado 91%, "Abaixo do ritmo -37%", projeção R$ 5,2M. KPIs com meta real: Vendas 20% de 46, Visitas 88% de 190, Leads 101% de 1.300. Vazamento: 122 no-shows em 187 marcadas (42%). |
-| Ranking | 31 corretores com equipe, parceria 50/50, VGV correto (Adriana R$ 1,4M topo). |
-| Meu Progresso | Carrega sem erro. |
-| Relatório 1:1 | Carrega sem erro (estado "sem rascunhos"). |
+Base lida: `CentralPerformance.tsx`, `PerfVisaoGeral`, `PerfRanking`, `PerfOrigem`, `PerfKpiCard`, `PerfMetaCard`, `PerfEvolucao`, `PerfTopCorretores`, `PerfDrilldownSheet`, `PerfCorretorSheet`, `CorretorProgresso`, `RelatorioCorretor`, camada SSOT (`metricasSSOT.ts`, `useMetricasSSOT`, `useMetasSSOT`, `useMetricasOrigem`, `useMetricasDetalhe`).
 
-Sem erros de runtime. Só warnings antigos de `forwardRef` no App (pré-existentes, fora do escopo).
+### O que já está bom
+- Fonte única real: todas as abas consomem `rpc_metricas` / `rpc_metricas_origem` / `rpc_metricas_detalhe` — sem recálculo local de VGV.
+- Metas e ritmo reais (`PerfMetaCard`), drill-down por KPI e por corretor, ranking com busca, mobile em cards, CSV do ranking.
 
-Observações visuais: o card "VGV assinado" quebra o valor em duas linhas; o Relatório 1:1 tem header próprio duplicando o da central; a tabela do Ranking rola na horizontal no celular.
+### Pontos fracos encontrados
+
+**1. A página não se adapta ao papel (o mais crítico)**
+- Todos veem as mesmas 5 abas na mesma ordem, começando em "Visão Geral" da empresa. Um corretor deveria cair em "Meu Progresso"/sua própria performance; CEO/diretor em Visão Geral.
+- `gerenteId` só é travado para gestor; não existe travamento por corretor (`filtro.userId` existe na SSOT mas nunca é usado na página).
+- Não há filtro/seletor de diretoria — diretor não consegue ver o conjunto das equipes dele.
+
+**2. Período pobre**
+- Só navegação mês a mês. Falta trimestre, ano, "últimos 90 dias" e intervalo customizado — CEO/diretor pensam em trimestre/ano.
+- Comparativo é só "vs mês anterior" no card de VGV; os demais KPIs não têm comparação.
+
+**3. Visão Geral: diagnóstico raso**
+- Só um vazamento (no-show). Faltam: leads sem primeiro contato no SLA e negócios parados em negociação — cada um com o "dono" do problema.
+- Funil só tem 2 etapas (lead→visita, visita→venda) e usa multiplicadores artificiais na barra (`conv*4`, `conv*8`), o que distorce a leitura visual.
+- Sem visita marcada → realizada e sem etapa de proposta/negociação no funil.
+
+**4. Ranking**
+- Ordena, mas não mostra direção da ordenação nem permite inverter; sem indicador de posição vs mês anterior; sem linha de total/média da equipe para comparar.
+- Bloco de equipes existe mas não é clicável (não abre detalhe da equipe).
+
+**5. Origem**
+- Tem leads/visitas/vendas/VGV, mas **não tem custo**: já existe `marketing_entries` com gasto diário por campanha — falta CPL, custo por visita, custo por venda e ROAS. É a informação que o CEO precisa para cortar campanha.
+- Linhas não são clicáveis (sem drill-down para a lista de leads da origem).
+- Sem exportação própria (o CSV do header exporta o ranking, não a origem — inconsistente e confuso).
+
+**6. Abas embutidas (Meu Progresso / Relatório 1:1)**
+- `CorretorProgresso` renderiza título próprio "Progresso do Dia" e `max-w-4xl` dentro do container, criando página-dentro-de-página e largura destoante.
+- Essas duas abas ignoram o filtro de período/equipe do header (o header some, mas o usuário perde contexto ao trocar de aba).
+
+**7. Exportação**
+- Só CSV do ranking. Sem PDF e sem exportação sensível à aba ativa.
 
 ---
 
-## Fase B — de relatório para instrumento de decisão
+## Plano de melhorias (4 fases, validando cada uma)
 
-### B1. Funil por Origem e Campanha (bloco novo)
-Novo bloco na Visão Geral: tabela/heatmap com Leads → Visitas realizadas → Vendas → VGV, agrupado por **origem** e, ao expandir, por **campanha**. Colunas de conversão (%) e CPL quando houver custo. Objetivo: ver na Performance o que hoje só existe em Dados Anúncios, mas medido pelo SSOT (mesma verdade de VGV).
+### Fase 1 — Papéis e período (fundação)
+- Abas e aba inicial por papel: corretor → `Meu Progresso` primeiro + `Minha Performance` (mesma Visão Geral, escopada com `filtro.userId`), sem Ranking global se assim decidido; gestor → Visão Geral da equipe travada; diretor → seletor das equipes sob ele; CEO/admin → tudo.
+- Passar `userId` ao `useMetricasSSOT` quando o papel for corretor (a SSOT já suporta).
+- Seletor de período: Mês / Trimestre / Ano / 90 dias / Customizado, mantendo BRT.
+- Comparativo automático período anterior em todos os KPIs (delta % + seta).
 
-Backend: nova RPC `rpc_metricas_origem(p_start, p_end, p_gerente_id)` agregando `v_fato_lead` + `v_fato_visita` + `v_fato_venda` por `origem`/`campanha`. Sem tabelas novas.
+### Fase 2 — Qualidade de dados e diagnóstico
+- Bloco "Vazamentos" com 3 itens ranqueados (no-show %, leads sem 1º contato no SLA, negócios parados em negociação > X dias), cada um com corretor/equipe pior colocado e link de ação.
+- Funil completo em 5 etapas: leads → visita marcada → visita realizada → negociação → venda, com barras proporcionais reais (sem multiplicador artificial).
+- Origem com custo: nova RPC juntando `rpc_metricas_origem` a `marketing_entries` (gasto no período) → CPL, custo/visita, custo/venda e ROAS, com destaque para campanhas acima do CPL alvo.
 
-### B2. Drill-down nos KPIs e no Ranking
-- Clicar num KPI abre painel lateral com a lista que compõe o número (vendas do mês, visitas realizadas, leads recebidos), com corretor, empreendimento e data.
-- Clicar numa linha do Ranking abre o perfil do corretor no período: KPIs dele, funil, últimas vendas e visitas, no-show.
+### Fase 3 — Interação e navegação
+- Origem: linha clicável abrindo o drill-down de leads daquela origem/campanha.
+- Ranking: seta de ordenação, inverter ordem, linha de média/total, variação de posição vs período anterior, equipe clicável abrindo detalhe da equipe.
+- Botão exportar sensível à aba (Ranking → CSV atual; Origem → CSV de origens; Visão Geral → PDF executivo de 1 página com metas, KPIs, funil e top 5).
 
-### B3. Bloco de vazamentos ampliado
-Hoje só no-show. Passa a mostrar 3 vazamentos ranqueados com o dono do problema: no-show %, leads sem primeiro contato no SLA, e negócios parados em negociação há mais de X dias — cada um com o corretor/equipe pior colocado e link para agir.
+### Fase 4 — Visual e coerência
+- Normalizar `CorretorProgresso` e `RelatorioCorretor` dentro do container (remover header duplicado e `max-w` próprio, herdar padding da página).
+- Header pegajoso no scroll com período + filtro; skeletons consistentes; densidade e alvos de toque revisados no mobile (440px).
+- Estados vazios explicativos ("sem meta cadastrada" com link para cadastrar meta).
 
-### B4. Leitura e mobile
-- Ranking vira cards empilhados abaixo de 768px (sem scroll horizontal).
-- Busca por corretor + coluna de conversão (visita→venda) no Ranking.
-- Ajuste do card de VGV para não quebrar linha.
-- Header interno do Relatório 1:1 removido/alinhado ao padrão da central.
+### Notas técnicas
+- Todo dado novo continua vindo por RPC na SSOT — nada de cálculo de VGV no frontend.
+- Junção com `marketing_entries` respeita BRT e o mesmo recorte de coorte já usado em `rpc_metricas_origem`; a diferença de semântica (custo no período × coorte) será explicitada em tooltip.
+- Componentes novos ficam em `src/components/performance/`, cada arquivo < 300 linhas.
 
-### Detalhes técnicos
-- Nova RPC `rpc_metricas_origem` (SQL, `security invoker`, mesmas regras de rateio 50/50 e BRT do `rpc_metricas`) + `src/hooks/useMetricasOrigemSSOT.ts`.
-- Novos componentes em `src/components/performance/`: `PerfFunilOrigem.tsx`, `PerfDrilldownSheet.tsx`, `PerfVazamentos.tsx`, `PerfRankingCards.tsx`.
-- `PerfRanking.tsx` e `PerfVisaoGeral.tsx` recebem handlers de drill-down; nenhum cálculo novo no frontend — tudo vem do SSOT.
-- 1 migration apenas (criação da RPC), respeitando o limite diário e a janela BRT.
-
-### Ordem de execução sugerida
-B4 (rápido, ganho imediato de leitura) → B1 (maior valor de decisão) → B3 → B2.
-
-Confirma a ordem, ou prefere começar direto pelo funil por origem (B1)?
+Ordem sugerida: Fase 1 → 2 → 3 → 4. Posso começar pela Fase 1, ou inverter se você preferir ver primeiro o custo por campanha (Fase 2).
