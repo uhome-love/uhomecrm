@@ -36,7 +36,10 @@ const PILLS: Array<{ id: CentralPeriodo; label: string }> = [
 interface Props {
   state: CentralUrlState;
   onChange: (patch: Partial<CentralUrlState>) => void;
+  /** Oculta o bloco de título (usado quando o shell já exibe o cabeçalho). */
+  hideTitle?: boolean;
 }
+
 
 function fmtRange(start: string, end: string): string {
   const s = new Date(`${start}T00:00:00`);
