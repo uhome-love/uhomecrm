@@ -248,8 +248,8 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Crescimento",
       items: [
         { label: "Progresso",          path: "/progresso",         icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
-        { label: "Meu relatório",      path: "/central-relatorios", icon: <BarChart2    size={15} strokeWidth={1.5} /> },
+        { label: "Meus resultados",    path: "/central-relatorios", icon: <BarChart2    size={15} strokeWidth={1.5} /> },
+
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
         { label: "Scripts",            path: "/scripts",           icon: <Lightbulb    size={15} strokeWidth={1.5} /> },
       ],
