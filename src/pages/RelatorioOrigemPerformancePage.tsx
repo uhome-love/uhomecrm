@@ -55,11 +55,15 @@ export default function DadosAnunciosPage() {
     const target = contentRef.current;
     if (!target) return;
     setExportingPdf(true);
+    // Renderiza todas as sub-abas expandidas para o PDF sair completo
+    window.dispatchEvent(new Event("origem-perf:print-start"));
+    await new Promise((r) => setTimeout(r, 400));
     try {
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import("html2canvas"),
         import("jspdf"),
       ]);
+
       const canvas = await html2canvas(target, {
         scale: 2,
         backgroundColor: "#ffffff",
@@ -124,8 +128,10 @@ export default function DadosAnunciosPage() {
       console.error(e);
       toast.error("Erro ao gerar PDF");
     } finally {
+      window.dispatchEvent(new Event("origem-perf:print-end"));
       setExportingPdf(false);
     }
+
   };
 
   return (
