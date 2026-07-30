@@ -9,7 +9,7 @@ import { TrilhaRail } from "@/components/academia/TrilhaRail";
 import { TrilhaPosterCard, ComingSoonPosterCard } from "@/components/academia/TrilhaPosterCard";
 import { MeuProgressoTab } from "@/components/academia/MeuProgressoTab";
 import { CertificadosTab } from "@/components/academia/CertificadosTab";
-import { RAIL_ORDER } from "@/components/academia/trilhaVisual";
+import { RAIL_ORDER, normalizeCategoria } from "@/components/academia/trilhaVisual";
 
 const AcademiaGerenciarPage = lazy(() => import("@/pages/AcademiaGerenciarPage"));
 
@@ -106,7 +106,7 @@ export default function AcademiaPage() {
           )}
 
           {RAIL_ORDER.map(({ key, label, hint }) => {
-            const doGrupo = trilhas.filter(t => t.categoria === key);
+            const doGrupo = trilhas.filter(t => normalizeCategoria(t.categoria) === key);
             const soon = doGrupo.length === 0 ? COMING_SOON[key] : null;
             if (doGrupo.length === 0 && !soon) return null;
             return (
@@ -122,7 +122,7 @@ export default function AcademiaPage() {
           {/* Trilhas sem categoria reconhecida */}
           {(() => {
             const known = new Set(RAIL_ORDER.map(r => r.key));
-            const outras = trilhas.filter(t => !known.has(t.categoria || ""));
+            const outras = trilhas.filter(t => !known.has(normalizeCategoria(t.categoria)));
             if (outras.length === 0) return null;
             return (
               <TrilhaRail titulo="📚 Outras trilhas">
