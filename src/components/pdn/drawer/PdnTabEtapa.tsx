@@ -32,8 +32,8 @@ export function PdnTabEtapa({
     <div className="space-y-4">
       <div className="space-y-1 rounded-lg border p-3">
         <div className="flex items-center gap-2">
-          <Label>Etapa no PDN</Label>
-          {row.etapaAjustada && <Badge variant="secondary" className="text-[10px]">ajustada pelo gestor</Badge>}
+          <Label>Etapa no pipeline</Label>
+          <Badge variant="secondary" className="text-[10px]">espelho do pipeline</Badge>
         </div>
         <Select value={row.grupo} onValueChange={(v) => onMudarEtapa(row, v as PdnGrupo)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
@@ -41,12 +41,7 @@ export function PdnTabEtapa({
             {PDN_GRUPOS.map(g => <SelectItem key={g.key} value={g.key}>{g.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        {!row.isManual && row.etapaAjustada && (
-          <Button variant="ghost" size="sm" className="mt-1 h-7 text-xs text-muted-foreground" onClick={() => onLimparEtapa(row)}>
-            <Undo2 className="mr-1 h-3 w-3" /> Voltar à etapa do pipeline ({PDN_GRUPOS.find(g => g.key === row.grupoOrigem)?.label})
-          </Button>
-        )}
-        <p className="text-[11px] text-muted-foreground">Mudar a etapa aqui reorganiza o PDN e avisa o corretor automaticamente.</p>
+        <p className="text-[11px] text-muted-foreground">Mudar a etapa aqui move o lead no pipeline real e avisa o corretor.</p>
       </div>
 
       <div className="rounded-lg border p-3">
@@ -74,7 +69,7 @@ export function PdnTabEtapa({
 
       <div className="pt-2 border-t">
         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { onRemove(row); onClose(); }}>
-          <Trash2 className="mr-1.5 h-4 w-4" /> {row.isManual ? "Excluir" : "Remover da planilha"}
+          <Trash2 className="mr-1.5 h-4 w-4" /> Marcar como caiu / descartar
         </Button>
       </div>
     </div>

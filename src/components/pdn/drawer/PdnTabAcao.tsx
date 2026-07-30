@@ -40,27 +40,6 @@ export function PdnTabAcao({ row, state }: Props) {
 
   return (
     <div className="space-y-4">
-      {row.isManual && (
-        <div className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/30 p-3">
-          <div className="col-span-2 space-y-1">
-            <Label>Nome</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} />
-          </div>
-          <div className="col-span-2 space-y-1">
-            <Label>Empreendimento</Label>
-            <Input value={empreend} onChange={(e) => setEmpreend(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>VGV</Label>
-            <MoneyInput value={vgv} onCommit={setVgv} variant="field" />
-          </div>
-          <div className="space-y-1">
-            <Label>Corretor</Label>
-            <Input value={corretor} onChange={(e) => setCorretor(e.target.value)} />
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label>Prioridade</Label>
