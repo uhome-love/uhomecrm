@@ -663,7 +663,6 @@ export default function PdnGestor() {
         }} />
       ) : view === "arquivados" ? (
         <ArquivadosView
-          hiddenRows={[]}
           caidosRows={rows.filter(r => r.grupo === "caidos")}
           onRestaurar={reativarQueda}
           onReativar={reativarQueda}
@@ -703,6 +702,7 @@ export default function PdnGestor() {
                 colWidths={colWidths}
                 onColResize={setColWidth}
                 onSave={handleSave}
+                onSaveNegocio={saveNegocioCampos}
                       onRemove={handleRemove}
                 onQueda={setQuedaRow}
                 onReativar={reativarQueda}
@@ -825,7 +825,7 @@ function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort
 
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
-  isMobile, colWidths, onColResize, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  isMobile, colWidths, onColResize, onSave, onSaveNegocio, onRemove, onQueda, onReativar,
   onMudarEtapa, onAvisar, onOpenRow,
   visibleCols, onChangeCols, selectedIds, onToggleSelected, onGroupSelect,
 }: {
@@ -843,7 +843,7 @@ function GrupoBloco({
   colWidths: Record<string, number>;
   onColResize: (key: string, w: number) => void;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
-  onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
+  onSaveNegocio: (row: PdnRow, patch: { vgv?: number; empreendimento?: string }) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
@@ -912,7 +912,6 @@ function GrupoBloco({
                 key={r.id}
                 r={r}
                 onSave={onSave}
-                onUpdateManual={onUpdateManual}
                 onRemove={onRemove}
                 onQueda={onQueda}
                 onReativar={onReativar}
@@ -1091,10 +1090,9 @@ function GrupoBloco({
 
 
 
-function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow, selected, onToggleSelected }: {
+function MobileCard({ r, onSave, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow, selected, onToggleSelected }: {
   r: PdnRow;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
-  onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
@@ -1180,9 +1178,8 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
 
 
 function ArquivadosView({
-  hiddenRows, caidosRows, onRestaurar, onReativar, onOpen,
+  caidosRows, onRestaurar, onReativar, onOpen,
 }: {
-  hiddenRows: PdnRow[];
   caidosRows: PdnRow[];
   onRestaurar: (r: PdnRow) => void;
   onReativar: (r: PdnRow) => void;
@@ -1190,9 +1187,8 @@ function ArquivadosView({
 }) {
   const groups = [
     { title: "Caídos / Descartados / Inativados", rows: caidosRows, action: "reativar" as const },
-    { title: "Removidos da planilha", rows: hiddenRows, action: "restaurar" as const },
   ];
-  const total = caidosRows.length + hiddenRows.length;
+  const total = caidosRows.length;
   if (total === 0) {
     return (
       <Card className="border-dashed py-16 text-center text-sm text-muted-foreground">
