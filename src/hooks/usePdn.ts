@@ -536,8 +536,6 @@ export function usePdn(mes: string) {
         overrideId: ov?.id ?? null,
         grupo: grupoBase,
         grupoOrigem: grupoNatural,
-        grupoOverride: null,
-        etapaAjustada: false,
         nome: d.nome,
         data,
         empreendimento: d.empreendimento || "—",
@@ -552,18 +550,14 @@ export function usePdn(mes: string) {
         motivoQueda: "",
         diasParado: dias,
         emRisco,
-        isManual: false,
         proximaAcaoData,
         prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
         riscoManual,
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: isVencida(proximaAcaoData),
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
-        oculto: false,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-        ocultoEm: null,
-        ocultoPor: "",
         etapaAtualLabel: GRUPO_LABEL[grupoNatural],
       });
 
@@ -586,8 +580,6 @@ export function usePdn(mes: string) {
         overrideId: ov?.id ?? null,
         grupo: grupoBase,
         grupoOrigem: "ganho",
-        grupoOverride: null,
-        etapaAjustada: false,
         nome: vd.nome,
         data: (vd.dataAssinatura || "").slice(0, 10),
         empreendimento: vd.empreendimento || "—",
@@ -602,18 +594,14 @@ export function usePdn(mes: string) {
         motivoQueda: "",
         diasParado: 0,
         emRisco: false,
-        isManual: false,
         proximaAcaoData: ov?.proxima_acao_data || "",
         prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
         riscoManual: !!ov?.risco_manual,
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: false,
         novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
-        oculto: false,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-        ocultoEm: null,
-        ocultoPor: "",
         etapaAtualLabel: GRUPO_LABEL["ganho"],
       });
     }
@@ -635,7 +623,6 @@ export function usePdn(mes: string) {
 
   // O PDN mostra tudo que está no pipeline — nada é escondido por overlay.
   const rows = allRows;
-  const hiddenRows = useMemo<PdnRow[]>(() => [], []);
 
   // ── Overlay: SOMENTE anotações internas do gestor (pdn_entries) ───────────────
   // Etapa, VGV, empreendimento, corretor e queda vêm do pipeline — nunca daqui.
@@ -797,25 +784,6 @@ export function usePdn(mes: string) {
     toast.success("Corretor avisado no app.");
   }, [saveOverride]);
 
-  // ── Linha manual (CRUD completo) ─────────────────────────────────────────────
-  const addManualRow = useCallback(async (grupo: PdnGrupo) => {
-    if (!user) return;
-    const { error } = await supabase.from("pdn_entries").insert({
-      gerente_id: user.id,
-      mes,
-      nome: "Novo negócio",
-      situacao: grupo === "caidos" ? "em_negociacao" : grupo,
-    });
-    if (error) { toast.error("Erro ao adicionar linha"); return; }
-    await loadEntries();
-  }, [user, mes, loadEntries]);
-
-  const updateManualRow = useCallback(async (overrideId: string, patch: Record<string, any>) => {
-    const { error } = await supabase.from("pdn_entries").update(patch).eq("id", overrideId);
-    if (error) { toast.error("Erro ao salvar"); return; }
-    await loadEntries();
-  }, [loadEntries]);
-
   const deleteRow = useCallback(async (overrideId: string) => {
     const { error } = await supabase.from("pdn_entries").delete().eq("id", overrideId);
     if (error) { toast.error("Erro ao excluir"); return; }
@@ -826,7 +794,7 @@ export function usePdn(mes: string) {
   const duplicados = useMemo(() => {
     const map: Record<string, PdnRow[]> = {};
     for (const r of rows) {
-      if (r.isManual || !r.pipelineLeadId) continue;
+      if (!r.pipelineLeadId) continue;
       const key = `${r.nome.toLowerCase().trim()}|${r.corretor.toLowerCase().trim()}`;
       (map[key] ||= []).push(r);
     }
@@ -867,22 +835,19 @@ export function usePdn(mes: string) {
 
   return {
     rows,
-    hiddenRows,
     scopeAuthIds,
     resumo,
     duplicados,
     loading: loadingDeals || loadingEntries,
     refreshAll,
     saveOverride,
+    saveNegocioCampos,
     marcarQueda,
     mudarEtapa,
 
     avisarCorretor,
     descartarLead,
     inativarLead,
-    addManualRow,
-    updateManualRow,
-    deleteRow,
     reload: loadEntries,
   };
 }
