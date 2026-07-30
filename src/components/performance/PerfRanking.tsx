@@ -185,6 +185,21 @@ export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props
                   </tr>
                 ))}
             </tbody>
+            {!loading && ordenadas.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/30 text-xs font-semibold text-foreground">
+                  <td className="py-2.5 pl-6" colSpan={3}>
+                    Total · {ordenadas.length} corretores
+                  </td>
+                  <td className="py-2.5 text-right tabular-nums">{totais.leads.toLocaleString("pt-BR")}</td>
+                  <td className="py-2.5 text-right tabular-nums">{totais.visitas}</td>
+                  <td className="py-2.5 text-right tabular-nums text-muted-foreground">{convTotal.toFixed(1)}%</td>
+                  <td className="py-2.5 text-right tabular-nums">{totais.vendas}</td>
+                  <td className="py-2.5 pr-6 text-right tabular-nums">{fmtMoney(totais.vgv, "short")}</td>
+                </tr>
+              </tfoot>
+            )}
+
           </table>
         </div>
       </div>
