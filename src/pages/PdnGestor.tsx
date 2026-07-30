@@ -336,9 +336,15 @@ export default function PdnGestor() {
   useEffect(() => {
     try { sessionStorage.setItem(`pdn:view:${isMobile ? "mobile" : "desktop"}`, view); } catch { /* ignore */ }
   }, [view, isMobile]);
-  const { rows, hiddenRows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, descartarLead, inativarLead, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, mudarEtapa, avisarCorretor, descartarLead, inativarLead, updateManualRow, deleteRow } = usePdn(mes);
   const { rows: divergencias } = usePdnDivergencias(scopeAuthIds);
+  // PDN é espelho do pipeline: não existe mais "esconder" nem "reativar" só na planilha.
+  const reativarQueda = useCallback((_row: PdnRow) => {
+    toast.info("O PDN espelha o pipeline — reative o lead direto no pipeline.");
+  }, []);
+  const limparEtapaOverride = useCallback(async (_row: PdnRow) => { /* etapa vem sempre do pipeline */ }, []);
   const [showOcultos, setShowOcultos] = useState(false);
+
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -492,11 +498,12 @@ export default function PdnGestor() {
     saveOverride(row, patch);
   };
 
-  // Remover da planilha: linha manual = exclui de vez; negócio do pipeline = oculta (overlay), sem tocar no pipeline.
+  // Não existe mais "remover da planilha": o PDN espelha o pipeline.
+  // A saída de um negócio acontece via queda/descarte real no lead.
   const handleRemove = (row: PdnRow) => {
-    if (row.isManual && row.overrideId) deleteRow(row.overrideId);
-    else ocultarRow(row);
+    setQuedaRow(row);
   };
+
 
 
   // Resumo por corretor, agrupado por equipe (ignora o filtro de corretor p/ manter todos clicáveis)
@@ -604,35 +611,8 @@ export default function PdnGestor() {
       )}
 
 
-      {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
-      {showOcultos && hiddenRows.length > 0 && (
-        <Card className="border-dashed p-4">
-          <div className="mb-1 text-sm font-semibold text-muted-foreground">Removidos da planilha</div>
-          <p className="mb-2 text-xs text-muted-foreground">
-            Estes negócios continuam ativos no pipeline — só estão fora da planilha do mês. A remoção vale apenas para {mes} e é desfeita automaticamente se o negócio mudar de etapa.
-          </p>
-          <div className="space-y-1.5">
-            {hiddenRows.map(r => (
-              <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-1.5 text-sm">
-                <div className="min-w-0">
-                  <div>
-                    <span className="font-medium">{r.nome}</span>
-                    <span className="text-muted-foreground"> · {r.empreendimento !== "—" ? r.empreendimento : "sem empreendimento"} · {fmtMoney(r.vgv, "short")} · {r.corretor}</span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    Etapa atual: {r.etapaAtualLabel}
-                    {r.ocultoEm ? ` · removido em ${new Date(r.ocultoEm).toLocaleDateString("pt-BR")}` : ""}
-                    {r.ocultoPor ? ` por ${r.ocultoPor}` : ""}
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => restaurarRow(r)}>
-                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Restaurar
-                </Button>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+
+
 
       {/* Divergências entre PDN e Negócios (Fase 2) */}
       {!loading && (
@@ -686,7 +666,7 @@ export default function PdnGestor() {
         <ArquivadosView
           hiddenRows={hiddenRows}
           caidosRows={rows.filter(r => r.grupo === "caidos")}
-          onRestaurar={restaurarRow}
+          onRestaurar={reativarQueda}
           onReativar={reativarQueda}
           onOpen={setSelectedRow}
         />
@@ -701,7 +681,7 @@ export default function PdnGestor() {
           onMudarEtapa={handleMudarEtapa}
           onLimparEtapa={limparEtapaOverride}
           onAvisar={avisarCorretor}
-          onAdd={addManualRow}
+          onAdd={undefined}
         />
       ) : (
         <div className="space-y-5">
@@ -724,7 +704,6 @@ export default function PdnGestor() {
                 isMobile={isMobile}
                 colWidths={colWidths}
                 onColResize={setColWidth}
-                onAdd={() => addManualRow(g.key)}
                 onSave={handleSave}
                 onUpdateManual={updateManualRow}
                 onRemove={handleRemove}
@@ -850,7 +829,7 @@ function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort
 
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
-  isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  isMobile, colWidths, onColResize, onSave, onUpdateManual, onRemove, onQueda, onReativar,
   onMudarEtapa, onAvisar, onOpenRow,
   visibleCols, onChangeCols, selectedIds, onToggleSelected, onGroupSelect,
 }: {
@@ -867,7 +846,6 @@ function GrupoBloco({
   isMobile: boolean;
   colWidths: Record<string, number>;
   onColResize: (key: string, w: number) => void;
-  onAdd: () => void;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
   onRemove: (row: PdnRow) => void;
@@ -922,16 +900,8 @@ function GrupoBloco({
               <ColumnsMenu cols={visibleCols} onChange={onChangeCols} />
             </span>
           )}
-          {!isCaidos && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); onAdd(); }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-            >
-              <Plus className="h-4 w-4" />
-            </span>
-          )}
+
+
         </div>
       </div>
 

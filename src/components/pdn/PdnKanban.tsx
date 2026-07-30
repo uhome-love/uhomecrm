@@ -31,11 +31,12 @@ interface PdnKanbanProps {
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onLimparEtapa: (row: PdnRow) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
-  onAdd: (grupo: PdnGrupo) => void;
+  onAdd?: undefined;
 }
 
 export function PdnKanban({
-  rows, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar, onAdd,
+  rows, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
+
 }: PdnKanbanProps) {
   const [selected, setSelected] = useState<PdnRow | null>(null);
   const [dragOver, setDragOver] = useState<PdnGrupo | null>(null);
@@ -146,15 +147,8 @@ export function PdnKanban({
                   <span className={`text-sm font-semibold ${isCaidos ? "text-red-600 dark:text-red-400" : "text-foreground"}`}>{g.label}</span>
                   <Badge variant={isCaidos ? "destructive" : "secondary"}>{list.length}</Badge>
                 </div>
-                {!isCaidos && (
-                  <button
-                    onClick={() => onAdd(g.key)}
-                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-                    title="Adicionar negócio manual"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                )}
+
+
               </div>
 
               {/* Contadores extras */}
@@ -177,12 +171,8 @@ export function PdnKanban({
                 {list.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-8 text-center text-xs text-muted-foreground">
                     <span>Sem negócios nesta etapa</span>
-                    {!isCaidos && (
-                      <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => onAdd(g.key)}>
-                        <Plus className="h-3 w-3" /> Adicionar manual
-                      </Button>
-                    )}
                   </div>
+
                 ) : list.map(r => (
                   <PdnCard
                     key={r.id}

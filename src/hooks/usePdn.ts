@@ -514,15 +514,12 @@ export function usePdn(mes: string) {
         if (!isMesCorrente && ov?.mes !== mes) continue;
       }
       const grupoNatural: PdnGrupo = isGanho ? "ganho" : d.grupo;
-      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
-      // `caiu` / `oculto` só valem para o mês em que foram marcados e são
-      // automaticamente descartados quando o negócio andou de etapa depois da marcação.
-      const marcasAtivas = overlayMarcasAtivas(ov, mes, d.stageChangedAt);
-      const caiu = !!ov?.caiu && marcasAtivas;
-      const grupoBase = grupoOverride ?? grupoNatural;
+      // PDN é espelho do pipeline: a etapa, o VGV e o empreendimento vêm SEMPRE
+      // do pipeline/negócio. O overlay do gestor guarda apenas notas internas.
+      const grupoBase = grupoNatural;
       const data = isGanho ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
-      const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
-      const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
+      const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || "—";
+      const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || "—";
       const proximaAcao = ov?.proxima_acao || "";
       const proximaAcaoData = ov?.proxima_acao_data || "";
       const observacoesRow = (ov?.observacoes ?? d.observacoesNegocio ?? "").toString().trim();
@@ -532,29 +529,29 @@ export function usePdn(mes: string) {
       // ou edição manual no override do PDN nos últimos 7 dias. Qualquer um zera o risco automático.
       const foiEditadoRecente = !!ov?.updated_at && diffDays(ov.updated_at) <= 7;
       const temSinalDeAtualizacao = !!proximaAcao || !!observacoesRow || foiEditadoRecente;
-      const emRisco = !caiu && (riscoManual || (grupoBase !== "ganho" && !temSinalDeAtualizacao && dias > 7));
+      const emRisco = riscoManual || (grupoBase !== "ganho" && !temSinalDeAtualizacao && dias > 7);
       out.push({
         id: `deal-${d.id}`,
         negocioId: d.negocioId,
         pipelineLeadId: d.id,
         corretorAuthId: d.corretorAuthId,
         overrideId: ov?.id ?? null,
-        grupo: caiu ? "caidos" : grupoBase,
+        grupo: grupoBase,
         grupoOrigem: grupoNatural,
-        grupoOverride,
-        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== grupoNatural,
+        grupoOverride: null,
+        etapaAjustada: false,
         nome: d.nome,
         data,
-        empreendimento: ov?.empreendimento || d.empreendimento || "—",
-        vgv: Number(ov?.vgv ?? d.vgv) || 0,
+        empreendimento: d.empreendimento || "—",
+        vgv: Number(d.vgv) || 0,
         situacaoLabel: GRUPO_LABEL[grupoBase],
         corretor,
         equipe,
         status: ov?.status || "",
         observacoes: ov?.observacoes ?? d.observacoesNegocio ?? "",
         proximaAcao,
-        caiu,
-        motivoQueda: ov?.motivo_queda || "",
+        caiu: false,
+        motivoQueda: "",
         diasParado: dias,
         emRisco,
         isManual: false,
@@ -562,15 +559,16 @@ export function usePdn(mes: string) {
         prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
         riscoManual,
         riscoMotivo: ov?.risco_motivo || "",
-        proximaAcaoVencida: !caiu && isVencida(proximaAcaoData),
+        proximaAcaoVencida: isVencida(proximaAcaoData),
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
-        oculto: !!ov?.oculto && marcasAtivas,
+        oculto: false,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-        ocultoEm: ov?.oculto ? (ov.updated_at ?? null) : null,
-        ocultoPor: (ov?.gerente_id && gestorNames[ov.gerente_id]) || "",
+        ocultoEm: null,
+        ocultoPor: "",
         etapaAtualLabel: GRUPO_LABEL[grupoNatural],
       });
+
     }
 
     // Fallback: vendas do mês (negocios.fase='ganho') cujo lead está arquivado ou
@@ -579,11 +577,9 @@ export function usePdn(mes: string) {
     for (const vd of vendasMes) {
       if (vd.negocioId && negocioIdsNoOut.has(vd.negocioId)) continue; // já representado por um deal
       const ov = overrideByNegocio[vd.negocioId] || (vd.pipelineLeadId ? overrideByLead[vd.pipelineLeadId] : undefined);
-      if (ov?.caiu) continue;
-      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
-      const corretor = (vd.corretorAuthId && nameByAuthId[vd.corretorAuthId]) || ov?.corretor || "—";
-      const equipe = (vd.corretorAuthId && equipeByAuthId[vd.corretorAuthId]) || ov?.equipe || "—";
-      const grupoBase = grupoOverride ?? "ganho";
+      const corretor = (vd.corretorAuthId && nameByAuthId[vd.corretorAuthId]) || "—";
+      const equipe = (vd.corretorAuthId && equipeByAuthId[vd.corretorAuthId]) || "—";
+      const grupoBase: PdnGrupo = "ganho";
       out.push({
         id: `venda-${vd.negocioId}`,
         negocioId: vd.negocioId,
@@ -592,12 +588,12 @@ export function usePdn(mes: string) {
         overrideId: ov?.id ?? null,
         grupo: grupoBase,
         grupoOrigem: "ganho",
-        grupoOverride,
+        grupoOverride: null,
         etapaAjustada: false,
         nome: vd.nome,
         data: (vd.dataAssinatura || "").slice(0, 10),
-        empreendimento: ov?.empreendimento || vd.empreendimento || "—",
-        vgv: Number(ov?.vgv ?? vd.vgv) || 0,
+        empreendimento: vd.empreendimento || "—",
+        vgv: Number(vd.vgv) || 0,
         situacaoLabel: GRUPO_LABEL[grupoBase],
         corretor,
         equipe,
@@ -615,11 +611,11 @@ export function usePdn(mes: string) {
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: false,
         novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
-        oculto: !!ov?.oculto && ov?.mes === mes,
+        oculto: false,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-        ocultoEm: ov?.oculto ? (ov.updated_at ?? null) : null,
-        ocultoPor: (ov?.gerente_id && gestorNames[ov.gerente_id]) || "",
+        ocultoEm: null,
+        ocultoPor: "",
         etapaAtualLabel: GRUPO_LABEL["ganho"],
       });
     }
@@ -628,80 +624,36 @@ export function usePdn(mes: string) {
     // NOTA: Visitas realizadas do mês NÃO geram mais linhas próprias no PDN Pós-Visita.
     // A fonte única do grupo Pós-Visita é `pipeline_leads` em stage `pos_visita` (via `deals` acima).
     // Para conferência de visitas do mês (incluindo as que já avançaram/regrediram/caíram),
-    // use a aba "Conferência de Visitas" (useConferenciaVisitas). Isso elimina duplicações e
-    // reflete no PDN só o que o gestor precisa acompanhar operacionalmente.
+    // use a aba "Conferência de Visitas" (useConferenciaVisitas).
 
-
-    // Linhas manuais (sem vínculo com pipeline)
-    for (const m of manualRows) {
-      const base = normalizeGrupo(m.situacao) === "caidos" ? "em_negociacao" : normalizeGrupo(m.situacao);
-      const caiu = !!m.caiu;
-      out.push({
-        id: `manual-${m.id}`,
-        negocioId: null,
-        pipelineLeadId: null,
-        corretorAuthId: null,
-        overrideId: m.id,
-        grupo: caiu ? "caidos" : base,
-        grupoOrigem: base,
-        grupoOverride: null,
-        etapaAjustada: false,
-        nome: m.nome,
-        data: m.data_visita || "",
-        empreendimento: m.empreendimento || "—",
-        vgv: Number(m.vgv) || 0,
-        situacaoLabel: GRUPO_LABEL[base],
-        corretor: m.corretor || "—",
-        equipe: m.equipe || "—",
-        status: m.status || "",
-        observacoes: m.observacoes || "",
-        proximaAcao: m.proxima_acao || "",
-        caiu,
-        motivoQueda: m.motivo_queda || "",
-        diasParado: 0,
-        emRisco: !caiu && !!m.risco_manual,
-        isManual: true,
-        proximaAcaoData: m.proxima_acao_data || "",
-        prioridade: (m.prioridade as PdnRow["prioridade"]) || "",
-        riscoManual: !!m.risco_manual,
-        riscoMotivo: m.risco_motivo || "",
-        proximaAcaoVencida: !caiu && isVencida(m.proxima_acao_data || ""),
-        novoDesdeOntem: isNovoDesdeOntem(m.data_visita),
-        oculto: !!m.oculto,
-        avisadoEm: null,
-        avisadoEtapa: null,
-        ocultoEm: m.oculto ? (m.updated_at ?? null) : null,
-        ocultoPor: (m.gerente_id && gestorNames[m.gerente_id]) || "",
-        etapaAtualLabel: GRUPO_LABEL[base],
-      });
-    }
+    // NOTA: linhas manuais (pdn_entries sem vínculo com pipeline) NÃO são mais
+    // exibidas — o PDN é espelho do pipeline. Negócio só entra na planilha se
+    // existir no pipeline. O card "Divergências" aponta os casos a reconciliar.
 
     return out;
-  }, [deals, visitasReal, manualRows, vendasMes, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, gestorNames, mes, mesAtual]);
+  }, [deals, vendasMes, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes, mesAtual]);
 
 
-  const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
-  const hiddenRows = useMemo<PdnRow[]>(() => allRows.filter(r => r.oculto), [allRows]);
 
-  // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv" | "oculto" | "grupoOverride" | "avisadoEm" | "avisadoEtapa">>) => {
+  // O PDN mostra tudo que está no pipeline — nada é escondido por overlay.
+  const rows = allRows;
+  const hiddenRows = useMemo<PdnRow[]>(() => [], []);
+
+  // ── Overlay: SOMENTE anotações internas do gestor (pdn_entries) ───────────────
+  // Etapa, VGV, empreendimento, corretor e queda vêm do pipeline — nunca daqui.
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "avisadoEm" | "avisadoEtapa">>) => {
     if (!user) return;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
     if (patch.proximaAcao !== undefined) payload.proxima_acao = patch.proximaAcao || null;
     if (patch.status !== undefined) payload.status = patch.status || null;
-    if (patch.caiu !== undefined) payload.caiu = patch.caiu;
-    if (patch.motivoQueda !== undefined) payload.motivo_queda = patch.motivoQueda || null;
     if (patch.proximaAcaoData !== undefined) payload.proxima_acao_data = patch.proximaAcaoData || null;
     if (patch.prioridade !== undefined) payload.prioridade = patch.prioridade || null;
     if (patch.riscoManual !== undefined) payload.risco_manual = patch.riscoManual;
     if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
-    if (patch.empreendimento !== undefined) payload.empreendimento = patch.empreendimento || null;
-    if (patch.vgv !== undefined) payload.vgv = Number(patch.vgv) || 0;
-    if (patch.oculto !== undefined) payload.oculto = patch.oculto;
-    if (patch.grupoOverride !== undefined) payload.grupo_override = patch.grupoOverride || null;
     if (patch.avisadoEm !== undefined) payload.corretor_avisado_em = patch.avisadoEm || null;
     if (patch.avisadoEtapa !== undefined) payload.corretor_avisado_etapa = patch.avisadoEtapa || null;
+    if (Object.keys(payload).length === 0) return;
 
     if (row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
@@ -722,139 +674,73 @@ export function usePdn(mes: string) {
       });
       if (error) { toast.error("Erro ao salvar"); return; }
     }
-    // Sync VGV / empreendimento para o negócio real (não bloqueia overlay)
-    if (!row.isManual && row.negocioId && (patch.vgv !== undefined || patch.empreendimento !== undefined)) {
-      const vgvChanged = patch.vgv !== undefined && Number(patch.vgv) !== row.vgv;
-      const empChanged = patch.empreendimento !== undefined && (patch.empreendimento || "") !== (row.empreendimento === "—" ? "" : row.empreendimento);
-      if (vgvChanged || empChanged) {
-        syncNegocioVgvFromPdn(
-          row,
-          vgvChanged ? Number(patch.vgv) : null,
-          empChanged ? (patch.empreendimento || null) : null,
-        ).catch(() => undefined);
-      }
-    }
     await loadEntries();
   }, [user, mes, loadEntries]);
 
-  // ── Marcar / reverter queda ("caiu") — overlay + registro na timeline do lead ─
+
+  // ── Marcar queda — age NO PIPELINE (descarte real do lead), não no overlay ────
   const marcarQueda = useCallback(async (row: PdnRow, motivo: string) => {
-    await saveOverride(row, { caiu: true, motivoQueda: motivo });
-    if (row.pipelineLeadId && !row.isManual) {
+    if (!row.pipelineLeadId && !row.negocioId) {
+      toast.error("Sem lead vinculado — corrija a divergência antes de marcar queda.");
+      return;
+    }
+    const ok = await discardLeadFromPdn(row, motivo, user?.id ?? null);
+    if (!ok) return;
+    if (row.pipelineLeadId) {
       try {
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id: row.pipelineLeadId,
           tipo: "pdn_risco",
-          titulo: "PDN: marcado como caiu",
+          titulo: "PDN: negócio marcado como caiu",
           descricao: motivo || "Sem motivo informado",
           status: "concluida",
           created_by: user?.id ?? null,
         });
-      } catch { /* não bloqueia o overlay */ }
+      } catch { /* não bloqueia a ação */ }
     }
-  }, [saveOverride, user]);
+    await Promise.all([loadDeals(), loadEntries()]);
+  }, [user, loadDeals, loadEntries]);
 
-  const reativarQueda = useCallback(async (row: PdnRow) => {
-    await saveOverride(row, { caiu: false, motivoQueda: "" });
-    if (row.pipelineLeadId && !row.isManual) {
-      try {
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: row.pipelineLeadId,
-          tipo: "pdn_risco",
-          titulo: "PDN: reativado (reverteu queda)",
-          descricao: "",
-          status: "concluida",
-          created_by: user?.id ?? null,
-        });
-      } catch { /* não bloqueia o overlay */ }
-    }
-  }, [saveOverride, user]);
-
-
-  // ── Ocultar / restaurar negócio na planilha (só overlay, nunca no pipeline) ────
-  const ocultarRow = useCallback(async (row: PdnRow) => {
-    await saveOverride(row, { oculto: true });
-  }, [saveOverride]);
-
-  const restaurarRow = useCallback(async (row: PdnRow) => {
-    await saveOverride(row, { oculto: false });
-  }, [saveOverride]);
-
-  // ── Editar empreendimento / VGV (overlay do gestor) ──────────────────────────
-  const editarEmpreendimento = useCallback(async (row: PdnRow, empreendimento: string) => {
-    await saveOverride(row, { empreendimento });
-  }, [saveOverride]);
-
-  const editarVgv = useCallback(async (row: PdnRow, vgv: number) => {
-    await saveOverride(row, { vgv });
-  }, [saveOverride]);
-
-  // ── Mudar etapa no PDN — AGORA sincroniza com o pipeline real ────────────────
+  // ── Mudar etapa no PDN — escreve sempre no pipeline real ──────────────────────
   const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnDestino | "caidos", opts?: { motivo?: string }) => {
-    if (grupo === "caidos") { await saveOverride(row, { caiu: true }); return; }
+    if (grupo === "caidos") { await marcarQueda(row, opts?.motivo || ""); return; }
+    if (!row.pipelineLeadId && !row.negocioId) {
+      toast.error("Sem lead vinculado no pipeline — não é possível mover a etapa.");
+      return;
+    }
     const isPreVisita = grupo === "qualificacao" || grupo === "aquecimento";
-    if (row.isManual && row.overrideId) {
-      if (isPreVisita) {
-        toast.error("Linha manual não pode ser regredida para etapa fora do PDN.");
-        return;
-      }
-      const { error } = await supabase.from("pdn_entries").update({ situacao: grupo, caiu: false }).eq("id", row.overrideId);
-      if (error) { toast.error("Erro ao salvar"); return; }
-      await loadEntries();
-      return;
+    const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
+    if (!result) return;
+    // Alinha a nota do gestor com a nova etapa e garante o vínculo com o lead real.
+    if (row.overrideId && !isPreVisita) {
+      const patch: Record<string, unknown> = {
+        situacao: grupo,
+        updated_at: new Date().toISOString(),
+      };
+      if (result.pipelineLeadId && !row.pipelineLeadId) patch.pipeline_lead_id = result.pipelineLeadId;
+      if (result.negocioId && !row.negocioId) patch.negocio_id = result.negocioId;
+      const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
+      if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
     }
-    // Linha do pipeline (ou só com negocio_id): escreve NO pipeline real + alinha overlay
-    if (row.pipelineLeadId || row.negocioId) {
-      const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
-      if (!result) return;
-      // Sincroniza a pdn_entry existente com a nova etapa e garante o vínculo com o lead real.
-      // Regressão p/ qualificacao/aquecimento tira o lead do escopo PDN — não escreve situacao inválida.
-      if (row.overrideId && !isPreVisita) {
-        const patch: Record<string, unknown> = {
-          situacao: grupo,
-          grupo_override: null,
-          caiu: false,
-          motivo_queda: null,
-          updated_at: new Date().toISOString(),
-        };
-        if (result.pipelineLeadId && !row.pipelineLeadId) {
-          patch.pipeline_lead_id = result.pipelineLeadId;
-        }
-        if (result.negocioId && !row.negocioId) {
-          patch.negocio_id = result.negocioId;
-        }
-        const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
-        if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
-      }
-      await Promise.all([loadDeals(), loadEntries()]);
-      return;
-    }
-    // Fallback (sem pipeline): grava overlay (apenas grupos PDN válidos)
-    if (isPreVisita) return;
-    await saveOverride(row, { grupoOverride: grupo === row.grupoOrigem ? null : grupo, caiu: false });
-  }, [saveOverride, loadEntries, loadDeals, user?.id]);
+    await Promise.all([loadDeals(), loadEntries()]);
+  }, [marcarQueda, loadEntries, loadDeals, user?.id]);
 
 
   // ── Descartar (reengajável) via PDN → altera lead real ────────────────────────
   const descartarLead = useCallback(async (row: PdnRow, motivo: string) => {
     const ok = await discardLeadFromPdn(row, motivo, user?.id ?? null);
     if (!ok) return;
-    await saveOverride(row, { caiu: true, motivoQueda: motivo || "Descartado via PDN" });
     await Promise.all([loadDeals(), loadEntries()]);
-  }, [user?.id, saveOverride, loadDeals, loadEntries]);
+  }, [user?.id, loadDeals, loadEntries]);
 
   // ── Inativar definitivo via PDN → arquiva lead real ───────────────────────────
   const inativarLead = useCallback(async (row: PdnRow, motivo: string) => {
     const ok = await inactivateLeadFromPdn(row, motivo);
     if (!ok) return;
-    await saveOverride(row, { caiu: true, motivoQueda: motivo || "Inativado via PDN", oculto: true });
     await Promise.all([loadDeals(), loadEntries()]);
-  }, [saveOverride, loadDeals, loadEntries]);
+  }, [loadDeals, loadEntries]);
 
 
-  const limparEtapaOverride = useCallback(async (row: PdnRow) => {
-    await saveOverride(row, { grupoOverride: null });
-  }, [saveOverride]);
 
   // ── Avisar corretor (notificação no app) — não altera o pipeline ─────────────
   const avisarCorretor = useCallback(async (row: PdnRow, mensagem: string) => {
@@ -957,13 +843,8 @@ export function usePdn(mes: string) {
     refreshAll,
     saveOverride,
     marcarQueda,
-    reativarQueda,
-    ocultarRow,
-    restaurarRow,
-    editarEmpreendimento,
-    editarVgv,
     mudarEtapa,
-    limparEtapaOverride,
+
     avisarCorretor,
     descartarLead,
     inativarLead,
