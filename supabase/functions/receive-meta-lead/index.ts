@@ -13,6 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { PostgrestError } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
+import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -576,7 +577,7 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await supabase
       .from("pipeline_leads")
-      .select("id, corretor_id, nome, empreendimento, aceite_status, stage_id, arquivado, meta_lead_id")
+      .select("id, corretor_id, nome, empreendimento, observacoes, aceite_status, stage_id, arquivado, meta_lead_id")
       .eq("telefone", telefone)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -600,16 +601,28 @@ Deno.serve(async (req) => {
 
       // Lead has a corretor — reactivate with notification
       const todayStamp = new Date().toISOString().slice(0, 10);
-      const interestLabel = empreendimento || existing.empreendimento || "mesmo imóvel";
 
       // Determine if lead needs to be moved out of Descarte/archived
       const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
       const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
 
-      const updatePayload: Record<string, unknown> = {
-        updated_at: new Date().toISOString(),
-        observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Meta Ads direto)${message ? ` — "${message}"` : ""}`,
-      };
+      const novoInteresse = buildNovoInteresseUpdate({
+        empreendimentoNovo: empreendimento,
+        empreendimentoAtual: existing.empreendimento,
+        observacoesAtuais: existing.observacoes,
+        origemLabel: "Meta Ads direto",
+        origem: "meta_ads",
+        campos: {
+          campanha: campaignName || null,
+          campanha_id: campaignId || null,
+          origem_detalhe: campaignName || formName || null,
+          formulario: formName || null,
+          plataforma: "meta_ads",
+        },
+        mensagem: message || null,
+      });
+      const interestLabel = novoInteresse.interesseLabel;
+      const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
 
       // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
       if (externalLeadId && !existing.meta_lead_id) {
@@ -901,11 +914,11 @@ Deno.serve(async (req) => {
         // existente — provavelmente casou por E-MAIL (telefone diferente, por isso
         // o check inicial por telefone não pegou). Se tiver corretor, reativa:
         // atualiza o lead, registra no histórico e notifica o corretor.
-        let dup: { id: string; corretor_id: string | null; nome: string | null; empreendimento: string | null; stage_id: string | null; arquivado: boolean | null; meta_lead_id: string | null } | null = null;
+        let dup: { id: string; corretor_id: string | null; nome: string | null; empreendimento: string | null; observacoes: string | null; stage_id: string | null; arquivado: boolean | null; meta_lead_id: string | null } | null = null;
         if (email) {
           const { data } = await supabase
             .from("pipeline_leads")
-            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado, meta_lead_id")
+            .select("id, corretor_id, nome, empreendimento, observacoes, stage_id, arquivado, meta_lead_id")
             .eq("email", email)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -915,7 +928,7 @@ Deno.serve(async (req) => {
         if (!dup) {
           const { data } = await supabase
             .from("pipeline_leads")
-            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado, meta_lead_id")
+            .select("id, corretor_id, nome, empreendimento, observacoes, stage_id, arquivado, meta_lead_id")
             .eq("telefone", telefone)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -925,14 +938,26 @@ Deno.serve(async (req) => {
 
         if (dup && dup.corretor_id) {
           const todayStamp = new Date().toISOString().slice(0, 10);
-          const interestLabel = empreendimento || dup.empreendimento || "mesmo imóvel";
           const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
           const isDiscarded = dup.stage_id === DESCARTE_STAGE_ID || dup.arquivado === true;
 
-          const updatePayload: Record<string, unknown> = {
-            updated_at: new Date().toISOString(),
-            observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Meta Ads direto)${message ? ` — "${message}"` : ""}`,
-          };
+          const novoInteresseDup = buildNovoInteresseUpdate({
+            empreendimentoNovo: empreendimento,
+            empreendimentoAtual: dup.empreendimento,
+            observacoesAtuais: dup.observacoes,
+            origemLabel: "Meta Ads direto",
+            origem: "meta_ads",
+            campos: {
+              campanha: campaignName || null,
+              campanha_id: campaignId || null,
+              origem_detalhe: campaignName || formName || null,
+              formulario: formName || null,
+              plataforma: "meta_ads",
+            },
+            mensagem: message || null,
+          });
+          const interestLabel = novoInteresseDup.interesseLabel;
+          const updatePayload: Record<string, unknown> = { ...novoInteresseDup.payload };
 
           // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
           if (externalLeadId && !dup.meta_lead_id) {

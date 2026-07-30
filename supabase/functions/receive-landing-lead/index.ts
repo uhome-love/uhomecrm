@@ -20,6 +20,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
+import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -185,7 +186,7 @@ Deno.serve(async (req) => {
 
       const { data: existing } = await supabase
         .from("pipeline_leads")
-        .select("id, corretor_id, nome, empreendimento, stage_id, arquivado")
+        .select("id, corretor_id, nome, empreendimento, observacoes, stage_id, arquivado")
         .eq("telefone", telefone)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -201,15 +202,26 @@ Deno.serve(async (req) => {
         }
 
         const todayStamp = new Date().toISOString().slice(0, 10);
-        const interestLabel = empreendimento || existing.empreendimento || "mesmo imóvel";
 
         const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
         const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
 
-        const updatePayload: Record<string, unknown> = {
-          updated_at: new Date().toISOString(),
-          observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Landing Page)${message ? ` — "${message}"` : ""}`,
-        };
+        const novoInteresse = buildNovoInteresseUpdate({
+          empreendimentoNovo: empreendimento,
+          empreendimentoAtual: existing.empreendimento,
+          observacoesAtuais: existing.observacoes,
+          origemLabel: "Landing Page",
+          origem: "Landing Page",
+          campos: {
+            campanha: utmCampaign || null,
+            campanha_id: campaignId ? String(campaignId) : null,
+            origem_detalhe: utmCampaign || source || null,
+            plataforma: utmSource || null,
+          },
+          mensagem: message || null,
+        });
+        const interestLabel = novoInteresse.interesseLabel;
+        const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
 
         await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
 
