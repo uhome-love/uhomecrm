@@ -15,7 +15,7 @@ const PILLS: Array<{ id: string; label: string }> = [
 ];
 
 /**
- * Dados Anúncios — dashboard de rastreamento de mídia paga.
+ * Central de Marketing — dashboard de rastreamento de mídia paga.
  * Cruza campanha/conjunto/criativo/formulário/plataforma com qualidade,
  * visita, venda e tempo até 1º contato. Somente leitura.
  * Export PDF em A4 paisagem via html2canvas + jsPDF.
@@ -76,7 +76,7 @@ export default function DadosAnunciosPage() {
       // Cover
       pdf.setFontSize(20);
       pdf.setTextColor(20);
-      pdf.text("Dados Anúncios", MARGIN, 25);
+      pdf.text("Central de Marketing", MARGIN, 25);
       pdf.setFontSize(11);
       pdf.setTextColor(90);
       const periodoLabel = periodo === "custom" && de && ate
@@ -132,8 +132,8 @@ export default function DadosAnunciosPage() {
     <div style={{ height: "100vh", overflowY: "auto", background: "#f0f0f5" }}>
       <div style={{ background: "#fff", borderBottom: "0.5px solid #e5e7eb", padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div style={{ marginRight: "auto" }}>
-          <h1 style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Dados Anúncios</h1>
-          <p style={{ fontSize: 12, color: "#6b7280" }}>Inteligência de mídia paga: investimento, campanha, conjunto, criativo, formulário e conversões</p>
+          <h1 style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Central de Marketing</h1>
+          <p style={{ fontSize: 12, color: "#6b7280" }}>Leads, anúncios e investimento: campanha, conjunto, criativo, formulário e conversões</p>
         </div>
         <div style={{ display: "flex", gap: 4, background: "#f3f4f6", padding: 3, borderRadius: 10 }}>
           {ABAS.map((a) => (
