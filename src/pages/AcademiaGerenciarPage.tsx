@@ -255,10 +255,14 @@ export default function AcademiaGerenciarPage({ showHeader = true }: { showHeade
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/academia")} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h1 className="text-lg font-bold">🎓 Gerenciar Academia</h1>
+        {showHeader && (
+          <>
+            <button onClick={() => navigate("/academia")} className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <h1 className="text-lg font-bold">🎓 Gerenciar Academia</h1>
+          </>
+        )}
         <div className="ml-auto">
           <Button onClick={openNewTrilha} className="gap-1.5"><Plus className="h-4 w-4" /> Nova Trilha</Button>
         </div>
