@@ -275,7 +275,7 @@ async function processLead(
 
   const { data: existing } = await supabase
     .from("pipeline_leads")
-    .select("id, corretor_id, nome, empreendimento, aceite_status, stage_id, arquivado")
+    .select("id, corretor_id, nome, empreendimento, observacoes, aceite_status, stage_id, arquivado")
     .eq("telefone", telefone)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -289,15 +289,24 @@ async function processLead(
 
     // Lead exists with corretor — reactivate
     const todayStamp = new Date().toISOString().slice(0, 10);
-    const interestLabel = empreendimento || existing.empreendimento || "mesmo imóvel";
 
     const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
     const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
 
-    const updatePayload: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-      observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (RD Station)${message ? ` — "${message}"` : ""}`,
-    };
+    const novoInteresse = buildNovoInteresseUpdate({
+      empreendimentoNovo: empreendimento,
+      empreendimentoAtual: existing.empreendimento,
+      observacoesAtuais: existing.observacoes,
+      origemLabel: "RD Station",
+      origem: "rdstation",
+      campos: {
+        campanha: campaignName || null,
+        origem_detalhe: campaignName || null,
+      },
+      mensagem: message || null,
+    });
+    const interestLabel = novoInteresse.interesseLabel;
+    const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
 
     await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
 
