@@ -666,7 +666,7 @@ export default function PdnGestor() {
         <ArquivadosView
           hiddenRows={hiddenRows}
           caidosRows={rows.filter(r => r.grupo === "caidos")}
-          onRestaurar={restaurarRow}
+          onRestaurar={reativarQueda}
           onReativar={reativarQueda}
           onOpen={setSelectedRow}
         />
