@@ -28,10 +28,13 @@
   Regra que passa a valer: **rastreamento de marketing nunca pode derrubar a entrada de um lead**.
 - Passar as chamadas dos gatilhos a usar parâmetros nomeados (`p_lead_id =>`, `p_event_name =>` ...), o que elimina ambiguidade caso alguém crie outra sobrecarga no futuro.
 
-### Fase 3 — Recuperar o que foi perdido
-- Rodar `meta-leads-backfill` com janela de 3 dias para reingerir os leads recusados desde ~18h UTC de hoje (a função é idempotente por `meta:{lead_id}`).
-- Conferir o lead "Gabriel Figueroa" e comparar a contagem do dia com os números do app do Meta.
-- Reportar quantos leads voltaram e quais permanecem sem correspondência.
+### Fase 3 — Recuperar os leads perdidos, um a um, na Fila do CEO
+- Levantar a lista completa dos leads recusados: cruzar os erros `Lead insert failed` em `ops_events` (nome, telefone, empreendimento) com os leads do Meta via `meta-leads-backfill` (janela de 3 dias, idempotente por `meta:{lead_id}`).
+- Comparar cada um contra `pipeline_leads` por telefone normalizado e por `meta_lead_id` para não duplicar quem já entrou.
+- Reingerir os que realmente faltam já com `aceite_status = 'pendente_distribuicao'` (Fila do CEO), sem corretor atribuído — de lá o gestor despacha manualmente para a roleta, conforme a regra de Fila CEO manual.
+- Preservar os dados originais de cada lead: nome, telefone, e-mail, campanha, empreendimento, `meta_lead_id` e a data original de criação.
+- Entregar uma tabela de conferência lead a lado: nome, telefone, empreendimento, situação (recuperado / já existia / não encontrado no Meta), e comparar o total do dia com os números do app do Meta.
+
 
 ### Fase 4 — Alerta para não repetir
 - Regra em `edge-health-alert`: se `receive-meta-lead` registrar qualquer `Lead insert failed` na última hora, notifica admins.
