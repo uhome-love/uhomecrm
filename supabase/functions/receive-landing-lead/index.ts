@@ -20,6 +20,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
+import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
