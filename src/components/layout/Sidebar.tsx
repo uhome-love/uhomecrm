@@ -97,7 +97,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "HOMI CEO",           path: "/homi-ceo",          icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
-        { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen size={15} strokeWidth={1.5} /> },
       ],
     },
   ],
@@ -247,7 +246,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Meus resultados",    path: "/central-relatorios", icon: <BarChart2    size={15} strokeWidth={1.5} /> },
 
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
-        { label: "Scripts",            path: "/scripts",           icon: <Lightbulb    size={15} strokeWidth={1.5} /> },
       ],
     },
     {

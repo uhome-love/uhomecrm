@@ -129,6 +129,8 @@ const App = () => (
               {/* Fase 3 — páginas técnicas foram para Configurações / Central de Relatórios */}
               <Route path="/integracoes" element={<Navigate to="/configuracoes?secao=integracoes" replace />} />
               <Route path="/central-dados" element={<Navigate to="/central-relatorios?secao=forecast" replace />} />
+              <Route path="/scripts" element={<Navigate to="/materiais?tab=scripts" replace />} />
+              <Route path="/homi/base-conhecimento" element={<Navigate to="/materiais?tab=base" replace />} />
 
 
               <Route path="/links-site" element={<Navigate to="/imoveis?view=links" replace />} />

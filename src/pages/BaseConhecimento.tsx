@@ -32,7 +32,7 @@ const categoryColors: Record<string, string> = {
   estrategia: "bg-rose-500/20 text-rose-400 border-rose-500/30",
 };
 
-export default function BaseConhecimento() {
+export default function BaseConhecimento({ showHeader = true }: { showHeader?: boolean } = {}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -202,22 +202,33 @@ export default function BaseConhecimento() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Brain className="h-7 w-7 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Base de Conhecimento do HOMI</h1>
-            <p className="text-sm text-muted-foreground">
-              Alimente o HOMI com conhecimento sobre empreendimentos, scripts e estratégias
-            </p>
+      {showHeader ? (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Brain className="h-7 w-7 text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold">Base de Conhecimento do HOMI</h1>
+              <p className="text-sm text-muted-foreground">
+                Alimente o HOMI com conhecimento sobre empreendimentos, scripts e estratégias
+              </p>
+            </div>
           </div>
+          <Badge variant="outline" className="text-sm gap-1.5 px-3 py-1.5">
+            <FileText className="h-3.5 w-3.5" />
+            {totalIndexed} documentos indexados
+          </Badge>
         </div>
-        <Badge variant="outline" className="text-sm gap-1.5 px-3 py-1.5">
-          <FileText className="h-3.5 w-3.5" />
-          {totalIndexed} documentos indexados
-        </Badge>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Alimente o HOMI com conhecimento sobre empreendimentos, scripts e estratégias
+          </p>
+          <Badge variant="outline" className="text-xs gap-1.5 px-2.5 py-1">
+            <FileText className="h-3.5 w-3.5" />
+            {totalIndexed} documentos indexados
+          </Badge>
+        </div>
+      )}
 
       {/* Upload card */}
       <Card>
