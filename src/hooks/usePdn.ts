@@ -950,6 +950,7 @@ export function usePdn(mes: string) {
   return {
     rows,
     hiddenRows,
+    scopeAuthIds,
     resumo,
     duplicados,
     loading: loadingDeals || loadingEntries,
