@@ -128,8 +128,10 @@ export default function DadosAnunciosPage() {
       console.error(e);
       toast.error("Erro ao gerar PDF");
     } finally {
+      window.dispatchEvent(new Event("origem-perf:print-end"));
       setExportingPdf(false);
     }
+
   };
 
   return (
