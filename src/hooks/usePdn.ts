@@ -102,6 +102,9 @@ export interface PdnRow {
   oculto: boolean;           // removido da planilha pelo gestor (overlay), sem afetar o pipeline
   avisadoEm: string | null;  // quando o gestor avisou o corretor
   avisadoEtapa: string | null;
+  ocultoEm: string | null;   // quando a linha foi removida da planilha (overlay)
+  ocultoPor: string;         // nome do gestor que removeu (quando resolvido)
+  etapaAtualLabel: string;   // etapa atual no pipeline (para conferência no painel de ocultos)
 }
 
 type PdnEntry = {
@@ -154,6 +157,27 @@ function diffDays(dateStr: string): number {
   return Math.floor((Date.now() - d) / 86400000);
 }
 
+
+/**
+ * As marcações do gestor (`caiu` / `oculto`) valem apenas para o mês em que foram
+ * feitas e são descartadas automaticamente quando o negócio mudou de etapa depois
+ * da marcação — evita negócio ativo sumir do PDN para sempre.
+ */
+function overlayMarcasAtivas(
+  ov: { mes?: string | null; updated_at?: string | null } | undefined,
+  mes: string,
+  stageChangedAt: string | null | undefined,
+): boolean {
+  if (!ov) return false;
+  if (ov.mes !== mes) return false;
+  if (ov.updated_at && stageChangedAt) {
+    const marcado = new Date(ov.updated_at).getTime();
+    const mudou = new Date(stageChangedAt).getTime();
+    if (Number.isFinite(marcado) && Number.isFinite(mudou) && mudou > marcado) return false;
+  }
+  return true;
+}
+
 interface PipelineDeal {
   id: string;              // pipeline_lead_id
   nome: string;
@@ -203,6 +227,7 @@ export function usePdn(mes: string) {
   // Escopo de corretores resolvido (auth ids). undefined = ainda não resolvido; null = todos.
   const [scopeAuthIds, setScopeAuthIds] = useState<string[] | null | undefined>(undefined);
   const [vendasMes, setVendasMes] = useState<VendaMes[]>([]);
+  const [gestorNames, setGestorNames] = useState<Record<string, string>>({});
 
   // ── Overlay do gerente (pdn_entries) ─────────────────────────────────────────
   const loadEntries = useCallback(async () => {
@@ -443,6 +468,18 @@ export function usePdn(mes: string) {
     })();
   }, [deals, visitasReal]);
 
+  // Nomes dos gestores que criaram overlays (para o painel de removidos)
+  useEffect(() => {
+    const ids = [...new Set(entries.map(e => e.gerente_id).filter(Boolean))] as string[];
+    if (ids.length === 0) { setGestorNames({}); return; }
+    (async () => {
+      const { data } = await supabase.from("profiles").select("user_id, nome").in("user_id", ids);
+      const map: Record<string, string> = {};
+      for (const p of data || []) if ((p as any).user_id) map[(p as any).user_id] = (p as any).nome;
+      setGestorNames(map);
+    })();
+  }, [entries]);
+
   // Overlay indexado por negocio_id e por pipeline_lead_id
   const overrideByNegocio = useMemo(() => {
     const map: Record<string, PdnEntry> = {};
@@ -478,7 +515,10 @@ export function usePdn(mes: string) {
       }
       const grupoNatural: PdnGrupo = isGanho ? "ganho" : d.grupo;
       const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
-      const caiu = !!ov?.caiu;
+      // `caiu` / `oculto` só valem para o mês em que foram marcados e são
+      // automaticamente descartados quando o negócio andou de etapa depois da marcação.
+      const marcasAtivas = overlayMarcasAtivas(ov, mes, d.stageChangedAt);
+      const caiu = !!ov?.caiu && marcasAtivas;
       const grupoBase = grupoOverride ?? grupoNatural;
       const data = isGanho ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
@@ -524,9 +564,12 @@ export function usePdn(mes: string) {
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: !caiu && isVencida(proximaAcaoData),
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
-        oculto: !!ov?.oculto,
+        oculto: !!ov?.oculto && marcasAtivas,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
+        ocultoEm: ov?.oculto ? (ov.updated_at ?? null) : null,
+        ocultoPor: (ov?.gerente_id && gestorNames[ov.gerente_id]) || "",
+        etapaAtualLabel: GRUPO_LABEL[grupoNatural],
       });
     }
 
@@ -572,9 +615,12 @@ export function usePdn(mes: string) {
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: false,
         novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
-        oculto: !!ov?.oculto,
+        oculto: !!ov?.oculto && ov?.mes === mes,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
+        ocultoEm: ov?.oculto ? (ov.updated_at ?? null) : null,
+        ocultoPor: (ov?.gerente_id && gestorNames[ov.gerente_id]) || "",
+        etapaAtualLabel: GRUPO_LABEL["ganho"],
       });
     }
 
@@ -624,11 +670,14 @@ export function usePdn(mes: string) {
         oculto: !!m.oculto,
         avisadoEm: null,
         avisadoEtapa: null,
+        ocultoEm: m.oculto ? (m.updated_at ?? null) : null,
+        ocultoPor: (m.gerente_id && gestorNames[m.gerente_id]) || "",
+        etapaAtualLabel: GRUPO_LABEL[base],
       });
     }
 
     return out;
-  }, [deals, visitasReal, manualRows, vendasMes, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes, mesAtual]);
+  }, [deals, visitasReal, manualRows, vendasMes, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, gestorNames, mes, mesAtual]);
 
 
   const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
@@ -901,6 +950,7 @@ export function usePdn(mes: string) {
   return {
     rows,
     hiddenRows,
+    scopeAuthIds,
     resumo,
     duplicados,
     loading: loadingDeals || loadingEntries,

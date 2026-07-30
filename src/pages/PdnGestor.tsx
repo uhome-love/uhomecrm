@@ -41,6 +41,8 @@ import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { PdnRegredirDialog } from "@/components/pdn/PdnRegredirDialog";
 import { ConferenciaVisitasMes } from "@/components/pdn/ConferenciaVisitasMes";
+import { PdnDivergencias } from "@/components/pdn/PdnDivergencias";
+import { usePdnDivergencias } from "@/hooks/pdn/usePdnDivergencias";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
 
@@ -334,7 +336,8 @@ export default function PdnGestor() {
   useEffect(() => {
     try { sessionStorage.setItem(`pdn:view:${isMobile ? "mobile" : "desktop"}`, view); } catch { /* ignore */ }
   }, [view, isMobile]);
-  const { rows, hiddenRows, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, descartarLead, inativarLead, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, descartarLead, inativarLead, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows: divergencias } = usePdnDivergencias(scopeAuthIds);
   const [showOcultos, setShowOcultos] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
@@ -590,6 +593,8 @@ export default function PdnGestor() {
           kpiFilter={kpiFilter}
           onClearKpi={() => setKpiFilter(null)}
           hiddenCount={hiddenRows.length}
+          caidosCount={rows.filter(r => r.grupo === "caidos").length}
+          onOpenArquivados={() => setView("arquivados")}
           showOcultos={showOcultos}
           onToggleOcultos={() => setShowOcultos(v => !v)}
           view={view}
@@ -602,13 +607,23 @@ export default function PdnGestor() {
       {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
       {showOcultos && hiddenRows.length > 0 && (
         <Card className="border-dashed p-4">
-          <div className="mb-2 text-sm font-semibold text-muted-foreground">Removidos da planilha</div>
+          <div className="mb-1 text-sm font-semibold text-muted-foreground">Removidos da planilha</div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Estes negócios continuam ativos no pipeline — só estão fora da planilha do mês. A remoção vale apenas para {mes} e é desfeita automaticamente se o negócio mudar de etapa.
+          </p>
           <div className="space-y-1.5">
             {hiddenRows.map(r => (
               <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-1.5 text-sm">
                 <div className="min-w-0">
-                  <span className="font-medium">{r.nome}</span>
-                  <span className="text-muted-foreground"> · {r.empreendimento !== "—" ? r.empreendimento : "sem empreendimento"} · {fmtMoney(r.vgv, "short")} · {r.corretor}</span>
+                  <div>
+                    <span className="font-medium">{r.nome}</span>
+                    <span className="text-muted-foreground"> · {r.empreendimento !== "—" ? r.empreendimento : "sem empreendimento"} · {fmtMoney(r.vgv, "short")} · {r.corretor}</span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Etapa atual: {r.etapaAtualLabel}
+                    {r.ocultoEm ? ` · removido em ${new Date(r.ocultoEm).toLocaleDateString("pt-BR")}` : ""}
+                    {r.ocultoPor ? ` por ${r.ocultoPor}` : ""}
+                  </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => restaurarRow(r)}>
                   <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Restaurar
@@ -617,6 +632,17 @@ export default function PdnGestor() {
             ))}
           </div>
         </Card>
+      )}
+
+      {/* Divergências entre PDN e Negócios (Fase 2) */}
+      {!loading && (
+        <PdnDivergencias
+          rows={divergencias}
+          onOpenLead={(leadId) => {
+            const r = [...rows, ...hiddenRows].find(x => x.pipelineLeadId === leadId);
+            if (r) setSelectedRow(r);
+          }}
+        />
       )}
 
       {/* Possíveis duplicados no pipeline (só informativo — não apaga nada) */}
