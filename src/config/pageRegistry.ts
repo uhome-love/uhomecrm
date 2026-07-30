@@ -51,7 +51,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "ceo-religacao-negocios": lazyRetry(() => import("@/pages/CeoReligacaoNegocios")),
   "gerente-dashboard": lazyRetry(() => import("@/pages/GerenteDashboard")),
   checkpoint: lazyRetry(() => import("@/pages/CheckpointGerente")),
-  "central-dados": lazyRetry(() => import("@/pages/CentralDados")),
   scripts: lazyRetry(() => import("@/pages/ScriptsGenerator")),
   relatorios: lazyRetry(() => import("@/pages/RelatorioCorretor")),
   // "ranking" (Central de Performance) foi absorvido pela Central de Relatórios — ver "report-center".
@@ -118,7 +117,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "report-center": lazyRetry(() => import("@/pages/CentralRelatorios")),
   materiais: lazyRetry(() => import("@/pages/MateriaisPage")),
   "materiais-analytics": lazyRetry(() => import("@/pages/MateriaisAnalytics")),
-  integracoes: lazyRetry(() => import("@/pages/IntegracoesPage")),
   intermediacao: lazyRetry(() => import("@/pages/IntermediacaoPage")),
   "leads-estagnados": lazyRetry(() => import("@/pages/LeadsEstagnados")),
   "simulador-financiamento": lazyRetry(() => import("@/pages/SimuladorFinanciamento")),
@@ -138,7 +136,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/backoffice":            { key: "backoffice",           label: "Dashboard BO",        icon: "LayoutGrid",    closable: false, roles: ["backoffice", "admin"] },
   "/rh":                    { key: "rh",                   label: "Dashboard RH",        icon: "LayoutGrid",    closable: false, roles: ["rh", "admin"] },
   "/central-do-gerente":    { key: "checkpoint",           label: "Central Gerente",     icon: "CheckCircle",   roles: ["gestor", "admin", "diretor"] },
-  "/central-dados":         { key: "central-dados",        label: "Central Dados",       icon: "Database",      roles: ["gestor", "admin", "diretor"] },
   "/scripts":               { key: "scripts",              label: "Scripts",             icon: "Lightbulb" },
   "/relatorios":            { key: "relatorios",           label: "Relatórios 1:1",      icon: "FileText",      roles: ["gestor", "admin", "diretor"] },
   // "/ranking" e "/performance" → redirect para /central-relatorios (App.tsx)
@@ -177,7 +174,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/imoveis":               { key: "imoveis",              label: "Imóveis",             icon: "Home" },
   "/busca-leads":           { key: "busca-leads",          label: "Busca Leads",         icon: "Search",        roles: ["gestor", "admin", "diretor"] },
   "/configuracoes":         { key: "configuracoes",        label: "Configurações",       icon: "Settings" },
-  "/integracoes":           { key: "integracoes",          label: "Integrações",         icon: "Plug" },
   
   "/notificacoes":          { key: "notificacoes",         label: "Notificações",        icon: "BellRing" },
   "/auditoria":             { key: "auditoria",            label: "Auditoria",           icon: "ShieldCheck",   roles: ["admin"] },

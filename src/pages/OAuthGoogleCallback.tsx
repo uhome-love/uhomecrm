@@ -42,7 +42,7 @@ export default function OAuthGoogleCallback() {
       setStatus("ok");
       setMsg(`Conectado como ${data.account_email}`);
       toast.success("Google Calendar conectado!");
-      setTimeout(() => navigate("/integracoes", { replace: true }), 1500);
+      setTimeout(() => navigate("/configuracoes?secao=integracoes", { replace: true }), 1500);
     })();
   }, [params, navigate]);
 
@@ -54,7 +54,7 @@ export default function OAuthGoogleCallback() {
         {status === "error" && <XCircle className="h-10 w-10 mx-auto text-destructive" />}
         <p className="text-base">{msg}</p>
         {status === "error" && (
-          <button onClick={() => navigate("/integracoes")} className="text-sm underline text-primary">
+          <button onClick={() => navigate("/configuracoes?secao=integracoes")} className="text-sm underline text-primary">
             Voltar para Integrações
           </button>
         )}
