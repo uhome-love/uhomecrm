@@ -87,7 +87,7 @@ export interface UnifiedGroup {
 export const UNIFIED_GROUPS: UnifiedGroup[] = [
   { label: "Visão", ids: ["visao"] },
   { label: "Comercial", ids: ["pipeline-leads", "origem", "oferta-ativa", "sla", "visitas"] },
-  { label: "Resultado", ids: ["negocios", "vendas", "metas", "cohort"] },
+  { label: "Resultado", ids: ["negocios", "vendas", "metas", "cohort", "forecast"] },
   { label: "Equipe", ids: ["ranking", "relatorio-equipe", "progresso", "relatorio-1a1"] },
 ];
 
