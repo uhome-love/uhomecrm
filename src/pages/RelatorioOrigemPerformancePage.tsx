@@ -176,9 +176,9 @@ export default function DadosAnunciosPage() {
             <input type="date" value={ate} onChange={(e) => setAte(e.target.value)} style={{ border: "0.5px solid #e5e7eb", borderRadius: 8, padding: "5px 8px", fontSize: 12 }} />
           </div>
         )}
+        {aba === "rastreamento" && (
         <button
           onClick={exportPdf}
-          hidden={aba !== "rastreamento"}
           disabled={exportingPdf}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
@@ -190,6 +190,7 @@ export default function DadosAnunciosPage() {
           {exportingPdf ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
           PDF A4 paisagem
         </button>
+        )}
       </div>
       <div style={{ padding: 16 }} ref={contentRef}>
         {aba === "rastreamento"
