@@ -7,7 +7,7 @@ import {
   CalendarDays, Home, Phone, Search, Megaphone,
   BarChart3, TrendingUp, Heart, Star, Mail,
   MessageSquare, Sparkles, Bot, BookOpen,
-  Users, UsersRound, Briefcase, Video, Zap, ChevronRight,
+  Users, UsersRound, Briefcase, Video, ChevronRight,
   Sun, Moon, ShieldCheck, ClipboardList, Wrench,
   Trophy, GraduationCap, Lightbulb, Layers,
   Building2, Wallet, ListTodo, Database,
