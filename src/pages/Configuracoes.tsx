@@ -350,12 +350,6 @@ export default function Configuracoes() {
         </CardContent>
       </Card>
 
-      {/* Integrations - Admin only */}
-      {isAdmin && <MetaAdsSettings />}
-      {isAdmin && <RoletaCampanhasPanel />}
-
-      {/* Notification Preferences */}
-      <NotificationPreferences />
 
       {/* Sound & Celebration Preferences */}
       <Card>
