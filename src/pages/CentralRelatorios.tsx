@@ -1,34 +1,40 @@
 import { useCallback, useEffect, useMemo, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
-  UNIFIED_GROUPS,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  UNIFIED_VIEWS,
   UNIFIED_SECTIONS,
   DEFAULT_UNIFIED_SECTION,
   SECTION_ALIASES,
   getUnifiedSection,
+  getViewOfSection,
   isUnifiedSection,
   type UnifiedSectionId,
 } from "@/components/central-v2/unifiedSections";
 import { useCentralUrlState } from "@/components/central-v2/useCentralUrlState";
 import { CentralHeader } from "@/components/central-v2/CentralHeader";
 import { SectionRouterView } from "@/components/central-v2/SectionRouterView";
+import { VisaoPipelineExtra } from "@/components/central-v2/VisaoPipelineExtra";
 import { ReportBuilder } from "@/components/central-v2/report/ReportBuilder";
 import PerformanceHub, { type PerfTab } from "@/components/performance/PerformanceHub";
-import { Loader2 } from "lucide-react";
 
 const ForecastContent = lazy(() => import("@/components/central/ForecastContent"));
 
-
 /**
- * Central de Relatórios — hub único de resultado do CRM.
+ * Performance — hub único de resultado do CRM.
  *
- * Absorve a antiga Central de Performance (`/ranking`, `/performance`).
- * A seção ativa vive na URL (`?secao=`), com três motores de dados:
- * SSOT (`rpc_metricas`), relatórios operacionais (`get_relatorio_*`) e o
- * construtor de relatório por equipe.
+ * Absorve a antiga Central de Relatórios e a Central de Performance
+ * (`/ranking`, `/performance`). A navegação é de 2 níveis: 5 visões (chips)
+ * × sub-visões (select). A sub-visão ativa vive na URL (`?secao=`).
  */
 export default function CentralRelatorios() {
   const [params, setParams] = useSearchParams();
@@ -64,72 +70,101 @@ export default function CentralRelatorios() {
   }, [rolesLoading, disponiveis, secao, selecionar]);
 
   const atual = getUnifiedSection(secao);
-  const grupos = UNIFIED_GROUPS.map((g) => ({
-    ...g,
-    ids: g.ids.filter((id) => disponiveis.some((s) => s.id === id)),
-  })).filter((g) => g.ids.length > 0);
+  const viewAtual = getViewOfSection(secao);
+
+  const views = useMemo(
+    () =>
+      UNIFIED_VIEWS.map((v) => ({
+        ...v,
+        ids: v.ids.filter((id) => disponiveis.some((s) => s.id === id)),
+      })).filter((v) => v.ids.length > 0),
+    [disponiveis]
+  );
+
+  const subVisoes = views.find((v) => v.id === viewAtual.id)?.ids ?? [];
 
   return (
     <div className="flex min-h-full flex-col bg-background">
-      {/* Cabeçalho único */}
+      {/* Cabeçalho único do hub */}
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 px-4 py-3.5 backdrop-blur sm:px-6">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <BarChart3 className="h-5 w-5" strokeWidth={2} />
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="font-display truncate text-xl leading-tight text-foreground sm:text-2xl">
-              Central de Relatórios
+              Performance
             </h1>
             <p className="truncate text-xs text-muted-foreground">
               {soCorretor
                 ? "Seus números, progresso e relatório 1:1"
-                : "Resultado, performance e relatórios · fonte única de verdade"}
+                : "Resultado, funil e equipe · fonte única de verdade"}
             </p>
           </div>
         </div>
 
-        {/* Navegação por grupos */}
-        <nav
-          aria-label="Seções da Central de Relatórios"
-          className="mt-3 flex items-center gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {grupos.map((g, gi) => (
-            <div key={g.label} className="flex items-center gap-1">
-              {gi > 0 && <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-border" />}
-              {g.ids.map((id) => {
-                const s = getUnifiedSection(id);
-                const Icon = s.icon;
-                const active = id === secao;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => selecionar(id)}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-                      active
-                        ? "border-transparent bg-primary text-primary-foreground"
-                        : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />
-                    <span>{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
+        {/* Navegação: visões (chips) + sub-visão (select) */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <nav
+            aria-label="Visões da Performance"
+            className="flex items-center gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {views.map((v) => {
+              const Icon = v.icon;
+              const active = v.id === viewAtual.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => selecionar(v.ids[0])}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                    active
+                      ? "border-transparent bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />
+                  <span>{v.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {subVisoes.length > 1 && (
+            <Select value={secao} onValueChange={(v) => selecionar(v as UnifiedSectionId)}>
+              <SelectTrigger className="h-8 w-[210px] text-xs" aria-label="Sub-visão">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {subVisoes.map((id) => {
+                  const s = getUnifiedSection(id);
+                  const Icon = s.icon;
+                  return (
+                    <SelectItem key={id} value={id} className="text-xs">
+                      <span className="flex items-center gap-2">
+                        <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />
+                        {s.label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </header>
 
       <main className="flex-1 px-4 py-5 sm:px-6">
         {atual.engine === "ssot" && (
-          <PerformanceHub
-            tab={secao as PerfTab}
-            onNavigate={(t) => selecionar(t as UnifiedSectionId)}
-          />
+          <div className="flex flex-col gap-6">
+            <PerformanceHub
+              tab={secao as PerfTab}
+              onNavigate={(t) => selecionar(t as UnifiedSectionId)}
+            />
+            {secao === "visao" && !soCorretor && <VisaoPipelineExtra state={state} />}
+          </div>
         )}
 
         {atual.engine === "central" && atual.centralId && (
@@ -146,7 +181,6 @@ export default function CentralRelatorios() {
             <ForecastContent />
           </Suspense>
         )}
-
 
         <p className="mt-8 text-[11px] text-muted-foreground/70">Fonte: {atual.fonte}</p>
       </main>
