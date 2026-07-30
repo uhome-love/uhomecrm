@@ -142,8 +142,8 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/central-dados":         { key: "central-dados",        label: "Central Dados",       icon: "Database",      roles: ["gestor", "admin", "diretor"] },
   "/scripts":               { key: "scripts",              label: "Scripts",             icon: "Lightbulb" },
   "/relatorios":            { key: "relatorios",           label: "Relatórios 1:1",      icon: "FileText",      roles: ["gestor", "admin", "diretor"] },
-  "/ranking":               { key: "ranking",              label: "Performance",         icon: "Star" },
-  "/performance":           { key: "ranking",              label: "Performance",         icon: "Star" },
+  // "/ranking" e "/performance" → redirect para /central-relatorios (App.tsx)
+
   "/performance-legado":    { key: "ranking-legado",       label: "Performance (legado)", icon: "Star",         roles: ["admin"] },
 
   "/meu-time":              { key: "meu-time",             label: "Meu Time",            icon: "Users",         roles: ["gestor", "admin", "diretor"] },
