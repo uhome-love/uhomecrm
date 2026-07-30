@@ -1,4 +1,4 @@
-import { MapPin, CalendarPlus, CheckCircle2, UserX, Percent } from "lucide-react";
+import { MapPin, CalendarPlus, CalendarClock, CheckCircle2, UserX, Percent } from "lucide-react";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { KpiGrid, type KpiCardData } from "@/components/central-v2/shared/KpiCard";
 import { MiniTable, type MiniColumn } from "@/components/central-v2/shared/MiniTable";
@@ -23,6 +23,7 @@ interface EmpRow {
   empreendimento?: string;
   nome?: string;
   criadas?: number;
+  agendadas?: number;
   realizadas?: number;
 }
 
@@ -45,7 +46,7 @@ export function SectionVisitas({ query }: Props) {
       <SectionHeading
         icon={MapPin}
         title="Visitas"
-        subtitle="Agendamento, comparecimento e desempenho por empreendimento"
+        subtitle="Fonte única (v_fato_visita) · agendadas por criação, realizadas por data da visita"
       />
 
       {query.error ? (
@@ -74,13 +75,15 @@ export function SectionVisitas({ query }: Props) {
 }
 
 function buildKpis(data: Record<string, unknown>): KpiCardData[] {
-  const criadas = safeGet<number>(data, "visitas.criadas", "Visitas criadas");
+  const agendadas = safeGet<number>(data, "visitas.agendadas", "Visitas agendadas");
+  const aRealizar = safeGet<number>(data, "visitas.a_realizar", "Visitas a_realizar");
   const realizadas = safeGet<number>(data, "visitas.realizadas", "Visitas realizadas");
   const noShow = safeGet<number>(data, "visitas.no_show", "Visitas no_show");
   const taxa = safeGet<number>(data, "visitas.taxa_comparecimento_pct", "Visitas taxa_comparecimento_pct");
 
   return [
-    { label: "Criadas", value: fmtInt(criadas), icon: CalendarPlus },
+    { label: "Agendadas", value: fmtInt(agendadas), icon: CalendarPlus },
+    { label: "A realizar", value: fmtInt(aRealizar), icon: CalendarClock },
     { label: "Realizadas", value: fmtInt(realizadas), icon: CheckCircle2 },
     { label: "No Show", value: fmtInt(noShow), icon: UserX },
     { label: "Taxa Comparecimento", value: fmtPct(taxa), icon: Percent },
@@ -95,10 +98,10 @@ const columns: MiniColumn<EmpRow>[] = [
     render: (r) => r.empreendimento ?? r.nome ?? "—",
   },
   {
-    key: "criadas",
-    label: "Criadas",
+    key: "agendadas",
+    label: "Agendadas",
     align: "right",
-    render: (r) => fmtInt(r.criadas ?? null),
+    render: (r) => fmtInt(r.agendadas ?? r.criadas ?? null),
   },
   {
     key: "realizadas",
