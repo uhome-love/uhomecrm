@@ -125,14 +125,20 @@ export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props
                 {COLS.map((c) => (
                   <th key={c.key} className="text-right font-semibold py-2.5 pr-6 last:pr-6">
                     <button
-                      onClick={() => setOrdem(c.key)}
+                      onClick={() => alternarOrdem(c.key)}
+                      title={ordem === c.key ? (desc ? "Maior → menor" : "Menor → maior") : "Ordenar por esta coluna"}
                       className={cn("hover:text-foreground transition-colors inline-flex items-center gap-1", ordem === c.key && "text-primary")}
                     >
                       {c.label}
-                      {ordem === c.key && <ArrowUpDown className="h-3 w-3" />}
+                      {ordem === c.key ? (
+                        desc ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-30" />
+                      )}
                     </button>
                   </th>
                 ))}
+
               </tr>
             </thead>
             <tbody>
