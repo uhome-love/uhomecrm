@@ -353,6 +353,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // mode "reset": limpa o registro de submissões já processadas para
+    // permitir a reingestão de leads que falharam por erro transitório.
+    if (mode === "reset") {
+      const ids: string[] = Array.isArray(body.lead_ids)
+        ? body.lead_ids.map((v: unknown) => String(v)).map((v: string) => (v.startsWith("meta:") ? v : `meta:${v}`))
+        : [];
+      if (ids.length === 0) return json({ success: false, error: "lead_ids obrigatório" }, 200);
+      const { error: delErr } = await supabase
+        .from("jetimob_processed").delete().in("jetimob_lead_id", ids);
+      if (delErr) return json({ success: false, error: delErr.message }, 200);
+      return json({ success: true, mode: "reset", cleared: ids.length, ids });
+    }
+
     if (mode === "test") {
       return json({
         success: true,
