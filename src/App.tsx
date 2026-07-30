@@ -119,9 +119,13 @@ const App = () => (
               <Route path="/gestao" element={<Navigate to="/gerente/dashboard" replace />} />
               <Route path="/index" element={<Navigate to="/" replace />} />
               <Route path="/index.html" element={<Navigate to="/" replace />} />
-              <Route path="/relatorio-semanal" element={<Navigate to="/central-relatorios?visao=executivo" replace />} />
-              <Route path="/relatorios" element={<Navigate to="/central-relatorios?visao=um-a-um" replace />} />
-              <Route path="/relatorios-1-1" element={<Navigate to="/central-relatorios?secao=geral" replace />} />
+              <Route path="/relatorio-semanal" element={<Navigate to="/central-relatorios?secao=visao" replace />} />
+              <Route path="/relatorios" element={<Navigate to="/central-relatorios?secao=relatorio-1a1" replace />} />
+              <Route path="/relatorios-1-1" element={<Navigate to="/central-relatorios?secao=relatorio-1a1" replace />} />
+              {/* Performance foi absorvida pela Central de Relatórios */}
+              <Route path="/ranking" element={<Navigate to="/central-relatorios?secao=ranking" replace />} />
+              <Route path="/performance" element={<Navigate to="/central-relatorios?secao=visao" replace />} />
+
               <Route path="/links-site" element={<Navigate to="/imoveis?view=links" replace />} />
               <Route path="/disponibilidade" element={<Navigate to="/roleta" replace />} />
               <Route path="/pipeline-negocios" element={<Navigate to="/pipeline-leads" replace />} />
