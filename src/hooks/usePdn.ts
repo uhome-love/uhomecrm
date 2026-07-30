@@ -102,6 +102,9 @@ export interface PdnRow {
   oculto: boolean;           // removido da planilha pelo gestor (overlay), sem afetar o pipeline
   avisadoEm: string | null;  // quando o gestor avisou o corretor
   avisadoEtapa: string | null;
+  ocultoEm: string | null;   // quando a linha foi removida da planilha (overlay)
+  ocultoPor: string;         // nome do gestor que removeu (quando resolvido)
+  etapaAtualLabel: string;   // etapa atual no pipeline (para conferência no painel de ocultos)
 }
 
 type PdnEntry = {
