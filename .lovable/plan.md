@@ -68,3 +68,44 @@ Ferramentas: Imóveis · Materiais
 - Nenhuma migration nesta etapa: é reorganização de frontend. As RPCs `rpc_metricas`, `rpc_metricas_origem` e `get_relatorio_*` continuam como estão.
 - Convivência de fontes: a Central de Relatórios usa `get_relatorio_*` e a Performance usa o SSOT `rpc_metricas`. Nesta reorganização as duas convivem no mesmo shell; a consolidação numérica em cima do SSOT fica como fase seguinte, para não misturar mudança de layout com mudança de número.
 - Execução por fases, uma de cada vez, com mockup antes do build e validação ao vivo no preview a cada fase.
+
+## Princípios de organização do CRM (regem todas as fases)
+
+1. **Uma verdade só por métrica.** Cada número tem uma origem única e documentada: VGV/vendas, visitas, leads e metas vêm do SSOT (`rpc_metricas` / `v_fato_*`). Nenhuma tela nova pode calcular métrica no frontend nem consultar tabela crua para número que já existe no SSOT.
+2. **Uma tela por assunto.** Nada de duas páginas mostrando a mesma coisa. Se duas telas se sobrepõem, uma vira seção da outra e a antiga só existe como redirect.
+3. **Nada de remendo.** Não se resolve divergência escondendo card ou ajustando número na tela: corrige-se na fonte (view/RPC) e todas as telas herdam.
+4. **Rota é contrato.** Rota antiga nunca morre sem redirect; link salvo, notificação e PDF antigos continuam funcionando.
+5. **Papel define escopo, não a tela.** Corretor vê o próprio, gestor vê a equipe, diretor vê as equipes, CEO vê tudo — na mesma página, com o mesmo número.
+
+## Padrão de rotas (frontend)
+
+- Nomes em português, minúsculas, sem acento, hierarquia por prefixo. Padrão final:
+  - `/central-relatorios` (resultado e performance, seções via `?secao=`)
+  - `/inteligencia-leads` (anúncios + leads que performam; `/dados-anuncios` e `/marketing` redirecionam)
+  - `/configuracoes?secao=integracoes|sistema|meta-ads|perfil|notificacoes`
+  - `/materiais?aba=biblioteca|scripts|base-homi`
+- Toda rota registrada em `src/config/pageRegistry.ts` com role obrigatória — sem rota "solta" no `App.tsx` fora das públicas.
+- Redirects declarados num único mapa (`LEGACY_REDIRECTS`) em vez de espalhados, e refletidos em `src/lib/routePatterns.ts` para o tracking de `page_views` não gerar `/_unknown`.
+- Estado de navegação sempre na URL (`?secao=`, `?aba=`, período/filtro), para link compartilhável e retomada de contexto.
+
+## Padrão de dados (backend)
+
+- Camadas: **fatos** (`v_fato_venda`, `v_fato_visita`, ...) → **RPCs de leitura** (`rpc_metricas*`, `get_relatorio_*`) → **hooks** (`useMetricasSSOT`, `useRelatoriosCentral`) → **telas**. Tela nunca pula camada.
+- Nomenclatura: `v_fato_*` para fatos, `v_kpi_*` para agregados, `rpc_*` para leitura, `get_*`/verbo para ação. Nada de `_v2`/`_novo`.
+- Convergência SSOT: enquanto `get_relatorio_*` e `rpc_metricas` coexistirem, cada seção declara sua fonte no rodapé ("fonte: SSOT"), e a migração de cada seção para o SSOT é uma fase própria, com conferência número a número antes de trocar.
+- Sem migration nas fases 1–5 (é reorganização de frontend). Qualquer ajuste de dado que aparecer vira fase separada, respeitando o limite de 2 migrations/dia em horário comercial.
+
+## Regra de "não quebrar" e validação ponta a ponta
+
+Cada fase só é dada como pronta depois deste checklist, executado ao vivo no preview:
+
+1. Rotas antigas: abrir cada URL aposentada e confirmar redirect correto (sem 404, sem loop).
+2. Papéis: entrar/simular como corretor, gestor, diretor e CEO e confirmar escopo e permissão em cada seção.
+3. Números: comparar 3 métricas-chave (VGV do mês, visitas agendadas, leads do mês) entre a tela nova e a tela antiga antes de aposentar a antiga — divergência bloqueia a fase.
+4. Navegação: menu lateral, abas do topo, busca global e notificações que apontam para as rotas mexidas.
+5. Técnico: build/typecheck limpos, console sem erro novo, sem chamada de rede quebrada no preview.
+6. Só depois disso o item sai do menu; a página antiga fica como redirect por pelo menos um ciclo antes de qualquer remoção de código.
+
+## Ordem de execução
+
+Fase 1 (Relatórios+Performance) → validação → Fase 3 (Configurações recebe Integrações e Forecast) → validação → Fase 4 (Materiais absorve Scripts e Base HOMI) → validação → Fase 5 (HOMI CEO só no header) → validação → Fase 2 (Inteligência de Leads, a maior) → validação. As fases pequenas primeiro reduzem risco e já limpam o menu; a Inteligência de Leads entra por último, com mockup dedicado.
