@@ -13671,6 +13671,26 @@ export type Database = {
           visitas_realizadas: number
         }[]
       }
+      rpc_metricas_detalhe: {
+        Args: {
+          p_end: string
+          p_gerente_id?: string
+          p_limit?: number
+          p_start: string
+          p_tipo: string
+          p_user_id?: string
+        }
+        Returns: {
+          corretor_nome: string
+          data_ref: string
+          equipe: string
+          id: string
+          status: string
+          subtitulo: string
+          titulo: string
+          valor: number
+        }[]
+      }
       rpc_metricas_origem: {
         Args: { p_end: string; p_gerente_id?: string; p_start: string }
         Returns: {
