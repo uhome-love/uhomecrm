@@ -7,6 +7,7 @@ import PerfEvolucao from "./PerfEvolucao";
 import PerfTopCorretores from "./PerfTopCorretores";
 import type { PontoEvolucao } from "@/hooks/useEvolucaoSSOT";
 import type { MetasMes, PaceMes } from "@/hooks/useMetasSSOT";
+import type { DetalheTipo } from "@/hooks/useMetricasDetalhe";
 
 interface Props {
   linhas: MetricaCorretor[];
@@ -19,6 +20,7 @@ interface Props {
   metas?: MetasMes;
   pace?: PaceMes;
   metasLoading?: boolean;
+  onDrilldown?: (tipo: DetalheTipo) => void;
 }
 
 export default function PerfVisaoGeral({
@@ -32,6 +34,7 @@ export default function PerfVisaoGeral({
   metas,
   pace,
   metasLoading,
+  onDrilldown,
 }: Props) {
   const t = useMemo(() => somarMetricas(linhas), [linhas]);
 
@@ -62,6 +65,7 @@ export default function PerfVisaoGeral({
           hintTone={deltaVgv !== null && deltaVgv >= 0 ? "success" : "muted"}
           progress={pctMeta(t.vgv_assinado, metas?.meta_vgv)}
           loading={loading}
+          onClick={onDrilldown ? () => onDrilldown("vgv") : undefined}
         />
         <PerfKpiCard
           label="Vendas"
@@ -76,6 +80,7 @@ export default function PerfVisaoGeral({
           progress={pctMeta(t.vendas, metas?.meta_vendas)}
           barClass="bg-success"
           loading={loading}
+          onClick={onDrilldown ? () => onDrilldown("vendas") : undefined}
         />
         <PerfKpiCard
           label="Visitas realizadas"
@@ -83,6 +88,7 @@ export default function PerfVisaoGeral({
           hint={hintMeta(t.visitas_realizadas, metas?.meta_visitas_realizadas)}
           progress={pctMeta(t.visitas_realizadas, metas?.meta_visitas_realizadas)}
           loading={loading}
+          onClick={onDrilldown ? () => onDrilldown("visitas_realizadas") : undefined}
         />
         <PerfKpiCard
           label="Leads recebidos"
@@ -90,11 +96,16 @@ export default function PerfVisaoGeral({
           hint={hintMeta(t.leads_recebidos, metas?.meta_leads, (n) => n.toLocaleString("pt-BR"))}
           progress={pctMeta(t.leads_recebidos, metas?.meta_leads)}
           loading={loading}
+          onClick={onDrilldown ? () => onDrilldown("leads") : undefined}
         />
       </div>
 
       {noShowPct > 0 && (
-        <div className="bg-card border border-border rounded-xl px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => onDrilldown?.("visitas_no_show")}
+          className="w-full text-left bg-card border border-border rounded-xl px-6 py-4 flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-primary/30"
+        >
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Maior vazamento do período</span>
             <p className="text-sm text-foreground mt-1">
@@ -107,7 +118,7 @@ export default function PerfVisaoGeral({
           >
             {noShowPct.toFixed(0)}%
           </span>
-        </div>
+        </button>
       )}
 
 
