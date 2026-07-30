@@ -481,17 +481,20 @@ export function usePdn(mes: string) {
   }, [entries]);
 
   // Overlay indexado por negocio_id e por pipeline_lead_id
+  // Overlay indexado por negocio_id e por pipeline_lead_id — SEMPRE recortado pelo mês
+  // selecionado (sem isso, uma nota de julho aparecia/era gravada em agosto).
+  const entriesDoMes = useMemo(() => entries.filter(e => e.mes === mes), [entries, mes]);
   const overrideByNegocio = useMemo(() => {
     const map: Record<string, PdnEntry> = {};
-    for (const e of entries) if (e.negocio_id) map[e.negocio_id] = e;
+    for (const e of entriesDoMes) if (e.negocio_id) map[e.negocio_id] = e;
     return map;
-  }, [entries]);
+  }, [entriesDoMes]);
   const overrideByLead = useMemo(() => {
     const map: Record<string, PdnEntry> = {};
-    for (const e of entries) if (!e.negocio_id && e.pipeline_lead_id) map[e.pipeline_lead_id] = e;
+    for (const e of entriesDoMes) if (!e.negocio_id && e.pipeline_lead_id) map[e.pipeline_lead_id] = e;
     return map;
-  }, [entries]);
-  const manualRows = useMemo(() => entries.filter(e => !e.negocio_id && !e.pipeline_lead_id && e.mes === mes), [entries, mes]);
+  }, [entriesDoMes]);
+
 
   const mesAtual = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
