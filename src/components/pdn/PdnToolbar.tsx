@@ -23,7 +23,6 @@ interface Props {
   onClearKpi: () => void;
   caidosCount?: number;
   onOpenArquivados?: () => void;
-  onToggleOcultos: () => void;
   view: "planilha" | "kanban" | "meta" | "arquivados" | "visitas";
   showResetLarguras: boolean;
   onResetLarguras: () => void;
