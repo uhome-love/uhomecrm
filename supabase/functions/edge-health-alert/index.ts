@@ -170,11 +170,113 @@ Deno.serve(async (req) => {
       recovered++;
     }
 
+    // ── 6. Vigilância dedicada da INGESTÃO DE LEADS ──────────────────────
+    // Regra 1: qualquer "Lead insert failed" na última hora = lead perdido.
+    // Regra 2: nenhum lead novo por 3h+ em horário comercial BRT = ingestão parada.
+    const ingestAlerts: string[] = [];
+
+    const notifyAdmins = async (
+      dedupKey: string,
+      titulo: string,
+      mensagem: string,
+      ctx: Record<string, unknown>,
+    ) => {
+      const { data: prior } = await supabase
+        .from("ops_events")
+        .select("id")
+        .eq("fn", "edge-health-alert")
+        .eq("category", "alert")
+        .eq("message", dedupKey)
+        .gte("created_at", new Date(Date.now() - 3 * 3600 * 1000).toISOString())
+        .limit(1);
+      if ((prior ?? []).length > 0) return false;
+
+      const { data: adminRows } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      const targets = adminRows ?? [];
+      if (targets.length > 0) {
+        await supabase.from("notifications").insert(
+          targets.map((a: { user_id: string }) => ({
+            user_id: a.user_id,
+            tipo: "sistema",
+            categoria: "sla_urgente",
+            titulo,
+            mensagem,
+            dados: { ...ctx, link: "/admin/ingestao" },
+            lida: false,
+          })),
+        );
+      }
+      await supabase.from("ops_events").insert({
+        fn: "edge-health-alert",
+        level: "error",
+        category: "alert",
+        message: dedupKey,
+        ctx: { ...ctx, admins_notified: targets.length },
+      });
+      return true;
+    };
+
+    // Regra 1 — falhas de inserção de lead na última hora
+    const oneHourAgo = new Date(Date.now() - 3600 * 1000).toISOString();
+    const { data: insertFails } = await supabase
+      .from("ops_events")
+      .select("fn,message,ctx,created_at")
+      .ilike("fn", "receive-%")
+      .ilike("message", "%insert failed%")
+      .gte("created_at", oneHourAgo)
+      .limit(20);
+
+    if ((insertFails ?? []).length > 0) {
+      const n = insertFails!.length;
+      const sent = await notifyAdmins(
+        "lead_ingest_insert_failed",
+        `🚨 ${n} lead(s) recusado(s) na entrada`,
+        `${n} lead(s) falharam ao ser gravados no CRM na última hora. ` +
+          `Verifique /admin/ingestao imediatamente — são leads pagos sendo perdidos.`,
+        { rule: "lead_ingest_insert_failed", count: n, samples: insertFails!.slice(0, 3) },
+      );
+      if (sent) ingestAlerts.push("insert_failed");
+    }
+
+    // Regra 2 — ingestão parada em horário comercial BRT (09h-19h)
+    const brtHour = Number(
+      new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        hour12: false,
+      }).format(new Date()),
+    );
+    if (brtHour >= 9 && brtHour < 19) {
+      const { data: lastLead } = await supabase
+        .from("pipeline_leads")
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const lastAt = lastLead?.created_at ? new Date(lastLead.created_at).getTime() : 0;
+      const hoursSince = lastAt ? (Date.now() - lastAt) / 3600000 : 99;
+      if (hoursSince >= 3) {
+        const sent = await notifyAdmins(
+          "lead_ingest_stalled",
+          "🚨 Entrada de leads parada",
+          `Nenhum lead novo há ${hoursSince.toFixed(1)}h em horário comercial. ` +
+            `Verifique /admin/ingestao — pode ser webhook ou trigger quebrado.`,
+          { rule: "lead_ingest_stalled", hours_since_last_lead: Number(hoursSince.toFixed(2)) },
+        );
+        if (sent) ingestAlerts.push("stalled");
+      }
+    }
+
     const result = {
       checked: stats.length,
       alerted,
       recovered,
       deduped,
+      ingest_alerts: ingestAlerts,
+
       problematic_now: problematic.map((p) => ({
         fn: p.fn,
         error_rate: p.error_rate,
