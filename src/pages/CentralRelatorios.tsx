@@ -17,6 +17,10 @@ import { CentralHeader } from "@/components/central-v2/CentralHeader";
 import { SectionRouterView } from "@/components/central-v2/SectionRouterView";
 import { ReportBuilder } from "@/components/central-v2/report/ReportBuilder";
 import PerformanceHub, { type PerfTab } from "@/components/performance/PerformanceHub";
+import { Loader2 } from "lucide-react";
+
+const ForecastContent = lazy(() => import("@/components/central/ForecastContent"));
+
 
 /**
  * Central de Relatórios — hub único de resultado do CRM.
