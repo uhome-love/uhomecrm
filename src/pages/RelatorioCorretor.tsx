@@ -186,7 +186,7 @@ export default function RelatorioCorretor({ hideHeader = false }: { hideHeader?:
       try {
         const ssot = await fetchMetricas({ start: dataInicio, end: dataFim, userId: authId });
         const tot = somarMetricas(ssot);
-        m.visitas_marcadas.real = tot.visitas_marcadas;
+        m.visitas_marcadas.real = tot.visitas_agendadas;
         m.visitas_realizadas.real = tot.visitas_realizadas;
         m.vgv_assinado.real = tot.vgv_assinado;
       } catch (e) {

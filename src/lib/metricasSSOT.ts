@@ -87,14 +87,15 @@ export function somarMetricas(linhas: MetricaCorretor[]): MetricasTotais {
   return linhas.reduce<MetricasTotais>(
     (acc, l) => ({
       leads_recebidos: acc.leads_recebidos + l.leads_recebidos,
-      visitas_marcadas: acc.visitas_marcadas + l.visitas_marcadas,
+      visitas_agendadas: acc.visitas_agendadas + l.visitas_agendadas,
+      visitas_a_realizar: acc.visitas_a_realizar + l.visitas_a_realizar,
       visitas_realizadas: acc.visitas_realizadas + l.visitas_realizadas,
       visitas_no_show: acc.visitas_no_show + l.visitas_no_show,
       vendas: acc.vendas + l.vendas,
       vgv_assinado: acc.vgv_assinado + l.vgv_assinado,
       corretores: acc.corretores + 1,
     }),
-    { leads_recebidos: 0, visitas_marcadas: 0, visitas_realizadas: 0, visitas_no_show: 0, vendas: 0, vgv_assinado: 0, corretores: 0 }
+    { leads_recebidos: 0, visitas_agendadas: 0, visitas_a_realizar: 0, visitas_realizadas: 0, visitas_no_show: 0, vendas: 0, vgv_assinado: 0, corretores: 0 }
   );
 }
 

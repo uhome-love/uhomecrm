@@ -68,10 +68,10 @@ export default function PerfVisaoGeral({
 
   /** funil com larguras proporcionais reais (base = leads, ou maior etapa quando não há leads) */
   const etapas = useMemo(() => {
-    const base = Math.max(t.leads_recebidos, t.visitas_marcadas, t.visitas_realizadas, t.vendas, 1);
+    const base = Math.max(t.leads_recebidos, t.visitas_agendadas, t.visitas_realizadas, t.vendas, 1);
     const passos = [
       { label: "Leads recebidos", valor: t.leads_recebidos, cor: "bg-primary/40" },
-      { label: "Visitas marcadas", valor: t.visitas_marcadas, cor: "bg-primary/60" },
+      { label: "Visitas agendadas", valor: t.visitas_agendadas, cor: "bg-primary/60" },
       { label: "Visitas realizadas", valor: t.visitas_realizadas, cor: "bg-primary" },
       { label: "Vendas", valor: t.vendas, cor: "bg-success" },
     ];
@@ -144,7 +144,7 @@ export default function PerfVisaoGeral({
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Maior vazamento do período</span>
             <p className="text-sm text-foreground mt-1">
               <strong className="tabular-nums">{t.visitas_no_show}</strong> no-shows em{" "}
-              <strong className="tabular-nums">{t.visitas_marcadas}</strong> visitas marcadas
+              <strong className="tabular-nums">{t.visitas_agendadas}</strong> visitas agendadas
             </p>
           </div>
           <span className={`text-2xl font-bold tabular-nums ${noShowPct >= 30 ? "text-destructive" : "text-foreground"}`}>
