@@ -143,7 +143,7 @@ export default function CentralPerformance() {
       ]);
     baixarCsv(
       "performance-uhome",
-      ["Corretor", "Equipe", "Ativo", "Leads", "Visitas marcadas", "Visitas realizadas", "No-show", "Vendas", "VGV assinado"],
+      ["Corretor", "Equipe", "Ativo", "Leads", "Visitas agendadas", "Visitas a realizar", "Visitas realizadas", "No-show", "Vendas", "VGV assinado"],
       rows
     );
   };
