@@ -644,8 +644,8 @@ export function usePdn(mes: string) {
 
   // ── Overlay: SOMENTE anotações internas do gestor (pdn_entries) ───────────────
   // Etapa, VGV, empreendimento, corretor e queda vêm do pipeline — nunca daqui.
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "avisadoEm" | "avisadoEtapa">>) => {
-    if (!user) return;
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "avisadoEm" | "avisadoEtapa">>): Promise<boolean> => {
+    if (!user) return false;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
     if (patch.proximaAcao !== undefined) payload.proxima_acao = patch.proximaAcao || null;
@@ -656,12 +656,10 @@ export function usePdn(mes: string) {
     if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
     if (patch.avisadoEm !== undefined) payload.corretor_avisado_em = patch.avisadoEm || null;
     if (patch.avisadoEtapa !== undefined) payload.corretor_avisado_etapa = patch.avisadoEtapa || null;
-    if (Object.keys(payload).length === 0) return;
+    if (Object.keys(payload).length === 0) return false;
+    payload.updated_at = new Date().toISOString();
 
-    if (row.overrideId) {
-      const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
-      if (error) { toast.error("Erro ao salvar"); return; }
-    } else {
+    const insertRow = async () => {
       const { error } = await supabase.from("pdn_entries").insert({
         gerente_id: user.id,
         negocio_id: row.negocioId,
@@ -675,10 +673,46 @@ export function usePdn(mes: string) {
         equipe: row.equipe === "—" ? null : row.equipe,
         ...payload,
       });
-      if (error) { toast.error("Erro ao salvar"); return; }
+      if (error) { toast.error(`Erro ao salvar: ${error.message}`); return false; }
+      return true;
+    };
+
+    let ok: boolean;
+    if (row.overrideId) {
+      // `.select("id")` é obrigatório: sem ele, um UPDATE bloqueado por RLS afeta 0
+      // linhas e retorna sucesso — o gestor via "salvo" sem nada ter sido gravado.
+      const { data, error } = await supabase
+        .from("pdn_entries").update(payload).eq("id", row.overrideId).select("id");
+      if (error) { toast.error(`Erro ao salvar: ${error.message}`); return false; }
+      ok = (data?.length ?? 0) > 0 ? true : await insertRow();
+    } else {
+      ok = await insertRow();
     }
+    if (!ok) return false;
     await loadEntries();
+    return true;
   }, [user, mes, loadEntries]);
+
+  // ── Empreendimento / VGV: gravam no NEGÓCIO real (fonte única), nunca no overlay ──
+  const saveNegocioCampos = useCallback(async (
+    row: PdnRow,
+    patch: { vgv?: number; empreendimento?: string },
+  ): Promise<boolean> => {
+    if (!row.negocioId) {
+      toast.error("Sem negócio vinculado — abra o lead para criar o negócio antes de editar VGV/empreendimento.");
+      return false;
+    }
+    const ok = await syncNegocioVgvFromPdn(
+      row,
+      patch.vgv ?? null,
+      patch.empreendimento !== undefined ? patch.empreendimento : null,
+    );
+    if (!ok) return false;
+    toast.success("Negócio atualizado.");
+    await loadDeals();
+    return true;
+  }, [loadDeals]);
+
 
 
   // ── Marcar queda — age NO PIPELINE (descarte real do lead), não no overlay ────
