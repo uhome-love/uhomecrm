@@ -31,11 +31,12 @@ interface PdnKanbanProps {
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onLimparEtapa: (row: PdnRow) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
-  onAdd: (grupo: PdnGrupo) => void;
+  onAdd?: undefined;
 }
 
 export function PdnKanban({
-  rows, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar, onAdd,
+  rows, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
+
 }: PdnKanbanProps) {
   const [selected, setSelected] = useState<PdnRow | null>(null);
   const [dragOver, setDragOver] = useState<PdnGrupo | null>(null);
