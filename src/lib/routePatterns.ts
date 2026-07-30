@@ -33,7 +33,13 @@ const REDIRECT_ALIASES: string[] = [
   "/index",
   "/index.html",
   "/links-site",
+  "/ranking",
+  "/performance",
+  "/relatorios",
+  "/relatorios-1-1",
+  "/relatorio-semanal",
 ];
+
 
 export const ROUTE_PATTERNS: string[] = Array.from(
   new Set<string>([
