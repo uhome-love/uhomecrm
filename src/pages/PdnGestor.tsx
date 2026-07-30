@@ -336,9 +336,15 @@ export default function PdnGestor() {
   useEffect(() => {
     try { sessionStorage.setItem(`pdn:view:${isMobile ? "mobile" : "desktop"}`, view); } catch { /* ignore */ }
   }, [view, isMobile]);
-  const { rows, hiddenRows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, descartarLead, inativarLead, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, mudarEtapa, avisarCorretor, descartarLead, inativarLead, updateManualRow, deleteRow } = usePdn(mes);
   const { rows: divergencias } = usePdnDivergencias(scopeAuthIds);
+  // PDN é espelho do pipeline: não existe mais "esconder" nem "reativar" só na planilha.
+  const reativarQueda = useCallback((_row: PdnRow) => {
+    toast.info("O PDN espelha o pipeline — reative o lead direto no pipeline.");
+  }, []);
+  const limparEtapaOverride = useCallback(async (_row: PdnRow) => { /* etapa vem sempre do pipeline */ }, []);
   const [showOcultos, setShowOcultos] = useState(false);
+
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
     setRefreshing(true);
