@@ -45,7 +45,7 @@ export function MeuProgressoTab() {
             </div>
           );
         })}
-        {trilhas.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma trilha disponível ainda.</p>}
+        {trilhas.length === 0 && <p className="text-sm text-muted-foreground">Nenhum módulo disponível ainda.</p>}
       </div>
     </div>
   );

@@ -72,7 +72,7 @@ export default function AcademiaPage() {
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-5">
         <TabsList>
-          <TabsTrigger value="trilhas">Trilhas</TabsTrigger>
+          <TabsTrigger value="trilhas">Módulos</TabsTrigger>
           <TabsTrigger value="progresso">Meu progresso</TabsTrigger>
           <TabsTrigger value="certificados">Certificados</TabsTrigger>
           {canManage && <TabsTrigger value="gerenciar">Gerenciar</TabsTrigger>}
@@ -98,7 +98,7 @@ export default function AcademiaPage() {
           />
 
           {emAndamento.length > 0 && (
-            <TrilhaRail titulo="▶️ Continue assistindo" hint="trilhas iniciadas">
+            <TrilhaRail titulo="▶️ Continue assistindo" hint="módulos iniciados">
               {emAndamento.map(t => (
                 <TrilhaPosterCard key={t.id} trilha={t} progress={getTrilhaProgress(t.id)} onClick={() => navigate(`/academia/trilha/${t.id}`)} />
               ))}
@@ -125,7 +125,7 @@ export default function AcademiaPage() {
             const outras = trilhas.filter(t => !known.has(normalizeCategoria(t.categoria)));
             if (outras.length === 0) return null;
             return (
-              <TrilhaRail titulo="📚 Outras trilhas">
+              <TrilhaRail titulo="📚 Outros módulos">
                 {outras.map(t => (
                   <TrilhaPosterCard key={t.id} trilha={t} progress={getTrilhaProgress(t.id)} onClick={() => navigate(`/academia/trilha/${t.id}`)} />
                 ))}
@@ -136,8 +136,8 @@ export default function AcademiaPage() {
           {trilhas.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <GraduationCap className="h-12 w-12 text-muted-foreground/30 mb-3" />
-              <h3 className="text-foreground font-bold text-lg mb-1">Nenhuma trilha disponível</h3>
-              <p className="text-muted-foreground text-sm">Em breve, novas trilhas estarão disponíveis.</p>
+              <h3 className="text-foreground font-bold text-lg mb-1">Nenhum módulo disponível</h3>
+              <p className="text-muted-foreground text-sm">Em breve, novos módulos estarão disponíveis.</p>
             </div>
           )}
         </TabsContent>
