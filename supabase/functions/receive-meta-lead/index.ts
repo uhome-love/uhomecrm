@@ -1034,7 +1034,7 @@ Deno.serve(async (req) => {
             reason: "lead_ativo_recebeu_novo_interesse_via_email_match",
             lead_id: dup.id,
             corretor_id: dup.corretor_id,
-            was_discarded: isDiscarded,
+            was_discarded: false,
             telefone_anon: await anonPhone(telefone),
             email_anon: anonEmail(email),
           });
