@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { agruparPorEquipe, type MetricaCorretor } from "@/lib/metricasSSOT";
 import { cn } from "@/lib/utils";
-import { ArrowUpDown, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 
 type Coluna = "vgv_assinado" | "vendas" | "visitas_realizadas" | "leads_recebidos" | "conversao";
 
@@ -25,7 +25,16 @@ const valor = (l: MetricaCorretor, c: Coluna) => (c === "conversao" ? conv(l) : 
 
 export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props) {
   const [ordem, setOrdem] = useState<Coluna>("vgv_assinado");
+  const [desc, setDesc] = useState(true);
   const [busca, setBusca] = useState("");
+
+  const alternarOrdem = (c: Coluna) => {
+    if (c === ordem) setDesc((d) => !d);
+    else {
+      setOrdem(c);
+      setDesc(true);
+    }
+  };
 
   const filtradas = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -34,9 +43,25 @@ export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props
   }, [linhas, busca]);
 
   const ordenadas = useMemo(
-    () => [...filtradas].sort((a, b) => valor(b, ordem) - valor(a, ordem)),
-    [filtradas, ordem]
+    () => [...filtradas].sort((a, b) => (desc ? valor(b, ordem) - valor(a, ordem) : valor(a, ordem) - valor(b, ordem))),
+    [filtradas, ordem, desc]
   );
+
+  const totais = useMemo(
+    () =>
+      ordenadas.reduce(
+        (acc, l) => ({
+          leads: acc.leads + l.leads_recebidos,
+          visitas: acc.visitas + l.visitas_realizadas,
+          vendas: acc.vendas + l.vendas,
+          vgv: acc.vgv + l.vgv_assinado,
+        }),
+        { leads: 0, visitas: 0, vendas: 0, vgv: 0 }
+      ),
+    [ordenadas]
+  );
+  const convTotal = totais.visitas > 0 ? (totais.vendas / totais.visitas) * 100 : 0;
+
   const equipes = useMemo(() => agruparPorEquipe(linhas), [linhas]);
   const maxVgv = Math.max(1, ...equipes.map((e) => e.totais.vgv_assinado));
 
@@ -100,14 +125,20 @@ export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props
                 {COLS.map((c) => (
                   <th key={c.key} className="text-right font-semibold py-2.5 pr-6 last:pr-6">
                     <button
-                      onClick={() => setOrdem(c.key)}
+                      onClick={() => alternarOrdem(c.key)}
+                      title={ordem === c.key ? (desc ? "Maior → menor" : "Menor → maior") : "Ordenar por esta coluna"}
                       className={cn("hover:text-foreground transition-colors inline-flex items-center gap-1", ordem === c.key && "text-primary")}
                     >
                       {c.label}
-                      {ordem === c.key && <ArrowUpDown className="h-3 w-3" />}
+                      {ordem === c.key ? (
+                        desc ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-30" />
+                      )}
                     </button>
                   </th>
                 ))}
+
               </tr>
             </thead>
             <tbody>
@@ -154,6 +185,21 @@ export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props
                   </tr>
                 ))}
             </tbody>
+            {!loading && ordenadas.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/30 text-xs font-semibold text-foreground">
+                  <td className="py-2.5 pl-6" colSpan={3}>
+                    Total · {ordenadas.length} corretores
+                  </td>
+                  <td className="py-2.5 text-right tabular-nums">{totais.leads.toLocaleString("pt-BR")}</td>
+                  <td className="py-2.5 text-right tabular-nums">{totais.visitas}</td>
+                  <td className="py-2.5 text-right tabular-nums text-muted-foreground">{convTotal.toFixed(1)}%</td>
+                  <td className="py-2.5 text-right tabular-nums">{totais.vendas}</td>
+                  <td className="py-2.5 pr-6 text-right tabular-nums">{fmtMoney(totais.vgv, "short")}</td>
+                </tr>
+              </tfoot>
+            )}
+
           </table>
         </div>
       </div>

@@ -1,7 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { format, startOfMonth, endOfMonth, addMonths, isSameMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,8 +11,10 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useMetricasSSOT } from "@/hooks/useMetricasSSOT";
 import { useEvolucaoSSOT } from "@/hooks/useEvolucaoSSOT";
 import { useMetasSSOT, usePaceMes } from "@/hooks/useMetasSSOT";
+import { resolverPeriodo, type PeriodoState } from "@/lib/perfPeriodo";
 
 import RankingFilters from "@/components/ranking/v2/RankingFilters";
+import PerfPeriodoSelector from "@/components/performance/PerfPeriodoSelector";
 import PerfVisaoGeral from "@/components/performance/PerfVisaoGeral";
 import PerfRanking from "@/components/performance/PerfRanking";
 import PerfOrigem from "@/components/performance/PerfOrigem";
@@ -28,43 +28,71 @@ import RelatorioCorretor from "@/pages/RelatorioCorretor";
 
 type TabKey = "visao" | "ranking" | "origem" | "progresso" | "relatorio";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "visao", label: "Visão Geral" },
-  { key: "ranking", label: "Ranking" },
-  { key: "origem", label: "Origem" },
-  { key: "progresso", label: "Meu Progresso" },
-  { key: "relatorio", label: "Relatório 1:1" },
-];
+const TAB_LABELS: Record<TabKey, string> = {
+  visao: "Visão Geral",
+  ranking: "Ranking",
+  origem: "Origem",
+  progresso: "Meu Progresso",
+  relatorio: "Relatório 1:1",
+};
 
+const COM_FILTROS: TabKey[] = ["visao", "ranking", "origem"];
 
 export default function CentralPerformance() {
   const { user } = useAuthUser();
-  const { isAdmin, isGestor } = useUserRole();
+  const { isAdmin, isGestor, isDiretor, isCorretor, loading: rolesLoading } = useUserRole();
+
+  /** corretor puro: sem visão de gestão — só a própria performance */
+  const soCorretor = isCorretor && !isGestor && !isAdmin;
+
+  const tabs = useMemo<TabKey[]>(
+    () =>
+      soCorretor
+        ? ["progresso", "visao", "relatorio"]
+        : ["visao", "ranking", "origem", "progresso", "relatorio"],
+    [soCorretor]
+  );
+
   const [tab, setTab] = useState<TabKey>("visao");
-  const [offset, setOffset] = useState(0);
+  useEffect(() => {
+    if (rolesLoading) return;
+    setTab(soCorretor ? "progresso" : "visao");
+  }, [soCorretor, rolesLoading]);
+
+  const [periodo, setPeriodo] = useState<PeriodoState>({ tipo: "mes", offset: 0 });
   const [meses, setMeses] = useState(6);
   const [gerenteId, setGerenteId] = useState<string | undefined>();
   const [drilldown, setDrilldown] = useState<DetalheTipo | null>(null);
   const [corretorSel, setCorretorSel] = useState<MetricaCorretor | null>(null);
 
   useEffect(() => {
-    if (isGestor && !isAdmin && user?.id) setGerenteId(user.id);
-  }, [isGestor, isAdmin, user?.id]);
+    if (isGestor && !isAdmin && !isDiretor && user?.id) setGerenteId(user.id);
+  }, [isGestor, isAdmin, isDiretor, user?.id]);
 
-  const referencia = useMemo(() => addMonths(new Date(), offset), [offset]);
+  const p = useMemo(() => resolverPeriodo(periodo), [periodo]);
+
+  /** corretor vê apenas os próprios números */
+  const userId = soCorretor ? user?.id ?? null : null;
+
   const filtro = useMemo(
-    () => ({
-      start: format(startOfMonth(referencia), "yyyy-MM-dd"),
-      end: format(endOfMonth(referencia), "yyyy-MM-dd"),
-      gerenteId: gerenteId ?? null,
-    }),
-    [referencia, gerenteId]
+    () => ({ start: p.start, end: p.end, gerenteId: gerenteId ?? null, userId }),
+    [p.start, p.end, gerenteId, userId]
+  );
+  const filtroAnterior = useMemo(
+    () => ({ start: p.prevStart, end: p.prevEnd, gerenteId: gerenteId ?? null, userId }),
+    [p.prevStart, p.prevEnd, gerenteId, userId]
   );
 
   const { linhas, isLoading } = useMetricasSSOT(filtro);
-  const { pontos, isLoading: evolucaoLoading } = useEvolucaoSSOT({ referencia, meses, gerenteId });
-  const { data: metas, isLoading: metasLoading } = useMetasSSOT(referencia, gerenteId);
-  const { data: pace } = usePaceMes(referencia);
+  const { linhas: linhasAnterior } = useMetricasSSOT(filtroAnterior, tab === "visao");
+  const { pontos, isLoading: evolucaoLoading } = useEvolucaoSSOT({
+    referencia: p.referencia,
+    meses,
+    gerenteId,
+    userId,
+  });
+  const { data: metas, isLoading: metasLoading } = useMetasSSOT(p.referencia, gerenteId);
+  const { data: pace } = usePaceMes(p.referencia);
   const { data: dadosOrigem = [], isLoading: origemLoading } = useMetricasOrigem(
     filtro.start,
     filtro.end,
@@ -72,16 +100,33 @@ export default function CentralPerformance() {
     tab === "origem"
   );
 
+  const baixarCsv = (nome: string, header: string[], rows: (string | number)[][]) => {
+    const csv = [header, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${nome}-${filtro.start}-${filtro.end}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exportado");
+  };
 
-
-  const periodoLabel = useMemo(() => {
-    const label = format(referencia, "MMMM 'de' yyyy", { locale: ptBR });
-    const cap = label.charAt(0).toUpperCase() + label.slice(1);
-    return isSameMonth(referencia, new Date()) ? `${cap} · mês atual` : cap;
-  }, [referencia]);
-
-  const exportarCsv = () => {
-    const header = ["Corretor", "Equipe", "Ativo", "Leads", "Visitas marcadas", "Visitas realizadas", "No-show", "Vendas", "VGV assinado"];
+  const exportar = () => {
+    if (tab === "origem") {
+      const rows = dadosOrigem.map((o) => [
+        o.origem ?? "",
+        o.campanha ?? "",
+        o.leads,
+        o.visitas_realizadas,
+        o.vendas,
+        o.vgv_assinado.toFixed(2).replace(".", ","),
+      ]);
+      baixarCsv("performance-origem", ["Origem", "Campanha", "Leads", "Visitas realizadas", "Vendas", "VGV assinado"], rows);
+      return;
+    }
     const rows = [...linhas]
       .sort((a, b) => b.vgv_assinado - a.vgv_assinado)
       .map((l) => [
@@ -95,84 +140,63 @@ export default function CentralPerformance() {
         l.vendas,
         l.vgv_assinado.toFixed(2).replace(".", ","),
       ]);
-    const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `performance-uhome-${filtro.start}-${filtro.end}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV exportado");
+    baixarCsv(
+      "performance-uhome",
+      ["Corretor", "Equipe", "Ativo", "Leads", "Visitas marcadas", "Visitas realizadas", "No-show", "Vendas", "VGV assinado"],
+      rows
+    );
   };
 
   const totalVgv = linhas.reduce((s, l) => s + l.vgv_assinado, 0);
+  const mostraFiltros = COM_FILTROS.includes(tab);
 
   return (
     <div className="-m-6 min-h-full bg-background p-4 md:p-8">
       <div className="mx-auto w-full max-w-7xl bg-card border border-border rounded-xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         {/* Header */}
-        <div className="px-6 md:px-8 pt-8 pb-6 border-b border-border">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="px-4 md:px-8 pt-6 md:pt-8 pb-5 border-b border-border">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Central de Performance</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Fonte única de verdade · VGV, visitas e leads em tempo real
+                {soCorretor
+                  ? "Seus números, missões do dia e relatório 1:1"
+                  : "Fonte única de verdade · VGV, visitas e leads em tempo real"}
               </p>
             </div>
 
             <nav className="flex bg-muted/60 p-1 rounded-xl border border-border overflow-x-auto scrollbar-hide">
-              {TABS.map((t) => (
+              {tabs.map((t) => (
                 <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
+                  key={t}
+                  onClick={() => setTab(t)}
                   className={cn(
-                    "px-4 md:px-5 py-2 text-sm rounded-lg whitespace-nowrap transition-colors",
-                    tab === t.key
+                    "px-3.5 md:px-5 py-2 text-sm rounded-lg whitespace-nowrap transition-colors",
+                    tab === t
                       ? "bg-card shadow-sm text-primary font-semibold"
                       : "text-muted-foreground hover:text-foreground font-medium"
                   )}
                 >
-                  {t.label}
+                  {t === "visao" && soCorretor ? "Minha Performance" : TAB_LABELS[t]}
                 </button>
               ))}
             </nav>
           </div>
 
-          {(tab === "visao" || tab === "ranking" || tab === "origem") && (
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-6">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setOffset((o) => o - 1)}
-                  className="p-1.5 rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Mês anterior"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <span className="text-sm font-semibold text-foreground min-w-[190px] text-center">{periodoLabel}</span>
-                <button
-                  onClick={() => setOffset((o) => Math.min(o + 1, 0))}
-                  disabled={offset === 0}
-                  aria-label="Próximo mês"
-                  className={cn(
-                    "p-1.5 rounded-lg transition-colors",
-                    offset === 0
-                      ? "text-muted-foreground/30 cursor-not-allowed"
-                      : "bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+          {mostraFiltros && (
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-5">
+              <div className="flex items-center gap-3 flex-wrap">
+                <PerfPeriodoSelector estado={periodo} resolvido={p} onChange={setPeriodo} />
                 {!isLoading && (
-                  <span className="ml-2 text-xs font-medium text-muted-foreground hidden sm:inline">
+                  <span className="text-xs font-medium text-muted-foreground hidden sm:inline">
                     {fmtMoney(totalVgv, "short")} no período
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <RankingFilters equipeId={gerenteId} onEquipeChange={setGerenteId} showEquipe={isAdmin} />
-                <Button size="sm" variant="outline" className="gap-2 text-xs h-8" onClick={exportarCsv} disabled={isLoading}>
+                <RankingFilters equipeId={gerenteId} onEquipeChange={setGerenteId} showEquipe={isAdmin || isDiretor} />
+                <Button size="sm" variant="outline" className="gap-2 text-xs h-8" onClick={exportar} disabled={isLoading}>
                   <Download className="h-3.5 w-3.5" /> Exportar CSV
                 </Button>
               </div>
@@ -181,11 +205,13 @@ export default function CentralPerformance() {
         </div>
 
         {/* Content */}
-        <div className={cn(tab === "visao" || tab === "ranking" || tab === "origem" ? "p-6 md:p-8 bg-muted/20" : "")}>
+        <div className="p-4 md:p-8 bg-muted/20">
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
             {tab === "visao" && (
               <PerfVisaoGeral
                 linhas={linhas}
+                linhasAnterior={linhasAnterior}
+                prevLabel={p.prevLabel}
                 loading={isLoading}
                 pontos={pontos}
                 evolucaoLoading={evolucaoLoading}
@@ -196,16 +222,16 @@ export default function CentralPerformance() {
                 pace={pace}
                 metasLoading={metasLoading}
                 onDrilldown={setDrilldown}
+                mostrarRanking={!soCorretor}
               />
             )}
 
             {tab === "ranking" && (
               <PerfRanking linhas={linhas} loading={isLoading} onSelectCorretor={setCorretorSel} />
             )}
-            {tab === "origem" && <PerfOrigem dados={dadosOrigem} loading={origemLoading} />}
-            {tab === "progresso" && <CorretorProgresso />}
+            {tab === "origem" && <PerfOrigem dados={dadosOrigem} loading={origemLoading} start={filtro.start} end={filtro.end} />}
+            {tab === "progresso" && <CorretorProgresso embedded />}
             {tab === "relatorio" && <RelatorioCorretor hideHeader />}
-
           </motion.div>
         </div>
       </div>
@@ -224,7 +250,7 @@ export default function CentralPerformance() {
         onOpenChange={(v) => !v && setCorretorSel(null)}
         start={filtro.start}
         end={filtro.end}
-        periodoLabel={periodoLabel}
+        periodoLabel={p.label}
       />
     </div>
   );

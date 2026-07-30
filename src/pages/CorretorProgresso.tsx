@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Lock } from "lucide-react";
 
-export default function CorretorProgresso() {
+export default function CorretorProgresso({ embedded = false }: { embedded?: boolean }) {
   const { progress, goals, saveGoals } = useCorretorProgress();
   const { missoes, missaoGeral, ranking, rankingLoading, userId } = useMissoesLeads();
   const { unlocked, isUnlocked, newlyUnlocked, dismissCelebration } = useConquistas();
@@ -25,16 +25,19 @@ export default function CorretorProgresso() {
   const categories: AchievementCategory[] = ["volume", "qualidade", "consistencia", "especial"];
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto pb-20">
+    <div className={embedded ? "space-y-5" : "p-4 md:p-6 space-y-5 max-w-4xl mx-auto pb-20"}>
       <CelebrationOverlay achievement={newlyUnlocked} onDismiss={dismissCelebration} />
 
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-center pt-2">
-        <h1 className="text-2xl font-black text-foreground flex items-center justify-center gap-2">
-          <Target className="h-6 w-6 text-primary" /> Progresso do Dia
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">Missões, metas, ranking e conquistas</p>
-      </motion.div>
+      {!embedded && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-center pt-2">
+          <h1 className="text-2xl font-black text-foreground flex items-center justify-center gap-2">
+            <Target className="h-6 w-6 text-primary" /> Progresso do Dia
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Missões, metas, ranking e conquistas</p>
+        </motion.div>
+      )}
+
 
       {/* Level + XP */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
