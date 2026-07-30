@@ -54,7 +54,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "central-dados": lazyRetry(() => import("@/pages/CentralDados")),
   scripts: lazyRetry(() => import("@/pages/ScriptsGenerator")),
   relatorios: lazyRetry(() => import("@/pages/RelatorioCorretor")),
-  ranking: lazyRetry(() => import("@/pages/CentralPerformance")),
+  // "ranking" (Central de Performance) foi absorvido pela Central de Relatórios — ver "report-center".
   "ranking-legado": lazyRetry(() => import("@/pages/RankingEquipe")),
   "meu-time": lazyRetry(() => import("@/pages/MeuTime")),
   "oferta-ativa": lazyRetry(() => import("@/pages/OfertaAtiva")),
