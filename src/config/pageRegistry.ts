@@ -90,7 +90,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   configuracoes: lazyRetry(() => import("@/pages/Configuracoes")),
   
   notificacoes: lazyRetry(() => import("@/pages/Notificacoes")),
-  marketing: lazyRetry(() => import("@/pages/MarketingDashboard")),
   auditoria: lazyRetry(() => import("@/pages/AuditDashboard")),
   admin: lazyRetry(() => import("@/pages/AdminPanel")),
   integracao: lazyRetry(() => import("@/pages/IntegracaoJetimob")),
@@ -181,7 +180,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/integracoes":           { key: "integracoes",          label: "Integrações",         icon: "Plug" },
   
   "/notificacoes":          { key: "notificacoes",         label: "Notificações",        icon: "BellRing" },
-  "/marketing":             { key: "marketing",            label: "Marketing",           icon: "Zap",           roles: ["admin"] },
   "/auditoria":             { key: "auditoria",            label: "Auditoria",           icon: "ShieldCheck",   roles: ["admin"] },
   "/admin":                 { key: "admin",                label: "Admin",               icon: "Users",         roles: ["admin"] },
   "/integracao":            { key: "integracao",           label: "Integração",          icon: "Layers",        roles: ["admin"] },

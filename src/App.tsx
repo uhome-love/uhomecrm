@@ -125,6 +125,7 @@ const App = () => (
               {/* Performance foi absorvida pela Central de Relatórios */}
               <Route path="/ranking" element={<Navigate to="/central-relatorios?secao=ranking" replace />} />
               <Route path="/performance" element={<Navigate to="/central-relatorios?secao=visao" replace />} />
+              <Route path="/marketing" element={<Navigate to="/dados-anuncios?aba=investimento" replace />} />
 
               <Route path="/links-site" element={<Navigate to="/imoveis?view=links" replace />} />
               <Route path="/disponibilidade" element={<Navigate to="/roleta" replace />} />
