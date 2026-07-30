@@ -141,6 +141,13 @@ export default function CentralRelatorios() {
 
         {atual.engine === "builder" && <ReportBuilder />}
 
+        {atual.engine === "forecast" && (
+          <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <ForecastContent />
+          </Suspense>
+        )}
+
+
         <p className="mt-8 text-[11px] text-muted-foreground/70">Fonte: {atual.fonte}</p>
       </main>
     </div>
