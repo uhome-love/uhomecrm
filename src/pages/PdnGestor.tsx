@@ -902,16 +902,8 @@ function GrupoBloco({
               <ColumnsMenu cols={visibleCols} onChange={onChangeCols} />
             </span>
           )}
-          {!isCaidos && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); onAdd(); }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-            >
-              <Plus className="h-4 w-4" />
-            </span>
-          )}
+
+
         </div>
       </div>
 
