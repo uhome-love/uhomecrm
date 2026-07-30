@@ -577,11 +577,9 @@ export function usePdn(mes: string) {
     for (const vd of vendasMes) {
       if (vd.negocioId && negocioIdsNoOut.has(vd.negocioId)) continue; // já representado por um deal
       const ov = overrideByNegocio[vd.negocioId] || (vd.pipelineLeadId ? overrideByLead[vd.pipelineLeadId] : undefined);
-      if (ov?.caiu) continue;
-      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
-      const corretor = (vd.corretorAuthId && nameByAuthId[vd.corretorAuthId]) || ov?.corretor || "—";
-      const equipe = (vd.corretorAuthId && equipeByAuthId[vd.corretorAuthId]) || ov?.equipe || "—";
-      const grupoBase = grupoOverride ?? "ganho";
+      const corretor = (vd.corretorAuthId && nameByAuthId[vd.corretorAuthId]) || "—";
+      const equipe = (vd.corretorAuthId && equipeByAuthId[vd.corretorAuthId]) || "—";
+      const grupoBase: PdnGrupo = "ganho";
       out.push({
         id: `venda-${vd.negocioId}`,
         negocioId: vd.negocioId,
@@ -590,12 +588,12 @@ export function usePdn(mes: string) {
         overrideId: ov?.id ?? null,
         grupo: grupoBase,
         grupoOrigem: "ganho",
-        grupoOverride,
+        grupoOverride: null,
         etapaAjustada: false,
         nome: vd.nome,
         data: (vd.dataAssinatura || "").slice(0, 10),
-        empreendimento: ov?.empreendimento || vd.empreendimento || "—",
-        vgv: Number(ov?.vgv ?? vd.vgv) || 0,
+        empreendimento: vd.empreendimento || "—",
+        vgv: Number(vd.vgv) || 0,
         situacaoLabel: GRUPO_LABEL[grupoBase],
         corretor,
         equipe,
@@ -613,11 +611,11 @@ export function usePdn(mes: string) {
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: false,
         novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
-        oculto: !!ov?.oculto && ov?.mes === mes,
+        oculto: false,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-        ocultoEm: ov?.oculto ? (ov.updated_at ?? null) : null,
-        ocultoPor: (ov?.gerente_id && gestorNames[ov.gerente_id]) || "",
+        ocultoEm: null,
+        ocultoPor: "",
         etapaAtualLabel: GRUPO_LABEL["ganho"],
       });
     }
@@ -626,56 +624,15 @@ export function usePdn(mes: string) {
     // NOTA: Visitas realizadas do mês NÃO geram mais linhas próprias no PDN Pós-Visita.
     // A fonte única do grupo Pós-Visita é `pipeline_leads` em stage `pos_visita` (via `deals` acima).
     // Para conferência de visitas do mês (incluindo as que já avançaram/regrediram/caíram),
-    // use a aba "Conferência de Visitas" (useConferenciaVisitas). Isso elimina duplicações e
-    // reflete no PDN só o que o gestor precisa acompanhar operacionalmente.
+    // use a aba "Conferência de Visitas" (useConferenciaVisitas).
 
-
-    // Linhas manuais (sem vínculo com pipeline)
-    for (const m of manualRows) {
-      const base = normalizeGrupo(m.situacao) === "caidos" ? "em_negociacao" : normalizeGrupo(m.situacao);
-      const caiu = !!m.caiu;
-      out.push({
-        id: `manual-${m.id}`,
-        negocioId: null,
-        pipelineLeadId: null,
-        corretorAuthId: null,
-        overrideId: m.id,
-        grupo: caiu ? "caidos" : base,
-        grupoOrigem: base,
-        grupoOverride: null,
-        etapaAjustada: false,
-        nome: m.nome,
-        data: m.data_visita || "",
-        empreendimento: m.empreendimento || "—",
-        vgv: Number(m.vgv) || 0,
-        situacaoLabel: GRUPO_LABEL[base],
-        corretor: m.corretor || "—",
-        equipe: m.equipe || "—",
-        status: m.status || "",
-        observacoes: m.observacoes || "",
-        proximaAcao: m.proxima_acao || "",
-        caiu,
-        motivoQueda: m.motivo_queda || "",
-        diasParado: 0,
-        emRisco: !caiu && !!m.risco_manual,
-        isManual: true,
-        proximaAcaoData: m.proxima_acao_data || "",
-        prioridade: (m.prioridade as PdnRow["prioridade"]) || "",
-        riscoManual: !!m.risco_manual,
-        riscoMotivo: m.risco_motivo || "",
-        proximaAcaoVencida: !caiu && isVencida(m.proxima_acao_data || ""),
-        novoDesdeOntem: isNovoDesdeOntem(m.data_visita),
-        oculto: !!m.oculto,
-        avisadoEm: null,
-        avisadoEtapa: null,
-        ocultoEm: m.oculto ? (m.updated_at ?? null) : null,
-        ocultoPor: (m.gerente_id && gestorNames[m.gerente_id]) || "",
-        etapaAtualLabel: GRUPO_LABEL[base],
-      });
-    }
+    // NOTA: linhas manuais (pdn_entries sem vínculo com pipeline) NÃO são mais
+    // exibidas — o PDN é espelho do pipeline. Negócio só entra na planilha se
+    // existir no pipeline. O card "Divergências" aponta os casos a reconciliar.
 
     return out;
-  }, [deals, visitasReal, manualRows, vendasMes, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, gestorNames, mes, mesAtual]);
+  }, [deals, vendasMes, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes, mesAtual]);
+
 
 
   const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
