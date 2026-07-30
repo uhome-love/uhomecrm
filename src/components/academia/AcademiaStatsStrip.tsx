@@ -22,7 +22,7 @@ export function AcademiaStatsStrip({ aulasConcluidas, aulasTotal, xp, trilhasCon
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <Stat value={`${aulasConcluidas}/${aulasTotal}`} label="Aulas concluídas" />
       <Stat value={xp} label="XP acumulado" className="text-amber-500" />
-      <Stat value={trilhasConcluidas} label="Trilhas concluídas" className="text-emerald-500" />
+      <Stat value={trilhasConcluidas} label="Módulos concluídos" className="text-emerald-500" />
       <Stat value={certificados} label="Certificados" className="text-purple-500" />
     </div>
   );

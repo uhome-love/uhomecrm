@@ -46,7 +46,7 @@ export function AcademiaHero({ trilha, aula, percent, onContinuar, onVerTrilha }
             <Play className="h-4 w-4" /> Continuar aula
           </Button>
           <Button onClick={onVerTrilha} variant="outline" className="bg-white/10 text-white border-white/25 hover:bg-white/20 hover:text-white">
-            Ver trilha completa
+            Ver módulo completo
           </Button>
         </div>
       </div>

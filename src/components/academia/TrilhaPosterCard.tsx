@@ -31,7 +31,7 @@ export function TrilhaPosterCard({ trilha, progress, onClick }: Props) {
       )}
     >
       {capa ? (
-        <img src={capa} alt={`Capa da trilha ${trilha.titulo}`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={capa} alt={`Capa do módulo ${trilha.titulo}`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
       ) : (
         <div className={cn("absolute inset-0 bg-gradient-to-br", gradient)} />
       )}

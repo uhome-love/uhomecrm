@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSignedMedia } from "@/lib/academiaMedia";
 
 function extractYoutubeId(url: string): string | null {
   const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
@@ -465,6 +466,8 @@ function MediaPlayer({ aula, status, onComplete }: {
   const conteudo = aula.conteudo as any;
   const youtubeId = aula.youtube_id || (conteudo?.url ? extractYoutubeId(conteudo.url) : null);
   const vimeoId = conteudo?.url ? extractVimeoId(conteudo.url) : null;
+  const mediaUrl = useSignedMedia(conteudo, aula.conteudo_url);
+  const temArquivo = !!(conteudo?.storage_key || conteudo?.storage_path || aula.conteudo_url);
 
   return (
     <div className="space-y-4">
@@ -492,18 +495,22 @@ function MediaPlayer({ aula, status, onComplete }: {
           <iframe src={`https://player.vimeo.com/video/${vimeoId}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
         </div>
       )}
-      {aula.tipo === "video_upload" && (conteudo?.storage_path || aula.conteudo_url) && (
-        <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "16/9" }}>
-          <video src={conteudo?.storage_path || aula.conteudo_url!} controls className="w-full h-full" />
+      {aula.tipo === "video_upload" && temArquivo && (
+        <div className="relative w-full rounded-xl overflow-hidden bg-black flex items-center justify-center" style={{ aspectRatio: "16/9" }}>
+          {mediaUrl
+            ? <video src={mediaUrl} controls className="w-full h-full" />
+            : <Loader2 className="h-6 w-6 animate-spin text-white/70" />}
         </div>
       )}
       {aula.tipo === "pdf" && (
         <div className="space-y-2">
           <div className="rounded-xl overflow-hidden border border-border" style={{ height: "65vh" }}>
-            <iframe src={conteudo?.storage_path || aula.conteudo_url || ""} className="w-full h-full bg-white" />
+            {mediaUrl
+              ? <iframe src={mediaUrl} className="w-full h-full bg-white" />
+              : <div className="h-full flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
           </div>
-          {(conteudo?.storage_path || aula.conteudo_url) && (
-            <a href={conteudo?.storage_path || aula.conteudo_url!} target="_blank" rel="noopener noreferrer">
+          {mediaUrl && (
+            <a href={mediaUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="gap-1.5"><Download className="h-3.5 w-3.5" /> Download PDF</Button>
             </a>
           )}
