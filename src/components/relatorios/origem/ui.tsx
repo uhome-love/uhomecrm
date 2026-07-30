@@ -93,7 +93,9 @@ export function TopNSelect({ value, onChange }: { value: number; onChange: (v: n
       onChange={(e) => onChange(Number(e.target.value))}
       style={{ border: "0.5px solid #e5e7eb", borderRadius: 8, padding: "4px 6px", fontSize: 11, color: "#6b7280", background: "#fff" }}
     >
+      <option value="5">Top 5</option>
       <option value="10">Top 10</option>
+
       <option value="25">Top 25</option>
       <option value="9999">Tudo</option>
     </select>
