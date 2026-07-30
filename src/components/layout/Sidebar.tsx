@@ -141,11 +141,10 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Dados Anúncios",     path: "/dados-anuncios",    icon: <BarChart2    size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
-        { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
         { label: "Gestão WhatsApp",    path: "/gestor/whatsapp-dashboard", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
+
         { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
       ],
     },
