@@ -1,9 +1,11 @@
 import { useState, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import RelatorioOrigemPerformance from "@/components/relatorios/RelatorioOrigemPerformance";
 import type { ReportFilters } from "@/components/relatorios/reportUtils";
 import { formatBRT } from "@/lib/brtTime";
+import MarketingDashboard from "@/components/marketing/MarketingDashboard";
 
 const PILLS: Array<{ id: string; label: string }> = [
   { id: "hoje", label: "Hoje" },
@@ -18,7 +20,22 @@ const PILLS: Array<{ id: string; label: string }> = [
  * visita, venda e tempo até 1º contato. Somente leitura.
  * Export PDF em A4 paisagem via html2canvas + jsPDF.
  */
+const ABAS = [
+  { id: "rastreamento", label: "Rastreamento & Funil" },
+  { id: "investimento", label: "Investimento (Meta Ads)" },
+] as const;
+type AbaId = (typeof ABAS)[number]["id"];
+
 export default function DadosAnunciosPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const abaParam = searchParams.get("aba");
+  const aba: AbaId = abaParam === "investimento" ? "investimento" : "rastreamento";
+  const setAba = (id: AbaId) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === "rastreamento") next.delete("aba");
+    else next.set("aba", id);
+    setSearchParams(next, { replace: true });
+  };
   const [periodo, setPeriodo] = useState<string>("mes");
   const [de, setDe] = useState<string>("");
   const [ate, setAte] = useState<string>("");
@@ -116,9 +133,26 @@ export default function DadosAnunciosPage() {
       <div style={{ background: "#fff", borderBottom: "0.5px solid #e5e7eb", padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div style={{ marginRight: "auto" }}>
           <h1 style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Dados Anúncios</h1>
-          <p style={{ fontSize: 12, color: "#6b7280" }}>Rastreamento completo: campanha, conjunto, criativo, formulário, plataforma e conversões</p>
+          <p style={{ fontSize: 12, color: "#6b7280" }}>Inteligência de mídia paga: investimento, campanha, conjunto, criativo, formulário e conversões</p>
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: 4, background: "#f3f4f6", padding: 3, borderRadius: 10 }}>
+          {ABAS.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => setAba(a.id)}
+              style={{
+                padding: "6px 12px", fontSize: 12, borderRadius: 8, cursor: "pointer", border: "none",
+                background: aba === a.id ? "#fff" : "transparent",
+                color: aba === a.id ? "#111827" : "#6b7280",
+                fontWeight: aba === a.id ? 600 : 400,
+                boxShadow: aba === a.id ? "0 1px 2px rgba(0,0,0,.08)" : "none",
+              }}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: aba === "rastreamento" ? "flex" : "none", gap: 6 }}>
           {PILLS.map((p) => (
             <button
               key={p.id}
@@ -135,7 +169,7 @@ export default function DadosAnunciosPage() {
             </button>
           ))}
         </div>
-        {periodo === "custom" && (
+        {aba === "rastreamento" && periodo === "custom" && (
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <input type="date" value={de} onChange={(e) => setDe(e.target.value)} style={{ border: "0.5px solid #e5e7eb", borderRadius: 8, padding: "5px 8px", fontSize: 12 }} />
             <span style={{ color: "#9ca3af", fontSize: 12 }}>até</span>
@@ -144,6 +178,7 @@ export default function DadosAnunciosPage() {
         )}
         <button
           onClick={exportPdf}
+          hidden={aba !== "rastreamento"}
           disabled={exportingPdf}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
@@ -157,7 +192,9 @@ export default function DadosAnunciosPage() {
         </button>
       </div>
       <div style={{ padding: 16 }} ref={contentRef}>
-        <RelatorioOrigemPerformance filters={filters} userRole="admin" />
+        {aba === "rastreamento"
+          ? <RelatorioOrigemPerformance filters={filters} userRole="admin" />
+          : <MarketingDashboard />}
       </div>
     </div>
   );
