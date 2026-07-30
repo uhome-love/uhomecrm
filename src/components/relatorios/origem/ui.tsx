@@ -95,8 +95,8 @@ export function TopNSelect({ value, onChange }: { value: number; onChange: (v: n
     >
       <option value="5">Top 5</option>
       <option value="10">Top 10</option>
-
       <option value="25">Top 25</option>
+
       <option value="9999">Tudo</option>
     </select>
   );
