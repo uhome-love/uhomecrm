@@ -126,6 +126,10 @@ const App = () => (
               <Route path="/ranking" element={<Navigate to="/central-relatorios?secao=ranking" replace />} />
               <Route path="/performance" element={<Navigate to="/central-relatorios?secao=visao" replace />} />
               <Route path="/marketing" element={<Navigate to="/dados-anuncios?aba=investimento" replace />} />
+              {/* Fase 3 — páginas técnicas foram para Configurações / Central de Relatórios */}
+              <Route path="/integracoes" element={<Navigate to="/configuracoes?secao=integracoes" replace />} />
+              <Route path="/central-dados" element={<Navigate to="/central-relatorios?secao=forecast" replace />} />
+
 
               <Route path="/links-site" element={<Navigate to="/imoveis?view=links" replace />} />
               <Route path="/disponibilidade" element={<Navigate to="/roleta" replace />} />

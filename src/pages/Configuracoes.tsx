@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,20 +11,47 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
-import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Upload, CreditCard, BadgeCheck, Wrench } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Upload, CreditCard, BadgeCheck, Wrench, Bell, Plug, type LucideIcon } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import RoletaCampanhasPanel from "@/components/settings/RoletaCampanhasPanel";
+import IntegracoesSection from "@/components/settings/IntegracoesSection";
 import { useUserRole } from "@/hooks/useUserRole";
 import { getSoundEnabled, setSoundEnabled, getCelebrationEnabled, setCelebrationEnabled } from "@/lib/celebrations";
 import { emitProfileUpdated } from "@/lib/profileEvents";
 
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 
+/** Seções das Configurações — estado sempre na URL (`?secao=`). */
+type ConfigSectionId = "perfil" | "notificacoes" | "integracoes" | "sistema";
+
+const CONFIG_SECTIONS: { id: ConfigSectionId; label: string; icon: LucideIcon; adminOnly?: boolean }[] = [
+  { id: "perfil", label: "Perfil", icon: User },
+  { id: "notificacoes", label: "Notificações", icon: Bell },
+  { id: "integracoes", label: "Integrações", icon: Plug },
+  { id: "sistema", label: "Sistema", icon: Wrench, adminOnly: true },
+];
+
+function isConfigSection(v: string | null): v is ConfigSectionId {
+  return !!v && CONFIG_SECTIONS.some((s) => s.id === v);
+}
+
 export default function Configuracoes() {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
+  const [params, setParams] = useSearchParams();
+  const rawSecao = params.get("secao");
+  const secao: ConfigSectionId = isConfigSection(rawSecao) ? rawSecao : "perfil";
+  const selecionar = useCallback(
+    (id: ConfigSectionId) => {
+      const next = new URLSearchParams(params);
+      next.set("secao", id);
+      setParams(next, { replace: true });
+    },
+    [params, setParams]
+  );
   const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [uploadingGlb, setUploadingGlb] = useState(false);
@@ -197,11 +225,41 @@ export default function Configuracoes() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Gerencie seu perfil e altere sua senha
+          Perfil, notificações, integrações e ferramentas de sistema
         </p>
       </div>
 
+      <nav
+        aria-label="Seções das Configurações"
+        className="flex items-center gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {CONFIG_SECTIONS.filter((s) => !s.adminOnly || isAdmin).map((s) => {
+          const Icon = s.icon;
+          const active = s.id === secao;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => selecionar(s.id)}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                active
+                  ? "border-transparent bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />
+              {s.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {secao === "perfil" && (
+        <>
       {/* Profile Card */}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -350,12 +408,6 @@ export default function Configuracoes() {
         </CardContent>
       </Card>
 
-      {/* Integrations - Admin only */}
-      {isAdmin && <MetaAdsSettings />}
-      {isAdmin && <RoletaCampanhasPanel />}
-
-      {/* Notification Preferences */}
-      <NotificationPreferences />
 
       {/* Sound & Celebration Preferences */}
       <Card>
@@ -440,24 +492,44 @@ export default function Configuracoes() {
         </CardContent>
       </Card>
 
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Wrench className="h-5 w-5 text-primary" />
-              Ferramentas de Sistema
-            </CardTitle>
-            <CardDescription>
-              Configurações avançadas do CRM — integrações, chaves e reindex. Visível apenas para CEO/Admin.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
-              <AdminPanel />
-            </Suspense>
-          </CardContent>
-        </Card>
+        </>
       )}
+
+      {secao === "integracoes" && (
+        <>
+          <IntegracoesSection />
+          {isAdmin && <MetaAdsSettings />}
+        </>
+      )}
+
+      {secao === "notificacoes" && <NotificationPreferences />}
+
+      {secao === "sistema" && (
+        <>
+          {isAdmin && <RoletaCampanhasPanel />}
+          {isAdmin ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Wrench className="h-5 w-5 text-primary" />
+                  Ferramentas de Sistema
+                </CardTitle>
+                <CardDescription>
+                  Configurações avançadas do CRM — integrações, chaves e reindex. Visível apenas para CEO/Admin.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                  <AdminPanel />
+                </Suspense>
+              </CardContent>
+            </Card>
+          ) : (
+            <p className="text-sm text-muted-foreground">Seção disponível apenas para CEO/Admin.</p>
+          )}
+        </>
+      )}
+
     </div>
   );
 }

@@ -24,7 +24,7 @@ import type { CentralSectionId } from "./sections";
  *  - `central`  → RPCs get_relatorio_* (visões operacionais)
  *  - `builder`  → construtor de relatório por equipe/corretor
  */
-export type CentralEngine = "ssot" | "central" | "builder";
+export type CentralEngine = "ssot" | "central" | "builder" | "forecast";
 
 export type UnifiedSectionId =
   | "visao"
@@ -37,10 +37,12 @@ export type UnifiedSectionId =
   | "vendas"
   | "metas"
   | "cohort"
+  | "forecast"
   | "ranking"
   | "relatorio-equipe"
   | "progresso"
   | "relatorio-1a1";
+
 
 export interface UnifiedSection {
   id: UnifiedSectionId;
@@ -68,6 +70,8 @@ export const UNIFIED_SECTIONS: UnifiedSection[] = [
   { id: "vendas", label: "Vendas", icon: TrendingUp, engine: "central", centralId: "vendas", fonte: "get_relatorio_vendas" },
   { id: "metas", label: "Metas vs. Realizado", icon: Target, engine: "central", centralId: "metas", fonte: "get_relatorio_metas" },
   { id: "cohort", label: "Coorte & Retenção", icon: LineChart, engine: "central", centralId: "cohort", fonte: "get_relatorio_cohort" },
+  { id: "forecast", label: "Forecast IA", icon: Sparkles, engine: "forecast", fonte: "Forecast IA · pipeline de negócios" },
+
 
   { id: "ranking", label: "Ranking", icon: Trophy, engine: "ssot", fonte: "SSOT · rpc_metricas" },
   { id: "relatorio-equipe", label: "Relatório por equipe", icon: FileText, engine: "builder", fonte: "get_relatorio_* por corretor" },
@@ -83,7 +87,7 @@ export interface UnifiedGroup {
 export const UNIFIED_GROUPS: UnifiedGroup[] = [
   { label: "Visão", ids: ["visao"] },
   { label: "Comercial", ids: ["pipeline-leads", "origem", "oferta-ativa", "sla", "visitas"] },
-  { label: "Resultado", ids: ["negocios", "vendas", "metas", "cohort"] },
+  { label: "Resultado", ids: ["negocios", "vendas", "metas", "cohort", "forecast"] },
   { label: "Equipe", ids: ["ranking", "relatorio-equipe", "progresso", "relatorio-1a1"] },
 ];
 

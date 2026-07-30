@@ -38,6 +38,9 @@ const REDIRECT_ALIASES: string[] = [
   "/relatorios",
   "/relatorios-1-1",
   "/relatorio-semanal",
+  "/marketing",
+  "/integracoes",
+  "/central-dados",
 ];
 
 

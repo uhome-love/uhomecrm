@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import { BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,10 @@ import { CentralHeader } from "@/components/central-v2/CentralHeader";
 import { SectionRouterView } from "@/components/central-v2/SectionRouterView";
 import { ReportBuilder } from "@/components/central-v2/report/ReportBuilder";
 import PerformanceHub, { type PerfTab } from "@/components/performance/PerformanceHub";
+import { Loader2 } from "lucide-react";
+
+const ForecastContent = lazy(() => import("@/components/central/ForecastContent"));
+
 
 /**
  * Central de Relatórios — hub único de resultado do CRM.
@@ -136,6 +140,13 @@ export default function CentralRelatorios() {
         )}
 
         {atual.engine === "builder" && <ReportBuilder />}
+
+        {atual.engine === "forecast" && (
+          <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <ForecastContent />
+          </Suspense>
+        )}
+
 
         <p className="mt-8 text-[11px] text-muted-foreground/70">Fonte: {atual.fonte}</p>
       </main>
