@@ -25,13 +25,23 @@ const valor = (l: MetricaCorretor, c: Coluna) => (c === "conversao" ? conv(l) : 
 
 export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props) {
   const [ordem, setOrdem] = useState<Coluna>("vgv_assinado");
+  const [desc, setDesc] = useState(true);
   const [busca, setBusca] = useState("");
+
+  const alternarOrdem = (c: Coluna) => {
+    if (c === ordem) setDesc((d) => !d);
+    else {
+      setOrdem(c);
+      setDesc(true);
+    }
+  };
 
   const filtradas = useMemo(() => {
     const q = busca.trim().toLowerCase();
     if (!q) return linhas;
     return linhas.filter((l) => (l.corretor_nome || "").toLowerCase().includes(q) || (l.equipe || "").toLowerCase().includes(q));
   }, [linhas, busca]);
+
 
   const ordenadas = useMemo(
     () => [...filtradas].sort((a, b) => valor(b, ordem) - valor(a, ordem)),
