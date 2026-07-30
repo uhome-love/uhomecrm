@@ -514,15 +514,12 @@ export function usePdn(mes: string) {
         if (!isMesCorrente && ov?.mes !== mes) continue;
       }
       const grupoNatural: PdnGrupo = isGanho ? "ganho" : d.grupo;
-      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
-      // `caiu` / `oculto` só valem para o mês em que foram marcados e são
-      // automaticamente descartados quando o negócio andou de etapa depois da marcação.
-      const marcasAtivas = overlayMarcasAtivas(ov, mes, d.stageChangedAt);
-      const caiu = !!ov?.caiu && marcasAtivas;
-      const grupoBase = grupoOverride ?? grupoNatural;
+      // PDN é espelho do pipeline: a etapa, o VGV e o empreendimento vêm SEMPRE
+      // do pipeline/negócio. O overlay do gestor guarda apenas notas internas.
+      const grupoBase = grupoNatural;
       const data = isGanho ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
-      const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
-      const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
+      const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || "—";
+      const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || "—";
       const proximaAcao = ov?.proxima_acao || "";
       const proximaAcaoData = ov?.proxima_acao_data || "";
       const observacoesRow = (ov?.observacoes ?? d.observacoesNegocio ?? "").toString().trim();
@@ -532,29 +529,29 @@ export function usePdn(mes: string) {
       // ou edição manual no override do PDN nos últimos 7 dias. Qualquer um zera o risco automático.
       const foiEditadoRecente = !!ov?.updated_at && diffDays(ov.updated_at) <= 7;
       const temSinalDeAtualizacao = !!proximaAcao || !!observacoesRow || foiEditadoRecente;
-      const emRisco = !caiu && (riscoManual || (grupoBase !== "ganho" && !temSinalDeAtualizacao && dias > 7));
+      const emRisco = riscoManual || (grupoBase !== "ganho" && !temSinalDeAtualizacao && dias > 7);
       out.push({
         id: `deal-${d.id}`,
         negocioId: d.negocioId,
         pipelineLeadId: d.id,
         corretorAuthId: d.corretorAuthId,
         overrideId: ov?.id ?? null,
-        grupo: caiu ? "caidos" : grupoBase,
+        grupo: grupoBase,
         grupoOrigem: grupoNatural,
-        grupoOverride,
-        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== grupoNatural,
+        grupoOverride: null,
+        etapaAjustada: false,
         nome: d.nome,
         data,
-        empreendimento: ov?.empreendimento || d.empreendimento || "—",
-        vgv: Number(ov?.vgv ?? d.vgv) || 0,
+        empreendimento: d.empreendimento || "—",
+        vgv: Number(d.vgv) || 0,
         situacaoLabel: GRUPO_LABEL[grupoBase],
         corretor,
         equipe,
         status: ov?.status || "",
         observacoes: ov?.observacoes ?? d.observacoesNegocio ?? "",
         proximaAcao,
-        caiu,
-        motivoQueda: ov?.motivo_queda || "",
+        caiu: false,
+        motivoQueda: "",
         diasParado: dias,
         emRisco,
         isManual: false,
@@ -562,15 +559,16 @@ export function usePdn(mes: string) {
         prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
         riscoManual,
         riscoMotivo: ov?.risco_motivo || "",
-        proximaAcaoVencida: !caiu && isVencida(proximaAcaoData),
+        proximaAcaoVencida: isVencida(proximaAcaoData),
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
-        oculto: !!ov?.oculto && marcasAtivas,
+        oculto: false,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-        ocultoEm: ov?.oculto ? (ov.updated_at ?? null) : null,
-        ocultoPor: (ov?.gerente_id && gestorNames[ov.gerente_id]) || "",
+        ocultoEm: null,
+        ocultoPor: "",
         etapaAtualLabel: GRUPO_LABEL[grupoNatural],
       });
+
     }
 
     // Fallback: vendas do mês (negocios.fase='ganho') cujo lead está arquivado ou
