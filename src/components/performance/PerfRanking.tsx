@@ -42,11 +42,26 @@ export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props
     return linhas.filter((l) => (l.corretor_nome || "").toLowerCase().includes(q) || (l.equipe || "").toLowerCase().includes(q));
   }, [linhas, busca]);
 
-
   const ordenadas = useMemo(
-    () => [...filtradas].sort((a, b) => valor(b, ordem) - valor(a, ordem)),
-    [filtradas, ordem]
+    () => [...filtradas].sort((a, b) => (desc ? valor(b, ordem) - valor(a, ordem) : valor(a, ordem) - valor(b, ordem))),
+    [filtradas, ordem, desc]
   );
+
+  const totais = useMemo(
+    () =>
+      ordenadas.reduce(
+        (acc, l) => ({
+          leads: acc.leads + l.leads_recebidos,
+          visitas: acc.visitas + l.visitas_realizadas,
+          vendas: acc.vendas + l.vendas,
+          vgv: acc.vgv + l.vgv_assinado,
+        }),
+        { leads: 0, visitas: 0, vendas: 0, vgv: 0 }
+      ),
+    [ordenadas]
+  );
+  const convTotal = totais.visitas > 0 ? (totais.vendas / totais.visitas) * 100 : 0;
+
   const equipes = useMemo(() => agruparPorEquipe(linhas), [linhas]);
   const maxVgv = Math.max(1, ...equipes.map((e) => e.totais.vgv_assinado));
 
