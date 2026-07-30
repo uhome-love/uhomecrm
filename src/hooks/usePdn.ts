@@ -635,28 +635,25 @@ export function usePdn(mes: string) {
 
 
 
-  const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
-  const hiddenRows = useMemo<PdnRow[]>(() => allRows.filter(r => r.oculto), [allRows]);
+  // O PDN mostra tudo que está no pipeline — nada é escondido por overlay.
+  const rows = allRows;
+  const hiddenRows = useMemo<PdnRow[]>(() => [], []);
 
-  // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv" | "oculto" | "grupoOverride" | "avisadoEm" | "avisadoEtapa">>) => {
+  // ── Overlay: SOMENTE anotações internas do gestor (pdn_entries) ───────────────
+  // Etapa, VGV, empreendimento, corretor e queda vêm do pipeline — nunca daqui.
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "avisadoEm" | "avisadoEtapa">>) => {
     if (!user) return;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
     if (patch.proximaAcao !== undefined) payload.proxima_acao = patch.proximaAcao || null;
     if (patch.status !== undefined) payload.status = patch.status || null;
-    if (patch.caiu !== undefined) payload.caiu = patch.caiu;
-    if (patch.motivoQueda !== undefined) payload.motivo_queda = patch.motivoQueda || null;
     if (patch.proximaAcaoData !== undefined) payload.proxima_acao_data = patch.proximaAcaoData || null;
     if (patch.prioridade !== undefined) payload.prioridade = patch.prioridade || null;
     if (patch.riscoManual !== undefined) payload.risco_manual = patch.riscoManual;
     if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
-    if (patch.empreendimento !== undefined) payload.empreendimento = patch.empreendimento || null;
-    if (patch.vgv !== undefined) payload.vgv = Number(patch.vgv) || 0;
-    if (patch.oculto !== undefined) payload.oculto = patch.oculto;
-    if (patch.grupoOverride !== undefined) payload.grupo_override = patch.grupoOverride || null;
     if (patch.avisadoEm !== undefined) payload.corretor_avisado_em = patch.avisadoEm || null;
     if (patch.avisadoEtapa !== undefined) payload.corretor_avisado_etapa = patch.avisadoEtapa || null;
+    if (Object.keys(payload).length === 0) return;
 
     if (row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
@@ -677,20 +674,9 @@ export function usePdn(mes: string) {
       });
       if (error) { toast.error("Erro ao salvar"); return; }
     }
-    // Sync VGV / empreendimento para o negócio real (não bloqueia overlay)
-    if (!row.isManual && row.negocioId && (patch.vgv !== undefined || patch.empreendimento !== undefined)) {
-      const vgvChanged = patch.vgv !== undefined && Number(patch.vgv) !== row.vgv;
-      const empChanged = patch.empreendimento !== undefined && (patch.empreendimento || "") !== (row.empreendimento === "—" ? "" : row.empreendimento);
-      if (vgvChanged || empChanged) {
-        syncNegocioVgvFromPdn(
-          row,
-          vgvChanged ? Number(patch.vgv) : null,
-          empChanged ? (patch.empreendimento || null) : null,
-        ).catch(() => undefined);
-      }
-    }
     await loadEntries();
   }, [user, mes, loadEntries]);
+
 
   // ── Marcar / reverter queda ("caiu") — overlay + registro na timeline do lead ─
   const marcarQueda = useCallback(async (row: PdnRow, motivo: string) => {
