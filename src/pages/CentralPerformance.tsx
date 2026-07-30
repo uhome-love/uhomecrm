@@ -134,7 +134,8 @@ export default function CentralPerformance() {
         l.equipe ?? "",
         l.corretor_ativo ? "sim" : "não",
         l.leads_recebidos,
-        l.visitas_marcadas,
+        l.visitas_agendadas,
+        l.visitas_a_realizar,
         l.visitas_realizadas,
         l.visitas_no_show,
         l.vendas,
@@ -142,7 +143,7 @@ export default function CentralPerformance() {
       ]);
     baixarCsv(
       "performance-uhome",
-      ["Corretor", "Equipe", "Ativo", "Leads", "Visitas marcadas", "Visitas realizadas", "No-show", "Vendas", "VGV assinado"],
+      ["Corretor", "Equipe", "Ativo", "Leads", "Visitas agendadas", "Visitas a realizar", "Visitas realizadas", "No-show", "Vendas", "VGV assinado"],
       rows
     );
   };

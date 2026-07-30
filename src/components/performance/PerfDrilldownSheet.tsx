@@ -6,7 +6,7 @@ export const TIPO_LABEL: Record<DetalheTipo, string> = {
   vendas: "Vendas assinadas",
   vgv: "VGV assinado",
   visitas_realizadas: "Visitas realizadas",
-  visitas_marcadas: "Visitas marcadas",
+  visitas_marcadas: "Visitas agendadas",
   visitas_no_show: "No-shows",
   leads: "Leads recebidos",
 };

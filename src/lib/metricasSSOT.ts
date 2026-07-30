@@ -22,7 +22,10 @@ export interface MetricaCorretor {
   gerente_auth_id: string | null;
   corretor_ativo: boolean;
   leads_recebidos: number;
-  visitas_marcadas: number;
+  /** visitas criadas/agendadas no período (data de criação) */
+  visitas_agendadas: number;
+  /** agendadas que ainda não aconteceram (marcada/confirmada/reagendada) */
+  visitas_a_realizar: number;
   visitas_realizadas: number;
   visitas_no_show: number;
   vendas: number;
@@ -60,7 +63,8 @@ export async function fetchMetricas(filtro: MetricasFiltro): Promise<MetricaCorr
     gerente_auth_id: (r.gerente_auth_id as string) ?? null,
     corretor_ativo: Boolean(r.corretor_ativo),
     leads_recebidos: num(r.leads_recebidos),
-    visitas_marcadas: num(r.visitas_marcadas),
+    visitas_agendadas: num(r.visitas_agendadas ?? r.visitas_marcadas),
+    visitas_a_realizar: num(r.visitas_a_realizar),
     visitas_realizadas: num(r.visitas_realizadas),
     visitas_no_show: num(r.visitas_no_show),
     vendas: num(r.vendas),
@@ -70,7 +74,8 @@ export async function fetchMetricas(filtro: MetricasFiltro): Promise<MetricaCorr
 
 export interface MetricasTotais {
   leads_recebidos: number;
-  visitas_marcadas: number;
+  visitas_agendadas: number;
+  visitas_a_realizar: number;
   visitas_realizadas: number;
   visitas_no_show: number;
   vendas: number;
@@ -82,14 +87,15 @@ export function somarMetricas(linhas: MetricaCorretor[]): MetricasTotais {
   return linhas.reduce<MetricasTotais>(
     (acc, l) => ({
       leads_recebidos: acc.leads_recebidos + l.leads_recebidos,
-      visitas_marcadas: acc.visitas_marcadas + l.visitas_marcadas,
+      visitas_agendadas: acc.visitas_agendadas + l.visitas_agendadas,
+      visitas_a_realizar: acc.visitas_a_realizar + l.visitas_a_realizar,
       visitas_realizadas: acc.visitas_realizadas + l.visitas_realizadas,
       visitas_no_show: acc.visitas_no_show + l.visitas_no_show,
       vendas: acc.vendas + l.vendas,
       vgv_assinado: acc.vgv_assinado + l.vgv_assinado,
       corretores: acc.corretores + 1,
     }),
-    { leads_recebidos: 0, visitas_marcadas: 0, visitas_realizadas: 0, visitas_no_show: 0, vendas: 0, vgv_assinado: 0, corretores: 0 }
+    { leads_recebidos: 0, visitas_agendadas: 0, visitas_a_realizar: 0, visitas_realizadas: 0, visitas_no_show: 0, vendas: 0, vgv_assinado: 0, corretores: 0 }
   );
 }
 
