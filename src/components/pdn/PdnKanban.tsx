@@ -170,12 +170,8 @@ export function PdnKanban({
                 {list.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-8 text-center text-xs text-muted-foreground">
                     <span>Sem negócios nesta etapa</span>
-                    {!isCaidos && (
-                      <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => onAdd(g.key)}>
-                        <Plus className="h-3 w-3" /> Adicionar manual
-                      </Button>
-                    )}
                   </div>
+
                 ) : list.map(r => (
                   <PdnCard
                     key={r.id}
