@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { agruparPorEquipe, type MetricaCorretor } from "@/lib/metricasSSOT";
 import { cn } from "@/lib/utils";
-import { ArrowUpDown, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 
 type Coluna = "vgv_assinado" | "vendas" | "visitas_realizadas" | "leads_recebidos" | "conversao";
 
