@@ -19,6 +19,10 @@ import PerfVisaoGeral from "@/components/performance/PerfVisaoGeral";
 import PerfRanking from "@/components/performance/PerfRanking";
 import PerfOrigem from "@/components/performance/PerfOrigem";
 import { useMetricasOrigem } from "@/hooks/useMetricasOrigem";
+import PerfDrilldownSheet from "@/components/performance/PerfDrilldownSheet";
+import PerfCorretorSheet from "@/components/performance/PerfCorretorSheet";
+import type { DetalheTipo } from "@/hooks/useMetricasDetalhe";
+import type { MetricaCorretor } from "@/lib/metricasSSOT";
 import CorretorProgresso from "@/pages/CorretorProgresso";
 import RelatorioCorretor from "@/pages/RelatorioCorretor";
 
@@ -40,6 +44,8 @@ export default function CentralPerformance() {
   const [offset, setOffset] = useState(0);
   const [meses, setMeses] = useState(6);
   const [gerenteId, setGerenteId] = useState<string | undefined>();
+  const [drilldown, setDrilldown] = useState<DetalheTipo | null>(null);
+  const [corretorSel, setCorretorSel] = useState<MetricaCorretor | null>(null);
 
   useEffect(() => {
     if (isGestor && !isAdmin && user?.id) setGerenteId(user.id);
@@ -189,10 +195,13 @@ export default function CentralPerformance() {
                 metas={metas}
                 pace={pace}
                 metasLoading={metasLoading}
+                onDrilldown={setDrilldown}
               />
             )}
 
-            {tab === "ranking" && <PerfRanking linhas={linhas} loading={isLoading} />}
+            {tab === "ranking" && (
+              <PerfRanking linhas={linhas} loading={isLoading} onSelectCorretor={setCorretorSel} />
+            )}
             {tab === "origem" && <PerfOrigem dados={dadosOrigem} loading={origemLoading} />}
             {tab === "progresso" && <CorretorProgresso />}
             {tab === "relatorio" && <RelatorioCorretor hideHeader />}
@@ -200,6 +209,23 @@ export default function CentralPerformance() {
           </motion.div>
         </div>
       </div>
+
+      <PerfDrilldownSheet
+        open={!!drilldown}
+        onOpenChange={(v) => !v && setDrilldown(null)}
+        tipo={drilldown}
+        start={filtro.start}
+        end={filtro.end}
+        gerenteId={gerenteId ?? null}
+      />
+
+      <PerfCorretorSheet
+        corretor={corretorSel}
+        onOpenChange={(v) => !v && setCorretorSel(null)}
+        start={filtro.start}
+        end={filtro.end}
+        periodoLabel={periodoLabel}
+      />
     </div>
   );
 }
