@@ -611,35 +611,8 @@ export default function PdnGestor() {
       )}
 
 
-      {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
-      {showOcultos && hiddenRows.length > 0 && (
-        <Card className="border-dashed p-4">
-          <div className="mb-1 text-sm font-semibold text-muted-foreground">Removidos da planilha</div>
-          <p className="mb-2 text-xs text-muted-foreground">
-            Estes negócios continuam ativos no pipeline — só estão fora da planilha do mês. A remoção vale apenas para {mes} e é desfeita automaticamente se o negócio mudar de etapa.
-          </p>
-          <div className="space-y-1.5">
-            {hiddenRows.map(r => (
-              <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-1.5 text-sm">
-                <div className="min-w-0">
-                  <div>
-                    <span className="font-medium">{r.nome}</span>
-                    <span className="text-muted-foreground"> · {r.empreendimento !== "—" ? r.empreendimento : "sem empreendimento"} · {fmtMoney(r.vgv, "short")} · {r.corretor}</span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    Etapa atual: {r.etapaAtualLabel}
-                    {r.ocultoEm ? ` · removido em ${new Date(r.ocultoEm).toLocaleDateString("pt-BR")}` : ""}
-                    {r.ocultoPor ? ` por ${r.ocultoPor}` : ""}
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => restaurarRow(r)}>
-                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Restaurar
-                </Button>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+
+
 
       {/* Divergências entre PDN e Negócios (Fase 2) */}
       {!loading && (
