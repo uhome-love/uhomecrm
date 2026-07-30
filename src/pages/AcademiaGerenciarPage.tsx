@@ -14,8 +14,9 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { TrilhaCapaUpload } from "@/components/academia/TrilhaCapaUpload";
 
-export default function AcademiaGerenciarPage() {
+export default function AcademiaGerenciarPage({ showHeader = true }: { showHeader?: boolean } = {}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { trilhas, aulas, createTrilha, updateTrilha, deleteTrilha, createAula, updateAula, deleteAula, loading } = useAcademia();
@@ -254,10 +255,14 @@ export default function AcademiaGerenciarPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/academia")} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h1 className="text-lg font-bold">🎓 Gerenciar Academia</h1>
+        {showHeader && (
+          <>
+            <button onClick={() => navigate("/academia")} className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <h1 className="text-lg font-bold">🎓 Gerenciar Academia</h1>
+          </>
+        )}
         <div className="ml-auto">
           <Button onClick={openNewTrilha} className="gap-1.5"><Plus className="h-4 w-4" /> Nova Trilha</Button>
         </div>
@@ -381,7 +386,8 @@ export default function AcademiaGerenciarPage() {
           <div className="space-y-4">
             <div><Label>Título</Label><Input value={trilhaForm.titulo} onChange={e => setTrilhaForm(p => ({ ...p, titulo: e.target.value }))} /></div>
             <div><Label>Descrição</Label><Textarea value={trilhaForm.descricao} onChange={e => setTrilhaForm(p => ({ ...p, descricao: e.target.value }))} rows={3} /></div>
-            <div><Label>URL da Capa/Thumbnail</Label><Input value={trilhaForm.thumbnail_url} onChange={e => setTrilhaForm(p => ({ ...p, thumbnail_url: e.target.value }))} placeholder="https://..." /></div>
+            <TrilhaCapaUpload value={trilhaForm.thumbnail_url} onChange={(url) => setTrilhaForm(p => ({ ...p, thumbnail_url: url }))} />
+            <div><Label>Ou cole a URL da capa</Label><Input value={trilhaForm.thumbnail_url} onChange={e => setTrilhaForm(p => ({ ...p, thumbnail_url: e.target.value }))} placeholder="https://..." /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Categoria</Label>
                 <Select value={trilhaForm.categoria} onValueChange={v => setTrilhaForm(p => ({ ...p, categoria: v }))}>
