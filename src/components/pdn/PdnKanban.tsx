@@ -146,15 +146,8 @@ export function PdnKanban({
                   <span className={`text-sm font-semibold ${isCaidos ? "text-red-600 dark:text-red-400" : "text-foreground"}`}>{g.label}</span>
                   <Badge variant={isCaidos ? "destructive" : "secondary"}>{list.length}</Badge>
                 </div>
-                {!isCaidos && (
-                  <button
-                    onClick={() => onAdd(g.key)}
-                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-                    title="Adicionar negócio manual"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                )}
+
+
               </div>
 
               {/* Contadores extras */}
