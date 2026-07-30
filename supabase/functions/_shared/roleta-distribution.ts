@@ -24,6 +24,7 @@ export async function distributeLeadDirect(
   traceId: string,
   logger: Logger,
   maxRetries = 2,
+  excludeAuthUserId: string | null = null,
 ): Promise<Result> {
   const supabase = createClient(supabaseUrl, serviceKey);
   let lastFailure: Result = { success: false, reason: "unknown" };
@@ -33,7 +34,7 @@ export async function distributeLeadDirect(
       const { data: result, error } = await supabase.rpc("distribuir_lead_atomico", {
         p_lead_id: leadId,
         p_janela: null,
-        p_exclude_auth_user_id: null,
+        p_exclude_auth_user_id: excludeAuthUserId,
         p_force: false,
       });
 
