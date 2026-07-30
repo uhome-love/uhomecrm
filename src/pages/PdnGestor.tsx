@@ -704,7 +704,6 @@ export default function PdnGestor() {
                 isMobile={isMobile}
                 colWidths={colWidths}
                 onColResize={setColWidth}
-                onAdd={undefined}
                 onSave={handleSave}
                 onUpdateManual={updateManualRow}
                 onRemove={handleRemove}
@@ -830,7 +829,7 @@ function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort
 
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
-  isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  isMobile, colWidths, onColResize, onSave, onUpdateManual, onRemove, onQueda, onReativar,
   onMudarEtapa, onAvisar, onOpenRow,
   visibleCols, onChangeCols, selectedIds, onToggleSelected, onGroupSelect,
 }: {
@@ -847,7 +846,6 @@ function GrupoBloco({
   isMobile: boolean;
   colWidths: Record<string, number>;
   onColResize: (key: string, w: number) => void;
-  onAdd: () => void;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
   onRemove: (row: PdnRow) => void;
