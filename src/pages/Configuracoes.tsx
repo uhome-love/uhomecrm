@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,20 +11,47 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
-import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Upload, CreditCard, BadgeCheck, Wrench } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Upload, CreditCard, BadgeCheck, Wrench, Bell, Plug, type LucideIcon } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import RoletaCampanhasPanel from "@/components/settings/RoletaCampanhasPanel";
+import IntegracoesSection from "@/components/settings/IntegracoesSection";
 import { useUserRole } from "@/hooks/useUserRole";
 import { getSoundEnabled, setSoundEnabled, getCelebrationEnabled, setCelebrationEnabled } from "@/lib/celebrations";
 import { emitProfileUpdated } from "@/lib/profileEvents";
 
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 
+/** Seções das Configurações — estado sempre na URL (`?secao=`). */
+type ConfigSectionId = "perfil" | "notificacoes" | "integracoes" | "sistema";
+
+const CONFIG_SECTIONS: { id: ConfigSectionId; label: string; icon: LucideIcon; adminOnly?: boolean }[] = [
+  { id: "perfil", label: "Perfil", icon: User },
+  { id: "notificacoes", label: "Notificações", icon: Bell },
+  { id: "integracoes", label: "Integrações", icon: Plug },
+  { id: "sistema", label: "Sistema", icon: Wrench, adminOnly: true },
+];
+
+function isConfigSection(v: string | null): v is ConfigSectionId {
+  return !!v && CONFIG_SECTIONS.some((s) => s.id === v);
+}
+
 export default function Configuracoes() {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
+  const [params, setParams] = useSearchParams();
+  const rawSecao = params.get("secao");
+  const secao: ConfigSectionId = isConfigSection(rawSecao) ? rawSecao : "perfil";
+  const selecionar = useCallback(
+    (id: ConfigSectionId) => {
+      const next = new URLSearchParams(params);
+      next.set("secao", id);
+      setParams(next, { replace: true });
+    },
+    [params, setParams]
+  );
   const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [uploadingGlb, setUploadingGlb] = useState(false);
