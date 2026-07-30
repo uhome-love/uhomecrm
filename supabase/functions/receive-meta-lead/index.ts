@@ -952,6 +952,39 @@ Deno.serve(async (req) => {
 
           await supabase.from("pipeline_leads").update(updatePayload).eq("id", dup.id);
 
+          // ── Lead DESCARTADO/ARQUIVADO: volta como NOVO LEAD para a roleta
+          if (isDiscarded) {
+            const reac = await reactivateDiscardedToRoleta(supabase, {
+              supabaseUrl,
+              serviceKey,
+              leadId: dup.id,
+              corretorAnteriorId: dup.corretor_id,
+              origemLabel: "Meta Ads",
+              interesseLabel: interestLabel,
+              mensagem: message || null,
+              traceId,
+              logger: L,
+            });
+            try {
+              await supabase
+                .from("jetimob_processed")
+                .upsert({ jetimob_lead_id: dedupRegistryId, telefone }, { onConflict: "jetimob_lead_id" });
+            } catch (e) { L.warn("Dedup registry upsert warn (roleta/email)", { dedupRegistryId }, e); }
+            logOps("info", "business", "lead_descartado_reenviado_para_roleta", {
+              lead_id: dup.id,
+              corretor_anterior: dup.corretor_id,
+              distributed: reac.distributed,
+              novo_corretor: reac.corretor_id || null,
+              reason: reac.reason || null,
+              telefone_anon: await anonPhone(telefone),
+              email_anon: anonEmail(email),
+            });
+            return new Response(
+              JSON.stringify({ success: true, action: "reactivated_to_roleta", lead_id: dup.id, distributed: reac.distributed, trace_id: traceId }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
           await Promise.all([
             supabase.from("notifications").insert({
               user_id: dup.corretor_id,
