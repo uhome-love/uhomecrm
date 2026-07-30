@@ -23,12 +23,27 @@ export const RAIL_ORDER: { key: string; label: string; hint: string }[] = [
   { key: "treinamento_sistema", label: "🖥️ Treinamento do Sistema", hint: "domine o CRM" },
 ];
 
+/** Categorias legadas do banco → chaves canônicas dos carrosséis */
+const CATEGORIA_ALIASES: Record<string, string> = {
+  sistema: "treinamento_sistema",
+  produto: "empreendimentos",
+  vendas: "tecnicas_vendas",
+  scripts: "objecoes_scripts",
+  objecoes: "objecoes_scripts",
+  processo: "processos",
+};
+
+export function normalizeCategoria(categoria?: string | null) {
+  const c = categoria || "";
+  return CATEGORIA_ALIASES[c] || c;
+}
+
 export function gradientOf(categoria?: string | null) {
-  return TRILHA_GRADIENTS[categoria || ""] || "from-slate-600 to-slate-800";
+  return TRILHA_GRADIENTS[normalizeCategoria(categoria)] || "from-slate-600 to-slate-800";
 }
 
 export function iconOf(categoria?: string | null) {
-  return TRILHA_ICONS[categoria || ""] || "📚";
+  return TRILHA_ICONS[normalizeCategoria(categoria)] || "📚";
 }
 
 export function isNova(createdAt?: string | null) {
