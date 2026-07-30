@@ -1931,7 +1931,7 @@ export type Database = {
       distribuicao_historico: {
         Row: {
           acao: string
-          corretor_id: string
+          corretor_id: string | null
           created_at: string
           empreendimento_canonico_id: string | null
           id: string
@@ -1945,7 +1945,7 @@ export type Database = {
         }
         Insert: {
           acao?: string
-          corretor_id: string
+          corretor_id?: string | null
           created_at?: string
           empreendimento_canonico_id?: string | null
           id?: string
@@ -1959,7 +1959,7 @@ export type Database = {
         }
         Update: {
           acao?: string
-          corretor_id?: string
+          corretor_id?: string | null
           created_at?: string
           empreendimento_canonico_id?: string | null
           id?: string
