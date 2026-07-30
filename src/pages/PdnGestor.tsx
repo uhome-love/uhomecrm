@@ -41,6 +41,8 @@ import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { PdnRegredirDialog } from "@/components/pdn/PdnRegredirDialog";
 import { ConferenciaVisitasMes } from "@/components/pdn/ConferenciaVisitasMes";
+import { PdnDivergencias } from "@/components/pdn/PdnDivergencias";
+import { usePdnDivergencias } from "@/hooks/pdn/usePdnDivergencias";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
 
