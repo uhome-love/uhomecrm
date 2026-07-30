@@ -14,7 +14,6 @@ interface Props {
   row: PdnRow | null;
   onClose: () => void;
   onSave: (row: PdnRow, patch: PdnSavePatch) => void;
-  onUpdateManual: (overrideId: string, patch: Record<string, unknown>) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
@@ -32,7 +31,7 @@ interface Props {
  *   - Etapa:    mover no PDN, avisar corretor, marcar risco/queda, remover
  */
 export function PdnLeadDrawer({
-  row, onClose, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
+  row, onClose, onSave, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
   defaultTab = "acao",
 }: Props) {
   const [status, setStatus] = useState("");
@@ -82,13 +81,7 @@ export function PdnLeadDrawer({
       status, observacoes: obs, proximaAcao: proxAcao, proximaAcaoData: proxData,
       prioridade: (prioridade as PdnRow["prioridade"]) || "",
       riscoManual, riscoMotivo,
-      ...(row.isManual ? {} : { empreendimento: empreend, vgv }),
     });
-    if (row.isManual && row.overrideId) {
-      onUpdateManual(row.overrideId, {
-        nome, empreendimento: empreend || null, vgv, corretor: corretor || null,
-      });
-    }
     onClose();
   };
 
@@ -99,7 +92,6 @@ export function PdnLeadDrawer({
       status, observacoes: obs, proximaAcao: proxAcao, proximaAcaoData: proxData,
       prioridade: (prioridade as PdnRow["prioridade"]) || "",
       riscoManual, riscoMotivo,
-      ...(row.isManual ? {} : { empreendimento: empreend, vgv }),
     });
     setPublishing("observacao");
     try {
@@ -135,7 +127,7 @@ export function PdnLeadDrawer({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             {row.emRisco && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-            {row.isManual ? "Negócio manual" : row.nome}
+            {row.nome}
           </SheetTitle>
         </SheetHeader>
 

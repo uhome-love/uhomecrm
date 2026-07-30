@@ -41,18 +41,6 @@ export function PdnTabContexto({ row }: { row: PdnRow }) {
     return () => { cancelled = true; };
   }, [row.pipelineLeadId]);
 
-  if (row.isManual) {
-    return (
-      <div className="flex items-start gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-        <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        <div>
-          <div className="font-medium text-foreground">Negócio manual</div>
-          <div className="text-xs">Este negócio foi adicionado direto no PDN e não tem lead vinculado no pipeline — sem histórico para exibir.</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {/* Cabeçalho leitura */}

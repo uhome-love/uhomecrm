@@ -21,11 +21,8 @@ interface Props {
   total: number;
   kpiFilter: string | null;
   onClearKpi: () => void;
-  hiddenCount: number;
   caidosCount?: number;
   onOpenArquivados?: () => void;
-  showOcultos: boolean;
-  onToggleOcultos: () => void;
   view: "planilha" | "kanban" | "meta" | "arquivados" | "visitas";
   showResetLarguras: boolean;
   onResetLarguras: () => void;
@@ -39,7 +36,7 @@ interface Props {
 export function PdnToolbar({
   filters, setFilters, showEquipeFilter, equipes, corretores,
   hits, vgvHits, total, kpiFilter, onClearKpi,
-  hiddenCount, caidosCount = 0, onOpenArquivados, showOcultos, onToggleOcultos,
+  caidosCount = 0, onOpenArquivados,
   view, showResetLarguras, onResetLarguras,
 }: Props) {
   const anyFilter = filters.soRisco || filters.soNovos || filters.equipe !== "todas" || filters.corretor !== "todos" || !!kpiFilter;
@@ -102,18 +99,6 @@ export function PdnToolbar({
           onClick={() => setFilters({ soRisco: false, soNovos: false, equipe: "todas", corretor: "todos" })}
         >
           <X className="h-3.5 w-3.5" /> Limpar tudo
-        </Button>
-      )}
-
-      {hiddenCount > 0 && (
-        <Button
-          variant={showOcultos ? "default" : "outline"}
-          size="sm"
-          className={`h-8 text-xs ${showOcultos ? "" : "border-amber-500/40 text-amber-700 dark:text-amber-400"}`}
-          onClick={onToggleOcultos}
-          title="Negócios removidos da planilha pelo gestor — continuam ativos no pipeline"
-        >
-          {showOcultos ? "Ocultar removidos" : `${hiddenCount} removido${hiddenCount > 1 ? "s" : ""} da planilha`}
         </Button>
       )}
 

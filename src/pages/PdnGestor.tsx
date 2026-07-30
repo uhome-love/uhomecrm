@@ -336,14 +336,13 @@ export default function PdnGestor() {
   useEffect(() => {
     try { sessionStorage.setItem(`pdn:view:${isMobile ? "mobile" : "desktop"}`, view); } catch { /* ignore */ }
   }, [view, isMobile]);
-  const { rows, hiddenRows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, mudarEtapa, avisarCorretor, descartarLead, inativarLead, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, saveNegocioCampos, marcarQueda, mudarEtapa, avisarCorretor, descartarLead, inativarLead } = usePdn(mes);
   const { rows: divergencias } = usePdnDivergencias(scopeAuthIds);
   // PDN é espelho do pipeline: não existe mais "esconder" nem "reativar" só na planilha.
   const reativarQueda = useCallback((_row: PdnRow) => {
     toast.info("O PDN espelha o pipeline — reative o lead direto no pipeline.");
   }, []);
   const limparEtapaOverride = useCallback(async (_row: PdnRow) => { /* etapa vem sempre do pipeline */ }, []);
-  const [showOcultos, setShowOcultos] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
@@ -599,11 +598,8 @@ export default function PdnGestor() {
           total={rows.length}
           kpiFilter={kpiFilter}
           onClearKpi={() => setKpiFilter(null)}
-          hiddenCount={hiddenRows.length}
           caidosCount={rows.filter(r => r.grupo === "caidos").length}
           onOpenArquivados={() => setView("arquivados")}
-          showOcultos={showOcultos}
-          onToggleOcultos={() => setShowOcultos(v => !v)}
           view={view}
           showResetLarguras={!isMobile && colsCustomized}
           onResetLarguras={resetColWidths}
@@ -619,7 +615,7 @@ export default function PdnGestor() {
         <PdnDivergencias
           rows={divergencias}
           onOpenLead={(leadId) => {
-            const r = [...rows, ...hiddenRows].find(x => x.pipelineLeadId === leadId);
+            const r = rows.find(x => x.pipelineLeadId === leadId);
             if (r) setSelectedRow(r);
           }}
         />
@@ -659,12 +655,11 @@ export default function PdnGestor() {
         <PdnMetaMes mes={mes} rows={rows} />
       ) : view === "visitas" ? (
         <ConferenciaVisitasMes mes={mes} onOpenLead={(leadId) => {
-          const r = [...rows, ...hiddenRows].find(x => x.pipelineLeadId === leadId);
+          const r = rows.find(x => x.pipelineLeadId === leadId);
           if (r) setSelectedRow(r);
         }} />
       ) : view === "arquivados" ? (
         <ArquivadosView
-          hiddenRows={hiddenRows}
           caidosRows={rows.filter(r => r.grupo === "caidos")}
           onRestaurar={reativarQueda}
           onReativar={reativarQueda}
@@ -674,7 +669,6 @@ export default function PdnGestor() {
         <PdnKanban
           rows={filtered}
           onSave={handleSave}
-          onUpdateManual={updateManualRow}
           onRemove={handleRemove}
           onQueda={setQuedaRow}
           onReativar={reativarQueda}
@@ -705,8 +699,8 @@ export default function PdnGestor() {
                 colWidths={colWidths}
                 onColResize={setColWidth}
                 onSave={handleSave}
-                onUpdateManual={updateManualRow}
-                onRemove={handleRemove}
+                onSaveNegocio={saveNegocioCampos}
+                      onRemove={handleRemove}
                 onQueda={setQuedaRow}
                 onReativar={reativarQueda}
                 onMudarEtapa={handleMudarEtapa}
@@ -758,7 +752,6 @@ export default function PdnGestor() {
         row={selectedRow ? (filtered.find(r => r.id === selectedRow.id) ?? selectedRow) : null}
         onClose={() => setSelectedRow(null)}
         onSave={handleSave}
-        onUpdateManual={updateManualRow}
         onRemove={handleRemove}
         onQueda={setQuedaRow}
         onReativar={reativarQueda}
@@ -829,7 +822,7 @@ function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort
 
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
-  isMobile, colWidths, onColResize, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  isMobile, colWidths, onColResize, onSave, onSaveNegocio, onRemove, onQueda, onReativar,
   onMudarEtapa, onAvisar, onOpenRow,
   visibleCols, onChangeCols, selectedIds, onToggleSelected, onGroupSelect,
 }: {
@@ -847,7 +840,7 @@ function GrupoBloco({
   colWidths: Record<string, number>;
   onColResize: (key: string, w: number) => void;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
-  onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
+  onSaveNegocio: (row: PdnRow, patch: { vgv?: number; empreendimento?: string }) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
@@ -916,7 +909,6 @@ function GrupoBloco({
                 key={r.id}
                 r={r}
                 onSave={onSave}
-                onUpdateManual={onUpdateManual}
                 onRemove={onRemove}
                 onQueda={onQueda}
                 onReativar={onReativar}
@@ -981,17 +973,10 @@ function GrupoBloco({
                       />
                     </TableCell>
                     <TableCell className="py-2 font-medium">
-                      {r.isManual ? (
-                        <span data-no-row-open>
-                          <EditableCell value={r.nome} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { nome: v })} />
-                        </span>
-                      ) : (
-                        <div className="flex w-full items-center gap-1.5 text-left hover:text-primary" title="Abrir detalhes">
-                          {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-                          <span className="truncate underline-offset-2 group-hover:underline">{r.nome}</span>
-                          {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px] px-1">ajustada</Badge>}
-                        </div>
-                      )}
+                      <div className="flex w-full items-center gap-1.5 text-left hover:text-primary" title="Abrir detalhes">
+                        {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
+                        <span className="truncate underline-offset-2 group-hover:underline">{r.nome}</span>
+                      </div>
                       <div className="mt-1" data-no-row-open>
                         <Select value={r.grupo} onValueChange={(v) => onMudarEtapa(r, v as PdnGrupo)}>
                           <SelectTrigger className="h-6 border-transparent bg-transparent px-1 text-[11px] text-muted-foreground hover:border-border">
@@ -1005,39 +990,38 @@ function GrupoBloco({
                     </TableCell>
 
                     {visibleCols.data && (
-                      <TableCell className="py-2 text-sm text-muted-foreground" data-no-row-open={r.isManual ? true : undefined}>
-                        {r.isManual
-                          ? <EditableCell type="date" value={r.data} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { data_visita: v })} />
-                          : (r.data ? formatBRT(r.data, "dd/MM/yy") : "—")}
+                      <TableCell className="py-2 text-sm text-muted-foreground">
+                        {r.data ? formatBRT(r.data, "dd/MM/yy") : "—"}
                       </TableCell>
                     )}
                     {visibleCols.empreendimento && (
                       <TableCell className="py-2 text-sm" data-no-row-open>
-                        <EditableWrapCell
-                          value={r.empreendimento === "—" ? "" : r.empreendimento}
-                          placeholder="Empreendimento…"
-                          onCommit={(v) => r.isManual
-                            ? (r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v }))
-                            : onSave(r, { empreendimento: v })}
-                        />
+                        {r.negocioId ? (
+                          <EditableWrapCell
+                            value={r.empreendimento === "—" ? "" : r.empreendimento}
+                            placeholder="Empreendimento…"
+                            onCommit={(v) => onSaveNegocio(r, { empreendimento: v })}
+                          />
+                        ) : (
+                          <span className="text-sm text-muted-foreground/70" title="Sem negócio vinculado — abra o lead para criar o negócio">
+                            {r.empreendimento === "—" ? "—" : r.empreendimento}
+                          </span>
+                        )}
                       </TableCell>
                     )}
                     {visibleCols.vgv && (
                       <TableCell className="py-2 text-sm font-medium" data-no-row-open>
-                        <MoneyInput
-                          value={r.vgv || 0}
-                          onCommit={(v) => r.isManual
-                            ? (r.overrideId && onUpdateManual(r.overrideId, { vgv: v }))
-                            : onSave(r, { vgv: v })}
-                        />
+                        {r.negocioId ? (
+                          <MoneyInput value={r.vgv || 0} onCommit={(v) => onSaveNegocio(r, { vgv: v })} />
+                        ) : (
+                          <span className="tabular-nums text-muted-foreground/70" title="Sem negócio vinculado — abra o lead para criar o negócio">
+                            {r.vgv > 0 ? fmtMoney(r.vgv, "short") : "—"}
+                          </span>
+                        )}
                       </TableCell>
                     )}
                     {visibleCols.corretor && (
-                      <TableCell className="py-2 text-sm text-muted-foreground" data-no-row-open={r.isManual ? true : undefined}>
-                        {r.isManual
-                          ? <EditableCell value={r.corretor === "—" ? "" : r.corretor} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { corretor: v })} />
-                          : r.corretor}
-                      </TableCell>
+                      <TableCell className="py-2 text-sm text-muted-foreground">{r.corretor}</TableCell>
                     )}
                     {visibleCols.status && (
                       <TableCell className="py-2" data-no-row-open>
@@ -1064,7 +1048,7 @@ function GrupoBloco({
                         )}
                         {(() => {
                           const prev = PREV_GRUPO[r.grupo];
-                          const canRegress = !r.isManual && !r.caiu && prev && (r.pipelineLeadId || r.negocioId);
+                          const canRegress = !r.caiu && prev && (r.pipelineLeadId || r.negocioId);
                           if (canRegress) {
                             return (
                               <Button
@@ -1079,7 +1063,7 @@ function GrupoBloco({
                             );
                           }
                           return (
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha (não afeta o corretor)"} onClick={() => onRemove(r)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Marcar como caiu / descartar" onClick={() => onRemove(r)}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           );
@@ -1103,10 +1087,9 @@ function GrupoBloco({
 
 
 
-function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow, selected, onToggleSelected }: {
+function MobileCard({ r, onSave, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow, selected, onToggleSelected }: {
   r: PdnRow;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
-  onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
@@ -1145,7 +1128,6 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
             {PDN_GRUPOS.map(g => <SelectItem key={g.key} value={g.key} className="text-xs">{g.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px]">ajustada</Badge>}
       </div>
       {r.caiu && r.motivoQueda ? (
         <div className="rounded-md bg-red-500/5 px-2 py-1 text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
@@ -1164,7 +1146,7 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
         )}
         {(() => {
           const prev = PREV_GRUPO[r.grupo];
-          if (!r.isManual && !r.caiu && prev) {
+          if (!r.caiu && prev) {
             return (
               <Button
                 variant="ghost"
@@ -1178,7 +1160,7 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
             );
           }
           return (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha"} onClick={() => onRemove(r)}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Marcar como caiu / descartar" onClick={() => onRemove(r)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           );
@@ -1193,9 +1175,8 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
 
 
 function ArquivadosView({
-  hiddenRows, caidosRows, onRestaurar, onReativar, onOpen,
+  caidosRows, onRestaurar, onReativar, onOpen,
 }: {
-  hiddenRows: PdnRow[];
   caidosRows: PdnRow[];
   onRestaurar: (r: PdnRow) => void;
   onReativar: (r: PdnRow) => void;
@@ -1203,9 +1184,8 @@ function ArquivadosView({
 }) {
   const groups = [
     { title: "Caídos / Descartados / Inativados", rows: caidosRows, action: "reativar" as const },
-    { title: "Removidos da planilha", rows: hiddenRows, action: "restaurar" as const },
   ];
-  const total = caidosRows.length + hiddenRows.length;
+  const total = caidosRows.length;
   if (total === 0) {
     return (
       <Card className="border-dashed py-16 text-center text-sm text-muted-foreground">

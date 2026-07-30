@@ -73,10 +73,8 @@ export interface PdnRow {
   pipelineLeadId: string | null; // pipeline_leads.id (fonte)
   corretorAuthId: string | null; // auth id do corretor (para avisar)
   overrideId: string | null;  // pdn_entries.id do overlay (se houver)
-  grupo: PdnGrupo;            // grupo efetivo (caidos se caiu=true; senão override → natural)
-  grupoOrigem: PdnGrupo;      // grupo natural (etapa do pipeline) — sem override
-  grupoOverride: PdnGrupo | null; // etapa ajustada pelo gestor (só PDN)
-  etapaAjustada: boolean;    // grupo efetivo difere da etapa do pipeline (só linhas do pipeline)
+  grupo: PdnGrupo;            // etapa do pipeline (fonte única)
+  grupoOrigem: PdnGrupo;      // idem — mantido por compatibilidade de leitura
   nome: string;
   data: string;               // YYYY-MM-DD
   empreendimento: string;
@@ -91,7 +89,6 @@ export interface PdnRow {
   motivoQueda: string;
   diasParado: number;
   emRisco: boolean;
-  isManual: boolean;
   // ── Camada de gestão do gestor (interna) ──
   proximaAcaoData: string;   // YYYY-MM-DD
   prioridade: "alta" | "media" | "baixa" | "";
@@ -99,13 +96,11 @@ export interface PdnRow {
   riscoMotivo: string;
   proximaAcaoVencida: boolean;
   novoDesdeOntem: boolean;
-  oculto: boolean;           // removido da planilha pelo gestor (overlay), sem afetar o pipeline
   avisadoEm: string | null;  // quando o gestor avisou o corretor
   avisadoEtapa: string | null;
-  ocultoEm: string | null;   // quando a linha foi removida da planilha (overlay)
-  ocultoPor: string;         // nome do gestor que removeu (quando resolvido)
-  etapaAtualLabel: string;   // etapa atual no pipeline (para conferência no painel de ocultos)
+  etapaAtualLabel: string;   // etapa atual no pipeline
 }
+
 
 type PdnEntry = {
   id: string;
@@ -481,17 +476,20 @@ export function usePdn(mes: string) {
   }, [entries]);
 
   // Overlay indexado por negocio_id e por pipeline_lead_id
+  // Overlay indexado por negocio_id e por pipeline_lead_id — SEMPRE recortado pelo mês
+  // selecionado (sem isso, uma nota de julho aparecia/era gravada em agosto).
+  const entriesDoMes = useMemo(() => entries.filter(e => e.mes === mes), [entries, mes]);
   const overrideByNegocio = useMemo(() => {
     const map: Record<string, PdnEntry> = {};
-    for (const e of entries) if (e.negocio_id) map[e.negocio_id] = e;
+    for (const e of entriesDoMes) if (e.negocio_id) map[e.negocio_id] = e;
     return map;
-  }, [entries]);
+  }, [entriesDoMes]);
   const overrideByLead = useMemo(() => {
     const map: Record<string, PdnEntry> = {};
-    for (const e of entries) if (!e.negocio_id && e.pipeline_lead_id) map[e.pipeline_lead_id] = e;
+    for (const e of entriesDoMes) if (!e.negocio_id && e.pipeline_lead_id) map[e.pipeline_lead_id] = e;
     return map;
-  }, [entries]);
-  const manualRows = useMemo(() => entries.filter(e => !e.negocio_id && !e.pipeline_lead_id && e.mes === mes), [entries, mes]);
+  }, [entriesDoMes]);
+
 
   const mesAtual = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
@@ -538,8 +536,6 @@ export function usePdn(mes: string) {
         overrideId: ov?.id ?? null,
         grupo: grupoBase,
         grupoOrigem: grupoNatural,
-        grupoOverride: null,
-        etapaAjustada: false,
         nome: d.nome,
         data,
         empreendimento: d.empreendimento || "—",
@@ -554,18 +550,14 @@ export function usePdn(mes: string) {
         motivoQueda: "",
         diasParado: dias,
         emRisco,
-        isManual: false,
         proximaAcaoData,
         prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
         riscoManual,
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: isVencida(proximaAcaoData),
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
-        oculto: false,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-        ocultoEm: null,
-        ocultoPor: "",
         etapaAtualLabel: GRUPO_LABEL[grupoNatural],
       });
 
@@ -588,8 +580,6 @@ export function usePdn(mes: string) {
         overrideId: ov?.id ?? null,
         grupo: grupoBase,
         grupoOrigem: "ganho",
-        grupoOverride: null,
-        etapaAjustada: false,
         nome: vd.nome,
         data: (vd.dataAssinatura || "").slice(0, 10),
         empreendimento: vd.empreendimento || "—",
@@ -604,18 +594,14 @@ export function usePdn(mes: string) {
         motivoQueda: "",
         diasParado: 0,
         emRisco: false,
-        isManual: false,
         proximaAcaoData: ov?.proxima_acao_data || "",
         prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
         riscoManual: !!ov?.risco_manual,
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: false,
         novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
-        oculto: false,
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
-        ocultoEm: null,
-        ocultoPor: "",
         etapaAtualLabel: GRUPO_LABEL["ganho"],
       });
     }
@@ -637,12 +623,11 @@ export function usePdn(mes: string) {
 
   // O PDN mostra tudo que está no pipeline — nada é escondido por overlay.
   const rows = allRows;
-  const hiddenRows = useMemo<PdnRow[]>(() => [], []);
 
   // ── Overlay: SOMENTE anotações internas do gestor (pdn_entries) ───────────────
   // Etapa, VGV, empreendimento, corretor e queda vêm do pipeline — nunca daqui.
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "avisadoEm" | "avisadoEtapa">>) => {
-    if (!user) return;
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "avisadoEm" | "avisadoEtapa">>): Promise<boolean> => {
+    if (!user) return false;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
     if (patch.proximaAcao !== undefined) payload.proxima_acao = patch.proximaAcao || null;
@@ -653,12 +638,10 @@ export function usePdn(mes: string) {
     if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
     if (patch.avisadoEm !== undefined) payload.corretor_avisado_em = patch.avisadoEm || null;
     if (patch.avisadoEtapa !== undefined) payload.corretor_avisado_etapa = patch.avisadoEtapa || null;
-    if (Object.keys(payload).length === 0) return;
+    if (Object.keys(payload).length === 0) return false;
+    payload.updated_at = new Date().toISOString();
 
-    if (row.overrideId) {
-      const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
-      if (error) { toast.error("Erro ao salvar"); return; }
-    } else {
+    const insertRow = async () => {
       const { error } = await supabase.from("pdn_entries").insert({
         gerente_id: user.id,
         negocio_id: row.negocioId,
@@ -672,10 +655,46 @@ export function usePdn(mes: string) {
         equipe: row.equipe === "—" ? null : row.equipe,
         ...payload,
       });
-      if (error) { toast.error("Erro ao salvar"); return; }
+      if (error) { toast.error(`Erro ao salvar: ${error.message}`); return false; }
+      return true;
+    };
+
+    let ok: boolean;
+    if (row.overrideId) {
+      // `.select("id")` é obrigatório: sem ele, um UPDATE bloqueado por RLS afeta 0
+      // linhas e retorna sucesso — o gestor via "salvo" sem nada ter sido gravado.
+      const { data, error } = await supabase
+        .from("pdn_entries").update(payload).eq("id", row.overrideId).select("id");
+      if (error) { toast.error(`Erro ao salvar: ${error.message}`); return false; }
+      ok = (data?.length ?? 0) > 0 ? true : await insertRow();
+    } else {
+      ok = await insertRow();
     }
+    if (!ok) return false;
     await loadEntries();
+    return true;
   }, [user, mes, loadEntries]);
+
+  // ── Empreendimento / VGV: gravam no NEGÓCIO real (fonte única), nunca no overlay ──
+  const saveNegocioCampos = useCallback(async (
+    row: PdnRow,
+    patch: { vgv?: number; empreendimento?: string },
+  ): Promise<boolean> => {
+    if (!row.negocioId) {
+      toast.error("Sem negócio vinculado — abra o lead para criar o negócio antes de editar VGV/empreendimento.");
+      return false;
+    }
+    const ok = await syncNegocioVgvFromPdn(
+      row,
+      patch.vgv ?? null,
+      patch.empreendimento !== undefined ? patch.empreendimento : null,
+    );
+    if (!ok) return false;
+    toast.success("Negócio atualizado.");
+    await loadDeals();
+    return true;
+  }, [loadDeals]);
+
 
 
   // ── Marcar queda — age NO PIPELINE (descarte real do lead), não no overlay ────
@@ -765,36 +784,12 @@ export function usePdn(mes: string) {
     toast.success("Corretor avisado no app.");
   }, [saveOverride]);
 
-  // ── Linha manual (CRUD completo) ─────────────────────────────────────────────
-  const addManualRow = useCallback(async (grupo: PdnGrupo) => {
-    if (!user) return;
-    const { error } = await supabase.from("pdn_entries").insert({
-      gerente_id: user.id,
-      mes,
-      nome: "Novo negócio",
-      situacao: grupo === "caidos" ? "em_negociacao" : grupo,
-    });
-    if (error) { toast.error("Erro ao adicionar linha"); return; }
-    await loadEntries();
-  }, [user, mes, loadEntries]);
-
-  const updateManualRow = useCallback(async (overrideId: string, patch: Record<string, any>) => {
-    const { error } = await supabase.from("pdn_entries").update(patch).eq("id", overrideId);
-    if (error) { toast.error("Erro ao salvar"); return; }
-    await loadEntries();
-  }, [loadEntries]);
-
-  const deleteRow = useCallback(async (overrideId: string) => {
-    const { error } = await supabase.from("pdn_entries").delete().eq("id", overrideId);
-    if (error) { toast.error("Erro ao excluir"); return; }
-    await loadEntries();
-  }, [loadEntries]);
 
   // ── Possíveis duplicados: mesmo cliente do pipeline em mais de uma etapa ──────
   const duplicados = useMemo(() => {
     const map: Record<string, PdnRow[]> = {};
     for (const r of rows) {
-      if (r.isManual || !r.pipelineLeadId) continue;
+      if (!r.pipelineLeadId) continue;
       const key = `${r.nome.toLowerCase().trim()}|${r.corretor.toLowerCase().trim()}`;
       (map[key] ||= []).push(r);
     }
@@ -835,22 +830,19 @@ export function usePdn(mes: string) {
 
   return {
     rows,
-    hiddenRows,
     scopeAuthIds,
     resumo,
     duplicados,
     loading: loadingDeals || loadingEntries,
     refreshAll,
     saveOverride,
+    saveNegocioCampos,
     marcarQueda,
     mudarEtapa,
 
     avisarCorretor,
     descartarLead,
     inativarLead,
-    addManualRow,
-    updateManualRow,
-    deleteRow,
     reload: loadEntries,
   };
 }

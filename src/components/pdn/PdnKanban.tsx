@@ -19,12 +19,11 @@ const PROB_POR_GRUPO: Record<PdnGrupo, number> = {
   caidos: 0,
 };
 
-export type PdnSavePatch = Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv">>;
+export type PdnSavePatch = Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>;
 
 interface PdnKanbanProps {
   rows: PdnRow[];
   onSave: (row: PdnRow, patch: PdnSavePatch) => void;
-  onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
@@ -35,7 +34,7 @@ interface PdnKanbanProps {
 }
 
 export function PdnKanban({
-  rows, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
+  rows, onSave, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
 
 }: PdnKanbanProps) {
   const [selected, setSelected] = useState<PdnRow | null>(null);
@@ -208,7 +207,6 @@ export function PdnKanban({
         row={selectedLive}
         onClose={() => setSelected(null)}
         onSave={onSave}
-        onUpdateManual={onUpdateManual}
         onRemove={onRemove}
         onQueda={onQueda}
         onReativar={onReativar}
