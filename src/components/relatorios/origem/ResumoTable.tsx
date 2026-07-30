@@ -70,7 +70,7 @@ export function ResumoTable({
         !forceOpen && rows.length > 0 ? (
           <>
             <ToggleBtn active={full} onClick={() => setFull((f) => !f)}>{full ? "Menos colunas" : "Mais colunas"}</ToggleBtn>
-            {rows.length > 10 && <TopNSelect value={topN} onChange={setTopN} />}
+            {rows.length > 5 && <TopNSelect value={topN} onChange={setTopN} />}
           </>
         ) : null
       }
