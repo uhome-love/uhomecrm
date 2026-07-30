@@ -678,124 +678,69 @@ export function usePdn(mes: string) {
   }, [user, mes, loadEntries]);
 
 
-  // ── Marcar / reverter queda ("caiu") — overlay + registro na timeline do lead ─
+  // ── Marcar queda — age NO PIPELINE (descarte real do lead), não no overlay ────
   const marcarQueda = useCallback(async (row: PdnRow, motivo: string) => {
-    await saveOverride(row, { caiu: true, motivoQueda: motivo });
-    if (row.pipelineLeadId && !row.isManual) {
+    if (!row.pipelineLeadId && !row.negocioId) {
+      toast.error("Sem lead vinculado — corrija a divergência antes de marcar queda.");
+      return;
+    }
+    const ok = await discardLeadFromPdn(row, motivo, user?.id ?? null);
+    if (!ok) return;
+    if (row.pipelineLeadId) {
       try {
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id: row.pipelineLeadId,
           tipo: "pdn_risco",
-          titulo: "PDN: marcado como caiu",
+          titulo: "PDN: negócio marcado como caiu",
           descricao: motivo || "Sem motivo informado",
           status: "concluida",
           created_by: user?.id ?? null,
         });
-      } catch { /* não bloqueia o overlay */ }
+      } catch { /* não bloqueia a ação */ }
     }
-  }, [saveOverride, user]);
+    await Promise.all([loadDeals(), loadEntries()]);
+  }, [user, loadDeals, loadEntries]);
 
-  const reativarQueda = useCallback(async (row: PdnRow) => {
-    await saveOverride(row, { caiu: false, motivoQueda: "" });
-    if (row.pipelineLeadId && !row.isManual) {
-      try {
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: row.pipelineLeadId,
-          tipo: "pdn_risco",
-          titulo: "PDN: reativado (reverteu queda)",
-          descricao: "",
-          status: "concluida",
-          created_by: user?.id ?? null,
-        });
-      } catch { /* não bloqueia o overlay */ }
-    }
-  }, [saveOverride, user]);
-
-
-  // ── Ocultar / restaurar negócio na planilha (só overlay, nunca no pipeline) ────
-  const ocultarRow = useCallback(async (row: PdnRow) => {
-    await saveOverride(row, { oculto: true });
-  }, [saveOverride]);
-
-  const restaurarRow = useCallback(async (row: PdnRow) => {
-    await saveOverride(row, { oculto: false });
-  }, [saveOverride]);
-
-  // ── Editar empreendimento / VGV (overlay do gestor) ──────────────────────────
-  const editarEmpreendimento = useCallback(async (row: PdnRow, empreendimento: string) => {
-    await saveOverride(row, { empreendimento });
-  }, [saveOverride]);
-
-  const editarVgv = useCallback(async (row: PdnRow, vgv: number) => {
-    await saveOverride(row, { vgv });
-  }, [saveOverride]);
-
-  // ── Mudar etapa no PDN — AGORA sincroniza com o pipeline real ────────────────
+  // ── Mudar etapa no PDN — escreve sempre no pipeline real ──────────────────────
   const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnDestino | "caidos", opts?: { motivo?: string }) => {
-    if (grupo === "caidos") { await saveOverride(row, { caiu: true }); return; }
+    if (grupo === "caidos") { await marcarQueda(row, opts?.motivo || ""); return; }
+    if (!row.pipelineLeadId && !row.negocioId) {
+      toast.error("Sem lead vinculado no pipeline — não é possível mover a etapa.");
+      return;
+    }
     const isPreVisita = grupo === "qualificacao" || grupo === "aquecimento";
-    if (row.isManual && row.overrideId) {
-      if (isPreVisita) {
-        toast.error("Linha manual não pode ser regredida para etapa fora do PDN.");
-        return;
-      }
-      const { error } = await supabase.from("pdn_entries").update({ situacao: grupo, caiu: false }).eq("id", row.overrideId);
-      if (error) { toast.error("Erro ao salvar"); return; }
-      await loadEntries();
-      return;
+    const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
+    if (!result) return;
+    // Alinha a nota do gestor com a nova etapa e garante o vínculo com o lead real.
+    if (row.overrideId && !isPreVisita) {
+      const patch: Record<string, unknown> = {
+        situacao: grupo,
+        updated_at: new Date().toISOString(),
+      };
+      if (result.pipelineLeadId && !row.pipelineLeadId) patch.pipeline_lead_id = result.pipelineLeadId;
+      if (result.negocioId && !row.negocioId) patch.negocio_id = result.negocioId;
+      const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
+      if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
     }
-    // Linha do pipeline (ou só com negocio_id): escreve NO pipeline real + alinha overlay
-    if (row.pipelineLeadId || row.negocioId) {
-      const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
-      if (!result) return;
-      // Sincroniza a pdn_entry existente com a nova etapa e garante o vínculo com o lead real.
-      // Regressão p/ qualificacao/aquecimento tira o lead do escopo PDN — não escreve situacao inválida.
-      if (row.overrideId && !isPreVisita) {
-        const patch: Record<string, unknown> = {
-          situacao: grupo,
-          grupo_override: null,
-          caiu: false,
-          motivo_queda: null,
-          updated_at: new Date().toISOString(),
-        };
-        if (result.pipelineLeadId && !row.pipelineLeadId) {
-          patch.pipeline_lead_id = result.pipelineLeadId;
-        }
-        if (result.negocioId && !row.negocioId) {
-          patch.negocio_id = result.negocioId;
-        }
-        const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
-        if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
-      }
-      await Promise.all([loadDeals(), loadEntries()]);
-      return;
-    }
-    // Fallback (sem pipeline): grava overlay (apenas grupos PDN válidos)
-    if (isPreVisita) return;
-    await saveOverride(row, { grupoOverride: grupo === row.grupoOrigem ? null : grupo, caiu: false });
-  }, [saveOverride, loadEntries, loadDeals, user?.id]);
+    await Promise.all([loadDeals(), loadEntries()]);
+  }, [marcarQueda, loadEntries, loadDeals, user?.id]);
 
 
   // ── Descartar (reengajável) via PDN → altera lead real ────────────────────────
   const descartarLead = useCallback(async (row: PdnRow, motivo: string) => {
     const ok = await discardLeadFromPdn(row, motivo, user?.id ?? null);
     if (!ok) return;
-    await saveOverride(row, { caiu: true, motivoQueda: motivo || "Descartado via PDN" });
     await Promise.all([loadDeals(), loadEntries()]);
-  }, [user?.id, saveOverride, loadDeals, loadEntries]);
+  }, [user?.id, loadDeals, loadEntries]);
 
   // ── Inativar definitivo via PDN → arquiva lead real ───────────────────────────
   const inativarLead = useCallback(async (row: PdnRow, motivo: string) => {
     const ok = await inactivateLeadFromPdn(row, motivo);
     if (!ok) return;
-    await saveOverride(row, { caiu: true, motivoQueda: motivo || "Inativado via PDN", oculto: true });
     await Promise.all([loadDeals(), loadEntries()]);
-  }, [saveOverride, loadDeals, loadEntries]);
+  }, [loadDeals, loadEntries]);
 
 
-  const limparEtapaOverride = useCallback(async (row: PdnRow) => {
-    await saveOverride(row, { grupoOverride: null });
-  }, [saveOverride]);
 
   // ── Avisar corretor (notificação no app) — não altera o pipeline ─────────────
   const avisarCorretor = useCallback(async (row: PdnRow, mensagem: string) => {
