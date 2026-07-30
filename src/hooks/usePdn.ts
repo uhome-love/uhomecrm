@@ -73,10 +73,8 @@ export interface PdnRow {
   pipelineLeadId: string | null; // pipeline_leads.id (fonte)
   corretorAuthId: string | null; // auth id do corretor (para avisar)
   overrideId: string | null;  // pdn_entries.id do overlay (se houver)
-  grupo: PdnGrupo;            // grupo efetivo (caidos se caiu=true; senão override → natural)
-  grupoOrigem: PdnGrupo;      // grupo natural (etapa do pipeline) — sem override
-  grupoOverride: PdnGrupo | null; // etapa ajustada pelo gestor (só PDN)
-  etapaAjustada: boolean;    // grupo efetivo difere da etapa do pipeline (só linhas do pipeline)
+  grupo: PdnGrupo;            // etapa do pipeline (fonte única)
+  grupoOrigem: PdnGrupo;      // idem — mantido por compatibilidade de leitura
   nome: string;
   data: string;               // YYYY-MM-DD
   empreendimento: string;
@@ -91,7 +89,6 @@ export interface PdnRow {
   motivoQueda: string;
   diasParado: number;
   emRisco: boolean;
-  isManual: boolean;
   // ── Camada de gestão do gestor (interna) ──
   proximaAcaoData: string;   // YYYY-MM-DD
   prioridade: "alta" | "media" | "baixa" | "";
@@ -99,13 +96,11 @@ export interface PdnRow {
   riscoMotivo: string;
   proximaAcaoVencida: boolean;
   novoDesdeOntem: boolean;
-  oculto: boolean;           // removido da planilha pelo gestor (overlay), sem afetar o pipeline
   avisadoEm: string | null;  // quando o gestor avisou o corretor
   avisadoEtapa: string | null;
-  ocultoEm: string | null;   // quando a linha foi removida da planilha (overlay)
-  ocultoPor: string;         // nome do gestor que removeu (quando resolvido)
-  etapaAtualLabel: string;   // etapa atual no pipeline (para conferência no painel de ocultos)
+  etapaAtualLabel: string;   // etapa atual no pipeline
 }
+
 
 type PdnEntry = {
   id: string;
