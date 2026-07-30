@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { MaterialListaCompact } from "@/components/materiais/MaterialListaCompac
 import { EmpreendimentoFormDialog } from "@/components/materiais/EmpreendimentoFormDialog";
 import {
   FolderOpen, Plus, Search, Loader2, Sparkles, X, BarChart3,
-  Clock, Menu, Building2, MoreVertical,
+  Clock, Menu, Building2, MoreVertical, Lightbulb, Brain,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,11 @@ import {
   useMaterialRecentes,
 } from "@/hooks/useMateriaisFavoritos";
 
+const ScriptsGenerator = lazy(() => import("@/pages/ScriptsGenerator"));
+const BaseConhecimento = lazy(() => import("@/pages/BaseConhecimento"));
+
+type MateriaisTab = "todos" | "recentes" | "scripts" | "base";
+
 interface SemanticResult extends MaterialLink {
   similarity: number;
   snippet: string;
@@ -34,10 +39,12 @@ interface SemanticResult extends MaterialLink {
 
 export default function MateriaisPage() {
   const { data: empreendimentos = [], isLoading } = useMateriais();
-  const { isGestor } = useUserRole();
+  const { isGestor, isAdmin } = useUserRole();
+  const podeBaseHomi = isGestor || isAdmin;
   const [searchParams, setSearchParams] = useSearchParams();
-  const [tab, setTab] = useState<"todos" | "recentes">(
-    (searchParams.get("tab") as any) === "recentes" ? "recentes" : "todos",
+  const tabParam = searchParams.get("tab") as MateriaisTab | null;
+  const [tab, setTab] = useState<MateriaisTab>(
+    tabParam && ["recentes", "scripts", "base"].includes(tabParam) ? tabParam : "todos",
   );
   const [search, setSearch] = useState("");
   const [newDialog, setNewDialog] = useState(false);
@@ -155,16 +162,24 @@ export default function MateriaisPage() {
       {/* Barra unificada: abas + busca única */}
       <Tabs value={tab} onValueChange={handleTabChange} className="space-y-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <TabsList className="h-9 self-start">
+          <TabsList className="h-9 self-start flex-wrap">
             <TabsTrigger value="todos" className="h-7 px-3 text-xs">
               <FolderOpen className="h-3.5 w-3.5 mr-1.5" /> Empreendimentos
             </TabsTrigger>
             <TabsTrigger value="recentes" className="h-7 px-3 text-xs">
               <Clock className="h-3.5 w-3.5 mr-1.5" /> Recentes
             </TabsTrigger>
+            <TabsTrigger value="scripts" className="h-7 px-3 text-xs">
+              <Lightbulb className="h-3.5 w-3.5 mr-1.5" /> Scripts
+            </TabsTrigger>
+            {podeBaseHomi && (
+              <TabsTrigger value="base" className="h-7 px-3 text-xs">
+                <Brain className="h-3.5 w-3.5 mr-1.5" /> Base HOMI
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          <div className="flex-1 flex items-center gap-2 min-w-0">
+          <div className={`flex-1 items-center gap-2 min-w-0 ${tab === "scripts" || tab === "base" ? "hidden" : "flex"}`}>
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -320,6 +335,19 @@ export default function MateriaisPage() {
             emptyLabel="Seus últimos materiais abertos aparecerão aqui."
           />
         </TabsContent>
+        <TabsContent value="scripts" className="mt-0">
+          <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}>
+            <ScriptsGenerator showHeader={false} />
+          </Suspense>
+        </TabsContent>
+
+        {podeBaseHomi && (
+          <TabsContent value="base" className="mt-0">
+            <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}>
+              <BaseConhecimento showHeader={false} />
+            </Suspense>
+          </TabsContent>
+        )}
       </Tabs>
 
       <EmpreendimentoFormDialog open={newDialog} onOpenChange={setNewDialog} />
