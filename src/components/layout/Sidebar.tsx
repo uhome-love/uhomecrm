@@ -197,7 +197,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Meu Time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
+        { label: "Performance",        path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
 
       ],
     },
