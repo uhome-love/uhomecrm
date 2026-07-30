@@ -1031,7 +1031,7 @@ Deno.serve(async (req) => {
           } catch (e) { L.warn("Dedup registry upsert warn (reactivation/email)", { dedupRegistryId }, e); }
 
           logOps("info", "business", "lead_dedup_reactivated", {
-            reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse_via_email_match",
+            reason: "lead_ativo_recebeu_novo_interesse_via_email_match",
             lead_id: dup.id,
             corretor_id: dup.corretor_id,
             was_discarded: isDiscarded,
