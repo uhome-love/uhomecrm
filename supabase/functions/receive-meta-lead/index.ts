@@ -603,19 +603,12 @@ Deno.serve(async (req) => {
 
       // Determine if lead needs to be moved out of Descarte/archived
       const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-      const SEM_CONTATO_STAGE_ID = "2fcba9be-1188-4a54-9452-394beefdc330";
       const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
 
       const updatePayload: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
         observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Meta Ads direto)${message ? ` — "${message}"` : ""}`,
       };
-      if (isDiscarded) {
-        updatePayload.stage_id = SEM_CONTATO_STAGE_ID;
-        updatePayload.stage_changed_at = new Date().toISOString();
-        updatePayload.arquivado = false;
-        updatePayload.motivo_descarte = null;
-      }
 
       // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
       if (externalLeadId && !existing.meta_lead_id) {
@@ -634,7 +627,41 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Lead DESCARTADO/ARQUIVADO: volta como NOVO LEAD para a roleta (não retorna ao corretor antigo)
+      if (isDiscarded) {
+        await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
+        const reac = await reactivateDiscardedToRoleta(supabase, {
+          supabaseUrl,
+          serviceKey,
+          leadId: existing.id,
+          corretorAnteriorId: existing.corretor_id,
+          origemLabel: "Meta Ads",
+          interesseLabel: interestLabel,
+          mensagem: message || null,
+          traceId,
+          logger: L,
+        });
+        try {
+          await supabase
+            .from("jetimob_processed")
+            .upsert({ jetimob_lead_id: dedupRegistryId, telefone }, { onConflict: "jetimob_lead_id" });
+        } catch (e) { L.warn("Dedup registry upsert warn (roleta/phone)", { dedupRegistryId }, e); }
+        logOps("info", "business", "lead_descartado_reenviado_para_roleta", {
+          lead_id: existing.id,
+          corretor_anterior: existing.corretor_id,
+          distributed: reac.distributed,
+          novo_corretor: reac.corretor_id || null,
+          reason: reac.reason || null,
+          telefone_anon: await anonPhone(telefone),
+        });
+        return new Response(
+          JSON.stringify({ success: true, action: "reactivated_to_roleta", lead_id: existing.id, distributed: reac.distributed, trace_id: traceId }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
+
 
       await Promise.all([
         supabase.from("notifications").insert({
