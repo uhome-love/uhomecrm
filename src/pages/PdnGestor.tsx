@@ -704,7 +704,7 @@ export default function PdnGestor() {
                 isMobile={isMobile}
                 colWidths={colWidths}
                 onColResize={setColWidth}
-                onAdd={() => addManualRow(g.key)}
+                onAdd={undefined}
                 onSave={handleSave}
                 onUpdateManual={updateManualRow}
                 onRemove={handleRemove}
