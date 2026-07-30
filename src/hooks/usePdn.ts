@@ -157,6 +157,27 @@ function diffDays(dateStr: string): number {
   return Math.floor((Date.now() - d) / 86400000);
 }
 
+
+/**
+ * As marcações do gestor (`caiu` / `oculto`) valem apenas para o mês em que foram
+ * feitas e são descartadas automaticamente quando o negócio mudou de etapa depois
+ * da marcação — evita negócio ativo sumir do PDN para sempre.
+ */
+function overlayMarcasAtivas(
+  ov: { mes?: string | null; updated_at?: string | null } | undefined,
+  mes: string,
+  stageChangedAt: string | null | undefined,
+): boolean {
+  if (!ov) return false;
+  if (ov.mes !== mes) return false;
+  if (ov.updated_at && stageChangedAt) {
+    const marcado = new Date(ov.updated_at).getTime();
+    const mudou = new Date(stageChangedAt).getTime();
+    if (Number.isFinite(marcado) && Number.isFinite(mudou) && mudou > marcado) return false;
+  }
+  return true;
+}
+
 interface PipelineDeal {
   id: string;              // pipeline_lead_id
   nome: string;
@@ -206,6 +227,7 @@ export function usePdn(mes: string) {
   // Escopo de corretores resolvido (auth ids). undefined = ainda não resolvido; null = todos.
   const [scopeAuthIds, setScopeAuthIds] = useState<string[] | null | undefined>(undefined);
   const [vendasMes, setVendasMes] = useState<VendaMes[]>([]);
+  const [gestorNames, setGestorNames] = useState<Record<string, string>>({});
 
   // ── Overlay do gerente (pdn_entries) ─────────────────────────────────────────
   const loadEntries = useCallback(async () => {
