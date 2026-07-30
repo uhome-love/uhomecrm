@@ -7506,6 +7506,7 @@ export type Database = {
           campanha: string | null
           campanha_id: string | null
           capi_enviado_at: string | null
+          cep: string | null
           client_ip_address: string | null
           client_user_agent: string | null
           complexidade_score: number
@@ -7617,6 +7618,7 @@ export type Database = {
           campanha?: string | null
           campanha_id?: string | null
           capi_enviado_at?: string | null
+          cep?: string | null
           client_ip_address?: string | null
           client_user_agent?: string | null
           complexidade_score?: number
@@ -7728,6 +7730,7 @@ export type Database = {
           campanha?: string | null
           campanha_id?: string | null
           capi_enviado_at?: string | null
+          cep?: string | null
           client_ip_address?: string | null
           client_user_agent?: string | null
           complexidade_score?: number
@@ -12645,16 +12648,29 @@ export type Database = {
           visitas_semana: number
         }[]
       }
-      enqueue_meta_capi_event: {
-        Args: {
-          p_custom_data?: Json
-          p_event_name: string
-          p_event_time?: string
-          p_lead_event_source?: string
-          p_lead_id: string
-        }
-        Returns: string
-      }
+      enqueue_meta_capi_event:
+        | {
+            Args: {
+              p_custom_data?: Json
+              p_event_name: string
+              p_event_time?: string
+              p_lead_event_source?: string
+              p_lead_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_action_source?: string
+              p_custom_data?: Json
+              p_event_name: string
+              p_event_source_url?: string
+              p_event_time?: string
+              p_lead_event_source?: string
+              p_lead_id: string
+            }
+            Returns: string
+          }
       enviados_hoje_reengajamento: { Args: never; Returns: number }
       escalonar_notificacoes_leads: { Args: never; Returns: number }
       expirar_aceites_roleta: { Args: never; Returns: Json }

@@ -222,8 +222,14 @@ Deno.serve(async (req) => {
         });
         const interestLabel = novoInteresse.interesseLabel;
         const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
+        // Atualiza sinais de match do Meta (fbc/fbp/UA/IP) quando vierem nesta submissão
+        if (fbc) updatePayload.fbc = fbc;
+        if (fbp) updatePayload.fbp = fbp;
+        if (clientUserAgent) updatePayload.client_user_agent = clientUserAgent;
+        if (clientIpAddress) updatePayload.client_ip_address = clientIpAddress;
 
         await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
+
 
         // ── Lead DESCARTADO/ARQUIVADO: volta como NOVO LEAD para a roleta
         if (isDiscarded) {
