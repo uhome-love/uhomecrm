@@ -197,11 +197,41 @@ export default function Configuracoes() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Gerencie seu perfil e altere sua senha
+          Perfil, notificações, integrações e ferramentas de sistema
         </p>
       </div>
 
+      <nav
+        aria-label="Seções das Configurações"
+        className="flex items-center gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {CONFIG_SECTIONS.filter((s) => !s.adminOnly || isAdmin).map((s) => {
+          const Icon = s.icon;
+          const active = s.id === secao;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => selecionar(s.id)}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                active
+                  ? "border-transparent bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />
+              {s.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {secao === "perfil" && (
+        <>
       {/* Profile Card */}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
