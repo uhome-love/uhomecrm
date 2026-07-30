@@ -926,19 +926,12 @@ Deno.serve(async (req) => {
           const todayStamp = new Date().toISOString().slice(0, 10);
           const interestLabel = empreendimento || dup.empreendimento || "mesmo imóvel";
           const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-          const SEM_CONTATO_STAGE_ID = "2fcba9be-1188-4a54-9452-394beefdc330";
           const isDiscarded = dup.stage_id === DESCARTE_STAGE_ID || dup.arquivado === true;
 
           const updatePayload: Record<string, unknown> = {
             updated_at: new Date().toISOString(),
             observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Meta Ads direto)${message ? ` — "${message}"` : ""}`,
           };
-          if (isDiscarded) {
-            updatePayload.stage_id = SEM_CONTATO_STAGE_ID;
-            updatePayload.stage_changed_at = new Date().toISOString();
-            updatePayload.arquivado = false;
-            updatePayload.motivo_descarte = null;
-          }
 
           // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
           if (externalLeadId && !dup.meta_lead_id) {
