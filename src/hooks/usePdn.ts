@@ -784,11 +784,6 @@ export function usePdn(mes: string) {
     toast.success("Corretor avisado no app.");
   }, [saveOverride]);
 
-  const deleteRow = useCallback(async (overrideId: string) => {
-    const { error } = await supabase.from("pdn_entries").delete().eq("id", overrideId);
-    if (error) { toast.error("Erro ao excluir"); return; }
-    await loadEntries();
-  }, [loadEntries]);
 
   // ── Possíveis duplicados: mesmo cliente do pipeline em mais de uma etapa ──────
   const duplicados = useMemo(() => {
