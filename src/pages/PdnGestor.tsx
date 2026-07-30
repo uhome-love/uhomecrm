@@ -681,7 +681,7 @@ export default function PdnGestor() {
           onMudarEtapa={handleMudarEtapa}
           onLimparEtapa={limparEtapaOverride}
           onAvisar={avisarCorretor}
-          onAdd={addManualRow}
+          onAdd={undefined}
         />
       ) : (
         <div className="space-y-5">
