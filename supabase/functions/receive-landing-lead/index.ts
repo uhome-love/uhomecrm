@@ -204,21 +204,34 @@ Deno.serve(async (req) => {
         const interestLabel = empreendimento || existing.empreendimento || "mesmo imóvel";
 
         const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-        const SEM_CONTATO_STAGE_ID = "2fcba9be-1188-4a54-9452-394beefdc330";
         const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
 
         const updatePayload: Record<string, unknown> = {
           updated_at: new Date().toISOString(),
           observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Landing Page)${message ? ` — "${message}"` : ""}`,
         };
-        if (isDiscarded) {
-          updatePayload.stage_id = SEM_CONTATO_STAGE_ID;
-          updatePayload.stage_changed_at = new Date().toISOString();
-          updatePayload.arquivado = false;
-          updatePayload.motivo_descarte = null;
-        }
 
         await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
+
+        // ── Lead DESCARTADO/ARQUIVADO: volta como NOVO LEAD para a roleta
+        if (isDiscarded) {
+          const reac = await reactivateDiscardedToRoleta(supabase, {
+            supabaseUrl,
+            serviceKey,
+            leadId: existing.id,
+            corretorAnteriorId: existing.corretor_id,
+            origemLabel: "Landing Page",
+            interesseLabel: interestLabel,
+            mensagem: message || null,
+            logger: L,
+          });
+          L.info("Lead descartado reenviado para a roleta", { leadId: existing.id, distributed: reac.distributed });
+          return new Response(
+            JSON.stringify({ success: true, action: "reactivated_to_roleta", lead_id: existing.id, distributed: reac.distributed }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
 
         await Promise.all([
           supabase.from("notifications").insert({
