@@ -22,7 +22,10 @@ export interface MetricaCorretor {
   gerente_auth_id: string | null;
   corretor_ativo: boolean;
   leads_recebidos: number;
-  visitas_marcadas: number;
+  /** visitas criadas/agendadas no período (data de criação) */
+  visitas_agendadas: number;
+  /** agendadas que ainda não aconteceram (marcada/confirmada/reagendada) */
+  visitas_a_realizar: number;
   visitas_realizadas: number;
   visitas_no_show: number;
   vendas: number;
@@ -60,7 +63,8 @@ export async function fetchMetricas(filtro: MetricasFiltro): Promise<MetricaCorr
     gerente_auth_id: (r.gerente_auth_id as string) ?? null,
     corretor_ativo: Boolean(r.corretor_ativo),
     leads_recebidos: num(r.leads_recebidos),
-    visitas_marcadas: num(r.visitas_marcadas),
+    visitas_agendadas: num(r.visitas_agendadas ?? r.visitas_marcadas),
+    visitas_a_realizar: num(r.visitas_a_realizar),
     visitas_realizadas: num(r.visitas_realizadas),
     visitas_no_show: num(r.visitas_no_show),
     vendas: num(r.vendas),
@@ -70,7 +74,8 @@ export async function fetchMetricas(filtro: MetricasFiltro): Promise<MetricaCorr
 
 export interface MetricasTotais {
   leads_recebidos: number;
-  visitas_marcadas: number;
+  visitas_agendadas: number;
+  visitas_a_realizar: number;
   visitas_realizadas: number;
   visitas_no_show: number;
   vendas: number;
