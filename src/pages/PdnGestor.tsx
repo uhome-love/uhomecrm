@@ -343,7 +343,6 @@ export default function PdnGestor() {
     toast.info("O PDN espelha o pipeline — reative o lead direto no pipeline.");
   }, []);
   const limparEtapaOverride = useCallback(async (_row: PdnRow) => { /* etapa vem sempre do pipeline */ }, []);
-  const [showOcultos, setShowOcultos] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
@@ -601,8 +600,6 @@ export default function PdnGestor() {
           onClearKpi={() => setKpiFilter(null)}
           caidosCount={rows.filter(r => r.grupo === "caidos").length}
           onOpenArquivados={() => setView("arquivados")}
-          showOcultos={showOcultos}
-          onToggleOcultos={() => setShowOcultos(v => !v)}
           view={view}
           showResetLarguras={!isMobile && colsCustomized}
           onResetLarguras={resetColWidths}
