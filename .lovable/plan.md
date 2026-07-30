@@ -1,71 +1,41 @@
-## Auditoria — Central de Performance (`/performance`)
+## Problema confirmado
 
-Base lida: `CentralPerformance.tsx`, `PerfVisaoGeral`, `PerfRanking`, `PerfOrigem`, `PerfKpiCard`, `PerfMetaCard`, `PerfEvolucao`, `PerfTopCorretores`, `PerfDrilldownSheet`, `PerfCorretorSheet`, `CorretorProgresso`, `RelatorioCorretor`, camada SSOT (`metricasSSOT.ts`, `useMetricasSSOT`, `useMetasSSOT`, `useMetricasOrigem`, `useMetricasDetalhe`).
+Os 4 receivers de lead (`receive-meta-lead`, `receive-landing-lead`, `receive-imovelweb-lead`, `receive-rdstation-lead`) têm o mesmo bloco: quando o telefone/e-mail bate com um lead existente **que está em Descarte ou arquivado**, eles apenas movem o lead para **Sem Contato**, mantendo o corretor antigo (`corretor_id` inalterado, `aceite_status='aceito'`) e notificando esse corretor.
 
-### O que já está bom
-- Fonte única real: todas as abas consomem `rpc_metricas` / `rpc_metricas_origem` / `rpc_metricas_detalhe` — sem recálculo local de VGV.
-- Metas e ritmo reais (`PerfMetaCard`), drill-down por KPI e por corretor, ranking com busca, mobile em cards, CSV do ranking.
+Confirmado no banco: os 8 leads citados (Lisandra, Valeria, Jhennifer, Matheus, Cheyenne, Marilene, Patrícia em Sem Contato; Lucia já movida para Qualificação) estão com `aceite_status='aceito'`, corretor preenchido e `stage_changed_at` de 29/07.
 
-### Pontos fracos encontrados
+## Regra correta
 
-**1. A página não se adapta ao papel (o mais crítico)**
-- Todos veem as mesmas 5 abas na mesma ordem, começando em "Visão Geral" da empresa. Um corretor deveria cair em "Meu Progresso"/sua própria performance; CEO/diretor em Visão Geral.
-- `gerenteId` só é travado para gestor; não existe travamento por corretor (`filtro.userId` existe na SSOT mas nunca é usado na página).
-- Não há filtro/seletor de diretoria — diretor não consegue ver o conjunto das equipes dele.
+- **Lead ATIVO no pipeline** (qualquer etapa fora de Descarte, não arquivado): comportamento atual mantido — nada muda de etapa/dono, só gera notificação + push + atividade "🔄 Novo interesse" para o corretor. Já funciona.
+- **Lead em DESCARTE ou ARQUIVADO**: passa a voltar como **Novo Lead** e entra na **roleta**:
+  - `stage_id` = Novo Lead, `stage_changed_at` = agora
+  - `corretor_id` = null, `gerente_id` = null, `aceite_status = 'pendente_distribuicao'`
+  - `arquivado=false`, `motivo_descarte`/`tipo_descarte`/`reengajamento_status` zerados
+  - Observação/atividade registram o novo interesse e a origem
+  - Chama a distribuição da roleta **excluindo o corretor que descartou**
+  - Notificação do "lead reativado" NÃO vai mais para o corretor antigo (ele perdeu o lead); quem receber pela roleta recebe o aviso normal de novo lead
+  - Se a roleta não encontrar corretor (fora de janela, sem credenciado), o lead fica em `pendente_distribuicao` e aparece na **Fila do CEO** (comportamento padrão de lead novo)
 
-**2. Período pobre**
-- Só navegação mês a mês. Falta trimestre, ano, "últimos 90 dias" e intervalo customizado — CEO/diretor pensam em trimestre/ano.
-- Comparativo é só "vs mês anterior" no card de VGV; os demais KPIs não têm comparação.
+## Detalhes técnicos
 
-**3. Visão Geral: diagnóstico raso**
-- Só um vazamento (no-show). Faltam: leads sem primeiro contato no SLA e negócios parados em negociação — cada um com o "dono" do problema.
-- Funil só tem 2 etapas (lead→visita, visita→venda) e usa multiplicadores artificiais na barra (`conv*4`, `conv*8`), o que distorce a leitura visual.
-- Sem visita marcada → realizada e sem etapa de proposta/negociação no funil.
+1. **`supabase/functions/_shared/roleta-distribution.ts`** — `distributeLeadDirect` ganha parâmetro opcional `excludeAuthUserId`, repassado a `distribuir_lead_atomico(p_exclude_auth_user_id)` (a RPC já suporta).
+2. **Novo helper `supabase/functions/_shared/reactivateDiscardedToRoleta.ts`** — concentra o update do lead + atividade + chamada da distribuição, para os 4 receivers usarem o mesmo caminho (hoje o bloco está duplicado 5x, contando o match por e-mail do meta).
+3. **Atualizar os blocos `isDiscarded`** em:
+   - `receive-meta-lead/index.ts` (match por telefone ~linha 604 e match por e-mail ~linha 900)
+   - `receive-landing-lead/index.ts` (~linha 204)
+   - `receive-imovelweb-lead/index.ts` (~linha 304)
+   - `receive-rdstation-lead/index.ts` (~linha 292)
+   Cada um: se `isDiscarded` → helper novo (roleta) e retorna `action: "reactivated_to_roleta"`; senão → fluxo atual de notificação.
+4. **Log/observabilidade** — `ops_events` passa a registrar `lead_descartado_reenviado_para_roleta` com `lead_id`, `corretor_anterior`, resultado da distribuição.
+5. **Exclusividade com Oferta Ativa** — ao voltar para o pipeline, remove o registro correspondente em `oferta_ativa_leads` (por telefone normalizado), conforme a regra de exclusividade já vigente.
+6. **Correção retroativa dos 8 leads** — script pontual (data change, não migration) que, para esses IDs: limpa corretor/gerente, marca `pendente_distribuicao`, move para Novo Lead e dispara a distribuição excluindo o corretor anterior. Notifico o resultado lead a lead (quem pegou cada um / quem ficou na Fila do CEO).
 
-**4. Ranking**
-- Ordena, mas não mostra direção da ordenação nem permite inverter; sem indicador de posição vs mês anterior; sem linha de total/média da equipe para comparar.
-- Bloco de equipes existe mas não é clicável (não abre detalhe da equipe).
+## Validação
 
-**5. Origem**
-- Tem leads/visitas/vendas/VGV, mas **não tem custo**: já existe `marketing_entries` com gasto diário por campanha — falta CPL, custo por visita, custo por venda e ROAS. É a informação que o CEO precisa para cortar campanha.
-- Linhas não são clicáveis (sem drill-down para a lista de leads da origem).
-- Sem exportação própria (o CSV do header exporta o ranking, não a origem — inconsistente e confuso).
+- Teste com lead sintético: criar lead em Descarte com corretor X → simular novo touch do receiver → conferir no banco `stage=Novo Lead`, `corretor_id` novo ≠ X, `aceite_status` coerente, atividade registrada.
+- Teste do caminho ativo: lead em Qualificação recebe novo touch → confirmar que continua na mesma etapa e com o mesmo corretor, só com notificação.
+- Conferência visual no Pipeline/Roleta no preview antes de declarar pronto.
 
-**6. Abas embutidas (Meu Progresso / Relatório 1:1)**
-- `CorretorProgresso` renderiza título próprio "Progresso do Dia" e `max-w-4xl` dentro do container, criando página-dentro-de-página e largura destoante.
-- Essas duas abas ignoram o filtro de período/equipe do header (o header some, mas o usuário perde contexto ao trocar de aba).
+## Fora de escopo
 
-**7. Exportação**
-- Só CSV do ranking. Sem PDF e sem exportação sensível à aba ativa.
-
----
-
-## Plano de melhorias (4 fases, validando cada uma)
-
-### Fase 1 — Papéis e período (fundação)
-- Abas e aba inicial por papel: corretor → `Meu Progresso` primeiro + `Minha Performance` (mesma Visão Geral, escopada com `filtro.userId`), sem Ranking global se assim decidido; gestor → Visão Geral da equipe travada; diretor → seletor das equipes sob ele; CEO/admin → tudo.
-- Passar `userId` ao `useMetricasSSOT` quando o papel for corretor (a SSOT já suporta).
-- Seletor de período: Mês / Trimestre / Ano / 90 dias / Customizado, mantendo BRT.
-- Comparativo automático período anterior em todos os KPIs (delta % + seta).
-
-### Fase 2 — Qualidade de dados e diagnóstico
-- Bloco "Vazamentos" com 3 itens ranqueados (no-show %, leads sem 1º contato no SLA, negócios parados em negociação > X dias), cada um com corretor/equipe pior colocado e link de ação.
-- Funil completo em 5 etapas: leads → visita marcada → visita realizada → negociação → venda, com barras proporcionais reais (sem multiplicador artificial).
-- Origem com custo: nova RPC juntando `rpc_metricas_origem` a `marketing_entries` (gasto no período) → CPL, custo/visita, custo/venda e ROAS, com destaque para campanhas acima do CPL alvo.
-
-### Fase 3 — Interação e navegação
-- Origem: linha clicável abrindo o drill-down de leads daquela origem/campanha.
-- Ranking: seta de ordenação, inverter ordem, linha de média/total, variação de posição vs período anterior, equipe clicável abrindo detalhe da equipe.
-- Botão exportar sensível à aba (Ranking → CSV atual; Origem → CSV de origens; Visão Geral → PDF executivo de 1 página com metas, KPIs, funil e top 5).
-
-### Fase 4 — Visual e coerência
-- Normalizar `CorretorProgresso` e `RelatorioCorretor` dentro do container (remover header duplicado e `max-w` próprio, herdar padding da página).
-- Header pegajoso no scroll com período + filtro; skeletons consistentes; densidade e alvos de toque revisados no mobile (440px).
-- Estados vazios explicativos ("sem meta cadastrada" com link para cadastrar meta).
-
-### Notas técnicas
-- Todo dado novo continua vindo por RPC na SSOT — nada de cálculo de VGV no frontend.
-- Junção com `marketing_entries` respeita BRT e o mesmo recorte de coorte já usado em `rpc_metricas_origem`; a diferença de semântica (custo no período × coorte) será explicitada em tooltip.
-- Componentes novos ficam em `src/components/performance/`, cada arquivo < 300 linhas.
-
-Ordem sugerida: Fase 1 → 2 → 3 → 4. Posso começar pela Fase 1, ou inverter se você preferir ver primeiro o custo por campanha (Fase 2).
+Nenhuma mudança de UI, de etapas do pipeline ou de regras de descarte manual.

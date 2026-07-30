@@ -56,7 +56,9 @@ Deno.serve(async (req) => {
       leadIds,
       selected_lead_ids,
       selectedLeadIds,
+      exclude_auth_user_id,
     } = body;
+    const excludeAuthUserId: string | null = exclude_auth_user_id || null;
 
     const singleLeadId = pipeline_lead_id || lead_id || leadId || null;
     const batchLeadIdsRaw = pipeline_lead_ids || lead_ids || leadIds || selected_lead_ids || selectedLeadIds || [];
@@ -110,7 +112,7 @@ Deno.serve(async (req) => {
       const forceDispatch = (action === "dispatch_fila_ceo" || action === "redistribuir_pendentes");
 
       for (const lid of allLeadIds) {
-        const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, lid, targetJanela, null, L, forceDispatch);
+        const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, lid, targetJanela, excludeAuthUserId, L, forceDispatch);
         if (result.success) {
           dispatched++;
           distributionLog.push({ leadId: lid, corretorId: result.corretor_id, segmento: result.segmento_id || "sem_segmento" });
@@ -142,7 +144,7 @@ Deno.serve(async (req) => {
       if (!singleLeadId) {
         return jsonResponse({ error: "pipeline_lead_id required" }, 400);
       }
-      const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, singleLeadId, janela || null, null, L);
+      const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, singleLeadId, janela || null, excludeAuthUserId, L);
       return jsonResponse(result);
     }
 

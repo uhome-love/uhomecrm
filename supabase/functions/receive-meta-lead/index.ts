@@ -12,6 +12,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { PostgrestError } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
+import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -603,19 +604,12 @@ Deno.serve(async (req) => {
 
       // Determine if lead needs to be moved out of Descarte/archived
       const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-      const SEM_CONTATO_STAGE_ID = "2fcba9be-1188-4a54-9452-394beefdc330";
       const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
 
       const updatePayload: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
         observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Meta Ads direto)${message ? ` — "${message}"` : ""}`,
       };
-      if (isDiscarded) {
-        updatePayload.stage_id = SEM_CONTATO_STAGE_ID;
-        updatePayload.stage_changed_at = new Date().toISOString();
-        updatePayload.arquivado = false;
-        updatePayload.motivo_descarte = null;
-      }
 
       // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
       if (externalLeadId && !existing.meta_lead_id) {
@@ -634,7 +628,41 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Lead DESCARTADO/ARQUIVADO: volta como NOVO LEAD para a roleta (não retorna ao corretor antigo)
+      if (isDiscarded) {
+        await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
+        const reac = await reactivateDiscardedToRoleta(supabase, {
+          supabaseUrl,
+          serviceKey,
+          leadId: existing.id,
+          corretorAnteriorId: existing.corretor_id,
+          origemLabel: "Meta Ads",
+          interesseLabel: interestLabel,
+          mensagem: message || null,
+          traceId,
+          logger: L,
+        });
+        try {
+          await supabase
+            .from("jetimob_processed")
+            .upsert({ jetimob_lead_id: dedupRegistryId, telefone }, { onConflict: "jetimob_lead_id" });
+        } catch (e) { L.warn("Dedup registry upsert warn (roleta/phone)", { dedupRegistryId }, e); }
+        logOps("info", "business", "lead_descartado_reenviado_para_roleta", {
+          lead_id: existing.id,
+          corretor_anterior: existing.corretor_id,
+          distributed: reac.distributed,
+          novo_corretor: reac.corretor_id || null,
+          reason: reac.reason || null,
+          telefone_anon: await anonPhone(telefone),
+        });
+        return new Response(
+          JSON.stringify({ success: true, action: "reactivated_to_roleta", lead_id: existing.id, distributed: reac.distributed, trace_id: traceId }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
+
 
       await Promise.all([
         supabase.from("notifications").insert({
@@ -680,12 +708,12 @@ Deno.serve(async (req) => {
           .upsert({ jetimob_lead_id: dedupRegistryId, telefone }, { onConflict: "jetimob_lead_id" });
       } catch (e) { L.warn("Dedup registry upsert warn (reactivation/phone)", { dedupRegistryId }, e); }
 
-      // BLOCO 4b: lead descartado/arquivado reativado por novo touch
+      // BLOCO 4b: lead ATIVO recebeu novo interesse (segue com o mesmo corretor)
       logOps("info", "business", "lead_dedup_reactivated", {
-        reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse",
+        reason: "lead_ativo_recebeu_novo_interesse",
         lead_id: existing.id,
         corretor_id: existing.corretor_id,
-        was_discarded: isDiscarded,
+        was_discarded: false,
         telefone_anon: await anonPhone(telefone),
       });
       return new Response(
@@ -899,19 +927,12 @@ Deno.serve(async (req) => {
           const todayStamp = new Date().toISOString().slice(0, 10);
           const interestLabel = empreendimento || dup.empreendimento || "mesmo imóvel";
           const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-          const SEM_CONTATO_STAGE_ID = "2fcba9be-1188-4a54-9452-394beefdc330";
           const isDiscarded = dup.stage_id === DESCARTE_STAGE_ID || dup.arquivado === true;
 
           const updatePayload: Record<string, unknown> = {
             updated_at: new Date().toISOString(),
             observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Meta Ads direto)${message ? ` — "${message}"` : ""}`,
           };
-          if (isDiscarded) {
-            updatePayload.stage_id = SEM_CONTATO_STAGE_ID;
-            updatePayload.stage_changed_at = new Date().toISOString();
-            updatePayload.arquivado = false;
-            updatePayload.motivo_descarte = null;
-          }
 
           // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
           if (externalLeadId && !dup.meta_lead_id) {
@@ -931,6 +952,39 @@ Deno.serve(async (req) => {
           }
 
           await supabase.from("pipeline_leads").update(updatePayload).eq("id", dup.id);
+
+          // ── Lead DESCARTADO/ARQUIVADO: volta como NOVO LEAD para a roleta
+          if (isDiscarded) {
+            const reac = await reactivateDiscardedToRoleta(supabase, {
+              supabaseUrl,
+              serviceKey,
+              leadId: dup.id,
+              corretorAnteriorId: dup.corretor_id,
+              origemLabel: "Meta Ads",
+              interesseLabel: interestLabel,
+              mensagem: message || null,
+              traceId,
+              logger: L,
+            });
+            try {
+              await supabase
+                .from("jetimob_processed")
+                .upsert({ jetimob_lead_id: dedupRegistryId, telefone }, { onConflict: "jetimob_lead_id" });
+            } catch (e) { L.warn("Dedup registry upsert warn (roleta/email)", { dedupRegistryId }, e); }
+            logOps("info", "business", "lead_descartado_reenviado_para_roleta", {
+              lead_id: dup.id,
+              corretor_anterior: dup.corretor_id,
+              distributed: reac.distributed,
+              novo_corretor: reac.corretor_id || null,
+              reason: reac.reason || null,
+              telefone_anon: await anonPhone(telefone),
+              email_anon: anonEmail(email),
+            });
+            return new Response(
+              JSON.stringify({ success: true, action: "reactivated_to_roleta", lead_id: dup.id, distributed: reac.distributed, trace_id: traceId }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
 
           await Promise.all([
             supabase.from("notifications").insert({
@@ -977,10 +1031,10 @@ Deno.serve(async (req) => {
           } catch (e) { L.warn("Dedup registry upsert warn (reactivation/email)", { dedupRegistryId }, e); }
 
           logOps("info", "business", "lead_dedup_reactivated", {
-            reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse_via_email_match",
+            reason: "lead_ativo_recebeu_novo_interesse_via_email_match",
             lead_id: dup.id,
             corretor_id: dup.corretor_id,
-            was_discarded: isDiscarded,
+            was_discarded: false,
             telefone_anon: await anonPhone(telefone),
             email_anon: anonEmail(email),
           });
