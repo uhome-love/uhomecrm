@@ -24,7 +24,7 @@ import type { CentralSectionId } from "./sections";
  *  - `central`  → RPCs get_relatorio_* (visões operacionais)
  *  - `builder`  → construtor de relatório por equipe/corretor
  */
-export type CentralEngine = "ssot" | "central" | "builder";
+export type CentralEngine = "ssot" | "central" | "builder" | "forecast";
 
 export type UnifiedSectionId =
   | "visao"
@@ -37,10 +37,12 @@ export type UnifiedSectionId =
   | "vendas"
   | "metas"
   | "cohort"
+  | "forecast"
   | "ranking"
   | "relatorio-equipe"
   | "progresso"
   | "relatorio-1a1";
+
 
 export interface UnifiedSection {
   id: UnifiedSectionId;
