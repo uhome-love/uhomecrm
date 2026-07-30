@@ -1,33 +1,45 @@
-## Objetivo
+# Novo interesse atualiza o empreendimento do lead
 
-Permitir que a roleta registre no histórico o envio de um lead para a **Fila do CEO** quando não há corretor ativo/credenciado. Hoje `distribuicao_historico.corretor_id` é `NOT NULL` (confirmado no schema), então a `distribuir_lead_atomico` estoura exceção ao gravar `acao='fila_ceo'` com `corretor_id = NULL` e desfaz a marcação de pendência.
+## Problema
 
-## Mudança
+Quando um lead antigo volta com novo interesse (outra campanha/empreendimento), os receivers gravam apenas a observação `[NOVO INTERESSE ...]`. Os campos `empreendimento`, `campanha`, `origem_detalhe`, `formulario` continuam com os dados da entrada original.
 
-Uma única migration (apenas DDL):
+Efeito confirmado na Fila CEO: Patrícia Zaikowski (novo interesse Terrace v3) e Janaina Lourenço (novo interesse Flow) continuam rotuladas como **Orygem** — empreendimento sem corretor alocado — e por isso caem em `sem_alocado_produto` em vez de irem para a roleta do empreendimento certo.
 
-1. `ALTER TABLE public.distribuicao_historico ALTER COLUMN corretor_id DROP NOT NULL;`
-2. Constraint de integridade para não afrouxar demais: `corretor_id` pode ser nulo **somente** quando `acao = 'fila_ceo'`; nas demais ações continua obrigatório.
+## O que muda
 
-```sql
-ALTER TABLE public.distribuicao_historico
-  ADD CONSTRAINT distribuicao_historico_corretor_obrigatorio
-  CHECK (corretor_id IS NOT NULL OR acao = 'fila_ceo');
-```
+### 1. Atualizar a identificação do lead no novo interesse
 
-Nenhuma tabela nova, portanto nenhum GRANT novo; RLS e policies existentes permanecem.
+Nos 4 receivers (`receive-meta-lead`, `receive-landing-lead`, `receive-rdstation-lead`, `receive-imovelweb-lead`), quando o novo touch traz um empreendimento resolvido, o update passa a incluir também:
 
-## Validação após aplicar
+- `empreendimento` = empreendimento do novo anúncio
+- `campanha`, `campanha_id`, `origem_detalhe`, `formulario`, `form_id`, `form_name`, `plataforma` (os que a origem fornecer)
+- `origem` atualizada para a origem do novo touch
 
-- Confirmar `is_nullable = YES` na coluna.
-- Rodar um lead de teste sem corretor elegível (ou simular) e verificar que aparece linha com `acao='fila_ceo'`, `corretor_id IS NULL`, `motivo_pendencia='sem_alocado_produto'` no lead.
-- Conferir que o lead fica em `aceite_status='pendente_distribuicao'` e aparece no painel **Leads Pendentes** (Fila do CEO), sem distribuição automática.
+Se o novo touch não resolver empreendimento (fica em "Avulso"/vazio), mantém o valor antigo — nunca sobrescreve com algo pior.
 
-## Fora de escopo
+Os campos canônicos não precisam ser calculados na função: os triggers `a_resolve_empreendimento_canonico` e `trg_pl_empreendimento_canonico` já recalculam `empreendimento_canonico_id` sempre que `empreendimento`/`campanha`/`formulario` mudam.
 
-- Nenhuma alteração na lógica de distribuição, no cron desligado de redistribuição ou no frontend.
-- Nenhum backfill de registros históricos (as tentativas anteriores falharam e não deixaram linhas).
+### 2. Lead que estava em descarte
 
-## Observação operacional
+O fluxo continua: reset para Novo Lead, limpa corretor/gerente e envia para a roleta excluindo quem descartou. A diferença é que a atualização do empreendimento acontece **antes** da chamada de distribuição, então `distribuir_lead_atomico` passa a filtrar pelos corretores alocados ao empreendimento **novo**, e não mais ao original.
 
-Regra de migrations: máx 2/dia entre 08–19h BRT. Esta é uma migration curta e sem lock pesado (DROP NOT NULL + CHECK valida a tabela); pode rodar quando você liberar.
+### 3. Histórico preservado
+
+O texto de observação passa a ser acrescentado ao histórico (padrão `\n---\n` já usado no ImovelWeb) em vez de substituir, e passa a registrar de/para: `[NOVO INTERESSE data] Terrace v3 (Meta Ads) — antes: Orygem`. A atividade no lead e a notificação ao corretor (quando o lead está ativo) também citam o empreendimento novo.
+
+### 4. Correção dos 2 leads já afetados
+
+Atualizar Patrícia Zaikowski para Terrace v3 e Janaina Lourenço para Flow (empreendimento + campanha/origem_detalhe), deixando os triggers recalcularem o canônico, e reprocessar a distribuição pela roleta do empreendimento correto.
+
+## Detalhes técnicos
+
+- Arquivos: `supabase/functions/receive-meta-lead/index.ts`, `receive-landing-lead/index.ts`, `receive-rdstation-lead/index.ts`, `receive-imovelweb-lead/index.ts`.
+- A montagem do `updatePayload` de novo interesse fica igual nos quatro (mesmos campos, rótulo de origem diferente).
+- `_shared/reactivateDiscardedToRoleta.ts` não precisa mudar: recebe o lead já atualizado.
+- Sem migration de schema. A correção dos 2 leads é operação de dados.
+
+## Validação
+
+- Reenviar um payload sintético de lead descartado com empreendimento diferente do original e conferir: `empreendimento`/`empreendimento_canonico_id` atualizados, observação com histórico, distribuição para corretor alocado ao empreendimento novo.
+- Conferir na Fila CEO que a prévia deixa de mostrar "Orygem" para esses casos.
