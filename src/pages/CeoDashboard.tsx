@@ -164,7 +164,7 @@ export default function CeoDashboard() {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
     pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv, vendasPeriodo, vgvMesAtual,
     teams, corretoresRank, origens, leadsPorEmpreendimento, leadsPorCorretor, visitasPorEmp,
-    totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
+    totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, agendaVisitas, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
 
