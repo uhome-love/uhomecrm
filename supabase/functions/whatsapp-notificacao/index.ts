@@ -52,21 +52,20 @@ serve(async (req) => {
         to: numeroFinal,
         type: "template",
         template: {
-          name: "novo_lead",
+          name: "novo_leaduhome",
           language: { code: "pt_BR" },
           components: [
             {
               type: "body",
               parameters: [
                 { type: "text", text: dados.nome || "Lead" },
-                { type: "text", text: dados.telefone || "N/A" },
-                { type: "text", text: dados.email || "N/A" },
                 { type: "text", text: dados.empreendimento || "Não identificado" },
               ],
             },
           ],
         },
       }),
+
     };
 
     // Fallback text messages for types without templates
