@@ -528,6 +528,15 @@ export async function executeHomiTool(
       const areaMin = num(args.area_min);
       const tipoTxt = typeof args.tipo === "string" && args.tipo.trim().length >= 3 ? args.tipo.trim() : "";
 
+      // Zona de Porto Alegre (Norte / Central / Leste / Sul / Metropolitana)
+      const zonaRaw = typeof args.zona === "string" ? args.zona.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+      const zona = /norte/.test(zonaRaw) ? "Norte"
+        : /(central|centro)/.test(zonaRaw) ? "Central"
+        : /leste/.test(zonaRaw) ? "Leste"
+        : /sul/.test(zonaRaw) ? "Sul"
+        : /(metropolitan|grande porto|litoral)/.test(zonaRaw) ? "Metropolitana"
+        : "";
+
       type Opts = {
         mobiliado: boolean; extras: boolean; dormsExato: boolean; faixa: "estrita" | "ampliada" | "off";
         tokens: "todos" | "principal" | "nenhum"; tipo: boolean;
@@ -535,6 +544,7 @@ export async function executeHomiTool(
 
       const build = (o: Opts) => {
         let q = userClient.from("properties").select(SELECT).eq("ativo", true).not("valor_venda", "is", null);
+        if (zona) q = q.eq("regiao", zona);
         if (dorms !== undefined) q = o.dormsExato ? q.eq("dormitorios", dorms) : q.gte("dormitorios", dorms);
         if (o.faixa !== "off") {
           const fator = o.faixa === "ampliada" ? 0.2 : 0;
