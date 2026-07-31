@@ -608,18 +608,9 @@ export default function CeoDashboard() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-xs font-semibold">Funil do Pipeline</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Select value={funnelFilter} onValueChange={setFunnelFilter}>
-                    <SelectTrigger className="h-7 text-[10px] w-32 bg-white dark:bg-white/[0.05]">
-                      <SelectValue placeholder="Equipe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas Equipes</SelectItem>
-                      {teams.map(t => <SelectItem key={t.gerente_id} value={t.gerente_id}>{t.gerente_nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <span className="text-[10px] text-muted-foreground">Visão global · todas as equipes</span>
               </div>
+
             </CardHeader>
             <CardContent>
               <div className="space-y-1.5">
