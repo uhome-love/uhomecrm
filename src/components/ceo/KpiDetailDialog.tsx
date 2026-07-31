@@ -99,7 +99,7 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
 
     } else if (type === "visitas_criadas") {
       const { data } = await supabase
-        .from("visitas")
+        .from("visitas_unicas" as any)
         .select("id, nome_cliente, empreendimento, data_visita, status, pipeline_lead_id, created_at")
         .gte("created_at", startUtc)
         .lt("created_at", endUtc)
@@ -120,7 +120,7 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
           ? ["realizada"]
           : ["no_show"];
       const { data } = await supabase
-        .from("visitas")
+        .from("visitas_unicas" as any)
         .select("id, nome_cliente, empreendimento, data_visita, status, pipeline_lead_id")
         .in("status", statusFilter)
         .gte("data_visita", start)

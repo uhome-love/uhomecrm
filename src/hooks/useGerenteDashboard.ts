@@ -175,8 +175,8 @@ export function useGerenteDashboard(period: Period) {
 
       // Visitas hoje (operational, keep direct query)
       const [{ count: visitasHoje }, { count: visitasSemana }, { count: totalLeads }] = await Promise.all([
-        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today).neq("status", "cancelada"),
-        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).gte("data_visita", format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).lte("data_visita", format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).neq("status", "cancelada"),
+        supabase.from("visitas_unicas" as any).select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today).neq("status", "cancelada"),
+        supabase.from("visitas_unicas" as any).select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).gte("data_visita", format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).lte("data_visita", format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).neq("status", "cancelada"),
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds),
       ]);
 
@@ -216,7 +216,7 @@ export function useGerenteDashboard(period: Period) {
       const [{ data: profiles }, { data: tentativas }, { data: visitas }, { data: disps }, { data: negociosData }] = await Promise.all([
         supabase.from("profiles").select("user_id, nome, avatar_url, avatar_gamificado_url").in("user_id", teamUserIds),
         supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, pontos").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
-        supabase.from("visitas").select("corretor_id").eq("gerente_id", user!.id).gte("data_visita", start).lte("data_visita", end),
+        supabase.from("visitas_unicas" as any).select("corretor_id").eq("gerente_id", user!.id).gte("data_visita", start).lte("data_visita", end),
         supabase.from("corretor_disponibilidade").select("user_id, status").in("user_id", teamUserIds),
         supabase.from("negocios").select("corretor_id").eq("gerente_id", profileId!).eq("status", "ativo"),
       ]);
@@ -227,7 +227,7 @@ export function useGerenteDashboard(period: Period) {
       const todayCallCounts: Record<string, number> = {};
       (todayCalls || []).forEach(t => { todayCallCounts[t.corretor_id] = (todayCallCounts[t.corretor_id] || 0) + 1; });
 
-      const { data: todayVisitas } = await supabase.from("visitas").select("corretor_id").eq("gerente_id", user!.id).eq("data_visita", todayStr).eq("status", "realizada");
+      const { data: todayVisitas } = await supabase.from("visitas_unicas" as any).select("corretor_id").eq("gerente_id", user!.id).eq("data_visita", todayStr).eq("status", "realizada");
       const todayVisitSet = new Set((todayVisitas || []).map(v => v.corretor_id).filter(Boolean));
 
       const profileMap = Object.fromEntries((profiles || []).map(p => [p.user_id, p]));
@@ -298,7 +298,7 @@ export function useGerenteDashboard(period: Period) {
       const semLigacao = teamUserIds.filter(id => !comLigacao.has(id)).length;
       if (semLigacao > 0) alerts.push({ id: "sem_ligacao", type: "warning", icon: "🚫", label: "corretores sem ligação hoje", count: semLigacao, route: "/central-do-gerente" });
 
-      const { count: visitasPendentes } = await supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today).eq("status", "marcada");
+      const { count: visitasPendentes } = await supabase.from("visitas_unicas" as any).select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today).eq("status", "marcada");
       if ((visitasPendentes || 0) > 0) alerts.push({ id: "visitas_pendentes", type: "info", icon: "📅", label: "visitas pendentes de status", count: visitasPendentes || 0, route: "/agenda-visitas" });
 
       // Leads sem tarefa

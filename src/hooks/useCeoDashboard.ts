@@ -503,9 +503,10 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       // MIGRATED: Use auth_user_id for negocios instead of profile_id lookup
       // FIX: propostas (em negociação) precisam de query própria — antes eram contadas
       // dentro do conjunto já filtrado por fase='ganho', resultando sempre em 0.
+      // SSOT: visitas_unicas = 1 visita por cliente por dia
       const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }, { data: allNegAtivos }] = await Promise.all([
-        supabase.from("visitas").select("id, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
-        supabase.from("visitas").select("id, status, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
+        (supabase.from("visitas_unicas" as never) as any).select("id, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
+        (supabase.from("visitas_unicas" as never) as any).select("id, status, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
         supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "ganho").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
         supabase.from("negocios").select("id, fase, auth_user_id").in("auth_user_id", allMemberUserIds).eq("status", "ativo").in("fase", ["em_negociacao", "contrato"]).limit(1000),
       ]);
@@ -574,8 +575,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const startTs = `${range.start}T00:00:00`;
       const endTs = `${range.end}T23:59:59`;
       const [{ data: visMarcadas }, { data: visRealizadas }] = await Promise.all([
-        supabase.from("visitas").select("empreendimento").gte("created_at", startTs).lte("created_at", endTs).not("status", "eq", "cancelada").not("origem", "like", "backfill_%"),
-        supabase.from("visitas").select("empreendimento").gte("data_visita", range.start).lte("data_visita", range.end).eq("status", "realizada").not("origem", "like", "backfill_%"),
+        (supabase.from("visitas_unicas" as never) as any).select("empreendimento").gte("created_at", startTs).lte("created_at", endTs).not("status", "eq", "cancelada").not("origem", "like", "backfill_%"),
+        (supabase.from("visitas_unicas" as never) as any).select("empreendimento").gte("data_visita", range.start).lte("data_visita", range.end).eq("status", "realizada").not("origem", "like", "backfill_%"),
       ]);
       const empMap = new Map<string, { marcadas: number; realizadas: number }>();
       for (const v of (visMarcadas || [])) {
@@ -606,20 +607,14 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       // NOTE: leads counts (marketing / OA / enviadosRoleta) come from pipelineData
       // to guarantee identical classification with charts. Here we only fetch ancillary KPIs.
       const [{ data: visitasRows }, { count: novoInteresseCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
-        supabase.from("visitas").select("id, status, pipeline_lead_id, corretor_id").gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada").not("origem", "like", "backfill_%").order("created_at", { ascending: false }).range(0, 4999),
+        (supabase.from("visitas_unicas" as never) as any).select("id, status, pipeline_lead_id, corretor_id").gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada").not("origem", "like", "backfill_%").order("created_at", { ascending: false }).range(0, 4999),
         supabase.from("campaign_clicks").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).eq("lead_action", "updated"),
         supabase.from("roleta_credenciamentos").select("corretor_id").eq("data", hoje).in("status", ["aprovado", "saiu"]),
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
       ]);
 
-      // Dedup: mesma visita registrada 2x (mesmo lead + mesmo corretor) conta 1 só
-      const seen = new Set<string>();
-      const visitasUnicas = (visitasRows || []).filter(v => {
-        const key = v.pipeline_lead_id ? `${v.corretor_id ?? ""}|${v.pipeline_lead_id}` : `id:${v.id}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      // SSOT no banco (visitas_unicas): 1 visita por cliente por dia
+      const visitasUnicas = (visitasRows || []) as any[];
 
       const dispIds = new Set<string>();
       (roletaRows || []).forEach(r => { if (r.corretor_id) dispIds.add(r.corretor_id); });

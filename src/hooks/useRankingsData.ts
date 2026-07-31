@@ -222,7 +222,7 @@ async function fetchVisitas(filters: RankingFilters, corretores: CorretorBase[])
   if (ids.length === 0) return [];
   const list = await fetchAllPaged<{ corretor_id: string; status: string; data_visita: string }>(() => {
     let q = supabase
-      .from("visitas")
+      .from("visitas_unicas" as any)
       .select("corretor_id, status, data_visita")
       .in("corretor_id", ids);
     if (filters.start) q = q.gte("data_visita", filters.start);

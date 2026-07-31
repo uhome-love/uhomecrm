@@ -119,12 +119,12 @@ export async function fetchDailyVisitasStats(
 
   const [{ data: marcadas }, { data: realizadas }] = await Promise.all([
     supabase
-      .from("visitas")
+      .from("visitas_unicas" as any)
       .select("corretor_id")
       .in("corretor_id", userIds)
       .eq("data_visita", date),
     supabase
-      .from("visitas")
+      .from("visitas_unicas" as any)
       .select("corretor_id")
       .in("corretor_id", userIds)
       .eq("data_visita", date)

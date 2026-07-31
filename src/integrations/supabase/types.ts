@@ -3814,6 +3814,13 @@ export type Database = {
             referencedRelation: "visitas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lead_progressao_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "visitas_unicas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lead_property_interactions: {
@@ -7041,6 +7048,13 @@ export type Database = {
             columns: ["linked_visit_id"]
             isOneToOne: false
             referencedRelation: "visitas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_linked_visit_id_fkey"
+            columns: ["linked_visit_id"]
+            isOneToOne: false
+            referencedRelation: "visitas_unicas"
             referencedColumns: ["id"]
           },
           {
@@ -10732,6 +10746,13 @@ export type Database = {
             referencedRelation: "visitas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "visita_eventos_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "visitas_unicas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       visitas: {
@@ -11956,6 +11977,7 @@ export type Database = {
       }
       v_fato_visita: {
         Row: {
+          cliente_key: string | null
           conta_a_realizar: boolean | null
           conta_marcada: boolean | null
           conta_no_show: boolean | null
@@ -11974,8 +11996,10 @@ export type Database = {
           nome_cliente: string | null
           pipeline_lead_id: string | null
           resultado_visita: string | null
+          seq_dia: number | null
           status: string | null
           visita_id: string | null
+          visita_principal_dia: boolean | null
         }
         Relationships: [
           {
@@ -12165,6 +12189,7 @@ export type Database = {
       v_kpi_visitas: {
         Row: {
           auth_user_id: string | null
+          cliente_key: string | null
           conta_marcada: number | null
           conta_no_show: number | null
           conta_realizada: number | null
@@ -12173,31 +12198,9 @@ export type Database = {
           empreendimento: string | null
           id: string | null
           origem: string | null
+          seq_dia: number | null
           status: string | null
-        }
-        Insert: {
-          auth_user_id?: string | null
-          conta_marcada?: never
-          conta_no_show?: never
-          conta_realizada?: never
-          data_criacao?: never
-          data_visita?: string | null
-          empreendimento?: string | null
-          id?: string | null
-          origem?: string | null
-          status?: string | null
-        }
-        Update: {
-          auth_user_id?: string | null
-          conta_marcada?: never
-          conta_no_show?: never
-          conta_realizada?: never
-          data_criacao?: never
-          data_visita?: string | null
-          empreendimento?: string | null
-          id?: string | null
-          origem?: string | null
-          status?: string | null
+          visita_principal_dia: boolean | null
         }
         Relationships: []
       }
@@ -12378,6 +12381,127 @@ export type Database = {
           },
           {
             foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+        ]
+      }
+      visitas_unicas: {
+        Row: {
+          cancel_reason: string | null
+          cliente_key: string | null
+          confirmacao_enviada_em: string | null
+          confirmacao_status: string | null
+          confirmation_token: string | null
+          confirmed_at: string | null
+          converted_to_pdn_at: string | null
+          converted_to_pdn_by: string | null
+          corretor_id: string | null
+          created_at: string | null
+          created_by: string | null
+          data_visita: string | null
+          empreendimento: string | null
+          empreendimento_canonico_id: string | null
+          gerente_id: string | null
+          google_event_id: string | null
+          google_event_link: string | null
+          hora_visita: string | null
+          id: string | null
+          lead_id: string | null
+          lead_site_id: string | null
+          linked_attempt_id: string | null
+          linked_pdn_id: string | null
+          local_visita: string | null
+          negocio_id: string | null
+          nome_cliente: string | null
+          observacoes: string | null
+          origem: string | null
+          origem_detalhe: string | null
+          pipeline_lead_id: string | null
+          responsavel_visita: string | null
+          resposta_at: string | null
+          resposta_texto: string | null
+          resultado_visita: string | null
+          risco_alertado_at: string | null
+          seq_dia: number | null
+          status: string | null
+          telefone: string | null
+          tipo: string | null
+          tipo_reuniao: string | null
+          token_expires_at: string | null
+          toque_d0_at: string | null
+          toque_d1_at: string | null
+          toque_marcacao_at: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitas_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_lead_site_id_fkey"
+            columns: ["lead_site_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_linked_attempt_id_fkey"
+            columns: ["linked_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_tentativas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_linked_pdn_id_fkey"
+            columns: ["linked_pdn_id"]
+            isOneToOne: false
+            referencedRelation: "pdn_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"

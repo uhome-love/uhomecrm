@@ -137,8 +137,8 @@ export default function CheckpointGerente() {
     const [{ data: saved }, { data: tentativas }, { data: visitasMarcadas }, { data: visitasRealizadas }, { data: corretorGoals }, { data: credenciamentos }, { data: disponibilidades }] = await Promise.all([
       supabase.from("checkpoint_diario").select("*").eq("data", dateStr).in("corretor_id", teamUserIds),
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`),
-      supabase.from("visitas").select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr),
-      supabase.from("visitas").select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr).eq("status", "realizada"),
+      supabase.from("visitas_unicas" as any).select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr),
+      supabase.from("visitas_unicas" as any).select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr).eq("status", "realizada"),
       supabase.from("corretor_daily_goals").select("corretor_id, meta_ligacoes, meta_aproveitados, meta_visitas_marcadas, status").in("corretor_id", teamUserIds).eq("data", dateStr),
       profileIds.length > 0
         ? supabase.from("roleta_credenciamentos").select("corretor_id, status").eq("data", dateStr).in("corretor_id", profileIds)
@@ -242,8 +242,8 @@ export default function CheckpointGerente() {
 
     const [{ count: ligR }, { count: vmR }, { count: vrR }, { data: negocios }, { data: metasSalvas }] = await Promise.all([
       supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("created_at", `${mesInicio}T00:00:00`).lte("created_at", `${mesFim}T23:59:59`),
-      supabase.from("visitas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim),
-      supabase.from("visitas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim).eq("status", "realizada"),
+      supabase.from("visitas_unicas" as any).select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim),
+      supabase.from("visitas_unicas" as any).select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim).eq("status", "realizada"),
       supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, data_assinatura, corretor_id")
         .eq("fase", "ganho")
         .gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim)

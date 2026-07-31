@@ -187,11 +187,11 @@ function useNightRequirements(
       let error: string | null = null;
 
       try {
-        const marcadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
+        const marcadasRes = await supabase.from("visitas_unicas" as any).select("id", { count: "exact", head: true })
           .in("corretor_id", idsToCheck)
           .gte("data_visita", hoje)
           .in("status", ["marcada", "confirmada", "reagendada"]);
-        const realizadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
+        const realizadasRes = await supabase.from("visitas_unicas" as any).select("id", { count: "exact", head: true })
           .in("corretor_id", idsToCheck)
           .eq("status", "realizada")
           .gte("data_visita", hoje);
