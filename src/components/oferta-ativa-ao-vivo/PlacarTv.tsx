@@ -31,7 +31,7 @@ function formatTime(d: Date) {
 function ProgressBar({ valor, meta, cor }: any) {
   const pct = Math.min((valor / meta) * 100, 100);
   return (
-    <div style={{ background: "#1e1e2e", borderRadius: 99, height: 14, overflow: "hidden", position: "relative" }}>
+    <div style={{ background: "#1e1e2e", borderRadius: 99, height: 20, overflow: "hidden", position: "relative" }}>
       <div
         style={{
           width: `${pct}%`,
@@ -42,9 +42,10 @@ function ProgressBar({ valor, meta, cor }: any) {
           boxShadow: `0 0 16px ${cor}88`,
         }}
       />
-      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: "#fff", textShadow: "0 1px 4px #0008", letterSpacing: 0.5 }}>
+      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#fff", textShadow: "0 1px 4px #0008", letterSpacing: 0.5 }}>
         {Math.round(pct)}%
       </span>
+
     </div>
   );
 }
@@ -122,10 +123,8 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
   const [stageScale, setStageScale] = useState(1);
   useEffect(() => {
     const calc = () => {
-      const w = window.innerWidth, h = window.innerHeight;
-      const byWidth = w / STAGE_W;
-      const contain = Math.min(byWidth, h / STAGE_H);
-      setStageScale(((byWidth + contain) / 2) * scaleAdjust);
+      // Preenche a largura inteira da TV; excedente vertical fica centralizado (bordas já vazias).
+      setStageScale((window.innerWidth / STAGE_W) * scaleAdjust);
     };
     calc();
     window.addEventListener("resize", calc);
@@ -324,47 +323,48 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         })()}
 
         {/* Header */}
-        <div style={{ textAlign: "center", padding: "8px 24px 6px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff44", fontFamily: "monospace", marginBottom: 2 }}>
+        <div style={{ textAlign: "center", padding: "12px 28px 10px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
+          <div style={{ fontSize: 15, letterSpacing: 6, color: "#ffffff55", fontFamily: "monospace", marginBottom: 4 }}>
             UHOME NEGÓCIOS IMOBILIÁRIOS · MUTIRÃO INTELIGENTE
           </div>
           <h1 style={{
-            fontSize: "clamp(20px, 3.5vw, 40px)", letterSpacing: 4, margin: 0, lineHeight: 1.1,
+            fontSize: 64, letterSpacing: 6, margin: 0, lineHeight: 1.05,
             background: "linear-gradient(90deg, #F59E0B, #EF4444, #9333EA)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", textTransform: "uppercase",
           }}>⚡ Mutirão Ao Vivo ⚡</h1>
-          <p style={{ fontSize: "clamp(8px, 1vw, 11px)", letterSpacing: 6, color: "#ffffff55", margin: "2px 0 0", textTransform: "uppercase", fontFamily: "monospace", display: "flex", justifyContent: "center", alignItems: "center", gap: 16 }}>
+          <p style={{ fontSize: 20, letterSpacing: 8, color: "#ffffff77", margin: "4px 0 0", textTransform: "uppercase", fontFamily: "monospace", display: "flex", justifyContent: "center", alignItems: "center", gap: 24 }}>
             <span>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" })}</span>
-            <span style={{ color: "#F59E0B", fontSize: "clamp(10px, 1.3vw, 16px)", fontWeight: 700, letterSpacing: 2 }}>{formatTime(relogio)}</span>
+            <span style={{ color: "#F59E0B", fontSize: 28, fontWeight: 700, letterSpacing: 3 }}>{formatTime(relogio)}</span>
           </p>
         </div>
 
         {/* KPIs + Meta */}
-        <div style={{ padding: "6px 24px 8px", background: "#ffffff06", borderBottom: "1px solid #ffffff14", flexShrink: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 2fr", gap: 12, alignItems: "center" }}>
+        <div style={{ padding: "10px 28px 12px", background: "#ffffff06", borderBottom: "1px solid #ffffff14", flexShrink: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 2fr", gap: 16, alignItems: "center" }}>
           <KPI label="Ligações" value={totalLigacoes} cor="#0EA5E9" />
           <KPI label="Visitas hoje" value={totalVisitas} cor={metaBatida ? "#22c55e" : "#F59E0B"} big />
           <KPI label="Pontos totais" value={totalPontos} cor="#9333EA" />
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, fontSize: 10, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, fontSize: 16, letterSpacing: 3, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace" }}>
               <span>🎯 Meta do mutirão</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 22, fontWeight: 900, color: metaBatida ? "#22c55e" : "#F59E0B", fontFamily: "'Bebas Neue', sans-serif" }}>{totalVisitas}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 36, fontWeight: 900, color: metaBatida ? "#22c55e" : "#F59E0B", fontFamily: "'Bebas Neue', sans-serif" }}>{totalVisitas}</span>
                 <span style={{ color: "#ffffff55" }}>/</span>
                 {isAdminMode ? (
-                  <input type="number" value={meta} onChange={(e) => handleMetaChange(Number(e.target.value))} style={{ width: 60, background: "transparent", border: "1px solid #ffffff33", borderRadius: 6, color: "#fff", padding: "2px 8px", fontSize: 14, fontFamily: "'Bebas Neue', sans-serif" }} />
+                  <input type="number" value={meta} onChange={(e) => handleMetaChange(Number(e.target.value))} style={{ width: 80, background: "transparent", border: "1px solid #ffffff33", borderRadius: 6, color: "#fff", padding: "2px 8px", fontSize: 24, fontFamily: "'Bebas Neue', sans-serif" }} />
                 ) : (
-                  <span style={{ fontSize: 22, fontWeight: 900, color: metaBatida ? "#22c55e" : "#F59E0B", fontFamily: "'Bebas Neue', sans-serif" }}>{meta}</span>
+                  <span style={{ fontSize: 36, fontWeight: 900, color: metaBatida ? "#22c55e" : "#F59E0B", fontFamily: "'Bebas Neue', sans-serif" }}>{meta}</span>
                 )}
               </div>
             </div>
             <ProgressBar valor={totalVisitas} meta={meta} cor={metaBatida ? "#22c55e" : "#F59E0B"} />
             {metaBatida && (
-              <div style={{ textAlign: "center", marginTop: 4, fontSize: 14, letterSpacing: 3, color: "#22c55e", animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
+              <div style={{ textAlign: "center", marginTop: 6, fontSize: 22, letterSpacing: 4, color: "#22c55e", animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
                 🎉 META BATIDA!
               </div>
             )}
           </div>
         </div>
+
 
         {/* Corpo: Esquerda (equipes horizontais) + Direita (ranking corretores) */}
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2.2fr) minmax(0, 1fr)", gap: 12, padding: "10px 20px 6px", flex: 1, minHeight: 0, overflow: "hidden" }}>
@@ -386,27 +386,27 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
                   flex: 1, minHeight: 0, minWidth: 0,
                   background: bateuMeta ? `linear-gradient(135deg, ${st.cor}33, #0d0d20, ${st.cor}22)` : `linear-gradient(90deg, ${st.cor}22 0%, #0d0d20 40%)`,
                   border: `2px solid ${st.cor}66`,
-                  borderRadius: 16, padding: "8px 12px", position: "relative", overflow: "hidden",
-                  display: "grid", gridTemplateColumns: "auto auto minmax(0, 1fr) auto auto auto minmax(90px, 1fr)", alignItems: "center", gap: 8,
+                  borderRadius: 16, padding: "12px 20px", position: "relative", overflow: "hidden",
+                  display: "grid", gridTemplateColumns: "auto auto minmax(0, 1fr) auto auto auto minmax(160px, 1fr)", alignItems: "center", gap: 14,
                   boxShadow: bateuMeta ? `0 0 30px ${st.cor}66` : `0 0 20px ${st.cor}22`,
                 } as any}>
                   {/* Rank badge grande */}
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(40px, 4.5vw, 72px)", lineHeight: 0.85, color: st.cor, textShadow: `0 0 30px ${st.cor}aa`, minWidth: 44, textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 96, lineHeight: 0.85, color: st.cor, textShadow: `0 0 30px ${st.cor}aa`, minWidth: 70, textAlign: "center" }}>
                     {i + 1}<span style={{ fontSize: "0.4em", verticalAlign: "super" }}>º</span>
                   </div>
                   {/* Escudo da equipe */}
-                  <div style={{ width: 56, height: 56, borderRadius: 12, background: `linear-gradient(135deg, ${st.cor}55, ${st.cor}22)`, border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, boxShadow: `0 0 20px ${st.cor}66`, flexShrink: 0 }}>
+                  <div style={{ width: 78, height: 78, borderRadius: 16, background: `linear-gradient(135deg, ${st.cor}55, ${st.cor}22)`, border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, boxShadow: `0 0 20px ${st.cor}66`, flexShrink: 0 }}>
                     {st.emoji}
                   </div>
                   {/* Nome da equipe + tamanho */}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 9, letterSpacing: 3, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 2 }}>
+                    <div style={{ fontSize: 15, letterSpacing: 4, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 3 }}>
                       Equipe
                     </div>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(22px, 2.6vw, 38px)", letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>
                       {e.equipe ?? "—"}
                     </div>
-                    <div style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff66", textTransform: "uppercase", fontFamily: "monospace", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 15, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {e.corretores ?? 0} corretor{(e.corretores ?? 0) === 1 ? "" : "es"}
                     </div>
                   </div>
@@ -418,64 +418,68 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
                   <Stat label="Pontos" value={e.pontos} icon="🏆" cor="#F59E0B" />
                   {/* Progresso da meta */}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4, gap: 6 }}>
-                      <span style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Meta</span>
-                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: bateuMeta ? "#22c55e" : st.cor, lineHeight: 1 }}>{Math.round(pct)}%</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6, gap: 8 }}>
+                      <span style={{ fontSize: 15, letterSpacing: 3, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Meta</span>
+                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: bateuMeta ? "#22c55e" : st.cor, lineHeight: 1 }}>{Math.round(pct)}%</span>
                     </div>
                     <ProgressBar valor={e.visitas} meta={META_EQUIPE} cor={bateuMeta ? "#22c55e" : st.cor} />
-                    <div style={{ fontSize: 9, color: "#ffffff55", fontFamily: "monospace", letterSpacing: 1, marginTop: 3, textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 15, color: "#ffffff77", fontFamily: "monospace", letterSpacing: 1, marginTop: 5, textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {bateuMeta ? "✅ META BATIDA" : `${e.visitas}/${META_EQUIPE} VISITAS`}
                     </div>
                   </div>
+
                 </div>
               );
             })}
           </div>
 
           {/* Direita: Ranking dos Corretores */}
-          <div style={{ background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
-            <div style={{ fontSize: "clamp(13px, 1.4vw, 17px)", letterSpacing: 4, textTransform: "uppercase", color: "#F59E0B", marginBottom: 10, textAlign: "center", fontWeight: 900, flexShrink: 0, textShadow: "0 0 20px #F59E0B66" }}>
+          <div style={{ background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+            <div style={{ fontSize: 26, letterSpacing: 4, textTransform: "uppercase", color: "#F59E0B", marginBottom: 12, textAlign: "center", fontWeight: 900, flexShrink: 0, textShadow: "0 0 20px #F59E0B66" }}>
               🏅 Ranking dos Corretores
             </div>
-            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 5 }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 6 }}>
               {corretores.length === 0 && (
-                <div style={{ color: "#ffffff33", fontSize: 12, fontFamily: "monospace", textAlign: "center", marginTop: 20 }}>Aguardando corretores…</div>
+                <div style={{ color: "#ffffff33", fontSize: 18, fontFamily: "monospace", textAlign: "center", marginTop: 20 }}>Aguardando corretores…</div>
               )}
-              {corretores.slice(0, 8).map((c: any, i: number) => {
+              {corretores.slice(0, 5).map((c: any, i: number) => {
                 const st = equipeStyle(c.equipe, i);
                 const isFlash = flashCorretor === c.corretor_id;
                 return (
                   <div key={c.corretor_id} className={isFlash ? "row-flash" : ""} style={{
-                    display: "grid", gridTemplateColumns: "36px 40px 1fr auto", alignItems: "center", gap: 10,
-                    padding: "6px 10px", borderRadius: 10,
+                    display: "grid", gridTemplateColumns: "44px 52px 1fr auto", alignItems: "center", gap: 12,
+                    flex: 1, minHeight: 0,
+                    padding: "6px 12px", borderRadius: 12,
                     background: i === 0 ? "#1a1400" : "#0d0d14",
                     border: `1px solid ${i === 0 ? "#F59E0B66" : st.cor + "22"}`,
                   }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: i === 0 ? "#F59E0B" : "#ffffff88", textAlign: "center", lineHeight: 1 }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 34, color: i === 0 ? "#F59E0B" : "#ffffff88", textAlign: "center", lineHeight: 1 }}>
                       {i + 1}<span style={{ fontSize: "0.55em", verticalAlign: "super" }}>º</span>
                     </div>
                     {c.foto_url ? (
-                      <img src={c.foto_url} alt={c.nome} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
+                      <img src={c.foto_url} alt={c.nome} style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
                     ) : (
-                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: st.cor }}>
+                      <div style={{ width: 52, height: 52, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: st.cor }}>
                         {(c.nome || "?").slice(0, 1)}
                       </div>
                     )}
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 1, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {(c.nome || "—").split(" ")[0].toUpperCase()}
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 9, color: st.cor, letterSpacing: 1, textTransform: "uppercase", marginTop: 2 }}>
+                      <div style={{ fontFamily: "monospace", fontSize: 14, color: st.cor, letterSpacing: 1, textTransform: "uppercase", marginTop: 2 }}>
                         Equipe {c.equipe ?? "—"}
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 9, color: "#ffffff88", letterSpacing: 0.5, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontFamily: "monospace", fontSize: 14, color: "#ffffff99", letterSpacing: 0.5, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {(c.visitas ?? 0)} vis. ×30 + {(c.aproveitamentos ?? 0)} aprov. ×5
                       </div>
                     </div>
-                    <div style={{ textAlign: "center", minWidth: 50 }}>
-                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, lineHeight: 1, color: "#F59E0B", textShadow: "0 0 15px #F59E0B66" }}>{c.pontos}</div>
-                      <div style={{ fontSize: 8, letterSpacing: 2, color: "#ffffff55", fontFamily: "monospace" }}>PONTOS</div>
+                    <div style={{ textAlign: "center", minWidth: 74 }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, lineHeight: 1, color: "#F59E0B", textShadow: "0 0 15px #F59E0B66" }}>{c.pontos}</div>
+                      <div style={{ fontSize: 12, letterSpacing: 2, color: "#ffffff66", fontFamily: "monospace" }}>PONTOS</div>
                     </div>
+
+
 
                   </div>
                 );
@@ -485,15 +489,15 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         </div>
 
         {/* Últimas Conquistas — faixa horizontal na base */}
-        <div style={{ padding: "6px 20px 10px", flexShrink: 0 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "auto repeat(4, 1fr)", gap: 10, background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 14, padding: "10px 14px", alignItems: "stretch" }}>
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 14, borderRight: "1px solid #ffffff14", minWidth: 130 }}>
-              <div style={{ fontSize: "clamp(13px, 1.4vw, 18px)", letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1 }}>Últimas</div>
-              <div style={{ fontSize: "clamp(13px, 1.4vw, 18px)", letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1 }}>Conquistas</div>
-              <div style={{ fontSize: 22, marginTop: 4 }}>🏆</div>
+        <div style={{ padding: "8px 24px 12px", flexShrink: 0 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "auto repeat(4, 1fr)", gap: 14, background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 14, padding: "12px 18px", alignItems: "stretch" }}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 18, borderRight: "1px solid #ffffff14", minWidth: 180 }}>
+              <div style={{ fontSize: 26, letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1.05 }}>Últimas</div>
+              <div style={{ fontSize: 26, letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1.05 }}>Conquistas</div>
+              <div style={{ fontSize: 30, marginTop: 6 }}>🏆</div>
             </div>
             {feed.length === 0 && (
-              <div style={{ gridColumn: "span 4", color: "#ffffff33", fontSize: 12, fontFamily: "monospace", textAlign: "center", alignSelf: "center" }}>Nenhuma conquista ainda — bora fechar!</div>
+              <div style={{ gridColumn: "span 4", color: "#ffffff44", fontSize: 18, fontFamily: "monospace", textAlign: "center", alignSelf: "center" }}>Nenhuma conquista ainda — bora fechar!</div>
             )}
             {feed.slice(0, 4).map((v, i) => {
               const visita = v.tipo === "visita_agendada";
@@ -502,25 +506,25 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
               const st = equipeStyle(corr?.equipe, i);
               return (
                 <div key={`${v.corretor}-${v.hora}-${i}`} style={{
-                  display: "flex", alignItems: "center", gap: 10, padding: "4px 6px",
+                  display: "flex", alignItems: "center", gap: 12, padding: "4px 8px",
                   borderLeft: i === 0 ? `3px solid ${cor}` : "3px solid transparent",
                   animation: i === 0 ? "slideDown 0.4s ease-out" : "none",
                 }}>
                   {corr?.foto_url ? (
-                    <img src={corr.foto_url} alt={v.corretor} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
+                    <img src={corr.foto_url} alt={v.corretor} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
                   ) : (
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: st.cor, flexShrink: 0 }}>
+                    <div style={{ width: 60, height: 60, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: st.cor, flexShrink: 0 }}>
                       {(v.corretor || "?").slice(0, 1)}
                     </div>
                   )}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: st.cor, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 1, color: st.cor, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {(v.corretor || "").toUpperCase()}
                     </div>
-                    <div style={{ fontFamily: "monospace", fontSize: 10, color: "#ffffffbb", letterSpacing: 1, textTransform: "uppercase", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: 16, color: "#ffffffcc", letterSpacing: 1, textTransform: "uppercase", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {visita ? "Marcou uma visita" : "Aproveitou um lead"}
                     </div>
-                    <div style={{ fontFamily: "monospace", fontSize: 10, color: cor, letterSpacing: 1, marginTop: 2, fontWeight: 700 }}>
+                    <div style={{ fontFamily: "monospace", fontSize: 16, color: cor, letterSpacing: 1, marginTop: 3, fontWeight: 700 }}>
                       {v.hora}
                     </div>
                   </div>
@@ -531,11 +535,12 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         </div>
 
         {/* Footer */}
-        <div style={{ textAlign: "center", padding: "2px 24px 6px", color: "#ffffff33", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, flexShrink: 0 }}>
-          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#22c55e", marginRight: 6, animation: "pulse 1.5s infinite" }} />
+        <div style={{ textAlign: "center", padding: "4px 24px 10px", color: "#ffffff55", fontSize: 15, fontFamily: "monospace", letterSpacing: 2, flexShrink: 0 }}>
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#22c55e", marginRight: 8, animation: "pulse 1.5s infinite" }} />
           AO VIVO · MUTIRÃO INTELIGENTE · {corretores.length} CORRETOR{corretores.length === 1 ? "" : "ES"} NO PLACAR
-          <span style={{ color: "#ffffff55", marginLeft: 12 }}>· PONTUAÇÃO: VISITA AGENDADA = 30 PTS · LEAD APROVEITADO = 5 PTS · TENTATIVA = 0</span>
+          <span style={{ color: "#ffffff77", marginLeft: 14 }}>· PONTUAÇÃO: VISITA AGENDADA = 30 PTS · LEAD APROVEITADO = 5 PTS · TENTATIVA = 0</span>
         </div>
+
 
       </div>
       </div>
@@ -546,9 +551,9 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
 
 function KPI({ label, value, cor, big }: any) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "4px 8px", borderRight: "1px solid #ffffff10" }}>
-      <div style={{ fontSize: 9, letterSpacing: 3, color: "#ffffff55", textTransform: "uppercase", fontFamily: "monospace" }}>{label}</div>
-      <div style={{ fontSize: big ? "clamp(32px, 4.5vw, 48px)" : "clamp(24px, 3.5vw, 36px)", fontWeight: 900, color: cor, lineHeight: 1, textShadow: `0 0 20px ${cor}66`, fontFamily: "'Bebas Neue', sans-serif" }}>
+    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "4px 10px", borderRight: "1px solid #ffffff10" }}>
+      <div style={{ fontSize: 16, letterSpacing: 4, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace" }}>{label}</div>
+      <div style={{ fontSize: big ? 72 : 54, fontWeight: 900, color: cor, lineHeight: 1, textShadow: `0 0 20px ${cor}66`, fontFamily: "'Bebas Neue', sans-serif" }}>
         {value}
       </div>
     </div>
@@ -557,12 +562,12 @@ function KPI({ label, value, cor, big }: any) {
 
 function Stat({ label, value, icon, cor }: any) {
   return (
-    <div style={{ textAlign: "center", minWidth: 58, padding: "0 4px", borderLeft: "1px solid #ffffff10" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
-        <span style={{ fontSize: 16 }}>{icon}</span>
-        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(24px, 2.6vw, 38px)", color: cor, lineHeight: 1, textShadow: `0 0 15px ${cor}66` }}>{value}</span>
+    <div style={{ textAlign: "center", minWidth: 86, padding: "0 8px", borderLeft: "1px solid #ffffff10" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 8 }}>
+        <span style={{ fontSize: 24 }}>{icon}</span>
+        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, color: cor, lineHeight: 1, textShadow: `0 0 15px ${cor}66` }}>{value}</span>
       </div>
-      <div style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginTop: 3 }}>{label}</div>
+      <div style={{ fontSize: 15, letterSpacing: 3, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace", marginTop: 4 }}>{label}</div>
     </div>
   );
 }
