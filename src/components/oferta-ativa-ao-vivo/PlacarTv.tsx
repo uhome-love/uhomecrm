@@ -438,7 +438,7 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
             <div style={{ fontSize: 26, letterSpacing: 4, textTransform: "uppercase", color: "#F59E0B", marginBottom: 12, textAlign: "center", fontWeight: 900, flexShrink: 0, textShadow: "0 0 20px #F59E0B66" }}>
               🏅 Ranking dos Corretores
             </div>
-            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 6 }}>
               {corretores.length === 0 && (
                 <div style={{ color: "#ffffff33", fontSize: 18, fontFamily: "monospace", textAlign: "center", marginTop: 20 }}>Aguardando corretores…</div>
               )}
@@ -447,36 +447,38 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
                 const isFlash = flashCorretor === c.corretor_id;
                 return (
                   <div key={c.corretor_id} className={isFlash ? "row-flash" : ""} style={{
-                    display: "grid", gridTemplateColumns: "48px 56px 1fr auto", alignItems: "center", gap: 12,
-                    padding: "10px 12px", borderRadius: 12,
+                    display: "grid", gridTemplateColumns: "44px 52px 1fr auto", alignItems: "center", gap: 12,
+                    flex: 1, minHeight: 0,
+                    padding: "6px 12px", borderRadius: 12,
                     background: i === 0 ? "#1a1400" : "#0d0d14",
                     border: `1px solid ${i === 0 ? "#F59E0B66" : st.cor + "22"}`,
                   }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: i === 0 ? "#F59E0B" : "#ffffff88", textAlign: "center", lineHeight: 1 }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 34, color: i === 0 ? "#F59E0B" : "#ffffff88", textAlign: "center", lineHeight: 1 }}>
                       {i + 1}<span style={{ fontSize: "0.55em", verticalAlign: "super" }}>º</span>
                     </div>
                     {c.foto_url ? (
-                      <img src={c.foto_url} alt={c.nome} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
+                      <img src={c.foto_url} alt={c.nome} style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
                     ) : (
-                      <div style={{ width: 56, height: 56, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: st.cor }}>
+                      <div style={{ width: 52, height: 52, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: st.cor }}>
                         {(c.nome || "?").slice(0, 1)}
                       </div>
                     )}
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 30, letterSpacing: 1, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 1, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {(c.nome || "—").split(" ")[0].toUpperCase()}
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 15, color: st.cor, letterSpacing: 1, textTransform: "uppercase", marginTop: 3 }}>
+                      <div style={{ fontFamily: "monospace", fontSize: 14, color: st.cor, letterSpacing: 1, textTransform: "uppercase", marginTop: 2 }}>
                         Equipe {c.equipe ?? "—"}
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 15, color: "#ffffff99", letterSpacing: 0.5, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontFamily: "monospace", fontSize: 14, color: "#ffffff99", letterSpacing: 0.5, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {(c.visitas ?? 0)} vis. ×30 + {(c.aproveitamentos ?? 0)} aprov. ×5
                       </div>
                     </div>
-                    <div style={{ textAlign: "center", minWidth: 78 }}>
-                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 46, lineHeight: 1, color: "#F59E0B", textShadow: "0 0 15px #F59E0B66" }}>{c.pontos}</div>
-                      <div style={{ fontSize: 13, letterSpacing: 2, color: "#ffffff66", fontFamily: "monospace" }}>PONTOS</div>
+                    <div style={{ textAlign: "center", minWidth: 74 }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, lineHeight: 1, color: "#F59E0B", textShadow: "0 0 15px #F59E0B66" }}>{c.pontos}</div>
+                      <div style={{ fontSize: 12, letterSpacing: 2, color: "#ffffff66", fontFamily: "monospace" }}>PONTOS</div>
                     </div>
+
 
 
                   </div>
