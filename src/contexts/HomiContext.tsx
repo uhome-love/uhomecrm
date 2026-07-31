@@ -71,10 +71,12 @@ interface HomiContextType {
 
 const HomiContext = createContext<HomiContextType | null>(null);
 
+// Cérebro único: todos os papéis usam homi-chat (RAG + ferramentas).
+// O foco por papel é enviado no body (`perfil`).
 const CHAT_URL_MAP: Record<HomiRole, string> = {
   corretor: "homi-chat",
-  gestor: "uhome-ia-core",
-  ceo: "uhome-ia-core",
+  gestor: "homi-chat",
+  ceo: "homi-chat",
 };
 
 export function HomiProvider({ children }: { children: ReactNode }) {
@@ -189,15 +191,15 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     const functionName = CHAT_URL_MAP[homiRole];
     const url = `${EDGE_BASE_URL}/functions/v1/${functionName}`;
 
-    // ── Copilot mode (corretor): non-streaming tool-calling ──
-    if (homiRole === "corretor") {
+    // ── Copilot mode (todos os papéis): non-streaming tool-calling ──
+    {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const resp = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ messages: newMessages, enableTools: true, stream: false }),
+          body: JSON.stringify({ messages: newMessages, enableTools: true, stream: false, perfil: homiRole }),
         });
         if (!resp.ok) {
           if (resp.status === 429) throw new Error("Rate limit. Aguarde alguns segundos.");
@@ -222,87 +224,6 @@ export function HomiProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
       return;
-    }
-
-    let assistantContent = "";
-
-
-    try {
-      const body: any = { messages: newMessages };
-      if (functionName === "uhome-ia-core") {
-        body.role = homiRole === "ceo" ? "admin" : "gestor";
-        body.module = "general";
-        body.context = { page: currentPage, userName };
-      }
-
-      // Use the user's session JWT for authenticated edge function calls
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!resp.ok || !resp.body) {
-        if (resp.status === 429) throw new Error("Rate limit. Aguarde alguns segundos.");
-        if (resp.status === 402) throw new Error("Créditos esgotados.");
-        throw new Error("Erro ao conectar com o HOMI");
-      }
-
-      // Parse knowledge source header (admin debug)
-      try {
-        const ksHeader = resp.headers.get("x-knowledge-source");
-        if (ksHeader) setKnowledgeSource(JSON.parse(ksHeader));
-      } catch (e) { console.warn("[HomiContext] Failed to parse x-knowledge-source header:", e); }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let idx: number;
-        while ((idx = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantContent += content;
-              setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
-                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-                }
-                return [...prev, { role: "assistant", content: assistantContent }];
-              });
-            }
-          } catch (e) { console.warn("[HomiContext] Partial SSE chunk:", e); }
-        }
-      }
-
-      const finalMsgs = [...newMessages, { role: "assistant" as const, content: assistantContent }];
-      setMessages(finalMsgs);
-      const newId = await saveConversation(finalMsgs, conversationId);
-      if (newId) setConversationId(newId);
-    } catch (e: any) {
-      console.error("HOMI chat error:", e);
-      setMessages(prev => [...prev, { role: "assistant", content: `Erro: ${e.message || "Tente novamente."}` }]);
-    } finally {
-      setIsLoading(false);
     }
   }, [messages, isLoading, homiRole, currentPage, userName, conversationId, saveConversation]);
 

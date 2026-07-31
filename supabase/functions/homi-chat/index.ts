@@ -30,7 +30,7 @@ serve(async (req) => {
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const { messages, empreendimento, stream: wantStream = true, system: customSystem, enableTools = false } = await req.json();
+    const { messages, empreendimento, stream: wantStream = true, system: customSystem, enableTools = false, perfil = "corretor" } = await req.json();
     const shouldStream = wantStream !== false;
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -146,9 +146,22 @@ REGRAS IMPORTANTES:
 
 Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + ragContext;
 
-    const finalSystemPrompt = customSystem
+    // ── Foco por papel (mesmo cérebro, lente diferente) ──
+    const isLideranca = perfil === "ceo" || perfil === "gestor" || perfil === "admin";
+    const roleBlock = isLideranca
+      ? `
+
+PERFIL DE QUEM ESTÁ FALANDO COM VOCÊ: ${perfil === "gestor" ? "GESTOR/LÍDER DE EQUIPE" : "CEO/DIRETOR"}.
+Você é o mesmo HOMI (mesmo conhecimento: Método Uhome, empreendimentos, imóveis, zonas de POA, Academia), mas com a lente da liderança:
+- Fale de funil, VGV, produtividade do time, gargalos e decisão — não de "seu lead" nem de tarefas pessoais.
+- Nunca chame quem fala de "corretor". Trate como líder.
+- Mesmo assim, você TEM as mesmas ferramentas: quando pedirem imóveis ("me vê opções de 3 dorms na zona norte"), CHAME buscar_imovel normalmente e mostre os cartões — não responda só com texto.
+- Respostas curtas e decidíveis: 1 frase de leitura + no máximo 3 bullets. Relatório completo só se pedirem "aprofundar".`
+      : "";
+
+    const finalSystemPrompt = (customSystem
       ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + "\n\nDETALHES:\n" + detailedKnowledge + ragContext
-      : systemPrompt;
+      : systemPrompt) + roleBlock;
 
     // ── HOMI ↔ Materiais: injeta materiais relevantes do Hub ──
     let materiaisSuggestions: any[] = [];
