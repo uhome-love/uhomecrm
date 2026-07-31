@@ -524,7 +524,13 @@ function ImovelRow({ im, onOpen }: { im: any; onOpen: () => void }) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-foreground truncate group-hover:underline">{im.empreendimento || im.titulo || im.codigo}</p>
           <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
-            <MapPin className="h-2.5 w-2.5" />{im.bairro || "—"}
+            <MapPin className="h-2.5 w-2.5" />
+            {im.bairro || "—"}
+            {im.zona && (
+              <span className="rounded bg-muted px-1 text-[9px] font-medium text-muted-foreground">
+                {im.zona === "Metropolitana" ? "Região Metrop." : `Zona ${im.zona}`}
+              </span>
+            )}
           </p>
           {im.valor_venda != null && <p className="text-[11px] font-bold text-primary">{fmtMoney(im.valor_venda)}</p>}
         </div>
