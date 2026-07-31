@@ -1,86 +1,37 @@
-# Redesign U.Home CRM — Fase 1: Fundação + Shell
+# Dashboard CEO Beta — nova identidade visual (Inter + Montserrat · #4969FF)
 
-Auditoria feita nas telas reais (Pipeline, Minha Rotina, Tarefas, Imóveis, Dashboard CEO) e no design system atual. Esta fase troca a **base visual do produto inteiro** — tokens, tipografia, contraste, sidebar, header, botões, cards e tabelas. Nenhuma regra de negócio, query, RPC ou tabela é tocada.
+Tela descartável para ver o novo design rodando com dados reais, sem tocar em nada que já está em produção.
 
-## O que está errado hoje (verificado no código e nas telas)
+## O que muda em relação ao mockup anterior
 
-| Problema | Evidência |
-|---|---|
-| Texto secundário reprova acessibilidade | `--muted-foreground` = `#94A3B8` sobre branco = **2,9:1** (WCAG AA exige 4,5:1). É a cor de quase todo subtítulo, label e legenda do CRM |
-| Cor hardcoded fora do design system | **1.396 ocorrências** de `text-white`, `bg-gray-*`, `bg-slate-*`, `bg-[#...]` em **176 arquivos**, mais 183 arquivos com `style={{}}` inline. Qualquer troca de paleta hoje deixa telas "meio antigas, meio novas" |
-| Escala tipográfica com buraco | Existe `base` (14px) e pula direto para `lg` (18px). Não há passo intermediário, então títulos de seção viram 14px em negrito — sem hierarquia real |
-| Densidade inconsistente entre telas | Pipeline: 4 KPIs gigantes + 3 cards de equipe e o resto da tela vazia. Imóveis: grid apertado, cards colados, sem respiro. São dois produtos diferentes |
-| Botões sem hierarquia clara | 12 variantes no `Button`, várias concorrendo entre si (`success`, `warning`, `outline-success`, `outline-warning`). Na prática o corretor não sabe qual é a ação principal da tela |
-| Sem estados de foco/loading padronizados | `focus-visible` existe no Button, mas listas, cards clicáveis e linhas de tabela não têm estado de foco — navegação por teclado fica invisível |
-| Ícone-only sem rótulo | Botões de ícone sem `aria-label` em várias telas — leitor de tela anuncia "botão" |
+- **Tipografia:** Montserrat nos títulos, números de KPI e nomes de card. Inter no corpo, tabelas, labels e legendas, com números tabulares.
+- **Cor:** o **#4969FF da U.Home vira a cor dominante** (`brand-500`) — ação primária, barra de KPI, item ativo da sidebar, barras de funil e ranking, anel de foco e destaque de linha. A escala completa (50 → 900) é derivada dele.
+- **Neutros:** slate sai, entra uma escala fria que conversa com o azul. O cinza secundário sai de `#94A3B8` (2,9:1 — reprova AA) para `#69748C` (5,4:1 — passa AA).
 
-## Direções aprovadas
+## Como a tela beta funciona
 
-- **Paleta: Grafite & Indigo Profundo** — base grafite/carvão, superfícies brancas frias, indigo profundo como cor de ação.
-- **Densidade: Confortável** (recomendação confirmada abaixo).
-- **Escopo: Fundação + Shell** — reflete automaticamente em todas as telas.
+- Nova rota **`/ceo-beta`**, acessível só para admin/CEO, **sem entrada no menu lateral** (acesso por URL). Nada de link para usuários comuns.
+- A tela **reaproveita os hooks existentes** do dashboard atual (`useCeoDashboard` e os hooks de drill-down). Mesmos números, mesmas regras, mesmas queries — só a camada visual é nova.
+- O dashboard atual em `/ceo` continua **intocado**. Se o beta não agradar, apaga-se a rota e a pasta de componentes e nada mais é afetado.
 
-### Tipografia — recomendação
+## O que a tela beta mostra
 
-Você pediu a linha Poppins/Montserrat (geométrica, redonda, "cara de marca"). Poppins puro tem dois problemas em CRM: números com largura irregular em tabelas e um ar genérico de template. Proposta na mesma família visual, com melhor desempenho em dados densos:
-
-- **Recomendado — Outfit (títulos) + Plus Jakarta Sans (corpo e tabelas).** Outfit é geométrico como Poppins, porém mais afiado e com títulos que sustentam peso 600/700. Plus Jakarta tem números tabulares excelentes e mantém legibilidade a 13px.
-- **Alternativa fiel ao pedido — Montserrat (títulos) + Inter (corpo).** Montserrat entrega exatamente o ar Poppins/Montserrat que você citou; Inter continua no corpo por já estar validado em tabelas.
-
-Escolho **Outfit + Plus Jakarta Sans** no plano. Se preferir Montserrat + Inter, é só dizer na aprovação — é uma linha de config.
-
-### Densidade — por que Confortável
-
-Comparando com o mercado: Linear e Attio usam linhas de ~36px porque o usuário passa o dia inteiro varrendo listas. Pipedrive, HubSpot e Salesforce Lightning — CRMs onde o usuário **decide** em cada linha em vez de varrer — usam 48-56px. O corretor lê nome, empreendimento, etapa, SLA e tempo parado antes de agir; linha apertada aumenta erro de clique e leitura. Vai **Confortável (48px) como padrão**, com toggle Compacto salvo por usuário nas telas de lista pesada (Pipeline, Imóveis, Tarefas, Vendas) na Fase 2.
-
-## O que será construído nesta fase
-
-### 1. Tokens de cor (`src/index.css`)
-Nova escala grafite substituindo a slate atual, indigo profundo `#2B3FA8` como `--primary`, superfícies em três níveis (página / card / card elevado) e correção de contraste:
-- `--muted-foreground` sobe para grafite ~`#5A6377` → **4,8:1** (passa AA)
-- Cores de status (success/warning/danger) rebalanceadas para o novo fundo, com variantes `-fg` legíveis sobre pill claro
-- Sidebar grafite profundo alinhado à nova base, item ativo com barra indigo em vez de fundo cheio
-- Sombras trocadas por conjunto de 3 níveis suaves (ambiente + contato), sem sombra dura
-
-### 2. Tipografia (`tailwind.config.ts` + `index.html`)
-- Fontes carregadas com preload (mesmo padrão atual, sem render-blocking)
-- Escala completa e sem buraco: `2xs 11 · xs 12 · sm 13 · base 14 · md 15 · lg 17 · xl 20 · 2xl 24 · 3xl 30`
-- `line-height` amarrado por tamanho (1.5 em corpo, 1.25 em títulos) e `letter-spacing` negativo progressivo nos títulos
-- Números em tabelas com `font-variant-numeric: tabular-nums` global — colunas de valor param de dançar
-
-### 3. Espaçamento e raio
-- Escala 4/8 aplicada nos tokens de espaçamento de página, seção e card
-- Raio consistente: 8px em controles, 12px em cards, 16px em modais e painéis
-
-### 4. Componentes base
-- **Button:** 12 variantes reduzidas a **5 papéis** — `primary`, `secondary`, `ghost`, `outline`, `destructive` — mais um modificador `tone` (success/warning) para casos de status. Estados hover/active/focus/loading padronizados, com spinner embutido e `aria-busy`
-- **Card:** um único componente com variantes `flat`, `raised`, `interactive` (hover eleva + borda indigo)
-- **Tabela/Lista:** cabeçalho fixo, zebra sutil, linha com estado hover/focus/selected, altura confortável de 48px, coluna de ação alinhada à direita
-- **Badge/Pill de etapa:** cores derivadas dos tokens, contraste AA garantido em todas as etapas do pipeline
-- **Skeletons:** shimmer padrão substituindo os "0" e telas em branco durante carregamento
-- **Estado vazio:** componente único com ícone, frase e ação sugerida (hoje é texto solto centralizado)
-
-### 5. Shell (sidebar + header)
-- **Sidebar:** hierarquia tipográfica real entre grupo e item, ícones alinhados em grid de 20px, item ativo com barra + peso, densidade reduzida para caber mais sem apertar, colapso para strip de ícones preservando os rótulos em tooltip
-- **Header:** altura fixa, busca com atalho visível, ações à direita agrupadas, avatar/menu com contraste corrigido
-- **Container de página:** largura máxima e padding uniformes; hoje cada tela define o seu
-
-### 6. Acessibilidade
-- Todo botão ícone-only do shell e dos componentes base ganha `aria-label`
-- Anel de foco visível e consistente em links, cards clicáveis e linhas de tabela
-- `<main>` único por rota no layout
+1. **Header + saudação** — nome, data BRT, horário de atualização, ações à direita (Fila CEO + Exportar).
+2. **Seletor de período** em segmented control (Hoje / Ontem / Semana / Mês / 30 dias / Personalizado), com o mesmo estado do dashboard atual.
+3. **5 KPIs** com barra semântica de severidade, delta versus período anterior e microcópia orientada à ação. Todos clicáveis, abrindo os mesmos drill-downs de hoje.
+4. **Funil de negócios** com barras proporcionais e taxa de conversão por etapa.
+5. **Rankings** (por corretor / origem / empreendimento) em barras na escala do azul.
+6. **Tabela "Leads que exigem ação"** — linha de 48px, nome + origem em dois níveis, etapa em pill semântica, SLA explícito, VGV alinhado à direita, foco de teclado visível.
 
 ## Detalhes técnicos
 
-- Arquivos centrais: `src/index.css`, `tailwind.config.ts`, `index.html`, `src/components/ui/*` (button, card, table, badge, skeleton, input, tabs), `src/components/layout/Sidebar.tsx` e o shell/header.
-- **Migração das 1.396 cores hardcoded:** nesta fase é feita a varredura mecânica dos casos de mapeamento direto (`text-white` → `text-primary-foreground` no contexto certo, `bg-gray-50` → `bg-muted`, `text-gray-500` → `text-muted-foreground`), arquivo por arquivo com verificação visual. Casos com cor de marca ou gráfico ficam para as fases de tela, onde há contexto.
-- Componentes com estilo inline (`style={{}}`) usados em PDF/relatórios (`src/components/relatorios/origem/*`, `centralPdf.ts`) **não** são migrados — precisam de cor literal para exportar.
-- Zero mudança em hooks, serviços, RPCs, edge functions, migrations ou schema.
-- Validação: typecheck + captura Playwright antes/depois de Dashboard CEO, Pipeline, Minha Rotina, Tarefas e Imóveis, comparando lado a lado, mais checagem de contraste dos pares de token novos.
+- Novos arquivos, isolados: `src/pages/CeoDashboardBeta.tsx` e `src/components/ceo-beta/*` (KpiCard, FunilCard, RankingCard, LeadsAcaoTable, PeriodSegments).
+- Os tokens novos entram como um **escopo local** (`.theme-beta` no container da página) definido em um CSS próprio, **sem alterar `src/index.css` nem `tailwind.config.ts`**. Isso garante zero risco de vazar estilo para as outras 200+ telas enquanto o beta estiver em avaliação.
+- Fontes Montserrat e Inter carregadas com `display=swap` e preconnect no `index.html` (Inter já é usada hoje; entra só a Montserrat).
+- Rota registrada em `App.tsx` com o mesmo guard de papel usado por `/ceo`, sem item no `Sidebar.tsx`.
+- Zero mudança em hooks de dados, serviços, RPCs, edge functions, migrations ou schema.
+- Validação ao vivo: abrir `/ceo-beta` no preview, comparar cada KPI e cada linha da tabela contra `/ceo` no mesmo período e confirmar que os números batem número a número.
 
-## Fases seguintes (para aprovar depois, uma por vez)
+## Depois da validação
 
-- **Fase 2 — Jornada do Corretor:** Minha Rotina como centro de comando do dia, Pipeline com cards enxutos e sinal de SLA, Detalhe do Lead reorganizado em coluna de contexto + timeline, toggle de densidade.
-- **Fase 3 — Gestor/CEO:** dashboards com hierarquia de leitura (o que importa primeiro), deltas e drill-down consistentes.
-- **Fase 4 — Imóveis & Vitrine:** cards de imóvel premium, mapa integrado, vitrine enviada ao cliente com cara de material de alto padrão.
-- **Fase 5 — Micro-interações:** transições de etapa, celebração de venda, feedback de ação otimista.
+Se aprovar, a Fase 1 (fundação global: tokens em `index.css`, escala tipográfica em `tailwind.config.ts`, componentes base e shell) sobe promovendo esses mesmos tokens para o produto inteiro. Se não aprovar, remove-se a rota, a pasta `ceo-beta` e o CSS local — o CRM volta ao estado atual sem resíduo.
