@@ -481,11 +481,15 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const allMemberProfileIds = (corrProfs || []).map(p => p.id).filter(Boolean) as string[];
 
       // MIGRATED: Use auth_user_id for negocios instead of profile_id lookup
-      const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
+      // FIX: propostas (em negociação) precisam de query própria — antes eram contadas
+      // dentro do conjunto já filtrado por fase='ganho', resultando sempre em 0.
+      const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }, { data: allNegAtivos }] = await Promise.all([
         supabase.from("visitas").select("id, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("id, status, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
         supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "ganho").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
+        supabase.from("negocios").select("id, fase, auth_user_id").in("auth_user_id", allMemberUserIds).eq("status", "ativo").in("fase", ["em_negociacao", "contrato"]).limit(1000),
       ]);
+
       // Excluir backfills de conciliação (origem 'backfill_*') dos placares diários/janela
       const filterNoBackfill = (rows: any[] | null) => (rows || []).filter(r => !String(r?.origem || "").startsWith("backfill_"));
       const visMarcadasClean = filterNoBackfill(allVisMarcadas);
