@@ -5,6 +5,7 @@ import { Target, BarChart3, Building2 } from "lucide-react";
 import { FocoAlocacaoTab } from "@/components/foco/FocoAlocacaoTab";
 import { FocoDadosTab } from "@/components/foco/FocoDadosTab";
 import { FocoEmpreendimentosTab } from "@/components/foco/FocoEmpreendimentosTab";
+import { ProdutosNaoIdentificadosCard } from "@/components/foco/ProdutosNaoIdentificadosCard";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
 
