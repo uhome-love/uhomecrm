@@ -30,6 +30,7 @@ import LeadAcceptanceDialog from "@/components/pipeline/LeadAcceptanceDialog";
 
 import NewLeadBanner from "@/components/notifications/NewLeadBanner";
 import PushPromptBanner from "@/components/notifications/PushPromptBanner";
+import TelefoneFaltandoBanner from "@/components/notifications/TelefoneFaltandoBanner";
 import BackendHealthBanner from "@/components/system/BackendHealthBanner";
 import GlobalSearch from "@/components/GlobalSearch";
 import { Search } from "lucide-react";
@@ -295,6 +296,8 @@ export default function AppLayout() {
               </div>
             </header>
             <PushPromptBanner />
+            <TelefoneFaltandoBanner />
+
             <TabBar />
             
             <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-background">
