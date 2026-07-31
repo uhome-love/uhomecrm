@@ -35,15 +35,68 @@ export const HOMI_TOOLS = [
     function: {
       name: "buscar_imovel",
       description:
-        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. Receba o texto livre do corretor em `termo` (ex: '2 dorms no Petrópolis até 600 mil') e EXTRAIA você mesmo dormitórios e valor máximo para os campos, deixando em `termo` só bairro/empreendimento/tipo.",
+        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. O corretor manda um texto único (ex: 'apartamento de 3 dorms de 1M até 1,5M no Menino Deus mobiliado'). EXTRAIA você mesmo TODOS os atributos para os campos (faixa de valor, dorms, mobiliado, suítes, vagas, área, tipo) e deixe em `termo` SÓ bairro/empreendimento/cidade. ATENÇÃO: 'de X até Y' / 'entre X e Y' é FAIXA — preencha valor_min E valor_max. 'a partir de X' = valor_min. 'até X' = valor_max. 'M' = milhões, 'mil'/'k' = milhares.",
       parameters: {
         type: "object",
         properties: {
-          termo: { type: "string", description: "Bairro, empreendimento ou tipo (texto livre, sem número de dorms nem valor)." },
-          dormitorios: { type: "number", description: "Número mínimo de dormitórios extraído do texto." },
-          valor_max: { type: "number", description: "Valor de venda máximo em reais extraído do texto." },
+          termo: { type: "string", description: "Somente bairro, empreendimento ou cidade (sem dorms, sem valor, sem 'mobiliado')." },
+          dormitorios: { type: "number", description: "Número de dormitórios citado." },
+          dormitorios_exato: { type: "boolean", description: "true quando o corretor disse um número fechado ('3 dorms'); false quando disse '3+' / 'no mínimo 3'. Padrão: true." },
+          valor_min: { type: "number", description: "Valor de venda MÍNIMO em reais (ex: 1000000 para '1M')." },
+          valor_max: { type: "number", description: "Valor de venda MÁXIMO em reais (ex: 1500000 para '1,5M')." },
+          mobiliado: { type: "boolean", description: "true se o corretor pediu mobiliado." },
+          suites_min: { type: "number", description: "Número mínimo de suítes." },
+          vagas_min: { type: "number", description: "Número mínimo de vagas." },
+          area_min: { type: "number", description: "Área privativa mínima em m²." },
+          tipo: { type: "string", description: "Tipo do imóvel: apartamento, casa, cobertura, terreno, sala..." },
         },
       },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "fila_execucao",
+      description:
+        "Monta uma FILA de execução para o corretor resolver pendências uma a uma. Use quando ele pedir 'me ajuda a concluir minhas tarefas atrasadas', 'quais leads estão sem tarefa', 'me organiza', 'vamos resolver de 3 em 3'. Cada item traz o contexto do lead e a ação sugerida.",
+      parameters: {
+        type: "object",
+        properties: {
+          fila: {
+            type: "string",
+            enum: ["tarefas_atrasadas", "leads_sem_tarefa"],
+            description: "Qual fila montar. Padrão: tarefas_atrasadas.",
+          },
+          lote: { type: "number", description: "Quantos cards mostrar por vez: 1 ou 3. Padrão: 1." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "visitas_a_confirmar",
+      description:
+        "Lista as visitas futuras do corretor que ainda NÃO foram confirmadas com o cliente. Use quando ele perguntar 'quais visitas tenho que confirmar?', 'preciso confirmar alguma visita?'.",
+      parameters: { type: "object", properties: { dias: { type: "number", description: "Janela em dias à frente. Padrão: 3." } } },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "visitas_pendentes_resultado",
+      description:
+        "Lista as visitas do corretor cuja data já passou e que continuam SEM resultado registrado (nem realizada, nem no-show). Use quando ele perguntar 'quais visitas tenho pendentes?', 'o que falta registrar de visita?'.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "briefing_do_dia",
+      description:
+        "Monta o briefing objetivo do dia: números (tarefas atrasadas, visitas a confirmar, visitas sem resultado, leads sem tarefa, leads esfriando) e prioridades. Use quando o corretor pedir 'faz meu briefing', 'o que devo fazer hoje', 'me dá o resumo objetivo'.",
+      parameters: { type: "object", properties: {} },
     },
   },
   {
