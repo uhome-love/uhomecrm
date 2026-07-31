@@ -559,7 +559,10 @@ const CardMinimal = memo(function CardMinimal({
           onOpenChange={(v) => { if (!completingBusy) setCompletingOpen(v); }}
           tarefaTitulo={proximaTarefa?.titulo || "Tarefa"}
           tarefaOrigem={proximaTarefa?.origem ?? null}
+          tarefaId={proximaTarefa?.id ?? null}
+          tarefaSubtipo={(proximaTarefa as { subtipo?: string | null } | null)?.subtipo ?? null}
           tarefaTipo={proximaTarefa?.tipo ?? null}
+
 
           leadNome={lead.nome || undefined}
           leadId={lead.id}
