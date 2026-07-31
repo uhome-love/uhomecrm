@@ -271,7 +271,7 @@ async function collectImoveis(sb: any): Promise<SourceDoc[]> {
 }
 
 async function indexDoc(sb: any, doc: SourceDoc): Promise<number> {
-  const chunks = chunkText(doc.content);
+  const chunks = doc.content.includes("[MU-") ? chunkMetodoUhome(doc.content) : chunkText(doc.content);
   if (chunks.length === 0) return 0;
 
   const { data: existing } = await sb
