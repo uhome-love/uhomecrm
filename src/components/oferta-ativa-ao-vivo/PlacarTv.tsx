@@ -486,15 +486,15 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         </div>
 
         {/* Últimas Conquistas — faixa horizontal na base */}
-        <div style={{ padding: "6px 20px 10px", flexShrink: 0 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "auto repeat(4, 1fr)", gap: 10, background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 14, padding: "10px 14px", alignItems: "stretch" }}>
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 14, borderRight: "1px solid #ffffff14", minWidth: 130 }}>
-              <div style={{ fontSize: "clamp(13px, 1.4vw, 18px)", letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1 }}>Últimas</div>
-              <div style={{ fontSize: "clamp(13px, 1.4vw, 18px)", letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1 }}>Conquistas</div>
-              <div style={{ fontSize: 22, marginTop: 4 }}>🏆</div>
+        <div style={{ padding: "8px 24px 12px", flexShrink: 0 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "auto repeat(4, 1fr)", gap: 14, background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 14, padding: "12px 18px", alignItems: "stretch" }}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 18, borderRight: "1px solid #ffffff14", minWidth: 180 }}>
+              <div style={{ fontSize: 26, letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1.05 }}>Últimas</div>
+              <div style={{ fontSize: 26, letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1.05 }}>Conquistas</div>
+              <div style={{ fontSize: 30, marginTop: 6 }}>🏆</div>
             </div>
             {feed.length === 0 && (
-              <div style={{ gridColumn: "span 4", color: "#ffffff33", fontSize: 12, fontFamily: "monospace", textAlign: "center", alignSelf: "center" }}>Nenhuma conquista ainda — bora fechar!</div>
+              <div style={{ gridColumn: "span 4", color: "#ffffff44", fontSize: 18, fontFamily: "monospace", textAlign: "center", alignSelf: "center" }}>Nenhuma conquista ainda — bora fechar!</div>
             )}
             {feed.slice(0, 4).map((v, i) => {
               const visita = v.tipo === "visita_agendada";
@@ -503,25 +503,25 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
               const st = equipeStyle(corr?.equipe, i);
               return (
                 <div key={`${v.corretor}-${v.hora}-${i}`} style={{
-                  display: "flex", alignItems: "center", gap: 10, padding: "4px 6px",
+                  display: "flex", alignItems: "center", gap: 12, padding: "4px 8px",
                   borderLeft: i === 0 ? `3px solid ${cor}` : "3px solid transparent",
                   animation: i === 0 ? "slideDown 0.4s ease-out" : "none",
                 }}>
                   {corr?.foto_url ? (
-                    <img src={corr.foto_url} alt={v.corretor} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
+                    <img src={corr.foto_url} alt={v.corretor} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
                   ) : (
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: st.cor, flexShrink: 0 }}>
+                    <div style={{ width: 60, height: 60, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: st.cor, flexShrink: 0 }}>
                       {(v.corretor || "?").slice(0, 1)}
                     </div>
                   )}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: st.cor, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 1, color: st.cor, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {(v.corretor || "").toUpperCase()}
                     </div>
-                    <div style={{ fontFamily: "monospace", fontSize: 10, color: "#ffffffbb", letterSpacing: 1, textTransform: "uppercase", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: 16, color: "#ffffffcc", letterSpacing: 1, textTransform: "uppercase", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {visita ? "Marcou uma visita" : "Aproveitou um lead"}
                     </div>
-                    <div style={{ fontFamily: "monospace", fontSize: 10, color: cor, letterSpacing: 1, marginTop: 2, fontWeight: 700 }}>
+                    <div style={{ fontFamily: "monospace", fontSize: 16, color: cor, letterSpacing: 1, marginTop: 3, fontWeight: 700 }}>
                       {v.hora}
                     </div>
                   </div>
@@ -532,11 +532,12 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         </div>
 
         {/* Footer */}
-        <div style={{ textAlign: "center", padding: "2px 24px 6px", color: "#ffffff33", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, flexShrink: 0 }}>
-          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#22c55e", marginRight: 6, animation: "pulse 1.5s infinite" }} />
+        <div style={{ textAlign: "center", padding: "4px 24px 10px", color: "#ffffff55", fontSize: 15, fontFamily: "monospace", letterSpacing: 2, flexShrink: 0 }}>
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#22c55e", marginRight: 8, animation: "pulse 1.5s infinite" }} />
           AO VIVO · MUTIRÃO INTELIGENTE · {corretores.length} CORRETOR{corretores.length === 1 ? "" : "ES"} NO PLACAR
-          <span style={{ color: "#ffffff55", marginLeft: 12 }}>· PONTUAÇÃO: VISITA AGENDADA = 30 PTS · LEAD APROVEITADO = 5 PTS · TENTATIVA = 0</span>
+          <span style={{ color: "#ffffff77", marginLeft: 14 }}>· PONTUAÇÃO: VISITA AGENDADA = 30 PTS · LEAD APROVEITADO = 5 PTS · TENTATIVA = 0</span>
         </div>
+
 
       </div>
       </div>
