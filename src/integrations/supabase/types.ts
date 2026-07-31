@@ -722,6 +722,36 @@ export type Database = {
         }
         Relationships: []
       }
+      bairros_zonas: {
+        Row: {
+          bairro: string
+          bairro_norm: string
+          cidade: string
+          created_at: string
+          id: string
+          updated_at: string
+          zona: string
+        }
+        Insert: {
+          bairro: string
+          bairro_norm: string
+          cidade?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          zona: string
+        }
+        Update: {
+          bairro?: string
+          bairro_norm?: string
+          cidade?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          zona?: string
+        }
+        Relationships: []
+      }
       blocked_templates: {
         Row: {
           blocked_at: string
@@ -13552,6 +13582,7 @@ export type Database = {
       }
       monitor_primeiro_contato_v1_coverage: { Args: never; Returns: undefined }
       norm_empreendimento: { Args: { s: string }; Returns: string }
+      normalizar_bairro: { Args: { _txt: string }; Returns: string }
       normalize_alias: { Args: { input: string }; Returns: string }
       normalize_telefone: { Args: { raw: string }; Returns: string }
       oa_ao_vivo_is_gestor_of: {
@@ -13906,6 +13937,7 @@ export type Database = {
         Returns: Json
       }
       unaccent: { Args: { "": string }; Returns: string }
+      unaccent_immutable: { Args: { _txt: string }; Returns: string }
       upsert_roleta_fila: {
         Args: {
           p_corretor_id: string

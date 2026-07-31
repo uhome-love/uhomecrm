@@ -71,7 +71,7 @@ Quando o lead vem de um empreendimento listado abaixo, SEMPRE preencher o bairro
 - "Connect JW" / "Connect João Wallig" → bairro: "Passo da Areia", tipo: "apartamento", bairros_proximos: ["Boa Vista", "Jardim Lindóia", "Cristo Redentor"], ticket: R$350k-560k, dorms: 1-2
 - "Orygem" → bairro: "Teresópolis", tipo: "casa", bairros_proximos: ["Cristal", "Medianeira", "Glória"], ticket: R$800k-1M, dorms: 3-4
 - "Open Bosque" → bairro: "Jardim Carvalho", tipo: "apartamento", bairros_proximos: ["Passo da Areia", "Jardim Lindóia"]
-- "Casa Tua" / "Las Casas" → bairro: "Teresópolis", tipo: "casa", bairros_proximos: ["Cristal", "Medianeira"]
+- "Casa Tua" / "Las Casas" → bairro: "Alto Petrópolis" (ZONA NORTE de Porto Alegre), tipo: "casa", bairros_proximos: ["Passo da Areia", "Jardim Itu", "Vila Ipiranga", "Higienópolis"]
 - "Vértice" / "Vertice Las Casas" / "Vértice - Las Casas" → bairro: "Santa Fé", tipo: "apartamento", bairros_proximos: ["Teresópolis", "Cristal"]
 - "Alto Lindóia" / "Alto Lindoia" → bairro: "Lindóia", tipo: "apartamento", bairros_proximos: ["Jardim Lindóia", "São João"]
 - "Shift" / "Shift - Vanguard" / "Vanguard" → bairro: "Petrópolis", tipo: "apartamento", bairros_proximos: ["Bela Vista", "Bom Fim"]
@@ -97,7 +97,20 @@ REGRAS:
 2. Se o empreendimento tem ticket conhecido, usar como valor_min/valor_max
 3. Se o empreendimento não está na lista, inferir tipo pelo nome (Village/Casa → casa, Tower/Alto → apartamento)
 4. NUNCA deixar bairros vazio se o empreendimento está mapeado acima
-5. "Avulso - ImovelWeb" = lead orgânico, não forçar bairro — deixar vazio para o corretor preencher`;
+5. "Avulso - ImovelWeb" = lead orgânico, não forçar bairro — deixar vazio para o corretor preencher
+6. NUNCA invente bairro, zona ou ticket de um empreendimento que não está na lista. Diga que vai confirmar.`;
+
+const ZONAS_POA = `
+=== ZONAS DE PORTO ALEGRE (entendimento obrigatório) ===
+Quando o usuário falar em "zona norte", "zona sul", "zona leste", "zona central"/"centro" (ou "região norte", "norte", etc.), traduza para os bairros da zona:
+
+- ZONA NORTE: Passo da Areia (Passo d'Areia), São João, Higienópolis, Boa Vista, Cristo Redentor, Jardim Itu, Jardim Lindóia, Lindóia, Sarandi, Rubem Berta, Vila Ipiranga, São Sebastião, Alto Petrópolis, Jardim Floresta, Costa e Silva, Parque Santa Fé, Santa Rosa de Lima, Passo das Pedras, Jardim São Pedro, Vila Jardim Leopoldina, Anchieta, Humaitá, Farrapos, Navegantes, São Geraldo.
+- ZONA CENTRAL: Centro Histórico, Independência, Bom Fim, Rio Branco, Moinhos de Vento, Auxiliadora, Mont'Serrat, Petrópolis, Bela Vista, Santana, Santa Cecília, Farroupilha, Cidade Baixa, Menino Deus, Praia de Belas, Azenha, Floresta, Marcílio Dias, Praia de Belas.
+- ZONA LESTE: Partenon, Jardim Botânico, Santo Antônio, Vila Jardim, Bom Jesus, Chácara das Pedras, Três Figueiras, Jardim Carvalho, Jardim do Salso, Jardim Sabará, Agronomia, Lomba do Pinheiro, Mário Quintana, Protásio Alves, Morro Santana, Vila João Pessoa, Coronel Aparício Borges, São José, Jardim Isabel, Morada de Santa Fé.
+- ZONA SUL: Cristal, Camaquã, Cavalhada, Tristeza, Vila Assunção, Vila Nova, Nonoai, Teresópolis, Medianeira, Glória, Ipanema, Pedra Redonda, Vila Conceição, Espírito Santo, Guarujá, Serraria, Hípica, Aberta dos Morros, Belém Novo, Lami, Restinga, Lageado, Ponta Grossa, Belém Velho, Chapéu do Sol, Jardim Isabel, Santa Tereza, Vila Nova.
+- REGIÃO METROPOLITANA (não é zona de POA): Canoas, Viamão, Alvorada, Gravataí, Cachoeirinha, Esteio, São Leopoldo, Novo Hamburgo, Xangri-lá, Capão da Canoa.
+
+Regras: sempre que citar um bairro, mencione a zona quando for útil. Se o bairro não estiver acima, diga que vai confirmar em vez de chutar a zona.`;
 
 const MODULE_CONTEXTS: Record<string, string> = {
   recovery: `MÓDULO ATIVO: Recuperação de Leads

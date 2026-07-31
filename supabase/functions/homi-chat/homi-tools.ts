@@ -35,11 +35,16 @@ export const HOMI_TOOLS = [
     function: {
       name: "buscar_imovel",
       description:
-        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. O corretor manda um texto único (ex: 'apartamento de 3 dorms de 1M até 1,5M no Menino Deus mobiliado'). EXTRAIA você mesmo TODOS os atributos para os campos (faixa de valor, dorms, mobiliado, suítes, vagas, área, tipo) e deixe em `termo` SÓ bairro/empreendimento/cidade. ATENÇÃO: 'de X até Y' / 'entre X e Y' é FAIXA — preencha valor_min E valor_max. 'a partir de X' = valor_min. 'até X' = valor_max. 'M' = milhões, 'mil'/'k' = milhares.",
+        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. O corretor manda um texto único (ex: 'apartamento de 3 dorms de 1M até 1,5M no Menino Deus mobiliado'). EXTRAIA você mesmo TODOS os atributos para os campos (faixa de valor, dorms, mobiliado, suítes, vagas, área, tipo, ZONA) e deixe em `termo` SÓ bairro/empreendimento/cidade. ATENÇÃO: 'de X até Y' / 'entre X e Y' é FAIXA — preencha valor_min E valor_max. 'a partir de X' = valor_min. 'até X' = valor_max. 'M' = milhões, 'mil'/'k' = milhares. Se o corretor citar uma ZONA de Porto Alegre ('zona norte', 'zona sul', 'zona leste', 'zona central', 'centro', 'região norte'), preencha o campo `zona` e NÃO coloque isso em `termo`.",
       parameters: {
         type: "object",
         properties: {
-          termo: { type: "string", description: "Somente bairro, empreendimento ou cidade (sem dorms, sem valor, sem 'mobiliado')." },
+          termo: { type: "string", description: "Somente bairro, empreendimento ou cidade (sem dorms, sem valor, sem 'mobiliado', sem zona)." },
+          zona: {
+            type: "string",
+            enum: ["Norte", "Central", "Leste", "Sul", "Metropolitana"],
+            description: "Zona de Porto Alegre pedida pelo corretor. 'centro'/'zona central' = Central. Cidades vizinhas (Canoas, Viamão, Gravataí, litoral) = Metropolitana.",
+          },
           dormitorios: { type: "number", description: "Número de dormitórios citado." },
           dormitorios_exato: { type: "boolean", description: "true quando o corretor disse um número fechado ('3 dorms'); false quando disse '3+' / 'no mínimo 3'. Padrão: true." },
           valor_min: { type: "number", description: "Valor de venda MÍNIMO em reais (ex: 1000000 para '1M')." },
@@ -480,7 +485,7 @@ export async function executeHomiTool(
     }
 
     if (name === "buscar_imovel") {
-      const SELECT = "id, codigo, titulo, empreendimento, bairro, cidade, tipo, valor_venda, valor_condominio, mobiliado, dormitorios, suites, vagas, area_privativa, fotos";
+      const SELECT = "id, codigo, titulo, empreendimento, bairro, cidade, regiao, tipo, valor_venda, valor_condominio, mobiliado, dormitorios, suites, vagas, area_privativa, fotos";
       const mapRows = (data: any[]) => (data || []).map((r: any) => ({
         id: r.id,
         codigo: r.codigo,
@@ -488,6 +493,7 @@ export async function executeHomiTool(
         empreendimento: r.empreendimento,
         bairro: r.bairro,
         cidade: r.cidade,
+        zona: r.regiao,
         tipo: r.tipo,
         valor_venda: r.valor_venda,
         valor_condominio: r.valor_condominio,
@@ -522,6 +528,15 @@ export async function executeHomiTool(
       const areaMin = num(args.area_min);
       const tipoTxt = typeof args.tipo === "string" && args.tipo.trim().length >= 3 ? args.tipo.trim() : "";
 
+      // Zona de Porto Alegre (Norte / Central / Leste / Sul / Metropolitana)
+      const zonaRaw = typeof args.zona === "string" ? args.zona.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+      const zona = /norte/.test(zonaRaw) ? "Norte"
+        : /(central|centro)/.test(zonaRaw) ? "Central"
+        : /leste/.test(zonaRaw) ? "Leste"
+        : /sul/.test(zonaRaw) ? "Sul"
+        : /(metropolitan|grande porto|litoral)/.test(zonaRaw) ? "Metropolitana"
+        : "";
+
       type Opts = {
         mobiliado: boolean; extras: boolean; dormsExato: boolean; faixa: "estrita" | "ampliada" | "off";
         tokens: "todos" | "principal" | "nenhum"; tipo: boolean;
@@ -529,6 +544,7 @@ export async function executeHomiTool(
 
       const build = (o: Opts) => {
         let q = userClient.from("properties").select(SELECT).eq("ativo", true).not("valor_venda", "is", null);
+        if (zona) q = q.eq("regiao", zona);
         if (dorms !== undefined) q = o.dormsExato ? q.eq("dormitorios", dorms) : q.gte("dormitorios", dorms);
         if (o.faixa !== "off") {
           const fator = o.faixa === "ampliada" ? 0.2 : 0;
@@ -579,6 +595,7 @@ export async function executeHomiTool(
           ? `${vMin !== undefined ? "de " + fmtBRL(vMin) : ""}${vMax !== undefined ? (vMin !== undefined ? " até " : "até ") + fmtBRL(vMax) : ""}`
           : "",
         wantMobiliado ? "mobiliado" : "",
+        zona ? (zona === "Metropolitana" ? "Região Metropolitana" : `Zona ${zona}`) : "",
         rawTermo || "",
       ].filter(Boolean).join(" · ");
 
