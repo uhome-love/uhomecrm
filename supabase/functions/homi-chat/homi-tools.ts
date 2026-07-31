@@ -458,60 +458,98 @@ export async function executeHomiTool(
 
       // Normaliza o texto: separa em tokens úteis (ignora conectivos curtos)
       const rawTermo = `${args.termo || ""} ${args.bairro || ""}`.trim();
-      const stop = new Set(["de", "da", "do", "com", "para", "em", "no", "na", "e", "dorms", "dorm", "dormitorios", "quartos"]);
+      const stop = new Set(["de", "da", "do", "com", "para", "em", "no", "na", "e", "dorms", "dorm", "dormitorios", "quartos", "apartamento", "apto", "casa", "imovel", "mobiliado", "mobiliada"]);
       const tokens = rawTermo
         .toLowerCase()
         .replace(/['"]/g, "")
         .split(/\s+/)
         .filter((t) => t.length >= 3 && !stop.has(t));
+      const strongest = [...tokens].sort((a, b) => b.length - a.length)[0];
 
-      const baseFilters = (q0: any) => {
-        let q = q0.eq("ativo", true).not("valor_venda", "is", null);
-        if (typeof args.dormitorios === "number") q = q.gte("dormitorios", args.dormitorios);
-        if (typeof args.valor_max === "number") q = q.lte("valor_venda", args.valor_max);
-        return q;
+      const num = (v: any) => (typeof v === "number" && !isNaN(v) ? v : undefined);
+      const dorms = num(args.dormitorios);
+      const dormsExato = args.dormitorios_exato !== false; // padrão: número fechado
+      const vMin = num(args.valor_min);
+      const vMax = num(args.valor_max);
+      const wantMobiliado = args.mobiliado === true;
+      const suitesMin = num(args.suites_min);
+      const vagasMin = num(args.vagas_min);
+      const areaMin = num(args.area_min);
+      const tipoTxt = typeof args.tipo === "string" && args.tipo.trim().length >= 3 ? args.tipo.trim() : "";
+
+      type Opts = {
+        mobiliado: boolean; extras: boolean; dormsExato: boolean; faixa: "estrita" | "ampliada" | "off";
+        tokens: "todos" | "principal" | "nenhum"; tipo: boolean;
       };
 
-      // 1) Busca estrita: todos os tokens precisam bater em algum campo textual
-      let strict = baseFilters(userClient.from("properties").select(SELECT)).limit(6);
-      for (const tk of tokens) {
-        strict = strict.or(`bairro.ilike.%${tk}%,empreendimento.ilike.%${tk}%,titulo.ilike.%${tk}%,cidade.ilike.%${tk}%`);
-      }
-      strict = strict.order("valor_venda", { ascending: true });
-      const { data: strictData, error } = await strict;
-      if (error) {
-        console.error("[buscar_imovel] error:", error);
-        return { modelResult: "Não consegui buscar imóveis agora." };
-      }
-
-      let imoveis = mapRows(strictData || []);
-      let aproximado = false;
-
-      // 2) Fallback: se não achou, relaxa (só dorms/valor, ou o token mais forte)
-      if (imoveis.length === 0) {
-        let loose = baseFilters(userClient.from("properties").select(SELECT)).limit(6);
-        const strongest = [...tokens].sort((a, b) => b.length - a.length)[0];
-        if (strongest) {
-          loose = loose.or(`bairro.ilike.%${strongest}%,empreendimento.ilike.%${strongest}%,titulo.ilike.%${strongest}%,cidade.ilike.%${strongest}%`);
+      const build = (o: Opts) => {
+        let q = userClient.from("properties").select(SELECT).eq("ativo", true).not("valor_venda", "is", null);
+        if (dorms !== undefined) q = o.dormsExato ? q.eq("dormitorios", dorms) : q.gte("dormitorios", dorms);
+        if (o.faixa !== "off") {
+          const fator = o.faixa === "ampliada" ? 0.2 : 0;
+          if (vMin !== undefined) q = q.gte("valor_venda", Math.round(vMin * (1 - fator)));
+          if (vMax !== undefined) q = q.lte("valor_venda", Math.round(vMax * (1 + fator)));
         }
-        loose = loose.order("valor_venda", { ascending: true });
-        const { data: looseData } = await loose;
-        imoveis = mapRows(looseData || []);
-        aproximado = imoveis.length > 0;
+        if (o.mobiliado && wantMobiliado) q = q.eq("mobiliado", true);
+        if (o.extras) {
+          if (suitesMin !== undefined) q = q.gte("suites", suitesMin);
+          if (vagasMin !== undefined) q = q.gte("vagas", vagasMin);
+          if (areaMin !== undefined) q = q.gte("area_privativa", areaMin);
+        }
+        if (o.tipo && tipoTxt) q = q.ilike("tipo", `%${tipoTxt}%`);
+        const tks = o.tokens === "todos" ? tokens : o.tokens === "principal" ? (strongest ? [strongest] : []) : [];
+        for (const tk of tks) {
+          q = q.or(`bairro.ilike.%${tk}%,empreendimento.ilike.%${tk}%,titulo.ilike.%${tk}%,cidade.ilike.%${tk}%`);
+        }
+        return q.order("valor_venda", { ascending: true }).limit(6);
+      };
+
+      const full: Opts = { mobiliado: true, extras: true, dormsExato: true, faixa: "estrita", tokens: "todos", tipo: true };
+      const tentativas: { opts: Opts; relaxou: string[] }[] = [
+        { opts: full, relaxou: [] },
+        { opts: { ...full, tokens: "principal" }, relaxou: [] },
+        { opts: { ...full, tokens: "principal", extras: false }, relaxou: suitesMin || vagasMin || areaMin ? ["suítes/vagas/área"] : [] },
+        { opts: { ...full, tokens: "principal", extras: false, tipo: false }, relaxou: [tipoTxt ? "tipo do imóvel" : ""].filter(Boolean) },
+        { opts: { ...full, tokens: "principal", extras: false, tipo: false, dormsExato: false }, relaxou: [dorms !== undefined && dormsExato ? `dormitórios (aceitando ${dorms}+)` : ""].filter(Boolean) },
+        { opts: { ...full, tokens: "principal", extras: false, tipo: false, dormsExato: false, mobiliado: false }, relaxou: [wantMobiliado ? "mobiliado" : ""].filter(Boolean) },
+        { opts: { ...full, tokens: "principal", extras: false, tipo: false, dormsExato: false, mobiliado: false, faixa: "ampliada" }, relaxou: [(vMin || vMax) ? "faixa de valor (±20%)" : ""].filter(Boolean) },
+      ];
+
+      let imoveis: any[] = [];
+      const relaxados: string[] = [];
+      for (const t of tentativas) {
+        const { data, error } = await build(t.opts);
+        if (error) {
+          console.error("[buscar_imovel] error:", error);
+          return { modelResult: "Não consegui buscar imóveis agora." };
+        }
+        for (const r of t.relaxou) if (!relaxados.includes(r)) relaxados.push(r);
+        imoveis = mapRows(data || []);
+        if (imoveis.length > 0) break;
       }
+
+      const criterios = [
+        dorms !== undefined ? `${dorms} dorm${dormsExato ? "" : "+"}` : "",
+        vMin !== undefined || vMax !== undefined
+          ? `${vMin !== undefined ? "de " + fmtBRL(vMin) : ""}${vMax !== undefined ? (vMin !== undefined ? " até " : "até ") + fmtBRL(vMax) : ""}`
+          : "",
+        wantMobiliado ? "mobiliado" : "",
+        rawTermo || "",
+      ].filter(Boolean).join(" · ");
 
       if (imoveis.length === 0) {
         return {
-          result: { tipo: "imoveis", imoveis: [] },
-          modelResult: "Nenhum imóvel encontrado nem em busca ampla. Sugira ao corretor ampliar os critérios (valor, bairro ou dormitórios).",
+          result: { tipo: "imoveis", imoveis: [], criterios },
+          modelResult: `Nenhum imóvel encontrado para: ${criterios}. Diga isso em 1 frase e sugira ampliar 1 critério específico (faixa de valor, bairro ou mobiliado).`,
         };
       }
 
+      const aproximado = relaxados.length > 0;
       return {
-        result: { tipo: "imoveis", imoveis, aproximado },
+        result: { tipo: "imoveis", imoveis, aproximado, criterios, relaxados },
         modelResult: aproximado
-          ? `Não achei correspondência exata, mas trouxe ${imoveis.length} opções próximas (já exibidas com botão de enviar por WhatsApp). Comente em 1 frase.`
-          : `Encontrei ${imoveis.length} imóveis (já exibidos com botão de enviar por WhatsApp). Comente em 1 frase o destaque.`,
+          ? `Busca "${criterios}": não havia correspondência exata, relaxei ${relaxados.join(" e ")} e trouxe ${imoveis.length} opções (já exibidas na tela). Responda em 1 frase repetindo o critério entendido e AVISANDO explicitamente o que foi relaxado.`
+          : `Busca "${criterios}": ${imoveis.length} imóveis dentro do pedido (já exibidos na tela com botão de WhatsApp). Responda em 1 frase confirmando o critério entendido e o destaque. Não repita a lista.`,
       };
     }
 
