@@ -25,37 +25,10 @@ serve(async (req) => {
     try { getSupabase().from("ops_events").insert({ fn: "whatsapp-notificacao", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(() => {}); } catch {}
   };
 
-  // Fallback de envio por texto livre via Evolution API (instância do CRM)
-  const enviarViaEvolution = async (numero: string, texto: string): Promise<{ ok: boolean; error?: string }> => {
-    try {
-      if (!texto) return { ok: false, error: "texto vazio" };
-      const evoUrl = Deno.env.get("EVOLUTION_API_URL");
-      const evoKey = Deno.env.get("EVOLUTION_API_KEY");
-      if (!evoUrl || !evoKey) return { ok: false, error: "Evolution env vars ausentes" };
+  // Aviso interno para corretores: SOMENTE canais Meta (template + texto livre).
+  // Nunca usar a instância Evolution de nutrição — aquele número fala com clientes.
 
-      const { data: cfg } = await getSupabase()
-        .from("reengajamento_config")
-        .select("evolution_instance")
-        .limit(1)
-        .maybeSingle();
-      const instancia = cfg?.evolution_instance;
-      if (!instancia) return { ok: false, error: "instância Evolution não configurada" };
 
-      const r = await fetch(`${evoUrl}/message/sendText/${instancia}`, {
-        method: "POST",
-        headers: { apikey: evoKey, "Content-Type": "application/json" },
-        body: JSON.stringify({ number: numero, text: texto }),
-      });
-      if (!r.ok) {
-        const t = await r.text();
-        return { ok: false, error: `evolution ${r.status}: ${t.slice(0, 300)}` };
-      }
-      await r.text();
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : String(e) };
-    }
-  };
 
 
   try {
