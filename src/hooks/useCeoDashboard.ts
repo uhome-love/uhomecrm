@@ -678,6 +678,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     totalLeadsPeriodo: pipelineData?.totalMarketing || 0,
     leadsReaproveitadosOA: pipelineData?.totalOfertaAtiva || 0,
     totalVisitasCriadas: extraKpis?.totalVisitasCriadas || 0,
+    agendaVisitas: extraKpis?.agendaVisitas || { marcadas: 0, realizadas: 0, noShow: 0 },
+
     novoInteresse: extraKpis?.novoInteresse || 0,
     enviadosRoleta: pipelineData?.enviadosRoleta || 0,
     presentesHoje: extraKpis?.presentesHoje || 0,
