@@ -55,7 +55,7 @@ export default function ScoringLegend() {
                       <Icon className={`h-3.5 w-3.5 shrink-0 ${rule.color}`} />
                       <span className="text-foreground font-medium flex-1">{rule.resultado}</span>
                       <Badge
-                        variant={rule.pontos >= 3 ? "default" : rule.pontos === 0 ? "destructive" : "secondary"}
+                        variant={rule.pontos >= 5 ? "default" : "secondary"}
                         className="text-[10px] h-5 min-w-[40px] justify-center"
                       >
                         {rule.pontos === 0 ? "0 pts" : `+${rule.pontos} pt${rule.pontos > 1 ? "s" : ""}`}
