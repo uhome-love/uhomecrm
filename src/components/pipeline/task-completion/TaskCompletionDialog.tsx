@@ -39,9 +39,14 @@ export interface TaskCompletionDialogProps {
   currentStageId?: string;
   /** Origem da tarefa. Se for 'cadencia_sem_contato', a próxima tarefa é criada pelo sistema. */
   tarefaOrigem?: string | null;
+  /** Id da tarefa clicada — usado para abrir EXATAMENTE o card certo no fluxo Visita. */
+  tarefaId?: string | null;
+  /** Subtipo da tarefa clicada (visita_auto). */
+  tarefaSubtipo?: string | null;
   /** Tipo da tarefa sendo concluída (ligacao/whatsapp/email/visita/follow_up/proposta).
    *  Usado para herdar tipo_contato sem expor UI de "Canal". */
   tarefaTipo?: string | null;
+
   /** Default 'lead'. 'negocio' oculta o grupo "Encerrar lead". */
   context?: CompletionContext;
   onConfirm: (payload: CompletionPayload) => Promise<void> | void;
