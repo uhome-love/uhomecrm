@@ -2,7 +2,9 @@
 
 ## Problema
 
-Os formulários dos anúncios agora têm perguntas de qualificação (ex.: "Qual a sua preferência?" → Studio / 1 Dormitório / Ambos), mas o CRM só aproveita nome, e-mail e telefone do `field_data`. Verificado no receptor de leads do Meta: as demais perguntas são lidas e descartadas, e não existe nenhuma coluna no lead guardando essas respostas (nenhum campo de payload bruto em `pipeline_leads`; `jetimob_processed` só guarda id + telefone). Resultado: o corretor abre o lead e não vê o que a pessoa respondeu.
+Os formulários dos anúncios agora têm perguntas de qualificação — **cada empreendimento tem a sua própria pergunta** (a de tipologia "Qual a sua preferência? Studio / 1 Dormitório / Ambos" é só um exemplo; outros formulários perguntam outra coisa, e o Terrace ainda não foi atualizado). O CRM, porém, só aproveita nome, e-mail e telefone do `field_data`. Verificado no receptor de leads do Meta: as demais perguntas são lidas e descartadas, e não existe nenhuma coluna no lead guardando essas respostas (nenhum campo de payload bruto em `pipeline_leads`; `jetimob_processed` só guarda id + telefone). Resultado: o corretor abre o lead e não vê o que a pessoa respondeu.
+
+A solução é genérica: guarda e exibe **qualquer** pergunta/resposta que o formulário daquele empreendimento trouxer, sem lista fixa de perguntas no código.
 
 ## O que muda
 
