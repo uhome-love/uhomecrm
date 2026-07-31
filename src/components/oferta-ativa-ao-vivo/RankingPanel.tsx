@@ -93,7 +93,7 @@ export function RankingPanel({ sessaoId, paused }: { sessaoId: string | null; pa
         </Tabs>
       </div>
       <p className="text-[10px] text-muted-foreground px-3 py-2 border-t border-border bg-muted/30">
-        Visita = 10 pts · Aproveitamento = 4 pts · Ligação = 1 pt
+        Visita agendada = 30 pts · Aproveitado = 5 pts · Tentativa = 0
       </p>
     </div>
   );

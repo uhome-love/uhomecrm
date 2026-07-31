@@ -9,10 +9,11 @@ import {
 import { useState } from "react";
 
 const SCORING_RULES = [
-  { resultado: "Ligação / WhatsApp / E-mail", descricao: "Qualquer tentativa de contato", pontos: 1, icon: Phone, color: "text-primary" },
-  { resultado: "Não atendeu", descricao: "Lead não atendeu, volta à fila com cooldown", pontos: 1, icon: PhoneMissed, color: "text-blue-500" },
-  { resultado: "Sem interesse", descricao: "Lead descartado — removido da fila", pontos: 1, icon: ThumbsDown, color: "text-amber-500" },
-  { resultado: "Com interesse (Aproveitado)", descricao: "Lead convertido — transferido para cadastro", pontos: 3, icon: ThumbsUp, color: "text-emerald-500" },
+  { resultado: "Agendamento de visita", descricao: "Visita marcada com o lead", pontos: 30, icon: Trophy, color: "text-emerald-500" },
+  { resultado: "Com interesse (Aproveitado)", descricao: "Lead convertido — transferido para cadastro", pontos: 5, icon: ThumbsUp, color: "text-emerald-500" },
+  { resultado: "Ligação / WhatsApp / E-mail", descricao: "Tentativa de contato — não pontua", pontos: 0, icon: Phone, color: "text-primary" },
+  { resultado: "Não atendeu", descricao: "Lead não atendeu, volta à fila com cooldown", pontos: 0, icon: PhoneMissed, color: "text-blue-500" },
+  { resultado: "Sem interesse", descricao: "Lead descartado — removido da fila", pontos: 0, icon: ThumbsDown, color: "text-amber-500" },
   { resultado: "Número errado", descricao: "Telefone bloqueado — lead removido", pontos: 0, icon: PhoneOff, color: "text-destructive" },
 ];
 
@@ -54,7 +55,7 @@ export default function ScoringLegend() {
                       <Icon className={`h-3.5 w-3.5 shrink-0 ${rule.color}`} />
                       <span className="text-foreground font-medium flex-1">{rule.resultado}</span>
                       <Badge
-                        variant={rule.pontos >= 3 ? "default" : rule.pontos === 0 ? "destructive" : "secondary"}
+                        variant={rule.pontos >= 5 ? "default" : "secondary"}
                         className="text-[10px] h-5 min-w-[40px] justify-center"
                       >
                         {rule.pontos === 0 ? "0 pts" : `+${rule.pontos} pt${rule.pontos > 1 ? "s" : ""}`}
@@ -83,7 +84,7 @@ export default function ScoringLegend() {
 
             {/* Tips */}
             <div className="p-2 rounded-lg bg-muted/50 border border-border text-[10px] text-muted-foreground">
-              <strong className="text-foreground">💡 Dica:</strong> Foque em qualidade! Aproveitados valem <strong>3x</strong> mais que tentativas comuns. 
+              <strong className="text-foreground">💡 Dica:</strong> Tentativa não pontua — o que vale é resultado: aproveitar o lead (+5) e, principalmente, agendar visita (+30).
               Configure suas metas diárias na <strong>"Minha Área"</strong> para acompanhar seu progresso.
             </div>
           </CardContent>
