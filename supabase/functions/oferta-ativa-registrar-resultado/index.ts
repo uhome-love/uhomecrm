@@ -20,13 +20,14 @@ const COOLDOWN_TTL_DAYS: Record<string, number | null> = {
   pulado: 0,
 };
 
+// Pontuação (31/07/2026): tentativa não pontua; só resultado real pontua.
 const PONTOS: Record<string, number> = {
   pulado: 0,
-  nao_atendeu: 1,
-  sem_interesse: 1,
-  descarte_definitivo: 1, // Onda 2 · Bloco 3 — encerra o lead na base
-  aproveitado: 4,
-  visita_agendada: 10,
+  nao_atendeu: 0,
+  sem_interesse: 0,
+  descarte_definitivo: 0,
+  aproveitado: 5,
+  visita_agendada: 30,
 };
 
 // Patamares de "level up" (celebração no feed) por pontos acumulados na sessão
