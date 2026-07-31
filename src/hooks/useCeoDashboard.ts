@@ -523,8 +523,9 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const vr = visRealizadasClean.filter(v => v.corretor_id === uid && v.status === "realizada").length;
           // MIGRATED: Use auth_user_id directly (no profile_id conversion needed)
           const neg = (allNeg || []).filter(n => n.auth_user_id === uid);
-          const prop = neg.filter(n => n.fase === "em_negociacao" || n.fase === "em_negociacao").length;
+          const prop = (allNegAtivos || []).filter(n => n.auth_user_id === uid && n.fase === "em_negociacao").length;
           const vgv = neg.reduce((s: number, n: any) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
+
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
           corretoresAll.push({
             corretor_id: uid as string, nome: corrNameMap.get(uid) as string || "Corretor", gerente_nome: gerenteNome as string,
