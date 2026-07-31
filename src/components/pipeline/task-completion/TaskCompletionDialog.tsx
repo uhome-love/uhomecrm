@@ -97,7 +97,10 @@ export default function TaskCompletionDialog({
   leadId,
   currentStageId,
   tarefaOrigem,
+  tarefaId,
+  tarefaSubtipo,
   tarefaTipo,
+
   context = "lead",
   onConfirm,
 }: TaskCompletionDialogProps) {
