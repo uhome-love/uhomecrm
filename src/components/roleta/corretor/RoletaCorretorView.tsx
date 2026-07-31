@@ -286,8 +286,9 @@ export function RoletaCorretorView() {
   }
 
   // Marcar presença via alocação
+  // O servidor (credenciar_por_alocacao) é a validação real da alocação —
+  // aqui não bloqueamos por leitura local vazia/falha.
   const handleMarcarPresenca = async () => {
-    if (minhaAlocacao.length === 0) return;
     setMarcandoPresenca(true);
     try {
       const { data, error } = await supabase.rpc("credenciar_por_alocacao", {
@@ -300,6 +301,7 @@ export function RoletaCorretorView() {
         return;
       }
       toast.success(res.message || "Presença registrada!");
+      refetchAlocacao();
     } catch (e: any) {
       toast.error("Erro: " + (e.message || String(e)));
     } finally {
@@ -307,8 +309,10 @@ export function RoletaCorretorView() {
     }
   };
 
-  const semAlocacao = !loadingAlocacao && minhaAlocacao.length === 0;
+  const semAlocacao = !loadingAlocacao && !erroAlocacao && minhaAlocacao.length === 0;
   const alocacaoAtiva = minhaAlocacao.filter((a) => a.ativo);
+  const todosInativos = !loadingAlocacao && minhaAlocacao.length > 0 && alocacaoAtiva.length === 0;
+
 
   return (
     <div className="max-w-lg mx-auto space-y-6 py-8">
