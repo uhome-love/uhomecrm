@@ -35,11 +35,16 @@ export const HOMI_TOOLS = [
     function: {
       name: "buscar_imovel",
       description:
-        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. O corretor manda um texto único (ex: 'apartamento de 3 dorms de 1M até 1,5M no Menino Deus mobiliado'). EXTRAIA você mesmo TODOS os atributos para os campos (faixa de valor, dorms, mobiliado, suítes, vagas, área, tipo) e deixe em `termo` SÓ bairro/empreendimento/cidade. ATENÇÃO: 'de X até Y' / 'entre X e Y' é FAIXA — preencha valor_min E valor_max. 'a partir de X' = valor_min. 'até X' = valor_max. 'M' = milhões, 'mil'/'k' = milhares.",
+        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. O corretor manda um texto único (ex: 'apartamento de 3 dorms de 1M até 1,5M no Menino Deus mobiliado'). EXTRAIA você mesmo TODOS os atributos para os campos (faixa de valor, dorms, mobiliado, suítes, vagas, área, tipo, ZONA) e deixe em `termo` SÓ bairro/empreendimento/cidade. ATENÇÃO: 'de X até Y' / 'entre X e Y' é FAIXA — preencha valor_min E valor_max. 'a partir de X' = valor_min. 'até X' = valor_max. 'M' = milhões, 'mil'/'k' = milhares. Se o corretor citar uma ZONA de Porto Alegre ('zona norte', 'zona sul', 'zona leste', 'zona central', 'centro', 'região norte'), preencha o campo `zona` e NÃO coloque isso em `termo`.",
       parameters: {
         type: "object",
         properties: {
-          termo: { type: "string", description: "Somente bairro, empreendimento ou cidade (sem dorms, sem valor, sem 'mobiliado')." },
+          termo: { type: "string", description: "Somente bairro, empreendimento ou cidade (sem dorms, sem valor, sem 'mobiliado', sem zona)." },
+          zona: {
+            type: "string",
+            enum: ["Norte", "Central", "Leste", "Sul", "Metropolitana"],
+            description: "Zona de Porto Alegre pedida pelo corretor. 'centro'/'zona central' = Central. Cidades vizinhas (Canoas, Viamão, Gravataí, litoral) = Metropolitana.",
+          },
           dormitorios: { type: "number", description: "Número de dormitórios citado." },
           dormitorios_exato: { type: "boolean", description: "true quando o corretor disse um número fechado ('3 dorms'); false quando disse '3+' / 'no mínimo 3'. Padrão: true." },
           valor_min: { type: "number", description: "Valor de venda MÍNIMO em reais (ex: 1000000 para '1M')." },
