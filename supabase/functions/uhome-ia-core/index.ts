@@ -71,7 +71,7 @@ Quando o lead vem de um empreendimento listado abaixo, SEMPRE preencher o bairro
 - "Connect JW" / "Connect João Wallig" → bairro: "Passo da Areia", tipo: "apartamento", bairros_proximos: ["Boa Vista", "Jardim Lindóia", "Cristo Redentor"], ticket: R$350k-560k, dorms: 1-2
 - "Orygem" → bairro: "Teresópolis", tipo: "casa", bairros_proximos: ["Cristal", "Medianeira", "Glória"], ticket: R$800k-1M, dorms: 3-4
 - "Open Bosque" → bairro: "Jardim Carvalho", tipo: "apartamento", bairros_proximos: ["Passo da Areia", "Jardim Lindóia"]
-- "Casa Tua" / "Las Casas" → bairro: "Teresópolis", tipo: "casa", bairros_proximos: ["Cristal", "Medianeira"]
+- "Casa Tua" / "Las Casas" → bairro: "Alto Petrópolis" (ZONA NORTE de Porto Alegre), tipo: "casa", bairros_proximos: ["Passo da Areia", "Jardim Itu", "Vila Ipiranga", "Higienópolis"]
 - "Vértice" / "Vertice Las Casas" / "Vértice - Las Casas" → bairro: "Santa Fé", tipo: "apartamento", bairros_proximos: ["Teresópolis", "Cristal"]
 - "Alto Lindóia" / "Alto Lindoia" → bairro: "Lindóia", tipo: "apartamento", bairros_proximos: ["Jardim Lindóia", "São João"]
 - "Shift" / "Shift - Vanguard" / "Vanguard" → bairro: "Petrópolis", tipo: "apartamento", bairros_proximos: ["Bela Vista", "Bom Fim"]
