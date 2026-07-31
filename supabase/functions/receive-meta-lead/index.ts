@@ -1138,7 +1138,7 @@ Deno.serve(async (req) => {
       pipeline_lead_id: insertedLead.id,
       tipo: "entrada",
       titulo: `Lead gerado via ${plataformaLabel}${entryPrimary ? ` — ${entryPrimary}` : ""}`,
-      descricao: entradaParts.length ? entradaParts.join(" • ") : null,
+      descricao: [entradaParts.length ? entradaParts.join(" • ") : null, formRespostasTexto ? `Respostas do formulário:\n${formRespostasTexto}` : null].filter(Boolean).join("\n") || null,
       status: "concluida",
       created_by: "00000000-0000-0000-0000-000000000000",
     }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
