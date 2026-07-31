@@ -975,6 +975,9 @@ export function HomiResultsRenderer({ results, onPick }: { results?: HomiResult[
         if (r.tipo === "contexto_lead") return <ContextoLeadCard key={i} result={r} />;
         if (r.tipo === "leads_esfriando") return <LeadsEsfriandoCard key={i} result={r} onPick={onPick} />;
         if (r.tipo === "preparar_visita") return <PrepararVisitaCard key={i} result={r} />;
+        if (r.tipo === "fila_execucao") return <FilaExecucaoCard key={i} result={r} onPick={onPick} />;
+        if (r.tipo === "visitas_pendentes") return <VisitasPendentesCard key={i} result={r} />;
+        if (r.tipo === "briefing_dia") return <BriefingDiaCard key={i} result={r} />;
         return null;
       })}
     </div>
