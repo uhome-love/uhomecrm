@@ -473,10 +473,28 @@ function buildShare(im: any, slugRef: string | null) {
   return { shareUrl, message: linhas.join("\n") };
 }
 
-function ImovelRow({ im }: { im: any }) {
+/** Selo de atributo: neutro (sem pedido), verde (atende), âmbar (não atende / relaxado) */
+function AttrChip({ icon: Icon, label, match }: { icon: any; label: string; match?: boolean | null }) {
+  const cls =
+    match === true
+      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+      : match === false
+      ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+      : "bg-muted/60 text-muted-foreground border-border";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>
+      <Icon className="h-2.5 w-2.5" />
+      {label}
+      {match === true && <CheckCheck className="h-2.5 w-2.5" />}
+    </span>
+  );
+}
+
+function ImovelRow({ im, onOpen }: { im: any; onOpen: () => void }) {
   const slugRef = useBrokerSlug();
   const [copied, setCopied] = useState(false);
   const { shareUrl, message } = buildShare(im, slugRef);
+  const match = im.match || {};
 
   const copy = async () => {
     try {
@@ -486,19 +504,50 @@ function ImovelRow({ im }: { im: any }) {
     } catch { /* ignore */ }
   };
 
+  const nFotos = Array.isArray(im.fotos) ? im.fotos.length : im.thumb ? 1 : 0;
+
   return (
     <div className="rounded-xl border border-border bg-card/60 p-2 space-y-2">
-      <div className="flex gap-2">
-        {im.thumb ? <img src={im.thumb} alt="" className="h-12 w-12 rounded-lg object-cover shrink-0" /> : <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0"><Home className="h-5 w-5 text-muted-foreground" /></div>}
+      <button type="button" onClick={onOpen} className="flex gap-2 w-full text-left group">
+        <div className="relative shrink-0">
+          {im.thumb ? (
+            <img src={im.thumb} alt="" className="h-14 w-14 rounded-lg object-cover group-hover:opacity-90 transition" />
+          ) : (
+            <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center"><Home className="h-5 w-5 text-muted-foreground" /></div>
+          )}
+          {nFotos > 1 && (
+            <span className="absolute bottom-0.5 right-0.5 inline-flex items-center gap-0.5 rounded bg-black/60 px-1 text-[9px] text-white">
+              <Images className="h-2.5 w-2.5" />{nFotos}
+            </span>
+          )}
+        </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-foreground truncate">{im.empreendimento || im.titulo || im.codigo}</p>
-          <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />{im.bairro || "—"} · {im.dormitorios ? `${im.dormitorios} dorm` : ""} {im.area ? `· ${im.area}m²` : ""}</p>
+          <p className="text-xs font-semibold text-foreground truncate group-hover:underline">{im.empreendimento || im.titulo || im.codigo}</p>
+          <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
+            <MapPin className="h-2.5 w-2.5" />{im.bairro || "—"}
+          </p>
           {im.valor_venda != null && <p className="text-[11px] font-bold text-primary">{fmtMoney(im.valor_venda)}</p>}
         </div>
+      </button>
+
+      <div className="flex flex-wrap gap-1">
+        {im.dormitorios != null && <AttrChip icon={BedDouble} label={`${im.dormitorios} dorm`} match={match.dormitorios} />}
+        {im.suites ? <AttrChip icon={Bath} label={`${im.suites} suíte${im.suites > 1 ? "s" : ""}`} match={match.suites} /> : null}
+        <AttrChip
+          icon={Car}
+          label={im.vagas ? `${im.vagas} vaga${im.vagas > 1 ? "s" : ""}` : "sem vaga"}
+          match={match.vagas}
+        />
+        {im.area ? <AttrChip icon={Maximize2} label={`${im.area}m²`} match={match.area} /> : null}
+        {im.mobiliado ? <AttrChip icon={CheckCircle2} label="mobiliado" match={match.mobiliado} /> : null}
       </div>
+
       <div className="flex gap-1.5">
         <Button size="sm" variant="outline" className="flex-1 h-8 text-[11px] gap-1" onClick={copy}>
-          {copied ? <><CheckCheck className="h-3.5 w-3.5 text-green-600" /> Copiado</> : <><MessageCircle className="h-3.5 w-3.5" /> Copiar mensagem</>}
+          {copied ? <><CheckCheck className="h-3.5 w-3.5 text-green-600" /> Copiado</> : <><MessageCircle className="h-3.5 w-3.5" /> Copiar</>}
+        </Button>
+        <Button size="sm" variant="outline" className="flex-1 h-8 text-[11px] gap-1" onClick={onOpen}>
+          <Images className="h-3.5 w-3.5" /> Ver imóvel
         </Button>
         <Button asChild size="sm" className="flex-1 h-8 text-[11px] gap-1 bg-[#25D366] hover:bg-[#1fb457] text-white">
           <a href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">
@@ -512,16 +561,61 @@ function ImovelRow({ im }: { im: any }) {
 
 function ImoveisCard({ result }: { result: HomiResult }) {
   const imoveis = (result.imoveis as any[]) || [];
+  const [idx, setIdx] = useState<number | null>(null);
+  const [detalhe, setDetalhe] = useState<any | null>(null);
+  const [loadingDet, setLoadingDet] = useState(false);
+
+  const open = useCallback(async (i: number) => {
+    const base = imoveis[i];
+    if (!base) return;
+    setIdx(i);
+    setDetalhe(base);
+    setLoadingDet(true);
+    try {
+      const { data } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("codigo", base.codigo)
+        .maybeSingle();
+      if (data) setDetalhe({ ...data, ...base, fotos: (data as any).fotos ?? base.fotos });
+    } catch { /* mantém o básico */ }
+    setLoadingDet(false);
+  }, [imoveis]);
+
   if (!imoveis.length) return <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">Nenhum imóvel encontrado com esses critérios.</div>;
+
   return (
     <div className="space-y-1.5">
       {result.aproximado && (
-        <p className="text-[10px] text-amber-600 dark:text-amber-400 px-1">Sem correspondência exata — mostrando opções próximas:</p>
+        <p className="text-[10px] text-amber-600 dark:text-amber-400 px-1">
+          Sem correspondência exata{Array.isArray(result.relaxados) && (result.relaxados as string[]).length ? ` — relaxei ${(result.relaxados as string[]).join(" e ")}` : ""} — os selos em âmbar mostram o que não bateu.
+        </p>
       )}
-      {imoveis.map((im) => <ImovelRow key={im.codigo} im={im} />)}
+      {imoveis.map((im, i) => <ImovelRow key={im.codigo || i} im={im} onOpen={() => open(i)} />)}
+
+      {idx !== null && detalhe && (
+        <PropertyPreviewDrawer
+          item={detalhe}
+          open={idx !== null}
+          onClose={() => { setIdx(null); setDetalhe(null); }}
+          isFavorite={false}
+          onFavorite={() => {}}
+          getPreco={(it: any) => (it?.valor_venda != null ? fmtMoney(it.valor_venda) : "Sob consulta")}
+          selectMode={false}
+          isSelected={false}
+          onToggleSelect={() => {}}
+          onPrev={() => open(Math.max(0, idx - 1))}
+          onNext={() => open(Math.min(imoveis.length - 1, idx + 1))}
+          hasPrev={idx > 0}
+          hasNext={idx < imoveis.length - 1}
+          positionLabel={`${idx + 1} de ${imoveis.length}`}
+        />
+      )}
+      {loadingDet && <p className="sr-only">Carregando imóvel…</p>}
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────── Read: escolher lead
 function EscolherLeadCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
