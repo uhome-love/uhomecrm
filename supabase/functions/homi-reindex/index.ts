@@ -159,9 +159,13 @@ async function collectEmpreendimentos(sb: any): Promise<SourceDoc[]> {
 
 /** Documentos oficiais do Método Uhome (texto em storage: materiais-uhome/metodo/*.txt) */
 const METODO_FILES: { path: string; title: string; priority: number }[] = [
-  { path: "metodo/apresentacao-completa.txt", title: "Método Uhome — Apresentação Completa", priority: 10 },
-  { path: "metodo/playbook-de-campo.txt", title: "Método Uhome — Playbook de Campo", priority: 10 },
-  { path: "metodo/manual-diario.txt", title: "Método Uhome — Manual Diário do Corretor", priority: 10 },
+  // Camada 1 — fonte da verdade de comportamento comercial (vence os demais em conflito).
+  { path: "metodo/metodo-uhome-ia-v1.txt", title: "Método Uhome — Documento de Inteligência para IA (v1.0)", priority: 10 },
+  // Material de apoio — em caso de conflito, vale o Método v1.0.
+  { path: "metodo/apresentacao-completa.txt", title: "Método Uhome — Apresentação Completa (apoio)", priority: 5 },
+  { path: "metodo/playbook-de-campo.txt", title: "Método Uhome — Playbook de Campo (apoio)", priority: 5 },
+  { path: "metodo/manual-diario.txt", title: "Método Uhome — Manual Diário do Corretor (apoio)", priority: 5 },
+  // Camada 2 — produto.
   { path: "metodo/casa-tua.txt", title: "Método Uhome — Casa Tua", priority: 9 },
 ];
 
@@ -173,7 +177,10 @@ async function collectMetodo(sb: any): Promise<SourceDoc[]> {
       console.error(`[homi-reindex] metodo download falhou: ${f.path}`, error);
       continue;
     }
-    const text = (await data.text()).replace(/\s+/g, " ").trim();
+    const raw = await data.text();
+    const isMU = raw.includes("[MU-");
+    // Documento MU preserva quebras de linha (chunker por bloco); demais são achatados.
+    const text = isMU ? raw.trim() : raw.replace(/\s+/g, " ").trim();
     if (text.length < 200) continue;
     docs.push({
       source_type: "documento",
@@ -181,10 +188,52 @@ async function collectMetodo(sb: any): Promise<SourceDoc[]> {
       title: f.title,
       category: "metodo_uhome",
       priority: f.priority,
-      content: `${f.title} (documento oficial do Método Uhome).\n${text}`,
+      content: isMU ? text : `${f.title} (documento oficial do Método Uhome).\n${text}`,
     });
   }
   return docs;
+}
+
+/**
+ * Chunker do "Método Uhome — Documento de Inteligência para IA".
+ * Quebra por bloco `### [MU-xx.x]`, carregando a seção pai (`## MU-xx`) em cada
+ * chunk para que o trecho se sustente sozinho quando recuperado fora de contexto.
+ */
+function chunkMetodoUhome(text: string): string[] {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let secao = "";
+  let header = "";
+  let buf: string[] = [];
+
+  const flush = () => {
+    if (!header) { buf = []; return; }
+    const body = buf.join("\n").trim();
+    if (body.length < 20) { buf = []; return; }
+    const prefix = [secao ? `Seção: ${secao}` : "", `Bloco: ${header}`, "(Método Uhome — documento oficial de inteligência para IA, v1.0)"]
+      .filter(Boolean).join("\n");
+    const full = `${prefix}\n\n${body}`;
+    if (full.length <= 2400) {
+      out.push(full);
+    } else {
+      // Bloco longo (tabelas, fichas): fatia preservando o ID do bloco em cada parte.
+      const step = 1800;
+      for (let i = 0, part = 1; i < body.length; i += step, part++) {
+        out.push(`${prefix} — parte ${part}\n\n${body.slice(i, i + step).trim()}`);
+      }
+    }
+    buf = [];
+  };
+
+  for (const line of lines) {
+    const mSecao = line.match(/^##\s+(MU-\d+.*)$/);
+    const mBloco = line.match(/^###\s+(\[MU-[\d.]+\].*)$/);
+    if (mSecao) { flush(); secao = mSecao[1].trim(); header = ""; continue; }
+    if (mBloco) { flush(); header = mBloco[1].trim(); continue; }
+    if (header) buf.push(line);
+  }
+  flush();
+  return out;
 }
 
 async function collectImoveis(sb: any): Promise<SourceDoc[]> {
