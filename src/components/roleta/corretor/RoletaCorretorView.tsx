@@ -54,14 +54,38 @@ export function RoletaCorretorView() {
   const { segmentos, meuCredenciamento, fila, loading, submitting, sairDaRoleta } =
     useRoleta();
   const { elegibilidade, carregando: carregandoElegibilidade } = useElegibilidadeRoleta();
-  const { data: minhaAlocacao = [], isLoading: loadingAlocacao } = useMinhaAlocacao();
-  const windowInfo = getCurrentWindowInfo();
+  const {
+    data: minhaAlocacao = [],
+    isLoading: loadingAlocacao,
+    isError: erroAlocacao,
+    refetch: refetchAlocacao,
+    isFetching: fetchingAlocacao,
+  } = useMinhaAlocacao();
+
+  // Relógio vivo: recalcula a janela a cada 30s para a tela virar sozinha
+  // quando o credenciamento abre/fecha (PWA fica aberto o dia todo).
+  const [windowInfo, setWindowInfo] = useState(() => getCurrentWindowInfo());
+  useEffect(() => {
+    const i = setInterval(() => setWindowInfo(getCurrentWindowInfo()), 30_000);
+    return () => clearInterval(i);
+  }, []);
+
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isDiaEspecial = isSunday || isHoliday;
+  const [janelaManual, setJanelaManual] = useState(false);
   const [selectedJanela, setSelectedJanela] = useState<string>(
     isDiaEspecial ? "dia_todo" : windowInfo.credenciamentoJanela || windowInfo.janela
   );
+
+  // Enquanto o corretor não escolher manualmente, segue a janela vigente.
+  useEffect(() => {
+    if (janelaManual || isDiaEspecial) return;
+    const alvo = windowInfo.credenciamentoJanela || windowInfo.janela;
+    setSelectedJanela((prev) => (prev === alvo ? prev : alvo));
+  }, [windowInfo.credenciamentoJanela, windowInfo.janela, janelaManual, isDiaEspecial]);
+
   const [marcandoPresenca, setMarcandoPresenca] = useState(false);
+
 
   // Noturna eligibility state
   const [noturnaEligible, setNoturnaEligible] = useState<boolean | null>(null);
@@ -245,10 +269,11 @@ export function RoletaCorretorView() {
               O credenciamento abre nos seguintes horários:
             </p>
             <div className="space-y-1 text-sm text-left max-w-xs mx-auto">
-              <p>🌅 <strong>Manhã</strong>: 07:30 – 09:30</p>
+              <p>🌅 <strong>Manhã</strong>: 07:00 – 09:30</p>
               <p>🌞 <strong>Tarde</strong>: 12:00 – 13:30</p>
-              <p>🌙 <strong>Noturna</strong>: 18:30 – 20:00</p>
+              <p>🌙 <strong>Noturna</strong>: 18:30 – 21:30</p>
             </div>
+
             <div className="flex items-center justify-center gap-2 pt-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Próxima abertura em </span>
@@ -261,8 +286,9 @@ export function RoletaCorretorView() {
   }
 
   // Marcar presença via alocação
+  // O servidor (credenciar_por_alocacao) é a validação real da alocação —
+  // aqui não bloqueamos por leitura local vazia/falha.
   const handleMarcarPresenca = async () => {
-    if (minhaAlocacao.length === 0) return;
     setMarcandoPresenca(true);
     try {
       const { data, error } = await supabase.rpc("credenciar_por_alocacao", {
@@ -275,6 +301,7 @@ export function RoletaCorretorView() {
         return;
       }
       toast.success(res.message || "Presença registrada!");
+      refetchAlocacao();
     } catch (e: any) {
       toast.error("Erro: " + (e.message || String(e)));
     } finally {
@@ -282,8 +309,10 @@ export function RoletaCorretorView() {
     }
   };
 
-  const semAlocacao = !loadingAlocacao && minhaAlocacao.length === 0;
+  const semAlocacao = !loadingAlocacao && !erroAlocacao && minhaAlocacao.length === 0;
   const alocacaoAtiva = minhaAlocacao.filter((a) => a.ativo);
+  const todosInativos = !loadingAlocacao && minhaAlocacao.length > 0 && alocacaoAtiva.length === 0;
+
 
   return (
     <div className="max-w-lg mx-auto space-y-6 py-8">
@@ -306,7 +335,13 @@ export function RoletaCorretorView() {
           {/* Janela */}
           <div>
             <label className="text-sm font-medium mb-1.5 block">Janela</label>
-            <Select value={selectedJanela} onValueChange={setSelectedJanela}>
+            <Select
+              value={selectedJanela}
+              onValueChange={(v) => {
+                setJanelaManual(true);
+                setSelectedJanela(v);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a janela" />
               </SelectTrigger>
@@ -334,8 +369,9 @@ export function RoletaCorretorView() {
                     return (
                       <>
                         <SelectItem value="manha" disabled={manhaEncerrado}>
-                          🌅 Manhã (07:30–12:00) {manhaEncerrado ? "— encerrado" : ""}
+                          🌅 Manhã (07:00–12:00) {manhaEncerrado ? "— encerrado" : ""}
                         </SelectItem>
+
                         <SelectItem value="tarde" disabled={tardeEncerrado || mins < t1200}>
                           🌞 Tarde (12:00–18:30){" "}
                           {tardeEncerrado
@@ -365,23 +401,53 @@ export function RoletaCorretorView() {
 
           {/* Card: Seus empreendimentos hoje */}
           <div>
-            <label className="text-sm font-medium mb-1.5 block">
-              Seus empreendimentos hoje
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium">Seus empreendimentos hoje</label>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[11px]"
+                onClick={() => refetchAlocacao()}
+                disabled={fetchingAlocacao}
+              >
+                {fetchingAlocacao ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Atualizar"
+                )}
+              </Button>
+            </div>
             {loadingAlocacao ? (
               <div className="flex items-center gap-2 p-3 rounded-md border bg-muted">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Carregando alocação...</span>
+              </div>
+            ) : erroAlocacao ? (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Não consegui carregar seu foco agora. Toque em “Atualizar” — você ainda pode
+                  marcar presença, a validação é feita no servidor.
+                </p>
+              </div>
+            ) : todosInativos ? (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Seus empreendimentos de foco estão inativos no momento. Fale com seu gestor
+                  para reativar e voltar a receber leads.
+                </p>
               </div>
             ) : semAlocacao ? (
               <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-700 dark:text-amber-400">
                   Você ainda não tem empreendimentos alocados. Fale com seu gestor pra receber
-                  leads da roleta.
+                  leads da roleta. Se o gestor acabou de definir, toque em “Atualizar”.
                 </p>
               </div>
             ) : (
+
               <div className="rounded-md border bg-muted/30 divide-y">
                 {alocacaoAtiva.map((a) => (
                   <div
@@ -462,9 +528,10 @@ export function RoletaCorretorView() {
             className="w-full"
             onClick={handleMarcarPresenca}
             disabled={
-              semAlocacao ||
               loadingAlocacao ||
               marcandoPresenca ||
+              submitting ||
+
               submitting ||
               (selectedJanela === "noturna" &&
                 (checkingNoturna || noturnaEligible === false)) ||

@@ -270,6 +270,11 @@ export function useMinhaAlocacao() {
         ativo: r.ativo,
       }));
     },
-    staleTime: 60_000,
+    // Foco muda durante o dia (gestor altera com o app do corretor aberto).
+    // Sempre buscar do servidor ao montar / voltar ao foco, e revalidar a cada 2 min.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 2 * 60_000,
   });
 }
