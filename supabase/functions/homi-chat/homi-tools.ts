@@ -595,6 +595,7 @@ export async function executeHomiTool(
           ? `${vMin !== undefined ? "de " + fmtBRL(vMin) : ""}${vMax !== undefined ? (vMin !== undefined ? " até " : "até ") + fmtBRL(vMax) : ""}`
           : "",
         wantMobiliado ? "mobiliado" : "",
+        zona ? (zona === "Metropolitana" ? "Região Metropolitana" : `Zona ${zona}`) : "",
         rawTermo || "",
       ].filter(Boolean).join(" · ");
 
