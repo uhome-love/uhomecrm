@@ -123,6 +123,9 @@ export default function TarefasHojeLateral({ variant }: Props) {
       open={!!completing}
       onOpenChange={(v) => { if (!v) setCompleting(null); }}
       tarefaTitulo={completing?.titulo || "Tarefa"}
+      tarefaId={(completing as { id?: string | null } | null)?.id ?? null}
+      tarefaSubtipo={(completing as { subtipo?: string | null } | null)?.subtipo ?? null}
+
       leadNome={completing?.lead_nome}
       leadId={completing?.lead_id}
       currentStageId={completing?.stage_id || undefined}
