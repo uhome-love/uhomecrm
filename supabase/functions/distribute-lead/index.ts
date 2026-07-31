@@ -253,13 +253,32 @@ async function distributeViaRPC(
     }
   }
 
+  // A RPC distribuir_lead_atomico NÃO devolve nome/empreendimento —
+  // buscamos direto no lead para os avisos (WhatsApp, push e sino).
+  let leadRow: any = null;
+  try {
+    const { data } = await supabase
+      .from("pipeline_leads")
+      .select("nome, empreendimento, telefone, origem, empreendimentos_canonicos(nome)")
+      .eq("id", leadId)
+      .maybeSingle();
+    leadRow = data;
+  } catch (e) {
+    console.warn("lead fetch for notifications failed:", (e as Error)?.message);
+  }
+
   const lead = {
     id: leadId,
-    nome: result.lead_nome,
-    empreendimento: result.lead_empreendimento,
-    telefone: result.lead_telefone,
-    origem: result.lead_origem,
+    nome: leadRow?.nome || result.lead_nome || null,
+    empreendimento:
+      leadRow?.empreendimentos_canonicos?.nome ||
+      leadRow?.empreendimento ||
+      result.lead_empreendimento ||
+      null,
+    telefone: leadRow?.telefone || result.lead_telefone || null,
+    origem: leadRow?.origem || result.lead_origem || null,
   };
+
 
   // Notification insert
   supabase.from("notifications").insert({
