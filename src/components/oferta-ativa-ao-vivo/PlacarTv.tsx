@@ -31,7 +31,7 @@ function formatTime(d: Date) {
 function ProgressBar({ valor, meta, cor }: any) {
   const pct = Math.min((valor / meta) * 100, 100);
   return (
-    <div style={{ background: "#1e1e2e", borderRadius: 99, height: 14, overflow: "hidden", position: "relative" }}>
+    <div style={{ background: "#1e1e2e", borderRadius: 99, height: 20, overflow: "hidden", position: "relative" }}>
       <div
         style={{
           width: `${pct}%`,
@@ -42,9 +42,10 @@ function ProgressBar({ valor, meta, cor }: any) {
           boxShadow: `0 0 16px ${cor}88`,
         }}
       />
-      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: "#fff", textShadow: "0 1px 4px #0008", letterSpacing: 0.5 }}>
+      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#fff", textShadow: "0 1px 4px #0008", letterSpacing: 0.5 }}>
         {Math.round(pct)}%
       </span>
+
     </div>
   );
 }
