@@ -45,28 +45,23 @@ serve(async (req) => {
       .map(r => formatForAssistant(knowledge, r.nome || r.codigo))
       .join("\n\n---\n\n");
 
-    // ── RAG: search knowledge base ──
-    let ragContext = "";
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    // ── RAG unificado (método, materiais, academia, scripts, empreendimentos, imóveis) ──
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content;
-
-    if (openaiKey && lastUserMsg) {
-      const embedding = await getQueryEmbedding(lastUserMsg, openaiKey);
-
-      if (embedding) {
-        const chunks = await searchKnowledgeBase(supabase, embedding, empreendimento);
-        if (chunks.length > 0) {
-          ragContext = `\n\nCONHECIMENTO DA BASE UHOME (use para responder com precisão):
-${chunks.map((c, i) => `[${i + 1}] ${c}`).join("\n---\n")}
-
-Se a pergunta estiver relacionada ao conteúdo acima, use-o como fonte principal. Se não houver informação relevante, responda com seu conhecimento geral.`;
-        }
-      }
+    let ragContext = "";
+    if (lastUserMsg) {
+      const chunks = await searchKnowledge(supabase, lastUserMsg, {
+        limit: 10,
+        threshold: 0.3,
+        empreendimento: null,
+      });
+      ragContext = formatKnowledgeBlock(chunks);
     }
 
-    const systemPrompt = `Você é o HOMI, o assistente de inteligência comercial da Uhome, uma imobiliária de Porto Alegre especializada em venda de imóveis de construtora.
+    const systemPrompt = HOMI_IDENTITY + `
 
 Sua função é ajudar os corretores da Uhome a converter leads em visitas e vendas.
+
+
 
 Você não é apenas um assistente. Você é:
 • treinador de vendas
