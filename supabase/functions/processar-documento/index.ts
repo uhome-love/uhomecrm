@@ -1,25 +1,21 @@
+/**
+ * processar-documento — extrai texto, quebra em chunks e indexa no cérebro do HOMI.
+ * Embeddings via Lovable AI Gateway (sem dependência de OPENAI_API_KEY).
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { embedTexts } from "../_shared/homi-brain.ts";
 
 async function extractTextFromPdf(pdfBytes: Uint8Array): Promise<string> {
-  // Basic PDF text extraction - decode streams and extract text between BT/ET markers
   const decoder = new TextDecoder("latin1");
   const raw = decoder.decode(pdfBytes);
-  
+
   const textParts: string[] = [];
-  
-  // Extract text from PDF text objects (between BT and ET)
   const btEtRegex = /BT\s([\s\S]*?)ET/g;
   let match;
   while ((match = btEtRegex.exec(raw)) !== null) {
     const block = match[1];
-    // Extract text strings in parentheses (Tj/TJ operators)
     const tjRegex = /\(([^)]*)\)/g;
     let tjMatch;
     while ((tjMatch = tjRegex.exec(block)) !== null) {
@@ -32,57 +28,61 @@ async function extractTextFromPdf(pdfBytes: Uint8Array): Promise<string> {
       if (text.trim()) textParts.push(text);
     }
   }
-  
-  // Also try to extract readable text directly (for simple PDFs)
+
   if (textParts.length < 5) {
     const directText = raw
       .replace(/[^\x20-\x7E\xA0-\xFF\u0100-\uFFFF\n\r\t]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
-    if (directText.length > textParts.join(" ").length) {
-      return directText;
-    }
+    if (directText.length > textParts.join(" ").length) return directText;
   }
-  
+
   return textParts.join(" ").replace(/\s+/g, " ").trim();
 }
+
+const CHUNK_SIZE = 900;
+const OVERLAP = 120;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization");
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, serviceKey);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) throw new Error("Unauthorized");
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "").trim();
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const headerSecret = req.headers.get("x-cron-secret");
+
+    let authorized =
+      (cronSecret && headerSecret && headerSecret === cronSecret) ||
+      (token && token === serviceKey);
+
+    if (!authorized) {
+      if (!token) throw new Error("Missing authorization");
+      const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data: { user } } = await supabaseAuth.auth.getUser();
+      if (!user) throw new Error("Unauthorized");
+      authorized = true;
+    }
 
     const { documentId } = await req.json();
     if (!documentId) throw new Error("documentId is required");
 
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) throw new Error("OPENAI_API_KEY necessária para gerar embeddings de documentos.");
-
-    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-    // Get document
     const { data: doc, error: docError } = await supabase
       .from("homi_documents")
       .select("*")
       .eq("id", documentId)
       .single();
-
     if (docError || !doc) throw new Error("Document not found");
 
     let content = doc.content || "";
 
-    // If content is empty but file_url exists, download from storage and extract
     if ((!content || content.trim().length < 50) && doc.file_url) {
-      console.log(`Downloading file from storage: ${doc.file_url}`);
       const { data: fileData, error: dlError } = await supabase.storage
         .from("homi-documents")
         .download(doc.file_url);
@@ -92,17 +92,13 @@ serve(async (req) => {
         throw new Error("Failed to download file from storage");
       }
 
-      const fileType = doc.file_type || "";
-      if (fileType === "pdf") {
+      if ((doc.file_type || "") === "pdf") {
         const bytes = new Uint8Array(await fileData.arrayBuffer());
         content = await extractTextFromPdf(bytes);
-        console.log(`Extracted ${content.length} chars from PDF`);
       } else {
-        // txt, md, etc.
         content = await fileData.text();
       }
 
-      // Save extracted content back to document
       if (content.trim().length > 0) {
         await supabase.from("homi_documents").update({ content }).eq("id", documentId);
       }
@@ -113,86 +109,65 @@ serve(async (req) => {
       throw new Error("Document has no extractable content (too short or empty)");
     }
 
-    console.log(`Processing document: ${doc.title} (${content.length} chars)`);
+    console.log(`[processar-documento] ${doc.title} (${content.length} chars)`);
 
-    // Split into chunks (~500 chars with 50 char overlap)
-    const chunkSize = 500;
-    const overlap = 50;
+    const clean = content.replace(/\s+\n/g, "\n").replace(/[ \t]{2,}/g, " ").trim();
     const chunks: string[] = [];
-
-    for (let i = 0; i < content.length; i += chunkSize - overlap) {
-      const chunk = content.slice(i, i + chunkSize).trim();
-      if (chunk.length > 20) chunks.push(chunk);
+    for (let i = 0; i < clean.length; i += CHUNK_SIZE - OVERLAP) {
+      const chunk = clean.slice(i, i + CHUNK_SIZE).trim();
+      if (chunk.length > 40) chunks.push(chunk);
     }
 
-    console.log(`Created ${chunks.length} chunks`);
+    // Reindexa do zero
+    await supabase.from("homi_chunks").delete().eq("document_id", documentId);
+    await supabase.from("homi_documents").update({ status: "processing" }).eq("id", documentId);
 
-    // Process in batches of 20
-    const batchSize = 20;
+    const batchSize = 32;
     let processedChunks = 0;
 
     for (let b = 0; b < chunks.length; b += batchSize) {
       const batch = chunks.slice(b, b + batchSize);
-
-      const embeddingRes = await fetch("https://api.openai.com/v1/embeddings", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openaiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "text-embedding-3-small",
-          input: batch,
-        }),
-      });
-
-      if (!embeddingRes.ok) {
-        const errText = await embeddingRes.text();
-        console.error("OpenAI embedding error:", errText);
+      let embeddings: number[][];
+      try {
+        embeddings = await embedTexts(batch);
+      } catch (e) {
         await supabase.from("homi_documents").update({ status: "error" }).eq("id", documentId);
-        throw new Error("Failed to generate embeddings: " + errText);
+        throw e;
       }
-
-      const embeddingData = await embeddingRes.json();
 
       const rows = batch.map((chunk, i) => ({
         document_id: documentId,
         content: chunk,
-        embedding: embeddingData.data[i].embedding,
+        embedding: embeddings[i],
         metadata: {
           title: doc.title,
           category: doc.category,
+          source_type: doc.source_type ?? "documento",
+          source_url: doc.source_url ?? null,
           empreendimento: doc.empreendimento,
           chunk_index: b + i,
         },
       }));
 
       const { error: insertError } = await supabase.from("homi_chunks").insert(rows);
-      if (insertError) {
-        console.error("Chunk insert error:", insertError);
-        throw new Error("Failed to save chunks");
-      }
-
+      if (insertError) throw new Error("Failed to save chunks: " + insertError.message);
       processedChunks += batch.length;
     }
 
-    // Update document status
     await supabase.from("homi_documents").update({
       status: "indexed",
       chunk_count: processedChunks,
     }).eq("id", documentId);
 
-    console.log(`Document indexed: ${processedChunks} chunks`);
-
     return new Response(
       JSON.stringify({ success: true, chunks: processedChunks }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
     console.error("processar-documento error:", err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

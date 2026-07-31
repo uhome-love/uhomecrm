@@ -43,28 +43,37 @@ function money(v: number | null | undefined): string {
 }
 
 async function collectMateriais(sb: any): Promise<SourceDoc[]> {
-  const { data } = await sb
-    .from("materiais_links")
-    .select("id, titulo, descricao, categoria, url, resumo_ia, tags, empreendimento_id, empreendimentos_canonicos(nome)")
-    .limit(1000);
-  return (data ?? []).map((m: any) => ({
-    source_type: "material" as const,
-    source_id: m.id,
-    title: m.titulo ?? "Material",
-    category: m.categoria ?? "material",
-    empreendimento: m.empreendimentos_canonicos?.nome ?? null,
-    source_url: m.url ?? null,
-    priority: 4,
-    content: [
-      `Material do Hub: ${m.titulo ?? ""}`,
-      m.empreendimentos_canonicos?.nome ? `Empreendimento: ${m.empreendimentos_canonicos.nome}` : "",
-      m.categoria ? `Categoria: ${m.categoria}` : "",
-      m.descricao ?? "",
-      m.resumo_ia ?? "",
-      Array.isArray(m.tags) && m.tags.length ? `Tags: ${m.tags.join(", ")}` : "",
-      m.url ? `Link: ${m.url}` : "",
-    ].filter(Boolean).join("\n"),
-  }));
+  const [{ data, error }, { data: emps }] = await Promise.all([
+    sb.from("materiais_links")
+      .select("id, titulo, descricao, categoria, url, resumo_ia, tags, empreendimento_id")
+      .limit(1000),
+    sb.from("materiais_empreendimentos").select("id, nome").limit(1000),
+  ]);
+  if (error) console.error("[homi-reindex] materiais:", error);
+  const nomeById = new Map<string, string>();
+  for (const e of emps ?? []) nomeById.set(e.id, e.nome);
+
+  return (data ?? []).map((m: any) => {
+    const nome = m.empreendimento_id ? nomeById.get(m.empreendimento_id) ?? null : null;
+    return {
+      source_type: "material" as const,
+      source_id: m.id,
+      title: m.titulo ?? "Material",
+      category: m.categoria ?? "material",
+      empreendimento: nome,
+      source_url: m.url ?? null,
+      priority: 4,
+      content: [
+        `Material do Hub: ${m.titulo ?? ""}`,
+        nome ? `Empreendimento: ${nome}` : "",
+        m.categoria ? `Categoria: ${m.categoria}` : "",
+        m.descricao ?? "",
+        m.resumo_ia ?? "",
+        Array.isArray(m.tags) && m.tags.length ? `Tags: ${m.tags.join(", ")}` : "",
+        m.url ? `Link: ${m.url}` : "",
+      ].filter(Boolean).join("\n"),
+    };
+  });
 }
 
 async function collectAcademia(sb: any): Promise<SourceDoc[]> {
@@ -146,6 +155,36 @@ async function collectEmpreendimentos(sb: any): Promise<SourceDoc[]> {
       ].filter(Boolean).join("\n"),
     };
   });
+}
+
+/** Documentos oficiais do Método Uhome (texto em storage: materiais-uhome/metodo/*.txt) */
+const METODO_FILES: { path: string; title: string; priority: number }[] = [
+  { path: "metodo/apresentacao-completa.txt", title: "Método Uhome — Apresentação Completa", priority: 10 },
+  { path: "metodo/playbook-de-campo.txt", title: "Método Uhome — Playbook de Campo", priority: 10 },
+  { path: "metodo/manual-diario.txt", title: "Método Uhome — Manual Diário do Corretor", priority: 10 },
+  { path: "metodo/casa-tua.txt", title: "Método Uhome — Casa Tua", priority: 9 },
+];
+
+async function collectMetodo(sb: any): Promise<SourceDoc[]> {
+  const docs: SourceDoc[] = [];
+  for (const f of METODO_FILES) {
+    const { data, error } = await sb.storage.from("materiais-uhome").download(f.path);
+    if (error || !data) {
+      console.error(`[homi-reindex] metodo download falhou: ${f.path}`, error);
+      continue;
+    }
+    const text = (await data.text()).replace(/\s+/g, " ").trim();
+    if (text.length < 200) continue;
+    docs.push({
+      source_type: "documento",
+      source_id: f.path,
+      title: f.title,
+      category: "metodo_uhome",
+      priority: f.priority,
+      content: `${f.title} (documento oficial do Método Uhome).\n${text}`,
+    });
+  }
+  return docs;
 }
 
 async function collectImoveis(sb: any): Promise<SourceDoc[]> {
@@ -269,10 +308,11 @@ serve(async (req) => {
     }
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    const requested: string[] = body.sources ?? ["material", "academia", "script", "empreendimento", "imovel"];
+    const requested: string[] = body.sources ?? ["metodo", "material", "academia", "script", "empreendimento", "imovel"];
     const limitPerSource: number = body.limit ?? 400;
 
     const collectors: Record<string, (sb: any) => Promise<SourceDoc[]>> = {
+      metodo: collectMetodo,
       material: collectMateriais,
       academia: collectAcademia,
       script: collectScripts,
