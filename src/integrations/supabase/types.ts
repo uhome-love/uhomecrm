@@ -13694,6 +13694,10 @@ export type Database = {
           segmento_id: string
         }[]
       }
+      recomputar_placar_sessao: {
+        Args: { p_sessao_id: string }
+        Returns: undefined
+      }
       reconciliar_visitas_vencidas: { Args: never; Returns: number }
       redistribuir_leads_pendentes: {
         Args: { p_segmento_id?: string }
