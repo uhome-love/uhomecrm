@@ -345,7 +345,7 @@ export default function TaskCompletionDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, leadId, currentStageId, context, tarefaOrigem]);
+  }, [open, leadId, currentStageId, context, tarefaOrigem, tarefaId, tarefaSubtipo]);
 
   useEffect(() => {
     if (!semContatoInfo.enabled) return;
