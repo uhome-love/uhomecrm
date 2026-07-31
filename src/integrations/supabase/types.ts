@@ -5997,7 +5997,8 @@ export type Database = {
           id: string
           motivo_perda: string | null
           observacao: string | null
-          pipeline_lead_id: string
+          origem: string
+          pipeline_lead_id: string | null
           pontos: number
           prospecto: Json | null
           resultado: string
@@ -6009,7 +6010,8 @@ export type Database = {
           id?: string
           motivo_perda?: string | null
           observacao?: string | null
-          pipeline_lead_id: string
+          origem?: string
+          pipeline_lead_id?: string | null
           pontos?: number
           prospecto?: Json | null
           resultado: string
@@ -6021,7 +6023,8 @@ export type Database = {
           id?: string
           motivo_perda?: string | null
           observacao?: string | null
-          pipeline_lead_id?: string
+          origem?: string
+          pipeline_lead_id?: string | null
           pontos?: number
           prospecto?: Json | null
           resultado?: string
