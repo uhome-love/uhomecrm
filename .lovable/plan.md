@@ -29,9 +29,36 @@
 - Nova coluna de localização em `empreendimentos_canonicos` (bairro, região) + backfill dos empreendimentos ativos, com GRANT/RLS seguindo o padrão do projeto.
 - Reindexação via `homi-reindex` ao final.
 
+### Fase 4 — Inteligência por região (zonas de Porto Alegre)
+Hoje a coluna `regiao` da tabela de imóveis está **100% vazia** (25.133 imóveis ativos, 550 bairros distintos, nenhuma região preenchida). Por isso o HOMI não entende "me vê opções na zona norte".
+
+O que será feito:
+- Criar um mapa canônico bairro → zona (Norte, Centro/Central, Leste, Sul, mais Extremo Sul e Ilhas quando fizer sentido), cobrindo os bairros oficiais de Porto Alegre e as grafias que aparecem na nossa base.
+- Preencher a coluna `regiao` de todos os imóveis a partir desse mapa, e manter o preenchimento automático para imóveis novos que entram pela sincronização.
+- Ensinar o HOMI a entender zona: ao pedir "zona norte", ele busca por todos os bairros daquela zona; ao mostrar um imóvel, ele diz bairro e zona.
+- Reconhecer sinônimos comuns ("norte", "zona norte", "região norte", "zona central", "centro").
+- Bairros de cidades vizinhas (Canoas, Viamão, Alvorada, Gravataí, Cachoeirinha) ficam fora das zonas de POA e são tratados como "Região Metropolitana", para não poluir a busca.
+
+Referência das zonas (será revisada com você antes do backfill):
+- **Norte**: Passo d'Areia, São João, Higienópolis, Boa Vista, Cristo Redentor, Jardim Itu, Jardim Lindóia, Sarandi, Rubem Berta, Vila Ipiranga, São Sebastião, Alto Petrópolis, Jardim Floresta, Costa e Silva, Parque Santa Fé...
+- **Central**: Centro Histórico, Independência, Bom Fim, Rio Branco, Moinhos de Vento, Auxiliadora, Mont'Serrat, Petrópolis, Santana, Santa Cecília, Farroupilha, Cidade Baixa, Menino Deus, Praia de Belas, Azenha, Floresta, São Geraldo, Navegantes, Humaitá...
+- **Leste**: Partenon, Jardim Botânico, Santo Antônio, Vila Jardim, Bom Jesus, Chácara das Pedras, Três Figueiras, Boa Vista do Sul, Jardim Carvalho, Agronomia, Lomba do Pinheiro, Mário Quintana, Protásio Alves...
+- **Sul**: Cristal, Camaquã, Cavalhada, Tristeza, Vila Assunção, Vila Nova, Nonoai, Teresópolis, Medianeira, Glória, Ipanema, Pedra Redonda, Espírito Santo, Guarujá, Serraria, Hípica, Belém Novo, Lami, Restinga, Lageado, Ponta Grossa.
+
+Observação: **Teresópolis é bairro da zona sul** — o erro do Casa Tua foi ele ter sido rotulado com esse bairro; Alto Petrópolis fica na zona norte.
+
+### Detalhe técnico da Fase 4
+- Nova tabela `bairros_zonas` (bairro normalizado, zona, cidade) com GRANT + RLS de leitura para usuários autenticados, e função de normalização (sem acento, minúsculo) para casar as grafias da base.
+- Backfill de `properties.regiao` via essa tabela + trigger para novos registros.
+- `homi-tools.ts`: parâmetro `zona` no `buscar_imovel`, resolvendo para lista de bairros; o card do imóvel passa a exibir a zona.
+- Indexação da tabela de zonas no cérebro para o HOMI responder perguntas de localização mesmo fora da busca.
+
 ## Validação
 - Perguntar ao HOMI CEO "onde fica o Casa Tua?" e conferir Alto Petrópolis.
 - Fazer a mesma pergunta no modo corretor e confirmar resposta idêntica.
+- Pedir "me vê opções na zona norte" e conferir que só voltam bairros da zona norte.
+- Pedir "3 dorms na zona sul até 800 mil" e validar bairro + zona nos cards.
 - Conferir que o CEO continua respondendo funil/VGV normalmente e em formato curto.
 
-Sugestão: aprovar a Fase 1 isolada primeiro (correção do bairro, baixo risco) e validar ao vivo antes de encostar na unificação do cérebro.
+Sugestão de ordem: Fase 1 (correção do bairro, baixo risco) → Fase 4 (zonas, maior ganho para o corretor) → Fases 2 e 3 (unificação do cérebro), validando ao vivo a cada etapa.
+
