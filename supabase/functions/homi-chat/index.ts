@@ -217,7 +217,7 @@ REGRAS DO COPILOTO:
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: HOMI_CHAT_MODEL,
             messages: toolMessages,
             tools: HOMI_TOOLS,
             tool_choice: "auto",
@@ -262,7 +262,7 @@ REGRAS DO COPILOTO:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: HOMI_CHAT_MODEL,
         messages: [
           { role: "system", content: finalSystemPromptWithMateriais },
           ...messages,
