@@ -1,4 +1,4 @@
-# HOMI mais inteligente: busca de imóvel com faixa de preço e ajuda de atendimento com exemplos reais
+# HOMI mais inteligente: busca de imóvel com faixa de preço, ajuda de atendimento e modo "resolver o dia"
 
 ## O que aconteceu no teste da Larissa
 
