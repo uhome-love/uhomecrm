@@ -280,9 +280,13 @@ function HomiPanelInner() {
             {/* Quick actions when in conversation */}
             {messages.length > 0 && !isLoading && (
               <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto shrink-0">
+                <button onClick={() => sendMessage("Aprofunda a última resposta: diagnóstico completo, quick win e plano de 7 dias.")} className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+                  🔍 Aprofundar
+                </button>
                 <button onClick={() => sendMessage("Gere um checklist do dia.")} className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-border hover:bg-accent/50 hover:border-primary/30 transition-all">
                   📋 Checklist
                 </button>
+
                 <button onClick={() => sendMessage("Gere um script de ligação.")} className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-border hover:bg-accent/50 hover:border-primary/30 transition-all">
                   📞 Script
                 </button>
