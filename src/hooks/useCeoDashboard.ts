@@ -605,18 +605,32 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
       // NOTE: leads counts (marketing / OA / enviadosRoleta) come from pipelineData
       // to guarantee identical classification with charts. Here we only fetch ancillary KPIs.
-      const [{ count: visitasCriadasCount }, { count: novoInteresseCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
-        supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada").not("origem", "like", "backfill_%"),
+      const [{ data: visitasRows }, { count: novoInteresseCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
+        supabase.from("visitas").select("id, status, pipeline_lead_id, corretor_id").gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada").not("origem", "like", "backfill_%").order("created_at", { ascending: false }).range(0, 4999),
         supabase.from("campaign_clicks").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).eq("lead_action", "updated"),
         supabase.from("roleta_credenciamentos").select("corretor_id").eq("data", hoje).in("status", ["aprovado", "saiu"]),
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
       ]);
 
+      // Dedup: mesma visita registrada 2x (mesmo lead + mesmo corretor) conta 1 só
+      const seen = new Set<string>();
+      const visitasUnicas = (visitasRows || []).filter(v => {
+        const key = v.pipeline_lead_id ? `${v.corretor_id ?? ""}|${v.pipeline_lead_id}` : `id:${v.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
       const dispIds = new Set<string>();
       (roletaRows || []).forEach(r => { if (r.corretor_id) dispIds.add(r.corretor_id); });
 
       return {
-        totalVisitasCriadas: visitasCriadasCount || 0,
+        totalVisitasCriadas: visitasUnicas.length,
+        agendaVisitas: {
+          marcadas: visitasUnicas.filter(v => ["marcada", "confirmada", "reagendada", "realizada"].includes(v.status as string)).length,
+          realizadas: visitasUnicas.filter(v => v.status === "realizada").length,
+          noShow: visitasUnicas.filter(v => v.status === "no_show").length,
+        },
         novoInteresse: novoInteresseCount || 0,
         presentesHoje: dispIds.size,
         metasDiaTotal: {
@@ -625,6 +639,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           visitasMarcadas: (goals || []).reduce((a, g) => a + (g.meta_visitas_marcadas || 0), 0),
         },
       };
+
     },
     enabled: !!user,
     staleTime: 30_000,
