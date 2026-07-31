@@ -687,12 +687,17 @@ export default function CeoDashboard() {
       <section>
         <SectionLabel icon={DollarSign}>Gestão de Negócios</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          <MiniKpi label="Total de Negócios" value={totalNeg} variant="highlight" />
-          <MiniKpi label="VGV em Contrato Gerado" value={formatBRLCompact(vgvContrato)} sub={`${countContrato} negócio${countContrato !== 1 ? "s" : ""} em contrato`} />
+          <MiniKpi label="Total de Negócios" value={totalNeg} variant="highlight"
+            onClick={() => setKpiDetail({ type: "negocios", label: "Negócios ativos" })} />
+          <MiniKpi label="VGV em Contrato Gerado" value={formatBRLCompact(vgvContrato)}
+            sub={`${countContrato} negócio${countContrato !== 1 ? "s" : ""} em contrato`}
+            onClick={() => setKpiDetail({ type: "contratos", label: "Negócios em contrato" })} />
           <MiniKpi label="VGV Assinado" value={formatBRLCompact(kpis.vgvAssinado)} variant="success"
+            delta={delta(kpis.vgvAssinado, prevKpis?.vgvAssinado)}
             sub={ceoMetas.meta_vgv_assinado > 0 ? `${Math.round((kpis.vgvAssinado / ceoMetas.meta_vgv_assinado) * 100)}% da meta` : undefined}
             onClick={() => setKpiDetail({ type: "vgv_assinado", label: "VGV Assinado" })} />
           <MiniKpi label="Propostas" value={kpis.propostas}
+            delta={delta(kpis.propostas, prevKpis?.propostas)}
             sub={ceoMetas.meta_propostas > 0 ? `meta: ${ceoMetas.meta_propostas}` : undefined}
             onClick={() => setKpiDetail({ type: "propostas", label: "Propostas" })} />
         </div>
@@ -700,8 +705,11 @@ export default function CeoDashboard() {
         <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
+            <p className="text-[10px] text-muted-foreground">
+              Fases ativas = situação atual do pipeline · Ganho = vendas assinadas no período (data de assinatura)
+            </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
               {negFunnelOrder.map((fase, idx) => {
                 const data = negocioFases.find((f: any) => f.fase === fase);
@@ -710,10 +718,17 @@ export default function CeoDashboard() {
                 const maxCount = Math.max(...negocioFases.map((f: any) => f.count), 1);
                 const widthPct = maxCount > 0 ? Math.max((count / maxCount) * 100, 18) : 18;
                 const color = negFunnelColors[fase] || "#a1a1aa";
-                const isLast = idx === negFunnelOrder.length - 1;
                 const isCaiu = fase.toLowerCase().includes("caiu") || fase.toLowerCase().includes("perdid");
+                const detailType: KpiDetailType | null =
+                  fase === "em_negociacao" ? "negociacao" : fase === "contrato" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
                 return (
-                  <div key={fase} className="flex flex-col items-center text-center gap-2">
+                  <button
+                    key={fase}
+                    type="button"
+                    disabled={!detailType}
+                    onClick={() => detailType && setKpiDetail({ type: detailType, label: negFunnelLabels[fase] || fase })}
+                    className={`flex flex-col items-center text-center gap-2 rounded-lg p-1 ${detailType ? "hover:bg-white/60 dark:hover:bg-white/[0.04] transition-colors" : "cursor-default"}`}
+                  >
                     <span className="text-2xl font-[800] leading-none" style={{ color }}>
                       {count}
                     </span>
@@ -734,13 +749,73 @@ export default function CeoDashboard() {
                     <span className="text-[10px] font-medium text-[#a1a1aa] dark:text-[#71717a]">
                       {formatBRLCompact(vgv)}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
+
+            {/* Taxas de conversão do período */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
+              {conversoes.map(c => (
+                <div key={c.label} className="bg-white dark:bg-white/[0.04] rounded-lg px-3 py-2 border border-[#e8e8f0] dark:border-white/[0.05]">
+                  <p className="text-[10px] text-[#a1a1aa] truncate">{c.label}</p>
+                  <p className="text-base font-[800] text-foreground leading-tight">{c.value}</p>
+                  <p className="text-[9px] text-muted-foreground/70 truncate">{c.sub}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Vendas assinadas no período */}
+        <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none mt-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold flex items-center gap-2">
+              <DollarSign className="h-3.5 w-3.5 text-success" /> Vendas assinadas no período
+              <span className="text-[10px] font-normal text-muted-foreground">
+                {vendasPeriodo.length} venda{vendasPeriodo.length !== 1 ? "s" : ""} · {formatBRLCompact(kpis.vgvAssinado)}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {vendasPeriodo.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground py-4 text-center">Nenhuma venda assinada no período.</p>
+            ) : (
+              <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                <table className="w-full text-[11px]">
+                  <thead className="sticky top-0 bg-[#f7f7fb] dark:bg-[#141e30]">
+                    <tr className="text-[10px] text-[#a1a1aa] text-left">
+                      <th className="py-1.5 pr-2 font-medium">Cliente</th>
+                      <th className="py-1.5 pr-2 font-medium">Empreendimento</th>
+                      <th className="py-1.5 pr-2 font-medium">Corretor</th>
+                      <th className="py-1.5 pr-2 font-medium text-right">VGV</th>
+                      <th className="py-1.5 font-medium text-right">Assinatura</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vendasPeriodo.map((v: any) => (
+                      <tr
+                        key={v.id}
+                        onClick={() => v.leadId && navigate(`/pipeline-leads?lead=${v.leadId}`)}
+                        className={`border-t border-[#e8e8f0] dark:border-white/[0.05] ${v.leadId ? "cursor-pointer hover:bg-white/60 dark:hover:bg-white/[0.04]" : ""}`}
+                      >
+                        <td className="py-1.5 pr-2 font-medium text-foreground truncate max-w-[160px]">{v.cliente}</td>
+                        <td className="py-1.5 pr-2 text-[#71717a] truncate max-w-[160px]">{v.empreendimento}</td>
+                        <td className="py-1.5 pr-2 text-[#71717a] truncate max-w-[140px]">{v.corretor}</td>
+                        <td className="py-1.5 pr-2 text-right font-semibold text-success">{formatBRLCompact(v.vgv)}</td>
+                        <td className="py-1.5 text-right text-[#71717a]">
+                          {v.dataAssinatura ? format(new Date(v.dataAssinatura + "T12:00:00"), "dd/MM/yy") : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>
+
 
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* LINHA 4 — OFERTA ATIVA                                    */}
