@@ -638,23 +638,33 @@ export default function CeoDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-primary">{totalVisitasCriadas}</p>
-                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Total Visitas (Novas)</p>
-                </div>
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-warning">{kpis.visitasMarcadas}</p>
-                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Marcadas</p>
-                </div>
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-success">{kpis.visitasRealizadas}</p>
-                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Realizadas</p>
-                </div>
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-danger">{kpis.noShows}</p>
-                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">No Show</p>
-                </div>
+                {([
+                  { label: "Total Visitas (Novas)", value: totalVisitasCriadas, color: "text-primary", type: "visitas_criadas" as const },
+                  { label: "Marcadas", value: kpis.visitasMarcadas, color: "text-warning", type: "visitas_marcadas" as const, prev: prevKpis?.visitasMarcadas },
+                  { label: "Realizadas", value: kpis.visitasRealizadas, color: "text-success", type: "visitas_realizadas" as const, prev: prevKpis?.visitasRealizadas },
+                  { label: "No Show", value: kpis.noShows, color: "text-danger", type: "visitas_no_show" as const, prev: prevKpis?.noShows, invert: true },
+                ]).map(card => {
+                  const d = delta(card.value, card.prev);
+                  const positive = d != null && (card.invert ? d < 0 : d > 0);
+                  return (
+                    <button
+                      key={card.label}
+                      type="button"
+                      onClick={() => setKpiDetail({ type: card.type, label: card.label })}
+                      className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05] hover:border-primary/30 transition-colors"
+                    >
+                      <p className={`text-2xl font-[800] ${card.color}`}>{card.value}</p>
+                      <p className="text-[10px] text-[#a1a1aa] mt-0.5">{card.label}</p>
+                      {d != null && (
+                        <p className={`text-[9px] font-semibold mt-0.5 ${Math.round(d) === 0 ? "text-muted-foreground" : positive ? "text-success" : "text-danger"}`}>
+                          {Math.round(d) === 0 ? "→" : d > 0 ? "▲" : "▼"} {Math.abs(Math.round(d))}% vs. anterior
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+
               {ceoMetas.meta_visitas_realizadas > 0 && (
                 <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 border border-[#e8e8f0] dark:border-white/[0.05]">
                   <div className="flex justify-between text-[10px] text-[#a1a1aa] mb-1">
