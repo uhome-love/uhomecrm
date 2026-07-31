@@ -379,49 +379,81 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Negocios ──
+  // Funil de negócios:
+  //  · em_negociacao / contrato → snapshot atual dos negócios ativos (pipeline vivo)
+  //  · ganho → SOMENTE vendas com data_assinatura dentro do período (regra VGV fonte única)
+  //  · VGV sempre vgv_final com fallback para vgv_estimado
   const { data: negociosData } = useQuery({
     queryKey: ["ceo-negocios", user?.id, range.start, range.end],
     queryFn: async () => {
-      // Fetch active negocios only (matching pipeline view)
-      const { data: negocios } = await supabase
-        .from("negocios")
-        .select("id, fase, status, vgv_estimado, vgv_final, auth_user_id, updated_at, empreendimento, created_at, data_assinatura")
-        .eq("status", "ativo")
-        .limit(1000);
+      const [{ data: ativos }, { data: ganhosPeriodo }] = await Promise.all([
+        supabase
+          .from("negocios")
+          .select("id, fase, status, vgv_estimado, vgv_final, auth_user_id, updated_at, empreendimento, created_at, data_assinatura")
+          .eq("status", "ativo")
+          .neq("fase", "ganho")
+          .limit(1000),
+        supabase
+          .from("negocios")
+          .select("id, nome_cliente, fase, status, vgv_estimado, vgv_final, auth_user_id, empreendimento, data_assinatura, pipeline_lead_id")
+          .eq("fase", "ganho")
+          .eq("status", "ativo")
+          .gte("data_assinatura", range.start)
+          .lte("data_assinatura", range.end)
+          .order("data_assinatura", { ascending: false })
+          .limit(1000),
+      ]);
+
+      const vgvDe = (n: { vgv_final?: number | null; vgv_estimado?: number | null }) =>
+        Number(n.vgv_final ?? 0) || Number(n.vgv_estimado ?? 0) || 0;
+
       const now = new Date();
       const faseMap = new Map<string, { count: number; vgv: number }>();
       let risco = 0;
-      for (const n of (negocios || [])) {
+      for (const n of (ativos || [])) {
         const fase = n.fase || "desconhecido";
         const curr = faseMap.get(fase) || { count: 0, vgv: 0 };
         curr.count++;
-        curr.vgv += n.vgv_estimado || 0;
+        curr.vgv += vgvDe(n);
         faseMap.set(fase, curr);
         const diffDays = Math.floor((now.getTime() - new Date(n.updated_at || "").getTime()) / 86400000);
-        if (diffDays > 15) risco += n.vgv_estimado || 0;
+        if (diffDays > 15) risco += vgvDe(n);
       }
+      faseMap.set("ganho", {
+        count: (ganhosPeriodo || []).length,
+        vgv: (ganhosPeriodo || []).reduce((s, n) => s + vgvDe(n), 0),
+      });
       const negocioFases = Array.from(faseMap.entries()).map(([fase, d]) => ({ fase, ...d }));
 
-      // MIGRATED: Top corretores by VGV using auth_user_id (canonical)
+      // Top corretores por VGV assinado no período (auth_user_id canônico)
       const corrMap = new Map<string, number>();
-      for (const n of (negocios || [])) {
-        const uid = n.auth_user_id;
-        if (!uid) continue;
-        if (n.fase !== "ganho") continue;
-        corrMap.set(uid, (corrMap.get(uid) || 0) + (n.vgv_final || n.vgv_estimado || 0));
+      for (const n of (ganhosPeriodo || [])) {
+        if (!n.auth_user_id) continue;
+        corrMap.set(n.auth_user_id, (corrMap.get(n.auth_user_id) || 0) + vgvDe(n));
       }
       const corrIds = [...corrMap.keys()];
       const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds) : { data: [] as { user_id: string; nome: string }[] };
       const profMap = new Map((profs || []).map(p => [p.user_id, p.nome] as [string, string]));
       const topCorretoresVgv = Array.from(corrMap.entries()).map(([id, vgv]) => ({ nome: profMap.get(id) || "Corretor", vgv })).sort((a, b) => b.vgv - a.vgv).slice(0, 5);
 
-      return { negocioFases, vgvEmRisco: risco, topCorretoresVgv };
+      const vendasPeriodo = (ganhosPeriodo || []).map(n => ({
+        id: n.id,
+        cliente: n.nome_cliente || "Cliente",
+        empreendimento: n.empreendimento || "—",
+        corretor: (n.auth_user_id && profMap.get(n.auth_user_id)) || "—",
+        vgv: vgvDe(n),
+        dataAssinatura: n.data_assinatura as string | null,
+        leadId: n.pipeline_lead_id as string | null,
+      }));
+
+      return { negocioFases, vgvEmRisco: risco, topCorretoresVgv, vendasPeriodo };
     },
     enabled: !!user,
     staleTime: 60_000,
     refetchInterval: 60_000,
     placeholderData: keepPreviousData,
   });
+
 
   // ── Teams + Ranking ──
   const { data: teamsData } = useQuery({
@@ -449,11 +481,15 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const allMemberProfileIds = (corrProfs || []).map(p => p.id).filter(Boolean) as string[];
 
       // MIGRATED: Use auth_user_id for negocios instead of profile_id lookup
-      const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
+      // FIX: propostas (em negociação) precisam de query própria — antes eram contadas
+      // dentro do conjunto já filtrado por fase='ganho', resultando sempre em 0.
+      const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }, { data: allNegAtivos }] = await Promise.all([
         supabase.from("visitas").select("id, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("id, status, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
         supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "ganho").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
+        supabase.from("negocios").select("id, fase, auth_user_id").in("auth_user_id", allMemberUserIds).eq("status", "ativo").in("fase", ["em_negociacao", "contrato"]).limit(1000),
       ]);
+
       // Excluir backfills de conciliação (origem 'backfill_*') dos placares diários/janela
       const filterNoBackfill = (rows: any[] | null) => (rows || []).filter(r => !String(r?.origem || "").startsWith("backfill_"));
       const visMarcadasClean = filterNoBackfill(allVisMarcadas);
@@ -487,8 +523,9 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const vr = visRealizadasClean.filter(v => v.corretor_id === uid && v.status === "realizada").length;
           // MIGRATED: Use auth_user_id directly (no profile_id conversion needed)
           const neg = (allNeg || []).filter(n => n.auth_user_id === uid);
-          const prop = neg.filter(n => n.fase === "em_negociacao" || n.fase === "em_negociacao").length;
+          const prop = (allNegAtivos || []).filter(n => n.auth_user_id === uid && n.fase === "em_negociacao").length;
           const vgv = neg.reduce((s: number, n: any) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
+
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
           corretoresAll.push({
             corretor_id: uid as string, nome: corrNameMap.get(uid) as string || "Corretor", gerente_nome: gerenteNome as string,
@@ -593,6 +630,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     negocioFases: negociosData?.negocioFases || [],
     vgvEmRisco: negociosData?.vgvEmRisco || 0,
     topCorretoresVgv: negociosData?.topCorretoresVgv || [],
+    vendasPeriodo: negociosData?.vendasPeriodo || [],
+
     teams: teamsData?.teams || [],
     corretoresRank: teamsData?.corretoresRank || [],
     origens: pipelineData?.origens || [],

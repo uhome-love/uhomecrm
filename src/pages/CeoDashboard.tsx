@@ -72,13 +72,20 @@ const MiniKpi = forwardRef<HTMLDivElement, {
   label: string; value: string | number; sub?: string;
   variant?: "default" | "highlight" | "success" | "warning";
   onClick?: () => void;
-}>(({ label, value, sub, variant = "default", onClick }, ref) => {
+  /** Variação % vs. período anterior. null/undefined esconde o indicador. */
+  delta?: number | null;
+  /** Quando true, queda é boa (ex.: no-show). */
+  invertDelta?: boolean;
+}>(({ label, value, sub, variant = "default", onClick, delta, invertDelta }, ref) => {
   const colors = {
     default: "text-foreground",
     highlight: "text-primary",
     success: "text-success-500",
     warning: "text-warning-500",
   };
+  const showDelta = delta != null && Number.isFinite(delta);
+  const positive = showDelta && (invertDelta ? delta! < 0 : delta! > 0);
+  const neutral = showDelta && Math.round(delta!) === 0;
   return (
     <div
       ref={ref}
@@ -86,12 +93,23 @@ const MiniKpi = forwardRef<HTMLDivElement, {
       className={`bg-card border border-border rounded-xl p-3.5 border-l-[3px] border-l-primary ${onClick ? "cursor-pointer hover:border-primary/30 transition-colors" : ""}`}
     >
       <p className="text-[10px] font-medium text-muted-foreground tracking-wide mb-1 truncate">{label}</p>
-      <p className={`text-xl font-[800] leading-none tracking-tight ${colors[variant]}`}>{value}</p>
+      <div className="flex items-baseline gap-1.5">
+        <p className={`text-xl font-[800] leading-none tracking-tight ${colors[variant]}`}>{value}</p>
+        {showDelta && (
+          <span
+            className={`text-[10px] font-semibold leading-none ${neutral ? "text-muted-foreground" : positive ? "text-success-500" : "text-danger"}`}
+            title="vs. período anterior"
+          >
+            {neutral ? "→" : delta! > 0 ? "▲" : "▼"} {Math.abs(Math.round(delta!))}%
+          </span>
+        )}
+      </div>
       {sub && <p className="text-[10px] text-muted-foreground/70 mt-1 truncate">{sub}</p>}
     </div>
   );
 });
 MiniKpi.displayName = "MiniKpi";
+
 // ─── Horizontal Bar ───
 function HBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -138,17 +156,24 @@ export default function CeoDashboard() {
   const [lastDispatch, setLastDispatch] = useState<{ at: string; count: number } | null>(null);
   const [bulkEmpOpen, setBulkEmpOpen] = useState(false);
   const [kpiDetail, setKpiDetail] = useState<{ type: KpiDetailType; label: string } | null>(null);
-  const [funnelFilter, setFunnelFilter] = useState<"all" | string>("all");
+  
   const [funnelCorretorFilter, setFunnelCorretorFilter] = useState<"all" | string>("all");
   const [showAllCorretorLeads, setShowAllCorretorLeads] = useState(false);
 
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
-    pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv,
+    pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv, vendasPeriodo,
     teams, corretoresRank, origens, leadsPorEmpreendimento, leadsPorCorretor, visitasPorEmp,
     totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
+
+  /** Variação % vs. período anterior (null quando não há base de comparação). */
+  const delta = (curr: number | undefined, prev: number | undefined): number | null => {
+    if (curr == null || prev == null || !Number.isFinite(prev) || prev === 0) return null;
+    return ((curr - prev) / prev) * 100;
+  };
+
 
   // CEO metas (React Query)
   const mesAtual = useMemo(() => format(new Date(), "yyyy-MM"), []);
@@ -322,6 +347,19 @@ export default function CeoDashboard() {
   const countContrato = contratoGerado?.count || 0;
   const leadsDistribuidos = enviadosRoleta;
 
+  // Taxas de conversão do período (Lead → Visita realizada → Venda assinada)
+  const conversoes = useMemo(() => {
+    const vendas = vendasPeriodo.length;
+    const pct = (a: number, b: number) => (b > 0 ? `${((a / b) * 100).toFixed(1)}%` : "—");
+    return [
+      { label: "Lead → Visita realizada", value: pct(kpis.visitasRealizadas, totalLeadsPeriodo), sub: `${kpis.visitasRealizadas} de ${totalLeadsPeriodo} leads` },
+      { label: "Visita → Venda", value: pct(vendas, kpis.visitasRealizadas), sub: `${vendas} de ${kpis.visitasRealizadas} visitas` },
+      { label: "Lead → Venda", value: pct(vendas, totalLeadsPeriodo), sub: `${vendas} de ${totalLeadsPeriodo} leads` },
+      { label: "Ticket médio", value: vendas > 0 ? formatBRLCompact(kpis.vgvAssinado / vendas) : "—", sub: "VGV assinado / vendas" },
+    ];
+  }, [vendasPeriodo, kpis.visitasRealizadas, kpis.vgvAssinado, totalLeadsPeriodo]);
+
+
   // Pipeline funnel totals
   const funnelTotal = pipelineStages.reduce((a, s) => a + s.count, 0) || 1;
   const funnelColors = ["#4969FF","#6366f1","#6B84FF","#a5b4fc","#c7d2fe","#22c55e","#ef4444","#10b981","#f59e0b"];
@@ -461,13 +499,17 @@ export default function CeoDashboard() {
             sub="Meta, TikTok, LP, ImovelWeb..."
             onClick={() => setKpiDetail({ type: "total_leads", label: "Leads Gerados" })} />
           <MiniKpi label="Reaproveitados (OA)" value={leadsReaproveitadosOA} variant="warning"
-            sub="Leads da Oferta Ativa" />
+            sub="Leads da Oferta Ativa"
+            onClick={() => setKpiDetail({ type: "reaproveitados_oa", label: "Reaproveitados (OA)" })} />
           <MiniKpi label="Enviados p/ Roleta" value={leadsDistribuidos > 0 ? leadsDistribuidos : 0}
-            sub={filaCeoCount > 0 ? `${filaCeoCount} na fila` : "Fila vazia"} />
+            sub={filaCeoCount > 0 ? `${filaCeoCount} na fila` : "Fila vazia"}
+            onClick={() => setKpiDetail({ type: "enviados_roleta", label: "Enviados p/ Roleta" })} />
           <MiniKpi label="Novo Interesse" value={novoInteresse}
             sub="Leads com novo interesse" />
-          <MiniKpi label="Corretores na Roleta" value={presentesHoje} sub={`${presentesHoje} presentes hoje`} />
+          <MiniKpi label="Corretores na Roleta" value={presentesHoje} sub={`${presentesHoje} presentes hoje`}
+            onClick={() => setKpiDetail({ type: "presentes_hoje", label: "Corretores na Roleta" })} />
         </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Leads por Campanha/Empreendimento */}
@@ -566,18 +608,9 @@ export default function CeoDashboard() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-xs font-semibold">Funil do Pipeline</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Select value={funnelFilter} onValueChange={setFunnelFilter}>
-                    <SelectTrigger className="h-7 text-[10px] w-32 bg-white dark:bg-white/[0.05]">
-                      <SelectValue placeholder="Equipe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas Equipes</SelectItem>
-                      {teams.map(t => <SelectItem key={t.gerente_id} value={t.gerente_id}>{t.gerente_nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <span className="text-[10px] text-muted-foreground">Visão global · todas as equipes</span>
               </div>
+
             </CardHeader>
             <CardContent>
               <div className="space-y-1.5">
@@ -609,23 +642,33 @@ export default function CeoDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-primary">{totalVisitasCriadas}</p>
-                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Total Visitas (Novas)</p>
-                </div>
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-warning">{kpis.visitasMarcadas}</p>
-                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Marcadas</p>
-                </div>
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-success">{kpis.visitasRealizadas}</p>
-                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Realizadas</p>
-                </div>
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-danger">{kpis.noShows}</p>
-                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">No Show</p>
-                </div>
+                {([
+                  { label: "Total Visitas (Novas)", value: totalVisitasCriadas, color: "text-primary", type: "visitas_criadas" as const },
+                  { label: "Marcadas", value: kpis.visitasMarcadas, color: "text-warning", type: "visitas_marcadas" as const, prev: prevKpis?.visitasMarcadas },
+                  { label: "Realizadas", value: kpis.visitasRealizadas, color: "text-success", type: "visitas_realizadas" as const, prev: prevKpis?.visitasRealizadas },
+                  { label: "No Show", value: kpis.noShows, color: "text-danger", type: "visitas_no_show" as const, prev: prevKpis?.noShows, invert: true },
+                ]).map(card => {
+                  const d = delta(card.value, card.prev);
+                  const positive = d != null && (card.invert ? d < 0 : d > 0);
+                  return (
+                    <button
+                      key={card.label}
+                      type="button"
+                      onClick={() => setKpiDetail({ type: card.type, label: card.label })}
+                      className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05] hover:border-primary/30 transition-colors"
+                    >
+                      <p className={`text-2xl font-[800] ${card.color}`}>{card.value}</p>
+                      <p className="text-[10px] text-[#a1a1aa] mt-0.5">{card.label}</p>
+                      {d != null && (
+                        <p className={`text-[9px] font-semibold mt-0.5 ${Math.round(d) === 0 ? "text-muted-foreground" : positive ? "text-success" : "text-danger"}`}>
+                          {Math.round(d) === 0 ? "→" : d > 0 ? "▲" : "▼"} {Math.abs(Math.round(d))}% vs. anterior
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+
               {ceoMetas.meta_visitas_realizadas > 0 && (
                 <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 border border-[#e8e8f0] dark:border-white/[0.05]">
                   <div className="flex justify-between text-[10px] text-[#a1a1aa] mb-1">
@@ -648,12 +691,17 @@ export default function CeoDashboard() {
       <section>
         <SectionLabel icon={DollarSign}>Gestão de Negócios</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          <MiniKpi label="Total de Negócios" value={totalNeg} variant="highlight" />
-          <MiniKpi label="VGV em Contrato Gerado" value={formatBRLCompact(vgvContrato)} sub={`${countContrato} negócio${countContrato !== 1 ? "s" : ""} em contrato`} />
+          <MiniKpi label="Total de Negócios" value={totalNeg} variant="highlight"
+            onClick={() => setKpiDetail({ type: "negocios", label: "Negócios ativos" })} />
+          <MiniKpi label="VGV em Contrato Gerado" value={formatBRLCompact(vgvContrato)}
+            sub={`${countContrato} negócio${countContrato !== 1 ? "s" : ""} em contrato`}
+            onClick={() => setKpiDetail({ type: "contratos", label: "Negócios em contrato" })} />
           <MiniKpi label="VGV Assinado" value={formatBRLCompact(kpis.vgvAssinado)} variant="success"
+            delta={delta(kpis.vgvAssinado, prevKpis?.vgvAssinado)}
             sub={ceoMetas.meta_vgv_assinado > 0 ? `${Math.round((kpis.vgvAssinado / ceoMetas.meta_vgv_assinado) * 100)}% da meta` : undefined}
             onClick={() => setKpiDetail({ type: "vgv_assinado", label: "VGV Assinado" })} />
           <MiniKpi label="Propostas" value={kpis.propostas}
+            delta={delta(kpis.propostas, prevKpis?.propostas)}
             sub={ceoMetas.meta_propostas > 0 ? `meta: ${ceoMetas.meta_propostas}` : undefined}
             onClick={() => setKpiDetail({ type: "propostas", label: "Propostas" })} />
         </div>
@@ -661,8 +709,11 @@ export default function CeoDashboard() {
         <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
+            <p className="text-[10px] text-muted-foreground">
+              Fases ativas = situação atual do pipeline · Ganho = vendas assinadas no período (data de assinatura)
+            </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
               {negFunnelOrder.map((fase, idx) => {
                 const data = negocioFases.find((f: any) => f.fase === fase);
@@ -671,10 +722,17 @@ export default function CeoDashboard() {
                 const maxCount = Math.max(...negocioFases.map((f: any) => f.count), 1);
                 const widthPct = maxCount > 0 ? Math.max((count / maxCount) * 100, 18) : 18;
                 const color = negFunnelColors[fase] || "#a1a1aa";
-                const isLast = idx === negFunnelOrder.length - 1;
                 const isCaiu = fase.toLowerCase().includes("caiu") || fase.toLowerCase().includes("perdid");
+                const detailType: KpiDetailType | null =
+                  fase === "em_negociacao" ? "negociacao" : fase === "contrato" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
                 return (
-                  <div key={fase} className="flex flex-col items-center text-center gap-2">
+                  <button
+                    key={fase}
+                    type="button"
+                    disabled={!detailType}
+                    onClick={() => detailType && setKpiDetail({ type: detailType, label: negFunnelLabels[fase] || fase })}
+                    className={`flex flex-col items-center text-center gap-2 rounded-lg p-1 ${detailType ? "hover:bg-white/60 dark:hover:bg-white/[0.04] transition-colors" : "cursor-default"}`}
+                  >
                     <span className="text-2xl font-[800] leading-none" style={{ color }}>
                       {count}
                     </span>
@@ -695,13 +753,73 @@ export default function CeoDashboard() {
                     <span className="text-[10px] font-medium text-[#a1a1aa] dark:text-[#71717a]">
                       {formatBRLCompact(vgv)}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
+
+            {/* Taxas de conversão do período */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
+              {conversoes.map(c => (
+                <div key={c.label} className="bg-white dark:bg-white/[0.04] rounded-lg px-3 py-2 border border-[#e8e8f0] dark:border-white/[0.05]">
+                  <p className="text-[10px] text-[#a1a1aa] truncate">{c.label}</p>
+                  <p className="text-base font-[800] text-foreground leading-tight">{c.value}</p>
+                  <p className="text-[9px] text-muted-foreground/70 truncate">{c.sub}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Vendas assinadas no período */}
+        <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none mt-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold flex items-center gap-2">
+              <DollarSign className="h-3.5 w-3.5 text-success" /> Vendas assinadas no período
+              <span className="text-[10px] font-normal text-muted-foreground">
+                {vendasPeriodo.length} venda{vendasPeriodo.length !== 1 ? "s" : ""} · {formatBRLCompact(kpis.vgvAssinado)}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {vendasPeriodo.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground py-4 text-center">Nenhuma venda assinada no período.</p>
+            ) : (
+              <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                <table className="w-full text-[11px]">
+                  <thead className="sticky top-0 bg-[#f7f7fb] dark:bg-[#141e30]">
+                    <tr className="text-[10px] text-[#a1a1aa] text-left">
+                      <th className="py-1.5 pr-2 font-medium">Cliente</th>
+                      <th className="py-1.5 pr-2 font-medium">Empreendimento</th>
+                      <th className="py-1.5 pr-2 font-medium">Corretor</th>
+                      <th className="py-1.5 pr-2 font-medium text-right">VGV</th>
+                      <th className="py-1.5 font-medium text-right">Assinatura</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vendasPeriodo.map((v: any) => (
+                      <tr
+                        key={v.id}
+                        onClick={() => v.leadId && navigate(`/pipeline-leads?lead=${v.leadId}`)}
+                        className={`border-t border-[#e8e8f0] dark:border-white/[0.05] ${v.leadId ? "cursor-pointer hover:bg-white/60 dark:hover:bg-white/[0.04]" : ""}`}
+                      >
+                        <td className="py-1.5 pr-2 font-medium text-foreground truncate max-w-[160px]">{v.cliente}</td>
+                        <td className="py-1.5 pr-2 text-[#71717a] truncate max-w-[160px]">{v.empreendimento}</td>
+                        <td className="py-1.5 pr-2 text-[#71717a] truncate max-w-[140px]">{v.corretor}</td>
+                        <td className="py-1.5 pr-2 text-right font-semibold text-success">{formatBRLCompact(v.vgv)}</td>
+                        <td className="py-1.5 text-right text-[#71717a]">
+                          {v.dataAssinatura ? format(new Date(v.dataAssinatura + "T12:00:00"), "dd/MM/yy") : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>
+
 
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* LINHA 4 — OFERTA ATIVA                                    */}
@@ -710,11 +828,14 @@ export default function CeoDashboard() {
         <SectionLabel icon={Phone}>Oferta Ativa</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <MiniKpi label="Total Ligações" value={kpis.ligacoes.toLocaleString("pt-BR")} variant="highlight"
+            delta={delta(kpis.ligacoes, prevKpis?.ligacoes)}
             sub={ceoMetas.meta_ligacoes > 0 ? `${Math.round((kpis.ligacoes / ceoMetas.meta_ligacoes) * 100)}% da meta` : undefined}
             onClick={() => setKpiDetail({ type: "tentativas", label: "Ligações" })} />
           <MiniKpi label="Aproveitados" value={kpis.aproveitados} variant="success"
+            delta={delta(kpis.aproveitados, prevKpis?.aproveitados)}
             sub={`Taxa: ${kpis.taxaConversao}%`}
             onClick={() => setKpiDetail({ type: "aproveitados", label: "Aproveitados" })} />
+
           <MiniKpi label="Metas do Dia" value={`${metasDiaTotal.ligacoes} lig`}
             sub={`${metasDiaTotal.aproveitados} aprov · ${metasDiaTotal.visitasMarcadas} VM`} />
           <MiniKpi label="Taxa Aproveitamento" value={`${kpis.taxaConversao}%`}
