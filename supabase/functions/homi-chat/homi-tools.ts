@@ -35,15 +35,68 @@ export const HOMI_TOOLS = [
     function: {
       name: "buscar_imovel",
       description:
-        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. Receba o texto livre do corretor em `termo` (ex: '2 dorms no Petrópolis até 600 mil') e EXTRAIA você mesmo dormitórios e valor máximo para os campos, deixando em `termo` só bairro/empreendimento/tipo.",
+        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. O corretor manda um texto único (ex: 'apartamento de 3 dorms de 1M até 1,5M no Menino Deus mobiliado'). EXTRAIA você mesmo TODOS os atributos para os campos (faixa de valor, dorms, mobiliado, suítes, vagas, área, tipo) e deixe em `termo` SÓ bairro/empreendimento/cidade. ATENÇÃO: 'de X até Y' / 'entre X e Y' é FAIXA — preencha valor_min E valor_max. 'a partir de X' = valor_min. 'até X' = valor_max. 'M' = milhões, 'mil'/'k' = milhares.",
       parameters: {
         type: "object",
         properties: {
-          termo: { type: "string", description: "Bairro, empreendimento ou tipo (texto livre, sem número de dorms nem valor)." },
-          dormitorios: { type: "number", description: "Número mínimo de dormitórios extraído do texto." },
-          valor_max: { type: "number", description: "Valor de venda máximo em reais extraído do texto." },
+          termo: { type: "string", description: "Somente bairro, empreendimento ou cidade (sem dorms, sem valor, sem 'mobiliado')." },
+          dormitorios: { type: "number", description: "Número de dormitórios citado." },
+          dormitorios_exato: { type: "boolean", description: "true quando o corretor disse um número fechado ('3 dorms'); false quando disse '3+' / 'no mínimo 3'. Padrão: true." },
+          valor_min: { type: "number", description: "Valor de venda MÍNIMO em reais (ex: 1000000 para '1M')." },
+          valor_max: { type: "number", description: "Valor de venda MÁXIMO em reais (ex: 1500000 para '1,5M')." },
+          mobiliado: { type: "boolean", description: "true se o corretor pediu mobiliado." },
+          suites_min: { type: "number", description: "Número mínimo de suítes." },
+          vagas_min: { type: "number", description: "Número mínimo de vagas." },
+          area_min: { type: "number", description: "Área privativa mínima em m²." },
+          tipo: { type: "string", description: "Tipo do imóvel: apartamento, casa, cobertura, terreno, sala..." },
         },
       },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "fila_execucao",
+      description:
+        "Monta uma FILA de execução para o corretor resolver pendências uma a uma. Use quando ele pedir 'me ajuda a concluir minhas tarefas atrasadas', 'quais leads estão sem tarefa', 'me organiza', 'vamos resolver de 3 em 3'. Cada item traz o contexto do lead e a ação sugerida.",
+      parameters: {
+        type: "object",
+        properties: {
+          fila: {
+            type: "string",
+            enum: ["tarefas_atrasadas", "leads_sem_tarefa"],
+            description: "Qual fila montar. Padrão: tarefas_atrasadas.",
+          },
+          lote: { type: "number", description: "Quantos cards mostrar por vez: 1 ou 3. Padrão: 1." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "visitas_a_confirmar",
+      description:
+        "Lista as visitas futuras do corretor que ainda NÃO foram confirmadas com o cliente. Use quando ele perguntar 'quais visitas tenho que confirmar?', 'preciso confirmar alguma visita?'.",
+      parameters: { type: "object", properties: { dias: { type: "number", description: "Janela em dias à frente. Padrão: 3." } } },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "visitas_pendentes_resultado",
+      description:
+        "Lista as visitas do corretor cuja data já passou e que continuam SEM resultado registrado (nem realizada, nem no-show). Use quando ele perguntar 'quais visitas tenho pendentes?', 'o que falta registrar de visita?'.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "briefing_do_dia",
+      description:
+        "Monta o briefing objetivo do dia: números (tarefas atrasadas, visitas a confirmar, visitas sem resultado, leads sem tarefa, leads esfriando) e prioridades. Use quando o corretor pedir 'faz meu briefing', 'o que devo fazer hoje', 'me dá o resumo objetivo'.",
+      parameters: { type: "object", properties: {} },
     },
   },
   {
@@ -207,6 +260,45 @@ export const HOMI_TOOLS = [
 function todayBRT(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
+
+function addDaysBRT(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+}
+
+function fmtBRL(v: number): string {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+}
+
+// Contexto enxuto de um lead para os cards da fila de execução
+async function leadContextoCurto(userClient: any, leadIds: string[]) {
+  const map = new Map<string, any>();
+  if (!leadIds.length) return map;
+  const { data: leads } = await userClient
+    .from("pipeline_leads")
+    .select("id, nome, telefone, empreendimento, stage_id, ultima_acao_at")
+    .in("id", leadIds);
+  const stageIds = [...new Set((leads || []).map((l: any) => l.stage_id).filter(Boolean))];
+  let stageMap = new Map<string, string>();
+  if (stageIds.length) {
+    const { data: stages } = await userClient.from("pipeline_stages").select("id, nome").in("id", stageIds);
+    stageMap = new Map((stages || []).map((s: any) => [s.id, s.nome]));
+  }
+  for (const l of leads || []) {
+    const dt = l.ultima_acao_at ? new Date(l.ultima_acao_at) : null;
+    map.set(l.id, {
+      id: l.id,
+      nome: l.nome,
+      telefone: l.telefone,
+      empreendimento: l.empreendimento,
+      stage_nome: stageMap.get(l.stage_id) || "",
+      dias_parado: dt ? Math.floor((Date.now() - dt.getTime()) / 86400000) : null,
+    });
+  }
+  return map;
+}
+
 
 // Resolve a lead by name within the corretor's scope. Returns { lead } | { candidates } | { none }
 async function resolveLead(userClient: any, uid: string, nome: string) {
@@ -405,60 +497,98 @@ export async function executeHomiTool(
 
       // Normaliza o texto: separa em tokens úteis (ignora conectivos curtos)
       const rawTermo = `${args.termo || ""} ${args.bairro || ""}`.trim();
-      const stop = new Set(["de", "da", "do", "com", "para", "em", "no", "na", "e", "dorms", "dorm", "dormitorios", "quartos"]);
+      const stop = new Set(["de", "da", "do", "com", "para", "em", "no", "na", "e", "dorms", "dorm", "dormitorios", "quartos", "apartamento", "apto", "casa", "imovel", "mobiliado", "mobiliada"]);
       const tokens = rawTermo
         .toLowerCase()
         .replace(/['"]/g, "")
         .split(/\s+/)
         .filter((t) => t.length >= 3 && !stop.has(t));
+      const strongest = [...tokens].sort((a, b) => b.length - a.length)[0];
 
-      const baseFilters = (q0: any) => {
-        let q = q0.eq("ativo", true).not("valor_venda", "is", null);
-        if (typeof args.dormitorios === "number") q = q.gte("dormitorios", args.dormitorios);
-        if (typeof args.valor_max === "number") q = q.lte("valor_venda", args.valor_max);
-        return q;
+      const num = (v: any) => (typeof v === "number" && !isNaN(v) ? v : undefined);
+      const dorms = num(args.dormitorios);
+      const dormsExato = args.dormitorios_exato !== false; // padrão: número fechado
+      const vMin = num(args.valor_min);
+      const vMax = num(args.valor_max);
+      const wantMobiliado = args.mobiliado === true;
+      const suitesMin = num(args.suites_min);
+      const vagasMin = num(args.vagas_min);
+      const areaMin = num(args.area_min);
+      const tipoTxt = typeof args.tipo === "string" && args.tipo.trim().length >= 3 ? args.tipo.trim() : "";
+
+      type Opts = {
+        mobiliado: boolean; extras: boolean; dormsExato: boolean; faixa: "estrita" | "ampliada" | "off";
+        tokens: "todos" | "principal" | "nenhum"; tipo: boolean;
       };
 
-      // 1) Busca estrita: todos os tokens precisam bater em algum campo textual
-      let strict = baseFilters(userClient.from("properties").select(SELECT)).limit(6);
-      for (const tk of tokens) {
-        strict = strict.or(`bairro.ilike.%${tk}%,empreendimento.ilike.%${tk}%,titulo.ilike.%${tk}%,cidade.ilike.%${tk}%`);
-      }
-      strict = strict.order("valor_venda", { ascending: true });
-      const { data: strictData, error } = await strict;
-      if (error) {
-        console.error("[buscar_imovel] error:", error);
-        return { modelResult: "Não consegui buscar imóveis agora." };
-      }
-
-      let imoveis = mapRows(strictData || []);
-      let aproximado = false;
-
-      // 2) Fallback: se não achou, relaxa (só dorms/valor, ou o token mais forte)
-      if (imoveis.length === 0) {
-        let loose = baseFilters(userClient.from("properties").select(SELECT)).limit(6);
-        const strongest = [...tokens].sort((a, b) => b.length - a.length)[0];
-        if (strongest) {
-          loose = loose.or(`bairro.ilike.%${strongest}%,empreendimento.ilike.%${strongest}%,titulo.ilike.%${strongest}%,cidade.ilike.%${strongest}%`);
+      const build = (o: Opts) => {
+        let q = userClient.from("properties").select(SELECT).eq("ativo", true).not("valor_venda", "is", null);
+        if (dorms !== undefined) q = o.dormsExato ? q.eq("dormitorios", dorms) : q.gte("dormitorios", dorms);
+        if (o.faixa !== "off") {
+          const fator = o.faixa === "ampliada" ? 0.2 : 0;
+          if (vMin !== undefined) q = q.gte("valor_venda", Math.round(vMin * (1 - fator)));
+          if (vMax !== undefined) q = q.lte("valor_venda", Math.round(vMax * (1 + fator)));
         }
-        loose = loose.order("valor_venda", { ascending: true });
-        const { data: looseData } = await loose;
-        imoveis = mapRows(looseData || []);
-        aproximado = imoveis.length > 0;
+        if (o.mobiliado && wantMobiliado) q = q.eq("mobiliado", true);
+        if (o.extras) {
+          if (suitesMin !== undefined) q = q.gte("suites", suitesMin);
+          if (vagasMin !== undefined) q = q.gte("vagas", vagasMin);
+          if (areaMin !== undefined) q = q.gte("area_privativa", areaMin);
+        }
+        if (o.tipo && tipoTxt) q = q.ilike("tipo", `%${tipoTxt}%`);
+        const tks = o.tokens === "todos" ? tokens : o.tokens === "principal" ? (strongest ? [strongest] : []) : [];
+        for (const tk of tks) {
+          q = q.or(`bairro.ilike.%${tk}%,empreendimento.ilike.%${tk}%,titulo.ilike.%${tk}%,cidade.ilike.%${tk}%`);
+        }
+        return q.order("valor_venda", { ascending: true }).limit(6);
+      };
+
+      const full: Opts = { mobiliado: true, extras: true, dormsExato: true, faixa: "estrita", tokens: "todos", tipo: true };
+      const tentativas: { opts: Opts; relaxou: string[] }[] = [
+        { opts: full, relaxou: [] },
+        { opts: { ...full, tokens: "principal" }, relaxou: [] },
+        { opts: { ...full, tokens: "principal", extras: false }, relaxou: suitesMin || vagasMin || areaMin ? ["suítes/vagas/área"] : [] },
+        { opts: { ...full, tokens: "principal", extras: false, tipo: false }, relaxou: [tipoTxt ? "tipo do imóvel" : ""].filter(Boolean) },
+        { opts: { ...full, tokens: "principal", extras: false, tipo: false, dormsExato: false }, relaxou: [dorms !== undefined && dormsExato ? `dormitórios (aceitando ${dorms}+)` : ""].filter(Boolean) },
+        { opts: { ...full, tokens: "principal", extras: false, tipo: false, dormsExato: false, mobiliado: false }, relaxou: [wantMobiliado ? "mobiliado" : ""].filter(Boolean) },
+        { opts: { ...full, tokens: "principal", extras: false, tipo: false, dormsExato: false, mobiliado: false, faixa: "ampliada" }, relaxou: [(vMin || vMax) ? "faixa de valor (±20%)" : ""].filter(Boolean) },
+      ];
+
+      let imoveis: any[] = [];
+      const relaxados: string[] = [];
+      for (const t of tentativas) {
+        const { data, error } = await build(t.opts);
+        if (error) {
+          console.error("[buscar_imovel] error:", error);
+          return { modelResult: "Não consegui buscar imóveis agora." };
+        }
+        for (const r of t.relaxou) if (!relaxados.includes(r)) relaxados.push(r);
+        imoveis = mapRows(data || []);
+        if (imoveis.length > 0) break;
       }
+
+      const criterios = [
+        dorms !== undefined ? `${dorms} dorm${dormsExato ? "" : "+"}` : "",
+        vMin !== undefined || vMax !== undefined
+          ? `${vMin !== undefined ? "de " + fmtBRL(vMin) : ""}${vMax !== undefined ? (vMin !== undefined ? " até " : "até ") + fmtBRL(vMax) : ""}`
+          : "",
+        wantMobiliado ? "mobiliado" : "",
+        rawTermo || "",
+      ].filter(Boolean).join(" · ");
 
       if (imoveis.length === 0) {
         return {
-          result: { tipo: "imoveis", imoveis: [] },
-          modelResult: "Nenhum imóvel encontrado nem em busca ampla. Sugira ao corretor ampliar os critérios (valor, bairro ou dormitórios).",
+          result: { tipo: "imoveis", imoveis: [], criterios },
+          modelResult: `Nenhum imóvel encontrado para: ${criterios}. Diga isso em 1 frase e sugira ampliar 1 critério específico (faixa de valor, bairro ou mobiliado).`,
         };
       }
 
+      const aproximado = relaxados.length > 0;
       return {
-        result: { tipo: "imoveis", imoveis, aproximado },
+        result: { tipo: "imoveis", imoveis, aproximado, criterios, relaxados },
         modelResult: aproximado
-          ? `Não achei correspondência exata, mas trouxe ${imoveis.length} opções próximas (já exibidas com botão de enviar por WhatsApp). Comente em 1 frase.`
-          : `Encontrei ${imoveis.length} imóveis (já exibidos com botão de enviar por WhatsApp). Comente em 1 frase o destaque.`,
+          ? `Busca "${criterios}": não havia correspondência exata, relaxei ${relaxados.join(" e ")} e trouxe ${imoveis.length} opções (já exibidas na tela). Responda em 1 frase repetindo o critério entendido e AVISANDO explicitamente o que foi relaxado.`
+          : `Busca "${criterios}": ${imoveis.length} imóveis dentro do pedido (já exibidos na tela com botão de WhatsApp). Responda em 1 frase confirmando o critério entendido e o destaque. Não repita a lista.`,
       };
     }
 
@@ -738,6 +868,216 @@ export async function executeHomiTool(
       return {
         result: { tipo: "preparar_visita", lead: { id: lead?.id, nome: lead?.nome, empreendimento: lead?.empreendimento } },
         modelResult: `BRIEFING PRÉ-VISITA de ${lead?.nome || "cliente"}.\n${visitaInfo}\n${contextoTxt}\n\nMonte um briefing curto e prático: (1) quem é o lead e momento; (2) imóvel/empreendimento de interesse; (3) 2-3 argumentos de venda fortes desse empreendimento (use o conhecimento da base). Formato objetivo em tópicos.`,
+      };
+    }
+
+    if (name === "fila_execucao") {
+      const fila = args.fila === "leads_sem_tarefa" ? "leads_sem_tarefa" : "tarefas_atrasadas";
+      const lote = args.lote === 3 ? 3 : 1;
+      const today = todayBRT();
+
+      if (fila === "tarefas_atrasadas") {
+        const { data: tarefas } = await userClient
+          .from("pipeline_tarefas")
+          .select("id, titulo, tipo, descricao, vence_em, hora_vencimento, pipeline_lead_id")
+          .eq("responsavel_id", uid)
+          .eq("status", "pendente")
+          .lt("vence_em", today)
+          .order("vence_em", { ascending: true })
+          .limit(40);
+        const rows = tarefas || [];
+        const ctx = await leadContextoCurto(userClient, [...new Set(rows.map((r: any) => r.pipeline_lead_id).filter(Boolean))]);
+        const itens = rows.map((t: any) => {
+          const l = ctx.get(t.pipeline_lead_id) || {};
+          const atrasoDias = t.vence_em ? Math.max(0, Math.floor((new Date(today).getTime() - new Date(t.vence_em).getTime()) / 86400000)) : 0;
+          return {
+            tarefa_id: t.id,
+            titulo: t.titulo || t.tipo,
+            tipo: t.tipo,
+            vence_em: t.vence_em,
+            hora: t.hora_vencimento,
+            atraso_dias: atrasoDias,
+            lead_id: t.pipeline_lead_id,
+            lead_nome: l.nome || "Lead",
+            telefone: l.telefone || "",
+            empreendimento: l.empreendimento || "",
+            stage_nome: l.stage_nome || "",
+            dias_parado: l.dias_parado ?? null,
+          };
+        });
+        if (!itens.length) {
+          return {
+            result: { tipo: "fila_execucao", fila, lote, total: 0, itens: [] },
+            modelResult: "Nenhuma tarefa atrasada. Parabenize a cadência em 1 frase e ofereça revisar os leads sem tarefa.",
+          };
+        }
+        const resumo = itens.slice(0, lote).map((i: any) => `${i.lead_nome} (${i.stage_nome || "sem etapa"}, ${i.titulo}, ${i.atraso_dias}d de atraso, empreendimento ${i.empreendimento || "—"})`).join(" | ");
+        return {
+          result: { tipo: "fila_execucao", fila, lote, total: itens.length, itens },
+          modelResult: `Fila de ${itens.length} tarefas atrasadas montada, mostrando ${lote} por vez. Primeiros: ${resumo}. Para CADA um desses, escreva em 1-2 linhas a sugestão de ação + a mensagem de WhatsApp pronta (curta, natural, terminando em pergunta que puxe visita). Não repita a lista inteira nem dados que já estão nos cartões.`,
+        };
+      }
+
+      // leads_sem_tarefa
+      const { data: leads } = await userClient
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento, stage_id, ultima_acao_at")
+        .eq("corretor_id", uid)
+        .eq("arquivado", false)
+        .order("ultima_acao_at", { ascending: true, nullsFirst: true })
+        .limit(200);
+      const leadRows = leads || [];
+      const ids = leadRows.map((l: any) => l.id);
+      let comTarefa = new Set<string>();
+      if (ids.length) {
+        const { data: pend } = await userClient
+          .from("pipeline_tarefas")
+          .select("pipeline_lead_id")
+          .eq("status", "pendente")
+          .in("pipeline_lead_id", ids);
+        comTarefa = new Set((pend || []).map((t: any) => t.pipeline_lead_id));
+      }
+      const semTarefa = leadRows.filter((l: any) => !comTarefa.has(l.id)).slice(0, 30);
+      const ctx = await leadContextoCurto(userClient, semTarefa.map((l: any) => l.id));
+      const itens = semTarefa.map((l: any) => {
+        const c = ctx.get(l.id) || {};
+        return {
+          lead_id: l.id,
+          lead_nome: l.nome,
+          telefone: l.telefone || "",
+          empreendimento: l.empreendimento || "",
+          stage_nome: c.stage_nome || "",
+          dias_parado: c.dias_parado ?? null,
+        };
+      });
+      if (!itens.length) {
+        return {
+          result: { tipo: "fila_execucao", fila, lote, total: 0, itens: [] },
+          modelResult: "Todos os leads ativos têm próxima tarefa agendada. Elogie a cadência em 1 frase.",
+        };
+      }
+      const resumo = itens.slice(0, lote).map((i: any) => `${i.lead_nome} (${i.stage_nome || "sem etapa"}, ${i.empreendimento || "—"}, parado há ${i.dias_parado ?? "?"}d)`).join(" | ");
+      return {
+        result: { tipo: "fila_execucao", fila, lote, total: itens.length, itens },
+        modelResult: `Fila de ${itens.length} leads SEM próxima tarefa, mostrando ${lote} por vez. Primeiros: ${resumo}. Para CADA um, sugira em 1 linha qual próxima tarefa criar (tipo e prazo) e já entregue a mensagem de WhatsApp pronta. Não repita a lista.`,
+      };
+    }
+
+    if (name === "visitas_a_confirmar") {
+      const dias = typeof args.dias === "number" && args.dias > 0 ? Math.min(args.dias, 14) : 3;
+      const today = todayBRT();
+      const limite = addDaysBRT(dias);
+      const { data } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, empreendimento, data_visita, hora_visita, local_visita, status, pipeline_lead_id")
+        .eq("corretor_id", uid)
+        .gte("data_visita", today)
+        .lte("data_visita", limite)
+        .in("status", ["marcada", "reagendada"])
+        .order("data_visita", { ascending: true })
+        .limit(30);
+      const visitas = data || [];
+      return {
+        result: { tipo: "visitas_pendentes", modo: "confirmar", visitas, janela_dias: dias },
+        modelResult: visitas.length
+          ? `${visitas.length} visitas a confirmar nos próximos ${dias} dias (já exibidas em cartões com botão de confirmar): ${visitas.map((v: any) => `${v.nome_cliente} ${v.data_visita}${v.hora_visita ? " " + String(v.hora_visita).slice(0, 5) : ""}`).join(", ")}. Escreva UMA mensagem de confirmação curta e natural que sirva de modelo (com [nome], data e hora). Não repita a lista.`
+          : `Nenhuma visita pendente de confirmação nos próximos ${dias} dias. Diga isso em 1 frase.`,
+      };
+    }
+
+    if (name === "visitas_pendentes_resultado") {
+      const today = todayBRT();
+      const { data } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, empreendimento, data_visita, hora_visita, local_visita, status, pipeline_lead_id")
+        .eq("corretor_id", uid)
+        .lt("data_visita", today)
+        .in("status", ["marcada", "confirmada", "reagendada"])
+        .order("data_visita", { ascending: false })
+        .limit(30);
+      const visitas = data || [];
+      return {
+        result: { tipo: "visitas_pendentes", modo: "resultado", visitas },
+        modelResult: visitas.length
+          ? `${visitas.length} visitas já passaram e continuam sem resultado registrado (cartões na tela com botão de abrir o lead para registrar). Diga em 1 frase que registrar isso é o que destrava o funil e cite a mais antiga.`
+          : "Nenhuma visita passada sem resultado. Elogie em 1 frase o controle da agenda.",
+      };
+    }
+
+    if (name === "briefing_do_dia") {
+      const today = todayBRT();
+      const limite3 = addDaysBRT(3);
+
+      const { data: tarefas } = await userClient
+        .from("pipeline_tarefas")
+        .select("id, titulo, tipo, vence_em, pipeline_lead_id")
+        .eq("responsavel_id", uid)
+        .eq("status", "pendente")
+        .lte("vence_em", today)
+        .order("vence_em", { ascending: true })
+        .limit(100);
+      const tRows = tarefas || [];
+      const atrasadas = tRows.filter((t: any) => t.vence_em && t.vence_em < today);
+      const hoje = tRows.filter((t: any) => t.vence_em === today);
+
+      const { data: visitasHoje } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, hora_visita, empreendimento")
+        .eq("corretor_id", uid)
+        .eq("data_visita", today)
+        .order("hora_visita", { ascending: true })
+        .limit(20);
+
+      const { data: aConfirmar } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, data_visita")
+        .eq("corretor_id", uid)
+        .gte("data_visita", today)
+        .lte("data_visita", limite3)
+        .in("status", ["marcada", "reagendada"])
+        .limit(30);
+
+      const { data: semResultado } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, data_visita")
+        .eq("corretor_id", uid)
+        .lt("data_visita", today)
+        .in("status", ["marcada", "confirmada", "reagendada"])
+        .limit(30);
+
+      const { data: leadsAtivos } = await userClient
+        .from("pipeline_leads")
+        .select("id, ultima_acao_at")
+        .eq("corretor_id", uid)
+        .eq("arquivado", false)
+        .limit(500);
+      const ativos = leadsAtivos || [];
+      let comTarefa = new Set<string>();
+      if (ativos.length) {
+        const { data: pend } = await userClient
+          .from("pipeline_tarefas")
+          .select("pipeline_lead_id")
+          .eq("status", "pendente")
+          .in("pipeline_lead_id", ativos.map((l: any) => l.id));
+        comTarefa = new Set((pend || []).map((t: any) => t.pipeline_lead_id));
+      }
+      const semTarefa = ativos.filter((l: any) => !comTarefa.has(l.id));
+      const cutoff = Date.now() - 5 * 86400000;
+      const esfriando = ativos.filter((l: any) => !l.ultima_acao_at || new Date(l.ultima_acao_at).getTime() < cutoff);
+
+      const numeros = {
+        tarefas_atrasadas: atrasadas.length,
+        tarefas_hoje: hoje.length,
+        visitas_hoje: (visitasHoje || []).length,
+        visitas_a_confirmar: (aConfirmar || []).length,
+        visitas_sem_resultado: (semResultado || []).length,
+        leads_sem_tarefa: semTarefa.length,
+        leads_esfriando: esfriando.length,
+      };
+
+      return {
+        result: { tipo: "briefing_dia", today, numeros, visitas_hoje: visitasHoje || [] },
+        modelResult: `BRIEFING DO DIA (números já exibidos em cartão): ${JSON.stringify(numeros)}. Escreva um briefing OBJETIVO em tópicos curtos: (1) 3 a 5 prioridades em ordem, cada uma com motivo + próximo passo; (2) uma linha "Risco do dia" — o que se não for feito hoje custa venda; (3) termine oferecendo iniciar a fila (ex: "quer resolver as ${numeros.tarefas_atrasadas} atrasadas agora, de 3 em 3?"). Não repita os números crus, use-os nas prioridades.`,
       };
     }
 

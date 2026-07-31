@@ -12,12 +12,16 @@ import type { HomiAnimState } from "./HomiAnimated";
 
 const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
   corretor: [
-    { label: "⏰ O que tenho de atrasado?", prompt: "Mostra o que tenho de atrasado e pendente hoje." },
-    { label: "📋 Criar uma tarefa", prompt: "Quero criar uma tarefa." },
+    { label: "🧭 Briefing do dia", prompt: "Faz meu briefing do dia: o que eu preciso fazer hoje, por prioridade." },
+    { label: "⚡ Resolver atrasadas", prompt: "Me ajuda a concluir minhas tarefas atrasadas, uma de cada vez." },
+    { label: "🎯 Leads sem tarefa", prompt: "Quais leads estão sem próxima tarefa? Me mostra de 3 em 3." },
+    { label: "📅 Visitas a confirmar", prompt: "Quais visitas eu tenho que confirmar?" },
+    { label: "📝 Visitas pendentes", prompt: "Quais visitas estão pendentes de registro de resultado?" },
+    { label: "💬 Follow-up de lead parado", prompt: "Me ajuda a fazer um follow-up com um lead do Casa Tua que parou de responder." },
+    { label: "🔎 Buscar imóvel com faixa", prompt: "Me busca um apartamento de 3 dorms, de 1M até 1,5M no Menino Deus, mobiliado." },
     { label: "🏠 Marcar uma visita", prompt: "Quero marcar uma visita." },
-    { label: "🔎 Buscar um imóvel", prompt: "Me ajuda a buscar um imóvel." },
-    { label: "💬 Mensagem de WhatsApp", prompt: "Gere uma mensagem de follow-up curta para WhatsApp." },
   ],
+
   gestor: [
     { label: "📋 Checklist do dia", prompt: "Gere meu checklist para hoje como gerente. Rotinas de cobrança e foco em visitas." },
     { label: "📊 Diagnóstico rápido", prompt: "Faça um diagnóstico rápido da minha operação. Identifique os gargalos principais." },
