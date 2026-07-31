@@ -485,7 +485,7 @@ export async function executeHomiTool(
     }
 
     if (name === "buscar_imovel") {
-      const SELECT = "id, codigo, titulo, empreendimento, bairro, cidade, tipo, valor_venda, valor_condominio, mobiliado, dormitorios, suites, vagas, area_privativa, fotos";
+      const SELECT = "id, codigo, titulo, empreendimento, bairro, cidade, regiao, tipo, valor_venda, valor_condominio, mobiliado, dormitorios, suites, vagas, area_privativa, fotos";
       const mapRows = (data: any[]) => (data || []).map((r: any) => ({
         id: r.id,
         codigo: r.codigo,
@@ -493,6 +493,7 @@ export async function executeHomiTool(
         empreendimento: r.empreendimento,
         bairro: r.bairro,
         cidade: r.cidade,
+        zona: r.regiao,
         tipo: r.tipo,
         valor_venda: r.valor_venda,
         valor_condominio: r.valor_condominio,
