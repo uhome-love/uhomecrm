@@ -19,15 +19,27 @@ Um **cérebro único do HOMI** (mesma identidade, mesmas fontes, mesmas regras) 
 - Padronizar **um único motor de embeddings** via Lovable AI (`gemini-embedding-001`), eliminando a dependência de chave OpenAI. Nova coluna/índice de vetor compatível e reindexação de tudo.
 - Corrigir os 2 documentos quebrados e reprocessar o Método Uhome.
 
-### Fase 2 — Alimentar o cérebro com o acervo Uhome
+### Fase 2 — Alimentar o cérebro com TODO o acervo Uhome
 Indexar num só lugar, com rótulo de origem para citar na resposta:
-- Método Uhome e manuais (`homi_documents`)
-- Materiais e apresentações do Hub (`materiais_links`)
+- Método Uhome, manuais e processos (`homi_documents`)
+- Materiais, apresentações e drives do Hub (`materiais_links`, `materiais_empreendimentos`)
 - Aulas da Academia (título, descrição e, quando houver, transcrição do vídeo)
 - Scripts do time e templates de comunicação
-- Fichas/aliases de empreendimentos canônicos (preço, tipologia, diferenciais)
+- Empreendimentos canônicos + fichas + overrides (preço, tipologia, entrega, diferenciais, aliases)
+- Imóveis do CRM (`properties`): bairro, tipologia, faixa de preço, status — para o HOMI recomendar imóvel de verdade
 
-Reindexação automática quando um material/aula/documento é criado ou editado.
+Reindexação automática quando material, aula, ficha, imóvel ou documento é criado/editado.
+
+### Fase 2.5 — Conhecimento vivo do CRM (dados, não só texto)
+Texto indexado responde "como fazer"; para responder "quanto/quem/quando" o HOMI precisa consultar o banco na hora. Dou a ele um conjunto de ferramentas de leitura, sempre respeitando o papel de quem pergunta:
+- Buscar imóveis/empreendimentos por bairro, preço, tipologia e disponibilidade
+- Consultar o próprio funil do corretor (leads, etapa, tarefas atrasadas, visitas, SLA)
+- Consultar métricas oficiais (VGV, visitas, conversão) já pela fonte única `rpc_metricas` / `v_fato_venda`
+- Consultar o lead aberto na tela (histórico, respostas do formulário, empreendimento de interesse)
+- Sugerir o material/aula certa para a situação
+
+Regra de segurança: corretor só enxerga o que é dele; gestor, a equipe; diretor/CEO, tudo — reaproveitando as regras de acesso já existentes.
+
 
 ### Fase 3 — Elevar a inteligência das respostas
 - Modelo padrão dos HOMIs conversacionais para a geração atual (`google/gemini-3.6-flash`); análises pesadas do CEO/Gestor em modelo de raciocínio mais forte.
