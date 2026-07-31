@@ -480,20 +480,26 @@ export async function executeHomiTool(
     }
 
     if (name === "buscar_imovel") {
-      const SELECT = "id, codigo, titulo, empreendimento, bairro, cidade, tipo, valor_venda, dormitorios, suites, vagas, area_privativa, fotos";
+      const SELECT = "id, codigo, titulo, empreendimento, bairro, cidade, tipo, valor_venda, valor_condominio, mobiliado, dormitorios, suites, vagas, area_privativa, fotos";
       const mapRows = (data: any[]) => (data || []).map((r: any) => ({
+        id: r.id,
         codigo: r.codigo,
         titulo: r.titulo,
         empreendimento: r.empreendimento,
         bairro: r.bairro,
+        cidade: r.cidade,
         tipo: r.tipo,
         valor_venda: r.valor_venda,
+        valor_condominio: r.valor_condominio,
+        mobiliado: r.mobiliado,
         dormitorios: r.dormitorios,
         suites: r.suites,
         vagas: r.vagas,
         area: r.area_privativa,
+        fotos: Array.isArray(r.fotos) ? r.fotos.slice(0, 8) : [],
         thumb: Array.isArray(r.fotos) ? r.fotos[0] : null,
       }));
+
 
       // Normaliza o texto: separa em tokens úteis (ignora conectivos curtos)
       const rawTermo = `${args.termo || ""} ${args.bairro || ""}`.trim();
