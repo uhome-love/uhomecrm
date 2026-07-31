@@ -122,16 +122,51 @@ serve(async (req) => {
     const result = await response.json();
 
     if (response.ok) {
-      L.info("Sent successfully", { tipo, to: numeroFinal, messageId: result?.messages?.[0]?.id });
-    } else {
-      L.error("API error", { tipo, to: numeroFinal, status: response.status, error: result?.error });
-      logOps("error", "integration", `WhatsApp API error: ${response.status}`, { tipo, to: numeroFinal, status: response.status }, JSON.stringify(result?.error || {}));
+      L.info("Sent successfully", { tipo, to: numeroFinal, canal: "meta", messageId: result?.messages?.[0]?.id });
+      logOps("info", "integration", `WhatsApp enviado (meta): ${tipo}`, { tipo, to: numeroFinal, canal: "meta" });
+      return new Response(JSON.stringify({ ...result, canal: "meta" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
-    return new Response(JSON.stringify(result), {
+    L.error("API error", { tipo, to: numeroFinal, status: response.status, error: result?.error });
+
+    // Fallback: envia texto livre pela Evolution API (sem telefone/e-mail no corpo)
+    const fallbackText =
+      tipo === "novo_lead"
+        ? `🆕 *Novo lead recebido!*\n\nNome: ${dados?.nome || "Lead"}\nEmpreendimento: ${dados?.empreendimento || "Não identificado"}\n\nAceite o lead em até 10 minutos para ver os dados de contato.\nhttps://uhomesales.com/pipeline`
+        : (TEXT_MESSAGES[tipo] ? TEXT_MESSAGES[tipo]() : "");
+
+    const evo = await enviarViaEvolution(numeroFinal, fallbackText);
+
+    if (evo.ok) {
+      L.info("Sent via Evolution fallback", { tipo, to: numeroFinal, canal: "evolution" });
+      logOps("info", "integration", `WhatsApp enviado (evolution fallback): ${tipo}`, {
+        tipo,
+        to: numeroFinal,
+        canal: "evolution",
+        meta_error: result?.error?.code ?? null,
+      });
+      return new Response(JSON.stringify({ ok: true, canal: "evolution", meta_error: result?.error || null }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    logOps(
+      "error",
+      "integration",
+      `WhatsApp API error: ${response.status} (fallback evolution falhou)`,
+      { tipo, to: numeroFinal, status: response.status, evolution_error: evo.error },
+      JSON.stringify(result?.error || {})
+    );
+
+    return new Response(JSON.stringify({ ...result, canal: "none", evolution_error: evo.error }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: response.ok ? 200 : 400,
+      status: 400,
     });
+
   } catch (err) {
     L.error("Unhandled exception", {}, err);
     logOps("error", "system", "Unhandled exception", {}, err instanceof Error ? err.message : String(err));
