@@ -436,11 +436,15 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
                       <div style={{ fontFamily: "monospace", fontSize: 9, color: st.cor, letterSpacing: 1, textTransform: "uppercase", marginTop: 2 }}>
                         Equipe {c.equipe ?? "—"}
                       </div>
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: "#ffffff88", letterSpacing: 0.5, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {(c.visitas ?? 0)} vis. ×30 + {(c.aproveitamentos ?? 0)} aprov. ×5
+                      </div>
                     </div>
                     <div style={{ textAlign: "center", minWidth: 50 }}>
                       <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, lineHeight: 1, color: "#F59E0B", textShadow: "0 0 15px #F59E0B66" }}>{c.pontos}</div>
                       <div style={{ fontSize: 8, letterSpacing: 2, color: "#ffffff55", fontFamily: "monospace" }}>PONTOS</div>
                     </div>
+
                   </div>
                 );
               })}
@@ -498,7 +502,9 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         <div style={{ textAlign: "center", padding: "2px 24px 6px", color: "#ffffff33", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, flexShrink: 0 }}>
           <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#22c55e", marginRight: 6, animation: "pulse 1.5s infinite" }} />
           AO VIVO · MUTIRÃO INTELIGENTE · {corretores.length} CORRETOR{corretores.length === 1 ? "" : "ES"} NO PLACAR
+          <span style={{ color: "#ffffff55", marginLeft: 12 }}>· PONTUAÇÃO: VISITA AGENDADA = 30 PTS · LEAD APROVEITADO = 5 PTS · TENTATIVA = 0</span>
         </div>
+
       </div>
     </>
   );
