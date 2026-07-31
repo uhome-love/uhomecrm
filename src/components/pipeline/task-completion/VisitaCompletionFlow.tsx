@@ -151,24 +151,47 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
   }, []);
 
   useEffect(() => {
-    if (subtipo !== "registrar_resultado" && subtipo !== "pegar_feedback") return;
+    if (
+      subtipo !== "registrar_resultado" &&
+      subtipo !== "pegar_feedback" &&
+      subtipo !== "confirmar_visita"
+    )
+      return;
     let cancelled = false;
     (async () => {
-      // Última visita marcada/reagendada/confirmada (para registrar_resultado)
-      // ou realizada (para pegar_feedback — não precisamos alterar, só referência)
+      // Visita em aberto do lead (marcada/reagendada/confirmada), a mais próxima primeiro.
       const { data } = await supabase
         .from("visitas")
         .select("id, status, data_visita")
         .eq("pipeline_lead_id", leadId)
-        .order("data_visita", { ascending: false })
+        .in("status", ["marcada", "reagendada", "confirmada"])
+        .order("data_visita", { ascending: true })
         .limit(1);
+      let alvo = ((data ?? [])[0] as any) || null;
+      if (!alvo && subtipo !== "confirmar_visita") {
+        const { data: any2 } = await supabase
+          .from("visitas")
+          .select("id, status, data_visita")
+          .eq("pipeline_lead_id", leadId)
+          .order("data_visita", { ascending: false })
+          .limit(1);
+        alvo = ((any2 ?? [])[0] as any) || null;
+      }
       if (cancelled) return;
-      setVisitaAlvo(((data ?? [])[0] as any) || null);
+      setVisitaAlvo(alvo);
     })();
     return () => {
       cancelled = true;
     };
   }, [leadId, subtipo]);
+
+  /** Hoje em BRT (yyyy-mm-dd) — trava para não registrar resultado antes da visita. */
+  const hojeBRT = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const visitaFutura = !!visitaAlvo?.data_visita && visitaAlvo.data_visita > hojeBRT;
+  const visitaDataBR = visitaAlvo?.data_visita
+    ? visitaAlvo.data_visita.split("-").reverse().slice(0, 2).join("/")
+    : "";
+
 
   const obsValida = obs.trim().length >= 3;
   // Fallback defensivo: subtipos legados/novos (ex.: realizar_visita, definir_sequencia)
