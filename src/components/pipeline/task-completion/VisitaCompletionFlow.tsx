@@ -247,12 +247,25 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
 
   /* ─────────── Ações ─────────── */
 
-  async function handleConfirmarVisita() {
+  /** confirmou=true → grava visitas.status='confirmada'. false → só registra o toque. */
+  async function handleConfirmarVisita(confirmou: boolean) {
     if (!obsValida) return;
     onSaving(true);
     try {
-      await markTaskDone();
-      await finish("Confirmação registrada ✅");
+      await markTaskDone(
+        (confirmou ? "Cliente CONFIRMOU a visita. " : "Não conseguiu contato para confirmar. ") +
+          obs.trim(),
+      );
+      if (confirmou && visitaAlvo?.id && visitaAlvo.status !== "confirmada") {
+        const { error } = await supabase
+          .from("visitas")
+          .update({ status: "confirmada", confirmed_at: new Date().toISOString() } as never)
+          .eq("id", visitaAlvo.id);
+        if (error) throw error;
+      }
+      await finish(
+        confirmou ? "Visita confirmada ✅" : "Tentativa de confirmação registrada",
+      );
     } catch (err) {
       console.error("[VisitaFlow.confirmar]", err);
       toast.error("Erro ao concluir tarefa");
@@ -260,6 +273,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
       onSaving(false);
     }
   }
+
 
   async function handleAgendouOk() {
     // A visita será salva pelo VisitaForm — o trigger visita_auto_tarefas cria
