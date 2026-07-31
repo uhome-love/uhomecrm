@@ -111,6 +111,22 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
   });
   const isAdminMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin") === "true";
 
+  // ---- Palco fixo 1920x1080 escalado para caber em qualquer TV ----
+  const STAGE_W = 1920, STAGE_H = 1080;
+  const scaleAdjust = (() => {
+    if (typeof window === "undefined") return 1;
+    const s = Number(new URLSearchParams(window.location.search).get("scale"));
+    return Number.isFinite(s) && s > 0.3 && s <= 1.5 ? s : 1;
+  })();
+  const [stageScale, setStageScale] = useState(1);
+  useEffect(() => {
+    const calc = () =>
+      setStageScale(Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H) * scaleAdjust);
+    calc();
+    window.addEventListener("resize", calc);
+    return () => window.removeEventListener("resize", calc);
+  }, [scaleAdjust]);
+
 
   function tocarSom(tipo: "visita" | "aproveitado" = "visita") {
     try {
