@@ -322,47 +322,48 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         })()}
 
         {/* Header */}
-        <div style={{ textAlign: "center", padding: "8px 24px 6px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff44", fontFamily: "monospace", marginBottom: 2 }}>
+        <div style={{ textAlign: "center", padding: "12px 28px 10px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
+          <div style={{ fontSize: 15, letterSpacing: 6, color: "#ffffff55", fontFamily: "monospace", marginBottom: 4 }}>
             UHOME NEGÓCIOS IMOBILIÁRIOS · MUTIRÃO INTELIGENTE
           </div>
           <h1 style={{
-            fontSize: "clamp(20px, 3.5vw, 40px)", letterSpacing: 4, margin: 0, lineHeight: 1.1,
+            fontSize: 64, letterSpacing: 6, margin: 0, lineHeight: 1.05,
             background: "linear-gradient(90deg, #F59E0B, #EF4444, #9333EA)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", textTransform: "uppercase",
           }}>⚡ Mutirão Ao Vivo ⚡</h1>
-          <p style={{ fontSize: "clamp(8px, 1vw, 11px)", letterSpacing: 6, color: "#ffffff55", margin: "2px 0 0", textTransform: "uppercase", fontFamily: "monospace", display: "flex", justifyContent: "center", alignItems: "center", gap: 16 }}>
+          <p style={{ fontSize: 20, letterSpacing: 8, color: "#ffffff77", margin: "4px 0 0", textTransform: "uppercase", fontFamily: "monospace", display: "flex", justifyContent: "center", alignItems: "center", gap: 24 }}>
             <span>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" })}</span>
-            <span style={{ color: "#F59E0B", fontSize: "clamp(10px, 1.3vw, 16px)", fontWeight: 700, letterSpacing: 2 }}>{formatTime(relogio)}</span>
+            <span style={{ color: "#F59E0B", fontSize: 28, fontWeight: 700, letterSpacing: 3 }}>{formatTime(relogio)}</span>
           </p>
         </div>
 
         {/* KPIs + Meta */}
-        <div style={{ padding: "6px 24px 8px", background: "#ffffff06", borderBottom: "1px solid #ffffff14", flexShrink: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 2fr", gap: 12, alignItems: "center" }}>
+        <div style={{ padding: "10px 28px 12px", background: "#ffffff06", borderBottom: "1px solid #ffffff14", flexShrink: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 2fr", gap: 16, alignItems: "center" }}>
           <KPI label="Ligações" value={totalLigacoes} cor="#0EA5E9" />
           <KPI label="Visitas hoje" value={totalVisitas} cor={metaBatida ? "#22c55e" : "#F59E0B"} big />
           <KPI label="Pontos totais" value={totalPontos} cor="#9333EA" />
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, fontSize: 10, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, fontSize: 16, letterSpacing: 3, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace" }}>
               <span>🎯 Meta do mutirão</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 22, fontWeight: 900, color: metaBatida ? "#22c55e" : "#F59E0B", fontFamily: "'Bebas Neue', sans-serif" }}>{totalVisitas}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 36, fontWeight: 900, color: metaBatida ? "#22c55e" : "#F59E0B", fontFamily: "'Bebas Neue', sans-serif" }}>{totalVisitas}</span>
                 <span style={{ color: "#ffffff55" }}>/</span>
                 {isAdminMode ? (
-                  <input type="number" value={meta} onChange={(e) => handleMetaChange(Number(e.target.value))} style={{ width: 60, background: "transparent", border: "1px solid #ffffff33", borderRadius: 6, color: "#fff", padding: "2px 8px", fontSize: 14, fontFamily: "'Bebas Neue', sans-serif" }} />
+                  <input type="number" value={meta} onChange={(e) => handleMetaChange(Number(e.target.value))} style={{ width: 80, background: "transparent", border: "1px solid #ffffff33", borderRadius: 6, color: "#fff", padding: "2px 8px", fontSize: 24, fontFamily: "'Bebas Neue', sans-serif" }} />
                 ) : (
-                  <span style={{ fontSize: 22, fontWeight: 900, color: metaBatida ? "#22c55e" : "#F59E0B", fontFamily: "'Bebas Neue', sans-serif" }}>{meta}</span>
+                  <span style={{ fontSize: 36, fontWeight: 900, color: metaBatida ? "#22c55e" : "#F59E0B", fontFamily: "'Bebas Neue', sans-serif" }}>{meta}</span>
                 )}
               </div>
             </div>
             <ProgressBar valor={totalVisitas} meta={meta} cor={metaBatida ? "#22c55e" : "#F59E0B"} />
             {metaBatida && (
-              <div style={{ textAlign: "center", marginTop: 4, fontSize: 14, letterSpacing: 3, color: "#22c55e", animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
+              <div style={{ textAlign: "center", marginTop: 6, fontSize: 22, letterSpacing: 4, color: "#22c55e", animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
                 🎉 META BATIDA!
               </div>
             )}
           </div>
         </div>
+
 
         {/* Corpo: Esquerda (equipes horizontais) + Direita (ranking corretores) */}
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2.2fr) minmax(0, 1fr)", gap: 12, padding: "10px 20px 6px", flex: 1, minHeight: 0, overflow: "hidden" }}>
