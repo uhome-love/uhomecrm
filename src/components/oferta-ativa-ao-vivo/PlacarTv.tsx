@@ -268,10 +268,17 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
       `}</style>
 
       <div style={{
-        height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column",
+        position: "fixed", inset: 0, overflow: "hidden", background: "#05050f",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+      <div style={{
+        width: STAGE_W, height: STAGE_H, flexShrink: 0,
+        transform: `scale(${stageScale})`, transformOrigin: "center center",
+        overflow: "hidden", display: "flex", flexDirection: "column",
         background: "linear-gradient(135deg, #0a0a1a 0%, #0f0f2e 50%, #0a0a1a 100%)",
         fontFamily: "'Bebas Neue', 'Impact', sans-serif", color: "#fff", position: "relative",
       }}>
+
         <Confetti active={metaBatida} />
 
         {/* Anúncio no meio */}
