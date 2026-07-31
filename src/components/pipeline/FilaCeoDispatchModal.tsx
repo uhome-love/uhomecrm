@@ -106,6 +106,7 @@ const FAILURE_REASON_LABELS: Record<string, string> = {
   no_broker_available: "sem corretor elegível disponível",
   sem_alocado_produto: "sem corretor alocado ativo neste produto",
   empreendimento_inativo: "empreendimento inativo",
+  produto_nao_identificado: "produto não identificado (cadastrar apelido do anúncio)",
   lead_not_found: "lead não encontrado",
   already_assigned: "lead já atribuído",
   rpc_error: "erro interno na distribuição",
