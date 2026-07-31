@@ -36,3 +36,27 @@ A ferramenta `buscar_imovel` passa a devolver também `id`, `suites`, `condomini
 
 - Enviar o imóvel direto para um lead / registrar interesse a partir do card (pode virar uma fase 2).
 - Mudanças na relevância da busca em si (já ajustada na etapa anterior).
+
+---
+
+# HOMI · Respostas curtas e decidíveis
+
+O segundo problema: no popup (modo CEO/gestor) o HOMI responde em bloco gigante — "Gargalo Principal / Gargalos Secundários / Quick Win / Plano de 7 Dias / Ação Imediata..." — e o corretor precisa ler uma parede de texto para decidir o que fazer. Isso vem do prompt: hoje o HOMI é **obrigado** a sempre entregar diagnóstico em 4 níveis + 2 gargalos secundários + plano de 7 dias, e o formato de gestor/CEO exige 5 seções fixas (A a E).
+
+## O que muda
+
+1. **Resposta padrão curta.** O HOMI passa a responder como um assistente moderno: 3–6 linhas, direto ao ponto, com no máximo 3 bullets de ação. Uma frase de leitura da situação + o que fazer agora.
+2. **Diagnóstico completo vira opcional.** O plano de 7 dias / ranking / diagnóstico em 4 níveis só aparece quando o usuário pedir ("faz um diagnóstico", "plano da semana", "relatório") ou quando ele clicar no botão "Aprofundar" que aparece no fim da resposta curta.
+3. **Sem repetir o que já está em cartão.** Regra reforçada: quando a resposta vem de uma ferramenta (imóveis, tarefas, visitas), o texto é 1 frase — os dados já estão nos cartões.
+4. **Sem enfeite.** Nada de títulos em negrito para cada parágrafo, listas com sub-listas, ou repetição do que o usuário perguntou. Tom de conversa, não de relatório.
+
+## Detalhes técnicos
+
+- `supabase/functions/uhome-ia-core/index.ts`:
+  - "MODELO DE DIAGNÓSTICO" passa a ser condicional: aplicar apenas quando o pedido for de diagnóstico/plano/relatório.
+  - `GERENTE_FORMAT` e `CEO_FORMAT`: substituir as 5 seções obrigatórias por um formato curto padrão (situação em 1 frase + até 3 ações) e manter o formato longo em um bloco `FORMATO APROFUNDADO`, usado só sob pedido explícito.
+  - Nova regra de saída: limite alvo de ~80 palavras na resposta padrão; markdown mínimo.
+- `supabase/functions/homi-chat/index.ts`: já pede 1–2 frases após ferramentas; reforçar o limite também nas respostas sem ferramenta.
+- `src/components/homi/HomiPanel.tsx`: botão/atalho "Aprofundar" abaixo da última resposta, que reenvia o contexto pedindo o diagnóstico completo.
+
+Nenhuma mudança de banco. Só prompts e um atalho na UI.
