@@ -122,10 +122,8 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
   const [stageScale, setStageScale] = useState(1);
   useEffect(() => {
     const calc = () => {
-      const w = window.innerWidth, h = window.innerHeight;
-      const byWidth = w / STAGE_W;
-      const contain = Math.min(byWidth, h / STAGE_H);
-      setStageScale(((byWidth + contain) / 2) * scaleAdjust);
+      // Preenche a largura inteira da TV; excedente vertical fica centralizado (bordas já vazias).
+      setStageScale((window.innerWidth / STAGE_W) * scaleAdjust);
     };
     calc();
     window.addEventListener("resize", calc);
