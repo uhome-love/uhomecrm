@@ -14,6 +14,7 @@ import type { PostgrestError } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
 import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
+import { parseFormRespostas, formatFormRespostas } from "../_shared/formRespostas.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -411,6 +412,12 @@ Deno.serve(async (req) => {
       formName = META_FORM_ID_MAP[formName];
     }
 
+    // ── Respostas de qualificação do formulário (genérico por empreendimento) ──
+    let formRespostas: { pergunta: string; resposta: string }[] = [];
+    try { formRespostas = parseFormRespostas(body); } catch (_e) { formRespostas = []; }
+    const formRespostasJson = formRespostas.length ? formRespostas : null;
+    const formRespostasTexto = formatFormRespostas(formRespostas);
+
     const telefone = normalizePhone(phone);
     const isTestLead = isLikelyTestLead(name, email, message);
 
@@ -623,6 +630,7 @@ Deno.serve(async (req) => {
       });
       const interestLabel = novoInteresse.interesseLabel;
       const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
+      if (formRespostasJson) updatePayload.form_respostas = formRespostasJson;
 
       // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
       if (externalLeadId && !existing.meta_lead_id) {
@@ -892,6 +900,7 @@ Deno.serve(async (req) => {
         form_name: formName || null,
         plataforma: platform || null,
         observacoes: obsText,
+        form_respostas: formRespostasJson,
         corretor_id: atribuicaoDiretaBruno ? corretorDiretoId : null,
         gerente_id: atribuicaoDiretaBruno ? gerenteDiretoId : undefined,
         aceite_status: atribuicaoDiretaBruno ? "aceito" : "pendente_distribuicao",
@@ -958,6 +967,7 @@ Deno.serve(async (req) => {
           });
           const interestLabel = novoInteresseDup.interesseLabel;
           const updatePayload: Record<string, unknown> = { ...novoInteresseDup.payload };
+          if (formRespostasJson) updatePayload.form_respostas = formRespostasJson;
 
           // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
           if (externalLeadId && !dup.meta_lead_id) {
@@ -1128,7 +1138,7 @@ Deno.serve(async (req) => {
       pipeline_lead_id: insertedLead.id,
       tipo: "entrada",
       titulo: `Lead gerado via ${plataformaLabel}${entryPrimary ? ` — ${entryPrimary}` : ""}`,
-      descricao: entradaParts.length ? entradaParts.join(" • ") : null,
+      descricao: [entradaParts.length ? entradaParts.join(" • ") : null, formRespostasTexto ? `Respostas do formulário:\n${formRespostasTexto}` : null].filter(Boolean).join("\n") || null,
       status: "concluida",
       created_by: "00000000-0000-0000-0000-000000000000",
     }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
