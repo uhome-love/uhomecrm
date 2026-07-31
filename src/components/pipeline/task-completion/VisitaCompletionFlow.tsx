@@ -735,9 +735,15 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
                 ⚠ Nenhuma visita marcada encontrada. Confirme se o agendamento existe.
               </div>
             )}
+            {visitaFutura && (
+              <div className="text-[11px] text-warning-700 dark:text-warning-500 bg-warning-500/10 border border-warning-500/30 rounded-md p-2">
+                ⏳ A visita é dia <b>{visitaDataBR}</b>. O resultado só pode ser registrado
+                a partir da data da visita.
+              </div>
+            )}
             <Button
               onClick={() => handleRegistrarResultado("realizada")}
-              disabled={!obsValida || saving || !visitaAlvo}
+              disabled={!obsValida || saving || !visitaAlvo || visitaFutura}
               className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
               size="sm"
             >
@@ -746,7 +752,8 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
             </Button>
             <Button
               onClick={() => handleRegistrarResultado("no_show")}
-              disabled={!obsValida || saving || !visitaAlvo}
+              disabled={!obsValida || saving || !visitaAlvo || visitaFutura}
+
               variant="outline"
               className="w-full gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5"
               size="sm"
