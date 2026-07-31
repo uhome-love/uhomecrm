@@ -385,27 +385,27 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
                   flex: 1, minHeight: 0, minWidth: 0,
                   background: bateuMeta ? `linear-gradient(135deg, ${st.cor}33, #0d0d20, ${st.cor}22)` : `linear-gradient(90deg, ${st.cor}22 0%, #0d0d20 40%)`,
                   border: `2px solid ${st.cor}66`,
-                  borderRadius: 16, padding: "8px 12px", position: "relative", overflow: "hidden",
-                  display: "grid", gridTemplateColumns: "auto auto minmax(0, 1fr) auto auto auto minmax(90px, 1fr)", alignItems: "center", gap: 8,
+                  borderRadius: 16, padding: "12px 20px", position: "relative", overflow: "hidden",
+                  display: "grid", gridTemplateColumns: "auto auto minmax(0, 1fr) auto auto auto minmax(160px, 1fr)", alignItems: "center", gap: 14,
                   boxShadow: bateuMeta ? `0 0 30px ${st.cor}66` : `0 0 20px ${st.cor}22`,
                 } as any}>
                   {/* Rank badge grande */}
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(40px, 4.5vw, 72px)", lineHeight: 0.85, color: st.cor, textShadow: `0 0 30px ${st.cor}aa`, minWidth: 44, textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 96, lineHeight: 0.85, color: st.cor, textShadow: `0 0 30px ${st.cor}aa`, minWidth: 70, textAlign: "center" }}>
                     {i + 1}<span style={{ fontSize: "0.4em", verticalAlign: "super" }}>º</span>
                   </div>
                   {/* Escudo da equipe */}
-                  <div style={{ width: 56, height: 56, borderRadius: 12, background: `linear-gradient(135deg, ${st.cor}55, ${st.cor}22)`, border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, boxShadow: `0 0 20px ${st.cor}66`, flexShrink: 0 }}>
+                  <div style={{ width: 78, height: 78, borderRadius: 16, background: `linear-gradient(135deg, ${st.cor}55, ${st.cor}22)`, border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, boxShadow: `0 0 20px ${st.cor}66`, flexShrink: 0 }}>
                     {st.emoji}
                   </div>
                   {/* Nome da equipe + tamanho */}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 9, letterSpacing: 3, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 2 }}>
+                    <div style={{ fontSize: 15, letterSpacing: 4, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 3 }}>
                       Equipe
                     </div>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(22px, 2.6vw, 38px)", letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>
                       {e.equipe ?? "—"}
                     </div>
-                    <div style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff66", textTransform: "uppercase", fontFamily: "monospace", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 15, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {e.corretores ?? 0} corretor{(e.corretores ?? 0) === 1 ? "" : "es"}
                     </div>
                   </div>
@@ -417,15 +417,16 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
                   <Stat label="Pontos" value={e.pontos} icon="🏆" cor="#F59E0B" />
                   {/* Progresso da meta */}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4, gap: 6 }}>
-                      <span style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Meta</span>
-                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: bateuMeta ? "#22c55e" : st.cor, lineHeight: 1 }}>{Math.round(pct)}%</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6, gap: 8 }}>
+                      <span style={{ fontSize: 15, letterSpacing: 3, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Meta</span>
+                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: bateuMeta ? "#22c55e" : st.cor, lineHeight: 1 }}>{Math.round(pct)}%</span>
                     </div>
                     <ProgressBar valor={e.visitas} meta={META_EQUIPE} cor={bateuMeta ? "#22c55e" : st.cor} />
-                    <div style={{ fontSize: 9, color: "#ffffff55", fontFamily: "monospace", letterSpacing: 1, marginTop: 3, textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 15, color: "#ffffff77", fontFamily: "monospace", letterSpacing: 1, marginTop: 5, textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {bateuMeta ? "✅ META BATIDA" : `${e.visitas}/${META_EQUIPE} VISITAS`}
                     </div>
                   </div>
+
                 </div>
               );
             })}
