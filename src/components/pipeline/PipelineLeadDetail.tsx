@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { LeadFormRespostas } from "@/components/pipeline/drawer/LeadFormRespostas";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -699,6 +700,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
         </div>
       )}
+
+      {/* Respostas do formulário do anúncio */}
+      <LeadFormRespostas respostas={(lead as any).form_respostas} formulario={lead.formulario} />
 
       {/* Observações / Dados do anúncio (ImovelWeb, etc.) */}
       {lead.observacoes && (
