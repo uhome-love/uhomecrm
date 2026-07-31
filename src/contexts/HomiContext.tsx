@@ -191,15 +191,15 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     const functionName = CHAT_URL_MAP[homiRole];
     const url = `${EDGE_BASE_URL}/functions/v1/${functionName}`;
 
-    // ── Copilot mode (corretor): non-streaming tool-calling ──
-    if (homiRole === "corretor") {
+    // ── Copilot mode (todos os papéis): non-streaming tool-calling ──
+    {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const resp = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ messages: newMessages, enableTools: true, stream: false }),
+          body: JSON.stringify({ messages: newMessages, enableTools: true, stream: false, perfil: homiRole }),
         });
         if (!resp.ok) {
           if (resp.status === 429) throw new Error("Rate limit. Aguarde alguns segundos.");
