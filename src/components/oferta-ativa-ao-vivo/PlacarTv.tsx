@@ -529,6 +529,8 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         </div>
 
       </div>
+      </div>
+
     </>
   );
 }
