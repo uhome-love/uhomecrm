@@ -162,11 +162,18 @@ export default function CeoDashboard() {
 
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
-    pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv,
+    pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv, vendasPeriodo,
     teams, corretoresRank, origens, leadsPorEmpreendimento, leadsPorCorretor, visitasPorEmp,
     totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
+
+  /** Variação % vs. período anterior (null quando não há base de comparação). */
+  const delta = (curr: number | undefined, prev: number | undefined): number | null => {
+    if (curr == null || prev == null || !Number.isFinite(prev) || prev === 0) return null;
+    return ((curr - prev) / prev) * 100;
+  };
+
 
   // CEO metas (React Query)
   const mesAtual = useMemo(() => format(new Date(), "yyyy-MM"), []);
