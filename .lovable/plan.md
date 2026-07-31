@@ -21,11 +21,9 @@ Duas frentes: (A) subir um template novo com variáveis posicionais e apontar o 
 Você recebeu um novo lead no UhomeSales.
 
 Nome: {{1}}
-Telefone: {{2}}
-E-mail: {{3}}
-Empreendimento: {{4}}
+Empreendimento: {{2}}
 
-Aceite o lead em até 10 minutos para não perder o atendimento.
+Aceite o lead em até 10 minutos para ver os dados de contato.
 ```
 
 **Rodapé:** `UhomeSales · CRM`
@@ -39,17 +37,18 @@ Aceite o lead em até 10 minutos para não perder o atendimento.
 | Variável | Exemplo |
 | --- | --- |
 | {{1}} | Maria Silva |
-| {{2}} | (51) 99999-1234 |
-| {{3}} | maria.silva@email.com |
-| {{4}} | The Arch |
+| {{2}} | The Arch |
 
-Importante: ao criar as variáveis, usar o modo **numerado ({{1}}, {{2}}...)**, nunca o modo "nome do parâmetro". É a troca para o modo nomeado que quebra o envio hoje.
+Telefone e e-mail ficam fora da notificação de propósito: o corretor só vê os dados de contato depois de aceitar o lead no CRM (mesma regra do mascaramento de PII do pipeline).
+
+Importante: ao criar as variáveis, usar o modo **numerado ({{1}}, {{2}})**, nunca o modo "nome do parâmetro". É a troca para o modo nomeado que quebra o envio hoje.
+
 
 ---
 
 ## B) O que muda no CRM depois da aprovação
 
-1. `whatsapp-notificacao` passa a usar `novo_lead_v2` com os 4 parâmetros posicionais na mesma ordem (nome, telefone, e-mail, empreendimento).
+1. `whatsapp-notificacao` passa a usar `novo_lead_v2` com apenas 2 parâmetros posicionais (nome, empreendimento) — telefone e e-mail saem do payload.
 2. Fallback automático: se a Meta responder erro `#100` / `#132xxx` (template inválido ou não aprovado), a função reenvia a mesma notificação como **texto livre pela Evolution API** usando a instância do corretor, para o aviso nunca se perder.
 3. Registrar sucesso em `ops_events` (hoje só o erro é logado), o que encerra o alerta falso de "100% de erro" da função.
 4. Validação ao vivo com um lead de teste: conferir a chegada no WhatsApp do corretor e o evento de sucesso no painel de saúde.
