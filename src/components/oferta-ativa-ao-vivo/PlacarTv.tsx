@@ -111,25 +111,27 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
   });
   const isAdminMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin") === "true";
 
-  // ---- Palco de largura fixa (1920) com altura elástica, escalado para preencher a TV ----
+  // ---- Palco fixo 1920x1080 com escala híbrida (meio-termo entre preencher largura e caber) ----
   const STAGE_W = 1920;
+  const STAGE_H = 1080;
   const scaleAdjust = (() => {
     if (typeof window === "undefined") return 1;
     const s = Number(new URLSearchParams(window.location.search).get("scale"));
     return Number.isFinite(s) && s > 0.3 && s <= 1.5 ? s : 1;
   })();
-  const [stage, setStage] = useState({ scale: 1, h: 1080 });
+  const [stageScale, setStageScale] = useState(1);
   useEffect(() => {
     const calc = () => {
       const w = window.innerWidth, h = window.innerHeight;
-      const scale = (w / STAGE_W) * scaleAdjust;
-      const stageH = Math.min(1400, Math.max(900, Math.round(STAGE_W * (h / w))));
-      setStage({ scale, h: stageH });
+      const byWidth = w / STAGE_W;
+      const contain = Math.min(byWidth, h / STAGE_H);
+      setStageScale(((byWidth + contain) / 2) * scaleAdjust);
     };
     calc();
     window.addEventListener("resize", calc);
     return () => window.removeEventListener("resize", calc);
   }, [scaleAdjust]);
+
 
 
 
@@ -277,8 +279,9 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
       <div style={{
-        width: STAGE_W, height: stage.h, flexShrink: 0,
-        transform: `scale(${stage.scale})`, transformOrigin: "center center",
+        width: STAGE_W, height: STAGE_H, flexShrink: 0,
+        transform: `scale(${stageScale})`, transformOrigin: "center center",
+
 
         overflow: "hidden", display: "flex", flexDirection: "column",
         background: "linear-gradient(135deg, #0a0a1a 0%, #0f0f2e 50%, #0a0a1a 100%)",
