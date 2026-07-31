@@ -1,8 +1,9 @@
 /**
- * homi-chat — Conversational AI assistant with RAG for corretores
- * 
- * Phase 2: Enterprise knowledge loaded from DB via enterprise-knowledge helper.
- * RAG (embedding search) still uses OpenAI embeddings + buscar_conhecimento RPC.
+ * homi-chat — assistente conversacional do HOMI com RAG unificado.
+ *
+ * Cérebro único: _shared/homi-brain.ts (identidade + embeddings via Lovable AI Gateway
+ * + busca semântica em documentos/método, materiais, academia, scripts,
+ * empreendimentos e imóveis).
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -10,56 +11,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { loadEnterpriseKnowledge, formatForList, formatForAssistant, createServiceClient } from "../_shared/enterprise-knowledge.ts";
 import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
 import { HOMI_TOOLS, executeHomiTool } from "./homi-tools.ts";
+import { searchKnowledge, formatKnowledgeBlock, HOMI_IDENTITY, HOMI_CHAT_MODEL } from "../_shared/homi-brain.ts";
 
-// Generate embedding for RAG search
-async function getQueryEmbedding(text: string, openaiKey: string): Promise<number[] | null> {
-  try {
-    const res = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openaiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "text-embedding-3-small",
-        input: text.slice(0, 1000),
-      }),
-    });
-    if (!res.ok) {
-      console.error("Embedding error:", await res.text());
-      return null;
-    }
-    const data = await res.json();
-    return data.data?.[0]?.embedding || null;
-  } catch (e) {
-    console.error("Embedding fetch error:", e);
-    return null;
-  }
-}
-
-// Search knowledge base
-async function searchKnowledgeBase(
-  supabase: any,
-  embedding: number[],
-  empreendimento?: string
-): Promise<string[]> {
-  try {
-    const { data, error } = await supabase.rpc("buscar_conhecimento", {
-      query_embedding: JSON.stringify(embedding),
-      match_threshold: 0.65,
-      match_count: 5,
-      filter_empreendimento: empreendimento || null,
-    });
-    if (error) {
-      console.error("Knowledge search error:", error);
-      return [];
-    }
-    return (data || []).map((r: any) => r.content);
-  } catch (e) {
-    console.error("Knowledge search exception:", e);
-    return [];
-  }
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
