@@ -1,40 +1,61 @@
-# Corrigir notificação de novo lead no WhatsApp (função instável)
+# Notificação de novo lead no WhatsApp — template Meta + fallback Evolution
 
-## O que está acontecendo (verificado nos dados)
+## Situação
 
-O alerta "Edge function instável: whatsapp-notificacao" é real e vem de uma falha 100% silenciosa:
+O envio de "novo lead" usa o template `novo_lead` no WhatsApp Cloud API com 4 variáveis **posicionais** ({{1}}..{{4}}). O template aprovado hoje na Meta está com **parâmetros nomeados**, e por isso a Meta devolve `(#100) Invalid parameter — Parameter name is missing or empty` (232 falhas em 7 dias).
 
-- **232 falhas em 7 dias**, todas do mesmo tipo: `novo_lead` (a mensagem que avisa o corretor que ele recebeu um lead). Última falha: hoje 18:54 BRT.
-- Erro devolvido pela Meta em todas: `(#100) Invalid parameter — Parameter name is missing or empty`.
-- Traduzindo: o template `novo_lead` no WhatsApp Business foi (re)criado com **variáveis nomeadas** (`{{nome}}`, `{{telefone}}`…), mas o CRM envia as variáveis **por posição** (1, 2, 3, 4). A Meta rejeita e a mensagem nunca sai.
-- Consequência prática: **nenhum corretor está recebendo o aviso de novo lead por WhatsApp** — provavelmente há dias. Os avisos de SLA/1h/repasse são texto livre e continuam funcionando.
+Duas frentes: (A) subir um template novo com variáveis posicionais e apontar o CRM para ele; (B) manter a Evolution API como caminho alternativo, já que ela envia texto livre sem template.
 
-Detalhe secundário: essa função só registra **erros** no monitor (nunca registra sucesso). Por isso o vigia de saúde a enxerga como "100% de erro" mesmo quando parte dos envios dá certo — o alerta fica barulhento e pouco confiável.
+---
 
-## O que será feito
+## A) Modelo para subir na Meta
 
-### Fase 1 — Descobrir o formato real do template (leitura, sem mudança)
-Consultar na API da Meta a definição atual do template `novo_lead` (nome exato das variáveis, idioma, se tem cabeçalho/botões) para corrigir com o dado certo, em vez de adivinhar.
+**Nome:** `novo_lead_v2`
+**Categoria:** Utility (Utilidade)
+**Idioma:** Português (BR) — `pt_BR`
+**Cabeçalho:** Texto, sem variável → `Novo lead recebido`
 
-### Fase 2 — Corrigir o envio
-- Enviar os parâmetros no formato que o template exige. Se for nomeado, cada parâmetro vai com o seu `parameter_name`; se o template estiver posicional, mantém como está.
-- Nunca enviar variável vazia (a Meta também rejeita string vazia) — todo campo sem valor vira um texto seguro ("Não informado").
-- Se a Meta recusar o template por formato, o CRM manda **a mesma informação em texto simples** como plano B, para o corretor não ficar sem aviso.
+**Corpo (copiar e colar exatamente):**
 
-### Fase 3 — Reduzir alarme falso e dar visibilidade
-- Registrar também os envios com sucesso, para o vigia calcular taxa de erro de verdade.
-- No alerta, mostrar o motivo resumido (ex.: "template rejeitado pela Meta") em vez de só "instável".
+```text
+Você recebeu um novo lead no UhomeSales.
 
-### Fase 4 — Validação ao vivo
-- Disparar um envio de teste `novo_lead` para um número interno e confirmar recebimento no celular.
-- Conferir no monitor que a última hora fica sem erro e com sucessos registrados.
-- Confirmar com um corretor que o aviso de lead novo voltou a chegar.
+Nome: {{1}}
+Telefone: {{2}}
+E-mail: {{3}}
+Empreendimento: {{4}}
+
+Aceite o lead em até 10 minutos para não perder o atendimento.
+```
+
+**Rodapé:** `UhomeSales · CRM`
+
+**Botão (opcional, recomendado):** Botão de URL estática
+- Texto: `Abrir no CRM`
+- URL: `https://uhomesales.com/pipeline`
+
+**Exemplos de amostra (a Meta exige preencher para aprovar):**
+
+| Variável | Exemplo |
+| --- | --- |
+| {{1}} | Maria Silva |
+| {{2}} | (51) 99999-1234 |
+| {{3}} | maria.silva@email.com |
+| {{4}} | The Arch |
+
+Importante: ao criar as variáveis, usar o modo **numerado ({{1}}, {{2}}...)**, nunca o modo "nome do parâmetro". É a troca para o modo nomeado que quebra o envio hoje.
+
+---
+
+## B) O que muda no CRM depois da aprovação
+
+1. `whatsapp-notificacao` passa a usar `novo_lead_v2` com os 4 parâmetros posicionais na mesma ordem (nome, telefone, e-mail, empreendimento).
+2. Fallback automático: se a Meta responder erro `#100` / `#132xxx` (template inválido ou não aprovado), a função reenvia a mesma notificação como **texto livre pela Evolution API** usando a instância do corretor, para o aviso nunca se perder.
+3. Registrar sucesso em `ops_events` (hoje só o erro é logado), o que encerra o alerta falso de "100% de erro" da função.
+4. Validação ao vivo com um lead de teste: conferir a chegada no WhatsApp do corretor e o evento de sucesso no painel de saúde.
 
 ## Detalhes técnicos
 
-- `supabase/functions/whatsapp-notificacao/index.ts`: montagem do bloco `template.components[].parameters` com suporte a `parameter_name`, sanitização de valores vazios, fallback para `type: "text"` em erro 100/132, e `logOps("info", …)` no caminho de sucesso.
-- Leitura do template via `GET /{WABA_ID}/message_templates?name=novo_lead` usando o token já configurado (somente leitura, feita dentro de uma execução da função de diagnóstico).
-- Sem migration de banco nesta correção.
-
-## Observação
-Não vou mexer no conteúdo aprovado do template na Meta — a correção é do lado do CRM, para falar o dialeto que o template já usa.
+- `supabase/functions/whatsapp-notificacao/index.ts`: renomear o template em `TEMPLATE_MESSAGES.novo_lead`, envolver o `fetch` da Graph API em try/catch com checagem de `error.code`, e acionar o envio Evolution (`EVOLUTION_API_URL` + `EVOLUTION_API_KEY`, endpoint `/message/sendText/{instancia}`) quando a Meta falhar.
+- Texto do fallback Evolution espelha o corpo do template, em uma única mensagem.
+- Nenhuma migração de banco necessária.
