@@ -2956,9 +2956,14 @@ export type Database = {
           file_type: string | null
           file_url: string | null
           id: string
+          priority: number
+          source_id: string | null
+          source_type: string
+          source_url: string | null
           status: string | null
           subcategory: string | null
           title: string
+          updated_at: string
         }
         Insert: {
           category: string
@@ -2970,9 +2975,14 @@ export type Database = {
           file_type?: string | null
           file_url?: string | null
           id?: string
+          priority?: number
+          source_id?: string | null
+          source_type?: string
+          source_url?: string | null
           status?: string | null
           subcategory?: string | null
           title: string
+          updated_at?: string
         }
         Update: {
           category?: string
@@ -2984,9 +2994,14 @@ export type Database = {
           file_type?: string | null
           file_url?: string | null
           id?: string
+          priority?: number
+          source_id?: string | null
+          source_type?: string
+          source_url?: string | null
           status?: string | null
           subcategory?: string | null
           title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -12458,16 +12473,22 @@ export type Database = {
       buscar_conhecimento: {
         Args: {
           filter_empreendimento?: string
+          filter_source_types?: string[]
           match_count?: number
           match_threshold?: number
           query_embedding: string
         }
         Returns: {
+          category: string
           content: string
           document_id: string
           id: string
           metadata: Json
+          priority: number
           similarity: number
+          source_type: string
+          source_url: string
+          title: string
         }[]
       }
       cadencia_sc_descartar_reengajavel: {
