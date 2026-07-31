@@ -634,16 +634,35 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
 
         {/* Ramificação por subtipo */}
         {(subtipo === "confirmar_visita" || !subtipoConhecido) && (
-          <Button
-            onClick={handleConfirmarVisita}
-            disabled={!obsValida || saving}
-            className="w-full gap-1.5"
-            size="sm"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            {saving ? "Salvando..." : "Concluir confirmação"}
-          </Button>
+          <div className="space-y-2">
+            {visitaAlvo?.data_visita && (
+              <div className="text-[11px] text-muted-foreground bg-muted/50 border border-border rounded-md p-2">
+                Visita agendada para <b>{visitaDataBR}</b>. Esta etapa é apenas de
+                confirmação — o resultado (realizada / no-show) é registrado no dia.
+              </div>
+            )}
+            <Button
+              onClick={() => handleConfirmarVisita(true)}
+              disabled={!obsValida || saving}
+              className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
+              size="sm"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {saving ? "Salvando..." : "✅ Cliente confirmou a visita"}
+            </Button>
+            <Button
+              onClick={() => handleConfirmarVisita(false)}
+              disabled={!obsValida || saving}
+              variant="outline"
+              className="w-full gap-1.5"
+              size="sm"
+            >
+              <X className="w-3.5 h-3.5" />
+              Não consegui contato — registrar tentativa
+            </Button>
+          </div>
         )}
+
 
         {(subtipo === "agendar_visita" || subtipo === "reagendar_visita" || subtipo === "atualizar_visita") && !regressOpen && (
           <div className="space-y-2">
