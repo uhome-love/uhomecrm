@@ -347,6 +347,19 @@ export default function CeoDashboard() {
   const countContrato = contratoGerado?.count || 0;
   const leadsDistribuidos = enviadosRoleta;
 
+  // Taxas de conversão do período (Lead → Visita realizada → Venda assinada)
+  const conversoes = useMemo(() => {
+    const vendas = vendasPeriodo.length;
+    const pct = (a: number, b: number) => (b > 0 ? `${((a / b) * 100).toFixed(1)}%` : "—");
+    return [
+      { label: "Lead → Visita realizada", value: pct(kpis.visitasRealizadas, totalLeadsPeriodo), sub: `${kpis.visitasRealizadas} de ${totalLeadsPeriodo} leads` },
+      { label: "Visita → Venda", value: pct(vendas, kpis.visitasRealizadas), sub: `${vendas} de ${kpis.visitasRealizadas} visitas` },
+      { label: "Lead → Venda", value: pct(vendas, totalLeadsPeriodo), sub: `${vendas} de ${totalLeadsPeriodo} leads` },
+      { label: "Ticket médio", value: vendas > 0 ? formatBRLCompact(kpis.vgvAssinado / vendas) : "—", sub: "VGV assinado / vendas" },
+    ];
+  }, [vendasPeriodo, kpis.visitasRealizadas, kpis.vgvAssinado, totalLeadsPeriodo]);
+
+
   // Pipeline funnel totals
   const funnelTotal = pipelineStages.reduce((a, s) => a + s.count, 0) || 1;
   const funnelColors = ["#4969FF","#6366f1","#6B84FF","#a5b4fc","#c7d2fe","#22c55e","#ef4444","#10b981","#f59e0b"];
