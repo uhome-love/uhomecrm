@@ -54,16 +54,61 @@ Além disso, reforço no cérebro do HOMI para pedidos de atendimento:
 - Entrega sempre: 1 linha de leitura da situação + mensagem pronta pra copiar + sugestão do próximo passo.
 - Nada de perguntar "em que etapa está o lead?" quando dá pra deduzir do CRM.
 
+## Parte 3 — Modo "resolver o dia": tarefas, visitas e briefing
+
+O HOMI hoje só sabe *listar* pendências. Vai passar a **conduzir a execução**.
+
+### Fila de execução (1 em 1 ou 3 em 3)
+
+Quando o corretor pedir "me ajuda a concluir minhas tarefas atrasadas" ou "tenho leads sem tarefa?", o HOMI monta uma fila e apresenta **um card por vez** (ou 3 por vez, se o corretor pedir "de 3 em 3"):
+
+- Mostra: nome do lead, empreendimento, etapa, há quanto tempo sem contato, última interação e a tarefa em aberto.
+- Sugere a ação certa já escrita: mensagem de follow-up pronta pra copiar, ou o texto de conclusão da tarefa.
+- Botões no card: **Concluir tarefa** · **Criar próxima tarefa** · **Pular** · **Abrir lead**.
+- Ao concluir, ele já emenda o próximo da fila e mostra o progresso ("3 de 11 resolvidas").
+
+Duas filas atendidas pelo mesmo fluxo:
+- **Tarefas atrasadas** (data/hora BRT vencida).
+- **Leads sem nenhuma tarefa pendente** — aqui a sugestão é criar a próxima ação, não concluir.
+
+### Visitas
+
+Perguntas que passam a ter resposta direta e acionável:
+- "Quais visitas tenho que confirmar?" → visitas agendadas para amanhã/próximos dias ainda não confirmadas, com mensagem de confirmação pronta e botão de confirmar.
+- "Quais visitas tenho pendentes?" → visitas cuja data já passou e ainda não têm resultado registrado, com botão de registrar resultado (realizada / no-show).
+- Respeita as regras atuais de visita (confirmar ≠ realizar; 1 visita por cliente por dia).
+
+### Briefing objetivo
+
+"Faz meu briefing do dia" devolve um bloco curto e direto, sem enrolação:
+- 3 a 5 prioridades em ordem, cada uma com o motivo e o próximo passo.
+- Números do dia: tarefas atrasadas, visitas a confirmar, visitas a registrar, leads sem tarefa, leads esfriando.
+- Uma linha de "risco do dia" (o que se não for feito hoje custa venda).
+- Termina oferecendo iniciar a fila: "quer resolver as 6 atrasadas agora?".
+
+### Postura do assistente
+
+- Sempre que ele detectar pendências relevantes no contexto da conversa, **oferece a ação** ("você tem 2 visitas sem confirmar pra amanhã, quero preparar as mensagens?") em vez de esperar o pedido exato.
+- Responde a linguagem natural variada ("o que tá atrasado?", "tô sem saber por onde começar", "me organiza aqui") caindo no mesmo fluxo.
+
 ## Detalhes técnicos
 
 - `supabase/functions/homi-chat/homi-tools.ts`: novos parâmetros em `buscar_imovel` (`valor_min`, `valor_max`, `dormitorios`, `dormitorios_exato`, `mobiliado`, `suites_min`, `vagas_min`, `area_min`, `tipo`); reescrita da montagem da query em `properties` com ordenação por aderência e fallback que informa o critério relaxado.
-- `supabase/functions/homi-chat/index.ts`: regras de extração de faixa de valor e atributos no prompt do copiloto + regra de resposta para pedidos de atendimento.
-- `src/components/homi/HomiPanel.tsx`: novos exemplos reais nos `QUICK_ACTIONS` e na tela inicial.
-- Card de composição da busca (`HomiActionCard.tsx`): campos de valor mínimo, mobiliado, suítes e vagas.
-- Sem migration, sem mudança de dados. Só edge function + frontend.
+- Novas ferramentas no mesmo arquivo, reaproveitando as tabelas canônicas `pipeline_tarefas`, `pipeline_leads` e `visitas`:
+  - `fila_execucao` (tipo: `tarefas_atrasadas` | `leads_sem_tarefa`, tamanho do lote 1 ou 3) devolvendo os cards com contexto do lead e sugestão de ação.
+  - `visitas_a_confirmar` e `visitas_pendentes_resultado`.
+  - `briefing_do_dia`, agregando as ferramentas já existentes (`meu_dia`, `ver_pendencias`, `leads_esfriando`) em um resumo priorizado.
+  - Conclusão/criação reusa as ações já existentes (`criar_tarefa`, `registrar_resultado`) — nada de caminho novo de escrita no banco.
+- `supabase/functions/homi-chat/index.ts`: regras de extração de faixa de valor e atributos, regra de resposta para pedidos de atendimento e política de "ofereça a próxima ação" no prompt do copiloto.
+- `src/components/homi/HomiPanel.tsx` / `HomiActionCard.tsx`: exemplos reais nos atalhos, campos novos da busca, e o card de fila com progresso e botões Concluir / Próxima tarefa / Pular / Abrir lead.
+- Sem migration e sem mudança de dados. Só edge function + frontend; escopo de visibilidade continua o do usuário logado (RLS atual).
 
 ## Validação ao vivo
 
 1. "Me busca um apartamento de 3 dorms de 1M até 1,5M no Menino Deus mobiliado" → só resultados dentro da faixa e mobiliados.
 2. "2 dorms até 600 mil no Petrópolis" → comportamento antigo continua funcionando.
 3. "Me ajuda a fazer um follow-up com lead do Casa Tua que parou de me responder" → leitura da situação + mensagem pronta.
+4. "Me ajuda a concluir minhas tarefas atrasadas, de 3 em 3" → fila com 3 cards, conclusão real refletindo no pipeline.
+5. "Quais visitas tenho que confirmar?" e "quais visitas tenho pendentes?" → listas corretas e distintas.
+6. "Faz meu briefing do dia" → prioridades + números + oferta de iniciar a fila.
+
