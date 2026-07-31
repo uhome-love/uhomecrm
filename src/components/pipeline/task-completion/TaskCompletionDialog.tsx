@@ -259,9 +259,14 @@ export default function TaskCompletionDialog({
           .limit(1)
           .maybeSingle();
         const row = vTask as { id?: string; subtipo?: string; responsavel_id?: string } | null;
+        // Normaliza subtipos legados/alternativos para os fluxos suportados.
+        const SUBTIPO_ALIAS: Record<string, string> = {
+          realizar_visita: "registrar_resultado",
+          definir_sequencia: "confirmar_visita",
+        };
         if (!cancelled && row?.id && row.subtipo) {
           setVisitaFlowCtx({
-            subtipo: row.subtipo as any,
+            subtipo: (SUBTIPO_ALIAS[row.subtipo] ?? row.subtipo) as any,
             tarefaId: row.id,
             corretorId: row.responsavel_id ?? null,
           });
