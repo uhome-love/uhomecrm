@@ -21,6 +21,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
 import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
+import { parseFormRespostas } from "../_shared/formRespostas.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -222,6 +223,10 @@ Deno.serve(async (req) => {
         });
         const interestLabel = novoInteresse.interesseLabel;
         const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
+        try {
+          const fr = parseFormRespostas(body as Record<string, unknown>);
+          if (fr.length) updatePayload.form_respostas = fr;
+        } catch (_e) { /* rastreamento nunca derruba o lead */ }
         // Atualiza sinais de match do Meta (fbc/fbp/UA/IP) quando vierem nesta submissão
         if (fbc) updatePayload.fbc = fbc;
         if (fbp) updatePayload.fbp = fbp;
@@ -407,6 +412,7 @@ Deno.serve(async (req) => {
         campanha,
         plataforma,
         observacoes: message || null,
+        form_respostas: (() => { try { const fr = parseFormRespostas(body as Record<string, unknown>); return fr.length ? fr : null; } catch (_e) { return null; } })(),
         corretor_id: null,
         aceite_status: "pendente_distribuicao",
         prioridade_lead: "media",
