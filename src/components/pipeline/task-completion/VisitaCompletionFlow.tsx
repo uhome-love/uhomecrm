@@ -151,24 +151,47 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
   }, []);
 
   useEffect(() => {
-    if (subtipo !== "registrar_resultado" && subtipo !== "pegar_feedback") return;
+    if (
+      subtipo !== "registrar_resultado" &&
+      subtipo !== "pegar_feedback" &&
+      subtipo !== "confirmar_visita"
+    )
+      return;
     let cancelled = false;
     (async () => {
-      // Última visita marcada/reagendada/confirmada (para registrar_resultado)
-      // ou realizada (para pegar_feedback — não precisamos alterar, só referência)
+      // Visita em aberto do lead (marcada/reagendada/confirmada), a mais próxima primeiro.
       const { data } = await supabase
         .from("visitas")
         .select("id, status, data_visita")
         .eq("pipeline_lead_id", leadId)
-        .order("data_visita", { ascending: false })
+        .in("status", ["marcada", "reagendada", "confirmada"])
+        .order("data_visita", { ascending: true })
         .limit(1);
+      let alvo = ((data ?? [])[0] as any) || null;
+      if (!alvo && subtipo !== "confirmar_visita") {
+        const { data: any2 } = await supabase
+          .from("visitas")
+          .select("id, status, data_visita")
+          .eq("pipeline_lead_id", leadId)
+          .order("data_visita", { ascending: false })
+          .limit(1);
+        alvo = ((any2 ?? [])[0] as any) || null;
+      }
       if (cancelled) return;
-      setVisitaAlvo(((data ?? [])[0] as any) || null);
+      setVisitaAlvo(alvo);
     })();
     return () => {
       cancelled = true;
     };
   }, [leadId, subtipo]);
+
+  /** Hoje em BRT (yyyy-mm-dd) — trava para não registrar resultado antes da visita. */
+  const hojeBRT = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const visitaFutura = !!visitaAlvo?.data_visita && visitaAlvo.data_visita > hojeBRT;
+  const visitaDataBR = visitaAlvo?.data_visita
+    ? visitaAlvo.data_visita.split("-").reverse().slice(0, 2).join("/")
+    : "";
+
 
   const obsValida = obs.trim().length >= 3;
   // Fallback defensivo: subtipos legados/novos (ex.: realizar_visita, definir_sequencia)
@@ -224,12 +247,25 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
 
   /* ─────────── Ações ─────────── */
 
-  async function handleConfirmarVisita() {
+  /** confirmou=true → grava visitas.status='confirmada'. false → só registra o toque. */
+  async function handleConfirmarVisita(confirmou: boolean) {
     if (!obsValida) return;
     onSaving(true);
     try {
-      await markTaskDone();
-      await finish("Confirmação registrada ✅");
+      await markTaskDone(
+        (confirmou ? "Cliente CONFIRMOU a visita. " : "Não conseguiu contato para confirmar. ") +
+          obs.trim(),
+      );
+      if (confirmou && visitaAlvo?.id && visitaAlvo.status !== "confirmada") {
+        const { error } = await supabase
+          .from("visitas")
+          .update({ status: "confirmada", confirmed_at: new Date().toISOString() } as never)
+          .eq("id", visitaAlvo.id);
+        if (error) throw error;
+      }
+      await finish(
+        confirmou ? "Visita confirmada ✅" : "Tentativa de confirmação registrada",
+      );
     } catch (err) {
       console.error("[VisitaFlow.confirmar]", err);
       toast.error("Erro ao concluir tarefa");
@@ -237,6 +273,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
       onSaving(false);
     }
   }
+
 
   async function handleAgendouOk() {
     // A visita será salva pelo VisitaForm — o trigger visita_auto_tarefas cria
@@ -597,16 +634,35 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
 
         {/* Ramificação por subtipo */}
         {(subtipo === "confirmar_visita" || !subtipoConhecido) && (
-          <Button
-            onClick={handleConfirmarVisita}
-            disabled={!obsValida || saving}
-            className="w-full gap-1.5"
-            size="sm"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            {saving ? "Salvando..." : "Concluir confirmação"}
-          </Button>
+          <div className="space-y-2">
+            {visitaAlvo?.data_visita && (
+              <div className="text-[11px] text-muted-foreground bg-muted/50 border border-border rounded-md p-2">
+                Visita agendada para <b>{visitaDataBR}</b>. Esta etapa é apenas de
+                confirmação — o resultado (realizada / no-show) é registrado no dia.
+              </div>
+            )}
+            <Button
+              onClick={() => handleConfirmarVisita(true)}
+              disabled={!obsValida || saving}
+              className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
+              size="sm"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {saving ? "Salvando..." : "✅ Cliente confirmou a visita"}
+            </Button>
+            <Button
+              onClick={() => handleConfirmarVisita(false)}
+              disabled={!obsValida || saving}
+              variant="outline"
+              className="w-full gap-1.5"
+              size="sm"
+            >
+              <X className="w-3.5 h-3.5" />
+              Não consegui contato — registrar tentativa
+            </Button>
+          </div>
         )}
+
 
         {(subtipo === "agendar_visita" || subtipo === "reagendar_visita" || subtipo === "atualizar_visita") && !regressOpen && (
           <div className="space-y-2">
@@ -679,9 +735,15 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
                 ⚠ Nenhuma visita marcada encontrada. Confirme se o agendamento existe.
               </div>
             )}
+            {visitaFutura && (
+              <div className="text-[11px] text-warning-700 dark:text-warning-500 bg-warning-500/10 border border-warning-500/30 rounded-md p-2">
+                ⏳ A visita é dia <b>{visitaDataBR}</b>. O resultado só pode ser registrado
+                a partir da data da visita.
+              </div>
+            )}
             <Button
               onClick={() => handleRegistrarResultado("realizada")}
-              disabled={!obsValida || saving || !visitaAlvo}
+              disabled={!obsValida || saving || !visitaAlvo || visitaFutura}
               className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
               size="sm"
             >
@@ -690,7 +752,8 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
             </Button>
             <Button
               onClick={() => handleRegistrarResultado("no_show")}
-              disabled={!obsValida || saving || !visitaAlvo}
+              disabled={!obsValida || saving || !visitaAlvo || visitaFutura}
+
               variant="outline"
               className="w-full gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5"
               size="sm"

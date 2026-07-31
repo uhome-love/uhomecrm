@@ -350,6 +350,9 @@ export default function MinhaAgendaWidget() {
         onOpenChange={(v) => { if (!v) setCompleting(null); }}
         tarefaTitulo={completing?.titulo || ""}
         tarefaOrigem={(completing as any)?.origem ?? null}
+        tarefaId={(completing as { id?: string | null } | null)?.id ?? null}
+        tarefaSubtipo={(completing as { subtipo?: string | null } | null)?.subtipo ?? null}
+
         tarefaTipo={(completing as { tipo?: string | null } | null)?.tipo ?? null}
 
         leadNome={completing?.lead_nome || ""}

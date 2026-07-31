@@ -588,6 +588,10 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
         open={!!completingTarefa}
         onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
         tarefaTitulo={completingTarefa?.titulo || ""}
+        tarefaOrigem={(completingTarefa as { origem?: string | null } | null)?.origem ?? null}
+        tarefaId={completingTarefa?.id ?? null}
+        tarefaSubtipo={(completingTarefa as { subtipo?: string | null } | null)?.subtipo ?? null}
+
         leadNome={leadNome}
         leadId={leadId}
         currentStageId={leadStageId ?? undefined}

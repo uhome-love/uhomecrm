@@ -345,6 +345,9 @@ export default function DrawerTasksTab({
         onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
         tarefaTitulo={completingTarefa?.titulo || ""}
         tarefaOrigem={completingTarefa?.origem ?? null}
+        tarefaId={completingTarefa?.id ?? null}
+        tarefaSubtipo={(completingTarefa as { subtipo?: string | null } | null)?.subtipo ?? null}
+
         tarefaTipo={(completingTarefa as { tipo?: string | null } | null)?.tipo ?? null}
 
         leadNome={leadNome}

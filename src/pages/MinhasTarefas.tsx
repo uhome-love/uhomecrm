@@ -1207,6 +1207,9 @@ export default function MinhasTarefas() {
         open={!!completingTarefa}
         onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
         tarefaTitulo={completingTarefa?.titulo || ""}
+        tarefaId={completingTarefa?.id ?? null}
+        tarefaSubtipo={(completingTarefa as { subtipo?: string | null } | null)?.subtipo ?? null}
+
         leadNome={completingTarefa?.lead_nome}
         leadId={completingTarefa?.pipeline_lead_id}
         context="lead"

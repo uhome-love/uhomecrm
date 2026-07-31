@@ -39,9 +39,14 @@ export interface TaskCompletionDialogProps {
   currentStageId?: string;
   /** Origem da tarefa. Se for 'cadencia_sem_contato', a próxima tarefa é criada pelo sistema. */
   tarefaOrigem?: string | null;
+  /** Id da tarefa clicada — usado para abrir EXATAMENTE o card certo no fluxo Visita. */
+  tarefaId?: string | null;
+  /** Subtipo da tarefa clicada (visita_auto). */
+  tarefaSubtipo?: string | null;
   /** Tipo da tarefa sendo concluída (ligacao/whatsapp/email/visita/follow_up/proposta).
    *  Usado para herdar tipo_contato sem expor UI de "Canal". */
   tarefaTipo?: string | null;
+
   /** Default 'lead'. 'negocio' oculta o grupo "Encerrar lead". */
   context?: CompletionContext;
   onConfirm: (payload: CompletionPayload) => Promise<void> | void;
@@ -92,7 +97,10 @@ export default function TaskCompletionDialog({
   leadId,
   currentStageId,
   tarefaOrigem,
+  tarefaId,
+  tarefaSubtipo,
   tarefaTipo,
+
   context = "lead",
   onConfirm,
 }: TaskCompletionDialogProps) {
@@ -248,23 +256,43 @@ export default function TaskCompletionDialog({
       // Etapa Visita (tipo real no banco = 'visita'): fluxo fixo por subtipo.
       if (stageTipo === "visita") {
         if (!cancelled) setOutcome("concluir");
-        // Busca a tarefa visita_auto pendente do lead (invariante: no máx. 1).
-        const { data: vTask } = await supabase
-          .from("pipeline_tarefas")
-          .select("id, subtipo, responsavel_id")
-          .eq("pipeline_lead_id", leadId)
-          .eq("origem", "visita_auto")
-          .eq("status", "pendente")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const row = vTask as { id?: string; subtipo?: string; responsavel_id?: string } | null;
         // Normaliza subtipos legados/alternativos para os fluxos suportados.
         // `realizar_visita` foi aposentado: NÃO mapear para "registrar_resultado",
         // senão concluir o card marcava a visita como realizada indevidamente.
         const SUBTIPO_ALIAS: Record<string, string> = {
           definir_sequencia: "confirmar_visita",
         };
+
+        // 1) Prioridade absoluta: a tarefa que o corretor clicou.
+        if (tarefaId && tarefaSubtipo) {
+          const { data: clicked } = await supabase
+            .from("pipeline_tarefas")
+            .select("id, subtipo, responsavel_id")
+            .eq("id", tarefaId)
+            .maybeSingle();
+          const c = clicked as { id?: string; subtipo?: string; responsavel_id?: string } | null;
+          if (!cancelled && c?.id) {
+            setVisitaFlowCtx({
+              subtipo: (SUBTIPO_ALIAS[c.subtipo ?? tarefaSubtipo] ?? c.subtipo ?? tarefaSubtipo) as any,
+              tarefaId: c.id,
+              corretorId: c.responsavel_id ?? null,
+            });
+            return;
+          }
+        }
+
+        // 2) Fallback: tarefa visita_auto pendente mais ANTIGA (a próxima da fila).
+        const { data: vTask } = await supabase
+          .from("pipeline_tarefas")
+          .select("id, subtipo, responsavel_id")
+          .eq("pipeline_lead_id", leadId)
+          .eq("origem", "visita_auto")
+          .eq("status", "pendente")
+          .order("vence_em", { ascending: true })
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        const row = vTask as { id?: string; subtipo?: string; responsavel_id?: string } | null;
         if (!cancelled && row?.id && row.subtipo) {
           setVisitaFlowCtx({
             subtipo: (SUBTIPO_ALIAS[row.subtipo] ?? row.subtipo) as any,
@@ -274,6 +302,7 @@ export default function TaskCompletionDialog({
         }
         return;
       }
+
 
 
 
@@ -316,7 +345,7 @@ export default function TaskCompletionDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, leadId, currentStageId, context, tarefaOrigem]);
+  }, [open, leadId, currentStageId, context, tarefaOrigem, tarefaId, tarefaSubtipo]);
 
   useEffect(() => {
     if (!semContatoInfo.enabled) return;
