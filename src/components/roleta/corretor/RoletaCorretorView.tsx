@@ -401,23 +401,53 @@ export function RoletaCorretorView() {
 
           {/* Card: Seus empreendimentos hoje */}
           <div>
-            <label className="text-sm font-medium mb-1.5 block">
-              Seus empreendimentos hoje
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium">Seus empreendimentos hoje</label>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[11px]"
+                onClick={() => refetchAlocacao()}
+                disabled={fetchingAlocacao}
+              >
+                {fetchingAlocacao ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Atualizar"
+                )}
+              </Button>
+            </div>
             {loadingAlocacao ? (
               <div className="flex items-center gap-2 p-3 rounded-md border bg-muted">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Carregando alocação...</span>
+              </div>
+            ) : erroAlocacao ? (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Não consegui carregar seu foco agora. Toque em “Atualizar” — você ainda pode
+                  marcar presença, a validação é feita no servidor.
+                </p>
+              </div>
+            ) : todosInativos ? (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Seus empreendimentos de foco estão inativos no momento. Fale com seu gestor
+                  para reativar e voltar a receber leads.
+                </p>
               </div>
             ) : semAlocacao ? (
               <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-700 dark:text-amber-400">
                   Você ainda não tem empreendimentos alocados. Fale com seu gestor pra receber
-                  leads da roleta.
+                  leads da roleta. Se o gestor acabou de definir, toque em “Atualizar”.
                 </p>
               </div>
             ) : (
+
               <div className="rounded-md border bg-muted/30 divide-y">
                 {alocacaoAtiva.map((a) => (
                   <div
