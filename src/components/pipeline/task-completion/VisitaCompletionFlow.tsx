@@ -596,7 +596,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
         {observacaoBox}
 
         {/* Ramificação por subtipo */}
-        {subtipo === "confirmar_visita" && (
+        {(subtipo === "confirmar_visita" || !subtipoConhecido) && (
           <Button
             onClick={handleConfirmarVisita}
             disabled={!obsValida || saving}
