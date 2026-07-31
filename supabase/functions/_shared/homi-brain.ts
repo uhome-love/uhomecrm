@@ -112,7 +112,10 @@ export function formatKnowledgeBlock(chunks: HomiChunk[]): string {
     .map((c, i) => {
       const label = SOURCE_LABELS[c.source_type] ?? c.source_type;
       const url = c.source_url ? ` · ${c.source_url}` : "";
-      return `[${i + 1}] (${label} — ${c.title}${url})\n${c.content}`;
+      // Expõe o ID do bloco do Método (MU-xx.x) quando presente, para citação exata.
+      const mu = c.content.match(/\[MU-[\d.]+\]/)?.[0];
+      const muTag = mu ? ` · ${mu}` : "";
+      return `[${i + 1}] (${label} — ${c.title}${muTag}${url})\n${c.content}`;
     })
     .join("\n---\n");
 
@@ -122,7 +125,8 @@ BASE DE CONHECIMENTO UHOME (fonte oficial — use como verdade antes do seu conh
 ${body}
 
 REGRAS DE USO DA BASE:
-- Se a resposta estiver acima, use exatamente o que está escrito e cite a fonte no final em uma linha curta (ex: "Fonte: Método Uhome — Etapa 3").
+- Se a resposta estiver acima, use exatamente o que está escrito e cite a fonte no final em uma linha curta (ex: "Fonte: Método Uhome — MU-09.3").
+- Quando o trecho vier do Método Uhome, cite o ID do bloco (MU-xx.x).
 - Se não houver nada relevante acima, diga o que sabe e sugira o material/aula certa em vez de inventar.
 - Nunca invente preço, condição comercial, prazo de obra ou disponibilidade que não esteja na base.`;
 }
