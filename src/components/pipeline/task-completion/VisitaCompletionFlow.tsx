@@ -171,7 +171,13 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
   }, [leadId, subtipo]);
 
   const obsValida = obs.trim().length >= 3;
-  const header = SUBTIPO_HEADER[subtipo];
+  // Fallback defensivo: subtipos legados/novos (ex.: realizar_visita, definir_sequencia)
+  // não podem quebrar o drawer do lead.
+  const header = SUBTIPO_HEADER[subtipo] ?? {
+    titulo: "Concluir tarefa da visita",
+    sub: "Registre a observação e conclua a tarefa.",
+  };
+  const subtipoConhecido = Object.prototype.hasOwnProperty.call(SUBTIPO_HEADER, subtipo);
 
   /** Helpers */
   async function markTaskDone(extraDesc?: string) {
@@ -590,7 +596,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
         {observacaoBox}
 
         {/* Ramificação por subtipo */}
-        {subtipo === "confirmar_visita" && (
+        {(subtipo === "confirmar_visita" || !subtipoConhecido) && (
           <Button
             onClick={handleConfirmarVisita}
             disabled={!obsValida || saving}
