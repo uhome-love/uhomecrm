@@ -256,23 +256,43 @@ export default function TaskCompletionDialog({
       // Etapa Visita (tipo real no banco = 'visita'): fluxo fixo por subtipo.
       if (stageTipo === "visita") {
         if (!cancelled) setOutcome("concluir");
-        // Busca a tarefa visita_auto pendente do lead (invariante: no máx. 1).
-        const { data: vTask } = await supabase
-          .from("pipeline_tarefas")
-          .select("id, subtipo, responsavel_id")
-          .eq("pipeline_lead_id", leadId)
-          .eq("origem", "visita_auto")
-          .eq("status", "pendente")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const row = vTask as { id?: string; subtipo?: string; responsavel_id?: string } | null;
         // Normaliza subtipos legados/alternativos para os fluxos suportados.
         // `realizar_visita` foi aposentado: NÃO mapear para "registrar_resultado",
         // senão concluir o card marcava a visita como realizada indevidamente.
         const SUBTIPO_ALIAS: Record<string, string> = {
           definir_sequencia: "confirmar_visita",
         };
+
+        // 1) Prioridade absoluta: a tarefa que o corretor clicou.
+        if (tarefaId && tarefaSubtipo) {
+          const { data: clicked } = await supabase
+            .from("pipeline_tarefas")
+            .select("id, subtipo, responsavel_id")
+            .eq("id", tarefaId)
+            .maybeSingle();
+          const c = clicked as { id?: string; subtipo?: string; responsavel_id?: string } | null;
+          if (!cancelled && c?.id) {
+            setVisitaFlowCtx({
+              subtipo: (SUBTIPO_ALIAS[c.subtipo ?? tarefaSubtipo] ?? c.subtipo ?? tarefaSubtipo) as any,
+              tarefaId: c.id,
+              corretorId: c.responsavel_id ?? null,
+            });
+            return;
+          }
+        }
+
+        // 2) Fallback: tarefa visita_auto pendente mais ANTIGA (a próxima da fila).
+        const { data: vTask } = await supabase
+          .from("pipeline_tarefas")
+          .select("id, subtipo, responsavel_id")
+          .eq("pipeline_lead_id", leadId)
+          .eq("origem", "visita_auto")
+          .eq("status", "pendente")
+          .order("vence_em", { ascending: true })
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        const row = vTask as { id?: string; subtipo?: string; responsavel_id?: string } | null;
         if (!cancelled && row?.id && row.subtipo) {
           setVisitaFlowCtx({
             subtipo: (SUBTIPO_ALIAS[row.subtipo] ?? row.subtipo) as any,
@@ -282,6 +302,7 @@ export default function TaskCompletionDialog({
         }
         return;
       }
+
 
 
 
