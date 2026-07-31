@@ -590,8 +590,34 @@ export async function executeHomiTool(
       }
 
       const aproximado = relaxados.length > 0;
+
+      // Critérios pedidos + o que cada imóvel atende (para os selos no card)
+      const pedidos = {
+        dormitorios: dorms !== undefined,
+        vagas: vagasMin !== undefined,
+        suites: suitesMin !== undefined,
+        area: areaMin !== undefined,
+        valor: vMin !== undefined || vMax !== undefined,
+        mobiliado: wantMobiliado,
+      };
+      const imoveisComMatch = imoveis.map((im: any) => ({
+        ...im,
+        match: {
+          dormitorios: dorms === undefined ? null : (dormsExato ? im.dormitorios === dorms : (im.dormitorios ?? 0) >= dorms),
+          vagas: vagasMin === undefined ? null : (im.vagas ?? 0) >= vagasMin,
+          suites: suitesMin === undefined ? null : (im.suites ?? 0) >= suitesMin,
+          area: areaMin === undefined ? null : (im.area ?? 0) >= areaMin,
+          valor: !pedidos.valor ? null : (
+            (vMin === undefined || (im.valor_venda ?? 0) >= vMin) &&
+            (vMax === undefined || (im.valor_venda ?? Infinity) <= vMax)
+          ),
+          mobiliado: !wantMobiliado ? null : im.mobiliado === true,
+        },
+      }));
+
       return {
-        result: { tipo: "imoveis", imoveis, aproximado, criterios, relaxados },
+        result: { tipo: "imoveis", imoveis: imoveisComMatch, aproximado, criterios, relaxados, pedidos },
+
         modelResult: aproximado
           ? `Busca "${criterios}": não havia correspondência exata, relaxei ${relaxados.join(" e ")} e trouxe ${imoveis.length} opções (já exibidas na tela). Responda em 1 frase repetindo o critério entendido e AVISANDO explicitamente o que foi relaxado.`
           : `Busca "${criterios}": ${imoveis.length} imóveis dentro do pedido (já exibidos na tela com botão de WhatsApp). Responda em 1 frase confirmando o critério entendido e o destaque. Não repita a lista.`,
