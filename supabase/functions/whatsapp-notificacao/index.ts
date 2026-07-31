@@ -25,37 +25,10 @@ serve(async (req) => {
     try { getSupabase().from("ops_events").insert({ fn: "whatsapp-notificacao", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(() => {}); } catch {}
   };
 
-  // Fallback de envio por texto livre via Evolution API (instância do CRM)
-  const enviarViaEvolution = async (numero: string, texto: string): Promise<{ ok: boolean; error?: string }> => {
-    try {
-      if (!texto) return { ok: false, error: "texto vazio" };
-      const evoUrl = Deno.env.get("EVOLUTION_API_URL");
-      const evoKey = Deno.env.get("EVOLUTION_API_KEY");
-      if (!evoUrl || !evoKey) return { ok: false, error: "Evolution env vars ausentes" };
+  // Aviso interno para corretores: SOMENTE canais Meta (template + texto livre).
+  // Nunca usar a instância Evolution de nutrição — aquele número fala com clientes.
 
-      const { data: cfg } = await getSupabase()
-        .from("reengajamento_config")
-        .select("evolution_instance")
-        .limit(1)
-        .maybeSingle();
-      const instancia = cfg?.evolution_instance;
-      if (!instancia) return { ok: false, error: "instância Evolution não configurada" };
 
-      const r = await fetch(`${evoUrl}/message/sendText/${instancia}`, {
-        method: "POST",
-        headers: { apikey: evoKey, "Content-Type": "application/json" },
-        body: JSON.stringify({ number: numero, text: texto }),
-      });
-      if (!r.ok) {
-        const t = await r.text();
-        return { ok: false, error: `evolution ${r.status}: ${t.slice(0, 300)}` };
-      }
-      await r.text();
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : String(e) };
-    }
-  };
 
 
   try {
@@ -165,27 +138,13 @@ serve(async (req) => {
 
     L.error("API error", { tipo, to: numeroFinal, status: response.status, error: result?.error });
 
-    // Fallback: envia texto livre pela Evolution API (sem telefone/e-mail no corpo)
+    // Fallback interno: texto livre pela própria Meta (sem telefone/e-mail no corpo)
     const fallbackText =
       tipo === "novo_lead"
         ? `🆕 *Novo lead recebido!*\n\nNome: ${dados?.nome || "Lead"}\nEmpreendimento: ${dados?.empreendimento || "Não identificado"}\n\nAceite o lead em até 10 minutos para ver os dados de contato.\nhttps://uhomesales.com/pipeline`
         : (TEXT_MESSAGES[tipo] ? TEXT_MESSAGES[tipo]() : "");
 
-    const evo = await enviarViaEvolution(numeroFinal, fallbackText);
 
-    if (evo.ok) {
-      L.info("Sent via Evolution fallback", { tipo, to: numeroFinal, canal: "evolution" });
-      logOps("info", "integration", `WhatsApp enviado (evolution fallback): ${tipo}`, {
-        tipo,
-        to: numeroFinal,
-        canal: "evolution",
-        meta_error: result?.error?.code ?? null,
-      });
-      return new Response(JSON.stringify({ ok: true, canal: "evolution", meta_error: result?.error || null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
 
     // Último recurso: texto livre pela própria Meta (funciona dentro da janela de 24h)
     if (body.type === "template" && fallbackText) {
@@ -215,15 +174,16 @@ serve(async (req) => {
     logOps(
       "error",
       "integration",
-      `WhatsApp API error: ${response.status} (fallback evolution falhou)`,
-      { tipo, to: numeroFinal, status: response.status, evolution_error: evo.error },
+      `WhatsApp API error: ${response.status} (template e texto Meta falharam)`,
+      { tipo, to: numeroFinal, status: response.status, canal: "none" },
       JSON.stringify(result?.error || {})
     );
 
-    return new Response(JSON.stringify({ ...result, canal: "none", evolution_error: evo.error }), {
+    return new Response(JSON.stringify({ ...result, canal: "none" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
+
 
   } catch (err) {
     L.error("Unhandled exception", {}, err);
