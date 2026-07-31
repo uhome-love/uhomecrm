@@ -6,12 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { formatBRLCompact } from "@/lib/utils";
+import { formatBRLCompact, brtRangeToUTC } from "@/lib/utils";
 
 export type KpiDetailType =
   | "total_leads"
+  | "reaproveitados_oa"
+  | "enviados_roleta"
+  | "visitas_criadas"
   | "visitas_marcadas"
   | "visitas_realizadas"
+  | "visitas_no_show"
   | "negocios"
   | "propostas"
   | "negociacao"
@@ -50,6 +54,10 @@ const NEGOCIO_FASES: Record<string, string[]> = {
   assinados: ["ganho"],
   vgv_assinado: ["ganho"],
 };
+
+/** KPIs de negócio ancorados em data_assinatura (regra VGV fonte única). */
+const ASSINATURA_TYPES = new Set(["assinados", "vgv_assinado"]);
+
 
 export default function KpiDetailDialog({ open, onOpenChange, type, label, dateRange }: Props) {
   const [loading, setLoading] = useState(false);
