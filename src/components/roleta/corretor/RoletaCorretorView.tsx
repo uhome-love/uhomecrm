@@ -269,10 +269,11 @@ export function RoletaCorretorView() {
               O credenciamento abre nos seguintes horários:
             </p>
             <div className="space-y-1 text-sm text-left max-w-xs mx-auto">
-              <p>🌅 <strong>Manhã</strong>: 07:30 – 09:30</p>
+              <p>🌅 <strong>Manhã</strong>: 07:00 – 09:30</p>
               <p>🌞 <strong>Tarde</strong>: 12:00 – 13:30</p>
-              <p>🌙 <strong>Noturna</strong>: 18:30 – 20:00</p>
+              <p>🌙 <strong>Noturna</strong>: 18:30 – 21:30</p>
             </div>
+
             <div className="flex items-center justify-center gap-2 pt-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Próxima abertura em </span>
