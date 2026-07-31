@@ -545,9 +545,9 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
 
 function KPI({ label, value, cor, big }: any) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "4px 8px", borderRight: "1px solid #ffffff10" }}>
-      <div style={{ fontSize: 9, letterSpacing: 3, color: "#ffffff55", textTransform: "uppercase", fontFamily: "monospace" }}>{label}</div>
-      <div style={{ fontSize: big ? "clamp(32px, 4.5vw, 48px)" : "clamp(24px, 3.5vw, 36px)", fontWeight: 900, color: cor, lineHeight: 1, textShadow: `0 0 20px ${cor}66`, fontFamily: "'Bebas Neue', sans-serif" }}>
+    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "4px 10px", borderRight: "1px solid #ffffff10" }}>
+      <div style={{ fontSize: 16, letterSpacing: 4, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace" }}>{label}</div>
+      <div style={{ fontSize: big ? 72 : 54, fontWeight: 900, color: cor, lineHeight: 1, textShadow: `0 0 20px ${cor}66`, fontFamily: "'Bebas Neue', sans-serif" }}>
         {value}
       </div>
     </div>
@@ -556,12 +556,12 @@ function KPI({ label, value, cor, big }: any) {
 
 function Stat({ label, value, icon, cor }: any) {
   return (
-    <div style={{ textAlign: "center", minWidth: 58, padding: "0 4px", borderLeft: "1px solid #ffffff10" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
-        <span style={{ fontSize: 16 }}>{icon}</span>
-        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(24px, 2.6vw, 38px)", color: cor, lineHeight: 1, textShadow: `0 0 15px ${cor}66` }}>{value}</span>
+    <div style={{ textAlign: "center", minWidth: 86, padding: "0 8px", borderLeft: "1px solid #ffffff10" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 8 }}>
+        <span style={{ fontSize: 24 }}>{icon}</span>
+        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, color: cor, lineHeight: 1, textShadow: `0 0 15px ${cor}66` }}>{value}</span>
       </div>
-      <div style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginTop: 3 }}>{label}</div>
+      <div style={{ fontSize: 15, letterSpacing: 3, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace", marginTop: 4 }}>{label}</div>
     </div>
   );
 }
