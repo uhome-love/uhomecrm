@@ -162,7 +162,7 @@ export default function CeoDashboard() {
 
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
-    pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv, vendasPeriodo,
+    pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv, vendasPeriodo, range, vgvMesAtual,
     teams, corretoresRank, origens, leadsPorEmpreendimento, leadsPorCorretor, visitasPorEmp,
     totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
@@ -346,6 +346,12 @@ export default function CeoDashboard() {
   const vgvContrato = contratoGerado?.vgv || 0;
   const countContrato = contratoGerado?.count || 0;
   const leadsDistribuidos = enviadosRoleta;
+
+  // Rótulo legível do período selecionado (para deixar claro o escopo dos KPIs)
+  const periodoLabel = useMemo(() => {
+    const br = (d: string) => d.split("-").reverse().slice(0, 2).join("/");
+    return range.start === range.end ? br(range.start) : `${br(range.start)} – ${br(range.end)}`;
+  }, [range]);
 
   // Taxas de conversão do período (Lead → Visita realizada → Venda assinada)
   const conversoes = useMemo(() => {
@@ -692,17 +698,24 @@ export default function CeoDashboard() {
         <SectionLabel icon={DollarSign}>Gestão de Negócios</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <MiniKpi label="Total de Negócios" value={totalNeg} variant="highlight"
+            sub="situação atual do pipeline"
             onClick={() => setKpiDetail({ type: "negocios", label: "Negócios ativos" })} />
           <MiniKpi label="VGV em Contrato Gerado" value={formatBRLCompact(vgvContrato)}
-            sub={`${countContrato} negócio${countContrato !== 1 ? "s" : ""} em contrato`}
+            sub={`${countContrato} negócio${countContrato !== 1 ? "s" : ""} · situação atual`}
             onClick={() => setKpiDetail({ type: "contratos", label: "Negócios em contrato" })} />
           <MiniKpi label="VGV Assinado" value={formatBRLCompact(kpis.vgvAssinado)} variant="success"
             delta={delta(kpis.vgvAssinado, prevKpis?.vgvAssinado)}
-            sub={ceoMetas.meta_vgv_assinado > 0 ? `${Math.round((kpis.vgvAssinado / ceoMetas.meta_vgv_assinado) * 100)}% da meta` : undefined}
+            sub={
+              kpis.vgvAssinado === 0 && vgvMesAtual.vgv > 0
+                ? `sem assinatura no período · mês: ${formatBRLCompact(vgvMesAtual.vgv)}`
+                : ceoMetas.meta_vgv_assinado > 0
+                  ? `${Math.round((kpis.vgvAssinado / ceoMetas.meta_vgv_assinado) * 100)}% da meta · ${periodoLabel}`
+                  : `no período ${periodoLabel}`
+            }
             onClick={() => setKpiDetail({ type: "vgv_assinado", label: "VGV Assinado" })} />
           <MiniKpi label="Propostas" value={kpis.propostas}
             delta={delta(kpis.propostas, prevKpis?.propostas)}
-            sub={ceoMetas.meta_propostas > 0 ? `meta: ${ceoMetas.meta_propostas}` : undefined}
+            sub={ceoMetas.meta_propostas > 0 ? `meta: ${ceoMetas.meta_propostas}` : `no período ${periodoLabel}`}
             onClick={() => setKpiDetail({ type: "propostas", label: "Propostas" })} />
         </div>
 
@@ -710,9 +723,10 @@ export default function CeoDashboard() {
           <CardHeader className="pb-4">
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
             <p className="text-[10px] text-muted-foreground">
-              Fases ativas = situação atual do pipeline · Ganho = vendas assinadas no período (data de assinatura)
+              Em Negociação e Contrato = situação atual do pipeline (não filtram por período) · Ganho = vendas assinadas em {periodoLabel}
             </p>
           </CardHeader>
+
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
               {negFunnelOrder.map((fase, idx) => {
