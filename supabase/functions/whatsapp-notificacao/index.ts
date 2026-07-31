@@ -187,6 +187,31 @@ serve(async (req) => {
       });
     }
 
+    // Último recurso: texto livre pela própria Meta (funciona dentro da janela de 24h)
+    if (body.type === "template" && fallbackText) {
+      const textResp = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: numeroFinal,
+          type: "text",
+          text: { body: fallbackText },
+        }),
+      });
+      const textResult = await textResp.json();
+      if (textResp.ok) {
+        L.info("Sent via Meta text fallback", { tipo, to: numeroFinal, canal: "meta_text" });
+        logOps("info", "integration", `WhatsApp enviado (meta texto fallback): ${tipo}`, { tipo, to: numeroFinal, canal: "meta_text" });
+        return new Response(JSON.stringify({ ...textResult, canal: "meta_text" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      L.warn("Meta text fallback failed", { tipo, status: textResp.status, error: textResult?.error });
+    }
+
+
     logOps(
       "error",
       "integration",
