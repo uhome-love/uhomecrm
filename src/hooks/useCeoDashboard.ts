@@ -454,6 +454,26 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     placeholderData: keepPreviousData,
   });
 
+  // ── VGV assinado do MÊS ATUAL (referência auxiliar quando o período não tem assinaturas) ──
+  const mesRange = useMemo(() => {
+    const now = new Date();
+    return { start: dateToBRT(startOfMonth(now)), end: dateToBRT(endOfMonth(now)) };
+  }, []);
+  const { data: vgvMesAtual } = useQuery({
+    queryKey: ["ceo-vgv-mes", mesRange.start, mesRange.end],
+    queryFn: async () => {
+      const rows = await fetchOfficialKPIs(mesRange);
+      return {
+        vgv: rows.reduce((s, k) => s + k.vgv_assinado, 0),
+        vendas: rows.reduce((s, k) => s + k.vendas, 0),
+      };
+    },
+    enabled: !!user,
+    staleTime: 300_000,
+    placeholderData: keepPreviousData,
+  });
+
+
 
   // ── Teams + Ranking ──
   const { data: teamsData } = useQuery({
@@ -631,6 +651,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     vgvEmRisco: negociosData?.vgvEmRisco || 0,
     topCorretoresVgv: negociosData?.topCorretoresVgv || [],
     vendasPeriodo: negociosData?.vendasPeriodo || [],
+    range,
+    vgvMesAtual: vgvMesAtual || { vgv: 0, vendas: 0 },
 
     teams: teamsData?.teams || [],
     corretoresRank: teamsData?.corretoresRank || [],
