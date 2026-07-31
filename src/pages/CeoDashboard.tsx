@@ -156,7 +156,7 @@ export default function CeoDashboard() {
   const [lastDispatch, setLastDispatch] = useState<{ at: string; count: number } | null>(null);
   const [bulkEmpOpen, setBulkEmpOpen] = useState(false);
   const [kpiDetail, setKpiDetail] = useState<{ type: KpiDetailType; label: string } | null>(null);
-  const [funnelFilter, setFunnelFilter] = useState<"all" | string>("all");
+  
   const [funnelCorretorFilter, setFunnelCorretorFilter] = useState<"all" | string>("all");
   const [showAllCorretorLeads, setShowAllCorretorLeads] = useState(false);
 
