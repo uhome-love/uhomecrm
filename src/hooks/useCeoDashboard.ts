@@ -630,6 +630,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     negocioFases: negociosData?.negocioFases || [],
     vgvEmRisco: negociosData?.vgvEmRisco || 0,
     topCorretoresVgv: negociosData?.topCorretoresVgv || [],
+    vendasPeriodo: negociosData?.vendasPeriodo || [],
+
     teams: teamsData?.teams || [],
     corretoresRank: teamsData?.corretoresRank || [],
     origens: pipelineData?.origens || [],
