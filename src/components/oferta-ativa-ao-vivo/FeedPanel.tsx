@@ -74,9 +74,20 @@ export function FeedPanel({ sessaoId, paused }: { sessaoId: string | null; pause
               >
                 <Icon className={cn("w-4 h-4 mt-0.5 shrink-0", m.color)} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground truncate">{it.titulo}</p>
+                  <p className="text-xs font-medium text-foreground truncate">
+                    {it.titulo}
+                    {it.metadata?.origem === "pipeline" && (
+                      <span className="ml-1.5 rounded bg-muted px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground align-middle">
+                        via pipeline
+                      </span>
+                    )}
+                  </p>
+                  {it.descricao && (
+                    <p className="text-[10px] text-muted-foreground truncate">{it.descricao}</p>
+                  )}
                   <p className="text-[10px] text-muted-foreground font-mono tabular-nums">{formatBRT(it.created_at, "HH:mm:ss")}</p>
                 </div>
+
               </div>
             );
           })}
