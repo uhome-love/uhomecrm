@@ -84,7 +84,7 @@ export default function ScoringLegend() {
 
             {/* Tips */}
             <div className="p-2 rounded-lg bg-muted/50 border border-border text-[10px] text-muted-foreground">
-              <strong className="text-foreground">💡 Dica:</strong> Foque em qualidade! Aproveitados valem <strong>3x</strong> mais que tentativas comuns. 
+              <strong className="text-foreground">💡 Dica:</strong> Tentativa não pontua — o que vale é resultado: aproveitar o lead (+5) e, principalmente, agendar visita (+30).
               Configure suas metas diárias na <strong>"Minha Área"</strong> para acompanhar seu progresso.
             </div>
           </CardContent>
