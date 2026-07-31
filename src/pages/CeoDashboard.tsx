@@ -486,13 +486,17 @@ export default function CeoDashboard() {
             sub="Meta, TikTok, LP, ImovelWeb..."
             onClick={() => setKpiDetail({ type: "total_leads", label: "Leads Gerados" })} />
           <MiniKpi label="Reaproveitados (OA)" value={leadsReaproveitadosOA} variant="warning"
-            sub="Leads da Oferta Ativa" />
+            sub="Leads da Oferta Ativa"
+            onClick={() => setKpiDetail({ type: "reaproveitados_oa", label: "Reaproveitados (OA)" })} />
           <MiniKpi label="Enviados p/ Roleta" value={leadsDistribuidos > 0 ? leadsDistribuidos : 0}
-            sub={filaCeoCount > 0 ? `${filaCeoCount} na fila` : "Fila vazia"} />
+            sub={filaCeoCount > 0 ? `${filaCeoCount} na fila` : "Fila vazia"}
+            onClick={() => setKpiDetail({ type: "enviados_roleta", label: "Enviados p/ Roleta" })} />
           <MiniKpi label="Novo Interesse" value={novoInteresse}
             sub="Leads com novo interesse" />
-          <MiniKpi label="Corretores na Roleta" value={presentesHoje} sub={`${presentesHoje} presentes hoje`} />
+          <MiniKpi label="Corretores na Roleta" value={presentesHoje} sub={`${presentesHoje} presentes hoje`}
+            onClick={() => setKpiDetail({ type: "presentes_hoje", label: "Corretores na Roleta" })} />
         </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Leads por Campanha/Empreendimento */}
