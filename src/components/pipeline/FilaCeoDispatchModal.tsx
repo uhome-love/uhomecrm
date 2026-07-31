@@ -521,9 +521,11 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                               )}
                               {l.motivo_pendencia && (
                                 <Badge variant="outline" className="text-[10px] h-4 px-1.5 gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-300">
-                                  <PauseCircle className="h-2.5 w-2.5" /> Pausado
+                                  <PauseCircle className="h-2.5 w-2.5" />
+                                  {FAILURE_REASON_LABELS[l.motivo_pendencia] || l.motivo_pendencia}
                                 </Badge>
                               )}
+
                             </div>
                             <Button
                               size="sm"
