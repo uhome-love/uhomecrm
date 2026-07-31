@@ -24,12 +24,13 @@ Regras de captura:
 
 ### 2. Mostrar para o corretor no modal do lead
 
-Dois pontos, ambos no detalhe do lead:
+O corretor precisa bater o olho e entender na hora. Três pontos, todos no detalhe do lead:
 
-- **Bloco "Respostas do formulário"** no topo da coluna de informações, junto do resumo do lead: lista pergunta → resposta, com destaque visual na resposta. Só aparece quando existem respostas.
-- **Evento na linha do tempo** na aba Histórico, na data de entrada do lead: "Respondeu no formulário — Qual a sua preferência? Ambos", junto dos demais eventos de origem.
+- **Bloco em destaque "Respostas do formulário"**, logo abaixo do cabeçalho do lead (acima de observações), sem precisar clicar em aba: card com borda de destaque, título com ícone, e uma linha por pergunta — pergunta em texto secundário menor e **resposta em negrito**, tamanho maior. Suporta N perguntas do formulário daquele empreendimento (qualquer quantidade), e mostra o nome do formulário/empreendimento de origem no topo do card.
+- **Selo no topo do lead** quando houver respostas, para chamar atenção mesmo com o card recolhido em telas menores.
+- **Evento na linha do tempo** (aba Histórico), na data de entrada: "Respondeu no formulário — <pergunta>: <resposta>", uma linha por resposta, junto dos demais eventos de origem.
 
-Leads sem respostas (Terrace, formulários antigos) seguem exatamente como hoje, sem bloco vazio.
+Leads sem respostas (Terrace, formulários antigos) seguem exatamente como hoje, sem bloco vazio nem selo.
 
 ### 3. Leads já recebidos
 
