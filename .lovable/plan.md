@@ -2,7 +2,9 @@
 
 ## Problema
 
-Os formulários dos anúncios agora têm perguntas de qualificação (ex.: "Qual a sua preferência?" → Studio / 1 Dormitório / Ambos), mas o CRM só aproveita nome, e-mail e telefone do `field_data`. Verificado no receptor de leads do Meta: as demais perguntas são lidas e descartadas, e não existe nenhuma coluna no lead guardando essas respostas (nenhum campo de payload bruto em `pipeline_leads`; `jetimob_processed` só guarda id + telefone). Resultado: o corretor abre o lead e não vê o que a pessoa respondeu.
+Os formulários dos anúncios agora têm perguntas de qualificação — **cada empreendimento tem a sua própria pergunta** (a de tipologia "Qual a sua preferência? Studio / 1 Dormitório / Ambos" é só um exemplo; outros formulários perguntam outra coisa, e o Terrace ainda não foi atualizado). O CRM, porém, só aproveita nome, e-mail e telefone do `field_data`. Verificado no receptor de leads do Meta: as demais perguntas são lidas e descartadas, e não existe nenhuma coluna no lead guardando essas respostas (nenhum campo de payload bruto em `pipeline_leads`; `jetimob_processed` só guarda id + telefone). Resultado: o corretor abre o lead e não vê o que a pessoa respondeu.
+
+A solução é genérica: guarda e exibe **qualquer** pergunta/resposta que o formulário daquele empreendimento trouxer, sem lista fixa de perguntas no código.
 
 ## O que muda
 
@@ -22,12 +24,13 @@ Regras de captura:
 
 ### 2. Mostrar para o corretor no modal do lead
 
-Dois pontos, ambos no detalhe do lead:
+O corretor precisa bater o olho e entender na hora. Três pontos, todos no detalhe do lead:
 
-- **Bloco "Respostas do formulário"** no topo da coluna de informações, junto do resumo do lead: lista pergunta → resposta, com destaque visual na resposta. Só aparece quando existem respostas.
-- **Evento na linha do tempo** na aba Histórico, na data de entrada do lead: "Respondeu no formulário — Qual a sua preferência? Ambos", junto dos demais eventos de origem.
+- **Bloco em destaque "Respostas do formulário"**, logo abaixo do cabeçalho do lead (acima de observações), sem precisar clicar em aba: card com borda de destaque, título com ícone, e uma linha por pergunta — pergunta em texto secundário menor e **resposta em negrito**, tamanho maior. Suporta N perguntas do formulário daquele empreendimento (qualquer quantidade), e mostra o nome do formulário/empreendimento de origem no topo do card.
+- **Selo no topo do lead** quando houver respostas, para chamar atenção mesmo com o card recolhido em telas menores.
+- **Evento na linha do tempo** (aba Histórico), na data de entrada: "Respondeu no formulário — <pergunta>: <resposta>", uma linha por resposta, junto dos demais eventos de origem.
 
-Leads sem respostas (Terrace, formulários antigos) seguem exatamente como hoje, sem bloco vazio.
+Leads sem respostas (Terrace, formulários antigos) seguem exatamente como hoje, sem bloco vazio nem selo.
 
 ### 3. Leads já recebidos
 
