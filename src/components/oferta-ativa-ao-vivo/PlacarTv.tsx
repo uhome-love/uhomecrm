@@ -442,7 +442,7 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
               {corretores.length === 0 && (
                 <div style={{ color: "#ffffff33", fontSize: 18, fontFamily: "monospace", textAlign: "center", marginTop: 20 }}>Aguardando corretores…</div>
               )}
-              {corretores.slice(0, 7).map((c: any, i: number) => {
+              {corretores.slice(0, 5).map((c: any, i: number) => {
                 const st = equipeStyle(c.equipe, i);
                 const isFlash = flashCorretor === c.corretor_id;
                 return (
