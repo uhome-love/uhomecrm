@@ -650,9 +650,10 @@ export default function CeoDashboard() {
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { label: "Total Visitas (Novas)", value: totalVisitasCriadas, color: "text-primary", type: "visitas_criadas" as const },
-                  { label: "Marcadas", value: kpis.visitasMarcadas, color: "text-warning", type: "visitas_marcadas" as const, prev: prevKpis?.visitasMarcadas },
-                  { label: "Realizadas", value: kpis.visitasRealizadas, color: "text-success", type: "visitas_realizadas" as const, prev: prevKpis?.visitasRealizadas },
-                  { label: "No Show", value: kpis.noShows, color: "text-danger", type: "visitas_no_show" as const, prev: prevKpis?.noShows, invert: true },
+                  { label: "Marcadas", value: agendaVisitas.marcadas, color: "text-warning", type: "visitas_marcadas" as const, prev: prevKpis?.visitasMarcadas },
+                  { label: "Realizadas", value: agendaVisitas.realizadas, color: "text-success", type: "visitas_realizadas" as const, prev: prevKpis?.visitasRealizadas },
+                  { label: "No Show", value: agendaVisitas.noShow, color: "text-danger", type: "visitas_no_show" as const, prev: prevKpis?.noShows, invert: true },
+
                 ]).map(card => {
                   const d = delta(card.value, card.prev);
                   const positive = d != null && (card.invert ? d < 0 : d > 0);
