@@ -138,27 +138,13 @@ serve(async (req) => {
 
     L.error("API error", { tipo, to: numeroFinal, status: response.status, error: result?.error });
 
-    // Fallback: envia texto livre pela Evolution API (sem telefone/e-mail no corpo)
+    // Fallback interno: texto livre pela própria Meta (sem telefone/e-mail no corpo)
     const fallbackText =
       tipo === "novo_lead"
         ? `🆕 *Novo lead recebido!*\n\nNome: ${dados?.nome || "Lead"}\nEmpreendimento: ${dados?.empreendimento || "Não identificado"}\n\nAceite o lead em até 10 minutos para ver os dados de contato.\nhttps://uhomesales.com/pipeline`
         : (TEXT_MESSAGES[tipo] ? TEXT_MESSAGES[tipo]() : "");
 
-    const evo = await enviarViaEvolution(numeroFinal, fallbackText);
 
-    if (evo.ok) {
-      L.info("Sent via Evolution fallback", { tipo, to: numeroFinal, canal: "evolution" });
-      logOps("info", "integration", `WhatsApp enviado (evolution fallback): ${tipo}`, {
-        tipo,
-        to: numeroFinal,
-        canal: "evolution",
-        meta_error: result?.error?.code ?? null,
-      });
-      return new Response(JSON.stringify({ ok: true, canal: "evolution", meta_error: result?.error || null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
 
     // Último recurso: texto livre pela própria Meta (funciona dentro da janela de 24h)
     if (body.type === "template" && fallbackText) {
