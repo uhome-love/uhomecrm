@@ -335,7 +335,13 @@ export function RoletaCorretorView() {
           {/* Janela */}
           <div>
             <label className="text-sm font-medium mb-1.5 block">Janela</label>
-            <Select value={selectedJanela} onValueChange={setSelectedJanela}>
+            <Select
+              value={selectedJanela}
+              onValueChange={(v) => {
+                setJanelaManual(true);
+                setSelectedJanela(v);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a janela" />
               </SelectTrigger>
