@@ -7536,6 +7536,7 @@ export type Database = {
           flag_status: Json | null
           form_id: string | null
           form_name: string | null
+          form_respostas: Json | null
           forma_pagamento: string | null
           formulario: string | null
           gerente_id: string | null
@@ -7648,6 +7649,7 @@ export type Database = {
           flag_status?: Json | null
           form_id?: string | null
           form_name?: string | null
+          form_respostas?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
           gerente_id?: string | null
@@ -7760,6 +7762,7 @@ export type Database = {
           flag_status?: Json | null
           form_id?: string | null
           form_name?: string | null
+          form_respostas?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
           gerente_id?: string | null

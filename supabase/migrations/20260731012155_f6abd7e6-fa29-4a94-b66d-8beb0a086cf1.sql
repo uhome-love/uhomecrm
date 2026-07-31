@@ -1,0 +1,2 @@
+ALTER TABLE public.pipeline_leads ADD COLUMN IF NOT EXISTS form_respostas jsonb;
+COMMENT ON COLUMN public.pipeline_leads.form_respostas IS 'Respostas das perguntas de qualificação do formulário de origem: [{pergunta, resposta}]';
