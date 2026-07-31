@@ -160,7 +160,7 @@ export function useCorretorHomeData() {
 
       // Visitas
       const { data: visitas } = await supabase
-        .from("visitas")
+        .from("visitas_unicas" as any)
         .select("created_at, status")
         .eq("corretor_id", user!.id)
         .gte("created_at", sevenDaysAgo.toISOString());

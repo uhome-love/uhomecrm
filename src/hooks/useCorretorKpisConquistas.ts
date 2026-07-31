@@ -53,7 +53,7 @@ export function useCorretorKpisConquistas() {
 
       // Visitas realizadas mês
       const visRealQ = supabase
-        .from("visitas")
+        .from("visitas_unicas" as any)
         .select("id", { count: "exact", head: true })
         .in("corretor_id", visitaIds)
         .eq("status", "realizada")
@@ -71,7 +71,7 @@ export function useCorretorKpisConquistas() {
 
       // Visitas próximas 7d (incluindo hoje)
       const vis7Q = supabase
-        .from("visitas")
+        .from("visitas_unicas" as any)
         .select("id", { count: "exact", head: true })
         .in("corretor_id", visitaIds)
         .in("status", ["marcada", "confirmada", "reagendada"])

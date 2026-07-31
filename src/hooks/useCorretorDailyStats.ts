@@ -38,7 +38,7 @@ export function useCorretorDailyStats() {
           .eq("corretor_id", user!.id)
           .gte("created_at", dayStartUtc),
         supabase
-          .from("visitas")
+          .from("visitas_unicas" as any)
           .select("id")
           .eq("corretor_id", user!.id)
           .gte("created_at", dayStartUtc)

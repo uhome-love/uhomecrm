@@ -118,7 +118,21 @@ export default function PipelineTeamVisitas() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [visitas]);
 
-  const todayCount = visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00"))).length;
+  // SSOT: 1 visita por cliente por dia — as extras aparecem na agenda mas não somam.
+  const duplicadas = useMemo(() => {
+    const seen = new Set<string>();
+    const dup = new Set<string>();
+    const ordered = [...visitas].sort((a, b) => (a.data_visita + (a.hora_visita ?? "")).localeCompare(b.data_visita + (b.hora_visita ?? "")));
+    for (const v of ordered) {
+      const key = `${v.data_visita}|${(v.nome_cliente || "").trim().toLowerCase()}`;
+      if (seen.has(key)) dup.add(v.id);
+      else seen.add(key);
+    }
+    return dup;
+  }, [visitas]);
+
+  const totalUnicas = visitas.length - duplicadas.size;
+  const todayCount = visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00")) && !duplicadas.has(v.id)).length;
 
   if (isLoading) return null;
   if (visitas.length === 0) return null;
@@ -153,7 +167,7 @@ export default function PipelineTeamVisitas() {
             padding: "0 6px",
           }}
         >
-          {visitas.length}
+          {totalUnicas}
         </span>
         {todayCount > 0 && (
           <span
@@ -242,6 +256,19 @@ export default function PipelineTeamVisitas() {
                         title={v.empreendimento}
                       >
                         {v.empreendimento}
+                      </span>
+                    )}
+
+                    {duplicadas.has(v.id) && (
+                      <span
+                        className="shrink-0"
+                        style={{
+                          fontSize: 9, fontWeight: 700, color: "#a16207",
+                          background: "#fef3c7", borderRadius: 4, padding: "1px 5px",
+                        }}
+                        title="Mesmo cliente já tem visita neste dia — conta 1x"
+                      >
+                        não conta
                       </span>
                     )}
                   </div>
