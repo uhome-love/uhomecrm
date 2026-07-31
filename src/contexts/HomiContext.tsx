@@ -71,10 +71,12 @@ interface HomiContextType {
 
 const HomiContext = createContext<HomiContextType | null>(null);
 
+// Cérebro único: todos os papéis usam homi-chat (RAG + ferramentas).
+// O foco por papel é enviado no body (`perfil`).
 const CHAT_URL_MAP: Record<HomiRole, string> = {
   corretor: "homi-chat",
-  gestor: "uhome-ia-core",
-  ceo: "uhome-ia-core",
+  gestor: "homi-chat",
+  ceo: "homi-chat",
 };
 
 export function HomiProvider({ children }: { children: ReactNode }) {
