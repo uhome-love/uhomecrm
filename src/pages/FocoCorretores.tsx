@@ -60,7 +60,12 @@ export default function FocoCorretores() {
         </CardContent>
       </Card>
 
-      {tab === "alocacao" && <FocoAlocacaoTab />}
+      {tab === "alocacao" && (
+        <>
+          <ProdutosNaoIdentificadosCard />
+          <FocoAlocacaoTab />
+        </>
+      )}
       {tab === "dados" && <FocoDadosTab />}
       {tab === "empreendimentos" && canManageEmpreendimentos && <FocoEmpreendimentosTab />}
     </div>
