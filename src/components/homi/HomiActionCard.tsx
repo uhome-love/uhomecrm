@@ -775,6 +775,173 @@ function MeuDiaCard({ result, onPick }: { result: HomiResult; onPick: (text: str
   );
 }
 
+// ─────────────────────────────────────────────── Read: fila de execução (1 a 1 / 3 em 3)
+function FilaExecucaoCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
+  const { concluirTarefa } = useHomiActions();
+  const { sendMessage } = useHomi();
+  const openLead = useOpenLead();
+  const isTarefas = result.fila !== "leads_sem_tarefa";
+  const lote = (result.lote as number) === 3 ? 3 : 1;
+  const itens = (result.itens as any[]) || [];
+
+  const [cursor, setCursor] = useState(0);
+  const [done, setDone] = useState<Set<string>>(new Set());
+
+  const restantes = itens.filter((i) => !done.has(isTarefas ? i.tarefa_id : i.lead_id));
+  const visiveis = restantes.slice(cursor, cursor + lote);
+
+  if (!itens.length) {
+    return <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">🎉 Nada nessa fila. Tudo em dia por aqui.</div>;
+  }
+  if (!visiveis.length) {
+    return <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-700">✅ Fila concluída! {itens.length} itens revisados.</div>;
+  }
+
+  const marcarFeito = (key: string) => setDone((p) => new Set(p).add(key));
+
+  return (
+    <div className="space-y-2">
+      <Section
+        title={`${isTarefas ? "⚡ Fila de tarefas atrasadas" : "🎯 Leads sem próxima tarefa"} — ${Math.min(cursor + lote, restantes.length)}/${restantes.length}`}
+        icon={<CheckCheck className="h-3.5 w-3.5 text-primary" />}
+      >
+        {visiveis.map((i) => {
+          const key = isTarefas ? i.tarefa_id : i.lead_id;
+          return (
+            <div key={key} className="rounded-lg border border-border/70 bg-card/60 p-2.5 space-y-1.5">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">{i.lead_nome}</p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {isTarefas
+                    ? `${i.titulo || i.tipo}${i.atraso_dias ? ` · ${i.atraso_dias}d de atraso` : ""}`
+                    : `${i.dias_parado != null ? `${i.dias_parado}d sem ação` : "sem atividade"}`}
+                  {i.stage_nome ? ` · ${i.stage_nome}` : ""}
+                  {i.empreendimento ? ` · ${i.empreendimento}` : ""}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {isTarefas ? (
+                  <RowAction
+                    icon={<CheckCheck className="h-3.5 w-3.5" />}
+                    label="Concluir"
+                    tone="success"
+                    onClick={async () => {
+                      const ok = await concluirTarefa(i.tarefa_id, i.lead_id, i.lead_nome, i.titulo || i.tipo);
+                      if (ok) marcarFeito(key);
+                    }}
+                  />
+                ) : (
+                  <RowAction
+                    icon={<Plus className="h-3.5 w-3.5" />}
+                    label="Criar tarefa"
+                    onClick={() => sendMessage(`Cria uma tarefa de follow-up para o lead ${i.lead_nome}.`)}
+                  />
+                )}
+                <RowAction icon={<MessageCircle className="h-3.5 w-3.5" />} label="Msg" onClick={() => onPick(`Escreve uma mensagem de WhatsApp curta e natural para o lead ${i.lead_nome}.`)} />
+                <RowAction icon={<User className="h-3.5 w-3.5" />} label="Lead" onClick={() => openLead(i.lead_id)} />
+                <RowAction icon={<ChevronRight className="h-3.5 w-3.5" />} label="Pular" onClick={() => setCursor((c) => c + 1)} />
+              </div>
+            </div>
+          );
+        })}
+      </Section>
+      <div className="flex gap-1.5">
+        <Button size="sm" className="h-8 text-xs flex-1" onClick={() => setCursor((c) => c + lote)}>
+          Próxim{lote === 1 ? "o" : "os"} <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
+        {lote === 1 && (
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => sendMessage(isTarefas ? "Me mostra a fila de tarefas atrasadas de 3 em 3." : "Me mostra os leads sem tarefa de 3 em 3.")}>
+            Ver de 3 em 3
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────── Read: visitas pendentes (confirmar / registrar)
+function VisitasPendentesCard({ result }: { result: HomiResult }) {
+  const { sendMessage } = useHomi();
+  const openLead = useOpenLead();
+  const modo = result.modo === "resultado" ? "resultado" : "confirmar";
+  const visitas = (result.visitas as any[]) || [];
+
+  if (!visitas.length) {
+    return (
+      <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+        {modo === "confirmar" ? "✅ Nenhuma visita pendente de confirmação." : "✅ Nenhuma visita passada sem resultado."}
+      </div>
+    );
+  }
+
+  return (
+    <Section
+      title={modo === "confirmar" ? `📅 Confirmar com o cliente (${visitas.length})` : `📝 Sem resultado registrado (${visitas.length})`}
+      icon={<Home className="h-3.5 w-3.5 text-emerald-600" />}
+    >
+      {visitas.map((v) => (
+        <div key={v.id} className="rounded-lg border border-border/70 bg-card/60 p-2 space-y-1.5">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-foreground truncate">{v.nome_cliente}</p>
+            <p className="text-[10px] text-muted-foreground truncate">
+              {v.data_visita ? new Date(`${v.data_visita}T12:00:00`).toLocaleDateString("pt-BR") : ""}
+              {v.hora_visita ? ` · ${String(v.hora_visita).slice(0, 5)}` : ""}
+              {v.empreendimento ? ` · ${v.empreendimento}` : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {modo === "confirmar" && (
+              <RowAction
+                icon={<MessageCircle className="h-3.5 w-3.5" />}
+                label="Msg confirmação"
+                onClick={() => sendMessage(`Escreve a mensagem de confirmação da visita da ${v.nome_cliente}.`)}
+              />
+            )}
+            {v.pipeline_lead_id && (
+              <RowAction
+                icon={<User className="h-3.5 w-3.5" />}
+                label={modo === "resultado" ? "Registrar no lead" : "Lead"}
+                onClick={() => openLead(v.pipeline_lead_id)}
+              />
+            )}
+          </div>
+        </div>
+      ))}
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────── Read: briefing do dia
+function BriefingDiaCard({ result }: { result: HomiResult }) {
+  const { sendMessage } = useHomi();
+  const n = (result.numeros as Record<string, number>) || {};
+  const cells: { label: string; value: number; tone: string; prompt: string }[] = [
+    { label: "Tarefas atrasadas", value: n.tarefas_atrasadas ?? 0, tone: "text-destructive", prompt: "Me ajuda a concluir as tarefas atrasadas, uma de cada vez." },
+    { label: "Tarefas de hoje", value: n.tarefas_hoje ?? 0, tone: "text-foreground", prompt: "Quais são minhas tarefas de hoje?" },
+    { label: "Visitas hoje", value: n.visitas_hoje ?? 0, tone: "text-emerald-600", prompt: "Prepara minhas visitas de hoje." },
+    { label: "A confirmar", value: n.visitas_a_confirmar ?? 0, tone: "text-amber-600", prompt: "Quais visitas eu tenho que confirmar?" },
+    { label: "Sem resultado", value: n.visitas_sem_resultado ?? 0, tone: "text-amber-600", prompt: "Quais visitas estão pendentes de registro?" },
+    { label: "Leads sem tarefa", value: n.leads_sem_tarefa ?? 0, tone: "text-sky-600", prompt: "Me ajuda com os leads sem tarefa, de 3 em 3." },
+  ];
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-3 gap-1.5">
+        {cells.map((c) => (
+          <button
+            key={c.label}
+            onClick={() => sendMessage(c.prompt)}
+            className="rounded-lg border border-border/70 bg-card/60 p-2 text-left hover:bg-accent/50 transition-colors"
+          >
+            <p className={`text-base font-bold leading-none ${c.tone}`}>{c.value}</p>
+            <p className="text-[10px] text-muted-foreground mt-1 leading-tight">{c.label}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 // ─────────────────────────────────────────────── Public renderers
 
