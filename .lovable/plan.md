@@ -48,7 +48,7 @@ Importante: ao criar as variáveis, usar o modo **numerado ({{1}}, {{2}})**, nun
 
 ## B) O que muda no CRM depois da aprovação
 
-1. `whatsapp-notificacao` passa a usar `novo_lead_v2` com os 4 parâmetros posicionais na mesma ordem (nome, telefone, e-mail, empreendimento).
+1. `whatsapp-notificacao` passa a usar `novo_lead_v2` com apenas 2 parâmetros posicionais (nome, empreendimento) — telefone e e-mail saem do payload.
 2. Fallback automático: se a Meta responder erro `#100` / `#132xxx` (template inválido ou não aprovado), a função reenvia a mesma notificação como **texto livre pela Evolution API** usando a instância do corretor, para o aviso nunca se perder.
 3. Registrar sucesso em `ops_events` (hoje só o erro é logado), o que encerra o alerta falso de "100% de erro" da função.
 4. Validação ao vivo com um lead de teste: conferir a chegada no WhatsApp do corretor e o evento de sucesso no painel de saúde.
