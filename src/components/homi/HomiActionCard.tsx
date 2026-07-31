@@ -15,13 +15,16 @@ import {
 import {
   CheckCircle2, Clock, CalendarPlus, Home, MapPin, AlertTriangle, Search, Loader2,
   ChevronRight, User, MessageCircle, CheckCheck, Plus, Sparkles, Phone, Send,
-
+  BedDouble, Bath, Car, Maximize2, Images, ExternalLink,
 } from "lucide-react";
 import { useHomiActions, type LeadOption } from "@/hooks/useHomiActions";
 import { useHomi } from "@/contexts/HomiContext";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { gerarSlugUhome } from "@/utils/imoveisFormat";
+import PropertyPreviewDrawer from "@/components/imoveis/PropertyPreviewDrawer";
+import { supabase } from "@/integrations/supabase/client";
 import type { HomiAction, HomiResult } from "@/contexts/HomiContext";
+
 
 const TIPO_BUTTONS = [
   { value: "ligar", label: "Ligar", emoji: "📞" },
