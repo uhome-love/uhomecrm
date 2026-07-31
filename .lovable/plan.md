@@ -1,60 +1,26 @@
-# Notificação de novo lead no WhatsApp — template Meta + fallback Evolution
+# Notificação de novo lead no WhatsApp — apontar CRM para `novo_leaduhome`
 
 ## Situação
 
-O envio de "novo lead" usa o template `novo_lead` no WhatsApp Cloud API com 4 variáveis **posicionais** ({{1}}..{{4}}). O template aprovado hoje na Meta está com **parâmetros nomeados**, e por isso a Meta devolve `(#100) Invalid parameter — Parameter name is missing or empty` (232 falhas em 7 dias).
+O template novo já foi criado na Meta: **`novo_leaduhome`**, categoria Utilidade, Portuguese (BR), status **Em análise**, com 2 variáveis posicionais ({{1}} nome, {{2}} empreendimento), cabeçalho "Novo lead recebido!", rodapé "UhomeSales · CRM" e botão "Abrir no CRM".
 
-Duas frentes: (A) subir um template novo com variáveis posicionais e apontar o CRM para ele; (B) manter a Evolution API como caminho alternativo, já que ela envia texto livre sem template.
+O CRM ainda envia o template antigo `novo_lead` com 4 parâmetros, e é isso que gera o erro `(#100) Invalid parameter — Parameter name is missing or empty` (232 falhas em 7 dias) e o alerta "Edge function instável: whatsapp-notificacao".
 
----
-
-## A) Modelo para subir na Meta
-
-**Nome:** `novo_lead_v2`
-**Categoria:** Utility (Utilidade)
-**Idioma:** Português (BR) — `pt_BR`
-**Cabeçalho:** Texto, sem variável → `Novo lead recebido`
-
-**Corpo (copiar e colar exatamente):**
-
-```text
-Você recebeu um novo lead no UhomeSales.
-
-Nome: {{1}}
-Empreendimento: {{2}}
-
-Aceite o lead em até 10 minutos para ver os dados de contato.
-```
-
-**Rodapé:** `UhomeSales · CRM`
-
-**Botão (opcional, recomendado):** Botão de URL estática
-- Texto: `Abrir no CRM`
-- URL: `https://uhomesales.com/pipeline`
-
-**Exemplos de amostra (a Meta exige preencher para aprovar):**
-
-| Variável | Exemplo |
-| --- | --- |
-| {{1}} | Maria Silva |
-| {{2}} | The Arch |
-
-Telefone e e-mail ficam fora da notificação de propósito: o corretor só vê os dados de contato depois de aceitar o lead no CRM (mesma regra do mascaramento de PII do pipeline).
-
-Importante: ao criar as variáveis, usar o modo **numerado ({{1}}, {{2}})**, nunca o modo "nome do parâmetro". É a troca para o modo nomeado que quebra o envio hoje.
-
+Telefone e e-mail ficam fora da notificação de propósito: o corretor só vê contato depois de aceitar o lead no CRM.
 
 ---
 
-## B) O que muda no CRM depois da aprovação
+## O que será feito
 
-1. `whatsapp-notificacao` passa a usar `novo_lead_v2` com apenas 2 parâmetros posicionais (nome, empreendimento) — telefone e e-mail saem do payload.
-2. Fallback automático: se a Meta responder erro `#100` / `#132xxx` (template inválido ou não aprovado), a função reenvia a mesma notificação como **texto livre pela Evolution API** usando a instância do corretor, para o aviso nunca se perder.
-3. Registrar sucesso em `ops_events` (hoje só o erro é logado), o que encerra o alerta falso de "100% de erro" da função.
-4. Validação ao vivo com um lead de teste: conferir a chegada no WhatsApp do corretor e o evento de sucesso no painel de saúde.
+1. **Apontar para o template novo** — `whatsapp-notificacao` passa a enviar `novo_leaduhome` com apenas 2 parâmetros posicionais: nome e empreendimento.
+2. **Fallback automático pela Evolution** — se a Meta responder erro (`#100`, `#132xxx`, template ainda não aprovado), a mesma notificação sai como texto livre pela Evolution API, sem telefone/e-mail no corpo. O aviso nunca se perde enquanto o template estiver "Em análise".
+3. **Parar o alerta falso** — registrar também os envios com sucesso em `ops_events`, para o painel de saúde deixar de mostrar 100% de erro.
+4. **Validação ao vivo** — enviar uma notificação de teste para um corretor de teste, conferir a chegada no WhatsApp e o evento de sucesso no painel `/admin/ingestao`. Enquanto o template estiver em análise, a validação comprova o caminho Evolution; assim que a Meta aprovar, repetimos o teste pelo template.
 
 ## Detalhes técnicos
 
-- `supabase/functions/whatsapp-notificacao/index.ts`: renomear o template em `TEMPLATE_MESSAGES.novo_lead`, envolver o `fetch` da Graph API em try/catch com checagem de `error.code`, e acionar o envio Evolution (`EVOLUTION_API_URL` + `EVOLUTION_API_KEY`, endpoint `/message/sendText/{instancia}`) quando a Meta falhar.
-- Texto do fallback Evolution espelha o corpo do template, em uma única mensagem.
-- Nenhuma migração de banco necessária.
+- `supabase/functions/whatsapp-notificacao/index.ts`:
+  - `TEMPLATE_MESSAGES.novo_lead` → `name: "novo_leaduhome"`, `parameters: [nome, empreendimento]`.
+  - Envolver o POST da Graph API com checagem de `json.error?.code`; em erro, chamar o envio Evolution (`EVOLUTION_API_URL` + `EVOLUTION_API_KEY`, `POST /message/sendText/{instancia}`) com o texto espelhado do template.
+  - `logOps("info", ...)` no sucesso, com o canal usado (`meta` ou `evolution`).
+- Sem migração de banco. Nenhuma mudança de frontend.
