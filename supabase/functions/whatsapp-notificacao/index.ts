@@ -174,15 +174,16 @@ serve(async (req) => {
     logOps(
       "error",
       "integration",
-      `WhatsApp API error: ${response.status} (fallback evolution falhou)`,
-      { tipo, to: numeroFinal, status: response.status, evolution_error: evo.error },
+      `WhatsApp API error: ${response.status} (template e texto Meta falharam)`,
+      { tipo, to: numeroFinal, status: response.status, canal: "none" },
       JSON.stringify(result?.error || {})
     );
 
-    return new Response(JSON.stringify({ ...result, canal: "none", evolution_error: evo.error }), {
+    return new Response(JSON.stringify({ ...result, canal: "none" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
+
 
   } catch (err) {
     L.error("Unhandled exception", {}, err);
