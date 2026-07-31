@@ -296,6 +296,8 @@ export default function AppLayout() {
               </div>
             </header>
             <PushPromptBanner />
+            <TelefoneFaltandoBanner />
+
             <TabBar />
             
             <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-background">
