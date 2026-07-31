@@ -502,7 +502,9 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         <div style={{ textAlign: "center", padding: "2px 24px 6px", color: "#ffffff33", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, flexShrink: 0 }}>
           <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#22c55e", marginRight: 6, animation: "pulse 1.5s infinite" }} />
           AO VIVO · MUTIRÃO INTELIGENTE · {corretores.length} CORRETOR{corretores.length === 1 ? "" : "ES"} NO PLACAR
+          <span style={{ color: "#ffffff55", marginLeft: 12 }}>· PONTUAÇÃO: VISITA AGENDADA = 30 PTS · LEAD APROVEITADO = 5 PTS · TENTATIVA = 0</span>
         </div>
+
       </div>
     </>
   );
