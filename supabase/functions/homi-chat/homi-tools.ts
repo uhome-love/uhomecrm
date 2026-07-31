@@ -261,6 +261,45 @@ function todayBRT(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
+function addDaysBRT(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+}
+
+function fmtBRL(v: number): string {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+}
+
+// Contexto enxuto de um lead para os cards da fila de execução
+async function leadContextoCurto(userClient: any, leadIds: string[]) {
+  const map = new Map<string, any>();
+  if (!leadIds.length) return map;
+  const { data: leads } = await userClient
+    .from("pipeline_leads")
+    .select("id, nome, telefone, empreendimento, stage_id, ultima_acao_at")
+    .in("id", leadIds);
+  const stageIds = [...new Set((leads || []).map((l: any) => l.stage_id).filter(Boolean))];
+  let stageMap = new Map<string, string>();
+  if (stageIds.length) {
+    const { data: stages } = await userClient.from("pipeline_stages").select("id, nome").in("id", stageIds);
+    stageMap = new Map((stages || []).map((s: any) => [s.id, s.nome]));
+  }
+  for (const l of leads || []) {
+    const dt = l.ultima_acao_at ? new Date(l.ultima_acao_at) : null;
+    map.set(l.id, {
+      id: l.id,
+      nome: l.nome,
+      telefone: l.telefone,
+      empreendimento: l.empreendimento,
+      stage_nome: stageMap.get(l.stage_id) || "",
+      dias_parado: dt ? Math.floor((Date.now() - dt.getTime()) / 86400000) : null,
+    });
+  }
+  return map;
+}
+
+
 // Resolve a lead by name within the corretor's scope. Returns { lead } | { candidates } | { none }
 async function resolveLead(userClient: any, uid: string, nome: string) {
   const term = (nome || "").trim();
