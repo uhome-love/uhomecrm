@@ -1,0 +1,48 @@
+# Respostas do formulário do Meta no lead
+
+## Problema
+
+Os formulários dos anúncios agora têm perguntas de qualificação (ex.: "Qual a sua preferência?" → Studio / 1 Dormitório / Ambos), mas o CRM só aproveita nome, e-mail e telefone do `field_data`. Verificado no receptor de leads do Meta: as demais perguntas são lidas e descartadas, e não existe nenhuma coluna no lead guardando essas respostas (nenhum campo de payload bruto em `pipeline_leads`; `jetimob_processed` só guarda id + telefone). Resultado: o corretor abre o lead e não vê o que a pessoa respondeu.
+
+## O que muda
+
+### 1. Guardar as respostas na entrada do lead
+
+Nova coluna `form_respostas` (JSON) em `pipeline_leads`, gravada pelos receptores no formato:
+
+```text
+[{ "pergunta": "Qual a sua preferência?", "resposta": "1 Dormitório" }, ...]
+```
+
+Regras de captura:
+- Todos os campos do formulário que não sejam nome/e-mail/telefone entram na lista, na ordem em que o Meta envia.
+- O rótulo mostrado é a pergunta real quando o Meta manda (`label`/`question`); senão usa o nome técnico do campo formatado de forma legível.
+- Vale para os três formatos aceitos hoje: webhook nativo do Meta (`field_data`), Make.com (`mappable_field_data`) e a rede de segurança `meta-leads-backfill` (que já busca `field_data` na Graph API).
+- Se o lead já existe e volta com novo interesse, as respostas novas substituem as antigas e o texto vai também para o histórico de observações, preservando o registro anterior.
+
+### 2. Mostrar para o corretor no modal do lead
+
+Dois pontos, ambos no detalhe do lead:
+
+- **Bloco "Respostas do formulário"** no topo da coluna de informações, junto do resumo do lead: lista pergunta → resposta, com destaque visual na resposta. Só aparece quando existem respostas.
+- **Evento na linha do tempo** na aba Histórico, na data de entrada do lead: "Respondeu no formulário — Qual a sua preferência? Ambos", junto dos demais eventos de origem.
+
+Leads sem respostas (Terrace, formulários antigos) seguem exatamente como hoje, sem bloco vazio.
+
+### 3. Leads já recebidos
+
+Os leads que entraram desde a atualização dos formulários podem ter as respostas recuperadas rodando o backfill do Meta em modo leitura (a Graph API devolve o `field_data` completo por lead). Aplicar aos leads dos últimos 7 dias que tenham `meta_lead_id` e ainda não tenham respostas.
+
+## Detalhes técnicos
+
+- Migration: `ALTER TABLE public.pipeline_leads ADD COLUMN form_respostas jsonb` (sem mudança de RLS/grants — tabela já exposta).
+- Extração compartilhada em `supabase/functions/_shared/` (`parseFormRespostas`) usada por `receive-meta-lead`, `receive-landing-lead` e `meta-leads-backfill`, para não duplicar lógica.
+- Gravação envolvida em try/catch: nunca pode derrubar a criação do lead (regra de rastreamento vigente).
+- Frontend: novo componente `LeadFormRespostas.tsx` em `src/components/pipeline/drawer/`, consumido por `PipelineLeadDetail.tsx`; evento derivado em `LeadHistoricoTab.tsx` junto dos eventos existentes.
+- Sem impacto na roleta, distribuição ou CAPI.
+
+## Validação
+
+- Enviar um payload sintético com pergunta de múltipla escolha e conferir a coluna preenchida.
+- Abrir um lead real recente no preview e ver o bloco e o evento na linha do tempo.
+- Conferir que um lead do Terrace (formulário sem perguntas) continua idêntico.
