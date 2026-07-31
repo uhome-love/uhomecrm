@@ -21,7 +21,8 @@ Um **cérebro único do HOMI** (mesma identidade, mesmas fontes, mesmas regras) 
 
 ### Fase 2 — Alimentar o cérebro com TODO o acervo Uhome
 Indexar num só lugar, com rótulo de origem para citar na resposta:
-- Método Uhome, manuais e processos (`homi_documents`)
+- **Método Uhome completo (os 4 PDFs enviados agora):** Apresentação Completa, Playbook de Campo, Manual Diário e Casa Tua — carregados como documentos oficiais em `homi_documents`, processados em trechos e marcados como fonte de maior prioridade nas respostas
+- Manuais e processos já existentes (`homi_documents`), com os 2 registros quebrados corrigidos
 - Materiais, apresentações e drives do Hub (`materiais_links`, `materiais_empreendimentos`)
 - Aulas da Academia (título, descrição e, quando houver, transcrição do vídeo)
 - Scripts do time e templates de comunicação
@@ -29,6 +30,7 @@ Indexar num só lugar, com rótulo de origem para citar na resposta:
 - Imóveis do CRM (`properties`): bairro, tipologia, faixa de preço, status — para o HOMI recomendar imóvel de verdade
 
 Reindexação automática quando material, aula, ficha, imóvel ou documento é criado/editado.
+
 
 ### Fase 2.5 — Conhecimento vivo do CRM (dados, não só texto)
 Texto indexado responde "como fazer"; para responder "quanto/quem/quando" o HOMI precisa consultar o banco na hora. Dou a ele um conjunto de ferramentas de leitura, sempre respeitando o papel de quem pergunta:
