@@ -528,9 +528,10 @@ export function RoletaCorretorView() {
             className="w-full"
             onClick={handleMarcarPresenca}
             disabled={
-              semAlocacao ||
               loadingAlocacao ||
               marcandoPresenca ||
+              submitting ||
+
               submitting ||
               (selectedJanela === "noturna" &&
                 (checkingNoturna || noturnaEligible === false)) ||
