@@ -25,6 +25,39 @@ serve(async (req) => {
     try { getSupabase().from("ops_events").insert({ fn: "whatsapp-notificacao", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(() => {}); } catch {}
   };
 
+  // Fallback de envio por texto livre via Evolution API (instância do CRM)
+  const enviarViaEvolution = async (numero: string, texto: string): Promise<{ ok: boolean; error?: string }> => {
+    try {
+      if (!texto) return { ok: false, error: "texto vazio" };
+      const evoUrl = Deno.env.get("EVOLUTION_API_URL");
+      const evoKey = Deno.env.get("EVOLUTION_API_KEY");
+      if (!evoUrl || !evoKey) return { ok: false, error: "Evolution env vars ausentes" };
+
+      const { data: cfg } = await getSupabase()
+        .from("reengajamento_config")
+        .select("evolution_instance")
+        .limit(1)
+        .maybeSingle();
+      const instancia = cfg?.evolution_instance;
+      if (!instancia) return { ok: false, error: "instância Evolution não configurada" };
+
+      const r = await fetch(`${evoUrl}/message/sendText/${instancia}`, {
+        method: "POST",
+        headers: { apikey: evoKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ number: numero, text: texto }),
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        return { ok: false, error: `evolution ${r.status}: ${t.slice(0, 300)}` };
+      }
+      await r.text();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+
+
   try {
     const { telefone, tipo, dados } = await req.json();
 
@@ -52,21 +85,20 @@ serve(async (req) => {
         to: numeroFinal,
         type: "template",
         template: {
-          name: "novo_lead",
+          name: "novo_leaduhome",
           language: { code: "pt_BR" },
           components: [
             {
               type: "body",
               parameters: [
                 { type: "text", text: dados.nome || "Lead" },
-                { type: "text", text: dados.telefone || "N/A" },
-                { type: "text", text: dados.email || "N/A" },
                 { type: "text", text: dados.empreendimento || "Não identificado" },
               ],
             },
           ],
         },
       }),
+
     };
 
     // Fallback text messages for types without templates
@@ -123,16 +155,76 @@ serve(async (req) => {
     const result = await response.json();
 
     if (response.ok) {
-      L.info("Sent successfully", { tipo, to: numeroFinal, messageId: result?.messages?.[0]?.id });
-    } else {
-      L.error("API error", { tipo, to: numeroFinal, status: response.status, error: result?.error });
-      logOps("error", "integration", `WhatsApp API error: ${response.status}`, { tipo, to: numeroFinal, status: response.status }, JSON.stringify(result?.error || {}));
+      L.info("Sent successfully", { tipo, to: numeroFinal, canal: "meta", messageId: result?.messages?.[0]?.id });
+      logOps("info", "integration", `WhatsApp enviado (meta): ${tipo}`, { tipo, to: numeroFinal, canal: "meta" });
+      return new Response(JSON.stringify({ ...result, canal: "meta" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
-    return new Response(JSON.stringify(result), {
+    L.error("API error", { tipo, to: numeroFinal, status: response.status, error: result?.error });
+
+    // Fallback: envia texto livre pela Evolution API (sem telefone/e-mail no corpo)
+    const fallbackText =
+      tipo === "novo_lead"
+        ? `🆕 *Novo lead recebido!*\n\nNome: ${dados?.nome || "Lead"}\nEmpreendimento: ${dados?.empreendimento || "Não identificado"}\n\nAceite o lead em até 10 minutos para ver os dados de contato.\nhttps://uhomesales.com/pipeline`
+        : (TEXT_MESSAGES[tipo] ? TEXT_MESSAGES[tipo]() : "");
+
+    const evo = await enviarViaEvolution(numeroFinal, fallbackText);
+
+    if (evo.ok) {
+      L.info("Sent via Evolution fallback", { tipo, to: numeroFinal, canal: "evolution" });
+      logOps("info", "integration", `WhatsApp enviado (evolution fallback): ${tipo}`, {
+        tipo,
+        to: numeroFinal,
+        canal: "evolution",
+        meta_error: result?.error?.code ?? null,
+      });
+      return new Response(JSON.stringify({ ok: true, canal: "evolution", meta_error: result?.error || null }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Último recurso: texto livre pela própria Meta (funciona dentro da janela de 24h)
+    if (body.type === "template" && fallbackText) {
+      const textResp = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: numeroFinal,
+          type: "text",
+          text: { body: fallbackText },
+        }),
+      });
+      const textResult = await textResp.json();
+      if (textResp.ok) {
+        L.info("Sent via Meta text fallback", { tipo, to: numeroFinal, canal: "meta_text" });
+        logOps("info", "integration", `WhatsApp enviado (meta texto fallback): ${tipo}`, { tipo, to: numeroFinal, canal: "meta_text" });
+        return new Response(JSON.stringify({ ...textResult, canal: "meta_text" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      L.warn("Meta text fallback failed", { tipo, status: textResp.status, error: textResult?.error });
+    }
+
+
+    logOps(
+      "error",
+      "integration",
+      `WhatsApp API error: ${response.status} (fallback evolution falhou)`,
+      { tipo, to: numeroFinal, status: response.status, evolution_error: evo.error },
+      JSON.stringify(result?.error || {})
+    );
+
+    return new Response(JSON.stringify({ ...result, canal: "none", evolution_error: evo.error }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: response.ok ? 200 : 400,
+      status: 400,
     });
+
   } catch (err) {
     L.error("Unhandled exception", {}, err);
     logOps("error", "system", "Unhandled exception", {}, err instanceof Error ? err.message : String(err));
