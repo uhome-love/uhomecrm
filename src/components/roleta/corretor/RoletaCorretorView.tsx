@@ -369,8 +369,9 @@ export function RoletaCorretorView() {
                     return (
                       <>
                         <SelectItem value="manha" disabled={manhaEncerrado}>
-                          🌅 Manhã (07:30–12:00) {manhaEncerrado ? "— encerrado" : ""}
+                          🌅 Manhã (07:00–12:00) {manhaEncerrado ? "— encerrado" : ""}
                         </SelectItem>
+
                         <SelectItem value="tarde" disabled={tardeEncerrado || mins < t1200}>
                           🌞 Tarde (12:00–18:30){" "}
                           {tardeEncerrado
