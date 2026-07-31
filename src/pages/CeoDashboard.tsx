@@ -828,11 +828,14 @@ export default function CeoDashboard() {
         <SectionLabel icon={Phone}>Oferta Ativa</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <MiniKpi label="Total Ligações" value={kpis.ligacoes.toLocaleString("pt-BR")} variant="highlight"
+            delta={delta(kpis.ligacoes, prevKpis?.ligacoes)}
             sub={ceoMetas.meta_ligacoes > 0 ? `${Math.round((kpis.ligacoes / ceoMetas.meta_ligacoes) * 100)}% da meta` : undefined}
             onClick={() => setKpiDetail({ type: "tentativas", label: "Ligações" })} />
           <MiniKpi label="Aproveitados" value={kpis.aproveitados} variant="success"
+            delta={delta(kpis.aproveitados, prevKpis?.aproveitados)}
             sub={`Taxa: ${kpis.taxaConversao}%`}
             onClick={() => setKpiDetail({ type: "aproveitados", label: "Aproveitados" })} />
+
           <MiniKpi label="Metas do Dia" value={`${metasDiaTotal.ligacoes} lig`}
             sub={`${metasDiaTotal.aproveitados} aprov · ${metasDiaTotal.visitasMarcadas} VM`} />
           <MiniKpi label="Taxa Aproveitamento" value={`${kpis.taxaConversao}%`}
