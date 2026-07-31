@@ -871,6 +871,216 @@ export async function executeHomiTool(
       };
     }
 
+    if (name === "fila_execucao") {
+      const fila = args.fila === "leads_sem_tarefa" ? "leads_sem_tarefa" : "tarefas_atrasadas";
+      const lote = args.lote === 3 ? 3 : 1;
+      const today = todayBRT();
+
+      if (fila === "tarefas_atrasadas") {
+        const { data: tarefas } = await userClient
+          .from("pipeline_tarefas")
+          .select("id, titulo, tipo, descricao, vence_em, hora_vencimento, pipeline_lead_id")
+          .eq("responsavel_id", uid)
+          .eq("status", "pendente")
+          .lt("vence_em", today)
+          .order("vence_em", { ascending: true })
+          .limit(40);
+        const rows = tarefas || [];
+        const ctx = await leadContextoCurto(userClient, [...new Set(rows.map((r: any) => r.pipeline_lead_id).filter(Boolean))]);
+        const itens = rows.map((t: any) => {
+          const l = ctx.get(t.pipeline_lead_id) || {};
+          const atrasoDias = t.vence_em ? Math.max(0, Math.floor((new Date(today).getTime() - new Date(t.vence_em).getTime()) / 86400000)) : 0;
+          return {
+            tarefa_id: t.id,
+            titulo: t.titulo || t.tipo,
+            tipo: t.tipo,
+            vence_em: t.vence_em,
+            hora: t.hora_vencimento,
+            atraso_dias: atrasoDias,
+            lead_id: t.pipeline_lead_id,
+            lead_nome: l.nome || "Lead",
+            telefone: l.telefone || "",
+            empreendimento: l.empreendimento || "",
+            stage_nome: l.stage_nome || "",
+            dias_parado: l.dias_parado ?? null,
+          };
+        });
+        if (!itens.length) {
+          return {
+            result: { tipo: "fila_execucao", fila, lote, total: 0, itens: [] },
+            modelResult: "Nenhuma tarefa atrasada. Parabenize a cadência em 1 frase e ofereça revisar os leads sem tarefa.",
+          };
+        }
+        const resumo = itens.slice(0, lote).map((i: any) => `${i.lead_nome} (${i.stage_nome || "sem etapa"}, ${i.titulo}, ${i.atraso_dias}d de atraso, empreendimento ${i.empreendimento || "—"})`).join(" | ");
+        return {
+          result: { tipo: "fila_execucao", fila, lote, total: itens.length, itens },
+          modelResult: `Fila de ${itens.length} tarefas atrasadas montada, mostrando ${lote} por vez. Primeiros: ${resumo}. Para CADA um desses, escreva em 1-2 linhas a sugestão de ação + a mensagem de WhatsApp pronta (curta, natural, terminando em pergunta que puxe visita). Não repita a lista inteira nem dados que já estão nos cartões.`,
+        };
+      }
+
+      // leads_sem_tarefa
+      const { data: leads } = await userClient
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento, stage_id, ultima_acao_at")
+        .eq("corretor_id", uid)
+        .eq("arquivado", false)
+        .order("ultima_acao_at", { ascending: true, nullsFirst: true })
+        .limit(200);
+      const leadRows = leads || [];
+      const ids = leadRows.map((l: any) => l.id);
+      let comTarefa = new Set<string>();
+      if (ids.length) {
+        const { data: pend } = await userClient
+          .from("pipeline_tarefas")
+          .select("pipeline_lead_id")
+          .eq("status", "pendente")
+          .in("pipeline_lead_id", ids);
+        comTarefa = new Set((pend || []).map((t: any) => t.pipeline_lead_id));
+      }
+      const semTarefa = leadRows.filter((l: any) => !comTarefa.has(l.id)).slice(0, 30);
+      const ctx = await leadContextoCurto(userClient, semTarefa.map((l: any) => l.id));
+      const itens = semTarefa.map((l: any) => {
+        const c = ctx.get(l.id) || {};
+        return {
+          lead_id: l.id,
+          lead_nome: l.nome,
+          telefone: l.telefone || "",
+          empreendimento: l.empreendimento || "",
+          stage_nome: c.stage_nome || "",
+          dias_parado: c.dias_parado ?? null,
+        };
+      });
+      if (!itens.length) {
+        return {
+          result: { tipo: "fila_execucao", fila, lote, total: 0, itens: [] },
+          modelResult: "Todos os leads ativos têm próxima tarefa agendada. Elogie a cadência em 1 frase.",
+        };
+      }
+      const resumo = itens.slice(0, lote).map((i: any) => `${i.lead_nome} (${i.stage_nome || "sem etapa"}, ${i.empreendimento || "—"}, parado há ${i.dias_parado ?? "?"}d)`).join(" | ");
+      return {
+        result: { tipo: "fila_execucao", fila, lote, total: itens.length, itens },
+        modelResult: `Fila de ${itens.length} leads SEM próxima tarefa, mostrando ${lote} por vez. Primeiros: ${resumo}. Para CADA um, sugira em 1 linha qual próxima tarefa criar (tipo e prazo) e já entregue a mensagem de WhatsApp pronta. Não repita a lista.`,
+      };
+    }
+
+    if (name === "visitas_a_confirmar") {
+      const dias = typeof args.dias === "number" && args.dias > 0 ? Math.min(args.dias, 14) : 3;
+      const today = todayBRT();
+      const limite = addDaysBRT(dias);
+      const { data } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, empreendimento, data_visita, hora_visita, local_visita, status, pipeline_lead_id")
+        .eq("corretor_id", uid)
+        .gte("data_visita", today)
+        .lte("data_visita", limite)
+        .in("status", ["marcada", "reagendada"])
+        .order("data_visita", { ascending: true })
+        .limit(30);
+      const visitas = data || [];
+      return {
+        result: { tipo: "visitas_pendentes", modo: "confirmar", visitas, janela_dias: dias },
+        modelResult: visitas.length
+          ? `${visitas.length} visitas a confirmar nos próximos ${dias} dias (já exibidas em cartões com botão de confirmar): ${visitas.map((v: any) => `${v.nome_cliente} ${v.data_visita}${v.hora_visita ? " " + String(v.hora_visita).slice(0, 5) : ""}`).join(", ")}. Escreva UMA mensagem de confirmação curta e natural que sirva de modelo (com [nome], data e hora). Não repita a lista.`
+          : `Nenhuma visita pendente de confirmação nos próximos ${dias} dias. Diga isso em 1 frase.`,
+      };
+    }
+
+    if (name === "visitas_pendentes_resultado") {
+      const today = todayBRT();
+      const { data } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, empreendimento, data_visita, hora_visita, local_visita, status, pipeline_lead_id")
+        .eq("corretor_id", uid)
+        .lt("data_visita", today)
+        .in("status", ["marcada", "confirmada", "reagendada"])
+        .order("data_visita", { ascending: false })
+        .limit(30);
+      const visitas = data || [];
+      return {
+        result: { tipo: "visitas_pendentes", modo: "resultado", visitas },
+        modelResult: visitas.length
+          ? `${visitas.length} visitas já passaram e continuam sem resultado registrado (cartões na tela com botão de abrir o lead para registrar). Diga em 1 frase que registrar isso é o que destrava o funil e cite a mais antiga.`
+          : "Nenhuma visita passada sem resultado. Elogie em 1 frase o controle da agenda.",
+      };
+    }
+
+    if (name === "briefing_do_dia") {
+      const today = todayBRT();
+      const limite3 = addDaysBRT(3);
+
+      const { data: tarefas } = await userClient
+        .from("pipeline_tarefas")
+        .select("id, titulo, tipo, vence_em, pipeline_lead_id")
+        .eq("responsavel_id", uid)
+        .eq("status", "pendente")
+        .lte("vence_em", today)
+        .order("vence_em", { ascending: true })
+        .limit(100);
+      const tRows = tarefas || [];
+      const atrasadas = tRows.filter((t: any) => t.vence_em && t.vence_em < today);
+      const hoje = tRows.filter((t: any) => t.vence_em === today);
+
+      const { data: visitasHoje } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, hora_visita, empreendimento")
+        .eq("corretor_id", uid)
+        .eq("data_visita", today)
+        .order("hora_visita", { ascending: true })
+        .limit(20);
+
+      const { data: aConfirmar } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, data_visita")
+        .eq("corretor_id", uid)
+        .gte("data_visita", today)
+        .lte("data_visita", limite3)
+        .in("status", ["marcada", "reagendada"])
+        .limit(30);
+
+      const { data: semResultado } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, data_visita")
+        .eq("corretor_id", uid)
+        .lt("data_visita", today)
+        .in("status", ["marcada", "confirmada", "reagendada"])
+        .limit(30);
+
+      const { data: leadsAtivos } = await userClient
+        .from("pipeline_leads")
+        .select("id, ultima_acao_at")
+        .eq("corretor_id", uid)
+        .eq("arquivado", false)
+        .limit(500);
+      const ativos = leadsAtivos || [];
+      let comTarefa = new Set<string>();
+      if (ativos.length) {
+        const { data: pend } = await userClient
+          .from("pipeline_tarefas")
+          .select("pipeline_lead_id")
+          .eq("status", "pendente")
+          .in("pipeline_lead_id", ativos.map((l: any) => l.id));
+        comTarefa = new Set((pend || []).map((t: any) => t.pipeline_lead_id));
+      }
+      const semTarefa = ativos.filter((l: any) => !comTarefa.has(l.id));
+      const cutoff = Date.now() - 5 * 86400000;
+      const esfriando = ativos.filter((l: any) => !l.ultima_acao_at || new Date(l.ultima_acao_at).getTime() < cutoff);
+
+      const numeros = {
+        tarefas_atrasadas: atrasadas.length,
+        tarefas_hoje: hoje.length,
+        visitas_hoje: (visitasHoje || []).length,
+        visitas_a_confirmar: (aConfirmar || []).length,
+        visitas_sem_resultado: (semResultado || []).length,
+        leads_sem_tarefa: semTarefa.length,
+        leads_esfriando: esfriando.length,
+      };
+
+      return {
+        result: { tipo: "briefing_dia", today, numeros, visitas_hoje: visitasHoje || [] },
+        modelResult: `BRIEFING DO DIA (números já exibidos em cartão): ${JSON.stringify(numeros)}. Escreva um briefing OBJETIVO em tópicos curtos: (1) 3 a 5 prioridades em ordem, cada uma com motivo + próximo passo; (2) uma linha "Risco do dia" — o que se não for feito hoje custa venda; (3) termine oferecendo iniciar a fila (ex: "quer resolver as ${numeros.tarefas_atrasadas} atrasadas agora, de 3 em 3?"). Não repita os números crus, use-os nas prioridades.`,
+      };
+    }
+
     return { modelResult: `Ferramenta desconhecida: ${name}` };
   } catch (e) {
     console.error("[executeHomiTool] error:", name, e);
