@@ -54,14 +54,38 @@ export function RoletaCorretorView() {
   const { segmentos, meuCredenciamento, fila, loading, submitting, sairDaRoleta } =
     useRoleta();
   const { elegibilidade, carregando: carregandoElegibilidade } = useElegibilidadeRoleta();
-  const { data: minhaAlocacao = [], isLoading: loadingAlocacao } = useMinhaAlocacao();
-  const windowInfo = getCurrentWindowInfo();
+  const {
+    data: minhaAlocacao = [],
+    isLoading: loadingAlocacao,
+    isError: erroAlocacao,
+    refetch: refetchAlocacao,
+    isFetching: fetchingAlocacao,
+  } = useMinhaAlocacao();
+
+  // Relógio vivo: recalcula a janela a cada 30s para a tela virar sozinha
+  // quando o credenciamento abre/fecha (PWA fica aberto o dia todo).
+  const [windowInfo, setWindowInfo] = useState(() => getCurrentWindowInfo());
+  useEffect(() => {
+    const i = setInterval(() => setWindowInfo(getCurrentWindowInfo()), 30_000);
+    return () => clearInterval(i);
+  }, []);
+
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isDiaEspecial = isSunday || isHoliday;
+  const [janelaManual, setJanelaManual] = useState(false);
   const [selectedJanela, setSelectedJanela] = useState<string>(
     isDiaEspecial ? "dia_todo" : windowInfo.credenciamentoJanela || windowInfo.janela
   );
+
+  // Enquanto o corretor não escolher manualmente, segue a janela vigente.
+  useEffect(() => {
+    if (janelaManual || isDiaEspecial) return;
+    const alvo = windowInfo.credenciamentoJanela || windowInfo.janela;
+    setSelectedJanela((prev) => (prev === alvo ? prev : alvo));
+  }, [windowInfo.credenciamentoJanela, windowInfo.janela, janelaManual, isDiaEspecial]);
+
   const [marcandoPresenca, setMarcandoPresenca] = useState(false);
+
 
   // Noturna eligibility state
   const [noturnaEligible, setNoturnaEligible] = useState<boolean | null>(null);
