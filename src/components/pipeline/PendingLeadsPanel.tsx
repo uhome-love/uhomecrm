@@ -109,6 +109,11 @@ export default function PendingLeadsPanel() {
                         <PauseCircle className="h-2.5 w-2.5" /> Empreendimento pausado
                       </Badge>
                     )}
+                    {lead.motivo_pendencia === "produto_nao_identificado" && (
+                      <Badge className="text-[9px] px-1.5 bg-amber-500/10 text-amber-600 border-amber-500/20 gap-0.5">
+                        <PauseCircle className="h-2.5 w-2.5" /> Produto não identificado
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
                     {lead.empreendimento && (
