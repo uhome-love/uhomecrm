@@ -260,8 +260,9 @@ export default function TaskCompletionDialog({
           .maybeSingle();
         const row = vTask as { id?: string; subtipo?: string; responsavel_id?: string } | null;
         // Normaliza subtipos legados/alternativos para os fluxos suportados.
+        // `realizar_visita` foi aposentado: NÃO mapear para "registrar_resultado",
+        // senão concluir o card marcava a visita como realizada indevidamente.
         const SUBTIPO_ALIAS: Record<string, string> = {
-          realizar_visita: "registrar_resultado",
           definir_sequencia: "confirmar_visita",
         };
         if (!cancelled && row?.id && row.subtipo) {
