@@ -124,6 +124,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [baseOrdem, setBaseOrdem] = useState<OrdemBase>("recentes");
   const [baseExcluirOa, setBaseExcluirOa] = useState<boolean>(true);
   const [baseExcluirJaDisparado, setBaseExcluirJaDisparado] = useState<boolean>(true);
+  const { data: empreendimentosCanonicos } = useEmpreendimentosCanonicos();
+  const { data: formulariosBase } = useFormulariosBase();
+
 
   const [recencia, setRecencia] = useState<Recencia>("todos");
   const [empreendimentos, setEmpreendimentos] = useState<string[]>([]);
