@@ -116,14 +116,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
   const [listaIds, setListaIds] = useState<string[]>([]);
-  // Base Única de Leads
-  const [baseEmpIds, setBaseEmpIds] = useState<string[]>([]);
-  const [baseFormularios, setBaseFormularios] = useState<string[]>([]);
-  const [baseAnoMin, setBaseAnoMin] = useState<string>("");
-  const [baseAnoMax, setBaseAnoMax] = useState<string>("");
-  const [baseOrdem, setBaseOrdem] = useState<OrdemBase>("recentes");
-  const [baseExcluirOa, setBaseExcluirOa] = useState<boolean>(true);
-  const [baseExcluirJaDisparado, setBaseExcluirJaDisparado] = useState<boolean>(true);
+  // Base Única de Leads (contrato único de filtro)
+  const [baseFiltro, setBaseFiltro] = useState<BaseUnicaFiltro>(BASE_UNICA_FILTRO_PADRAO);
+
   const { data: empreendimentosCanonicos } = useEmpreendimentosCanonicos();
   const { data: formulariosBase } = useFormulariosBase();
 
