@@ -96,21 +96,21 @@ export default function CorretorEntrada({ onSair }: Props) {
             atual={progress.tentativas}
             meta={progress.metaLigacoes}
             pct={progress.progLigacoes}
-            onSave={(v) => saveGoals(v, progress.metaAproveitados, progress.metaVisitas).then(refetchGoals)}
+            onSave={(v) => saveGoals(v, progress.metaAproveitados, progress.metaVisitas).then(() => refetchGoals())}
           />
           <MetaMini
             label="✅ Aproveitados"
             atual={progress.aproveitados}
             meta={progress.metaAproveitados}
             pct={progress.progAproveitados}
-            onSave={(v) => saveGoals(progress.metaLigacoes, v, progress.metaVisitas).then(refetchGoals)}
+            onSave={(v) => saveGoals(progress.metaLigacoes, v, progress.metaVisitas).then(() => refetchGoals())}
           />
           <MetaMini
             label="📅 Visitas"
             atual={progress.visitasMarcadas}
             meta={progress.metaVisitas}
             pct={progress.progVisitas}
-            onSave={(v) => saveGoals(progress.metaLigacoes, progress.metaAproveitados, v).then(refetchGoals)}
+            onSave={(v) => saveGoals(progress.metaLigacoes, progress.metaAproveitados, v).then(() => refetchGoals())}
           />
         </div>
         <div className="flex items-center gap-3">
