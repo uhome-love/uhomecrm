@@ -96,8 +96,38 @@ export default function FunilLateral({
         )}
       </div>
 
-      {/* Funil cascata */}
-      {funil && (
+      {/* Funil cascata — Base única */}
+      {funil && funil.fonte === "base_unica" && (
+        <div className="text-[11px] space-y-0.5 font-mono">
+          <FunilRow label="Total na base (filtros)" value={funil.total_bruto ?? 0} tone="neutral" />
+          <FunilRow label="− Opt-out" value={-(funil.removidos_opt_out ?? 0)} tone="warn" />
+          <FunilRow label="− Sem telefone" value={-(funil.removidos_sem_telefone ?? 0)} tone="warn" />
+          <FunilRow
+            label={(funil.removidos_pipeline_ativo ?? 0) > 0 ? "− No pipeline ativo" : "· No pipeline ativo (mantidos)"}
+            value={(funil.removidos_pipeline_ativo ?? 0) > 0 ? -(funil.removidos_pipeline_ativo ?? 0) : (funil.mantidos_pipeline_ativo ?? 0)}
+            tone={(funil.removidos_pipeline_ativo ?? 0) > 0 ? "warn" : "muted"}
+          />
+          <FunilRow
+            label={(funil.removidos_ganho ?? 0) > 0 ? "− Já cliente (Ganho)" : "· Clientes (mantidos)"}
+            value={(funil.removidos_ganho ?? 0) > 0 ? -(funil.removidos_ganho ?? 0) : (funil.mantidos_ganho ?? 0)}
+            tone={(funil.removidos_ganho ?? 0) > 0 ? "warn" : "muted"}
+          />
+          <FunilRow
+            label={(funil.removidos_descartados ?? 0) > 0 ? "− Descartados / Caiu" : "· Descartados (mantidos)"}
+            value={(funil.removidos_descartados ?? 0) > 0 ? -(funil.removidos_descartados ?? 0) : (funil.mantidos_descartados ?? 0)}
+            tone={(funil.removidos_descartados ?? 0) > 0 ? "warn" : "muted"}
+          />
+          <FunilRow label="− Em Oferta Ativa" value={-(funil.removidos_oferta_ativa ?? 0)} tone="warn" />
+          <FunilRow label="− Já disparado (janela)" value={-(funil.duplicados_removidos ?? 0)} tone="warn" />
+          <div className="flex justify-between border-t pt-1 mt-1">
+            <span className="font-semibold">= Elegíveis</span>
+            <span className="font-bold text-indigo-700 dark:text-indigo-300">{elegiveis.toLocaleString("pt-BR")}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Funil cascata — demais fontes */}
+      {funil && funil.fonte !== "base_unica" && (
         <div className="text-[11px] space-y-0.5 font-mono">
           {bruto != null && (
             <FunilRow label="Total bruto" value={bruto} tone="neutral" />
@@ -149,6 +179,7 @@ export default function FunilLateral({
           </div>
         </div>
       )}
+
 
       {/* Breakdown por empreendimento */}
       {breakdownEmpreendimento && breakdownEmpreendimento.length > 0 && (
