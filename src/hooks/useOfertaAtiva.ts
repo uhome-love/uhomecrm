@@ -21,7 +21,11 @@ export interface OALista {
   updated_at: string;
   segmento_id?: string | null;
   ultima_higienizacao_at?: string | null;
+  liberada_em?: string | null;
+  expira_em?: string | null;
+  origem_base?: boolean | null;
 }
+
 
 export interface OALead {
   id: string;
