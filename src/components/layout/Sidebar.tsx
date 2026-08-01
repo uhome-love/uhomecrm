@@ -396,22 +396,16 @@ export default function Sidebar({
   const rawGroups = showCorretorMode
     ? [baseGroups[0], MODO_CORRETOR_GROUP, ...baseGroups.slice(1)]
     : baseGroups;
-  const withMutirao = mutiraoAtivo
-    ? rawGroups.map(g =>
-        g.title === "Leads" || g.title === "Leads & Visitas" || g.title === "Modo Corretor"
-          ? {
-              ...g,
-              items: g.items.some(i => i.path === "/oferta-ativa-ao-vivo")
-                ? g.items
-                : [
-                    ...g.items,
-                    {
-                      label: "⚡ Mutirão ao vivo",
-                      path: "/oferta-ativa-ao-vivo",
-                      icon: <Radio size={15} strokeWidth={1.5} />,
-                    },
-                  ],
-            }
+  const mutiraoItem: NavItem = {
+    label: "⚡ Mutirão ao vivo",
+    path: "/oferta-ativa-ao-vivo",
+    icon: <Radio size={15} strokeWidth={1.5} />,
+  };
+  const withMutirao: NavGroup[] = mutiraoAtivo
+    ? rawGroups.map((g) =>
+        (g.title === "Leads" || g.title === "Leads & Visitas" || g.title === "Modo Corretor") &&
+        !g.items.some((i) => i.path === mutiraoItem.path)
+          ? { ...g, items: [...g.items, mutiraoItem] }
           : g,
       )
     : rawGroups;
