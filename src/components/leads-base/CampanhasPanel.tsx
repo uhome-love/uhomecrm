@@ -27,22 +27,33 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
   pendente: "outline",
 };
 
-export function CampanhasPanel() {
+export function CampanhasPanel({ escopo = "todas" }: { escopo?: "todas" | "ativas" | "encerradas" }) {
   const { data, isLoading } = useCampanhasOA();
   const encerrar = useEncerrarCampanhasExpiradas();
   const encerrarUma = useEncerrarCampanha();
-  const rows = ((data ?? []) as unknown as Row[]).filter((r) => r.status !== "arquivada");
+  const rows = ((data ?? []) as unknown as Row[])
+    .filter((r) => r.status !== "arquivada")
+    .filter((r) => {
+      if (escopo === "todas") return true;
+      const ativa = r.status === "liberada" || r.status === "pausada" || r.status === "pendente";
+      return escopo === "ativas" ? ativa : !ativa;
+    });
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Campanhas temporárias geradas da Base Única. Ao expirar, os leads não trabalhados voltam para a base.
+          {escopo === "encerradas"
+            ? "Histórico das campanhas já encerradas — os leads não trabalhados voltaram para a Base Única."
+            : "Campanhas temporárias geradas da Base Única. Ao expirar, os leads não trabalhados voltam para a base."}
         </p>
-        <Button variant="outline" size="sm" className="gap-1.5" disabled={encerrar.isPending} onClick={() => encerrar.mutate()}>
-          <RefreshCcw size={14} /> Encerrar vencidas
-        </Button>
+        {escopo !== "encerradas" && (
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={encerrar.isPending} onClick={() => encerrar.mutate()}>
+            <RefreshCcw size={14} /> Encerrar vencidas
+          </Button>
+        )}
       </div>
+
 
       <div className="rounded-xl border bg-card overflow-x-auto">
         <table className="w-full text-sm">
