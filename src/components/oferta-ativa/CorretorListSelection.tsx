@@ -26,6 +26,24 @@ interface ListaStats {
   meusTentativas: number;
 }
 
+/** Gerentes (equipes) a que o usuário pertence — usado no escopo da campanha. */
+function useMinhasEquipes() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["oa-minhas-equipes", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("team_members")
+        .select("gerente_id")
+        .eq("status", "ativo")
+        .eq("user_id", user!.id);
+      return (data ?? []).map((r: { gerente_id: string }) => r.gerente_id).filter(Boolean) as string[];
+    },
+    staleTime: 10 * 60_000,
+  });
+}
+
 function useBatchListaStats(listaIds: string[]) {
   const { user } = useAuth();
 
@@ -332,9 +350,19 @@ export default function CorretorListSelection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLista]);
 
-  const liberadas = listas.filter(
-    l => l.status === "liberada" && (!l.expira_em || new Date(l.expira_em).getTime() > Date.now()),
-  );
+  const { data: minhasEquipes } = useMinhasEquipes();
+
+  const liberadas = listas.filter(l => {
+    if (l.status !== "liberada") return false;
+    if (l.expira_em && new Date(l.expira_em).getTime() <= Date.now()) return false;
+    // Escopo: campanha restrita só aparece para as equipes/corretores selecionados
+    const esc = l.escopo ?? {};
+    const equipes = esc.equipes ?? [];
+    const corretores = esc.corretores ?? [];
+    if (equipes.length === 0 && corretores.length === 0) return true;
+    if (user && corretores.includes(user.id)) return true;
+    return (minhasEquipes ?? []).some(g => equipes.includes(g));
+  });
 
   const listaIds = useMemo(() => liberadas.map(l => l.id), [liberadas]);
   const { data: statsMap } = useBatchListaStats(listaIds);
