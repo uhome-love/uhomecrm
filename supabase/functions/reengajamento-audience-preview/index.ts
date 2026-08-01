@@ -10,8 +10,22 @@ const corsHeaders = {
 
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 
-type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
+type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha" | "base_unica";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
+
+// Filtros do público vindo da Base Única de Leads
+export interface BaseFiltro {
+  empreendimento_ids?: string[];
+  formularios?: string[];
+  campanhas?: string[];
+  situacao_crm?: string[];
+  ano_min?: number | string;
+  ano_max?: number | string;
+  ordem_selecao?: "recentes" | "antigos" | "aleatorio";
+  excluir_oa?: boolean;
+  excluir_ja_disparado?: boolean;
+  janela_dedup_dias?: number;
+}
 
 interface Audience {
   source?: AudienceSource;
@@ -33,7 +47,9 @@ interface Audience {
   include_archived?: boolean;
   limit?: number;
   template_name?: string;
+  base_filtro?: BaseFiltro;
 }
+
 
 // Teto de segurança para agregação client-side dos breakdowns.
 // Suficiente para bases grandes sem estourar memória do worker.
@@ -48,7 +64,14 @@ function audienceKey(a: Audience): string {
   }
   if (a.source === "pipeline_ativo") return `pipeline:${(a.stage_ids || []).slice().sort().join(",")}`;
   if (a.source === "visita_amanha") return `visita_amanha:${a.data_visita || ""}`;
+  if (a.source === "base_unica") {
+    const f = a.base_filtro || {};
+    const emp = (f.empreendimento_ids || []).slice().sort().join(",");
+    const form = (f.formularios || []).slice().sort().join(",");
+    return `base_unica:${emp || "*"}|${form || "*"}`;
+  }
   return a.source;
+
 }
 
 const RESPONDEU_NAO_STATUSES = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
@@ -194,6 +217,46 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
     const freqCooldownDias = isMeta ? Math.max(0, Number(cfg?.freq_cooldown_dias ?? 14)) : 0;
+
+    // ─── Público: BASE ÚNICA DE LEADS ───
+    if (audience.source === "base_unica") {
+      const f = audience.base_filtro || {};
+      const filtro = {
+        empreendimento_ids: f.empreendimento_ids || [],
+        formularios: f.formularios || [],
+        campanhas: f.campanhas || [],
+        situacao_crm: f.situacao_crm || [],
+        ano_min: f.ano_min ?? null,
+        ano_max: f.ano_max ?? null,
+        ordem_selecao: f.ordem_selecao || "recentes",
+        excluir_oa: f.excluir_oa !== false,
+        excluir_ja_disparado: dedupMode === "include_all" ? false : (f.excluir_ja_disparado !== false),
+        janela_dedup_dias: Number(f.janela_dedup_dias || dedupLookbackDays),
+        template_name: isMeta ? (audience.template_name || null) : null,
+      };
+      const { data: prev, error: prevErr } = await supabase.rpc("preview_reengajamento_base", { p_filtro: filtro });
+      if (prevErr) throw prevErr;
+      const p: any = prev || {};
+      const elegiveis = Math.min(Number(p.total || 0), limit);
+      return new Response(JSON.stringify({
+        count: elegiveis,
+        count_pre_dedup: Number(p.bruto || 0),
+        sample_count: Array.isArray(p.amostra) ? p.amostra.length : 0,
+        sample: p.amostra || [],
+        audience_source: audSource,
+        funil: {
+          total_bruto: Number(p.bruto || 0),
+          removidos_opt_out: Number(p.removidos_opt_out || 0),
+          telefones_invalidos: Number(p.removidos_sem_telefone || 0),
+          removidos_pipeline_ativo: Number(p.removidos_crm || 0),
+          removidos_oferta_ativa: Number(p.removidos_oa || 0),
+          duplicados_removidos: Number(p.removidos_ja_disparado || 0),
+          elegiveis,
+          teto_limite: Number(p.total || 0) > limit ? limit : null,
+        },
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
 
     // ─── Público COMBINADO (descartados + oferta ativa + pipeline) com dedup por telefone ───
     if (sourcesArr.length > 1) {

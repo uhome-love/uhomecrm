@@ -356,7 +356,10 @@ Deno.serve(async (req) => {
       ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
       : src === "oferta_ativa_lista"
         ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
-        : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`;
+        : src === "base_unica"
+          ? `base_unica:${((((bodyAudience as any).base_filtro?.empreendimento_ids) || []) as string[]).slice().sort().join(",") || "*"}|${((((bodyAudience as any).base_filtro?.formularios) || []) as string[]).slice().sort().join(",") || "*"}`
+          : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`;
+
   let sourcesArr: string[] = [];
   let isCustomAudience = false;
   let isCombined = false;
@@ -553,7 +556,7 @@ Deno.serve(async (req) => {
       ? bodyDailyLimitOverride
       : (isCustomAudience && Number(bodyAudience?.limit) > 0 ? Number(bodyAudience.limit) : cfg.daily_limit);
 
-    let leads: Array<{ id: string; queue_id?: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
+    let leads: Array<{ id: string; queue_id?: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" | "base_lead" }> = [];
     let supressosRemovidos = 0;
     let pipelineAtivosRemovidos = 0;
     let frequenciaRemovidos = 0;
@@ -571,7 +574,7 @@ Deno.serve(async (req) => {
       const dedupMode = String(bodyAudience.dedup_mode || "exclude_sent");
       const dedupLookbackDays = Math.max(1, Number(bodyAudience.dedup_lookback_days || 30));
       const dedupSince = new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString();
-      type Lead = { id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" };
+      type Lead = { id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" | "base_lead" };
       const last8 = (raw: string | null): string => {
         const d = (raw || "").replace(/\D/g, "");
         return d.length >= 8 ? d.slice(-8) : d;
@@ -730,18 +733,48 @@ Deno.serve(async (req) => {
         return dedupOfertaViaMetaTemplate(byEventos);
       };
 
+      const fetchBaseUnica = async (cap: number): Promise<Lead[]> => {
+        const f = (bodyAudience as any).base_filtro || {};
+        const filtro = {
+          empreendimento_ids: f.empreendimento_ids || [],
+          formularios: f.formularios || [],
+          campanhas: f.campanhas || [],
+          situacao_crm: f.situacao_crm || [],
+          ano_min: f.ano_min ?? null,
+          ano_max: f.ano_max ?? null,
+          ordem_selecao: f.ordem_selecao || "recentes",
+          excluir_oa: f.excluir_oa !== false,
+          excluir_ja_disparado: dedupMode === "include_all" ? false : (f.excluir_ja_disparado !== false),
+          janela_dedup_dias: Number(f.janela_dedup_dias || 30),
+          template_name: canal === "meta" ? (metaTemplate || null) : null,
+        };
+        const { data, error } = await supabase.rpc("selecionar_reengajamento_base", { p_filtro: filtro, p_limit: cap });
+        if (error) throw error;
+        const rows = (data || []) as any[];
+        totalBrutoCapturado = Math.max(totalBrutoCapturado || 0, rows.length);
+        return rows.map((l: any) => ({
+          id: l.id as string,
+          nome: l.nome,
+          telefone: l.telefone,
+          email: l.email,
+          ref: "base_lead" as const,
+        }));
+      };
+
       const fetchForSource = async (src: string, cap: number): Promise<Lead[]> => {
         if (src === "descartados") return fetchDescartados(cap);
         if (src === "pipeline_ativo") return fetchPipelineAtivo(cap);
         if (src === "oferta_ativa_lista") return fetchOfertaAtiva(cap);
+        if (src === "base_unica") return fetchBaseUnica(cap);
         throw new Error(`audience.source inválido: ${src}`);
       };
+
 
       if (!isCombined) {
         leads = (await fetchForSource(primarySource, primarySource === "descartados" ? effectiveLimit : effectiveLimit * 2)).slice(0, effectiveLimit);
       } else {
         // Combinado: prioridade descartados > oferta_ativa > pipeline_ativo, dedup por últimos 8 dígitos.
-        const priority = ["descartados", "oferta_ativa_lista", "pipeline_ativo"];
+        const priority = ["descartados", "oferta_ativa_lista", "pipeline_ativo", "base_unica"];
         const ordered = priority.filter((s) => sourcesArr.includes(s));
         const seen = new Set<string>();
         const merged: Lead[] = [];

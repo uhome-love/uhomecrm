@@ -11,7 +11,10 @@ interface FunilData {
   telefones_invalidos?: number;
   suprimidos_meta?: number;
   removidos_pipeline_ativo?: number;
+  removidos_oferta_ativa?: number;
+  removidos_opt_out?: number;
   removidos_frequencia?: number;
+
   em_cooldown?: number;
   cooldown_dias?: number;
   inativados_definitivos?: number;
@@ -115,6 +118,13 @@ export default function FunilLateral({
           {(funil.removidos_pipeline_ativo ?? 0) > 0 && (
             <FunilRow label="− Já ativos no pipeline" value={-(funil.removidos_pipeline_ativo ?? 0)} tone="warn" />
           )}
+          {(funil.removidos_oferta_ativa ?? 0) > 0 && (
+            <FunilRow label="− Em campanha de Oferta Ativa" value={-(funil.removidos_oferta_ativa ?? 0)} tone="warn" />
+          )}
+          {(funil.removidos_opt_out ?? 0) > 0 && (
+            <FunilRow label="− Opt-out (pediu para não receber)" value={-(funil.removidos_opt_out ?? 0)} tone="warn" />
+          )}
+
           {(funil.em_cooldown ?? 0) > 0 && (
             <FunilRow
               label={`− Cooldown ${funil.cooldown_dias ?? 7}d`}

@@ -881,20 +881,33 @@ Deno.serve(async (req) => {
                 // descartados / oferta_ativa_lista / legacy → reativa e manda pra roleta
                 // pipeline_ativo / visita_amanha → mantém corretor, só notifica
                 const audSrc = String(metaDispatch.audience_source || "legacy");
-                const routeToRoleta = audSrc === "descartados" || audSrc === "oferta_ativa_lista" || audSrc === "legacy" || audSrc === "combo";
+                const isBaseUnica = audSrc === "base_unica";
+                const routeToRoleta = audSrc === "descartados" || audSrc === "oferta_ativa_lista" || audSrc === "legacy" || audSrc === "combo" || isBaseUnica;
                 const justNotifyCorretor = audSrc === "pipeline_ativo" || audSrc === "visita_amanha";
 
                 // Reativa lead se respondeu SIM E origem permite reengajamento → SEMPRE Fila do CEO
                 if (buttonResp === "sim" && routeToRoleta) {
                   const tplName = metaDispatch.template_name || "reengajamento";
-                  // ID efetivo do lead no pipeline (pode mudar se a origem for Oferta Ativa)
+                  // ID efetivo do lead no pipeline (pode mudar se a origem for Oferta Ativa / Base Única)
                   let effectiveLeadId = metaDispatch.lead_id;
                   // Quando o lead já está ATIVO no pipeline, respeitamos a exclusividade:
                   // não vai pra Fila do CEO, mantém com o corretor atual.
                   let alreadyActive = false;
                   let activeCorretorId: string | null = currentLead?.corretor_id || null;
                   try {
-                    if (!currentLead) {
+                    if (isBaseUnica && !currentLead) {
+                      // Contato veio da Base Única de Leads (ainda não existe no funil).
+                      const { data: baseRes, error: baseErr } = await supabase.rpc("reativar_base_lead_para_fila_ceo", {
+                        p_base_lead_id: metaDispatch.lead_id,
+                        p_template_name: tplName,
+                      });
+                      if (baseErr) throw baseErr;
+                      const newId = (baseRes as any)?.pipeline_lead_id;
+                      if (newId) effectiveLeadId = newId;
+                      alreadyActive = !!(baseRes as any)?.already_active;
+                      if (alreadyActive) activeCorretorId = (baseRes as any)?.corretor_id || null;
+                      console.log(`🔥 Base Única ${metaDispatch.lead_id} → pipeline ${effectiveLeadId} (template=${tplName}) ${alreadyActive ? "JÁ ATIVO — mantido com corretor" : "→ Fila do CEO"}`);
+                    } else if (!currentLead) {
                       // Lead não existe no pipeline → veio de uma lista de Oferta Ativa.
                       // A RPC SEMPRE verifica antes se o telefone já existe no pipeline ativo.
                       const { data: oaRes, error: oaErr } = await supabase.rpc("reativar_oferta_ativa_para_fila_ceo", {
@@ -918,6 +931,7 @@ Deno.serve(async (req) => {
                   } catch (e) {
                     console.error("rpc reativar (fila CEO) error:", e);
                   }
+
 
                   // Caso o lead já estivesse ATIVO no pipeline: a RPC já registrou a atividade
                   // e manteve o corretor. Apenas notifica o corretor atual e segue.
@@ -999,8 +1013,19 @@ Deno.serve(async (req) => {
                   console.log(`🔥 Lead ${metaDispatch.lead_id} (origem=${audSrc}) respondeu SIM — mantido com corretor atual, sem roleta`);
                   continue;
                 } else if (buttonResp === "nao") {
+                  // Base Única: contato ainda não é lead do funil → opt-out na base e encerra.
+                  if (isBaseUnica && !currentLead) {
+                    await supabase.from("base_leads").update({
+                      opt_out: true,
+                      opt_out_motivo: `Respondeu NÃO ao template "${metaDispatch.template_name || "reengajamento"}" em ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+                      updated_at: new Date().toISOString(),
+                    }).eq("id", metaDispatch.lead_id);
+                    console.log(`🚫 Base Única ${metaDispatch.lead_id} marcado como opt-out (respondeu NÃO)`);
+                    continue;
+                  }
                   // INATIVAÇÃO: lead respondeu NÃO → Descarte definitivo, NÃO reativar, NÃO mandar p/ roleta
                   const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+
                   const { data: leadAtual } = await supabase
                     .from("pipeline_leads")
                     .select("motivo_descarte")
