@@ -21,6 +21,7 @@ import FunilLateral from "./disparo/FunilLateral";
 import EmpreendimentoMultiSelect from "./disparo/EmpreendimentoMultiSelect";
 import { MultiPicker } from "@/components/leads-base/campanha/MultiPicker";
 import { useEmpreendimentosCanonicos, useFormulariosBase } from "@/hooks/useBaseLeads";
+import BaseUnicaFiltros, { BASE_UNICA_FILTRO_PADRAO, type BaseUnicaFiltro } from "./disparo/BaseUnicaFiltros";
 
 
 type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "base_unica";
