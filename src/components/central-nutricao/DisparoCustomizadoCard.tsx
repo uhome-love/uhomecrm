@@ -252,7 +252,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (modoTeste && canal === "meta") base.modo_teste = true;
     return base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), motivosDescarte.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
+  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), motivosDescarte.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), baseEmpIds.join(","), baseFormularios.join(","), baseAnoMin, baseAnoMax, baseOrdem, baseExcluirOa, baseExcluirJaDisparado, templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
 
 
   // ── Auto-preview com debounce ──
