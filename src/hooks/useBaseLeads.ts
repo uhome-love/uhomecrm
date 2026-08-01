@@ -416,7 +416,10 @@ export function useEscopoOpcoes() {
         supabase.from("team_members").select("user_id,gerente_id").eq("status", "ativo"),
         supabase.from("profiles").select("user_id,nome").order("nome"),
       ]);
-      const nomePorUser = new Map((perfis ?? []).map((p: { user_id: string; nome: string }) => [p.user_id, p.nome]));
+      const nomePorUser = new Map<string, string>(
+        (perfis ?? []).map((p: { user_id: string; nome: string }) => [p.user_id, p.nome] as [string, string]),
+      );
+
       const gerentes = Array.from(new Set((membros ?? []).map((m: { gerente_id: string }) => m.gerente_id).filter(Boolean)));
       const corretores = Array.from(new Set((membros ?? []).map((m: { user_id: string }) => m.user_id).filter(Boolean)));
       return {
