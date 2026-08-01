@@ -81,7 +81,10 @@ export function CampanhasPanel({ escopo = "todas" }: { escopo?: "todas" | "ativa
             {!isLoading && rows.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">
-                  Nenhuma campanha ativa. Crie uma a partir da aba “Base de leads”.
+                  {escopo === "encerradas"
+                    ? "Nenhuma campanha encerrada ainda."
+                    : "Nenhuma campanha ativa. Crie uma com o botão “Nova campanha” ou pela Base Única."}
+
                 </td>
               </tr>
             )}
