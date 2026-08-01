@@ -457,6 +457,68 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
               {/* ─── FILTROS ─── */}
               <TabsContent value="filtros" className="space-y-3 pt-3">
+                {/* Base única de leads */}
+                {has("base_unica") && (
+                  <div className="space-y-2 rounded-lg border border-indigo-200 dark:border-indigo-900 bg-indigo-50/40 dark:bg-indigo-950/20 p-3">
+                    <Label className="text-xs flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5" /> Base única de leads
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Base histórica higienizada: opt-out, sem telefone, já disparados e quem está no CRM ou em campanha de Oferta Ativa saem automaticamente.
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Empreendimento</Label>
+                        <MultiPicker
+                          items={(empreendimentosCanonicos || []).map((e) => ({ id: e.id, nome: e.nome }))}
+                          value={baseEmpIds}
+                          onChange={setBaseEmpIds}
+                          placeholder="Todos os empreendimentos"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Formulário de origem</Label>
+                        <MultiPicker
+                          items={(formulariosBase || []).map((f) => ({ id: f.formulario, nome: f.formulario, hint: String(f.total_leads) }))}
+                          value={baseFormularios}
+                          onChange={setBaseFormularios}
+                          placeholder="Todos os formulários"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Safra (ano)</Label>
+                        <div className="flex items-center gap-1.5">
+                          <Input type="number" placeholder="de" value={baseAnoMin} onChange={(e) => setBaseAnoMin(e.target.value)} className="h-9" />
+                          <span className="text-xs text-muted-foreground">até</span>
+                          <Input type="number" placeholder="até" value={baseAnoMax} onChange={(e) => setBaseAnoMax(e.target.value)} className="h-9" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Ordem de seleção</Label>
+                        <Select value={baseOrdem} onValueChange={(v) => setBaseOrdem(v as OrdemBase)}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="recentes">Mais recentes primeiro</SelectItem>
+                            <SelectItem value="antigos">Mais antigos primeiro</SelectItem>
+                            <SelectItem value="aleatorio">Aleatório</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-4 pt-1">
+                      <label className="flex items-center gap-2 text-xs cursor-pointer">
+                        <Checkbox checked={baseExcluirOa} onCheckedChange={(v) => setBaseExcluirOa(v === true)} />
+                        <span>Excluir quem está em campanha de Oferta Ativa</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-xs cursor-pointer">
+                        <Checkbox checked={baseExcluirJaDisparado} onCheckedChange={(v) => setBaseExcluirJaDisparado(v === true)} />
+                        <span>Excluir quem já recebeu disparo</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+
                 {/* Recência */}
                 {(has("descartados") || has("oferta_ativa_lista") || has("pipeline_ativo")) && (
                   <div>
