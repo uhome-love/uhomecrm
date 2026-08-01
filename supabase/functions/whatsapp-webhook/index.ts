@@ -1013,8 +1013,19 @@ Deno.serve(async (req) => {
                   console.log(`🔥 Lead ${metaDispatch.lead_id} (origem=${audSrc}) respondeu SIM — mantido com corretor atual, sem roleta`);
                   continue;
                 } else if (buttonResp === "nao") {
+                  // Base Única: contato ainda não é lead do funil → opt-out na base e encerra.
+                  if (isBaseUnica && !currentLead) {
+                    await supabase.from("base_leads").update({
+                      opt_out: true,
+                      opt_out_motivo: `Respondeu NÃO ao template "${metaDispatch.template_name || "reengajamento"}" em ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+                      updated_at: new Date().toISOString(),
+                    }).eq("id", metaDispatch.lead_id);
+                    console.log(`🚫 Base Única ${metaDispatch.lead_id} marcado como opt-out (respondeu NÃO)`);
+                    continue;
+                  }
                   // INATIVAÇÃO: lead respondeu NÃO → Descarte definitivo, NÃO reativar, NÃO mandar p/ roleta
                   const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+
                   const { data: leadAtual } = await supabase
                     .from("pipeline_leads")
                     .select("motivo_descarte")
