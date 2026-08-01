@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, X, ChevronRight, Loader2, Pencil, Layers, Bookmark, BarChart3 } from "lucide-react";
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
-import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
+import CorretorEntrada from "@/components/oferta-ativa/CorretorEntrada";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
@@ -636,7 +636,7 @@ export default function CorretorCall() {
             </TabsList>
 
             <TabsContent value="call" className="mt-0">
-              <CorretorListSelection />
+              <CorretorEntrada />
             </TabsContent>
             <TabsContent value="bases" className="mt-0">
               <BasesAtivasGrid />
