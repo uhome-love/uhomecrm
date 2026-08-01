@@ -30,6 +30,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
 export function CampanhasPanel() {
   const { data, isLoading } = useCampanhasOA();
   const encerrar = useEncerrarCampanhasExpiradas();
+  const encerrarUma = useEncerrarCampanha();
   const rows = ((data ?? []) as unknown as Row[]).filter((r) => r.status !== "arquivada");
 
   return (
