@@ -25,6 +25,8 @@ import CaminhosCards from "@/components/corretor/CaminhosCards";
 import TarefasHojeLateral from "@/components/corretor/TarefasHojeLateral";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
 import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
+import { OfertaAtivaBanner } from "@/components/oferta-ativa/OfertaAtivaBanner";
+
 
 export default function CorretorDashboard() {
   const { user } = useAuth();
