@@ -887,7 +887,10 @@ Deno.serve(async (req) => {
     // ── GUARDA DE EXCLUSIVIDADE DO PIPELINE (crítico, todos os canais) ──
     // Nunca dispara para quem é lead ATIVO no pipeline (telefone OU e-mail).
     // Checagem em tempo de disparo: cobre quem virou lead ativo depois de entrar na lista.
-    if (!bodyRunId && leads.length > 0) {
+    // Exceção: na Base única o usuário pode escolher MANTER quem está no pipeline ativo.
+    const baseUnicaMantemPipeline = sourcesArr.includes("base_unica")
+      && ((bodyAudience as any)?.base_filtro?.excluir_pipeline_ativo === false);
+    if (!bodyRunId && leads.length > 0 && !baseUnicaMantemPipeline) {
       const phoneSet = new Set<string>();
       const emailSet = new Set<string>();
       let pf = 0;
