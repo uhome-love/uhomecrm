@@ -19,6 +19,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import FunilLateral from "./disparo/FunilLateral";
 import EmpreendimentoMultiSelect from "./disparo/EmpreendimentoMultiSelect";
+import { MultiPicker } from "@/components/leads-base/campanha/MultiPicker";
+import { useEmpreendimentosCanonicos, useFormulariosBase } from "@/hooks/useBaseLeads";
+
 
 type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "base_unica";
 type Canal = "meta" | "evolution";
