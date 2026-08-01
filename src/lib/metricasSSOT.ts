@@ -90,7 +90,7 @@ export interface MetricasTotais {
 }
 
 export function somarMetricas(linhas: MetricaCorretor[]): MetricasTotais {
-  return linhas.reduce<MetricasTotais>(
+  const totais = linhas.reduce<MetricasTotais>(
     (acc, l) => ({
       leads_recebidos: acc.leads_recebidos + l.leads_recebidos,
       visitas_agendadas: acc.visitas_agendadas + l.visitas_agendadas,
@@ -99,11 +99,37 @@ export function somarMetricas(linhas: MetricaCorretor[]): MetricasTotais {
       visitas_no_show: acc.visitas_no_show + l.visitas_no_show,
       vendas: acc.vendas + l.vendas,
       vgv_assinado: acc.vgv_assinado + l.vgv_assinado,
-      corretores: acc.corretores + 1,
+      corretores: acc.corretores,
     }),
     { leads_recebidos: 0, visitas_agendadas: 0, visitas_a_realizar: 0, visitas_realizadas: 0, visitas_no_show: 0, vendas: 0, vgv_assinado: 0, corretores: 0 }
   );
+  totais.corretores = new Set(linhas.map((l) => l.corretor_auth_id)).size;
+  return totais;
 }
+
+/**
+ * Consolida em 1 linha por corretor (soma os períodos em equipes diferentes).
+ * A equipe exibida passa a ser a equipe ATUAL do corretor.
+ */
+export function consolidarPorCorretor(linhas: MetricaCorretor[]): MetricaCorretor[] {
+  const map = new Map<string, MetricaCorretor>();
+  linhas.forEach((l) => {
+    const cur = map.get(l.corretor_auth_id);
+    if (!cur) {
+      map.set(l.corretor_auth_id, { ...l, equipe: l.equipe_atual ?? l.equipe });
+      return;
+    }
+    cur.leads_recebidos += l.leads_recebidos;
+    cur.visitas_agendadas += l.visitas_agendadas;
+    cur.visitas_a_realizar += l.visitas_a_realizar;
+    cur.visitas_realizadas += l.visitas_realizadas;
+    cur.visitas_no_show += l.visitas_no_show;
+    cur.vendas += l.vendas;
+    cur.vgv_assinado += l.vgv_assinado;
+  });
+  return Array.from(map.values()).sort((a, b) => b.vgv_assinado - a.vgv_assinado);
+}
+
 
 /** Agrupa por equipe (desligados entram na equipe histórica). */
 export function agruparPorEquipe(linhas: MetricaCorretor[]) {
