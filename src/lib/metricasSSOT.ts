@@ -18,7 +18,10 @@ import { supabase } from "@/integrations/supabase/client";
 export interface MetricaCorretor {
   corretor_auth_id: string;
   corretor_nome: string | null;
+  /** equipe HISTÓRICA (do período em que o fato aconteceu) */
   equipe: string | null;
+  /** equipe atual do corretor no cadastro */
+  equipe_atual: string | null;
   gerente_auth_id: string | null;
   corretor_ativo: boolean;
   leads_recebidos: number;
@@ -31,6 +34,7 @@ export interface MetricaCorretor {
   vendas: number;
   vgv_assinado: number;
 }
+
 
 export interface MetricasFiltro {
   /** YYYY-MM-DD (BRT) */
