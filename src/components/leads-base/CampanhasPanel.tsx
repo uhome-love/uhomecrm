@@ -100,6 +100,19 @@ export function CampanhasPanel() {
                   {r.aproveitados ?? 0}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{Number(r.conversao_pct ?? 0).toFixed(1)}%</td>
+                <td className="px-3 py-2 text-right">
+                  {r.status === "liberada" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      disabled={encerrarUma.isPending}
+                      onClick={() => encerrarUma.mutate(r.lista_id)}
+                    >
+                      <Square size={12} /> Encerrar
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
