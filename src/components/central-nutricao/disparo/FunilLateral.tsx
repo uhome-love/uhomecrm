@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 interface FunilData {
+  fonte?: string;
   por_fonte?: Record<string, number>;
   total_bruto?: number;
   total_em_descarte?: number;
@@ -14,6 +15,12 @@ interface FunilData {
   removidos_oferta_ativa?: number;
   removidos_opt_out?: number;
   removidos_frequencia?: number;
+  removidos_sem_telefone?: number;
+  removidos_ganho?: number;
+  removidos_descartados?: number;
+  mantidos_pipeline_ativo?: number;
+  mantidos_ganho?: number;
+  mantidos_descartados?: number;
 
   em_cooldown?: number;
   cooldown_dias?: number;
@@ -22,6 +29,7 @@ interface FunilData {
   arquivados?: number;
   elegiveis?: number;
 }
+
 
 interface Props {
   loading: boolean;
