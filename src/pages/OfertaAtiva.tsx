@@ -1,71 +1,105 @@
 import { useState } from "react";
-import { Phone, Settings2, Bookmark, BarChart3, Layers } from "lucide-react";
-import ImportListPanel from "@/components/oferta-ativa/ImportListPanel";
-import CampaignManager from "@/components/oferta-ativa/CampaignManager";
+import { Phone, Settings2, BarChart3, Layers, Rocket, Database, Archive } from "lucide-react";
+import { Link, Navigate } from "react-router-dom";
 import TemplateManager from "@/components/oferta-ativa/TemplateManager";
 import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel";
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import OAObservabilityPanel from "@/components/oferta-ativa/OAObservabilityPanel";
-import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
 import ReservadosPanel from "@/components/oferta-ativa/ReservadosPanel";
 import MeusResultadosPanel from "@/components/oferta-ativa/MeusResultadosPanel";
+import { CampanhasPanel } from "@/components/leads-base/CampanhasPanel";
+import { CriarCampanhaDialog } from "@/components/leads-base/CriarCampanhaDialog";
+import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Navigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
+import type { BaseLeadsFiltro } from "@/hooks/useBaseLeads";
 
 const TABS = [
-  { label: "Bases ativas",    value: "bases"       },
-  { label: "Reservados",      value: "reservados"  },
-  { label: "Meus resultados", value: "resultados"  },
-  { label: "Configurações",   value: "config"      },
+  { label: "Campanhas ativas", value: "campanhas"  },
+  { label: "Ao vivo",          value: "live"       },
+  { label: "Ranking",          value: "ranking"    },
+  { label: "Encerradas",       value: "encerradas" },
+  { label: "Reservados",       value: "reservados" },
+  { label: "Meus resultados",  value: "resultados" },
+  { label: "Configurações",    value: "config"     },
 ];
 
-const CONFIG_SUB_TABS_ADMIN = [
-  { label: "Live",       value: "live",      icon: <Phone size={14} /> },
-  { label: "Ranking",    value: "ranking",   icon: <BarChart3 size={14} /> },
-  { label: "Radar",      value: "radar",     icon: <Layers size={14} /> },
-  { label: "Importar",   value: "importar",  icon: <Settings2 size={14} /> },
-  { label: "Campanhas",  value: "campanhas", icon: <Settings2 size={14} /> },
-  { label: "Templates",  value: "templates", icon: <Settings2 size={14} /> },
+const CONFIG_SUB_TABS = [
+  { label: "Radar",     value: "radar",     icon: <Layers size={14} /> },
+  { label: "Templates", value: "templates", icon: <Settings2 size={14} /> },
 ];
 
-const CONFIG_SUB_TABS_GESTOR = [
-  { label: "Live",    value: "live",    icon: <Phone size={14} /> },
-  { label: "Ranking", value: "ranking", icon: <BarChart3 size={14} /> },
-];
+const FILTRO_VAZIO: BaseLeadsFiltro = {
+  empreendimento_canonico_id: null,
+  ano_de: null,
+  ano_ate: null,
+  status_crm: null,
+  com_telefone: true,
+  com_email: null,
+  nunca_trabalhado: true,
+  busca: null,
+} as BaseLeadsFiltro;
 
 export default function OfertaAtiva() {
   const { isAdmin, isGestor, isCorretor } = useUserRole();
-  const [activeTab, setActiveTab] = useState("bases");
-  const [configSub, setConfigSub] = useState("live");
+  const [activeTab, setActiveTab] = useState("campanhas");
+  const [configSub, setConfigSub] = useState("radar");
+  const [criarOpen, setCriarOpen] = useState(false);
 
   if (isCorretor && !isGestor && !isAdmin) {
     return <Navigate to="/corretor" replace />;
   }
 
-  const subTabs = isAdmin ? CONFIG_SUB_TABS_ADMIN : CONFIG_SUB_TABS_GESTOR;
+  const tabs = isAdmin || isGestor ? TABS : TABS.filter((t) => t.value !== "config");
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
       <PageHeader
         title="Oferta ativa"
-        subtitle="Bases inteligentes, reservados e desempenho da equipe"
+        subtitle="Campanhas temporárias criadas a partir da Base Única — operação, ao vivo e resultado"
         icon={<Phone size={18} strokeWidth={1.5} />}
-        tabs={TABS}
+        tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
 
-      {activeTab === "bases" && <BasesAtivasGrid />}
+      {activeTab === "campanhas" && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link to="/base-leads">
+                <Database size={14} /> Ver Base Única
+              </Link>
+            </Button>
+            {(isAdmin || isGestor) && (
+              <Button size="sm" className="gap-1.5" onClick={() => setCriarOpen(true)}>
+                <Rocket size={14} /> Nova campanha
+              </Button>
+            )}
+          </div>
+          <CampanhasPanel escopo="ativas" />
+        </div>
+      )}
+
+      {activeTab === "live"       && <PerformanceLivePanel teamOnly={!isAdmin} />}
+      {activeTab === "ranking"    && <RankingOfertaAtiva />}
+
+      {activeTab === "encerradas" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Archive size={14} /> Histórico de campanhas encerradas
+          </div>
+          <CampanhasPanel escopo="encerradas" />
+        </div>
+      )}
 
       {activeTab === "reservados" && <ReservadosPanel />}
-
       {activeTab === "resultados" && <MeusResultadosPanel />}
 
       {activeTab === "config" && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {subTabs.map((t) => {
+            {CONFIG_SUB_TABS.map((t) => {
               const active = configSub === t.value;
               return (
                 <button
@@ -84,34 +118,18 @@ export default function OfertaAtiva() {
             })}
           </div>
 
-          {configSub === "live"       && <PerformanceLivePanel teamOnly={!isAdmin} />}
-          {configSub === "ranking"    && <RankingOfertaAtiva />}
-          {configSub === "radar"      && isAdmin && <OAObservabilityPanel />}
-          {configSub === "importar"   && isAdmin && <ImportListPanel />}
-          {configSub === "campanhas"  && isAdmin && <CampaignManager />}
-          {configSub === "templates"  && isAdmin && <TemplateManager />}
+          {configSub === "radar"     && isAdmin && <OAObservabilityPanel />}
+          {configSub === "templates" && isAdmin && <TemplateManager />}
+          {!isAdmin && (
+            <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
+              <BarChart3 className="mx-auto mb-2 h-5 w-5" />
+              Configurações disponíveis apenas para administradores.
+            </div>
+          )}
         </div>
       )}
-    </div>
-  );
-}
 
-function ComingSoon({
-  icon,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="rounded-xl border bg-card p-10 text-center space-y-2">
-      <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
-        {icon}
-      </div>
-      <h3 className="text-base font-semibold">{title}</h3>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto">{desc}</p>
+      <CriarCampanhaDialog open={criarOpen} onOpenChange={setCriarOpen} filtroInicial={FILTRO_VAZIO} />
     </div>
   );
 }
