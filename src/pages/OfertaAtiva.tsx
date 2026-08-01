@@ -31,14 +31,14 @@ const CONFIG_SUB_TABS = [
 
 const FILTRO_VAZIO: BaseLeadsFiltro = {
   empreendimento_canonico_id: null,
-  ano_de: null,
-  ano_ate: null,
-  status_crm: null,
+  ano_min: null,
+  ano_max: null,
+  situacao: null,
   com_telefone: true,
-  com_email: null,
   nunca_trabalhado: true,
   busca: null,
-} as BaseLeadsFiltro;
+};
+
 
 export default function OfertaAtiva() {
   const { isAdmin, isGestor, isCorretor } = useUserRole();
