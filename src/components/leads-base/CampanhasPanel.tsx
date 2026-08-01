@@ -62,14 +62,14 @@ export function CampanhasPanel() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
                   Carregando…
                 </td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">
                   Nenhuma campanha ativa. Crie uma a partir da aba “Base de leads”.
                 </td>
               </tr>
