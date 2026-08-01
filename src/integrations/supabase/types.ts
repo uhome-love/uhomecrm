@@ -6453,6 +6453,7 @@ export type Database = {
           empreendimento: string
           empreendimento_canonico_id: string | null
           encerrada_em: string | null
+          escopo: Json
           expira_em: string | null
           filtro: Json | null
           id: string
@@ -6460,10 +6461,13 @@ export type Database = {
           liberada_em: string | null
           max_tentativas: number
           nome: string
+          observacao: string | null
+          ordem_selecao: string
           origem: string | null
           origem_base: boolean
           segmento_id: string | null
           status: string
+          template_id: string | null
           tipo: string
           total_leads: number
           ultima_higienizacao_at: string | null
@@ -6477,6 +6481,7 @@ export type Database = {
           empreendimento: string
           empreendimento_canonico_id?: string | null
           encerrada_em?: string | null
+          escopo?: Json
           expira_em?: string | null
           filtro?: Json | null
           id?: string
@@ -6484,10 +6489,13 @@ export type Database = {
           liberada_em?: string | null
           max_tentativas?: number
           nome: string
+          observacao?: string | null
+          ordem_selecao?: string
           origem?: string | null
           origem_base?: boolean
           segmento_id?: string | null
           status?: string
+          template_id?: string | null
           tipo?: string
           total_leads?: number
           ultima_higienizacao_at?: string | null
@@ -6501,6 +6509,7 @@ export type Database = {
           empreendimento?: string
           empreendimento_canonico_id?: string | null
           encerrada_em?: string | null
+          escopo?: Json
           expira_em?: string | null
           filtro?: Json | null
           id?: string
@@ -6508,10 +6517,13 @@ export type Database = {
           liberada_em?: string | null
           max_tentativas?: number
           nome?: string
+          observacao?: string | null
+          ordem_selecao?: string
           origem?: string | null
           origem_base?: boolean
           segmento_id?: string | null
           status?: string
+          template_id?: string | null
           tipo?: string
           total_leads?: number
           ultima_higienizacao_at?: string | null
@@ -13140,6 +13152,10 @@ export type Database = {
         }
         Returns: Json
       }
+      criar_campanha_da_base_v2: {
+        Args: { p_config: Json; p_filtro: Json; p_nome: string }
+        Returns: Json
+      }
       criar_notificacao: {
         Args: {
           p_agrupamento_key?: string
@@ -14019,6 +14035,7 @@ export type Database = {
       perf_atividade_humana: { Args: { p_tipo: string }; Returns: boolean }
       presenca_role_scope: { Args: { _user_id: string }; Returns: string }
       preview_campanha_da_base: { Args: { p_filtro: Json }; Returns: number }
+      preview_campanha_da_base_v2: { Args: { p_filtro: Json }; Returns: Json }
       processar_cadencia_sem_contato: {
         Args: never
         Returns: {

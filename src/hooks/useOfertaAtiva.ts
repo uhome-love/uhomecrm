@@ -24,6 +24,8 @@ export interface OALista {
   liberada_em?: string | null;
   expira_em?: string | null;
   origem_base?: boolean | null;
+  observacao?: string | null;
+  escopo?: { equipes?: string[]; corretores?: string[] } | null;
 }
 
 
@@ -98,7 +100,7 @@ export function useOAListas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("oferta_ativa_listas")
-        .select("id, nome, empreendimento, campanha, origem, status, max_tentativas, cooldown_dias, total_leads, criado_por, created_at, updated_at, segmento_id, ultima_higienizacao_at, liberada_em, expira_em, origem_base")
+        .select("id, nome, empreendimento, campanha, origem, status, max_tentativas, cooldown_dias, total_leads, criado_por, created_at, updated_at, segmento_id, ultima_higienizacao_at, liberada_em, expira_em, origem_base, observacao, escopo")
         .in("status", ["liberada", "pausada", "pendente"])
         .order("created_at", { ascending: false });
       if (error) throw error;

@@ -289,3 +289,146 @@ export function useEmpreendimentosCanonicos() {
     staleTime: 30 * 60_000,
   });
 }
+
+/* ────────────────────────────────────────────────────────────────
+ * Construtor de campanha v2 — filtros múltiplos, ordem, escopo
+ * ──────────────────────────────────────────────────────────────── */
+
+export interface CampanhaFiltroV2 {
+  empreendimento_ids: string[];
+  formularios: string[];
+  ano_min: number | null;
+  ano_max: number | null;
+  situacao: string | null;
+  nunca_trabalhado: boolean;
+  com_telefone: boolean;
+  com_email: boolean;
+  ordem_selecao: "recentes" | "antigos" | "aleatorio";
+}
+
+export interface CampanhaConfigV2 {
+  limite: number;
+  expira_em: string;
+  liberar: boolean;
+  observacao: string | null;
+  template_id: string | null;
+  max_tentativas: number;
+  cooldown_dias: number;
+  ordem_selecao: "recentes" | "antigos" | "aleatorio";
+  escopo: { equipes: string[]; corretores: string[] };
+}
+
+export interface PreviewV2 {
+  total: number;
+  amostra: {
+    id: string;
+    nome: string | null;
+    sobrenome: string | null;
+    telefone: string | null;
+    email: string | null;
+    empreendimento_texto: string | null;
+    ultimo_formulario: string | null;
+    ultima_conversao_em: string | null;
+    situacao_crm: string | null;
+  }[];
+}
+
+/** Prévia da campanha v2: total + amostra dos 10 primeiros. */
+export function usePreviewCampanhaV2(filtro: CampanhaFiltroV2, enabled: boolean) {
+  return useQuery({
+    queryKey: ["base-leads-preview-v2", filtro],
+    enabled,
+    queryFn: async (): Promise<PreviewV2> => {
+      const { data, error } = await supabase.rpc("preview_campanha_da_base_v2", {
+        p_filtro: filtro as never,
+      });
+      if (error) throw error;
+      const r = (data ?? {}) as { total?: number; amostra?: PreviewV2["amostra"] };
+      return { total: r.total ?? 0, amostra: r.amostra ?? [] };
+    },
+    staleTime: 30_000,
+  });
+}
+
+/** Cria a campanha personalizada. */
+export function useCriarCampanhaV2() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { nome: string; filtro: CampanhaFiltroV2; config: CampanhaConfigV2 }) => {
+      const { data, error } = await supabase.rpc("criar_campanha_da_base_v2", {
+        p_nome: p.nome,
+        p_filtro: p.filtro as never,
+        p_config: p.config as never,
+      });
+      if (error) throw error;
+      return data as unknown as { ok: boolean; lista_id: string; total: number };
+    },
+    onSuccess: (r) => {
+      toast.success(`Campanha criada com ${r?.total ?? 0} leads`);
+      qc.invalidateQueries({ queryKey: ["base-leads"] });
+      qc.invalidateQueries({ queryKey: ["oa-campanhas"] });
+      qc.invalidateQueries({ queryKey: ["oa-listas"] });
+      qc.invalidateQueries({ queryKey: ["base-leads-resumo"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Falha ao criar campanha"),
+  });
+}
+
+/** Formulários da base (para filtro multi). */
+export function useFormulariosBase() {
+  return useQuery({
+    queryKey: ["base-form-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("base_leads_form_map")
+        .select("formulario,total_leads")
+        .order("total_leads", { ascending: false })
+        .limit(400);
+      if (error) throw error;
+      return (data ?? []) as { formulario: string; total_leads: number }[];
+    },
+    staleTime: 10 * 60_000,
+  });
+}
+
+/** Templates de script da Oferta Ativa (para vincular à campanha). */
+export function useTemplatesOA() {
+  return useQuery({
+    queryKey: ["oa-templates-select"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("oferta_ativa_templates")
+        .select("id,nome,empreendimento")
+        .order("nome");
+      if (error) throw error;
+      return (data ?? []) as { id: string; nome: string; empreendimento: string | null }[];
+    },
+    staleTime: 10 * 60_000,
+  });
+}
+
+/** Corretores ativos + equipes (gestores) para o escopo da campanha. */
+export function useEscopoOpcoes() {
+  return useQuery({
+    queryKey: ["oa-escopo-opcoes"],
+    queryFn: async () => {
+      const [{ data: membros }, { data: perfis }] = await Promise.all([
+        supabase.from("team_members").select("user_id,gerente_id").eq("status", "ativo"),
+        supabase.from("profiles").select("user_id,nome").order("nome"),
+      ]);
+      const nomePorUser = new Map<string, string>(
+        (perfis ?? []).map((p: { user_id: string; nome: string }) => [p.user_id, p.nome] as [string, string]),
+      );
+
+      const gerentes = Array.from(new Set((membros ?? []).map((m: { gerente_id: string }) => m.gerente_id).filter(Boolean)));
+      const corretores = Array.from(new Set((membros ?? []).map((m: { user_id: string }) => m.user_id).filter(Boolean)));
+      return {
+        equipes: gerentes.map((g) => ({ id: g as string, nome: nomePorUser.get(g as string) ?? "Equipe" })),
+        corretores: corretores
+          .map((c) => ({ id: c as string, nome: nomePorUser.get(c as string) ?? "Corretor" }))
+          .sort((a, b) => a.nome.localeCompare(b.nome)),
+      };
+    },
+    staleTime: 10 * 60_000,
+  });
+}
