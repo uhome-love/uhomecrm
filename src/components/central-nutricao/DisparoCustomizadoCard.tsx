@@ -231,6 +231,18 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (has("descartados")) base.tipo_descarte = tipoDescarte;
     if (has("pipeline_ativo")) base.stage_ids = stageIds;
     if (has("oferta_ativa_lista")) base.lista_ids = listaIds;
+    if (has("base_unica")) {
+      base.base_filtro = {
+        empreendimento_ids: baseEmpIds,
+        formularios: baseFormularios,
+        ano_min: baseAnoMin ? Number(baseAnoMin) : null,
+        ano_max: baseAnoMax ? Number(baseAnoMax) : null,
+        ordem_selecao: baseOrdem,
+        excluir_oa: baseExcluirOa,
+        excluir_ja_disparado: baseExcluirJaDisparado,
+      };
+    }
+
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
       base.template_language = templateLanguage;
