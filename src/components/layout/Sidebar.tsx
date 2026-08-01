@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import UhomeLogo from "@/components/UhomeLogo";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useMutiraoAtivo } from "@/hooks/useMutiraoAtivo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
@@ -60,7 +61,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "⚡ Mutirão ao vivo",   path: "/oferta-ativa-ao-vivo", icon: <Radio        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
       ],
@@ -119,7 +119,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "⚡ Mutirão ao vivo",   path: "/oferta-ativa-ao-vivo", icon: <Radio        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
@@ -180,7 +179,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "⚡ Mutirão ao vivo",   path: "/oferta-ativa-ao-vivo", icon: <Radio        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
       ],
@@ -237,7 +235,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/corretor/call",     icon: <Phone        size={15} strokeWidth={1.5} /> },
-        { label: "⚡ Mutirão ao vivo",   path: "/oferta-ativa-ao-vivo", icon: <Radio        size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -391,12 +388,28 @@ export default function Sidebar({
     return () => window.removeEventListener("storage", handler);
   }, [isManagerRole]);
 
+  // "Mutirão ao vivo" só entra no menu enquanto existir sessão ao vivo.
+  const { mutiraoAtivo } = useMutiraoAtivo();
+
   const baseGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
   const showCorretorMode = role === "gestor" && !!userId && CORRETOR_MODE_GESTORES.includes(userId);
   const rawGroups = showCorretorMode
     ? [baseGroups[0], MODO_CORRETOR_GROUP, ...baseGroups.slice(1)]
     : baseGroups;
-  const groups = rawGroups.map(g => ({
+  const mutiraoItem: NavItem = {
+    label: "⚡ Mutirão ao vivo",
+    path: "/oferta-ativa-ao-vivo",
+    icon: <Radio size={15} strokeWidth={1.5} />,
+  };
+  const withMutirao: NavGroup[] = mutiraoAtivo
+    ? rawGroups.map((g) =>
+        (g.title === "Leads" || g.title === "Leads & Visitas" || g.title === "Modo Corretor") &&
+        !g.items.some((i) => i.path === mutiraoItem.path)
+          ? { ...g, items: [...g.items, mutiraoItem] }
+          : g,
+      )
+    : rawGroups;
+  const groups = withMutirao.map(g => ({
     ...g,
     items: g.items.map(item =>
       item.path === "/whatsapp" && !isManagerRole && whatsappUnread > 0
