@@ -20,15 +20,19 @@ import { cn } from "@/lib/utils";
 import FunilLateral from "./disparo/FunilLateral";
 import EmpreendimentoMultiSelect from "./disparo/EmpreendimentoMultiSelect";
 
-type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
+type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "base_unica";
 type Canal = "meta" | "evolution";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 type Recencia = "7d" | "30d" | "90d" | "180d" | "mais" | "todos";
+type OrdemBase = "recentes" | "antigos" | "aleatorio";
 
 interface FunilData {
   por_fonte?: Record<string, number>;
   duplicados_removidos?: number;
   removidos_pipeline_ativo?: number;
+  removidos_oferta_ativa?: number;
+  removidos_opt_out?: number;
+
   removidos_frequencia?: number;
   telefones_invalidos?: number;
   total_bruto?: number;
