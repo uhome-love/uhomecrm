@@ -7,13 +7,6 @@ import { MultiPicker } from "./MultiPicker";
 import type { CampanhaFiltroV2, PreviewV2 } from "@/hooks/useBaseLeads";
 import { formatBRT } from "@/lib/brtTime";
 
-const SITUACOES: { v: string | null; label: string }[] = [
-  { v: null, label: "Todos" },
-  { v: "inedito", label: "Inéditos" },
-  { v: "na_oferta_ativa", label: "Já na Oferta Ativa" },
-  { v: "no_pipeline", label: "Já no pipeline" },
-];
-
 const ORDENS = [
   { v: "recentes", label: "Mais recentes" },
   { v: "antigos", label: "Mais antigos" },
@@ -38,6 +31,8 @@ export function PassoPublico({
   limite: number;
 }) {
   const total = preview?.total ?? 0;
+  const removidosCrm = preview?.removidos_crm ?? 0;
+  const removidosOa = preview?.removidos_oa ?? 0;
   const liberados = Math.min(total, limite);
   const anoAtual = new Date().getFullYear();
 
@@ -103,41 +98,26 @@ export function PassoPublico({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>Situação no CRM</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {SITUACOES.map((s) => (
-              <Button
-                key={s.label}
-                type="button"
-                size="sm"
-                variant={filtro.situacao === s.v ? "default" : "outline"}
-                className="h-7 text-xs"
-                onClick={() => set({ situacao: s.v })}
-              >
-                {s.label}
-              </Button>
-            ))}
-          </div>
+      <div className="space-y-1.5">
+        <Label>Ordem de seleção</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {ORDENS.map((o) => (
+            <Button
+              key={o.v}
+              type="button"
+              size="sm"
+              variant={filtro.ordem_selecao === o.v ? "default" : "outline"}
+              className="h-7 text-xs"
+              onClick={() => set({ ordem_selecao: o.v })}
+            >
+              {o.label}
+            </Button>
+          ))}
         </div>
-        <div className="space-y-1.5">
-          <Label>Ordem de seleção</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {ORDENS.map((o) => (
-              <Button
-                key={o.v}
-                type="button"
-                size="sm"
-                variant={filtro.ordem_selecao === o.v ? "default" : "outline"}
-                className="h-7 text-xs"
-                onClick={() => set({ ordem_selecao: o.v })}
-              >
-                {o.label}
-              </Button>
-            ))}
-          </div>
-        </div>
+        <p className="text-[11px] text-muted-foreground">
+          A Oferta Ativa é reengajamento de base fria: quem já existe no CRM (ativo, descartado ou arquivado) e quem
+          já está numa fila de Oferta Ativa é removido automaticamente.
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-4">
@@ -157,9 +137,17 @@ export function PassoPublico({
 
       <div className="rounded-lg border bg-muted/40 p-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Leads que batem no filtro</span>
+          <span className="text-muted-foreground">Elegíveis para a campanha</span>
           <span className="font-medium">{loading ? "…" : total.toLocaleString("pt-BR")}</span>
         </div>
+        {(removidosCrm > 0 || removidosOa > 0) && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Removidos pela higiene automática</span>
+            <span className="font-mono">
+              {removidosCrm.toLocaleString("pt-BR")} no CRM · {removidosOa.toLocaleString("pt-BR")} na Oferta Ativa
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Serão liberados</span>
           <span className="font-semibold text-primary">{liberados.toLocaleString("pt-BR")}</span>
