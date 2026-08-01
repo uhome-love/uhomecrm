@@ -12984,6 +12984,7 @@ export type Database = {
         }
         Returns: Json
       }
+      atualizar_situacao_crm_base_leads: { Args: never; Returns: Json }
       auto_arquivar_descartes_24h: {
         Args: never
         Returns: {
