@@ -2670,6 +2670,42 @@ export type Database = {
         }
         Relationships: []
       }
+      equipe_historico: {
+        Row: {
+          corretor_auth_id: string
+          created_at: string
+          equipe: string
+          gerente_auth_id: string | null
+          id: string
+          observacao: string | null
+          updated_at: string
+          vigencia_fim: string | null
+          vigencia_inicio: string
+        }
+        Insert: {
+          corretor_auth_id: string
+          created_at?: string
+          equipe: string
+          gerente_auth_id?: string | null
+          id?: string
+          observacao?: string | null
+          updated_at?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string
+        }
+        Update: {
+          corretor_auth_id?: string
+          created_at?: string
+          equipe?: string
+          gerente_auth_id?: string | null
+          id?: string
+          observacao?: string | null
+          updated_at?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string
+        }
+        Relationships: []
+      }
       executive_reports: {
         Row: {
           campanhas: Json | null
@@ -12884,6 +12920,15 @@ export type Database = {
         Args: { p_lead_id: string }
         Returns: undefined
       }
+      fn_equipe_na_data: {
+        Args: { p_corretor: string; p_data: string }
+        Returns: {
+          corretor_ativo: boolean
+          equipe: string
+          equipe_atual: string
+          gerente_auth_id: string
+        }[]
+      }
       fn_reconciliar_visita_auto: {
         Args: never
         Returns: {
@@ -13854,6 +13899,7 @@ export type Database = {
           corretor_auth_id: string
           corretor_nome: string
           equipe: string
+          equipe_atual: string
           gerente_auth_id: string
           leads_recebidos: number
           vendas: number
