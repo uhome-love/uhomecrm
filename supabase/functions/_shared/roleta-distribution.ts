@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { notifyLeadDistribuido } from "./lead-notify.ts";
 
 type Logger = {
   info?: (msg: string, ctx?: Record<string, unknown>) => void;
@@ -42,6 +43,16 @@ export async function distributeLeadDirect(
         lastFailure = { success: false, reason: "rpc_error", error: error.message };
         logger.warn?.(`Direct distribution attempt ${attempt + 1} failed`, { leadId, traceId, error: error.message });
       } else if (result?.success) {
+        // Aviso ao corretor NOVO (sino + WhatsApp Meta + push). Sem isso, leads
+        // que entram por Meta/site/reengajamento chegavam mudos.
+        const novoCorretor = (result as any).corretor_id as string | null;
+        if (novoCorretor && novoCorretor !== excludeAuthUserId) {
+          try {
+            await notifyLeadDistribuido(supabase, supabaseUrl, serviceKey, novoCorretor, leadId, result);
+          } catch (e) {
+            logger.warn?.("notifyLeadDistribuido falhou", { leadId, traceId, error: (e as Error)?.message });
+          }
+        }
         return result as Result;
       } else {
         lastFailure = (result as Result) || { success: false, reason: "unknown" };
