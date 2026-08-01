@@ -809,7 +809,7 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ error: "source inválido" }), {
+    return new Response(JSON.stringify({ error: `source inválido: ${String(audience.source)} (sources=${sourcesArr.join("+")})` }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
