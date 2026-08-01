@@ -94,9 +94,11 @@ export function useOAListas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("oferta_ativa_listas")
-        .select("id, nome, empreendimento, campanha, origem, status, max_tentativas, cooldown_dias, total_leads, criado_por, created_at, updated_at, segmento_id, ultima_higienizacao_at")
+        .select("id, nome, empreendimento, campanha, origem, status, max_tentativas, cooldown_dias, total_leads, criado_por, created_at, updated_at, segmento_id, ultima_higienizacao_at, liberada_em, expira_em, origem_base")
+        .in("status", ["liberada", "pausada", "pendente"])
         .order("created_at", { ascending: false });
       if (error) throw error;
+
       return data as OALista[];
     },
     enabled: !!user,
