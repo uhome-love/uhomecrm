@@ -774,7 +774,7 @@ Deno.serve(async (req) => {
         leads = (await fetchForSource(primarySource, primarySource === "descartados" ? effectiveLimit : effectiveLimit * 2)).slice(0, effectiveLimit);
       } else {
         // Combinado: prioridade descartados > oferta_ativa > pipeline_ativo, dedup por últimos 8 dígitos.
-        const priority = ["descartados", "oferta_ativa_lista", "pipeline_ativo"];
+        const priority = ["descartados", "oferta_ativa_lista", "pipeline_ativo", "base_unica"];
         const ordered = priority.filter((s) => sourcesArr.includes(s));
         const seen = new Set<string>();
         const merged: Lead[] = [];
