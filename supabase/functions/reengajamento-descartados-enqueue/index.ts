@@ -356,7 +356,10 @@ Deno.serve(async (req) => {
       ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
       : src === "oferta_ativa_lista"
         ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
-        : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`;
+        : src === "base_unica"
+          ? `base_unica:${((((bodyAudience as any).base_filtro?.empreendimento_ids) || []) as string[]).slice().sort().join(",") || "*"}|${((((bodyAudience as any).base_filtro?.formularios) || []) as string[]).slice().sort().join(",") || "*"}`
+          : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`;
+
   let sourcesArr: string[] = [];
   let isCustomAudience = false;
   let isCombined = false;
