@@ -14037,6 +14037,7 @@ export type Database = {
       presenca_role_scope: { Args: { _user_id: string }; Returns: string }
       preview_campanha_da_base: { Args: { p_filtro: Json }; Returns: number }
       preview_campanha_da_base_v2: { Args: { p_filtro: Json }; Returns: Json }
+      preview_reengajamento_base: { Args: { p_filtro: Json }; Returns: Json }
       processar_cadencia_sem_contato: {
         Args: never
         Returns: {
@@ -14060,6 +14061,10 @@ export type Database = {
       rate_marketplace_item: {
         Args: { p_comentario?: string; p_item_id: string; p_nota: number }
         Returns: undefined
+      }
+      reativar_base_lead_para_fila_ceo: {
+        Args: { p_base_lead_id: string; p_template_name?: string }
+        Returns: Json
       }
       reativar_lead_nutricao_campanha: {
         Args: {
@@ -14307,6 +14312,21 @@ export type Database = {
       }
       rpc_placar_do_dia: { Args: never; Returns: Json }
       rpc_placar_mutirao: { Args: { p_sessao_id?: string }; Returns: Json }
+      selecionar_reengajamento_base: {
+        Args: { p_filtro: Json; p_limit?: number }
+        Returns: {
+          email: string
+          empreendimento_canonico_id: string
+          empreendimento_texto: string
+          id: string
+          nome: string
+          situacao_crm: string
+          telefone: string
+          telefone_key: string
+          ultima_conversao_em: string
+          ultimo_formulario: string
+        }[]
+      }
       set_corretor_alocacao: {
         Args: {
           p_empreendimentos: string[]
