@@ -12,6 +12,7 @@ import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, X, Ch
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
 import CorretorEntrada from "@/components/oferta-ativa/CorretorEntrada";
+import { useCampanhasDisponiveis } from "@/hooks/useCampanhasDisponiveis";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
@@ -117,11 +118,16 @@ export default function CorretorCall() {
   // Meta do dia foi descontinuada — não bloqueia mais entrada na tela.
   // useCorretorProgress retorna defaults (30/5/3) quando goals é null.
 
-
+  // Campanhas liberadas para este corretor (regra única) — base da fila do warmup
+  const { campanhas: campanhasDisponiveis, statsMap: statsDisponiveis } = useCampanhasDisponiveis();
+  const filaDisponivel = useMemo(
+    () => campanhasDisponiveis.reduce((acc, c) => acc + (statsDisponiveis[c.id]?.naFila ?? 0), 0),
+    [campanhasDisponiveis, statsDisponiveis],
+  );
 
   // Ranking & leads data for warmup screen
   const { data: warmupData } = useQuery({
-    queryKey: ["call-warmup", user?.id],
+    queryKey: ["call-warmup", user?.id, filaDisponivel],
     queryFn: async () => {
       const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
@@ -158,16 +164,8 @@ export default function CorretorCall() {
         if (belowId) belowName = nameOf(belowId) || "#2";
       }
 
-      // Count leads available — corretor-specific: only from lists they have access to
-      const now = new Date().toISOString();
-      const { count: myQueueCount } = await supabase
-        .from("oferta_ativa_leads")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["na_fila", "em_cooldown"])
-        .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`)
-        .or(`corretor_id.is.null,corretor_id.eq.${user!.id}`);
-
-      const queueLeads = myQueueCount || 0;
+      // Fila = apenas campanhas liberadas/no escopo do corretor (regra única)
+      const queueLeads = filaDisponivel;
       const estMinutes = Math.min(120, queueLeads * 2); // cap at 2h
 
       return {
