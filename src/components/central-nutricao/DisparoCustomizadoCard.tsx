@@ -373,10 +373,14 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   function toggleStage(id: string) { setStageIds((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id]); }
   function toggleSource(s: Source) {
     setSources((prev) => {
-      const next = prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s];
+      // Base única é exclusiva: base fria, não combina com fontes do CRM
+      if (s === "base_unica") return prev.includes(s) ? ["descartados"] : ["base_unica"];
+      const semBase = prev.filter((x) => x !== "base_unica");
+      const next = semBase.includes(s) ? semBase.filter((x) => x !== s) : [...semBase, s];
       return next.length ? next : ["descartados"];
     });
   }
+
 
   return (
     <Card className="border-indigo-300 bg-indigo-50/30 dark:bg-indigo-950/10">
