@@ -711,46 +711,43 @@ export default function AgendaVisitas() {
 
       {/* ═══════ HEADER ═══════ */}
       <div className="space-y-2">
-        {/* Row 1: título + ações primárias */}
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
-            <CalendarDays size={13} strokeWidth={1.5} className="text-white" />
-          </div>
-          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-foreground">
-            Agenda de visitas
-          </h1>
+        <PageHeader
+          icon={<CalendarDays size={18} strokeWidth={1.6} />}
+          title="Agenda de visitas"
+          subtitle="Agende, confirme e acompanhe o comparecimento do time."
+          className="mb-0"
+          actions={
+            <>
+              {integration?.connected ? (
+                <button
+                  onClick={() => disconnect()}
+                  disabled={disconnecting}
+                  title={`Conectado: ${integration.email}`}
+                  className="h-[32px] px-2.5 sm:px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Link2 size={12} /> <span className="hidden sm:inline">Agenda conectada</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => connect()}
+                  disabled={connecting}
+                  title="Vincular Google Agenda"
+                  className="h-[32px] px-2.5 sm:px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Link2Off size={12} /> <span className="hidden sm:inline">{connecting ? "Conectando…" : "Vincular Google Agenda"}</span>
+                </button>
+              )}
 
-          <div className="flex-1" />
+              <button
+                onClick={() => setShowForm(true)}
+                className="h-[32px] px-3 sm:px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors shrink-0"
+              >
+                <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Nova Visita</span><span className="sm:hidden">Nova</span>
+              </button>
+            </>
+          }
+        />
 
-          {/* Google Calendar — texto some no mobile */}
-          {integration?.connected ? (
-            <button
-              onClick={() => disconnect()}
-              disabled={disconnecting}
-              title={`Conectado: ${integration.email}`}
-              className="h-[32px] px-2.5 sm:px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-            >
-              <Link2 size={12} /> <span className="hidden sm:inline">Agenda conectada</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => connect()}
-              disabled={connecting}
-              title="Vincular Google Agenda"
-              className="h-[32px] px-2.5 sm:px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-            >
-              <Link2Off size={12} /> <span className="hidden sm:inline">{connecting ? "Conectando…" : "Vincular Google Agenda"}</span>
-            </button>
-          )}
-
-          {/* Nova Visita */}
-          <button
-            onClick={() => setShowForm(true)}
-            className="h-[32px] px-3 sm:px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors shrink-0"
-          >
-            <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Nova Visita</span><span className="sm:hidden">Nova</span>
-          </button>
-        </div>
 
         {/* Row 2: busca + filtros */}
         <div className="flex items-center gap-2 flex-wrap">
