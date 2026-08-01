@@ -8,9 +8,12 @@ type Coluna = "vgv_assinado" | "vendas" | "visitas_realizadas" | "leads_recebido
 
 interface Props {
   linhas: MetricaCorretor[];
+  /** linhas brutas (1 por corretor × equipe da época) — usadas no ranking de equipes */
+  rowsHistoricas?: MetricaCorretor[];
   loading?: boolean;
   onSelectCorretor?: (linha: MetricaCorretor) => void;
 }
+
 
 const COLS: { key: Coluna; label: string }[] = [
   { key: "leads_recebidos", label: "Leads" },
