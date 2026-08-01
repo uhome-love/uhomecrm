@@ -197,6 +197,30 @@ export function useEncerrarCampanhasExpiradas() {
   });
 }
 
+/** Encerra uma campanha específica agora (antecipa o prazo e devolve os leads à base). */
+export function useEncerrarCampanha() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (listaId: string) => {
+      const { error: upErr } = await supabase
+        .from("oferta_ativa_listas")
+        .update({ expira_em: new Date().toISOString() })
+        .eq("id", listaId);
+      if (upErr) throw upErr;
+      const { data, error } = await supabase.rpc("encerrar_campanhas_expiradas");
+      if (error) throw error;
+      return data as { listas_encerradas: number; leads_devolvidos: number };
+    },
+    onSuccess: (r) => {
+      toast.success(`Campanha encerrada · ${r?.leads_devolvidos ?? 0} lead(s) devolvido(s) à base`);
+      qc.invalidateQueries({ queryKey: ["oa-campanhas"] });
+      qc.invalidateQueries({ queryKey: ["base-leads"] });
+      qc.invalidateQueries({ queryKey: ["base-leads-resumo"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 /** Formulários pendentes de revisão de produto. */
 export function useFormMap(pendentes: boolean) {
   return useQuery({

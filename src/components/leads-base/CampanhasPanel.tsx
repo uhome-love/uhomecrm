@@ -1,7 +1,7 @@
-import { Timer, RefreshCcw } from "lucide-react";
+import { Timer, RefreshCcw, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useCampanhasOA, useEncerrarCampanhasExpiradas } from "@/hooks/useBaseLeads";
+import { useCampanhasOA, useEncerrarCampanhasExpiradas, useEncerrarCampanha } from "@/hooks/useBaseLeads";
 import { formatBRT } from "@/lib/brtTime";
 
 interface Row {
@@ -30,6 +30,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
 export function CampanhasPanel() {
   const { data, isLoading } = useCampanhasOA();
   const encerrar = useEncerrarCampanhasExpiradas();
+  const encerrarUma = useEncerrarCampanha();
   const rows = ((data ?? []) as unknown as Row[]).filter((r) => r.status !== "arquivada");
 
   return (
@@ -55,19 +56,20 @@ export function CampanhasPanel() {
               <th className="text-right font-semibold px-3 py-2">Tentativas</th>
               <th className="text-right font-semibold px-3 py-2">Aproveitados</th>
               <th className="text-right font-semibold px-3 py-2">Conversão</th>
+              <th className="text-right font-semibold px-3 py-2">Ação</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
                   Carregando…
                 </td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">
                   Nenhuma campanha ativa. Crie uma a partir da aba “Base de leads”.
                 </td>
               </tr>
@@ -98,6 +100,19 @@ export function CampanhasPanel() {
                   {r.aproveitados ?? 0}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{Number(r.conversao_pct ?? 0).toFixed(1)}%</td>
+                <td className="px-3 py-2 text-right">
+                  {r.status === "liberada" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      disabled={encerrarUma.isPending}
+                      onClick={() => encerrarUma.mutate(r.lista_id)}
+                    >
+                      <Square size={12} /> Encerrar
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
