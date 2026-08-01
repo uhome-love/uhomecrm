@@ -332,7 +332,10 @@ export default function CorretorListSelection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLista]);
 
-  const liberadas = listas.filter(l => l.status === "liberada");
+  const liberadas = listas.filter(
+    l => l.status === "liberada" && (!l.expira_em || new Date(l.expira_em).getTime() > Date.now()),
+  );
+
   const listaIds = useMemo(() => liberadas.map(l => l.id), [liberadas]);
   const { data: statsMap } = useBatchListaStats(listaIds);
 
