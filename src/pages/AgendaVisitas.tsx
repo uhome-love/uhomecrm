@@ -6,6 +6,8 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw, ChevronDown, Link2, Link2Off, List, Columns3 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 import { useCalendarIntegration } from "@/hooks/useCalendarIntegration";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
@@ -850,8 +852,6 @@ export default function AgendaVisitas() {
           onClick={() => setKpiFilter(kpiFilter === "no_show" ? null : "no_show")}
         />
         <StatCard label="Taxa de comparecimento" value={`${kpis.taxa}%`} accent />
-
-        })}
       </div>
 
       {/* Active filter badge */}
