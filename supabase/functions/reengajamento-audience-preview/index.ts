@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
 
     // ─── Público: BASE ÚNICA DE LEADS ───
     if (audience.source === "base_unica") {
-      const f = audience.base_filtro || {};
+      const f: Record<string, any> = audience.base_filtro || {};
       const filtro = {
         empreendimento_ids: f.empreendimento_ids || [],
         formularios: f.formularios || [],
@@ -229,6 +229,9 @@ Deno.serve(async (req) => {
         ano_min: f.ano_min ?? null,
         ano_max: f.ano_max ?? null,
         ordem_selecao: f.ordem_selecao || "recentes",
+        excluir_pipeline_ativo: f.excluir_pipeline_ativo !== false,
+        excluir_ganho: f.excluir_ganho !== false,
+        excluir_descartados: f.excluir_descartados === true,
         excluir_oa: f.excluir_oa !== false,
         excluir_ja_disparado: dedupMode === "include_all" ? false : (f.excluir_ja_disparado !== false),
         janela_dedup_dias: Number(f.janela_dedup_dias || dedupLookbackDays),
@@ -245,17 +248,24 @@ Deno.serve(async (req) => {
         sample: p.amostra || [],
         audience_source: audSource,
         funil: {
+          fonte: "base_unica",
           total_bruto: Number(p.bruto || 0),
           removidos_opt_out: Number(p.removidos_opt_out || 0),
-          telefones_invalidos: Number(p.removidos_sem_telefone || 0),
-          removidos_pipeline_ativo: Number(p.removidos_crm || 0),
+          removidos_sem_telefone: Number(p.removidos_sem_telefone || 0),
+          removidos_pipeline_ativo: Number(p.removidos_pipeline_ativo || 0),
+          removidos_ganho: Number(p.removidos_ganho || 0),
+          removidos_descartados: Number(p.removidos_descartados || 0),
           removidos_oferta_ativa: Number(p.removidos_oa || 0),
           duplicados_removidos: Number(p.removidos_ja_disparado || 0),
+          mantidos_pipeline_ativo: Number(p.mantidos_pipeline_ativo || 0),
+          mantidos_ganho: Number(p.mantidos_ganho || 0),
+          mantidos_descartados: Number(p.mantidos_descartados || 0),
           elegiveis,
           teto_limite: Number(p.total || 0) > limit ? limit : null,
         },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
 
 
     // ─── Público COMBINADO (descartados + oferta ativa + pipeline) com dedup por telefone ───
