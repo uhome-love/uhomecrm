@@ -416,11 +416,13 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                     Fonte de leads
                     {isCombined && <Badge variant="outline" className="text-[9px]">combinado · dedup telefone</Badge>}
                   </Label>
-                  <div className="grid sm:grid-cols-3 gap-2 mt-1">
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-1">
                     {([
+                      { v: "base_unica" as Source, label: "Base única", desc: "Leads da base histórica (nunca no CRM)" },
                       { v: "descartados" as Source, label: "Descartados", desc: "Reengajar quem já esteve no funil" },
-                      { v: "oferta_ativa_lista" as Source, label: "Oferta Ativa", desc: "Disparar para listas específicas" },
+                      { v: "oferta_ativa_lista" as Source, label: "Oferta Ativa", desc: "Campanhas ativas de ligação" },
                       { v: "pipeline_ativo" as Source, label: "Pipeline ativo", desc: "Etapas selecionadas" },
+
                     ]).map(({ v, label, desc }) => {
                       const active = has(v);
                       return (
