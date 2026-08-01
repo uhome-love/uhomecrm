@@ -82,7 +82,7 @@ export function CriarCampanhaDialog({ open, onOpenChange, filtroInicial }: Props
       empreendimento_ids: filtroInicial?.empreendimento_canonico_id ? [filtroInicial.empreendimento_canonico_id] : [],
       ano_min: filtroInicial?.ano_min ?? null,
       ano_max: filtroInicial?.ano_max ?? null,
-      situacao: filtroInicial?.situacao ?? null,
+      situacao: null, // higiene automática: só entra quem não existe no CRM
       nunca_trabalhado: filtroInicial?.nunca_trabalhado ?? true,
       com_telefone: filtroInicial?.com_telefone ?? true,
     });

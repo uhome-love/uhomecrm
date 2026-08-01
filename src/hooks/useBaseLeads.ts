@@ -320,6 +320,12 @@ export interface CampanhaConfigV2 {
 
 export interface PreviewV2 {
   total: number;
+  /** Total que bate no filtro antes da higiene automática. */
+  bruto: number;
+  /** Removidos por já existirem no pipeline (ativos, descartados ou arquivados). */
+  removidos_crm: number;
+  /** Removidos por já estarem numa fila de Oferta Ativa. */
+  removidos_oa: number;
   amostra: {
     id: string;
     nome: string | null;
@@ -343,9 +349,16 @@ export function usePreviewCampanhaV2(filtro: CampanhaFiltroV2, enabled: boolean)
         p_filtro: filtro as never,
       });
       if (error) throw error;
-      const r = (data ?? {}) as { total?: number; amostra?: PreviewV2["amostra"] };
-      return { total: r.total ?? 0, amostra: r.amostra ?? [] };
+      const r = (data ?? {}) as Partial<PreviewV2>;
+      return {
+        total: r.total ?? 0,
+        bruto: r.bruto ?? r.total ?? 0,
+        removidos_crm: r.removidos_crm ?? 0,
+        removidos_oa: r.removidos_oa ?? 0,
+        amostra: r.amostra ?? [],
+      };
     },
+
     staleTime: 30_000,
   });
 }
