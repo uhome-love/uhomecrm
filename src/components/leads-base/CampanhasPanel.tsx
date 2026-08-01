@@ -1,7 +1,7 @@
-import { Timer, RefreshCcw } from "lucide-react";
+import { Timer, RefreshCcw, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useCampanhasOA, useEncerrarCampanhasExpiradas } from "@/hooks/useBaseLeads";
+import { useCampanhasOA, useEncerrarCampanhasExpiradas, useEncerrarCampanha } from "@/hooks/useBaseLeads";
 import { formatBRT } from "@/lib/brtTime";
 
 interface Row {
