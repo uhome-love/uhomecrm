@@ -3,7 +3,7 @@
  * Consome rpc_metricas via src/lib/metricasSSOT.ts.
  */
 import { useQuery } from "@tanstack/react-query";
-import { fetchMetricas, somarMetricas, agruparPorEquipe, type MetricasFiltro } from "@/lib/metricasSSOT";
+import { fetchMetricas, somarMetricas, agruparPorEquipe, consolidarPorCorretor, type MetricasFiltro } from "@/lib/metricasSSOT";
 
 export function useMetricasSSOT(filtro: MetricasFiltro, enabled = true) {
   const query = useQuery({
@@ -13,12 +13,18 @@ export function useMetricasSSOT(filtro: MetricasFiltro, enabled = true) {
     staleTime: 60_000,
   });
 
-  const linhas = query.data ?? [];
+  /** linhas brutas: 1 por (corretor, equipe da época) */
+  const rows = query.data ?? [];
+  /** linhas de corretor consolidadas (equipe = equipe atual) */
+  const linhas = consolidarPorCorretor(rows);
 
   return {
     ...query,
     linhas,
-    totais: somarMetricas(linhas),
-    equipes: agruparPorEquipe(linhas),
+    rows,
+    totais: somarMetricas(rows),
+    /** ranking de equipes usa a equipe HISTÓRICA do fato */
+    equipes: agruparPorEquipe(rows),
   };
 }
+

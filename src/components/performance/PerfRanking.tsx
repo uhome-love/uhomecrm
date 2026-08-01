@@ -8,9 +8,12 @@ type Coluna = "vgv_assinado" | "vendas" | "visitas_realizadas" | "leads_recebido
 
 interface Props {
   linhas: MetricaCorretor[];
+  /** linhas brutas (1 por corretor × equipe da época) — usadas no ranking de equipes */
+  rowsHistoricas?: MetricaCorretor[];
   loading?: boolean;
   onSelectCorretor?: (linha: MetricaCorretor) => void;
 }
+
 
 const COLS: { key: Coluna; label: string }[] = [
   { key: "leads_recebidos", label: "Leads" },
@@ -23,7 +26,7 @@ const COLS: { key: Coluna; label: string }[] = [
 const conv = (l: MetricaCorretor) => (l.visitas_realizadas > 0 ? (l.vendas / l.visitas_realizadas) * 100 : 0);
 const valor = (l: MetricaCorretor, c: Coluna) => (c === "conversao" ? conv(l) : (l[c] as number));
 
-export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props) {
+export default function PerfRanking({ linhas, rowsHistoricas, loading, onSelectCorretor }: Props) {
   const [ordem, setOrdem] = useState<Coluna>("vgv_assinado");
   const [desc, setDesc] = useState(true);
   const [busca, setBusca] = useState("");
@@ -62,7 +65,7 @@ export default function PerfRanking({ linhas, loading, onSelectCorretor }: Props
   );
   const convTotal = totais.visitas > 0 ? (totais.vendas / totais.visitas) * 100 : 0;
 
-  const equipes = useMemo(() => agruparPorEquipe(linhas), [linhas]);
+  const equipes = useMemo(() => agruparPorEquipe(rowsHistoricas ?? linhas), [rowsHistoricas, linhas]);
   const maxVgv = Math.max(1, ...equipes.map((e) => e.totais.vgv_assinado));
 
   return (
