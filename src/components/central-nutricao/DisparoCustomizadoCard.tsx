@@ -148,6 +148,13 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [mensagem, setMensagem] = useState<string>("");
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewing, setPreviewing] = useState(false);
+
+  // Nunca mostrar funil de uma fonte para outra
+  useEffect(() => {
+    setPreview(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sources.join(",")]);
+
   const [firing, setFiring] = useState(false);
   const [modoTeste, setModoTeste] = useState<boolean>(false);
   const [tab, setTab] = useState<"publico" | "filtros" | "mensagem">("publico");
