@@ -64,6 +64,8 @@ export async function fetchMetricas(filtro: MetricasFiltro): Promise<MetricaCorr
     corretor_auth_id: String(r.corretor_auth_id),
     corretor_nome: (r.corretor_nome as string) ?? null,
     equipe: (r.equipe as string) ?? null,
+    equipe_atual: (r.equipe_atual as string) ?? (r.equipe as string) ?? null,
+
     gerente_auth_id: (r.gerente_auth_id as string) ?? null,
     corretor_ativo: Boolean(r.corretor_ativo),
     leads_recebidos: num(r.leads_recebidos),
