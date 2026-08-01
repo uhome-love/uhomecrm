@@ -11,7 +11,10 @@ interface FunilData {
   telefones_invalidos?: number;
   suprimidos_meta?: number;
   removidos_pipeline_ativo?: number;
+  removidos_oferta_ativa?: number;
+  removidos_opt_out?: number;
   removidos_frequencia?: number;
+
   em_cooldown?: number;
   cooldown_dias?: number;
   inativados_definitivos?: number;
