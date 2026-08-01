@@ -730,12 +730,42 @@ Deno.serve(async (req) => {
         return dedupOfertaViaMetaTemplate(byEventos);
       };
 
+      const fetchBaseUnica = async (cap: number): Promise<Lead[]> => {
+        const f = (bodyAudience as any).base_filtro || {};
+        const filtro = {
+          empreendimento_ids: f.empreendimento_ids || [],
+          formularios: f.formularios || [],
+          campanhas: f.campanhas || [],
+          situacao_crm: f.situacao_crm || [],
+          ano_min: f.ano_min ?? null,
+          ano_max: f.ano_max ?? null,
+          ordem_selecao: f.ordem_selecao || "recentes",
+          excluir_oa: f.excluir_oa !== false,
+          excluir_ja_disparado: dedupMode === "include_all" ? false : (f.excluir_ja_disparado !== false),
+          janela_dedup_dias: Number(f.janela_dedup_dias || 30),
+          template_name: canal === "meta" ? (metaTemplate || null) : null,
+        };
+        const { data, error } = await supabase.rpc("selecionar_reengajamento_base", { p_filtro: filtro, p_limit: cap });
+        if (error) throw error;
+        const rows = (data || []) as any[];
+        totalBrutoCapturado = Math.max(totalBrutoCapturado || 0, rows.length);
+        return rows.map((l: any) => ({
+          id: l.id as string,
+          nome: l.nome,
+          telefone: l.telefone,
+          email: l.email,
+          ref: "base_lead" as const,
+        }));
+      };
+
       const fetchForSource = async (src: string, cap: number): Promise<Lead[]> => {
         if (src === "descartados") return fetchDescartados(cap);
         if (src === "pipeline_ativo") return fetchPipelineAtivo(cap);
         if (src === "oferta_ativa_lista") return fetchOfertaAtiva(cap);
+        if (src === "base_unica") return fetchBaseUnica(cap);
         throw new Error(`audience.source inválido: ${src}`);
       };
+
 
       if (!isCombined) {
         leads = (await fetchForSource(primarySource, primarySource === "descartados" ? effectiveLimit : effectiveLimit * 2)).slice(0, effectiveLimit);
