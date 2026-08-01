@@ -398,7 +398,7 @@ export default function Sidebar({
     : baseGroups;
   const withMutirao = mutiraoAtivo
     ? rawGroups.map(g =>
-        g.title === "Leads" || g.title === "Modo Corretor"
+        g.title === "Leads" || g.title === "Leads & Visitas" || g.title === "Modo Corretor"
           ? {
               ...g,
               items: g.items.some(i => i.path === "/oferta-ativa-ao-vivo")
