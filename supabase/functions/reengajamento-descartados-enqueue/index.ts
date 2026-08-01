@@ -553,7 +553,7 @@ Deno.serve(async (req) => {
       ? bodyDailyLimitOverride
       : (isCustomAudience && Number(bodyAudience?.limit) > 0 ? Number(bodyAudience.limit) : cfg.daily_limit);
 
-    let leads: Array<{ id: string; queue_id?: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
+    let leads: Array<{ id: string; queue_id?: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" | "base_lead" }> = [];
     let supressosRemovidos = 0;
     let pipelineAtivosRemovidos = 0;
     let frequenciaRemovidos = 0;
@@ -571,7 +571,7 @@ Deno.serve(async (req) => {
       const dedupMode = String(bodyAudience.dedup_mode || "exclude_sent");
       const dedupLookbackDays = Math.max(1, Number(bodyAudience.dedup_lookback_days || 30));
       const dedupSince = new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString();
-      type Lead = { id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" };
+      type Lead = { id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" | "base_lead" };
       const last8 = (raw: string | null): string => {
         const d = (raw || "").replace(/\D/g, "");
         return d.length >= 8 ? d.slice(-8) : d;
