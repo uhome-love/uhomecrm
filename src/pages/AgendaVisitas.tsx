@@ -6,6 +6,8 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw, ChevronDown, Link2, Link2Off, List, Columns3 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 import { useCalendarIntegration } from "@/hooks/useCalendarIntegration";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
@@ -711,46 +713,43 @@ export default function AgendaVisitas() {
 
       {/* ═══════ HEADER ═══════ */}
       <div className="space-y-2">
-        {/* Row 1: título + ações primárias */}
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
-            <CalendarDays size={13} strokeWidth={1.5} className="text-white" />
-          </div>
-          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-foreground">
-            Agenda de visitas
-          </h1>
+        <PageHeader
+          icon={<CalendarDays size={18} strokeWidth={1.6} />}
+          title="Agenda de visitas"
+          subtitle="Agende, confirme e acompanhe o comparecimento do time."
+          className="mb-0"
+          actions={
+            <>
+              {integration?.connected ? (
+                <button
+                  onClick={() => disconnect()}
+                  disabled={disconnecting}
+                  title={`Conectado: ${integration.email}`}
+                  className="h-[32px] px-2.5 sm:px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Link2 size={12} /> <span className="hidden sm:inline">Agenda conectada</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => connect()}
+                  disabled={connecting}
+                  title="Vincular Google Agenda"
+                  className="h-[32px] px-2.5 sm:px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Link2Off size={12} /> <span className="hidden sm:inline">{connecting ? "Conectando…" : "Vincular Google Agenda"}</span>
+                </button>
+              )}
 
-          <div className="flex-1" />
+              <button
+                onClick={() => setShowForm(true)}
+                className="h-[32px] px-3 sm:px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors shrink-0"
+              >
+                <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Nova Visita</span><span className="sm:hidden">Nova</span>
+              </button>
+            </>
+          }
+        />
 
-          {/* Google Calendar — texto some no mobile */}
-          {integration?.connected ? (
-            <button
-              onClick={() => disconnect()}
-              disabled={disconnecting}
-              title={`Conectado: ${integration.email}`}
-              className="h-[32px] px-2.5 sm:px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-            >
-              <Link2 size={12} /> <span className="hidden sm:inline">Agenda conectada</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => connect()}
-              disabled={connecting}
-              title="Vincular Google Agenda"
-              className="h-[32px] px-2.5 sm:px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-            >
-              <Link2Off size={12} /> <span className="hidden sm:inline">{connecting ? "Conectando…" : "Vincular Google Agenda"}</span>
-            </button>
-          )}
-
-          {/* Nova Visita */}
-          <button
-            onClick={() => setShowForm(true)}
-            className="h-[32px] px-3 sm:px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors shrink-0"
-          >
-            <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Nova Visita</span><span className="sm:hidden">Nova</span>
-          </button>
-        </div>
 
         {/* Row 2: busca + filtros */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -833,41 +832,26 @@ export default function AgendaVisitas() {
 
       {/* ═══════ KPIs ═══════ */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {[
-          { key: "criadas", label: "Criadas", value: kpiBase.length, color: "text-[#6366f1]", border: "border-l-[#6366f1]" },
-          { key: "marcadas", label: "Marcadas", value: kpis.marcadas, color: "text-warning-500", border: "border-l-warning-500" },
-          { key: "realizadas", label: "Realizadas", value: kpis.realizadas, color: "text-success-500", border: "border-l-success-500" },
-          { key: "no_show", label: "No-show", value: kpis.noShow, color: "text-danger-500", border: "border-l-danger-500" },
-          { key: "taxa", label: "Taxa comparecimento", value: `${kpis.taxa}%`, color: "text-primary", border: "border-l-primary" },
-        ].map(kpi => {
-          const isStatic = kpi.key === "taxa" || kpi.key === "criadas";
-          const isActive = kpiFilter === kpi.key;
-          const cardClass = cn(
-            "bg-card border border-border border-l-[3px] rounded-[10px] p-3 text-left transition-all",
-            kpi.border,
-            !isStatic && "cursor-pointer hover:border-neutral-300 dark:hover:border-white/15",
-            isActive && "ring-2 ring-primary/30 bg-primary/[0.02]"
-          );
-          const inner = (
-            <>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{kpi.label}</p>
-              <p className={cn("text-[22px] font-[800] leading-none mt-1 tracking-[-0.5px]", kpi.color)}>{kpi.value}</p>
-            </>
-          );
-          if (isStatic) {
-            return <div key={kpi.key} className={cardClass}>{inner}</div>;
-          }
-          return (
-            <button
-              key={kpi.key}
-              aria-pressed={isActive}
-              onClick={() => setKpiFilter(isActive ? null : kpi.key)}
-              className={cardClass}
-            >
-              {inner}
-            </button>
-          );
-        })}
+        <StatCard label="Criadas" value={kpiBase.length} />
+        <StatCard
+          label="Marcadas"
+          value={kpis.marcadas}
+          active={kpiFilter === "marcadas"}
+          onClick={() => setKpiFilter(kpiFilter === "marcadas" ? null : "marcadas")}
+        />
+        <StatCard
+          label="Realizadas"
+          value={kpis.realizadas}
+          active={kpiFilter === "realizadas"}
+          onClick={() => setKpiFilter(kpiFilter === "realizadas" ? null : "realizadas")}
+        />
+        <StatCard
+          label="No-show"
+          value={kpis.noShow}
+          active={kpiFilter === "no_show"}
+          onClick={() => setKpiFilter(kpiFilter === "no_show" ? null : "no_show")}
+        />
+        <StatCard label="Taxa de comparecimento" value={`${kpis.taxa}%`} accent />
       </div>
 
       {/* Active filter badge */}
