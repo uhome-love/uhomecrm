@@ -10,8 +10,22 @@ const corsHeaders = {
 
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 
-type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
+type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha" | "base_unica";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
+
+// Filtros do público vindo da Base Única de Leads
+export interface BaseFiltro {
+  empreendimento_ids?: string[];
+  formularios?: string[];
+  campanhas?: string[];
+  situacao_crm?: string[];
+  ano_min?: number | string;
+  ano_max?: number | string;
+  ordem_selecao?: "recentes" | "antigos" | "aleatorio";
+  excluir_oa?: boolean;
+  excluir_ja_disparado?: boolean;
+  janela_dedup_dias?: number;
+}
 
 interface Audience {
   source?: AudienceSource;
@@ -33,7 +47,9 @@ interface Audience {
   include_archived?: boolean;
   limit?: number;
   template_name?: string;
+  base_filtro?: BaseFiltro;
 }
+
 
 // Teto de segurança para agregação client-side dos breakdowns.
 // Suficiente para bases grandes sem estourar memória do worker.
