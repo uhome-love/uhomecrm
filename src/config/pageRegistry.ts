@@ -57,6 +57,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "ranking-legado": lazyRetry(() => import("@/pages/RankingEquipe")),
   "meu-time": lazyRetry(() => import("@/pages/MeuTime")),
   "oferta-ativa": lazyRetry(() => import("@/pages/OfertaAtiva")),
+  "base-leads": lazyRetry(() => import("@/pages/BaseLeadsPage")),
   "oferta-ativa-ao-vivo": lazyRetry(() => import("@/pages/OfertaAtivaAoVivo")),
   roleta: lazyRetry(() => import("@/pages/RoletaLeads")),
   marketplace: lazyRetry(() => import("@/pages/MarketplaceScripts")),
