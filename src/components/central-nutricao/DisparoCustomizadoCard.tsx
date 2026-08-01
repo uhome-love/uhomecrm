@@ -21,6 +21,7 @@ import FunilLateral from "./disparo/FunilLateral";
 import EmpreendimentoMultiSelect from "./disparo/EmpreendimentoMultiSelect";
 import { MultiPicker } from "@/components/leads-base/campanha/MultiPicker";
 import { useEmpreendimentosCanonicos, useFormulariosBase } from "@/hooks/useBaseLeads";
+import BaseUnicaFiltros, { BASE_UNICA_FILTRO_PADRAO, type BaseUnicaFiltro } from "./disparo/BaseUnicaFiltros";
 
 
 type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "base_unica";
@@ -30,8 +31,15 @@ type Recencia = "7d" | "30d" | "90d" | "180d" | "mais" | "todos";
 type OrdemBase = "recentes" | "antigos" | "aleatorio";
 
 interface FunilData {
+  fonte?: string;
   por_fonte?: Record<string, number>;
   duplicados_removidos?: number;
+  removidos_sem_telefone?: number;
+  removidos_ganho?: number;
+  removidos_descartados?: number;
+  mantidos_pipeline_ativo?: number;
+  mantidos_ganho?: number;
+  mantidos_descartados?: number;
   removidos_pipeline_ativo?: number;
   removidos_oferta_ativa?: number;
   removidos_opt_out?: number;
@@ -116,14 +124,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
   const [listaIds, setListaIds] = useState<string[]>([]);
-  // Base Única de Leads
-  const [baseEmpIds, setBaseEmpIds] = useState<string[]>([]);
-  const [baseFormularios, setBaseFormularios] = useState<string[]>([]);
-  const [baseAnoMin, setBaseAnoMin] = useState<string>("");
-  const [baseAnoMax, setBaseAnoMax] = useState<string>("");
-  const [baseOrdem, setBaseOrdem] = useState<OrdemBase>("recentes");
-  const [baseExcluirOa, setBaseExcluirOa] = useState<boolean>(true);
-  const [baseExcluirJaDisparado, setBaseExcluirJaDisparado] = useState<boolean>(true);
+  // Base Única de Leads (contrato único de filtro)
+  const [baseFiltro, setBaseFiltro] = useState<BaseUnicaFiltro>(BASE_UNICA_FILTRO_PADRAO);
+
   const { data: empreendimentosCanonicos } = useEmpreendimentosCanonicos();
   const { data: formulariosBase } = useFormulariosBase();
 
@@ -145,6 +148,13 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [mensagem, setMensagem] = useState<string>("");
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewing, setPreviewing] = useState(false);
+
+  // Nunca mostrar funil de uma fonte para outra
+  useEffect(() => {
+    setPreview(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sources.join(",")]);
+
   const [firing, setFiring] = useState(false);
   const [modoTeste, setModoTeste] = useState<boolean>(false);
   const [tab, setTab] = useState<"publico" | "filtros" | "mensagem">("publico");
@@ -235,15 +245,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (has("pipeline_ativo")) base.stage_ids = stageIds;
     if (has("oferta_ativa_lista")) base.lista_ids = listaIds;
     if (has("base_unica")) {
-      base.base_filtro = {
-        empreendimento_ids: baseEmpIds,
-        formularios: baseFormularios,
-        ano_min: baseAnoMin ? Number(baseAnoMin) : null,
-        ano_max: baseAnoMax ? Number(baseAnoMax) : null,
-        ordem_selecao: baseOrdem,
-        excluir_oa: baseExcluirOa,
-        excluir_ja_disparado: baseExcluirJaDisparado,
-      };
+      base.base_filtro = { ...baseFiltro };
     }
 
     if (canal === "meta" && templateName) {
@@ -255,7 +257,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (modoTeste && canal === "meta") base.modo_teste = true;
     return base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), motivosDescarte.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), baseEmpIds.join(","), baseFormularios.join(","), baseAnoMin, baseAnoMax, baseOrdem, baseExcluirOa, baseExcluirJaDisparado, templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
+  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), motivosDescarte.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), JSON.stringify(baseFiltro), templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
 
 
   // ── Auto-preview com debounce ──
@@ -466,64 +468,15 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               <TabsContent value="filtros" className="space-y-3 pt-3">
                 {/* Base única de leads */}
                 {has("base_unica") && (
-                  <div className="space-y-2 rounded-lg border border-indigo-200 dark:border-indigo-900 bg-indigo-50/40 dark:bg-indigo-950/20 p-3">
-                    <Label className="text-xs flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5" /> Base única de leads
-                    </Label>
-                    <p className="text-[10px] text-muted-foreground">
-                      Base histórica higienizada: opt-out, sem telefone, já disparados e quem está no CRM ou em campanha de Oferta Ativa saem automaticamente.
-                    </p>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Empreendimento</Label>
-                        <MultiPicker
-                          items={(empreendimentosCanonicos || []).map((e) => ({ id: e.id, nome: e.nome }))}
-                          value={baseEmpIds}
-                          onChange={setBaseEmpIds}
-                          placeholder="Todos os empreendimentos"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Formulário de origem</Label>
-                        <MultiPicker
-                          items={(formulariosBase || []).map((f) => ({ id: f.formulario, nome: f.formulario, hint: String(f.total_leads) }))}
-                          value={baseFormularios}
-                          onChange={setBaseFormularios}
-                          placeholder="Todos os formulários"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Safra (ano)</Label>
-                        <div className="flex items-center gap-1.5">
-                          <Input type="number" placeholder="de" value={baseAnoMin} onChange={(e) => setBaseAnoMin(e.target.value)} className="h-9" />
-                          <span className="text-xs text-muted-foreground">até</span>
-                          <Input type="number" placeholder="até" value={baseAnoMax} onChange={(e) => setBaseAnoMax(e.target.value)} className="h-9" />
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Ordem de seleção</Label>
-                        <Select value={baseOrdem} onValueChange={(v) => setBaseOrdem(v as OrdemBase)}>
-                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="recentes">Mais recentes primeiro</SelectItem>
-                            <SelectItem value="antigos">Mais antigos primeiro</SelectItem>
-                            <SelectItem value="aleatorio">Aleatório</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-4 pt-1">
-                      <label className="flex items-center gap-2 text-xs cursor-pointer">
-                        <Checkbox checked={baseExcluirOa} onCheckedChange={(v) => setBaseExcluirOa(v === true)} />
-                        <span>Excluir quem está em campanha de Oferta Ativa</span>
-                      </label>
-                      <label className="flex items-center gap-2 text-xs cursor-pointer">
-                        <Checkbox checked={baseExcluirJaDisparado} onCheckedChange={(v) => setBaseExcluirJaDisparado(v === true)} />
-                        <span>Excluir quem já recebeu disparo</span>
-                      </label>
-                    </div>
-                  </div>
+                  <BaseUnicaFiltros
+                    filtro={baseFiltro}
+                    onChange={(patch) => setBaseFiltro((p) => ({ ...p, ...patch }))}
+                    empreendimentos={(empreendimentosCanonicos || []).map((e) => ({ id: e.id, nome: e.nome }))}
+                    formularios={(formulariosBase || []).map((f) => ({ formulario: f.formulario, total_leads: f.total_leads }))}
+                    contagens={preview?.funil?.fonte === "base_unica" ? preview.funil : null}
+                  />
                 )}
+
 
 
                 {/* Recência */}

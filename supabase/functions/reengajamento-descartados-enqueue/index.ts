@@ -743,6 +743,9 @@ Deno.serve(async (req) => {
           ano_min: f.ano_min ?? null,
           ano_max: f.ano_max ?? null,
           ordem_selecao: f.ordem_selecao || "recentes",
+          excluir_pipeline_ativo: f.excluir_pipeline_ativo !== false,
+          excluir_ganho: f.excluir_ganho !== false,
+          excluir_descartados: f.excluir_descartados === true,
           excluir_oa: f.excluir_oa !== false,
           excluir_ja_disparado: dedupMode === "include_all" ? false : (f.excluir_ja_disparado !== false),
           janela_dedup_dias: Number(f.janela_dedup_dias || 30),
@@ -884,7 +887,10 @@ Deno.serve(async (req) => {
     // ── GUARDA DE EXCLUSIVIDADE DO PIPELINE (crítico, todos os canais) ──
     // Nunca dispara para quem é lead ATIVO no pipeline (telefone OU e-mail).
     // Checagem em tempo de disparo: cobre quem virou lead ativo depois de entrar na lista.
-    if (!bodyRunId && leads.length > 0) {
+    // Exceção: na Base única o usuário pode escolher MANTER quem está no pipeline ativo.
+    const baseUnicaMantemPipeline = sourcesArr.includes("base_unica")
+      && ((bodyAudience as any)?.base_filtro?.excluir_pipeline_ativo === false);
+    if (!bodyRunId && leads.length > 0 && !baseUnicaMantemPipeline) {
       const phoneSet = new Set<string>();
       const emailSet = new Set<string>();
       let pf = 0;

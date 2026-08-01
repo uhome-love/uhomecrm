@@ -13001,6 +13001,27 @@ export type Database = {
           lead_nome: string
         }[]
       }
+      base_reengajamento_candidatos: {
+        Args: { p_filtro: Json }
+        Returns: {
+          email: string
+          empreendimento_texto: string
+          f_descartado: boolean
+          f_ganho: boolean
+          f_ja_disparado: boolean
+          f_oferta_ativa: boolean
+          f_opt_out: boolean
+          f_pipeline_ativo: boolean
+          f_sem_telefone: boolean
+          id: string
+          nome: string
+          situacao_crm: string
+          telefone: string
+          telefone_key: string
+          ultima_conversao_em: string
+          ultimo_formulario: string
+        }[]
+      }
       buscar_conhecimento: {
         Args: {
           filter_empreendimento?: string
@@ -14316,13 +14337,10 @@ export type Database = {
         Args: { p_filtro: Json; p_limit?: number }
         Returns: {
           email: string
-          empreendimento_canonico_id: string
           empreendimento_texto: string
           id: string
           nome: string
-          situacao_crm: string
           telefone: string
-          telefone_key: string
           ultima_conversao_em: string
           ultimo_formulario: string
         }[]
