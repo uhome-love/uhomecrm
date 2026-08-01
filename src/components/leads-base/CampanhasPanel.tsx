@@ -56,6 +56,7 @@ export function CampanhasPanel() {
               <th className="text-right font-semibold px-3 py-2">Tentativas</th>
               <th className="text-right font-semibold px-3 py-2">Aproveitados</th>
               <th className="text-right font-semibold px-3 py-2">Conversão</th>
+              <th className="text-right font-semibold px-3 py-2">Ação</th>
             </tr>
           </thead>
           <tbody>
