@@ -230,15 +230,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (has("pipeline_ativo")) base.stage_ids = stageIds;
     if (has("oferta_ativa_lista")) base.lista_ids = listaIds;
     if (has("base_unica")) {
-      base.base_filtro = {
-        empreendimento_ids: baseEmpIds,
-        formularios: baseFormularios,
-        ano_min: baseAnoMin ? Number(baseAnoMin) : null,
-        ano_max: baseAnoMax ? Number(baseAnoMax) : null,
-        ordem_selecao: baseOrdem,
-        excluir_oa: baseExcluirOa,
-        excluir_ja_disparado: baseExcluirJaDisparado,
-      };
+      base.base_filtro = { ...baseFiltro };
     }
 
     if (canal === "meta" && templateName) {
@@ -250,7 +242,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (modoTeste && canal === "meta") base.modo_teste = true;
     return base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), motivosDescarte.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), baseEmpIds.join(","), baseFormularios.join(","), baseAnoMin, baseAnoMax, baseOrdem, baseExcluirOa, baseExcluirJaDisparado, templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
+  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), motivosDescarte.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), JSON.stringify(baseFiltro), templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
 
 
   // ── Auto-preview com debounce ──
