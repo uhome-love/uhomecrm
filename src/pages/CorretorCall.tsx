@@ -117,11 +117,16 @@ export default function CorretorCall() {
   // Meta do dia foi descontinuada — não bloqueia mais entrada na tela.
   // useCorretorProgress retorna defaults (30/5/3) quando goals é null.
 
-
+  // Campanhas liberadas para este corretor (regra única) — base da fila do warmup
+  const { campanhas: campanhasDisponiveis, statsMap: statsDisponiveis } = useCampanhasDisponiveis();
+  const filaDisponivel = useMemo(
+    () => campanhasDisponiveis.reduce((acc, c) => acc + (statsDisponiveis[c.id]?.naFila ?? 0), 0),
+    [campanhasDisponiveis, statsDisponiveis],
+  );
 
   // Ranking & leads data for warmup screen
   const { data: warmupData } = useQuery({
-    queryKey: ["call-warmup", user?.id],
+    queryKey: ["call-warmup", user?.id, filaDisponivel],
     queryFn: async () => {
       const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
