@@ -31,8 +31,15 @@ type Recencia = "7d" | "30d" | "90d" | "180d" | "mais" | "todos";
 type OrdemBase = "recentes" | "antigos" | "aleatorio";
 
 interface FunilData {
+  fonte?: string;
   por_fonte?: Record<string, number>;
   duplicados_removidos?: number;
+  removidos_sem_telefone?: number;
+  removidos_ganho?: number;
+  removidos_descartados?: number;
+  mantidos_pipeline_ativo?: number;
+  mantidos_ganho?: number;
+  mantidos_descartados?: number;
   removidos_pipeline_ativo?: number;
   removidos_oferta_ativa?: number;
   removidos_opt_out?: number;
