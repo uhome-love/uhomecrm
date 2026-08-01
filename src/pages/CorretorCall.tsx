@@ -158,16 +158,8 @@ export default function CorretorCall() {
         if (belowId) belowName = nameOf(belowId) || "#2";
       }
 
-      // Count leads available — corretor-specific: only from lists they have access to
-      const now = new Date().toISOString();
-      const { count: myQueueCount } = await supabase
-        .from("oferta_ativa_leads")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["na_fila", "em_cooldown"])
-        .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`)
-        .or(`corretor_id.is.null,corretor_id.eq.${user!.id}`);
-
-      const queueLeads = myQueueCount || 0;
+      // Fila = apenas campanhas liberadas/no escopo do corretor (regra única)
+      const queueLeads = filaDisponivel;
       const estMinutes = Math.min(120, queueLeads * 2); // cap at 2h
 
       return {
