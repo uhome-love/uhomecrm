@@ -752,6 +752,256 @@ export type Database = {
         }
         Relationships: []
       }
+      base_leads: {
+        Row: {
+          campanha: string | null
+          created_at: string
+          email: string | null
+          email_key: string | null
+          empreendimento_canonico_id: string | null
+          empreendimento_texto: string | null
+          external_id: string | null
+          fonte_dado: string
+          id: string
+          nome: string | null
+          observacoes: string | null
+          oferta_ativa_lead_id: string | null
+          opt_out: boolean
+          opt_out_motivo: string | null
+          pipeline_lead_id: string | null
+          primeira_conversao_em: string | null
+          primeiro_formulario: string | null
+          produto_extinto: boolean
+          situacao_crm: string
+          sobrenome: string | null
+          telefone: string | null
+          telefone_key: string | null
+          telefone_normalizado: string | null
+          total_conversoes: number
+          ultima_campanha_oa_id: string | null
+          ultima_conversao_em: string | null
+          ultima_liberacao_em: string | null
+          ultimo_formulario: string | null
+          updated_at: string
+          vezes_trabalhado: number
+        }
+        Insert: {
+          campanha?: string | null
+          created_at?: string
+          email?: string | null
+          email_key?: string | null
+          empreendimento_canonico_id?: string | null
+          empreendimento_texto?: string | null
+          external_id?: string | null
+          fonte_dado?: string
+          id?: string
+          nome?: string | null
+          observacoes?: string | null
+          oferta_ativa_lead_id?: string | null
+          opt_out?: boolean
+          opt_out_motivo?: string | null
+          pipeline_lead_id?: string | null
+          primeira_conversao_em?: string | null
+          primeiro_formulario?: string | null
+          produto_extinto?: boolean
+          situacao_crm?: string
+          sobrenome?: string | null
+          telefone?: string | null
+          telefone_key?: string | null
+          telefone_normalizado?: string | null
+          total_conversoes?: number
+          ultima_campanha_oa_id?: string | null
+          ultima_conversao_em?: string | null
+          ultima_liberacao_em?: string | null
+          ultimo_formulario?: string | null
+          updated_at?: string
+          vezes_trabalhado?: number
+        }
+        Update: {
+          campanha?: string | null
+          created_at?: string
+          email?: string | null
+          email_key?: string | null
+          empreendimento_canonico_id?: string | null
+          empreendimento_texto?: string | null
+          external_id?: string | null
+          fonte_dado?: string
+          id?: string
+          nome?: string | null
+          observacoes?: string | null
+          oferta_ativa_lead_id?: string | null
+          opt_out?: boolean
+          opt_out_motivo?: string | null
+          pipeline_lead_id?: string | null
+          primeira_conversao_em?: string | null
+          primeiro_formulario?: string | null
+          produto_extinto?: boolean
+          situacao_crm?: string
+          sobrenome?: string | null
+          telefone?: string | null
+          telefone_key?: string | null
+          telefone_normalizado?: string | null
+          total_conversoes?: number
+          ultima_campanha_oa_id?: string | null
+          ultima_conversao_em?: string | null
+          ultima_liberacao_em?: string | null
+          ultimo_formulario?: string | null
+          updated_at?: string
+          vezes_trabalhado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_leads_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_leads_conversoes: {
+        Row: {
+          base_lead_id: string
+          campanha: string | null
+          convertido_em: string | null
+          created_at: string
+          empreendimento_canonico_id: string | null
+          fonte_dado: string
+          formulario: string | null
+          id: string
+        }
+        Insert: {
+          base_lead_id: string
+          campanha?: string | null
+          convertido_em?: string | null
+          created_at?: string
+          empreendimento_canonico_id?: string | null
+          fonte_dado?: string
+          formulario?: string | null
+          id?: string
+        }
+        Update: {
+          base_lead_id?: string
+          campanha?: string | null
+          convertido_em?: string | null
+          created_at?: string
+          empreendimento_canonico_id?: string | null
+          fonte_dado?: string
+          formulario?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_leads_conversoes_base_lead_id_fkey"
+            columns: ["base_lead_id"]
+            isOneToOne: false
+            referencedRelation: "base_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_leads_conversoes_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_leads_form_map: {
+        Row: {
+          created_at: string
+          empreendimento_canonico_id: string | null
+          empreendimento_texto: string | null
+          extinto: boolean
+          formulario: string
+          id: string
+          revisado: boolean
+          revisado_por: string | null
+          total_leads: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empreendimento_canonico_id?: string | null
+          empreendimento_texto?: string | null
+          extinto?: boolean
+          formulario: string
+          id?: string
+          revisado?: boolean
+          revisado_por?: string | null
+          total_leads?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empreendimento_canonico_id?: string | null
+          empreendimento_texto?: string | null
+          extinto?: boolean
+          formulario?: string
+          id?: string
+          revisado?: boolean
+          revisado_por?: string | null
+          total_leads?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_leads_form_map_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_leads_import_runs: {
+        Row: {
+          arquivo: string | null
+          atualizados: number
+          created_at: string
+          criado_por: string | null
+          duplicados_arquivo: number
+          erro: string | null
+          fonte_dado: string
+          id: string
+          ignorados: number
+          novos: number
+          status: string
+          total_linhas: number
+          updated_at: string
+        }
+        Insert: {
+          arquivo?: string | null
+          atualizados?: number
+          created_at?: string
+          criado_por?: string | null
+          duplicados_arquivo?: number
+          erro?: string | null
+          fonte_dado?: string
+          id?: string
+          ignorados?: number
+          novos?: number
+          status?: string
+          total_linhas?: number
+          updated_at?: string
+        }
+        Update: {
+          arquivo?: string | null
+          atualizados?: number
+          created_at?: string
+          criado_por?: string | null
+          duplicados_arquivo?: number
+          erro?: string | null
+          fonte_dado?: string
+          id?: string
+          ignorados?: number
+          novos?: number
+          status?: string
+          total_linhas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blocked_templates: {
         Row: {
           blocked_at: string
@@ -1281,6 +1531,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oferta_ativa_listas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_sessions_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "v_oa_campanha_resultado"
+            referencedColumns: ["lista_id"]
           },
           {
             foreignKeyName: "coaching_sessions_lista_id_fkey"
@@ -5778,6 +6035,13 @@ export type Database = {
             foreignKeyName: "oa_events_lista_id_fkey"
             columns: ["lista_id"]
             isOneToOne: false
+            referencedRelation: "v_oa_campanha_resultado"
+            referencedColumns: ["lista_id"]
+          },
+          {
+            foreignKeyName: "oa_events_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
             referencedRelation: "v_oa_lista_potencial"
             referencedColumns: ["lista_id"]
           },
@@ -5978,6 +6242,7 @@ export type Database = {
       }
       oferta_ativa_leads: {
         Row: {
+          base_lead_id: string | null
           cadastrado_jetimob: boolean
           cadastrado_jetimob_em: string | null
           campanha: string | null
@@ -6006,6 +6271,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          base_lead_id?: string | null
           cadastrado_jetimob?: boolean
           cadastrado_jetimob_em?: string | null
           campanha?: string | null
@@ -6034,6 +6300,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          base_lead_id?: string | null
           cadastrado_jetimob?: boolean
           cadastrado_jetimob_em?: string | null
           campanha?: string | null
@@ -6063,11 +6330,25 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "oferta_ativa_leads_base_lead_id_fkey"
+            columns: ["base_lead_id"]
+            isOneToOne: false
+            referencedRelation: "base_leads"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "oferta_ativa_leads_lista_id_fkey"
             columns: ["lista_id"]
             isOneToOne: false
             referencedRelation: "oferta_ativa_listas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_leads_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "v_oa_campanha_resultado"
+            referencedColumns: ["lista_id"]
           },
           {
             foreignKeyName: "oferta_ativa_leads_lista_id_fkey"
@@ -6171,11 +6452,16 @@ export type Database = {
           criado_por: string
           empreendimento: string
           empreendimento_canonico_id: string | null
+          encerrada_em: string | null
+          expira_em: string | null
+          filtro: Json | null
           id: string
           is_base_semana: boolean
+          liberada_em: string | null
           max_tentativas: number
           nome: string
           origem: string | null
+          origem_base: boolean
           segmento_id: string | null
           status: string
           tipo: string
@@ -6190,11 +6476,16 @@ export type Database = {
           criado_por: string
           empreendimento: string
           empreendimento_canonico_id?: string | null
+          encerrada_em?: string | null
+          expira_em?: string | null
+          filtro?: Json | null
           id?: string
           is_base_semana?: boolean
+          liberada_em?: string | null
           max_tentativas?: number
           nome: string
           origem?: string | null
+          origem_base?: boolean
           segmento_id?: string | null
           status?: string
           tipo?: string
@@ -6209,11 +6500,16 @@ export type Database = {
           criado_por?: string
           empreendimento?: string
           empreendimento_canonico_id?: string | null
+          encerrada_em?: string | null
+          expira_em?: string | null
+          filtro?: Json | null
           id?: string
           is_base_semana?: boolean
+          liberada_em?: string | null
           max_tentativas?: number
           nome?: string
           origem?: string | null
+          origem_base?: boolean
           segmento_id?: string | null
           status?: string
           tipo?: string
@@ -6441,6 +6737,13 @@ export type Database = {
             foreignKeyName: "oferta_ativa_reservados_lista_id_fkey"
             columns: ["lista_id"]
             isOneToOne: false
+            referencedRelation: "v_oa_campanha_resultado"
+            referencedColumns: ["lista_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_reservados_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
             referencedRelation: "v_oa_lista_potencial"
             referencedColumns: ["lista_id"]
           },
@@ -6598,6 +6901,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oferta_ativa_listas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_tentativas_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "v_oa_campanha_resultado"
+            referencedColumns: ["lista_id"]
           },
           {
             foreignKeyName: "oferta_ativa_tentativas_lista_id_fkey"
@@ -12312,6 +12622,24 @@ export type Database = {
         }
         Relationships: []
       }
+      v_oa_campanha_resultado: {
+        Row: {
+          aproveitados: number | null
+          conversao_pct: number | null
+          descartados: number | null
+          empreendimento: string | null
+          encerrada_em: string | null
+          expira_em: string | null
+          liberada_em: string | null
+          liberados: number | null
+          lista_id: string | null
+          na_fila: number | null
+          nome: string | null
+          status: string | null
+          tentativas: number | null
+        }
+        Relationships: []
+      }
       v_oa_lista_potencial: {
         Row: {
           aproveitados_90d: number | null
@@ -12802,6 +13130,16 @@ export type Database = {
         Returns: Json
       }
       credenciar_por_alocacao: { Args: { p_janela: string }; Returns: Json }
+      criar_campanha_da_base: {
+        Args: {
+          p_expira_em: string
+          p_filtro: Json
+          p_liberar?: boolean
+          p_limite?: number
+          p_nome: string
+        }
+        Returns: Json
+      }
       criar_notificacao: {
         Args: {
           p_agrupamento_key?: string
@@ -12865,6 +13203,7 @@ export type Database = {
           visitas_semana: number
         }[]
       }
+      encerrar_campanhas_expiradas: { Args: never; Returns: Json }
       enqueue_meta_capi_event: {
         Args: {
           p_action_source?: string
@@ -13679,6 +14018,7 @@ export type Database = {
       }
       perf_atividade_humana: { Args: { p_tipo: string }; Returns: boolean }
       presenca_role_scope: { Args: { _user_id: string }; Returns: string }
+      preview_campanha_da_base: { Args: { p_filtro: Json }; Returns: number }
       processar_cadencia_sem_contato: {
         Args: never
         Returns: {
