@@ -73,7 +73,7 @@ export default function PerformanceHub({ tab, onNavigate }: Props) {
     [p.prevStart, p.prevEnd, gerenteId, userId]
   );
 
-  const { linhas, isLoading } = useMetricasSSOT(filtro);
+  const { linhas, rows, isLoading } = useMetricasSSOT(filtro);
   const { linhas: linhasAnterior } = useMetricasSSOT(filtroAnterior, tab === "visao");
   const { pontos, isLoading: evolucaoLoading } = useEvolucaoSSOT({
     referencia: p.referencia,
@@ -184,7 +184,7 @@ export default function PerformanceHub({ tab, onNavigate }: Props) {
         )}
 
         {tab === "ranking" && (
-          <PerfRanking linhas={linhas} loading={isLoading} onSelectCorretor={setCorretorSel} />
+          <PerfRanking linhas={linhas} rowsHistoricas={rows} loading={isLoading} onSelectCorretor={setCorretorSel} />
         )}
         {tab === "origem" && (
           <PerfOrigem dados={dadosOrigem} loading={origemLoading} start={filtro.start} end={filtro.end} />
