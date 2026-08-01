@@ -12,6 +12,7 @@ import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, X, Ch
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
 import CorretorEntrada from "@/components/oferta-ativa/CorretorEntrada";
+import { useCampanhasDisponiveis } from "@/hooks/useCampanhasDisponiveis";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
