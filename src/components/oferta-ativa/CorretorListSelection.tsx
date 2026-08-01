@@ -119,6 +119,12 @@ function ListaRow({
         {lista.campanha && (
           <p className="text-[11px] truncate" style={{ color: "var(--arena-text-subtle)" }}>{lista.campanha}</p>
         )}
+        {lista.observacao && (
+          <p className="text-[11px] truncate italic" style={{ color: "var(--arena-text-subtle)" }}>
+            🎯 {lista.observacao}
+          </p>
+        )}
+
       </div>
 
       {/* Inline stats */}
