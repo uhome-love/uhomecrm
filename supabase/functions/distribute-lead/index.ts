@@ -1,4 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { notifyLeadDistribuido } from "../_shared/lead-notify.ts";
+
+// Logger de ops_events em escopo de módulo (usado também por distributeViaRPC).
+function logOps(level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) {
+  try {
+    createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
+      .from("ops_events")
+      .insert({ fn: "distribute-lead", level, category, message, ctx: ctx || {}, error_detail: errorDetail || null })
+      .then(() => {});
+  } catch { /* nunca derruba a distribuição */ }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -253,51 +264,12 @@ async function distributeViaRPC(
     }
   }
 
-  // A RPC distribuir_lead_atomico NÃO devolve nome/empreendimento —
-  // buscamos direto no lead para os avisos (WhatsApp, push e sino).
-  let leadRow: any = null;
-  try {
-    const { data } = await supabase
-      .from("pipeline_leads")
-      .select("nome, empreendimento, telefone, origem, empreendimentos_canonicos(nome)")
-      .eq("id", leadId)
-      .maybeSingle();
-    leadRow = data;
-  } catch (e) {
-    console.warn("lead fetch for notifications failed:", (e as Error)?.message);
-  }
-
-  const lead = {
-    id: leadId,
-    nome: leadRow?.nome || result.lead_nome || null,
-    empreendimento:
-      leadRow?.empreendimentos_canonicos?.nome ||
-      leadRow?.empreendimento ||
-      result.lead_empreendimento ||
-      null,
-    telefone: leadRow?.telefone || result.lead_telefone || null,
-    origem: leadRow?.origem || result.lead_origem || null,
-  };
-
-
-  // Notification insert
-  supabase.from("notifications").insert({
-    user_id: normalizedCorretorId,
-    tipo: "lead",
-    categoria: "lead_novo",
-    titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
-    mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}${lead.origem ? ` (${lead.origem})` : ""}. Aceite em 10 minutos!`,
-    dados: { pipeline_lead_id: leadId, lead_nome: lead.nome, empreendimento: lead.empreendimento, telefone: lead.telefone, origem: lead.origem },
-    agrupamento_key: `lead_novo_${leadId}`,
-  }).then((r: any) => { if (r.error) console.warn("notification insert:", r.error.message); });
-
-  // WhatsApp + Push (fire-and-forget)
-  sendWhatsApp(supabase, supabaseUrl, serviceKey, result.corretor_id, lead).catch(e =>
-    console.warn("WhatsApp notify error:", e)
+  // Avisos (sino + WhatsApp Meta + push) — helper compartilhado com a
+  // distribuição direta, para o aviso ser idêntico em todos os caminhos.
+  notifyLeadDistribuido(supabase, supabaseUrl, serviceKey, normalizedCorretorId, leadId, result).catch((e) =>
+    console.warn("notifyLeadDistribuido error:", e)
   );
-  sendPush(supabaseUrl, serviceKey, normalizedCorretorId, lead).catch(e =>
-    console.warn("Push notify error:", e)
-  );
+
 
   L.info("Lead distributed", {
     leadId,
@@ -383,53 +355,6 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
 }
 
 // ─── Helpers ───
-async function sendWhatsApp(supabase: any, supabaseUrl: string, serviceKey: string, authUserId: string, lead: any) {
-  const { data: corretor } = await supabase
-    .from("profiles")
-    .select("telefone, nome")
-    .eq("user_id", authUserId)
-    .maybeSingle();
-
-  if (corretor?.telefone) {
-    await fetch(`${supabaseUrl}/functions/v1/whatsapp-notificacao`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        telefone: corretor.telefone,
-        tipo: "novo_lead",
-        dados: {
-          nome: lead.nome || "Lead",
-          empreendimento: lead.empreendimento || "Não identificado",
-          telefone: lead.telefone || "",
-        },
-      }),
-    });
-  }
-}
-
-async function sendPush(supabaseUrl: string, serviceKey: string, authUserId: string, lead: any) {
-  try {
-    const targetUrl = lead?.id ? `/aceite?lead=${lead.id}` : "/aceite";
-    await fetch(`${supabaseUrl}/functions/v1/send-push`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: authUserId,
-        title: "🚨 Novo Lead!",
-        body: `${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}. Aceite em 10 min!`,
-        url: targetUrl,
-        data: {
-          tag: `lead_novo_${lead.id}`,
-          url: targetUrl,
-          pipeline_lead_id: lead?.id ?? null,
-        },
-      }),
-    });
-  } catch (e) {
-    console.warn("Push notification error:", e);
-  }
-}
-
 function jsonResponse(data: any, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
