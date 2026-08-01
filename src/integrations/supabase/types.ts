@@ -752,6 +752,256 @@ export type Database = {
         }
         Relationships: []
       }
+      base_leads: {
+        Row: {
+          campanha: string | null
+          created_at: string
+          email: string | null
+          email_key: string | null
+          empreendimento_canonico_id: string | null
+          empreendimento_texto: string | null
+          external_id: string | null
+          fonte_dado: string
+          id: string
+          nome: string | null
+          observacoes: string | null
+          oferta_ativa_lead_id: string | null
+          opt_out: boolean
+          opt_out_motivo: string | null
+          pipeline_lead_id: string | null
+          primeira_conversao_em: string | null
+          primeiro_formulario: string | null
+          produto_extinto: boolean
+          situacao_crm: string
+          sobrenome: string | null
+          telefone: string | null
+          telefone_key: string | null
+          telefone_normalizado: string | null
+          total_conversoes: number
+          ultima_campanha_oa_id: string | null
+          ultima_conversao_em: string | null
+          ultima_liberacao_em: string | null
+          ultimo_formulario: string | null
+          updated_at: string
+          vezes_trabalhado: number
+        }
+        Insert: {
+          campanha?: string | null
+          created_at?: string
+          email?: string | null
+          email_key?: string | null
+          empreendimento_canonico_id?: string | null
+          empreendimento_texto?: string | null
+          external_id?: string | null
+          fonte_dado?: string
+          id?: string
+          nome?: string | null
+          observacoes?: string | null
+          oferta_ativa_lead_id?: string | null
+          opt_out?: boolean
+          opt_out_motivo?: string | null
+          pipeline_lead_id?: string | null
+          primeira_conversao_em?: string | null
+          primeiro_formulario?: string | null
+          produto_extinto?: boolean
+          situacao_crm?: string
+          sobrenome?: string | null
+          telefone?: string | null
+          telefone_key?: string | null
+          telefone_normalizado?: string | null
+          total_conversoes?: number
+          ultima_campanha_oa_id?: string | null
+          ultima_conversao_em?: string | null
+          ultima_liberacao_em?: string | null
+          ultimo_formulario?: string | null
+          updated_at?: string
+          vezes_trabalhado?: number
+        }
+        Update: {
+          campanha?: string | null
+          created_at?: string
+          email?: string | null
+          email_key?: string | null
+          empreendimento_canonico_id?: string | null
+          empreendimento_texto?: string | null
+          external_id?: string | null
+          fonte_dado?: string
+          id?: string
+          nome?: string | null
+          observacoes?: string | null
+          oferta_ativa_lead_id?: string | null
+          opt_out?: boolean
+          opt_out_motivo?: string | null
+          pipeline_lead_id?: string | null
+          primeira_conversao_em?: string | null
+          primeiro_formulario?: string | null
+          produto_extinto?: boolean
+          situacao_crm?: string
+          sobrenome?: string | null
+          telefone?: string | null
+          telefone_key?: string | null
+          telefone_normalizado?: string | null
+          total_conversoes?: number
+          ultima_campanha_oa_id?: string | null
+          ultima_conversao_em?: string | null
+          ultima_liberacao_em?: string | null
+          ultimo_formulario?: string | null
+          updated_at?: string
+          vezes_trabalhado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_leads_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_leads_conversoes: {
+        Row: {
+          base_lead_id: string
+          campanha: string | null
+          convertido_em: string | null
+          created_at: string
+          empreendimento_canonico_id: string | null
+          fonte_dado: string
+          formulario: string | null
+          id: string
+        }
+        Insert: {
+          base_lead_id: string
+          campanha?: string | null
+          convertido_em?: string | null
+          created_at?: string
+          empreendimento_canonico_id?: string | null
+          fonte_dado?: string
+          formulario?: string | null
+          id?: string
+        }
+        Update: {
+          base_lead_id?: string
+          campanha?: string | null
+          convertido_em?: string | null
+          created_at?: string
+          empreendimento_canonico_id?: string | null
+          fonte_dado?: string
+          formulario?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_leads_conversoes_base_lead_id_fkey"
+            columns: ["base_lead_id"]
+            isOneToOne: false
+            referencedRelation: "base_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_leads_conversoes_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_leads_form_map: {
+        Row: {
+          created_at: string
+          empreendimento_canonico_id: string | null
+          empreendimento_texto: string | null
+          extinto: boolean
+          formulario: string
+          id: string
+          revisado: boolean
+          revisado_por: string | null
+          total_leads: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empreendimento_canonico_id?: string | null
+          empreendimento_texto?: string | null
+          extinto?: boolean
+          formulario: string
+          id?: string
+          revisado?: boolean
+          revisado_por?: string | null
+          total_leads?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empreendimento_canonico_id?: string | null
+          empreendimento_texto?: string | null
+          extinto?: boolean
+          formulario?: string
+          id?: string
+          revisado?: boolean
+          revisado_por?: string | null
+          total_leads?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_leads_form_map_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_leads_import_runs: {
+        Row: {
+          arquivo: string | null
+          atualizados: number
+          created_at: string
+          criado_por: string | null
+          duplicados_arquivo: number
+          erro: string | null
+          fonte_dado: string
+          id: string
+          ignorados: number
+          novos: number
+          status: string
+          total_linhas: number
+          updated_at: string
+        }
+        Insert: {
+          arquivo?: string | null
+          atualizados?: number
+          created_at?: string
+          criado_por?: string | null
+          duplicados_arquivo?: number
+          erro?: string | null
+          fonte_dado?: string
+          id?: string
+          ignorados?: number
+          novos?: number
+          status?: string
+          total_linhas?: number
+          updated_at?: string
+        }
+        Update: {
+          arquivo?: string | null
+          atualizados?: number
+          created_at?: string
+          criado_por?: string | null
+          duplicados_arquivo?: number
+          erro?: string | null
+          fonte_dado?: string
+          id?: string
+          ignorados?: number
+          novos?: number
+          status?: string
+          total_linhas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blocked_templates: {
         Row: {
           blocked_at: string
