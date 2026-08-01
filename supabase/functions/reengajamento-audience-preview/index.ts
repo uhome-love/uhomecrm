@@ -64,7 +64,14 @@ function audienceKey(a: Audience): string {
   }
   if (a.source === "pipeline_ativo") return `pipeline:${(a.stage_ids || []).slice().sort().join(",")}`;
   if (a.source === "visita_amanha") return `visita_amanha:${a.data_visita || ""}`;
+  if (a.source === "base_unica") {
+    const f = a.base_filtro || {};
+    const emp = (f.empreendimento_ids || []).slice().sort().join(",");
+    const form = (f.formularios || []).slice().sort().join(",");
+    return `base_unica:${emp || "*"}|${form || "*"}`;
+  }
   return a.source;
+
 }
 
 const RESPONDEU_NAO_STATUSES = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
