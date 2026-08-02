@@ -1,20 +1,22 @@
 import { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useHomi } from "@/contexts/HomiContext";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/useTheme";
 
 function HomiHeaderButtonInner() {
-  const { toggleHomi, unseenCount, isLoading } = useHomi();
+  const { unseenCount, isLoading } = useHomi();
   const { theme } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <button
-      onClick={() => toggleHomi()}
+      onClick={() => navigate("/homi")}
       className={cn(
         "relative flex items-center justify-center h-11 w-11 sm:h-9 sm:w-9 rounded-xl transition-colors shrink-0 touch-manipulation",
         theme === "dark" ? "hover:bg-white/5" : "hover:bg-[#f0f0f5]"
       )}
-      title="Fale com o HOMI (tecle /)"
+      title="Falar com o HOMI"
       aria-label="Abrir HOMI"
     >
       <span className="flex items-center justify-center h-7 w-7 rounded-full bg-white shadow-sm overflow-hidden">
