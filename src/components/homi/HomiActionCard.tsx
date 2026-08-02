@@ -26,6 +26,7 @@ import PropertyPreviewDrawer from "@/components/imoveis/PropertyPreviewDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import type { HomiAction, HomiResult } from "@/contexts/HomiContext";
 import { LeadsParadosCard, FollowupLoteCard, RelatorioMetricasCard } from "@/components/homi/cards/HomiFase3Cards";
+import { DesempenhoTimeCard, RiscoMetaCard, DiagnosticoCorretorCard } from "@/components/homi/cards/HomiFase7Cards";
 
 
 
