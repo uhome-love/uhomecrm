@@ -28,7 +28,21 @@ export default function BriefingCard({ onPrompt }: { onPrompt: (t: string) => vo
   }
 
   const total = itens.reduce((s, i) => s + i.valor, 0);
-  if (total === 0) return null;
+
+  // Sem pendências próprias (típico de gestor/CEO): oferece a visão do time.
+  if (total === 0) {
+    return (
+      <button
+        type="button"
+        onClick={() => onPrompt("Como está o dia do time hoje? Atrasados, visitas e vendas — resumo curto.")}
+        className="w-full rounded-xl border border-border bg-muted/30 p-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted"
+      >
+        <span className="font-medium text-foreground">Nada pendente com você agora.</span>{" "}
+        Toque para ver como está o dia do time.
+      </button>
+    );
+  }
+
 
   return (
     <div className="w-full rounded-xl border border-border bg-muted/30 p-3">
