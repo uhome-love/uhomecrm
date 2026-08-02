@@ -821,7 +821,9 @@ function ResultadoCard({ action }: { action: HomiAction }) {
           onClick={async () => {
             const ok = await confirmarResultado(action.lead_id!, action.lead_nome!, action.resultado_label || "Resultado do contato", detalhe);
             if (ok) {
+              setUndo(takeLastUndo());
               setDone(true);
+
               if (prox.tipo) openComposer("criar_tarefa", { lead_id: action.lead_id!, lead_nome: action.lead_nome!, campos: { tipo: prox.tipo } });
             }
           }}>
