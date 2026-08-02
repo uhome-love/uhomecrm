@@ -50,18 +50,27 @@ export default function MessageList({ messages, isLoading, userName, onPrompt }:
           </p>
         </div>
         <BriefingCard onPrompt={onPrompt} />
-        <div className="flex flex-wrap justify-center gap-2">
-          {EXEMPLOS.map((e) => (
+        <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+          {INTENCOES.map((it, i) => (
             <button
-              key={e}
+              key={it.titulo}
               type="button"
-              onClick={() => onPrompt(e)}
-              className="hover-scale rounded-full border border-border bg-card px-3.5 py-2 text-xs text-muted-foreground shadow-sm transition-colors hover:border-primary/30 hover:text-foreground"
+              onClick={() => onPrompt(it.prompt)}
+              style={{ animationDelay: `${i * 60}ms` }}
+              className="hover-scale group flex animate-fade-in items-start gap-3 rounded-xl border border-border bg-card p-3 text-left shadow-sm transition-colors hover:border-primary/30"
             >
-              {e}
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <it.icon className="h-4 w-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">{it.grupo}</span>
+                <span className="block text-sm font-medium text-foreground">{it.titulo}</span>
+                <span className="block truncate text-xs text-muted-foreground">{it.sub}</span>
+              </span>
             </button>
           ))}
         </div>
+
       </div>
     );
   }
