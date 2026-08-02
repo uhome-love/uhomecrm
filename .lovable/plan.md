@@ -58,7 +58,13 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 - **Raciocínio profundo sob demanda** — botão "Aprofundar" troca para o modelo de raciocínio nas análises pesadas; o dia a dia continua rápido.
 - **Proatividade** — o HOMI abre o dia com o briefing e sinaliza no botão quando há algo urgente (SLA estourando, visita sem confirmação, lead quente parado).
 
-### 4. Segurança e verdade
+### 4. Voz — falar com o HOMI e ouvir a resposta
+- **Ditado:** microfone no composer; a fala do corretor vira texto e entra na conversa. Serve para quem está no carro, entre visitas.
+- **Ouvir a resposta:** botão de play em cada mensagem, com áudio em streaming (começa a falar antes de terminar de gerar).
+- **Modo mãos-livres:** conversa contínua — fala, o HOMI responde em voz e volta a ouvir, com botão de parar sempre visível.
+- Voz em português, natural, tom de colega de time. O áudio não é armazenado.
+
+### 5. Segurança e verdade
 - Corretor vê só o dele; gestor, a equipe; CEO, tudo — reaproveitando as regras de acesso já existentes.
 - Toda métrica sai das fontes canônicas (nada de número inventado). Sem dado, o HOMI diz que vai confirmar.
 - Preço, estoque e condição sempre do sistema, nunca de memória.
@@ -71,7 +77,9 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 | 2 | Botão contextual do HOMI nas páginas principais (tabela acima). |
 | 3 | Ferramentas novas: leads parados com diagnóstico, follow-up em lote, relatórios com gráfico. |
 | 4 | Coach de script/objeção + análise de conversa + "Aprofundar" com modelo de raciocínio. |
-| 5 | Proatividade (briefing automático, alertas no botão) e painel de qualidade (feedback 👍/👎, perguntas sem resposta). |
+| 5 | Voz: ditado, leitura em voz alta e modo mãos-livres. |
+| 6 | Proatividade (briefing automático, alertas no botão) e painel de qualidade (feedback 👍/👎, perguntas sem resposta). |
+| 7 | Remoção do HOMI Ana (marketing). |
 
 ## Detalhes técnicos
 
@@ -81,8 +89,10 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 - Backend continua em `homi-chat` (cérebro único `_shared/homi-brain.ts`): novas ferramentas em `homi-tools.ts` (`leads_parados_diagnostico`, `followup_em_lote`, `relatorio_metricas`, `analisar_conversa`), sempre com escopo por papel.
 - Modelo padrão `google/gemini-3.6-flash`; "Aprofundar" usa `google/gemini-3.1-pro-preview` (constante já existente).
 - Botão contextual: um componente único (`HomiPageAction`) alimentado por um mapa rota → prompt, encaixado nos cabeçalhos já padronizados (`PageHeader`).
+- Voz: transcrição com `openai/gpt-4o-mini-transcribe` e leitura com `openai/gpt-4o-mini-tts` (SSE), ambos via Lovable AI numa edge function — a chave nunca vai para o navegador; o áudio não é gravado em banco nem storage.
+- Remoção do HOMI Ana: página `HomiAna.tsx`, rota e entrada no `pageRegistry`, item do `Sidebar`, atalho no `BackofficeDashboard`, `HomiIdeiasChat` do Marketing e a edge function `homi-ana`.
 - Sem mudança nas telas de negócio (pipeline, PDN, performance) além do botão.
 
 ## Fora de escopo
-- Trocar o HOMI Ana (marketing) e a LIA do atendimento externo.
+- **LIA** — atendimento automático de leads (falar com o cliente, não com o corretor). É outro produto; plano próprio, depois que o HOMI estiver de pé.
 - Qualquer alteração em regra de negócio, cálculo de VGV ou disparo de WhatsApp em massa.
