@@ -10,8 +10,10 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  AlertTriangle, CheckCheck, ExternalLink, MessageCircle, Send, TrendingUp, User,
+  AlertTriangle, CheckCheck, MessageCircle, Send, TrendingUp, User, Mail,
 } from "lucide-react";
+import HomiCard, { HomiKpi } from "@/components/homi/cards/HomiCard";
+
 import type { HomiResult } from "@/contexts/HomiContext";
 
 function money(v?: number | null) {
