@@ -11,8 +11,10 @@ import PainelVivo from "@/components/homi/workspace/PainelVivo";
 import MessageList from "@/components/homi/workspace/MessageList";
 
 export default function HomiWorkspace() {
-  const { threadId } = useParams<{ threadId: string }>();
+  const location = useLocation();
+  const threadId = location.pathname.match(/^\/homi\/c\/(.+)$/)?.[1];
   const navigate = useNavigate();
+
   const {
     messages, sendMessage, isLoading, conversationId,
     loadConversation, startNewConversation, userName,
