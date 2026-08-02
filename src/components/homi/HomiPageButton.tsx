@@ -34,6 +34,8 @@ export function HomiPageButton({ sugestoes, area, className }: HomiPageButtonPro
 
   const abrir = (prompt?: string) => {
     setAberto(false);
+    // sessionStorage garante o envio mesmo se o sistema de abas descartar a query
+    if (prompt) sessionStorage.setItem("homi:prompt-pendente", prompt);
     navigate(prompt ? `/homi?p=${encodeURIComponent(prompt)}` : "/homi");
   };
 
