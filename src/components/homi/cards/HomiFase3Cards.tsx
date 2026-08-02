@@ -10,8 +10,10 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  AlertTriangle, CheckCheck, ExternalLink, MessageCircle, Send, TrendingUp, User,
+  AlertTriangle, CheckCheck, MessageCircle, Send, TrendingUp, User, Mail,
 } from "lucide-react";
+import HomiCard, { HomiKpi } from "@/components/homi/cards/HomiCard";
+
 import type { HomiResult } from "@/contexts/HomiContext";
 
 function money(v?: number | null) {
@@ -30,11 +32,12 @@ export function LeadsParadosCard({ result, onPick }: { result: HomiResult; onPic
   if (!leads.length) return null;
 
   return (
-    <div className="space-y-1.5 rounded-xl border border-amber-500/25 bg-amber-500/5 p-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-        Leads parados ({leads.length}) · {String(result.dias ?? 5)}+ dias
-      </p>
+    <HomiCard
+      icon={AlertTriangle}
+      tone="alerta"
+      titulo={`Leads parados (${leads.length}) · ${String(result.dias ?? 5)}+ dias`}
+    >
+
       {leads.map((l) => (
         <div key={l.id} className="space-y-1.5 rounded-lg border border-border/70 bg-card/60 p-2">
           <div className="min-w-0">
@@ -72,7 +75,7 @@ export function LeadsParadosCard({ result, onPick }: { result: HomiResult; onPic
       >
         <Send className="h-3.5 w-3.5" /> Gerar follow-up para todos
       </Button>
-    </div>
+    </HomiCard>
   );
 }
 
@@ -128,23 +131,15 @@ export function FollowupLoteCard({ result }: { result: HomiResult }) {
   const itens = (result.itens as any[]) || [];
   if (!itens.length) return null;
   return (
-    <div className="space-y-1.5 rounded-xl border border-primary/25 bg-primary/5 p-2.5">
-      <p className="text-xs font-bold text-foreground">✉️ Follow-ups prontos ({itens.length}) — revise e envie</p>
+    <HomiCard icon={Mail} tone="primario" titulo={`Follow-ups prontos (${itens.length}) — revise e envie`}>
       {itens.map((it, i) => <FollowupItem key={it.lead_id || i} item={it} />)}
-    </div>
+    </HomiCard>
   );
 }
 
 /* ─────────────────────────────── Relatório de métricas (SSOT) */
-function Kpi({ label, valor, sub }: { label: string; valor: string; sub?: string }) {
-  return (
-    <div className="rounded-lg border border-border/70 bg-card/60 p-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm font-bold text-foreground">{valor}</p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
+const Kpi = HomiKpi;
+
 
 function delta(atual: number, anterior?: number | null) {
   if (anterior == null) return undefined;
@@ -161,14 +156,15 @@ export function RelatorioMetricasCard({ result }: { result: HomiResult }) {
   const escopo = String(result.escopo || "corretor");
 
   return (
-    <div className="space-y-2 rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
-        Números · {String(result.periodo_label || "período")}
-        <span className="rounded bg-muted px-1 text-[9px] font-medium uppercase text-muted-foreground">
-          {escopo === "global" ? "empresa" : escopo === "gestor" ? "equipe" : "meu"}
-        </span>
-      </p>
+    <HomiCard
+      icon={TrendingUp}
+      tone="primario"
+      titulo={`Números · ${String(result.periodo_label || "período")}`}
+      selo={escopo === "global" ? "empresa" : escopo === "gestor" ? "equipe" : "meu"}
+      fonte={`Fonte: rpc_metricas · ${String(result.inicio)} a ${String(result.fim)} · ver na Performance`}
+      onFonteClick={() => navigate("/central-relatorios")}
+    >
+
 
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
         <Kpi label="Leads" valor={String(t.leads_recebidos ?? 0)} sub={delta(t.leads_recebidos ?? 0, ant?.leads_recebidos)} />
@@ -194,14 +190,6 @@ export function RelatorioMetricasCard({ result }: { result: HomiResult }) {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => navigate("/central-relatorios")}
-        className="flex w-full items-center justify-center gap-1 text-[10px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-      >
-        <ExternalLink className="h-3 w-3" />
-        Fonte: rpc_metricas · {String(result.inicio)} a {String(result.fim)} · ver na Performance
-      </button>
-    </div>
+    </HomiCard>
   );
 }

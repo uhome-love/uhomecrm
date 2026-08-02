@@ -5,22 +5,13 @@
  *  - DiagnosticoCorretorCard: raio-x de um corretor vs. média do time
  */
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, ExternalLink, Target, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, Target, TrendingUp, Users } from "lucide-react";
+import HomiCard, { HomiKpi as Kpi } from "@/components/homi/cards/HomiCard";
 import type { HomiResult } from "@/contexts/HomiContext";
 
 function money(v?: number | null) {
   if (v == null) return "R$ 0";
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-}
-
-function Kpi({ label, valor, sub }: { label: string; valor: string; sub?: string }) {
-  return (
-    <div className="rounded-lg border border-border/70 bg-card/60 p-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm font-bold text-foreground">{valor}</p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-    </div>
-  );
 }
 
 /* ───────────────────────────── Ranking do time */
@@ -31,21 +22,21 @@ export function DesempenhoTimeCard({ result, onPick }: { result: HomiResult; onP
   const risco = (result.risco as string[]) || [];
 
   return (
-    <div className="space-y-2 rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <Users className="h-3.5 w-3.5 text-indigo-500" />
-        Time · {String(result.periodo_label || "período")}
-        <span className="rounded bg-muted px-1 text-[9px] font-medium uppercase text-muted-foreground">
-          {result.escopo === "global" ? "empresa" : "equipe"}
-        </span>
-      </p>
-
+    <HomiCard
+      icon={Users}
+      tone="primario"
+      titulo={`Time · ${String(result.periodo_label || "período")}`}
+      selo={result.escopo === "global" ? "empresa" : "equipe"}
+      fonte={`Fonte: rpc_metricas · ${String(result.inicio)} a ${String(result.fim)} · ver na Performance`}
+      onFonteClick={() => navigate("/central-relatorios")}
+    >
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
         <Kpi label="Leads" valor={String(t.leads ?? 0)} />
         <Kpi label="Visitas" valor={String(t.visitas ?? 0)} />
         <Kpi label="Vendas" valor={String(t.vendas ?? 0)} />
         <Kpi label="VGV" valor={money(t.vgv)} />
       </div>
+
 
       {ranking.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-border/70 bg-card/60">
@@ -78,15 +69,8 @@ export function DesempenhoTimeCard({ result, onPick }: { result: HomiResult; onP
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={() => navigate("/central-relatorios")}
-        className="flex w-full items-center justify-center gap-1 text-[10px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-      >
-        <ExternalLink className="h-3 w-3" />
-        Fonte: rpc_metricas · {String(result.inicio)} a {String(result.fim)} · ver na Performance
-      </button>
-    </div>
+    </HomiCard>
+
   );
 }
 
@@ -100,25 +84,26 @@ export function RiscoMetaCard({ result }: { result: HomiResult }) {
   const status = String(result.status || "sem_meta");
   const tone =
     status === "no_ritmo"
-      ? { border: "border-emerald-500/30", bg: "bg-emerald-500/5", bar: "bg-emerald-500", label: "No ritmo" }
+      ? { card: "sucesso" as const, bar: "bg-emerald-500", label: "No ritmo" }
       : status === "atencao"
-        ? { border: "border-amber-500/30", bg: "bg-amber-500/5", bar: "bg-amber-500", label: "Atenção" }
+        ? { card: "alerta" as const, bar: "bg-amber-500", label: "Atenção" }
         : status === "risco"
-          ? { border: "border-red-500/30", bg: "bg-red-500/5", bar: "bg-red-500", label: "Em risco" }
-          : { border: "border-border", bg: "bg-muted/30", bar: "bg-muted-foreground", label: "Sem meta" };
+          ? { card: "critico" as const, bar: "bg-destructive", label: "Em risco" }
+          : { card: "neutro" as const, bar: "bg-muted-foreground", label: "Sem meta" };
 
   return (
-    <div className={`space-y-2 rounded-xl border p-2.5 ${tone.border} ${tone.bg}`}>
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <Target className="h-3.5 w-3.5" />
-        Meta {String(result.mes)} · {String(result.meta_fonte || "")}
-        <span className="rounded bg-muted px-1 text-[9px] font-medium uppercase text-muted-foreground">{tone.label}</span>
-      </p>
-
+    <HomiCard
+      icon={Target}
+      tone={tone.card}
+      titulo={`Meta ${String(result.mes)} · ${String(result.meta_fonte || "")}`}
+      selo={tone.label}
+      fonte="Fonte: rpc_metricas + metas cadastradas · ver na Performance"
+      onFonteClick={() => navigate("/central-relatorios")}
+    >
       {meta > 0 && (
         <div className="space-y-1">
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${pct}%` }} />
+            <div className={`h-full rounded-full transition-all ${tone.bar}`} style={{ width: `${pct}%` }} />
           </div>
           <p className="text-[10px] text-muted-foreground">
             {money(realizado)} de {money(meta)} ({result.pct ?? 0}%) · dia {String(result.dias_corridos)}/{String(result.dias_mes)}
@@ -132,17 +117,9 @@ export function RiscoMetaCard({ result }: { result: HomiResult }) {
         <Kpi label="Falta/dia" valor={money(Number(result.precisa_por_dia) || 0)} sub={`${result.dias_restantes} dias`} />
         <Kpi label="Vendas · visitas" valor={`${result.vendas ?? 0} · ${result.visitas_realizadas ?? 0}`} />
       </div>
-
-      <button
-        type="button"
-        onClick={() => navigate("/central-relatorios")}
-        className="flex w-full items-center justify-center gap-1 text-[10px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-      >
-        <ExternalLink className="h-3 w-3" />
-        Fonte: rpc_metricas + metas cadastradas · ver na Performance
-      </button>
-    </div>
+    </HomiCard>
   );
+
 }
 
 /* ───────────────────────────── Raio-x do corretor */
@@ -152,13 +129,12 @@ export function DiagnosticoCorretorCard({ result, onPick }: { result: HomiResult
   const parados = (result.parados as any[]) || [];
 
   return (
-    <div className="space-y-2 rounded-xl border border-sky-500/25 bg-sky-500/5 p-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <TrendingUp className="h-3.5 w-3.5 text-sky-500" />
-        {c.nome} · {String(result.periodo_label || "período")}
-        {c.equipe && <span className="rounded bg-muted px-1 text-[9px] uppercase text-muted-foreground">{c.equipe}</span>}
-      </p>
-
+    <HomiCard
+      icon={TrendingUp}
+      tone="info"
+      titulo={`${c.nome} · ${String(result.periodo_label || "período")}`}
+      selo={c.equipe || undefined}
+    >
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
         <Kpi label="Leads" valor={String(c.leads ?? 0)} sub={`time ${m.leads ?? 0}`} />
         <Kpi label="Visitas realizadas" valor={String(c.visitas ?? 0)} sub={`time ${m.visitas ?? 0}`} />
@@ -180,10 +156,11 @@ export function DiagnosticoCorretorCard({ result, onPick }: { result: HomiResult
       <button
         type="button"
         onClick={() => onPick(`Me ajuda a preparar o 1:1 com ${String(c.nome || "").split(" ")[0]}`)}
-        className="w-full rounded-lg border border-border bg-card/60 px-2 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
+        className="min-h-9 w-full rounded-lg border border-border bg-background/60 px-2 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
       >
         Preparar o 1:1 com {String(c.nome || "").split(" ")[0]}
       </button>
-    </div>
+    </HomiCard>
+
   );
 }
