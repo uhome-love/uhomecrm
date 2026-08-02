@@ -323,5 +323,5 @@ export function useHomiActions() {
   }, [queryClient]);
 
 
-  return { confirmarTarefa, confirmarVisita, confirmarResultado, searchLeads, concluirTarefa, anotarLead, saving };
+  return { confirmarTarefa, confirmarVisita, confirmarResultado, searchLeads, concluirTarefa, anotarLead, desfazer, saving };
 }
