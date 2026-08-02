@@ -170,15 +170,20 @@ export function useHomiActions() {
     setSaving(true);
     try {
       const nomeAutor = (await supabase.from("profiles").select("nome").eq("user_id", user.id).maybeSingle()).data?.nome || "Corretor";
-      const { error } = await supabase.from("pipeline_anotacoes").insert({
+      const { data: anot, error } = await supabase.from("pipeline_anotacoes").insert({
         pipeline_lead_id: leadId,
         conteudo: texto.trim(),
         autor_id: user.id,
         autor_nome: nomeAutor,
-      } as any);
+      } as any).select("id").maybeSingle();
       if (error) { toast.error("Erro ao anotar: " + error.message); return false; }
-      await logAtividade(leadId, user.id, "outro", `📝 Anotação via Homi`, texto.trim());
+      const atvId = await logAtividade(leadId, user.id, "outro", `📝 Anotação via Homi`, texto.trim());
+      setUndo(`Anotação removida · ${leadNome}`, leadId, [
+        (anot as any)?.id ? { op: "delete", table: "pipeline_anotacoes", id: (anot as any).id } : null,
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+      ]);
       toast.success("Anotação salva 📝");
+
       return true;
     } finally {
       setSaving(false);
