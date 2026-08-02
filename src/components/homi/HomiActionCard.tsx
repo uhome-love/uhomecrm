@@ -26,6 +26,7 @@ import PropertyPreviewDrawer from "@/components/imoveis/PropertyPreviewDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import type { HomiAction, HomiResult } from "@/contexts/HomiContext";
 import { LeadsParadosCard, FollowupLoteCard, RelatorioMetricasCard } from "@/components/homi/cards/HomiFase3Cards";
+import { DesempenhoTimeCard, RiscoMetaCard, DiagnosticoCorretorCard } from "@/components/homi/cards/HomiFase7Cards";
 
 
 
@@ -1121,6 +1122,9 @@ export function HomiResultsRenderer({ results, onPick }: { results?: HomiResult[
         if (r.tipo === "leads_parados") return <LeadsParadosCard key={i} result={r} onPick={onPick} />;
         if (r.tipo === "followup_lote") return <FollowupLoteCard key={i} result={r} />;
         if (r.tipo === "relatorio_metricas") return <RelatorioMetricasCard key={i} result={r} />;
+        if (r.tipo === "desempenho_time") return <DesempenhoTimeCard key={i} result={r} onPick={onPick} />;
+        if (r.tipo === "risco_meta") return <RiscoMetaCard key={i} result={r} />;
+        if (r.tipo === "diagnostico_corretor") return <DiagnosticoCorretorCard key={i} result={r} onPick={onPick} />;
         return null;
 
       })}

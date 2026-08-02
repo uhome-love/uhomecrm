@@ -338,6 +338,51 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "desempenho_time",
+      description:
+        "Só para liderança (gestor, diretor, CEO, admin). Ranking do time no período com funil por corretor (leads, visitas realizadas, vendas, VGV, conversões) + destaques e quem está em risco. Use quando pedirem 'como está o time', 'ranking', 'quem está bem/mal', 'quem não vendeu', 'produtividade da equipe'.",
+      parameters: {
+        type: "object",
+        properties: {
+          periodo: { type: "string", enum: ["hoje", "semana", "mes_atual", "mes_anterior", "ano"], description: "Padrão mes_atual." },
+          ordenar_por: { type: "string", enum: ["vgv", "vendas", "visitas", "leads", "conversao"], description: "Padrão vgv." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "risco_meta",
+      description:
+        "Meta do mês vs. realizado com ritmo diário e projeção de fechamento (empresa para CEO/diretor, equipe para gestor, pessoal para corretor). Use quando perguntarem 'vamos bater a meta?', 'como está a meta', 'quanto falta', 'projeção do mês', 'risco'.",
+      parameters: {
+        type: "object",
+        properties: {
+          mes: { type: "string", description: "Mês no formato YYYY-MM. Padrão: mês atual." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "diagnostico_corretor",
+      description:
+        "Só para liderança. Raio-x de UM corretor no período: funil (leads, visitas agendadas/realizadas/no-show, vendas, VGV), conversões, comparação com a média do time e leads parados dele. Use quando o líder citar um corretor pelo nome ('como está o João?', 'me dá o raio-x da Maria').",
+      parameters: {
+        type: "object",
+        properties: {
+          corretor_nome: { type: "string", description: "Nome (ou parte) do corretor." },
+          periodo: { type: "string", enum: ["hoje", "semana", "mes_atual", "mes_anterior", "ano"], description: "Padrão mes_atual." },
+        },
+        required: ["corretor_nome"],
+      },
+    },
+  },
 ];
 
 
@@ -1448,6 +1493,192 @@ export async function executeHomiTool(
       return {
         result: { tipo: "briefing_dia", today, numeros, visitas_hoje: visitasHoje || [] },
         modelResult: `BRIEFING DO DIA (números já exibidos em cartão): ${JSON.stringify(numeros)}. Escreva um briefing OBJETIVO em tópicos curtos: (1) 3 a 5 prioridades em ordem, cada uma com motivo + próximo passo; (2) uma linha "Risco do dia" — o que se não for feito hoje custa venda; (3) termine oferecendo iniciar a fila (ex: "quer resolver as ${numeros.tarefas_atrasadas} atrasadas agora, de 3 em 3?"). Não repita os números crus, use-os nas prioridades.`,
+      };
+    }
+
+    // ── Fase 7: lente de liderança ────────────────────────────────────────
+    if (name === "desempenho_time" || name === "diagnostico_corretor") {
+      const escopo = await resolverEscopoMetricas(userClient, uid);
+      if (escopo.tipo === "corretor") {
+        return { modelResult: "Essa visão é de liderança. Diga em 1 frase que você só consegue mostrar os números dele e ofereça relatorio_metricas." };
+      }
+      const periodo = String(args.periodo || "mes_atual");
+      const range = periodoBRT(periodo);
+      const params: Record<string, any> = { p_start: range.start, p_end: range.end };
+      if (escopo.tipo === "gestor") params.p_gerente_id = uid;
+      const { data, error } = await userClient.rpc("rpc_metricas", params);
+      if (error) {
+        console.error("[desempenho_time] rpc error:", error);
+        return { modelResult: "Não consegui ler os números do time agora. Diga isso em 1 frase." };
+      }
+      const rows = (data || []) as any[];
+      const linhas = rows.map((r: any) => {
+        const leads = Number(r.leads_recebidos) || 0;
+        const visitas = Number(r.visitas_realizadas) || 0;
+        const vendas = Number(r.vendas) || 0;
+        return {
+          auth_id: r.corretor_auth_id,
+          nome: r.corretor_nome,
+          equipe: r.equipe_atual || r.equipe,
+          leads,
+          visitas_agendadas: Number(r.visitas_agendadas) || 0,
+          visitas,
+          no_show: Number(r.visitas_no_show) || 0,
+          vendas,
+          vgv: Number(r.vgv_assinado) || 0,
+          conv_lead_visita: leads ? Math.round((visitas / leads) * 100) : 0,
+          conv_visita_venda: visitas ? Math.round((vendas / visitas) * 100) : 0,
+        };
+      });
+
+      if (name === "diagnostico_corretor") {
+        const alvo = String(args.corretor_nome || "").trim().toLowerCase();
+        const achados = linhas.filter((l) => (l.nome || "").toLowerCase().includes(alvo));
+        if (!achados.length) return { modelResult: `Não achei nenhum corretor com "${args.corretor_nome}" no escopo do período.` };
+        if (achados.length > 1) {
+          return { modelResult: `Achei mais de um corretor com "${args.corretor_nome}": ${achados.map((a) => a.nome).join(", ")}. Peça para o líder escolher.` };
+        }
+        const c = achados[0];
+        const n = linhas.length || 1;
+        const media = {
+          leads: Math.round(linhas.reduce((s, l) => s + l.leads, 0) / n),
+          visitas: Math.round(linhas.reduce((s, l) => s + l.visitas, 0) / n),
+          vendas: +(linhas.reduce((s, l) => s + l.vendas, 0) / n).toFixed(1),
+          vgv: Math.round(linhas.reduce((s, l) => s + l.vgv, 0) / n),
+        };
+        let parados: any[] = [];
+        try {
+          const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+          const { data: lp } = await userClient
+            .from("pipeline_leads")
+            .select("id, nome, empreendimento, ultima_acao_at")
+            .eq("corretor_id", c.auth_id)
+            .eq("arquivado", false)
+            .or(`ultima_acao_at.is.null,ultima_acao_at.lt.${cutoff}`)
+            .order("ultima_acao_at", { ascending: true, nullsFirst: true })
+            .limit(8);
+          parados = lp || [];
+        } catch (e) {
+          console.error("[diagnostico_corretor] parados:", e);
+        }
+        return {
+          result: { tipo: "diagnostico_corretor", periodo_label: range.label, corretor: c, media, parados, total_time: n },
+          modelResult:
+            `RAIO-X ${c.nome} (${range.label}) — já exibido em cartão: leads ${c.leads} · visitas realizadas ${c.visitas} (no-show ${c.no_show}) · vendas ${c.vendas} · VGV ${fmtBRL(c.vgv)} · lead→visita ${c.conv_lead_visita}% · visita→venda ${c.conv_visita_venda}%. Média do time: leads ${media.leads}, visitas ${media.visitas}, vendas ${media.vendas}, VGV ${fmtBRL(media.vgv)}. Leads parados 7+ dias: ${parados.length}.\n\nEscreva no máximo 3 linhas: onde está o gargalo dele (volume, agendamento ou fechamento), o que fazer no 1:1 desta semana e uma pergunta de decisão. Não repita os números.`,
+        };
+      }
+
+      const ordenar = String(args.ordenar_por || "vgv");
+      const key = ordenar === "conversao" ? "conv_visita_venda" : ordenar === "vendas" ? "vendas" : ordenar === "visitas" ? "visitas" : ordenar === "leads" ? "leads" : "vgv";
+      const ranking = [...linhas].sort((a: any, b: any) => b[key] - a[key] || b.vgv - a.vgv);
+      const ativos = ranking.filter((l) => l.leads > 0 || l.visitas > 0 || l.vendas > 0);
+      const risco = ativos.filter((l) => l.vendas === 0 && l.visitas === 0);
+      const totais = {
+        leads: linhas.reduce((s, l) => s + l.leads, 0),
+        visitas: linhas.reduce((s, l) => s + l.visitas, 0),
+        vendas: linhas.reduce((s, l) => s + l.vendas, 0),
+        vgv: linhas.reduce((s, l) => s + l.vgv, 0),
+      };
+      return {
+        result: {
+          tipo: "desempenho_time",
+          periodo_label: range.label,
+          inicio: range.start,
+          fim: range.end,
+          escopo: escopo.tipo,
+          ordenar_por: ordenar,
+          totais,
+          ranking: ranking.slice(0, 12),
+          risco: risco.map((r) => r.nome).slice(0, 8),
+        },
+        modelResult:
+          `DESEMPENHO DO TIME (${range.label}, escopo ${escopo.tipo}, fonte rpc_metricas — já em cartão): ${linhas.length} corretores · leads ${totais.leads} · visitas realizadas ${totais.visitas} · vendas ${totais.vendas} · VGV ${fmtBRL(totais.vgv)}. Topo: ${ranking.slice(0, 3).map((r) => `${r.nome} (${fmtBRL(r.vgv)}, ${r.visitas} visitas)`).join(" | ") || "—"}. Sem visita e sem venda: ${risco.map((r) => r.nome).join(", ") || "ninguém"}.\n\nEscreva no máximo 3 linhas: leitura do time, quem precisa de ação agora e o próximo passo (ex: abrir o raio-x de alguém). Não repita a tabela.`,
+      };
+    }
+
+    if (name === "risco_meta") {
+      const { y, m, day } = brtParts();
+      const mesArg = String(args.mes || "").match(/^\d{4}-\d{2}$/) ? String(args.mes) : `${y}-${String(m).padStart(2, "0")}`;
+      const [my, mm] = mesArg.split("-").map(Number);
+      const diasMes = lastDay(my, mm);
+      const mesAtual = my === y && mm === m;
+      const diasCorridos = mesAtual ? day : diasMes;
+      const start = ymd(my, mm, 1);
+      const end = mesAtual ? ymd(y, m, day) : ymd(my, mm, diasMes);
+
+      const escopo = await resolverEscopoMetricas(userClient, uid);
+      const params: Record<string, any> = { p_start: start, p_end: end };
+      if (escopo.tipo === "corretor") params.p_user_id = uid;
+      if (escopo.tipo === "gestor") params.p_gerente_id = uid;
+      const { data, error } = await userClient.rpc("rpc_metricas", params);
+      if (error) {
+        console.error("[risco_meta] rpc error:", error);
+        return { modelResult: "Não consegui ler o realizado do mês. Diga isso em 1 frase." };
+      }
+      const agg = agregarMetricas(data || []);
+      const realizado = agg.totais.vgv_assinado;
+
+      let meta = 0;
+      let metaFonte = "";
+      try {
+        if (escopo.tipo === "global") {
+          const { data: em } = await userClient.from("empresa_metas_mensais").select("meta_vgv").eq("mes", mesArg).maybeSingle();
+          meta = Number(em?.meta_vgv) || 0;
+          metaFonte = "meta da empresa";
+        } else if (escopo.tipo === "gestor") {
+          const { data: gm } = await userClient
+            .from("ceo_metas_mensais")
+            .select("meta_vgv_assinado")
+            .eq("mes", mesArg)
+            .eq("gerente_id", uid)
+            .maybeSingle();
+          meta = Number(gm?.meta_vgv_assinado) || 0;
+          metaFonte = "meta da equipe";
+        } else {
+          const { data: cm } = await userClient
+            .from("corretor_metas_mensais")
+            .select("meta_vgv")
+            .eq("mes", mesArg)
+            .eq("user_id", uid)
+            .maybeSingle();
+          meta = Number(cm?.meta_vgv) || 0;
+          metaFonte = "meta pessoal";
+        }
+      } catch (e) {
+        console.error("[risco_meta] meta:", e);
+      }
+
+      const ritmoDia = diasCorridos ? realizado / diasCorridos : 0;
+      const projecao = Math.round(ritmoDia * diasMes);
+      const falta = Math.max(0, meta - realizado);
+      const diasRestantes = Math.max(0, diasMes - diasCorridos);
+      const precisaPorDia = diasRestantes ? Math.round(falta / diasRestantes) : falta;
+      const pct = meta ? Math.round((realizado / meta) * 100) : null;
+      const status = !meta ? "sem_meta" : projecao >= meta ? "no_ritmo" : projecao >= meta * 0.8 ? "atencao" : "risco";
+
+      return {
+        result: {
+          tipo: "risco_meta",
+          mes: mesArg,
+          escopo: escopo.tipo,
+          meta_fonte: metaFonte,
+          meta,
+          realizado,
+          pct,
+          projecao,
+          status,
+          dias_corridos: diasCorridos,
+          dias_mes: diasMes,
+          dias_restantes: diasRestantes,
+          precisa_por_dia: precisaPorDia,
+          vendas: agg.totais.vendas,
+          visitas_realizadas: agg.totais.visitas_realizadas,
+        },
+        modelResult:
+          (meta
+            ? `META ${mesArg} (${metaFonte}, já em cartão): meta ${fmtBRL(meta)} · realizado ${fmtBRL(realizado)} (${pct}%) · projeção ${fmtBRL(projecao)} · faltam ${fmtBRL(falta)} em ${diasRestantes} dias (${fmtBRL(precisaPorDia)}/dia) · status ${status}.`
+            : `SEM META cadastrada para ${mesArg} (${metaFonte}). Realizado ${fmtBRL(realizado)}, projeção ${fmtBRL(projecao)}.`) +
+          `\n\nEscreva no máximo 3 linhas: se bate ou não bate, o que precisa acontecer (visitas/propostas necessárias) e a decisão de hoje. Não repita todos os números.`,
       };
     }
 
