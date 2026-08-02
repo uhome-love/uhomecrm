@@ -75,8 +75,9 @@ Objetivo: elevar a página `/homi` de "funcional" para "produto de IA premium", 
 - Validação ao vivo no preview (desktop + mobile) com conversa real antes de reportar pronto.
 
 
-## Execução em 3 fases
+## Execução em 4 fases
 
-1. Fase A — conversa: superfície, mensagens, "pensando", composer.
-2. Fase B — entrada e navegação: estado vazio com cards de ação, sidebar agrupada, Painel Vivo.
-3. Fase C — cartões: wrapper único, acentos e polimento mobile/microinterações.
+1. Fase A — mascote 3D refinado (as 3 variantes) para você aprovar visualmente antes do resto.
+2. Fase B — conversa: superfície, mensagens, "pensando", composer.
+3. Fase C — entrada e navegação: estado vazio com cards de ação, sidebar agrupada, Painel Vivo.
+4. Fase D — cartões: wrapper único, acentos e polimento mobile/microinterações.
