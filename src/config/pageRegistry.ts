@@ -78,7 +78,8 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "academia-aula": lazyRetry(() => import("@/pages/AcademiaAulaPage")),
   "academia-gerenciar": lazyRetry(() => import("@/pages/AcademiaGerenciarPage")),
   onboarding: lazyRetry(() => import("@/pages/Onboarding")),
-  homi: lazyRetry(() => import("@/pages/HomiAssistant")),
+  homi: lazyRetry(() => import("@/pages/HomiWorkspace")),
+  "homi-assistant": lazyRetry(() => import("@/pages/HomiAssistant")),
   "homi-gerente": lazyRetry(() => import("@/pages/HomiGerencial")),
   "homi-ceo": lazyRetry(() => import("@/pages/HomiCeo")),
   "base-conhecimento": lazyRetry(() => import("@/pages/BaseConhecimento")),
@@ -165,7 +166,8 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/academia":              { key: "academia",             label: "Academia",            icon: "GraduationCap" },
   // "/academia/gerenciar" virou aba do hub /academia?tab=gerenciar (redirect em App.tsx)
   "/onboarding":            { key: "onboarding",           label: "Onboarding",          icon: "Lightbulb" },
-  "/homi":                  { key: "homi",                 label: "HOMI",                icon: "Bot" },
+  "/homi":                  { key: "homi",                 label: "HOMI",                icon: "Bot",           noPadding: true },
+  "/homi-assistente":       { key: "homi-assistant",       label: "HOMI Assistente",     icon: "Bot" },
   "/homi-gerente":          { key: "homi-gerente",         label: "HOMI Gerente",        icon: "Bot",           roles: ["gestor", "admin", "diretor"] },
   "/homi-ceo":              { key: "homi-ceo",             label: "HOMI CEO",            icon: "Bot",           roles: ["admin"] },
   // "/pipeline-negocios" desativado — negócios agora vivem no Pipeline de Leads (lente Negócios). Redirect em App.tsx.
@@ -218,6 +220,12 @@ const DYNAMIC_PATTERNS: Array<{
   componentKey: string;
   config: (m: RegExpMatchArray) => Omit<TabRouteConfig, "pattern">;
 }> = [
+  {
+    regex: /^\/homi\/c\/(.+)$/,
+    pattern: "/homi/c/:threadId",
+    componentKey: "homi",
+    config: () => ({ key: "homi", label: "HOMI", icon: "Bot", noPadding: true }),
+  },
   {
     regex: /^\/academia\/trilha\/(.+)$/,
     pattern: "/academia/trilha/:trilhaId",
