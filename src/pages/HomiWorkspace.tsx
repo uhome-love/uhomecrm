@@ -246,17 +246,21 @@ export default function HomiWorkspace() {
 
       {/* Mobile: conversas */}
       <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
-        <SheetContent side="left" className="w-72 p-0">
+        <SheetContent side="left" className="w-[85vw] max-w-xs p-0">
           <div className="h-full pt-8">{sidebar}</div>
         </SheetContent>
       </Sheet>
 
-      {/* Mobile: painel vivo */}
+      {/* Mobile: painel vivo (bottom-sheet no celular, lateral no tablet) */}
       <Sheet open={painelAberto} onOpenChange={setPainelAberto}>
-        <SheetContent side="right" className="w-80 p-0">
+        <SheetContent
+          side={isMobile ? "bottom" : "right"}
+          className={isMobile ? "h-[75dvh] rounded-t-2xl p-0" : "w-80 p-0"}
+        >
           <div className="h-full pt-8"><PainelVivo onPrompt={enviar} busy={isLoading} /></div>
         </SheetContent>
       </Sheet>
+
     </div>
   );
 }
