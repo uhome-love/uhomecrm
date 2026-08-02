@@ -327,12 +327,11 @@ export default function AppLayout() {
         </div>
         <ErrorBoundary>
           <Suspense fallback={null}>
-            <HomiPanel />
-            <HomiAvatar />
+            {/* Balão flutuante do HOMI removido — a conversa vive em /homi */}
             <HomiProactiveAlert />
-            <HomiGreeting />
           </Suspense>
         </ErrorBoundary>
+
         <LeadAcceptanceDialog
           lead={pendingLead}
           open={showDialog}
