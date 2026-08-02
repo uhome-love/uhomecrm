@@ -25,8 +25,30 @@ const LOCAL_LABELS: Record<string, string> = {
   decorado: "Apartamento decorado", no_imovel: "No imóvel", outro: "Outro",
 };
 
-async function logAtividade(leadId: string, uid: string, tipo: string, titulo: string, descricao: string | null) {
-  await supabase.from("pipeline_atividades").insert({
+/* ───────────────────── Fase 4: desfazer (undo) ─────────────────────
+ * Toda ação gravada pelo Homi registra as operações inversas em um token.
+ * O cartão de sucesso mostra "Desfazer" enquanto a mensagem estiver na tela.
+ */
+export type UndoOp =
+  | { op: "delete"; table: string; id: string }
+  | { op: "update"; table: string; id: string; values: Record<string, unknown> };
+
+export interface UndoToken {
+  label: string;
+  leadId?: string | null;
+  ops: UndoOp[];
+}
+
+let lastUndo: UndoToken | null = null;
+/** Pega (e limpa) o último token de desfazer gerado. Chame logo após a ação. */
+export function takeLastUndo(): UndoToken | null {
+  const t = lastUndo;
+  lastUndo = null;
+  return t;
+}
+
+async function logAtividade(leadId: string, uid: string, tipo: string, titulo: string, descricao: string | null): Promise<string | null> {
+  const { data } = await supabase.from("pipeline_atividades").insert({
     pipeline_lead_id: leadId,
     tipo,
     titulo,
@@ -36,12 +58,19 @@ async function logAtividade(leadId: string, uid: string, tipo: string, titulo: s
     responsavel_id: uid,
     status: "pendente",
     created_by: uid,
-  } as any);
+  } as any).select("id").maybeSingle();
   await supabase.from("pipeline_leads").update({
     ultima_acao_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   } as any).eq("id", leadId);
+  return (data as any)?.id || null;
 }
+
+function setUndo(label: string, leadId: string | null | undefined, ops: (UndoOp | null)[]) {
+  const clean = ops.filter(Boolean) as UndoOp[];
+  lastUndo = clean.length ? { label, leadId, ops: clean } : null;
+}
+
 
 export interface TarefaConfirm {
   lead_id: string;
@@ -109,16 +138,22 @@ export function useHomiActions() {
         .update({ status: "concluida", concluida_em: new Date().toISOString() } as any)
         .eq("id", tarefaId);
       if (error) { toast.error("Erro ao concluir: " + error.message); return false; }
+      let atvId: string | null = null;
       if (leadId) {
-        await logAtividade(
+        atvId = await logAtividade(
           leadId, user.id, "outro",
           `✅ Tarefa concluída via Homi${titulo ? `: ${titulo}` : ""}`,
           null,
         );
       }
+      setUndo(`Conclusão desfeita${leadNome ? ` · ${leadNome}` : ""}`, leadId, [
+        { op: "update", table: "pipeline_tarefas", id: tarefaId, values: { status: "pendente", concluida_em: null } },
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+      ]);
       invalidateTaskQueries(queryClient, leadId || undefined);
       toast.success("Tarefa concluída ✅");
       return true;
+
     } finally {
       setSaving(false);
     }
@@ -135,15 +170,20 @@ export function useHomiActions() {
     setSaving(true);
     try {
       const nomeAutor = (await supabase.from("profiles").select("nome").eq("user_id", user.id).maybeSingle()).data?.nome || "Corretor";
-      const { error } = await supabase.from("pipeline_anotacoes").insert({
+      const { data: anot, error } = await supabase.from("pipeline_anotacoes").insert({
         pipeline_lead_id: leadId,
         conteudo: texto.trim(),
         autor_id: user.id,
         autor_nome: nomeAutor,
-      } as any);
+      } as any).select("id").maybeSingle();
       if (error) { toast.error("Erro ao anotar: " + error.message); return false; }
-      await logAtividade(leadId, user.id, "outro", `📝 Anotação via Homi`, texto.trim());
+      const atvId = await logAtividade(leadId, user.id, "outro", `📝 Anotação via Homi`, texto.trim());
+      setUndo(`Anotação removida · ${leadNome}`, leadId, [
+        (anot as any)?.id ? { op: "delete", table: "pipeline_anotacoes", id: (anot as any).id } : null,
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+      ]);
       toast.success("Anotação salva 📝");
+
       return true;
     } finally {
       setSaving(false);
@@ -159,7 +199,7 @@ export function useHomiActions() {
     setSaving(true);
     try {
       const titulo = t.tipo === "outro" ? (t.tipo_personalizado || "Tarefa") : (TIPO_LABELS[t.tipo] || "Tarefa");
-      const { error } = await supabase.from("pipeline_tarefas").insert({
+      const { data: tarefa, error } = await supabase.from("pipeline_tarefas").insert({
         pipeline_lead_id: t.lead_id,
         titulo,
         descricao: t.descricao?.trim() || null,
@@ -170,16 +210,21 @@ export function useHomiActions() {
         vence_em: t.vence_em,
         hora_vencimento: t.hora_vencimento || null,
         created_by: user.id,
-      } as any);
+      } as any).select("id").maybeSingle();
       if (error) { toast.error("Erro ao criar tarefa: " + error.message); return false; }
 
-      await logAtividade(
+      const atvId = await logAtividade(
         t.lead_id, user.id, "outro",
         `📋 Tarefa criada via Homi: ${titulo}`,
         `${titulo} — ${t.vence_em}${t.hora_vencimento ? " " + t.hora_vencimento : ""}${t.descricao ? " · " + t.descricao : ""}`,
       );
+      setUndo(`Tarefa removida · ${t.lead_nome}`, t.lead_id, [
+        (tarefa as any)?.id ? { op: "delete", table: "pipeline_tarefas", id: (tarefa as any).id } : null,
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+      ]);
       invalidateTaskQueries(queryClient, t.lead_id);
       toast.success("Tarefa criada ✅");
+
       return true;
     } finally {
       setSaving(false);
@@ -194,6 +239,11 @@ export function useHomiActions() {
 
     setSaving(true);
     try {
+      // Guarda a etapa atual: agendar visita pode avançar o lead no pipeline.
+      const { data: leadAntes } = await supabase
+        .from("pipeline_leads").select("stage_id").eq("id", v.lead_id).maybeSingle();
+      const stageAntes = (leadAntes as any)?.stage_id || null;
+
       const created = await createVisita({
         pipeline_lead_id: v.lead_id,
         lead_id: v.lead_id,
@@ -211,11 +261,16 @@ export function useHomiActions() {
       if (!created) return false; // createVisita já mostra o toast de erro
 
       const localLabel = v.local_visita ? (LOCAL_LABELS[v.local_visita] || v.local_visita) : "";
-      await logAtividade(
+      const atvId = await logAtividade(
         v.lead_id, user.id, "visita",
         `🏠 Visita agendada via Homi`,
         `${v.data_visita}${v.hora_visita ? " " + v.hora_visita : ""}${localLabel ? " · " + localLabel : ""}${v.observacoes ? " · " + v.observacoes : ""}`,
       );
+      setUndo(`Visita cancelada · ${v.lead_nome}`, v.lead_id, [
+        (created as any)?.id ? { op: "delete", table: "visitas", id: (created as any).id } : null,
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+        stageAntes ? { op: "update", table: "pipeline_leads", id: v.lead_id, values: { stage_id: stageAntes } } : null,
+      ]);
       return true;
     } finally {
       setSaving(false);
@@ -232,11 +287,14 @@ export function useHomiActions() {
     if (!user) { toast.error("Sessão expirada."); return false; }
     setSaving(true);
     try {
-      await logAtividade(
+      const atvId = await logAtividade(
         leadId, user.id, "outro",
         `${resultadoLabel} (via Homi)`,
         detalhe?.trim() || null,
       );
+      setUndo(`Registro removido · ${leadNome}`, leadId, [
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+      ]);
       toast.success("Resultado registrado ✅");
       return true;
     } finally {
@@ -244,5 +302,26 @@ export function useHomiActions() {
     }
   }, [user]);
 
-  return { confirmarTarefa, confirmarVisita, confirmarResultado, searchLeads, concluirTarefa, anotarLead, saving };
+  // Executa as operações inversas de uma ação já gravada.
+  const desfazer = useCallback(async (token: UndoToken): Promise<boolean> => {
+    setSaving(true);
+    try {
+      for (const o of token.ops) {
+        const q = supabase.from(o.table as any);
+        const { error } = o.op === "delete"
+          ? await q.delete().eq("id", o.id)
+          : await q.update(o.values as any).eq("id", o.id);
+        if (error) { toast.error("Não consegui desfazer: " + error.message); return false; }
+      }
+      invalidateTaskQueries(queryClient, token.leadId || undefined);
+      queryClient.invalidateQueries({ queryKey: ["visitas"] });
+      toast.success(token.label || "Ação desfeita");
+      return true;
+    } finally {
+      setSaving(false);
+    }
+  }, [queryClient]);
+
+
+  return { confirmarTarefa, confirmarVisita, confirmarResultado, searchLeads, concluirTarefa, anotarLead, desfazer, saving };
 }
