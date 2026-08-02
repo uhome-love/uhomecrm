@@ -15,6 +15,24 @@ export const HOMI_TOOLS = [
   {
     type: "function",
     function: {
+      name: "lembrar",
+      description:
+        "Guarda na memória de longo prazo um fato estável sobre quem está falando (preferências de estilo, meta, produtos que domina, região onde atua, horários). Use quando a pessoa disser algo que valha lembrar nas próximas conversas. NÃO use para fatos de um lead específico nem para coisas passageiras.",
+      parameters: {
+        type: "object",
+        properties: {
+          chave: { type: "string", description: "Identificador curto do fato, ex: 'meta_mensal', 'estilo_mensagem', 'regiao_atuacao'." },
+          valor: { type: "string", description: "O fato em si, em uma frase curta." },
+          categoria: { type: "string", description: "Agrupamento: perfil, meta, estilo, produto, rotina ou geral." },
+        },
+        required: ["chave", "valor"],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
       name: "ver_pendencias",
       description:
         "Mostra o que o corretor tem de pendente/atrasado: tarefas atrasadas, tarefas de hoje e visitas de hoje. Use quando o corretor perguntar o que tem para fazer, o que está atrasado, sua agenda ou pendências.",
