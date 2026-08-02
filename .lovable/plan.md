@@ -55,13 +55,25 @@ Objetivo: elevar a página `/homi` de "funcional" para "produto de IA premium", 
 ### 9. Microinterações
 - Entrada de mensagem com fade+slide curto, cartões com scale-in escalonado, hover-scale nos cards de exemplo — usando as animações já existentes no projeto (`animate-fade-in`, `scale-in`, `hover-scale`), sem biblioteca nova.
 
+### 10. Mascote HOMI em 3D refinado
+- Partir da arte oficial atual (`public/images/homi-mascot-official.png`) e requalificá-la, mantendo 100% a identidade: mesmo personagem azul com capuz em formato de casinha e chaminé, visor escuro, olhos e sorriso ciano, monograma de casa no peito, mesma pose e proporções.
+- O que melhora: render 3D com material mais rico (plástico soft-touch com leve subsurface), iluminação de estúdio em três pontos, reflexo suave no visor, emissão real (glow) nos olhos e no sorriso, bordas mais limpas em alta resolução, sombra de contato sutil e fundo transparente.
+- Três variantes geradas a partir da mesma arte:
+  - `homi-3d-full.png` — corpo inteiro, para o estado vazio e telas de destaque.
+  - `homi-3d-bust.png` — busto/cabeça, para o avatar ao lado das respostas.
+  - `homi-3d-icon.png` — recorte compacto, para botões contextuais e favicon/PWA.
+- Onde entra: estado vazio do `/homi`, avatar das mensagens do assistente, `HomiPageButton`/`HomiHeaderButton` e sidebar. Os arquivos atuais ficam no repositório como fallback até a validação visual.
+- Ao lado do avatar, um anel de "respiração" sutil enquanto o HOMI pensa (mesma animação de shimmer), sem GIF nem vídeo.
+
 ## Detalhes técnicos
 
 - Arquivos tocados: `src/pages/HomiWorkspace.tsx`, `src/components/homi/workspace/{MessageList,ThreadSidebar,PainelVivo,BriefingCard}.tsx`, um novo `src/components/homi/workspace/{Composer,ThinkingIndicator,HomiCard}.tsx`, e ajuste de classes nos cartões das fases 3 e 7.
+- Novas imagens em `public/images/` geradas por edição da arte oficial existente (não é um personagem novo), em PNG com transparência e servidas em tamanho adequado para não pesar no mobile.
 - Zero mudança em edge functions, ferramentas do HOMI, hooks de dados ou banco.
 - Somente tokens semânticos do design system (`background`, `card`, `muted`, `primary`, `border`); nenhuma cor fixa tipo `text-white` ou hex.
 - Sem dependências novas; markdown continua em `react-markdown` com classes `prose` customizadas.
 - Validação ao vivo no preview (desktop + mobile) com conversa real antes de reportar pronto.
+
 
 ## Execução em 3 fases
 
