@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 import { HomiActionsRenderer, HomiResultsRenderer } from "@/components/homi/HomiActionCard";
 import type { Message } from "@/contexts/HomiContext";
 
