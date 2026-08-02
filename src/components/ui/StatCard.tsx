@@ -7,7 +7,7 @@ const TONE_VALUE: Record<StatTone, string> = {
   neutral: "text-foreground",
   primary: "text-primary",
   success: "text-success-500",
-  warning: "text-warning-500",
+  warning: "text-warning-700 dark:text-warning-500",
   danger: "text-danger-500",
 };
 
