@@ -277,7 +277,69 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "leads_parados_diagnostico",
+      description:
+        "Leads parados COM DIAGNÓSTICO: além da lista, traz etapa, dias parado, última interação e anotações de cada lead para você explicar POR QUE parou e qual o próximo passo. Use quando pedirem diagnóstico do funil, 'o que travou', 'me ajuda com os leads parados', 'por onde destravar'.",
+      parameters: {
+        type: "object",
+        properties: {
+          dias: { type: "number", description: "Nº mínimo de dias sem atividade. Padrão: 5." },
+          limite: { type: "number", description: "Quantos leads analisar. Padrão 6, máximo 10." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "followup_em_lote",
+      description:
+        "Entrega mensagens de follow-up personalizadas para vários leads de uma vez, cada uma em um cartão com aprovação (copiar / enviar no WhatsApp). Você deve ESCREVER as mensagens antes de chamar (máx. 3 linhas cada, com nome e produto, terminando em pergunta). Use quando pedirem follow-up para vários leads.",
+      parameters: {
+        type: "object",
+        properties: {
+          mensagens: {
+            type: "array",
+            description: "Uma entrada por lead, com a mensagem já escrita.",
+            items: {
+              type: "object",
+              properties: {
+                lead_id: { type: "string", description: "ID do lead, quando você já tiver (dos cartões anteriores)." },
+                lead_nome: { type: "string", description: "Nome do lead." },
+                texto: { type: "string", description: "Mensagem de WhatsApp pronta, máximo 3 linhas." },
+              },
+              required: ["lead_nome", "texto"],
+            },
+          },
+        },
+        required: ["mensagens"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "relatorio_metricas",
+      description:
+        "Números oficiais do CRM (fonte única rpc_metricas): leads recebidos, visitas agendadas, visitas realizadas, vendas e VGV assinado no período, já no escopo de quem pergunta (corretor vê o dele, gestor a equipe, CEO tudo). Use SEMPRE que pedirem números, resultado, VGV, conversão, comparação de períodos ou desempenho do time. Nunca invente números.",
+      parameters: {
+        type: "object",
+        properties: {
+          periodo: {
+            type: "string",
+            enum: ["hoje", "semana", "mes_atual", "mes_anterior", "ano"],
+            description: "Período. Padrão: mes_atual.",
+          },
+          comparar: { type: "boolean", description: "Se true, traz também o período anterior equivalente para comparação." },
+        },
+      },
+    },
+  },
 ];
+
 
 
 function todayBRT(): string {
