@@ -40,10 +40,7 @@ import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
 const homiMascot = "/images/homi-mascot-official.png";
 
-const HomiPanel = lazy(() => import("@/components/homi/HomiPanel"));
-const HomiAvatar = lazy(() => import("@/components/homi/HomiAvatar"));
 const HomiProactiveAlert = lazy(() => import("@/components/homi/HomiProactiveAlert"));
-const HomiGreeting = lazy(() => import("@/components/HomiGreeting"));
 
 // Detect arena-mode or arena-session class on body reactively
 function useArenaMode() {
