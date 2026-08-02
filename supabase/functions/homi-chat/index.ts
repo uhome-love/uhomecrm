@@ -193,7 +193,26 @@ Você é o mesmo HOMI (mesmo conhecimento: Método Uhome, empreendimentos, imóv
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowStr = tomorrow.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
-      const copilotSystem = finalSystemPromptWithMateriais + `
+      // ── Memória de longo prazo do usuário (RLS: só a dele) ──
+      let memoriaBlock = "";
+      try {
+        const { data: mem } = await userClient
+          .from("homi_memoria_usuario")
+          .select("categoria, chave, valor")
+          .order("updated_at", { ascending: false })
+          .limit(40);
+        if (mem && mem.length) {
+          memoriaBlock = `
+
+O QUE VOCÊ JÁ SABE SOBRE ESSA PESSOA (memória de longo prazo — use naturalmente, nunca pergunte de novo):
+${mem.map((m: any) => `• [${m.categoria}] ${m.chave}: ${m.valor}`).join("\n")}`;
+        }
+      } catch (e) {
+        console.error("[homi-chat] memória indisponível:", e);
+      }
+
+      const copilotSystem = finalSystemPromptWithMateriais + memoriaBlock + `
+
 
 VOCÊ É UM COPILOTO COM FERRAMENTAS. Você PODE executar ações no CRM chamando ferramentas:
 - meu_dia: montar o resumo do dia (AGORA / VISITAS / ESFRIANDO) num único cartão
