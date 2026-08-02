@@ -32,6 +32,8 @@ export function PageHeader({
   onTabChange,
   size = "default",
   className,
+  homi = true,
+  homiSugestoes,
 }: PageHeaderProps) {
   return (
     <div className={cn("flex flex-col gap-3 mb-6", className)}>
