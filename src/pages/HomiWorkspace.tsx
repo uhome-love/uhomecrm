@@ -132,7 +132,7 @@ export default function HomiWorkspace() {
 
       {/* Painel vivo — desktop */}
       <aside className="hidden w-72 shrink-0 border-l border-border bg-muted/20 xl:block">
-        <PainelVivo onPrompt={enviar} />
+        <PainelVivo onPrompt={enviar} busy={isLoading} />
       </aside>
 
       {/* Mobile: conversas */}
@@ -145,7 +145,7 @@ export default function HomiWorkspace() {
       {/* Mobile: painel vivo */}
       <Sheet open={painelAberto} onOpenChange={setPainelAberto}>
         <SheetContent side="right" className="w-80 p-0">
-          <div className="h-full pt-8"><PainelVivo onPrompt={enviar} /></div>
+          <div className="h-full pt-8"><PainelVivo onPrompt={enviar} busy={isLoading} /></div>
         </SheetContent>
       </Sheet>
     </div>

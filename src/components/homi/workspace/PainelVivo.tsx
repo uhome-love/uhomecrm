@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Brain, Zap, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHomiMemoria } from "@/hooks/useHomiMemoria";
@@ -11,8 +12,15 @@ const ATALHOS: { label: string; prompt: string }[] = [
   { label: "Buscar imóvel", prompt: "Me busca um apartamento de 3 dorms até 1,5M em Porto Alegre" },
 ];
 
-export default function PainelVivo({ onPrompt }: { onPrompt: (t: string) => void }) {
-  const { memorias, esquecer } = useHomiMemoria();
+export default function PainelVivo({ onPrompt, busy = false }: { onPrompt: (t: string) => void; busy?: boolean }) {
+  const { memorias, esquecer, reload } = useHomiMemoria();
+  const prevBusy = useRef(busy);
+
+  // Ao terminar uma resposta do HOMI, recarrega a memória (ele pode ter gravado algo)
+  useEffect(() => {
+    if (prevBusy.current && !busy) reload();
+    prevBusy.current = busy;
+  }, [busy, reload]);
 
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto p-4">
