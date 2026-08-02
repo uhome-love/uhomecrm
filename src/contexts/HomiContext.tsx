@@ -319,6 +319,9 @@ const NOOP_CONTEXT: HomiContextType = {
   homiRole: "gestor",
   userName: "",
   knowledgeSource: null,
+  loadConversation: () => {},
+  startNewConversation: () => {},
+
   conversationId: null,
   launcherHidden: false,
   setLauncherHidden: () => {},
