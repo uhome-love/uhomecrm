@@ -24,6 +24,8 @@ import { gerarSlugUhome } from "@/utils/imoveisFormat";
 import PropertyPreviewDrawer from "@/components/imoveis/PropertyPreviewDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import type { HomiAction, HomiResult } from "@/contexts/HomiContext";
+import { LeadsParadosCard, FollowupLoteCard, RelatorioMetricasCard } from "@/components/homi/cards/HomiFase3Cards";
+
 
 
 const TIPO_BUTTONS = [
