@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Send, Loader2, PanelLeft, Sparkles, X } from "lucide-react";
+import { Send, Loader2, PanelLeft, Sparkles, X, Paperclip, FileText, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { useHomi } from "@/contexts/HomiContext";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useHomi, type HomiAnexo } from "@/contexts/HomiContext";
 import { useHomiThreads } from "@/hooks/useHomiThreads";
 import ThreadSidebar from "@/components/homi/workspace/ThreadSidebar";
 import PainelVivo from "@/components/homi/workspace/PainelVivo";
 import MessageList from "@/components/homi/workspace/MessageList";
+
 
 export default function HomiWorkspace() {
   const location = useLocation();
