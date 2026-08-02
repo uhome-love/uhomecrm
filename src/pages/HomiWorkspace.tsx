@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useHomi, type HomiAnexo } from "@/contexts/HomiContext";
 import { useHomiThreads } from "@/hooks/useHomiThreads";
+import { useIsMobile } from "@/hooks/use-mobile";
+
 import ThreadSidebar from "@/components/homi/workspace/ThreadSidebar";
 import PainelVivo from "@/components/homi/workspace/PainelVivo";
 import MessageList from "@/components/homi/workspace/MessageList";
