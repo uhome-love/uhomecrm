@@ -63,6 +63,11 @@ interface HomiContextType {
 
   // Conversation persistence
   conversationId: string | null;
+  // Carrega uma conversa existente (workspace /homi)
+  loadConversation: (id: string, msgs: Message[]) => void;
+  // Começa uma conversa nova (limpa mensagens e id)
+  startNewConversation: () => void;
+
 
   // Floating launcher visibility (hidden while a fullscreen drawer is open on mobile)
   launcherHidden: boolean;
@@ -246,6 +251,20 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     setKnowledgeSource(null);
   }, []);
 
+  const loadConversation = useCallback((id: string, msgs: Message[]) => {
+    setConversationId(id);
+    setMessages(Array.isArray(msgs) ? msgs : []);
+    setKnowledgeSource(null);
+  }, []);
+
+  const startNewConversation = useCallback(() => {
+    setConversationId(null);
+    setMessages([]);
+    setKnowledgeSource(null);
+  }, []);
+
+
+
   // Proactive alerts
   const addProactiveAlert = useCallback((alert: Omit<ProactiveAlert, "id" | "createdAt">) => {
     const id = crypto.randomUUID();
@@ -272,7 +291,8 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       alerts, addProactiveAlert, dismissAlert, unseenCount,
       currentPage, homiRole, userName,
       knowledgeSource,
-      conversationId,
+      conversationId, loadConversation, startNewConversation,
+
       launcherHidden, setLauncherHidden,
     }}>
       {children}
@@ -299,6 +319,9 @@ const NOOP_CONTEXT: HomiContextType = {
   homiRole: "gestor",
   userName: "",
   knowledgeSource: null,
+  loadConversation: () => {},
+  startNewConversation: () => {},
+
   conversationId: null,
   launcherHidden: false,
   setLauncherHidden: () => {},

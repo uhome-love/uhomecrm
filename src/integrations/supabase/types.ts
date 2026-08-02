@@ -3226,11 +3226,13 @@ export type Database = {
       homi_conversations: {
         Row: {
           acao: string | null
+          arquivada: boolean
           created_at: string
           empreendimento: string | null
           id: string
           mensagens: Json
           objetivo: string | null
+          pinned: boolean
           resultado: string | null
           situacao: string | null
           tipo: string
@@ -3240,11 +3242,13 @@ export type Database = {
         }
         Insert: {
           acao?: string | null
+          arquivada?: boolean
           created_at?: string
           empreendimento?: string | null
           id?: string
           mensagens?: Json
           objetivo?: string | null
+          pinned?: boolean
           resultado?: string | null
           situacao?: string | null
           tipo?: string
@@ -3254,11 +3258,13 @@ export type Database = {
         }
         Update: {
           acao?: string | null
+          arquivada?: boolean
           created_at?: string
           empreendimento?: string | null
           id?: string
           mensagens?: Json
           objetivo?: string | null
+          pinned?: boolean
           resultado?: string | null
           situacao?: string | null
           tipo?: string
@@ -3325,6 +3331,69 @@ export type Database = {
           subcategory?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      homi_memoria_lead: {
+        Row: {
+          chave: string
+          created_at: string
+          id: string
+          lead_id: string
+          updated_at: string
+          user_id: string
+          valor: string
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          updated_at?: string
+          user_id: string
+          valor: string
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          updated_at?: string
+          user_id?: string
+          valor?: string
+        }
+        Relationships: []
+      }
+      homi_memoria_usuario: {
+        Row: {
+          categoria: string
+          chave: string
+          created_at: string
+          id: string
+          origem: string
+          updated_at: string
+          user_id: string
+          valor: string
+        }
+        Insert: {
+          categoria?: string
+          chave: string
+          created_at?: string
+          id?: string
+          origem?: string
+          updated_at?: string
+          user_id: string
+          valor: string
+        }
+        Update: {
+          categoria?: string
+          chave?: string
+          created_at?: string
+          id?: string
+          origem?: string
+          updated_at?: string
+          user_id?: string
+          valor?: string
         }
         Relationships: []
       }
