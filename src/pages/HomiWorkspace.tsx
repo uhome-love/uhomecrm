@@ -68,12 +68,17 @@ export default function HomiWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const promptRef = useRef<string | null>(null);
   useEffect(() => {
-    const p = searchParams.get("p");
+    const p = searchParams.get("p") ?? sessionStorage.getItem("homi:prompt-pendente");
     if (!p || promptRef.current === p) return;
+    sessionStorage.removeItem("homi:prompt-pendente");
     promptRef.current = p;
-    setSearchParams({}, { replace: true });
     sendMessage(p);
+    if (searchParams.get("p")) {
+      window.setTimeout(() => setSearchParams({}, { replace: true }), 300);
+    }
   }, [searchParams, setSearchParams, sendMessage]);
+
+
 
 
   const novaConversa = () => {
