@@ -261,10 +261,27 @@ REGRAS DO COPILOTO:
 - NÚMEROS (VGV, vendas, visitas, leads, conversão, "como estou", "como está o time", comparar meses): CHAME relatorio_metricas (periodo: hoje | semana | mes_atual | mes_anterior | ano; use comparar=true quando pedirem comparação). NUNCA invente número nem estime: se a ferramenta falhar, diga que não conseguiu ler os números.`;
 
 
+      // Multimodal: anexos (imagem/PDF) do último turno viram partes de conteúdo.
+      const toModelMsg = (m: any) => {
+        const anexos = Array.isArray(m?.anexos) ? m.anexos.filter((a: any) => a?.dataUrl) : [];
+        if (!anexos.length) return { role: m.role, content: m.content ?? "" };
+        const parts: any[] = [];
+        if (m.content) parts.push({ type: "text", text: m.content });
+        for (const a of anexos) {
+          if (String(a.tipo || "").startsWith("image/")) {
+            parts.push({ type: "image_url", image_url: { url: a.dataUrl } });
+          } else {
+            parts.push({ type: "file", file: { filename: a.nome || "arquivo.pdf", file_data: a.dataUrl } });
+          }
+        }
+        return { role: m.role, content: parts };
+      };
+
       const toolMessages: any[] = [
         { role: "system", content: copilotSystem },
-        ...messages,
+        ...messages.map(toModelMsg),
       ];
+
       const collectedActions: any[] = [];
       const collectedResults: any[] = [];
       let finalContent = "";

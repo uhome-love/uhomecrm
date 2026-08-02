@@ -10,7 +10,11 @@ export type HomiRole = "corretor" | "gestor" | "ceo";
 export type HomiAction = { tipo: string; lead_id?: string; lead_nome?: string; campos?: Record<string, any> } & Record<string, any>;
 export type HomiResult = { tipo: string } & Record<string, any>;
 
-export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[]; _composerLabel?: string };
+/** Anexo enviado ao HOMI. `dataUrl` só trafega na requisição; o histórico guarda nome/tipo/url. */
+export type HomiAnexo = { nome: string; tipo: string; url?: string; dataUrl?: string };
+
+export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[]; anexos?: HomiAnexo[]; _composerLabel?: string };
+
 
 export type KnowledgeSourceInfo = {
   source: "db" | "fallback" | "partial";
@@ -40,7 +44,7 @@ interface HomiContextType {
 
   // Chat
   messages: Message[];
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, anexos?: HomiAnexo[]) => Promise<void>;
   clearMessages: () => void;
   isLoading: boolean;
 
@@ -185,10 +189,15 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     return convId;
   }, [user]);
 
-  // Stream chat
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || isLoading) return;
-    const userMsg: Message = { role: "user", content: text.trim() };
+  // Stream chat (aceita anexos multimodais: imagens e PDF)
+  const sendMessage = useCallback(async (text: string, anexos?: HomiAnexo[]) => {
+    const temAnexo = !!anexos?.length;
+    if ((!text.trim() && !temAnexo) || isLoading) return;
+    const userMsg: Message = {
+      role: "user",
+      content: text.trim() || (temAnexo ? "Analisa esse arquivo" : ""),
+      anexos: temAnexo ? anexos!.map(({ nome, tipo, url }) => ({ nome, tipo, url })) : undefined,
+    };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setIsLoading(true);
@@ -201,11 +210,16 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        // Os anexos (base64) vão só nesta requisição — a conversa salva guarda apenas nome/tipo/url.
+        const payloadMessages = newMessages.map((m, i) =>
+          i === newMessages.length - 1 && temAnexo ? { ...m, anexos } : m
+        );
         const resp = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ messages: newMessages, enableTools: true, stream: false, perfil: homiRole }),
+          body: JSON.stringify({ messages: payloadMessages, enableTools: true, stream: false, perfil: homiRole }),
         });
+
         if (!resp.ok) {
           if (resp.status === 429) throw new Error("Rate limit. Aguarde alguns segundos.");
           if (resp.status === 402) throw new Error("Créditos esgotados.");
