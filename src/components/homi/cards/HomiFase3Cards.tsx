@@ -131,23 +131,15 @@ export function FollowupLoteCard({ result }: { result: HomiResult }) {
   const itens = (result.itens as any[]) || [];
   if (!itens.length) return null;
   return (
-    <div className="space-y-1.5 rounded-xl border border-primary/25 bg-primary/5 p-2.5">
-      <p className="text-xs font-bold text-foreground">✉️ Follow-ups prontos ({itens.length}) — revise e envie</p>
+    <HomiCard icon={Mail} tone="primario" titulo={`Follow-ups prontos (${itens.length}) — revise e envie`}>
       {itens.map((it, i) => <FollowupItem key={it.lead_id || i} item={it} />)}
-    </div>
+    </HomiCard>
   );
 }
 
 /* ─────────────────────────────── Relatório de métricas (SSOT) */
-function Kpi({ label, valor, sub }: { label: string; valor: string; sub?: string }) {
-  return (
-    <div className="rounded-lg border border-border/70 bg-card/60 p-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm font-bold text-foreground">{valor}</p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
+const Kpi = HomiKpi;
+
 
 function delta(atual: number, anterior?: number | null) {
   if (anterior == null) return undefined;
