@@ -29,16 +29,17 @@ export default function MessageList({ messages, isLoading, userName, onPrompt }:
 
   if (messages.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-5 px-6 text-center">
-        <img src={homiMascot} alt="HOMI, assistente de vendas da Uhome" className="h-16 w-16" loading="lazy" />
+      <div className="mx-auto flex h-full w-full max-w-2xl flex-col items-center justify-center gap-5 px-4 py-6 text-center">
+        <img src={homiMascot} alt="HOMI, assistente de vendas da Uhome" className="h-14 w-14 sm:h-16 sm:w-16" loading="lazy" />
         <div>
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-lg font-semibold sm:text-xl">
             {userName ? `Oi, ${userName}. No que a gente mexe agora?` : "No que a gente mexe agora?"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Peça o dia, uma mensagem pronta, um imóvel ou uma tarefa — eu executo com você.
           </p>
         </div>
+        <BriefingCard onPrompt={onPrompt} />
         <div className="flex flex-wrap justify-center gap-2">
           {EXEMPLOS.map((e) => (
             <button
@@ -54,6 +55,7 @@ export default function MessageList({ messages, isLoading, userName, onPrompt }:
       </div>
     );
   }
+
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6">
