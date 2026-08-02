@@ -143,10 +143,11 @@ function TarefaCard({ action }: { action: HomiAction }) {
   const [hora, setHora] = useState<string>(c.hora_vencimento || "");
   const [obs, setObs] = useState<string>(c.descricao || "");
   const [done, setDone] = useState(false);
+  const [undo, setUndo] = useState<UndoToken | null>(null);
   const [cancelled, setCancelled] = useState(false);
 
   if (cancelled) return null;
-  if (done) return <DoneBadge label={`Tarefa criada para ${leadNome}`} />;
+  if (done) return <DoneBadge label={`Tarefa criada para ${leadNome}`} undo={undo} />;
 
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2.5">
@@ -191,7 +192,7 @@ function TarefaCard({ action }: { action: HomiAction }) {
                   lead_id: leadId, lead_nome: leadNome!, tipo,
                   tipo_personalizado: tipoCustom, vence_em: data, hora_vencimento: hora, descricao: obs,
                 });
-                if (ok) setDone(true);
+                if (ok) { setUndo(takeLastUndo()); setDone(true); }
               }}>
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Confirmar
             </Button>
@@ -217,10 +218,11 @@ function VisitaCard({ action }: { action: HomiAction }) {
   const [emp, setEmp] = useState<string>(c.empreendimento || "");
   const [obs, setObs] = useState<string>(c.observacoes || "");
   const [done, setDone] = useState(false);
+  const [undo, setUndo] = useState<UndoToken | null>(null);
   const [cancelled, setCancelled] = useState(false);
 
   if (cancelled) return null;
-  if (done) return <DoneBadge label={`Visita agendada para ${leadNome}`} />;
+  if (done) return <DoneBadge label={`Visita agendada para ${leadNome}`} undo={undo} />;
 
   return (
     <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2.5">
@@ -266,7 +268,7 @@ function VisitaCard({ action }: { action: HomiAction }) {
                   telefone, empreendimento: emp, data_visita: data, hora_visita: hora,
                   local_visita: local, responsavel_visita: resp, observacoes: obs,
                 });
-                if (ok) setDone(true);
+                if (ok) { setUndo(takeLastUndo()); setDone(true); }
               }}>
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Confirmar
             </Button>
@@ -283,10 +285,11 @@ function AnotacaoCard({ action }: { action: HomiAction }) {
   const { anotarLead, saving } = useHomiActions();
   const [texto, setTexto] = useState<string>(action.texto || "");
   const [done, setDone] = useState(false);
+  const [undo, setUndo] = useState<UndoToken | null>(null);
   const [cancelled, setCancelled] = useState(false);
 
   if (cancelled) return null;
-  if (done) return <DoneBadge label={`Anotação salva em ${action.lead_nome}`} />;
+  if (done) return <DoneBadge label={`Anotação salva em ${action.lead_nome}`} undo={undo} />;
 
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2.5">
@@ -298,7 +301,7 @@ function AnotacaoCard({ action }: { action: HomiAction }) {
         <Button size="sm" className="flex-1 h-8 text-xs gap-1" disabled={saving || !texto.trim()}
           onClick={async () => {
             const ok = await anotarLead(action.lead_id!, action.lead_nome!, texto);
-            if (ok) setDone(true);
+            if (ok) { setUndo(takeLastUndo()); setDone(true); }
           }}>
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Salvar anotação
         </Button>
@@ -797,11 +800,12 @@ function ResultadoCard({ action }: { action: HomiAction }) {
   const { openComposer } = useHomi();
   const [detalhe, setDetalhe] = useState<string>(action.detalhe || "");
   const [done, setDone] = useState(false);
+  const [undo, setUndo] = useState<UndoToken | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const prox = (action.proxima_tarefa as any) || {};
 
   if (cancelled) return null;
-  if (done) return <DoneBadge label={`Resultado registrado em ${action.lead_nome}`} />;
+  if (done) return <DoneBadge label={`Resultado registrado em ${action.lead_nome}`} undo={undo} />;
 
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2.5">
