@@ -24,6 +24,7 @@ import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/useP
 import PipelineCorretorSelect from "@/components/pipeline/header/PipelineCorretorSelect";
 import PipelineGestorSelect from "@/components/pipeline/header/PipelineGestorSelect";
 import PipelineScopeBadge from "@/components/pipeline/header/PipelineScopeBadge";
+import HomiPageButton from "@/components/homi/HomiPageButton";
 
 export type PipelineTabMode = "kanban" | "time" | "equipes";
 export type ClientStatusFilter = "todos" | LeadClientStatus;
