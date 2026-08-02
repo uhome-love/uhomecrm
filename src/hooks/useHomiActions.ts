@@ -239,6 +239,11 @@ export function useHomiActions() {
 
     setSaving(true);
     try {
+      // Guarda a etapa atual: agendar visita pode avançar o lead no pipeline.
+      const { data: leadAntes } = await supabase
+        .from("pipeline_leads").select("stage_id").eq("id", v.lead_id).maybeSingle();
+      const stageAntes = (leadAntes as any)?.stage_id || null;
+
       const created = await createVisita({
         pipeline_lead_id: v.lead_id,
         lead_id: v.lead_id,
@@ -256,11 +261,16 @@ export function useHomiActions() {
       if (!created) return false; // createVisita já mostra o toast de erro
 
       const localLabel = v.local_visita ? (LOCAL_LABELS[v.local_visita] || v.local_visita) : "";
-      await logAtividade(
+      const atvId = await logAtividade(
         v.lead_id, user.id, "visita",
         `🏠 Visita agendada via Homi`,
         `${v.data_visita}${v.hora_visita ? " " + v.hora_visita : ""}${localLabel ? " · " + localLabel : ""}${v.observacoes ? " · " + v.observacoes : ""}`,
       );
+      setUndo(`Visita cancelada · ${v.lead_nome}`, v.lead_id, [
+        (created as any)?.id ? { op: "delete", table: "visitas", id: (created as any).id } : null,
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+        stageAntes ? { op: "update", table: "pipeline_leads", id: v.lead_id, values: { stage_id: stageAntes } } : null,
+      ]);
       return true;
     } finally {
       setSaving(false);
@@ -277,17 +287,41 @@ export function useHomiActions() {
     if (!user) { toast.error("Sessão expirada."); return false; }
     setSaving(true);
     try {
-      await logAtividade(
+      const atvId = await logAtividade(
         leadId, user.id, "outro",
         `${resultadoLabel} (via Homi)`,
         detalhe?.trim() || null,
       );
+      setUndo(`Registro removido · ${leadNome}`, leadId, [
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+      ]);
       toast.success("Resultado registrado ✅");
       return true;
     } finally {
       setSaving(false);
     }
   }, [user]);
+
+  // Executa as operações inversas de uma ação já gravada.
+  const desfazer = useCallback(async (token: UndoToken): Promise<boolean> => {
+    setSaving(true);
+    try {
+      for (const o of token.ops) {
+        const q = supabase.from(o.table as any);
+        const { error } = o.op === "delete"
+          ? await q.delete().eq("id", o.id)
+          : await q.update(o.values as any).eq("id", o.id);
+        if (error) { toast.error("Não consegui desfazer: " + error.message); return false; }
+      }
+      invalidateTaskQueries(queryClient, token.leadId || undefined);
+      queryClient.invalidateQueries({ queryKey: ["visitas"] });
+      toast.success(token.label || "Ação desfeita");
+      return true;
+    } finally {
+      setSaving(false);
+    }
+  }, [queryClient]);
+
 
   return { confirmarTarefa, confirmarVisita, confirmarResultado, searchLeads, concluirTarefa, anotarLead, saving };
 }
