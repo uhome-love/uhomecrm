@@ -138,16 +138,22 @@ export function useHomiActions() {
         .update({ status: "concluida", concluida_em: new Date().toISOString() } as any)
         .eq("id", tarefaId);
       if (error) { toast.error("Erro ao concluir: " + error.message); return false; }
+      let atvId: string | null = null;
       if (leadId) {
-        await logAtividade(
+        atvId = await logAtividade(
           leadId, user.id, "outro",
           `✅ Tarefa concluída via Homi${titulo ? `: ${titulo}` : ""}`,
           null,
         );
       }
+      setUndo(`Conclusão desfeita${leadNome ? ` · ${leadNome}` : ""}`, leadId, [
+        { op: "update", table: "pipeline_tarefas", id: tarefaId, values: { status: "pendente", concluida_em: null } },
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+      ]);
       invalidateTaskQueries(queryClient, leadId || undefined);
       toast.success("Tarefa concluída ✅");
       return true;
+
     } finally {
       setSaving(false);
     }
