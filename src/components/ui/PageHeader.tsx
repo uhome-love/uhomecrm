@@ -16,6 +16,10 @@ interface PageHeaderProps {
   onTabChange?: (value: string) => void;
   size?: "default" | "sm";
   className?: string;
+  /** Botão contextual do HOMI (padrão: visível) */
+  homi?: boolean;
+  /** Sugestões específicas desta tela para o HOMI */
+  homiSugestoes?: string[];
 }
 
 export function PageHeader({
