@@ -45,9 +45,11 @@ export default function HomiWorkspace() {
 
   // Anexa imagens/PDF: sobe pro storage (histórico) e guarda o base64 para esta pergunta.
   const anexar = async (files: FileList | null) => {
+    console.log("[HOMI anexar] arquivos:", files?.length);
     if (!files?.length) return;
     setSubindo(true);
     try {
+
       const { data: sess } = await supabase.auth.getSession();
       const uid = sess?.session?.user?.id;
       const novos: HomiAnexo[] = [];
