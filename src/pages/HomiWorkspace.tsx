@@ -70,10 +70,16 @@ export default function HomiWorkspace() {
   useEffect(() => {
     const p = searchParams.get("p");
     if (!p || promptRef.current === p) return;
+    // Guarda global evita reenvio caso a tela remonte (sistema de abas)
+    const marca = `homi:prompt:${p}`;
+    if (sessionStorage.getItem(marca)) return;
+    sessionStorage.setItem(marca, "1");
+    window.setTimeout(() => sessionStorage.removeItem(marca), 5000);
     promptRef.current = p;
-    setSearchParams({}, { replace: true });
     sendMessage(p);
+    window.setTimeout(() => setSearchParams({}, { replace: true }), 300);
   }, [searchParams, setSearchParams, sendMessage]);
+
 
 
   const novaConversa = () => {
