@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { Loader2, FileText } from "lucide-react";
 import { HomiActionsRenderer, HomiResultsRenderer } from "@/components/homi/HomiActionCard";
+import BriefingCard from "@/components/homi/workspace/BriefingCard";
+
 import type { Message } from "@/contexts/HomiContext";
 
 const homiMascot = "/images/homi-mascot-official.png";
