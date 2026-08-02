@@ -15,9 +15,10 @@ import {
 import {
   CheckCircle2, Clock, CalendarPlus, Home, MapPin, AlertTriangle, Search, Loader2,
   ChevronRight, User, MessageCircle, CheckCheck, Plus, Sparkles, Phone, Send,
-  BedDouble, Bath, Car, Maximize2, Images, ExternalLink,
+  BedDouble, Bath, Car, Maximize2, Images, ExternalLink, Undo2,
 } from "lucide-react";
-import { useHomiActions, type LeadOption } from "@/hooks/useHomiActions";
+import { useHomiActions, takeLastUndo, type LeadOption, type UndoToken } from "@/hooks/useHomiActions";
+
 import { useHomi } from "@/contexts/HomiContext";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { gerarSlugUhome } from "@/utils/imoveisFormat";
