@@ -88,7 +88,68 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 - **Botão "não é isso"** — registra a falha e alimenta o painel de qualidade, para o HOMI melhorar com uso.
 - Preço, estoque e condição sempre do sistema, nunca de memória.
 
+### 9. O dia real do corretor (mobile, rua, WhatsApp aberto)
+- **Mobile-first:** `/homi` em uma coluna, painel vivo como aba, microfone grande no alcance do polegar.
+- **Internet ruim:** a mensagem digitada fica em fila e sobe quando a rede volta; nada se perde.
+- **Enviar no WhatsApp:** toda resposta útil (script, mensagem, ficha de imóvel) tem botão "enviar no WhatsApp" já com o lead escolhido.
+- **Antes da ligação:** cartão de 20 segundos — quem é, o que quer, o que já foi falado, primeira frase pronta.
+- **Depois da ligação/visita:** o corretor dita o que aconteceu; o HOMI escreve a observação, atualiza a etapa e cria a próxima tarefa (com aprovação).
+- **Fim do dia:** fechamento de 1 minuto — o que fechou, o que ficou, o que já está agendado para amanhã.
+- **Segunda de manhã:** plano da semana com meta e o que precisa acontecer para bater.
+- **Fricção zero:** atalho global ⌘K / Ctrl+K, "continuar de onde parou", respostas rápidas sugeridas, fixar e renomear conversa.
+- **Gestor e CEO:** "prepara meu 1:1 com o Fulano" (pauta com números e travas) e alerta silencioso de queda de performance, sempre em tom de conversa, nunca de punição.
+- **Custo sob controle:** limite de uso por dia/usuário e leitura de consumo, para não estourar crédito sem ninguém ver.
+- **Onboarding de 30s:** na primeira visita, 3 exemplos clicáveis do que pedir.
+
+### 10. O HOMI como agente operacional (o que ele consegue fazer, não só dizer)
+Tudo abaixo passa por aprovação em um clique, com desfazer, e respeita o escopo do papel.
+
+**Lead e funil**
+- Criar lead manual, atualizar telefone/e-mail/origem, corrigir empreendimento de interesse.
+- Mover etapa e preencher o substatus certo (qualificação, aquecimento, negociação, contrato).
+- Descartar com motivo, reativar lead parado, marcar "sem contato" e devolver para reciclagem.
+- Registrar observação e atividade na timeline a partir do que foi ditado.
+
+**Tarefas e agenda**
+- Criar tarefa com data/hora e tipo, reagendar em lote ("empurra tudo de hoje para amanhã 9h").
+- Concluir tarefa com observação e já criar a próxima (respeitando o fluxo de visita: confirmar → registrar resultado).
+- Agendar, confirmar, remarcar e cancelar visita; registrar resultado da visita e rotear o lead conforme a regra atual.
+
+**Comunicação**
+- Escrever e enviar mensagem de WhatsApp pelo canal já existente (ou copiar, se preferir mandar do celular).
+- Montar follow-up em lote personalizado por lead, com fila de aprovação item a item.
+- Gerar e-mail/proposta em texto, script de ligação, quebra de objeção e roteiro de visita.
+
+**Imóvel e proposta**
+- Buscar imóvel por demanda (bairro, dormitórios, faixa, vaga, mobiliado) e montar seleção para enviar.
+- Gerar link de vitrine personalizada para o cliente.
+- Rodar simulação de financiamento e devolver o PDF pronto para mandar.
+- Puxar material/apresentação/ficha do empreendimento no Hub e mandar o link certo.
+
+**Rotina e análise**
+- Briefing do dia, plano da semana, fechamento do dia.
+- Diagnóstico de funil, leads parados, previsão de fechamento, "por que perdi".
+- Relatórios de VGV, visitas e conversão com fonte clicável.
+- Para gestor/CEO: pauta de 1:1, leitura do PDN, comparativo de equipes.
+
+**Nunca sem pedir:** disparo em massa, exclusão de dados, mudança de responsável do lead, alteração de valor de venda/VGV — o HOMI prepara, quem decide é a pessoa.
+
+### 11. Arquivos, imagens e voz — o que o modelo aceita
+- **Recebe arquivo e imagem:** print de conversa, foto de tabela de preço, PDF de proposta ou ficha — o HOMI lê e responde em cima daquilo (entrada multimodal nativa do Gemini).
+- **Recebe áudio:** o corretor manda ou grava um áudio e o HOMI transcreve e age.
+- **Cria imagem quando faz sentido:** peça simples de divulgação a partir do imóvel (não substitui o designer) — usando o modelo de imagem do próprio gateway, sob demanda e nunca automático.
+- **Fala e ouve:** conforme a seção 7.
+- **Modelo:** `google/gemini-3.6-flash` como padrão (rápido, barato, aceita texto+imagem+PDF+áudio), `google/gemini-3.1-pro-preview` no "Aprofundar" para análise pesada, e modelos OpenAI dedicados só para voz (transcrição e leitura). É a melhor combinação disponível para este uso — a troca de modelo fica num único ponto do código, então dá para reavaliar depois com uso real.
+
+### 12. Manual de uso (entregue depois da implantação)
+Três manuais curtos e visuais, um por papel, com exemplos reais do CRM:
+- **Corretor** — rotina do dia (briefing, antes da ligação, pós-visita, fim do dia), como pedir imóvel, como gerar follow-up, como usar voz no carro.
+- **Gerente** — leitura do time, PDN, pauta de 1:1, onde o time trava, como cobrar com dado.
+- **CEO** — resumo executivo, VGV e funil, comparativo de equipes, riscos da semana.
+Formato: página dentro da Academia + PDF para baixar, com prints da tela e frases prontas para copiar.
+
 ## Fases (uma por vez, com validação no preview)
+
 
 | Fase | Entrega |
 | --- | --- |
@@ -101,7 +162,10 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 | 7 | Inteligência de histórico: por que perdi, previsão de fechamento, simulação de financiamento, comparação com o time. |
 | 8 | Voz: ditado, leitura em voz alta, mãos-livres e briefing em áudio. |
 | 9 | Proatividade (briefing automático, alertas no botão) e painel de qualidade (👍/👎, "não é isso", perguntas sem resposta). |
-| 10 | Remoção do HOMI Ana (marketing). |
+| 10 | Ampliação do agente operacional (seção 10): agenda, comunicação, imóvel/proposta, rotina — tudo com aprovação. |
+| 11 | Anexos e imagens (ler print/PDF/áudio; gerar peça simples) + rotina do dia real e ⌘K (seção 9). |
+| 12 | Remoção do HOMI Ana (marketing). |
+| 13 | Manuais de uso: Corretor, Gerente e CEO (Academia + PDF). |
 
 ## Detalhes técnicos
 
