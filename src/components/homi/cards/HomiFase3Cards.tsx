@@ -190,14 +190,6 @@ export function RelatorioMetricasCard({ result }: { result: HomiResult }) {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => navigate("/central-relatorios")}
-        className="flex w-full items-center justify-center gap-1 text-[10px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-      >
-        <ExternalLink className="h-3 w-3" />
-        Fonte: rpc_metricas · {String(result.inicio)} a {String(result.fim)} · ver na Performance
-      </button>
-    </div>
+    </HomiCard>
   );
 }
