@@ -277,7 +277,69 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "leads_parados_diagnostico",
+      description:
+        "Leads parados COM DIAGNÓSTICO: além da lista, traz etapa, dias parado, última interação e anotações de cada lead para você explicar POR QUE parou e qual o próximo passo. Use quando pedirem diagnóstico do funil, 'o que travou', 'me ajuda com os leads parados', 'por onde destravar'.",
+      parameters: {
+        type: "object",
+        properties: {
+          dias: { type: "number", description: "Nº mínimo de dias sem atividade. Padrão: 5." },
+          limite: { type: "number", description: "Quantos leads analisar. Padrão 6, máximo 10." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "followup_em_lote",
+      description:
+        "Entrega mensagens de follow-up personalizadas para vários leads de uma vez, cada uma em um cartão com aprovação (copiar / enviar no WhatsApp). Você deve ESCREVER as mensagens antes de chamar (máx. 3 linhas cada, com nome e produto, terminando em pergunta). Use quando pedirem follow-up para vários leads.",
+      parameters: {
+        type: "object",
+        properties: {
+          mensagens: {
+            type: "array",
+            description: "Uma entrada por lead, com a mensagem já escrita.",
+            items: {
+              type: "object",
+              properties: {
+                lead_id: { type: "string", description: "ID do lead, quando você já tiver (dos cartões anteriores)." },
+                lead_nome: { type: "string", description: "Nome do lead." },
+                texto: { type: "string", description: "Mensagem de WhatsApp pronta, máximo 3 linhas." },
+              },
+              required: ["lead_nome", "texto"],
+            },
+          },
+        },
+        required: ["mensagens"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "relatorio_metricas",
+      description:
+        "Números oficiais do CRM (fonte única rpc_metricas): leads recebidos, visitas agendadas, visitas realizadas, vendas e VGV assinado no período, já no escopo de quem pergunta (corretor vê o dele, gestor a equipe, CEO tudo). Use SEMPRE que pedirem números, resultado, VGV, conversão, comparação de períodos ou desempenho do time. Nunca invente números.",
+      parameters: {
+        type: "object",
+        properties: {
+          periodo: {
+            type: "string",
+            enum: ["hoje", "semana", "mes_atual", "mes_anterior", "ano"],
+            description: "Período. Padrão: mes_atual.",
+          },
+          comparar: { type: "boolean", description: "Se true, traz também o período anterior equivalente para comparação." },
+        },
+      },
+    },
+  },
 ];
+
 
 
 function todayBRT(): string {
@@ -293,6 +355,93 @@ function addDaysBRT(n: number): string {
 function fmtBRL(v: number): string {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
+
+// ── Fase 3: períodos em BRT para o relatório de métricas ──
+function brtParts(d = new Date()) {
+  const s = d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const [y, m, day] = s.split("-").map(Number);
+  return { y, m, day, iso: s };
+}
+function ymd(y: number, m: number, d: number): string {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+function lastDay(y: number, m: number): number {
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+function periodoBRT(periodo: string): { start: string; end: string; label: string } {
+  const { y, m, day, iso } = brtParts();
+  if (periodo === "hoje") return { start: iso, end: iso, label: "hoje" };
+  if (periodo === "semana") {
+    const d = new Date(`${iso}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 6);
+    return { start: d.toISOString().slice(0, 10), end: iso, label: "últimos 7 dias" };
+  }
+  if (periodo === "mes_anterior") {
+    const py = m === 1 ? y - 1 : y;
+    const pm = m === 1 ? 12 : m - 1;
+    return { start: ymd(py, pm, 1), end: ymd(py, pm, lastDay(py, pm)), label: `${String(pm).padStart(2, "0")}/${py}` };
+  }
+  if (periodo === "ano") return { start: ymd(y, 1, 1), end: iso, label: `${y}` };
+  return { start: ymd(y, m, 1), end: ymd(y, m, day), label: `${String(m).padStart(2, "0")}/${y}` };
+}
+function periodoAnteriorBRT(periodo: string): { start: string; end: string } {
+  const cur = periodoBRT(periodo);
+  const s = new Date(`${cur.start}T12:00:00Z`);
+  const e = new Date(`${cur.end}T12:00:00Z`);
+  if (periodo === "mes_atual" || periodo === "mes_anterior") {
+    const y = s.getUTCFullYear();
+    const m = s.getUTCMonth() + 1;
+    const py = m === 1 ? y - 1 : y;
+    const pm = m === 1 ? 12 : m - 1;
+    return { start: ymd(py, pm, 1), end: ymd(py, pm, lastDay(py, pm)) };
+  }
+  const dias = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+  const pe = new Date(s.getTime() - 86400000);
+  const ps = new Date(pe.getTime() - (dias - 1) * 86400000);
+  return { start: ps.toISOString().slice(0, 10), end: pe.toISOString().slice(0, 10) };
+}
+async function resolverEscopoMetricas(userClient: any, uid: string): Promise<{ tipo: "global" | "gestor" | "corretor" }> {
+  try {
+    const { data } = await userClient.from("user_roles").select("role").eq("user_id", uid);
+    const roles = (data || []).map((r: any) => r.role);
+    if (roles.some((r: string) => ["admin", "diretor"].includes(r))) return { tipo: "global" };
+    if (roles.includes("gestor")) return { tipo: "gestor" };
+  } catch (e) {
+    console.error("[resolverEscopoMetricas]", e);
+  }
+  return { tipo: "corretor" };
+}
+function agregarMetricas(rows: any[]) {
+  const totais = {
+    leads_recebidos: 0,
+    visitas_agendadas: 0,
+    visitas_realizadas: 0,
+    visitas_no_show: 0,
+    vendas: 0,
+    vgv_assinado: 0,
+  };
+  for (const r of rows) {
+    totais.leads_recebidos += Number(r.leads_recebidos) || 0;
+    totais.visitas_agendadas += Number(r.visitas_agendadas) || 0;
+    totais.visitas_realizadas += Number(r.visitas_realizadas) || 0;
+    totais.visitas_no_show += Number(r.visitas_no_show) || 0;
+    totais.vendas += Number(r.vendas) || 0;
+    totais.vgv_assinado += Number(r.vgv_assinado) || 0;
+  }
+  const corretores = [...rows]
+    .map((r: any) => ({
+      nome: r.corretor_nome,
+      equipe: r.equipe_atual || r.equipe,
+      leads: Number(r.leads_recebidos) || 0,
+      visitas: Number(r.visitas_realizadas) || 0,
+      vendas: Number(r.vendas) || 0,
+      vgv: Number(r.vgv_assinado) || 0,
+    }))
+    .sort((a, b) => b.vgv - a.vgv || b.visitas - a.visitas);
+  return { totais, corretores };
+}
+
+
 
 // Contexto enxuto de um lead para os cards da fila de execução
 async function leadContextoCurto(userClient: any, leadIds: string[]) {
@@ -905,6 +1054,139 @@ export async function executeHomiTool(
           : `Nenhum lead esfriando há mais de ${dias} dias. Parabenize o corretor pela cadência em 1 frase.`,
       };
     }
+
+    // ── Fase 3: leads parados COM diagnóstico ──
+    if (name === "leads_parados_diagnostico") {
+      const dias = typeof args.dias === "number" && args.dias > 0 ? args.dias : 5;
+      const limite = Math.min(Math.max(Number(args.limite) || 6, 1), 10);
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - dias);
+      const { data } = await userClient
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento, ultima_acao_at, stage_id, flag_status")
+        .eq("corretor_id", uid)
+        .eq("arquivado", false)
+        .or(`ultima_acao_at.lt.${cutoff.toISOString()},ultima_acao_at.is.null`)
+        .order("ultima_acao_at", { ascending: true, nullsFirst: true })
+        .limit(limite);
+      const base = data || [];
+      if (!base.length) {
+        return { modelResult: `Nenhum lead parado há mais de ${dias} dias. Comente em 1 frase.` };
+      }
+      const ctx = await leadContextoCurto(userClient, base.map((l: any) => l.id));
+      const leads: any[] = [];
+      const linhas: string[] = [];
+      for (const l of base) {
+        const hist = await readLeadHistory(userClient, l);
+        const c = ctx.get(l.id) || {};
+        const item = {
+          id: l.id,
+          nome: l.nome,
+          empreendimento: l.empreendimento || hist.empreendimento || null,
+          etapa: c.stage_nome || hist.stageNome || "—",
+          dias_parado: c.dias_parado ?? null,
+          ultima: hist.ultima || null,
+        };
+        leads.push(item);
+        linhas.push(
+          `- ${item.nome} · etapa ${item.etapa} · ${item.dias_parado ?? "?"} dias parado · último: ${item.ultima || "sem registro"}` +
+            (hist.anotacoes.length ? ` · anotações: ${hist.anotacoes.slice(0, 2).map((n: any) => n.conteudo).join(" | ").slice(0, 240)}` : ""),
+        );
+      }
+      return {
+        result: { tipo: "leads_parados", dias, leads },
+        modelResult:
+          `LEADS PARADOS (já exibidos em cartões, não repita a lista):\n${linhas.join("\n")}\n\n` +
+          `Para CADA lead escreva UMA linha no formato "Nome — por que parou → próximo passo". No fim, ofereça em 1 frase gerar os follow-ups em lote (ferramenta followup_em_lote).`,
+      };
+    }
+
+    // ── Fase 3: follow-up em lote (uma aprovação por lead) ──
+    if (name === "followup_em_lote") {
+      const entradas = Array.isArray(args.mensagens) ? args.mensagens.slice(0, 10) : [];
+      if (!entradas.length) return { modelResult: "Faltaram as mensagens. Escreva uma mensagem por lead e chame de novo." };
+      const itens: any[] = [];
+      for (const m of entradas) {
+        const texto = String(m?.texto || "").trim();
+        const nome = String(m?.lead_nome || "").trim();
+        if (!texto || !nome) continue;
+        let lead: any = null;
+        if (m.lead_id) {
+          const { data } = await userClient
+            .from("pipeline_leads")
+            .select("id, nome, telefone, empreendimento")
+            .eq("id", m.lead_id)
+            .maybeSingle();
+          lead = data;
+        }
+        if (!lead) {
+          const r = await resolveLead(userClient, uid, nome);
+          if ((r as any).lead) lead = (r as any).lead;
+        }
+        itens.push({
+          lead_id: lead?.id || null,
+          nome: lead?.nome || nome,
+          telefone: lead?.telefone || null,
+          empreendimento: lead?.empreendimento || null,
+          texto,
+        });
+      }
+      if (!itens.length) return { modelResult: "Não consegui casar nenhuma mensagem com um lead." };
+      return {
+        result: { tipo: "followup_lote", itens },
+        modelResult: `${itens.length} follow-ups prontos, exibidos em cartões com copiar/enviar. Responda em NO MÁXIMO 1 frase e não repita as mensagens.`,
+      };
+    }
+
+    // ── Fase 3: relatório de métricas (SSOT rpc_metricas) ──
+    if (name === "relatorio_metricas") {
+      const periodo = String(args.periodo || "mes_atual");
+      const range = periodoBRT(periodo);
+      const escopo = await resolverEscopoMetricas(userClient, uid);
+
+      const chamar = async (start: string, end: string) => {
+        const params: Record<string, any> = { p_start: start, p_end: end };
+        if (escopo.tipo === "corretor") params.p_user_id = uid;
+        if (escopo.tipo === "gestor") params.p_gerente_id = uid;
+        const { data, error } = await userClient.rpc("rpc_metricas", params);
+        if (error) {
+          console.error("[relatorio_metricas] rpc error:", error);
+          return null;
+        }
+        return agregarMetricas(data || []);
+      };
+
+      const atual = await chamar(range.start, range.end);
+      if (!atual) return { modelResult: "Não consegui ler os números agora. Diga isso em 1 frase e ofereça tentar de novo." };
+      let anterior: any = null;
+      if (args.comparar) {
+        const prev = periodoAnteriorBRT(periodo);
+        anterior = await chamar(prev.start, prev.end);
+      }
+
+      return {
+        result: {
+          tipo: "relatorio_metricas",
+          periodo,
+          periodo_label: range.label,
+          inicio: range.start,
+          fim: range.end,
+          escopo: escopo.tipo,
+          totais: atual.totais,
+          corretores: atual.corretores.slice(0, 10),
+          anterior: anterior?.totais || null,
+        },
+        modelResult:
+          `NÚMEROS OFICIAIS (${range.label}, escopo ${escopo.tipo}, fonte rpc_metricas — já exibidos em cartão):\n` +
+          `leads ${atual.totais.leads_recebidos} · visitas agendadas ${atual.totais.visitas_agendadas} · visitas realizadas ${atual.totais.visitas_realizadas} · vendas ${atual.totais.vendas} · VGV ${fmtBRL(atual.totais.vgv_assinado)}` +
+          (anterior
+            ? `\nPeríodo anterior: leads ${anterior.totais.leads_recebidos} · visitas realizadas ${anterior.totais.visitas_realizadas} · vendas ${anterior.totais.vendas} · VGV ${fmtBRL(anterior.totais.vgv_assinado)}`
+            : "") +
+          `\n\nComente em no máximo 2 linhas: o que esses números dizem e a próxima ação. Não repita todos os números.`,
+      };
+    }
+
+
 
     if (name === "preparar_visita") {
       const today = todayBRT();
