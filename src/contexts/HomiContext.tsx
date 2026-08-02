@@ -44,7 +44,7 @@ interface HomiContextType {
 
   // Chat
   messages: Message[];
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, anexos?: HomiAnexo[]) => Promise<void>;
   clearMessages: () => void;
   isLoading: boolean;
 
