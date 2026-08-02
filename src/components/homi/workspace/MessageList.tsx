@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { FileText } from "lucide-react";
+import { FileText, CalendarClock, PenLine, Search, BarChart3 } from "lucide-react";
 import { HomiActionsRenderer, HomiResultsRenderer } from "@/components/homi/HomiActionCard";
 import BriefingCard from "@/components/homi/workspace/BriefingCard";
 import ThinkingIndicator from "@/components/homi/workspace/ThinkingIndicator";
