@@ -162,13 +162,13 @@ export default function HomiWorkspace() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] min-h-0 overflow-hidden rounded-xl border border-border bg-background">
+    <div className="flex h-[calc(100dvh-8.5rem)] min-h-0 overflow-hidden border-y border-border bg-background sm:h-[calc(100vh-7rem)] sm:rounded-xl sm:border">
       {/* Conversas — desktop */}
       <aside className="hidden w-64 shrink-0 border-r border-border bg-muted/30 lg:block">{sidebar}</aside>
 
       {/* Conversa */}
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <header className="flex items-center gap-2 border-b border-border px-2 py-2 sm:px-3">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMenuAberto(true)} aria-label="Conversas">
             <PanelLeft className="h-4 w-4" />
           </Button>
@@ -176,16 +176,17 @@ export default function HomiWorkspace() {
             {threads.find(t => t.id === threadId)?.titulo || "HOMI"}
           </h1>
           <Button variant="ghost" size="sm" className="gap-1.5 xl:hidden" onClick={() => setPainelAberto(true)}>
-            <Sparkles className="h-4 w-4" /> Painel
+            <Sparkles className="h-4 w-4" /> <span className="hidden sm:inline">Painel</span>
           </Button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <MessageList messages={messages} isLoading={isLoading} userName={userName} onPrompt={enviar} />
         </div>
 
-        <div className="border-t border-border p-3">
+        <div className="border-t border-border p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-3">
           <div className="mx-auto w-full max-w-3xl space-y-2">
+
             {anexos.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {anexos.map((a, i) => (
