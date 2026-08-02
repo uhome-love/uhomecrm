@@ -338,6 +338,51 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "desempenho_time",
+      description:
+        "Só para liderança (gestor, diretor, CEO, admin). Ranking do time no período com funil por corretor (leads, visitas realizadas, vendas, VGV, conversões) + destaques e quem está em risco. Use quando pedirem 'como está o time', 'ranking', 'quem está bem/mal', 'quem não vendeu', 'produtividade da equipe'.",
+      parameters: {
+        type: "object",
+        properties: {
+          periodo: { type: "string", enum: ["hoje", "semana", "mes_atual", "mes_anterior", "ano"], description: "Padrão mes_atual." },
+          ordenar_por: { type: "string", enum: ["vgv", "vendas", "visitas", "leads", "conversao"], description: "Padrão vgv." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "risco_meta",
+      description:
+        "Meta do mês vs. realizado com ritmo diário e projeção de fechamento (empresa para CEO/diretor, equipe para gestor, pessoal para corretor). Use quando perguntarem 'vamos bater a meta?', 'como está a meta', 'quanto falta', 'projeção do mês', 'risco'.",
+      parameters: {
+        type: "object",
+        properties: {
+          mes: { type: "string", description: "Mês no formato YYYY-MM. Padrão: mês atual." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "diagnostico_corretor",
+      description:
+        "Só para liderança. Raio-x de UM corretor no período: funil (leads, visitas agendadas/realizadas/no-show, vendas, VGV), conversões, comparação com a média do time e leads parados dele. Use quando o líder citar um corretor pelo nome ('como está o João?', 'me dá o raio-x da Maria').",
+      parameters: {
+        type: "object",
+        properties: {
+          corretor_nome: { type: "string", description: "Nome (ou parte) do corretor." },
+          periodo: { type: "string", enum: ["hoje", "semana", "mes_atual", "mes_anterior", "ano"], description: "Padrão mes_atual." },
+        },
+        required: ["corretor_nome"],
+      },
+    },
+  },
 ];
 
 
