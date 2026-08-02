@@ -17,12 +17,13 @@ interface Props {
   onPrompt: (t: string) => void;
 }
 
-const EXEMPLOS = [
-  "Me dá o briefing do dia",
-  "Escreve um follow-up pro cliente que sumiu",
-  "Quais leads estão esfriando?",
-  "Me busca 3 dorms até 1,5M no Menino Deus",
+const INTENCOES = [
+  { icon: CalendarClock, grupo: "Meu dia", titulo: "Briefing do dia", sub: "Tarefas, visitas e prioridades", prompt: "Me dá o briefing do dia" },
+  { icon: PenLine, grupo: "Escrever", titulo: "Follow-up pronto", sub: "Mensagem pro cliente que sumiu", prompt: "Escreve um follow-up pro cliente que sumiu" },
+  { icon: Search, grupo: "Buscar", titulo: "Achar imóvel", sub: "Por bairro, valor e dormitórios", prompt: "Me busca 3 dorms até 1,5M no Menino Deus" },
+  { icon: BarChart3, grupo: "Números", titulo: "Como está o mês", sub: "VGV, funil e conversão", prompt: "Como estão meus números do mês?" },
 ];
+
 
 export default function MessageList({ messages, isLoading, userName, onPrompt }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
