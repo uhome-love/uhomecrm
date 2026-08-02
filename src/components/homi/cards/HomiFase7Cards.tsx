@@ -5,22 +5,13 @@
  *  - DiagnosticoCorretorCard: raio-x de um corretor vs. média do time
  */
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, ExternalLink, Target, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, Target, TrendingUp, Users } from "lucide-react";
+import HomiCard, { HomiKpi as Kpi } from "@/components/homi/cards/HomiCard";
 import type { HomiResult } from "@/contexts/HomiContext";
 
 function money(v?: number | null) {
   if (v == null) return "R$ 0";
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-}
-
-function Kpi({ label, valor, sub }: { label: string; valor: string; sub?: string }) {
-  return (
-    <div className="rounded-lg border border-border/70 bg-card/60 p-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm font-bold text-foreground">{valor}</p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-    </div>
-  );
 }
 
 /* ───────────────────────────── Ranking do time */
@@ -31,21 +22,21 @@ export function DesempenhoTimeCard({ result, onPick }: { result: HomiResult; onP
   const risco = (result.risco as string[]) || [];
 
   return (
-    <div className="space-y-2 rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <Users className="h-3.5 w-3.5 text-indigo-500" />
-        Time · {String(result.periodo_label || "período")}
-        <span className="rounded bg-muted px-1 text-[9px] font-medium uppercase text-muted-foreground">
-          {result.escopo === "global" ? "empresa" : "equipe"}
-        </span>
-      </p>
-
+    <HomiCard
+      icon={Users}
+      tone="primario"
+      titulo={`Time · ${String(result.periodo_label || "período")}`}
+      selo={result.escopo === "global" ? "empresa" : "equipe"}
+      fonte={`Fonte: rpc_metricas · ${String(result.inicio)} a ${String(result.fim)} · ver na Performance`}
+      onFonteClick={() => navigate("/central-relatorios")}
+    >
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
         <Kpi label="Leads" valor={String(t.leads ?? 0)} />
         <Kpi label="Visitas" valor={String(t.visitas ?? 0)} />
         <Kpi label="Vendas" valor={String(t.vendas ?? 0)} />
         <Kpi label="VGV" valor={money(t.vgv)} />
       </div>
+
 
       {ranking.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-border/70 bg-card/60">
