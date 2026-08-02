@@ -112,6 +112,11 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 - Modelo padrão `google/gemini-3.6-flash`; "Aprofundar" usa `google/gemini-3.1-pro-preview` (constante já existente).
 - Botão contextual: um componente único (`HomiPageAction`) alimentado por um mapa rota → prompt, encaixado nos cabeçalhos já padronizados (`PageHeader`).
 - Voz: transcrição com `openai/gpt-4o-mini-transcribe` e leitura com `openai/gpt-4o-mini-tts` (SSE), ambos via Lovable AI numa edge function — a chave nunca vai para o navegador; o áudio não é gravado em banco nem storage.
+- Memória: tabelas `homi_memoria_usuario` e `homi_memoria_lead` (RLS por dono), gravadas por ferramenta explícita do modelo e injetadas no prompt — nunca métrica, sempre preferência/contexto. Números continuam vindo das fontes canônicas.
+- Ações com aprovação: toda ferramenta que escreve (`criar_tarefa`, `agendar_visita`, `mover_etapa`, `enviar_whatsapp`) exige confirmação na UI e registra em log com janela de desfazer; nada dispara sozinho.
+- Anexos: imagem/PDF entram no chat como entrada multimodal do modelo; arquivos ficam em bucket privado com RLS por usuário.
+- Fonte clicável: cada cartão de métrica carrega a RPC/período usados e uma rota de destino no CRM.
+- Qualidade: `homi_feedback` (👍/👎, "não é isso", pergunta e resposta) alimentando um painel só para admin.
 - Remoção do HOMI Ana: página `HomiAna.tsx`, rota e entrada no `pageRegistry`, item do `Sidebar`, atalho no `BackofficeDashboard`, `HomiIdeiasChat` do Marketing e a edge function `homi-ana`.
 - Sem mudança nas telas de negócio (pipeline, PDN, performance) além do botão.
 
