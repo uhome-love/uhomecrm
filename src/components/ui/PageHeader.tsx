@@ -60,9 +60,10 @@ export function PageHeader({
             )}
           </div>
         </div>
-        {actions && (
+        {(actions || homi) && (
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             {actions}
+            {homi && <HomiPageButton sugestoes={homiSugestoes} />}
           </div>
         )}
       </div>
