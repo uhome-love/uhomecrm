@@ -251,6 +251,20 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     setKnowledgeSource(null);
   }, []);
 
+  const loadConversation = useCallback((id: string, msgs: Message[]) => {
+    setConversationId(id);
+    setMessages(Array.isArray(msgs) ? msgs : []);
+    setKnowledgeSource(null);
+  }, []);
+
+  const startNewConversation = useCallback(() => {
+    setConversationId(null);
+    setMessages([]);
+    setKnowledgeSource(null);
+  }, []);
+
+
+
   // Proactive alerts
   const addProactiveAlert = useCallback((alert: Omit<ProactiveAlert, "id" | "createdAt">) => {
     const id = crypto.randomUUID();
