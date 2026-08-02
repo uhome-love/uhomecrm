@@ -21,7 +21,7 @@ function HomiHeaderButtonInner() {
     >
       <span className="flex items-center justify-center h-7 w-7 rounded-full bg-white shadow-sm overflow-hidden">
         <img
-          src="/images/homi-mascot-official.png"
+          src="/images/homi-3d-icon.png"
           alt="HOMI"
           className="h-5 w-5 object-contain pointer-events-none"
         />

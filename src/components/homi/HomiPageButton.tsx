@@ -50,7 +50,7 @@ export function HomiPageButton({ sugestoes, area, className }: HomiPageButtonPro
         >
           <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm">
             <img
-              src="/images/homi-mascot-official.png"
+              src="/images/homi-3d-icon.png"
               alt=""
               className="h-4 w-4 object-contain"
             />

@@ -492,6 +492,14 @@
     border-radius: var(--radius-sm);
   }
 
+  /* ── HOMI: shimmer de texto no estado "pensando" ── */
+  @keyframes homi-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+
+
   /* ── Pulse status dot ── */
   @keyframes pulse-dot {
     0%, 100% { opacity: 1; transform: scale(1); }
