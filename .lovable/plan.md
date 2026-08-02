@@ -58,15 +58,34 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 - **Raciocínio profundo sob demanda** — botão "Aprofundar" troca para o modelo de raciocínio nas análises pesadas; o dia a dia continua rápido.
 - **Proatividade** — o HOMI abre o dia com o briefing e sinaliza no botão quando há algo urgente (SLA estourando, visita sem confirmação, lead quente parado).
 
-### 4. Voz — falar com o HOMI e ouvir a resposta
+### 4. Memória e personalização
+- **Memória do corretor** — jeito de escrever, produtos que domina, meta do mês, horários de trabalho. Ele para de perguntar as mesmas coisas toda vez.
+- **Perfil vivo do cliente** — o que já foi conversado sobre aquele lead aparece em qualquer thread, sem o corretor ter que recontar.
+- **Editável e apagável** — uma tela "O que o HOMI sabe de mim", onde o corretor corrige ou apaga qualquer memória.
+
+### 5. Ações de verdade (não só texto)
+- **Executa por mim** — criar tarefa, agendar visita, mover etapa, gerar mensagem de WhatsApp: o HOMI monta e mostra o que vai fazer, o corretor aprova num clique, com "desfazer" logo depois. Nada sai sem aprovação.
+- **Modo condução** — o HOMI toca o dia inteiro, um lead por vez (estilo Modo Foco com a IA junto): contexto, sugestão, ação, próximo.
+- **Anexos** — colar print de conversa, PDF de proposta ou tabela de preços e o HOMI lê e responde em cima daquilo.
+
+### 6. Inteligência sobre o histórico do CRM
+- **"Por que eu perdi?"** — padrões de descarte, no-show e sumiço do corretor e do time, com o que mudar.
+- **Previsão de fechamento** — quais leads têm mais chance de virar venda neste mês e por quê, para priorizar o dia.
+- **Simulação de financiamento no chat** — usando o simulador que já existe, com o PDF pronto para mandar.
+- **Comparação com a média do time** — sempre no tom de "o que fazer", nunca de exposição.
+
+### 7. Voz — falar com o HOMI e ouvir a resposta
 - **Ditado:** microfone no composer; a fala do corretor vira texto e entra na conversa. Serve para quem está no carro, entre visitas.
 - **Ouvir a resposta:** botão de play em cada mensagem, com áudio em streaming (começa a falar antes de terminar de gerar).
-- **Modo mãos-livres:** conversa contínua — fala, o HOMI responde em voz e volta a ouvir, com botão de parar sempre visível.
+- **Modo mãos-livres:** conversa contínua — fala, o HOMI responde em voz e volta a ouvir, com botão de parar sempre visível, e dá para interromper falando por cima.
+- **Briefing em áudio de ~60s** — para ouvir a caminho do primeiro compromisso.
 - Voz em português, natural, tom de colega de time. O áudio não é armazenado.
 
-### 5. Segurança e verdade
+### 8. Segurança e verdade
 - Corretor vê só o dele; gestor, a equipe; CEO, tudo — reaproveitando as regras de acesso já existentes.
 - Toda métrica sai das fontes canônicas (nada de número inventado). Sem dado, o HOMI diz que vai confirmar.
+- **Fonte visível** — toda resposta com número mostra de onde veio e o período, e leva para a tela real com um clique.
+- **Botão "não é isso"** — registra a falha e alimenta o painel de qualidade, para o HOMI melhorar com uso.
 - Preço, estoque e condição sempre do sistema, nunca de memória.
 
 ## Fases (uma por vez, com validação no preview)
@@ -75,11 +94,14 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 | --- | --- |
 | 1 | Tela `/homi` com threads, conversa, streaming, cartões e painel vivo. Pop-up desligado. |
 | 2 | Botão contextual do HOMI nas páginas principais (tabela acima). |
-| 3 | Ferramentas novas: leads parados com diagnóstico, follow-up em lote, relatórios com gráfico. |
-| 4 | Coach de script/objeção + análise de conversa + "Aprofundar" com modelo de raciocínio. |
-| 5 | Voz: ditado, leitura em voz alta e modo mãos-livres. |
-| 6 | Proatividade (briefing automático, alertas no botão) e painel de qualidade (feedback 👍/👎, perguntas sem resposta). |
-| 7 | Remoção do HOMI Ana (marketing). |
+| 3 | Ferramentas novas: leads parados com diagnóstico, follow-up em lote, relatórios com gráfico e fonte clicável. |
+| 4 | Ações com aprovação e desfazer + Modo condução + anexos. |
+| 5 | Coach de script/objeção + análise de conversa + "Aprofundar" com modelo de raciocínio. |
+| 6 | Memória do corretor e perfil vivo do cliente, com a tela "O que o HOMI sabe de mim". |
+| 7 | Inteligência de histórico: por que perdi, previsão de fechamento, simulação de financiamento, comparação com o time. |
+| 8 | Voz: ditado, leitura em voz alta, mãos-livres e briefing em áudio. |
+| 9 | Proatividade (briefing automático, alertas no botão) e painel de qualidade (👍/👎, "não é isso", perguntas sem resposta). |
+| 10 | Remoção do HOMI Ana (marketing). |
 
 ## Detalhes técnicos
 
@@ -90,6 +112,11 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 - Modelo padrão `google/gemini-3.6-flash`; "Aprofundar" usa `google/gemini-3.1-pro-preview` (constante já existente).
 - Botão contextual: um componente único (`HomiPageAction`) alimentado por um mapa rota → prompt, encaixado nos cabeçalhos já padronizados (`PageHeader`).
 - Voz: transcrição com `openai/gpt-4o-mini-transcribe` e leitura com `openai/gpt-4o-mini-tts` (SSE), ambos via Lovable AI numa edge function — a chave nunca vai para o navegador; o áudio não é gravado em banco nem storage.
+- Memória: tabelas `homi_memoria_usuario` e `homi_memoria_lead` (RLS por dono), gravadas por ferramenta explícita do modelo e injetadas no prompt — nunca métrica, sempre preferência/contexto. Números continuam vindo das fontes canônicas.
+- Ações com aprovação: toda ferramenta que escreve (`criar_tarefa`, `agendar_visita`, `mover_etapa`, `enviar_whatsapp`) exige confirmação na UI e registra em log com janela de desfazer; nada dispara sozinho.
+- Anexos: imagem/PDF entram no chat como entrada multimodal do modelo; arquivos ficam em bucket privado com RLS por usuário.
+- Fonte clicável: cada cartão de métrica carrega a RPC/período usados e uma rota de destino no CRM.
+- Qualidade: `homi_feedback` (👍/👎, "não é isso", pergunta e resposta) alimentando um painel só para admin.
 - Remoção do HOMI Ana: página `HomiAna.tsx`, rota e entrada no `pageRegistry`, item do `Sidebar`, atalho no `BackofficeDashboard`, `HomiIdeiasChat` do Marketing e a edge function `homi-ana`.
 - Sem mudança nas telas de negócio (pipeline, PDN, performance) além do botão.
 
