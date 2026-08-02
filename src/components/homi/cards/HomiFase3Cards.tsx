@@ -32,11 +32,12 @@ export function LeadsParadosCard({ result, onPick }: { result: HomiResult; onPic
   if (!leads.length) return null;
 
   return (
-    <div className="space-y-1.5 rounded-xl border border-amber-500/25 bg-amber-500/5 p-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-        Leads parados ({leads.length}) · {String(result.dias ?? 5)}+ dias
-      </p>
+    <HomiCard
+      icon={AlertTriangle}
+      tone="alerta"
+      titulo={`Leads parados (${leads.length}) · ${String(result.dias ?? 5)}+ dias`}
+    >
+
       {leads.map((l) => (
         <div key={l.id} className="space-y-1.5 rounded-lg border border-border/70 bg-card/60 p-2">
           <div className="min-w-0">
