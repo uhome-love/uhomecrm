@@ -199,7 +199,7 @@ export function useHomiActions() {
     setSaving(true);
     try {
       const titulo = t.tipo === "outro" ? (t.tipo_personalizado || "Tarefa") : (TIPO_LABELS[t.tipo] || "Tarefa");
-      const { error } = await supabase.from("pipeline_tarefas").insert({
+      const { data: tarefa, error } = await supabase.from("pipeline_tarefas").insert({
         pipeline_lead_id: t.lead_id,
         titulo,
         descricao: t.descricao?.trim() || null,
@@ -210,16 +210,21 @@ export function useHomiActions() {
         vence_em: t.vence_em,
         hora_vencimento: t.hora_vencimento || null,
         created_by: user.id,
-      } as any);
+      } as any).select("id").maybeSingle();
       if (error) { toast.error("Erro ao criar tarefa: " + error.message); return false; }
 
-      await logAtividade(
+      const atvId = await logAtividade(
         t.lead_id, user.id, "outro",
         `📋 Tarefa criada via Homi: ${titulo}`,
         `${titulo} — ${t.vence_em}${t.hora_vencimento ? " " + t.hora_vencimento : ""}${t.descricao ? " · " + t.descricao : ""}`,
       );
+      setUndo(`Tarefa removida · ${t.lead_nome}`, t.lead_id, [
+        (tarefa as any)?.id ? { op: "delete", table: "pipeline_tarefas", id: (tarefa as any).id } : null,
+        atvId ? { op: "delete", table: "pipeline_atividades", id: atvId } : null,
+      ]);
       invalidateTaskQueries(queryClient, t.lead_id);
       toast.success("Tarefa criada ✅");
+
       return true;
     } finally {
       setSaving(false);
