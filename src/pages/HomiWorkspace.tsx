@@ -230,7 +230,7 @@ export default function HomiWorkspace() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
                 }}
-                placeholder="Pergunte, peça uma mensagem ou uma ação no CRM..."
+                placeholder={isMobile ? "Pergunte ou peça uma ação..." : "Pergunte, peça uma mensagem ou uma ação no CRM..."}
                 rows={1}
                 className="max-h-40 min-h-[44px] resize-none text-sm"
               />
