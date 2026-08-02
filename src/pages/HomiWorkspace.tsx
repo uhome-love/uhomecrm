@@ -68,17 +68,16 @@ export default function HomiWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const promptRef = useRef<string | null>(null);
   useEffect(() => {
-    const p = searchParams.get("p");
+    const p = searchParams.get("p") ?? sessionStorage.getItem("homi:prompt-pendente");
     if (!p || promptRef.current === p) return;
-    // Guarda global evita reenvio caso a tela remonte (sistema de abas)
-    const marca = `homi:prompt:${p}`;
-    if (sessionStorage.getItem(marca)) return;
-    sessionStorage.setItem(marca, "1");
-    window.setTimeout(() => sessionStorage.removeItem(marca), 5000);
+    sessionStorage.removeItem("homi:prompt-pendente");
     promptRef.current = p;
     sendMessage(p);
-    window.setTimeout(() => setSearchParams({}, { replace: true }), 300);
+    if (searchParams.get("p")) {
+      window.setTimeout(() => setSearchParams({}, { replace: true }), 300);
+    }
   }, [searchParams, setSearchParams, sendMessage]);
+
 
 
 
