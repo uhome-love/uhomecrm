@@ -44,8 +44,7 @@ export default function HomiWorkspace() {
     });
 
   // Anexa imagens/PDF: sobe pro storage (histórico) e guarda o base64 para esta pergunta.
-  const anexar = async (files: FileList | null) => {
-    console.log("[HOMI anexar] arquivos:", files?.length);
+  const anexar = async (files: File[]) => {
     if (!files?.length) return;
     setSubindo(true);
     try {
@@ -53,7 +52,8 @@ export default function HomiWorkspace() {
       const { data: sess } = await supabase.auth.getSession();
       const uid = sess?.session?.user?.id;
       const novos: HomiAnexo[] = [];
-      for (const f of Array.from(files).slice(0, 4)) {
+      for (const f of files.slice(0, 4)) {
+
         if (f.size > LIMITE_MB * 1024 * 1024) {
           toast.error(`${f.name} passa de ${LIMITE_MB}MB`);
           continue;
