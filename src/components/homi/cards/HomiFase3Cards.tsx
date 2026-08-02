@@ -156,14 +156,15 @@ export function RelatorioMetricasCard({ result }: { result: HomiResult }) {
   const escopo = String(result.escopo || "corretor");
 
   return (
-    <div className="space-y-2 rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
-        Números · {String(result.periodo_label || "período")}
-        <span className="rounded bg-muted px-1 text-[9px] font-medium uppercase text-muted-foreground">
-          {escopo === "global" ? "empresa" : escopo === "gestor" ? "equipe" : "meu"}
-        </span>
-      </p>
+    <HomiCard
+      icon={TrendingUp}
+      tone="primario"
+      titulo={`Números · ${String(result.periodo_label || "período")}`}
+      selo={escopo === "global" ? "empresa" : escopo === "gestor" ? "equipe" : "meu"}
+      fonte={`Fonte: rpc_metricas · ${String(result.inicio)} a ${String(result.fim)} · ver na Performance`}
+      onFonteClick={() => navigate("/central-relatorios")}
+    >
+
 
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
         <Kpi label="Leads" valor={String(t.leads_recebidos ?? 0)} sub={delta(t.leads_recebidos ?? 0, ant?.leads_recebidos)} />
