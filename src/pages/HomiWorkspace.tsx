@@ -70,7 +70,7 @@ export default function HomiWorkspace() {
         }
         novos.push({ nome: f.name, tipo: f.type || "application/octet-stream", dataUrl, url });
       }
-      console.log("[HOMI anexar] prontos:", novos.length, novos.map(n => n.nome));
+      
       if (novos.length) setAnexos((prev) => [...prev, ...novos]);
 
     } catch (e) {
