@@ -25,8 +25,30 @@ const LOCAL_LABELS: Record<string, string> = {
   decorado: "Apartamento decorado", no_imovel: "No imóvel", outro: "Outro",
 };
 
-async function logAtividade(leadId: string, uid: string, tipo: string, titulo: string, descricao: string | null) {
-  await supabase.from("pipeline_atividades").insert({
+/* ───────────────────── Fase 4: desfazer (undo) ─────────────────────
+ * Toda ação gravada pelo Homi registra as operações inversas em um token.
+ * O cartão de sucesso mostra "Desfazer" enquanto a mensagem estiver na tela.
+ */
+export type UndoOp =
+  | { op: "delete"; table: string; id: string }
+  | { op: "update"; table: string; id: string; values: Record<string, unknown> };
+
+export interface UndoToken {
+  label: string;
+  leadId?: string | null;
+  ops: UndoOp[];
+}
+
+let lastUndo: UndoToken | null = null;
+/** Pega (e limpa) o último token de desfazer gerado. Chame logo após a ação. */
+export function takeLastUndo(): UndoToken | null {
+  const t = lastUndo;
+  lastUndo = null;
+  return t;
+}
+
+async function logAtividade(leadId: string, uid: string, tipo: string, titulo: string, descricao: string | null): Promise<string | null> {
+  const { data } = await supabase.from("pipeline_atividades").insert({
     pipeline_lead_id: leadId,
     tipo,
     titulo,
@@ -36,12 +58,19 @@ async function logAtividade(leadId: string, uid: string, tipo: string, titulo: s
     responsavel_id: uid,
     status: "pendente",
     created_by: uid,
-  } as any);
+  } as any).select("id").maybeSingle();
   await supabase.from("pipeline_leads").update({
     ultima_acao_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   } as any).eq("id", leadId);
+  return (data as any)?.id || null;
 }
+
+function setUndo(label: string, leadId: string | null | undefined, ops: (UndoOp | null)[]) {
+  const clean = ops.filter(Boolean) as UndoOp[];
+  lastUndo = clean.length ? { label, leadId, ops: clean } : null;
+}
+
 
 export interface TarefaConfirm {
   lead_id: string;
