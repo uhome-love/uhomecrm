@@ -84,25 +84,26 @@ export function RiscoMetaCard({ result }: { result: HomiResult }) {
   const status = String(result.status || "sem_meta");
   const tone =
     status === "no_ritmo"
-      ? { border: "border-emerald-500/30", bg: "bg-emerald-500/5", bar: "bg-emerald-500", label: "No ritmo" }
+      ? { card: "sucesso" as const, bar: "bg-emerald-500", label: "No ritmo" }
       : status === "atencao"
-        ? { border: "border-amber-500/30", bg: "bg-amber-500/5", bar: "bg-amber-500", label: "Atenção" }
+        ? { card: "alerta" as const, bar: "bg-amber-500", label: "Atenção" }
         : status === "risco"
-          ? { border: "border-red-500/30", bg: "bg-red-500/5", bar: "bg-red-500", label: "Em risco" }
-          : { border: "border-border", bg: "bg-muted/30", bar: "bg-muted-foreground", label: "Sem meta" };
+          ? { card: "critico" as const, bar: "bg-destructive", label: "Em risco" }
+          : { card: "neutro" as const, bar: "bg-muted-foreground", label: "Sem meta" };
 
   return (
-    <div className={`space-y-2 rounded-xl border p-2.5 ${tone.border} ${tone.bg}`}>
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <Target className="h-3.5 w-3.5" />
-        Meta {String(result.mes)} · {String(result.meta_fonte || "")}
-        <span className="rounded bg-muted px-1 text-[9px] font-medium uppercase text-muted-foreground">{tone.label}</span>
-      </p>
-
+    <HomiCard
+      icon={Target}
+      tone={tone.card}
+      titulo={`Meta ${String(result.mes)} · ${String(result.meta_fonte || "")}`}
+      selo={tone.label}
+      fonte="Fonte: rpc_metricas + metas cadastradas · ver na Performance"
+      onFonteClick={() => navigate("/central-relatorios")}
+    >
       {meta > 0 && (
         <div className="space-y-1">
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${pct}%` }} />
+            <div className={`h-full rounded-full transition-all ${tone.bar}`} style={{ width: `${pct}%` }} />
           </div>
           <p className="text-[10px] text-muted-foreground">
             {money(realizado)} de {money(meta)} ({result.pct ?? 0}%) · dia {String(result.dias_corridos)}/{String(result.dias_mes)}
@@ -116,17 +117,9 @@ export function RiscoMetaCard({ result }: { result: HomiResult }) {
         <Kpi label="Falta/dia" valor={money(Number(result.precisa_por_dia) || 0)} sub={`${result.dias_restantes} dias`} />
         <Kpi label="Vendas · visitas" valor={`${result.vendas ?? 0} · ${result.visitas_realizadas ?? 0}`} />
       </div>
-
-      <button
-        type="button"
-        onClick={() => navigate("/central-relatorios")}
-        className="flex w-full items-center justify-center gap-1 text-[10px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-      >
-        <ExternalLink className="h-3 w-3" />
-        Fonte: rpc_metricas + metas cadastradas · ver na Performance
-      </button>
-    </div>
+    </HomiCard>
   );
+
 }
 
 /* ───────────────────────────── Raio-x do corretor */
