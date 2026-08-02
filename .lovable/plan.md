@@ -162,7 +162,10 @@ Formato: página dentro da Academia + PDF para baixar, com prints da tela e fras
 | 7 | Inteligência de histórico: por que perdi, previsão de fechamento, simulação de financiamento, comparação com o time. |
 | 8 | Voz: ditado, leitura em voz alta, mãos-livres e briefing em áudio. |
 | 9 | Proatividade (briefing automático, alertas no botão) e painel de qualidade (👍/👎, "não é isso", perguntas sem resposta). |
-| 10 | Remoção do HOMI Ana (marketing). |
+| 10 | Ampliação do agente operacional (seção 10): agenda, comunicação, imóvel/proposta, rotina — tudo com aprovação. |
+| 11 | Anexos e imagens (ler print/PDF/áudio; gerar peça simples) + rotina do dia real e ⌘K (seção 9). |
+| 12 | Remoção do HOMI Ana (marketing). |
+| 13 | Manuais de uso: Corretor, Gerente e CEO (Academia + PDF). |
 
 ## Detalhes técnicos
 
