@@ -44,14 +44,16 @@ export default function HomiWorkspace() {
     });
 
   // Anexa imagens/PDF: sobe pro storage (histórico) e guarda o base64 para esta pergunta.
-  const anexar = async (files: FileList | null) => {
+  const anexar = async (files: File[]) => {
     if (!files?.length) return;
     setSubindo(true);
     try {
+
       const { data: sess } = await supabase.auth.getSession();
       const uid = sess?.session?.user?.id;
       const novos: HomiAnexo[] = [];
-      for (const f of Array.from(files).slice(0, 4)) {
+      for (const f of files.slice(0, 4)) {
+
         if (f.size > LIMITE_MB * 1024 * 1024) {
           toast.error(`${f.name} passa de ${LIMITE_MB}MB`);
           continue;
@@ -68,7 +70,9 @@ export default function HomiWorkspace() {
         }
         novos.push({ nome: f.name, tipo: f.type || "application/octet-stream", dataUrl, url });
       }
+      
       if (novos.length) setAnexos((prev) => [...prev, ...novos]);
+
     } catch (e) {
       console.error("Anexo HOMI:", e);
       toast.error("Não consegui ler o arquivo");
@@ -202,7 +206,7 @@ export default function HomiWorkspace() {
                 accept="image/*,application/pdf"
                 multiple
                 className="hidden"
-                onChange={(e) => { anexar(e.target.files); e.target.value = ""; }}
+                onChange={(e) => { const fs = Array.from(e.target.files ?? []); e.target.value = ""; anexar(fs); }}
               />
               <Button
                 variant="ghost"
