@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import HomiPageButton from "@/components/homi/HomiPageButton";
 
 interface PageHeaderProps {
   title: string;
@@ -15,6 +16,10 @@ interface PageHeaderProps {
   onTabChange?: (value: string) => void;
   size?: "default" | "sm";
   className?: string;
+  /** Botão contextual do HOMI (padrão: visível) */
+  homi?: boolean;
+  /** Sugestões específicas desta tela para o HOMI */
+  homiSugestoes?: string[];
 }
 
 export function PageHeader({
@@ -27,6 +32,8 @@ export function PageHeader({
   onTabChange,
   size = "default",
   className,
+  homi = true,
+  homiSugestoes,
 }: PageHeaderProps) {
   return (
     <div className={cn("flex flex-col gap-3 mb-6", className)}>
@@ -53,9 +60,10 @@ export function PageHeader({
             )}
           </div>
         </div>
-        {actions && (
+        {(actions || homi) && (
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             {actions}
+            {homi && <HomiPageButton sugestoes={homiSugestoes} />}
           </div>
         )}
       </div>

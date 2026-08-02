@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Send, Loader2, PanelLeft, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,6 +63,18 @@ export default function HomiWorkspace() {
     setPainelAberto(false);
     sendMessage(t);
   };
+
+  // Prompt contextual vindo de outra página: /homi?p=...
+  const [searchParams, setSearchParams] = useSearchParams();
+  const promptRef = useRef<string | null>(null);
+  useEffect(() => {
+    const p = searchParams.get("p");
+    if (!p || promptRef.current === p) return;
+    promptRef.current = p;
+    setSearchParams({}, { replace: true });
+    sendMessage(p);
+  }, [searchParams, setSearchParams, sendMessage]);
+
 
   const novaConversa = () => {
     loadedRef.current = null;
