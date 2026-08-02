@@ -398,7 +398,28 @@ export async function executeHomiTool(
   uid: string,
 ): Promise<ToolOutcome> {
   try {
+    if (name === "lembrar") {
+      const chave = String(args.chave || "").trim().slice(0, 80);
+      const valor = String(args.valor || "").trim().slice(0, 400);
+      const categoria = String(args.categoria || "geral").trim().slice(0, 40);
+      if (!chave || !valor) {
+        return { modelResult: "Não deu para guardar: faltou o que lembrar." };
+      }
+      const { error } = await userClient
+        .from("homi_memoria_usuario")
+        .upsert({ user_id: uid, chave, valor, categoria }, { onConflict: "user_id,chave" });
+      if (error) {
+        console.error("[lembrar] error:", error);
+        return { modelResult: "Não consegui guardar isso na memória agora." };
+      }
+      return {
+        modelResult: `Memória guardada: ${chave} = ${valor}. Confirme em 1 frase curta.`,
+        result: { tipo: "memoria_salva", chave, valor, categoria },
+      };
+    }
+
     if (name === "meu_dia") {
+
       const today = todayBRT();
 
       // AGORA: tarefas pendentes (atrasadas + hoje)
