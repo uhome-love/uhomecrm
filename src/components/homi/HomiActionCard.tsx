@@ -307,13 +307,41 @@ function AnotacaoCard({ action }: { action: HomiAction }) {
   );
 }
 
-function DoneBadge({ label }: { label: string }) {
+function DoneBadge({ label, undo }: { label: string; undo?: UndoToken | null }) {
+  const { desfazer } = useHomiActions();
+  const [undone, setUndone] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  if (undone) {
+    return (
+      <div className="rounded-xl border border-border bg-muted/40 p-2.5 flex items-center gap-2 text-xs text-muted-foreground font-medium">
+        <Undo2 className="h-4 w-4" /> Ação desfeita
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 flex items-center gap-2 text-xs text-emerald-700 font-medium">
-      <CheckCircle2 className="h-4 w-4" /> {label}
+      <CheckCircle2 className="h-4 w-4 shrink-0" />
+      <span className="flex-1 min-w-0">{label}</span>
+      {undo && (
+        <button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            const ok = await desfazer(undo);
+            setBusy(false);
+            if (ok) setUndone(true);
+          }}
+          className="shrink-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+        >
+          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />} Desfazer
+        </button>
+      )}
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────── Read: pendências (acionável)
 function PendenciasCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
