@@ -58,7 +58,13 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 - **Raciocínio profundo sob demanda** — botão "Aprofundar" troca para o modelo de raciocínio nas análises pesadas; o dia a dia continua rápido.
 - **Proatividade** — o HOMI abre o dia com o briefing e sinaliza no botão quando há algo urgente (SLA estourando, visita sem confirmação, lead quente parado).
 
-### 4. Segurança e verdade
+### 4. Voz — falar com o HOMI e ouvir a resposta
+- **Ditado:** microfone no composer; a fala do corretor vira texto e entra na conversa. Serve para quem está no carro, entre visitas.
+- **Ouvir a resposta:** botão de play em cada mensagem, com áudio em streaming (começa a falar antes de terminar de gerar).
+- **Modo mãos-livres:** conversa contínua — fala, o HOMI responde em voz e volta a ouvir, com botão de parar sempre visível.
+- Voz em português, natural, tom de colega de time. O áudio não é armazenado.
+
+### 5. Segurança e verdade
 - Corretor vê só o dele; gestor, a equipe; CEO, tudo — reaproveitando as regras de acesso já existentes.
 - Toda métrica sai das fontes canônicas (nada de número inventado). Sem dado, o HOMI diz que vai confirmar.
 - Preço, estoque e condição sempre do sistema, nunca de memória.
@@ -71,7 +77,9 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 | 2 | Botão contextual do HOMI nas páginas principais (tabela acima). |
 | 3 | Ferramentas novas: leads parados com diagnóstico, follow-up em lote, relatórios com gráfico. |
 | 4 | Coach de script/objeção + análise de conversa + "Aprofundar" com modelo de raciocínio. |
-| 5 | Proatividade (briefing automático, alertas no botão) e painel de qualidade (feedback 👍/👎, perguntas sem resposta). |
+| 5 | Voz: ditado, leitura em voz alta e modo mãos-livres. |
+| 6 | Proatividade (briefing automático, alertas no botão) e painel de qualidade (feedback 👍/👎, perguntas sem resposta). |
+| 7 | Remoção do HOMI Ana (marketing). |
 
 ## Detalhes técnicos
 
