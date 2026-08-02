@@ -128,23 +128,57 @@ export default function HomiWorkspace() {
         </div>
 
         <div className="border-t border-border p-3">
-          <div className="mx-auto flex w-full max-w-3xl items-end gap-2">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
-              }}
-              placeholder="Pergunte, peça uma mensagem ou uma ação no CRM..."
-              rows={1}
-              className="max-h-40 min-h-[44px] resize-none text-sm"
-            />
-            <Button onClick={() => enviar()} disabled={isLoading || !input.trim()} size="icon" className="h-11 w-11 shrink-0">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
+          <div className="mx-auto w-full max-w-3xl space-y-2">
+            {anexos.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {anexos.map((a, i) => (
+                  <div key={i} className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2 py-1 text-xs">
+                    {a.tipo.startsWith("image/") ? <ImageIcon className="h-3.5 w-3.5 text-primary" /> : <FileText className="h-3.5 w-3.5 text-primary" />}
+                    <span className="max-w-[160px] truncate">{a.nome}</span>
+                    <button type="button" onClick={() => setAnexos(prev => prev.filter((_, j) => j !== i))} aria-label={`Remover ${a.nome}`}>
+                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex w-full items-end gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                className="hidden"
+                onChange={(e) => { anexar(e.target.files); e.target.value = ""; }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 shrink-0"
+                onClick={() => fileRef.current?.click()}
+                disabled={isLoading || subindo}
+                aria-label="Anexar imagem ou PDF"
+              >
+                {subindo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+              </Button>
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
+                }}
+                placeholder="Pergunte, peça uma mensagem ou uma ação no CRM..."
+                rows={1}
+                className="max-h-40 min-h-[44px] resize-none text-sm"
+              />
+              <Button onClick={() => enviar()} disabled={isLoading || (!input.trim() && anexos.length === 0)} size="icon" className="h-11 w-11 shrink-0">
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
         </div>
+
       </main>
 
       {/* Painel vivo — desktop */}
