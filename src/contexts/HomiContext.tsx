@@ -291,7 +291,8 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       alerts, addProactiveAlert, dismissAlert, unseenCount,
       currentPage, homiRole, userName,
       knowledgeSource,
-      conversationId,
+      conversationId, loadConversation, startNewConversation,
+
       launcherHidden, setLauncherHidden,
     }}>
       {children}
