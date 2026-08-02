@@ -414,6 +414,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
           </button>
 
+          <HomiPageButton className="h-7 shrink-0" />
+
           {canAdd && activeTab === "kanban" && (
             <button
               onClick={() => setAddOpen(true)}
