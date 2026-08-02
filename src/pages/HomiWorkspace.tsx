@@ -108,12 +108,14 @@ export default function HomiWorkspace() {
 
   const enviar = (texto?: string) => {
     const t = (texto ?? input).trim();
-    if (!t || isLoading) return;
+    if ((!t && anexos.length === 0) || isLoading) return;
     setInput("");
     setMenuAberto(false);
     setPainelAberto(false);
-    sendMessage(t);
+    sendMessage(t, anexos.length ? anexos : undefined);
+    setAnexos([]);
   };
+
 
   // Prompt contextual vindo de outra página: /homi?p=...
   const [searchParams, setSearchParams] = useSearchParams();
