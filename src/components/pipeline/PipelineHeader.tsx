@@ -745,6 +745,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             </Popover>
           )}
 
+          <HomiPageButton className="h-9 shrink-0 rounded-lg" />
+
           {/* Menu de ações secundárias — Atualizar / Selecionar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
