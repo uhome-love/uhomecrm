@@ -129,13 +129,12 @@ export function DiagnosticoCorretorCard({ result, onPick }: { result: HomiResult
   const parados = (result.parados as any[]) || [];
 
   return (
-    <div className="space-y-2 rounded-xl border border-sky-500/25 bg-sky-500/5 p-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-        <TrendingUp className="h-3.5 w-3.5 text-sky-500" />
-        {c.nome} · {String(result.periodo_label || "período")}
-        {c.equipe && <span className="rounded bg-muted px-1 text-[9px] uppercase text-muted-foreground">{c.equipe}</span>}
-      </p>
-
+    <HomiCard
+      icon={TrendingUp}
+      tone="info"
+      titulo={`${c.nome} · ${String(result.periodo_label || "período")}`}
+      selo={c.equipe || undefined}
+    >
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
         <Kpi label="Leads" valor={String(c.leads ?? 0)} sub={`time ${m.leads ?? 0}`} />
         <Kpi label="Visitas realizadas" valor={String(c.visitas ?? 0)} sub={`time ${m.visitas ?? 0}`} />
@@ -157,10 +156,11 @@ export function DiagnosticoCorretorCard({ result, onPick }: { result: HomiResult
       <button
         type="button"
         onClick={() => onPick(`Me ajuda a preparar o 1:1 com ${String(c.nome || "").split(" ")[0]}`)}
-        className="w-full rounded-lg border border-border bg-card/60 px-2 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
+        className="min-h-9 w-full rounded-lg border border-border bg-background/60 px-2 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
       >
         Preparar o 1:1 com {String(c.nome || "").split(" ")[0]}
       </button>
-    </div>
+    </HomiCard>
+
   );
 }
