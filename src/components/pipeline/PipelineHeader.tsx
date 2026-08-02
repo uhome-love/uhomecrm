@@ -24,6 +24,7 @@ import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/useP
 import PipelineCorretorSelect from "@/components/pipeline/header/PipelineCorretorSelect";
 import PipelineGestorSelect from "@/components/pipeline/header/PipelineGestorSelect";
 import PipelineScopeBadge from "@/components/pipeline/header/PipelineScopeBadge";
+import HomiPageButton from "@/components/homi/HomiPageButton";
 
 export type PipelineTabMode = "kanban" | "time" | "equipes";
 export type ClientStatusFilter = "todos" | LeadClientStatus;
@@ -343,6 +344,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           >
             <RefreshCw className={`h-3.5 w-3.5 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
           </button>
+          <HomiPageButton className="h-8 shrink-0" />
         </div>
         )}
 
@@ -411,6 +413,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <button onClick={handleRefresh} disabled={refreshing} className="w-7 h-7 rounded-[7px] border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer">
             <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
           </button>
+
+          <HomiPageButton className="h-7 shrink-0" />
 
           {canAdd && activeTab === "kanban" && (
             <button
@@ -740,6 +744,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               </PopoverContent>
             </Popover>
           )}
+
+          <HomiPageButton className="h-9 shrink-0 rounded-lg" />
 
           {/* Menu de ações secundárias — Atualizar / Selecionar */}
           <DropdownMenu>
