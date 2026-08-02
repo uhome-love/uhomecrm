@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Send, Loader2, PanelLeft, Sparkles, X, Paperclip, FileText, Image as ImageIcon } from "lucide-react";
+import { PanelLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import ThreadSidebar from "@/components/homi/workspace/ThreadSidebar";
 import PainelVivo from "@/components/homi/workspace/PainelVivo";
 import MessageList from "@/components/homi/workspace/MessageList";
+import Composer from "@/components/homi/workspace/Composer";
+
 
 
 export default function HomiWorkspace() {
