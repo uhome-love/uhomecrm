@@ -22,6 +22,20 @@ export default function ThreadSidebar({ threads, activeId, onSelect, onNew, onUp
     .filter(t => (mostrarArquivadas ? t.arquivada : !t.arquivada))
     .filter(t => !busca.trim() || (t.titulo || "").toLowerCase().includes(busca.toLowerCase()));
 
+  // Agrupamento por tempo (Fixadas · Hoje · Últimos 7 dias · Antes)
+  const agora = Date.now();
+  const DIA = 24 * 60 * 60 * 1000;
+  const buckets: Record<string, HomiThread[]> = { Fixadas: [], Hoje: [], "Últimos 7 dias": [], Antes: [] };
+  for (const t of visiveis) {
+    if (t.pinned) { buckets.Fixadas.push(t); continue; }
+    const idade = agora - new Date(t.updated_at).getTime();
+    if (idade < DIA) buckets.Hoje.push(t);
+    else if (idade < 7 * DIA) buckets["Últimos 7 dias"].push(t);
+    else buckets.Antes.push(t);
+  }
+  const grupos = Object.entries(buckets).filter(([, itens]) => itens.length > 0);
+
+
   return (
     <div className="flex h-full flex-col gap-3 p-3">
       <Button onClick={onNew} className="w-full justify-start gap-2" size="sm">
