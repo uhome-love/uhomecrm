@@ -60,10 +60,29 @@ export default function MessageList({ messages, isLoading, userName, onPrompt }:
       {messages.map((msg, i) => (
         <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>
           {msg.role === "user" ? (
-            <div className="max-w-[85%] rounded-2xl bg-primary px-4 py-2.5 text-sm text-primary-foreground">
-              {msg.content}
+            <div className="flex max-w-[85%] flex-col items-end gap-1.5">
+              {!!msg.anexos?.length && (
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {msg.anexos.map((a, j) =>
+                    a.tipo?.startsWith("image/") && a.url ? (
+                      <img key={j} src={a.url} alt={a.nome} className="max-h-40 rounded-xl border border-border object-cover" />
+                    ) : (
+                      <span key={j} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2 py-1 text-xs text-foreground">
+                        <FileText className="h-3.5 w-3.5 text-primary" />
+                        <span className="max-w-[180px] truncate">{a.nome}</span>
+                      </span>
+                    )
+                  )}
+                </div>
+              )}
+              {msg.content && (
+                <div className="rounded-2xl bg-primary px-4 py-2.5 text-sm text-primary-foreground">
+                  {msg.content}
+                </div>
+              )}
             </div>
           ) : (
+
             <div className="space-y-3">
               {msg.content && (
                 <div className="prose prose-sm max-w-none text-sm text-foreground dark:prose-invert">
