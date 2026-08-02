@@ -26,7 +26,9 @@ export default function HomiWorkspace() {
   } = useHomi();
   const { threads, fetchMessages, update, remove, reload } = useHomiThreads();
 
+  const isMobile = useIsMobile();
   const [input, setInput] = useState("");
+
   const [menuAberto, setMenuAberto] = useState(false);
   const [painelAberto, setPainelAberto] = useState(false);
   const [anexos, setAnexos] = useState<HomiAnexo[]>([]);
