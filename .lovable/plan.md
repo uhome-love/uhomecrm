@@ -89,8 +89,10 @@ Além das 15 ferramentas atuais (pendências, buscar imóvel, briefing, criar ta
 - Backend continua em `homi-chat` (cérebro único `_shared/homi-brain.ts`): novas ferramentas em `homi-tools.ts` (`leads_parados_diagnostico`, `followup_em_lote`, `relatorio_metricas`, `analisar_conversa`), sempre com escopo por papel.
 - Modelo padrão `google/gemini-3.6-flash`; "Aprofundar" usa `google/gemini-3.1-pro-preview` (constante já existente).
 - Botão contextual: um componente único (`HomiPageAction`) alimentado por um mapa rota → prompt, encaixado nos cabeçalhos já padronizados (`PageHeader`).
+- Voz: transcrição com `openai/gpt-4o-mini-transcribe` e leitura com `openai/gpt-4o-mini-tts` (SSE), ambos via Lovable AI numa edge function — a chave nunca vai para o navegador; o áudio não é gravado em banco nem storage.
+- Remoção do HOMI Ana: página `HomiAna.tsx`, rota e entrada no `pageRegistry`, item do `Sidebar`, atalho no `BackofficeDashboard`, `HomiIdeiasChat` do Marketing e a edge function `homi-ana`.
 - Sem mudança nas telas de negócio (pipeline, PDN, performance) além do botão.
 
 ## Fora de escopo
-- Trocar o HOMI Ana (marketing) e a LIA do atendimento externo.
+- **LIA** — atendimento automático de leads (falar com o cliente, não com o corretor). É outro produto; plano próprio, depois que o HOMI estiver de pé.
 - Qualquer alteração em regra de negócio, cálculo de VGV ou disparo de WhatsApp em massa.
