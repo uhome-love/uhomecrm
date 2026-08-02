@@ -63,6 +63,11 @@ interface HomiContextType {
 
   // Conversation persistence
   conversationId: string | null;
+  // Carrega uma conversa existente (workspace /homi)
+  loadConversation: (id: string, msgs: Message[]) => void;
+  // Começa uma conversa nova (limpa mensagens e id)
+  startNewConversation: () => void;
+
 
   // Floating launcher visibility (hidden while a fullscreen drawer is open on mobile)
   launcherHidden: boolean;
