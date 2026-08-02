@@ -75,7 +75,7 @@ export function LeadsParadosCard({ result, onPick }: { result: HomiResult; onPic
       >
         <Send className="h-3.5 w-3.5" /> Gerar follow-up para todos
       </Button>
-    </div>
+    </HomiCard>
   );
 }
 
