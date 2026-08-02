@@ -171,15 +171,15 @@ export default function HomiWorkspace() {
       <aside className="hidden w-64 shrink-0 border-r border-border bg-muted/30 lg:block">{sidebar}</aside>
 
       {/* Conversa */}
-      <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-border px-2 py-2 sm:px-3">
+      <main className="flex min-w-0 flex-1 flex-col bg-muted/10">
+        <header className="flex items-center gap-2 border-b border-border/60 bg-background/80 px-2 py-2 backdrop-blur sm:px-3">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMenuAberto(true)} aria-label="Conversas">
             <PanelLeft className="h-4 w-4" />
           </Button>
-          <h1 className="min-w-0 flex-1 truncate text-sm font-semibold">
+          <h1 className="min-w-0 flex-1 truncate text-sm font-medium">
             {threads.find(t => t.id === threadId)?.titulo || "HOMI"}
           </h1>
-          <Button variant="ghost" size="sm" className="gap-1.5 xl:hidden" onClick={() => setPainelAberto(true)}>
+          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground xl:hidden" onClick={() => setPainelAberto(true)}>
             <Sparkles className="h-4 w-4" /> <span className="hidden sm:inline">Painel</span>
           </Button>
         </header>
@@ -188,60 +188,24 @@ export default function HomiWorkspace() {
           <MessageList messages={messages} isLoading={isLoading} userName={userName} onPrompt={enviar} />
         </div>
 
-        <div className="border-t border-border p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-3">
-          <div className="mx-auto w-full max-w-3xl space-y-2">
-
-            {anexos.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {anexos.map((a, i) => (
-                  <div key={i} className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2 py-1 text-xs">
-                    {a.tipo.startsWith("image/") ? <ImageIcon className="h-3.5 w-3.5 text-primary" /> : <FileText className="h-3.5 w-3.5 text-primary" />}
-                    <span className="max-w-[160px] truncate">{a.nome}</span>
-                    <button type="button" onClick={() => setAnexos(prev => prev.filter((_, j) => j !== i))} aria-label={`Remover ${a.nome}`}>
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex w-full items-end gap-2">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*,application/pdf"
-                multiple
-                className="hidden"
-                onChange={(e) => { const fs = Array.from(e.target.files ?? []); e.target.value = ""; anexar(fs); }}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 shrink-0"
-                onClick={() => fileRef.current?.click()}
-                disabled={isLoading || subindo}
-                aria-label="Anexar imagem ou PDF"
-              >
-                {subindo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
-              </Button>
-              <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
-                }}
-                placeholder={isMobile ? "Pergunte ou peça uma ação..." : "Pergunte, peça uma mensagem ou uma ação no CRM..."}
-                rows={1}
-                className="max-h-40 min-h-[44px] resize-none text-sm"
-              />
-              <Button onClick={() => enviar()} disabled={isLoading || (!input.trim() && anexos.length === 0)} size="icon" className="h-11 w-11 shrink-0">
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
+        <div className="border-t border-border/60 bg-background/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur sm:p-3">
+          <Composer
+            ref={textareaRef}
+            value={input}
+            onChange={setInput}
+            onSend={() => enviar()}
+            isLoading={isLoading}
+            subindo={subindo}
+            anexos={anexos}
+            onRemoveAnexo={(i) => setAnexos((prev) => prev.filter((_, j) => j !== i))}
+            onPickFiles={anexar}
+            isMobile={isMobile}
+            fileRef={fileRef}
+          />
         </div>
 
       </main>
+
 
       {/* Painel vivo — desktop */}
       <aside className="hidden w-72 shrink-0 border-l border-border bg-muted/20 xl:block">
