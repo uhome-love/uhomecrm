@@ -27,8 +27,56 @@ export default function HomiWorkspace() {
   const [input, setInput] = useState("");
   const [menuAberto, setMenuAberto] = useState(false);
   const [painelAberto, setPainelAberto] = useState(false);
+  const [anexos, setAnexos] = useState<HomiAnexo[]>([]);
+  const [subindo, setSubindo] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const loadedRef = useRef<string | null>(null);
+
+  const LIMITE_MB = 8;
+
+  const lerDataUrl = (f: File) =>
+    new Promise<string>((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(String(r.result));
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    });
+
+  // Anexa imagens/PDF: sobe pro storage (histórico) e guarda o base64 para esta pergunta.
+  const anexar = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setSubindo(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      const novos: HomiAnexo[] = [];
+      for (const f of Array.from(files).slice(0, 4)) {
+        if (f.size > LIMITE_MB * 1024 * 1024) {
+          toast.error(`${f.name} passa de ${LIMITE_MB}MB`);
+          continue;
+        }
+        const dataUrl = await lerDataUrl(f);
+        let url: string | undefined;
+        if (uid) {
+          const path = `${uid}/${crypto.randomUUID()}-${f.name.replace(/[^\w.\-]/g, "_")}`;
+          const { error } = await supabase.storage.from("homi-anexos").upload(path, f, { contentType: f.type });
+          if (!error) {
+            const { data: signed } = await supabase.storage.from("homi-anexos").createSignedUrl(path, 60 * 60 * 24 * 365);
+            url = signed?.signedUrl;
+          }
+        }
+        novos.push({ nome: f.name, tipo: f.type || "application/octet-stream", dataUrl, url });
+      }
+      if (novos.length) setAnexos((prev) => [...prev, ...novos]);
+    } catch (e) {
+      console.error("Anexo HOMI:", e);
+      toast.error("Não consegui ler o arquivo");
+    } finally {
+      setSubindo(false);
+    }
+  };
+
 
   // Restaura a thread da URL (recarregar /homi/c/:id volta a mesma conversa)
   useEffect(() => {
