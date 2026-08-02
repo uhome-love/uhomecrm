@@ -64,6 +64,18 @@ export default function HomiWorkspace() {
     sendMessage(t);
   };
 
+  // Prompt contextual vindo de outra página: /homi?p=...
+  const [searchParams, setSearchParams] = useSearchParams();
+  const promptRef = useRef<string | null>(null);
+  useEffect(() => {
+    const p = searchParams.get("p");
+    if (!p || promptRef.current === p) return;
+    promptRef.current = p;
+    setSearchParams({}, { replace: true });
+    sendMessage(p);
+  }, [searchParams, setSearchParams, sendMessage]);
+
+
   const novaConversa = () => {
     loadedRef.current = null;
     startNewConversation();
