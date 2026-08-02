@@ -179,16 +179,23 @@ export function RelatorioMetricasCard({ result }: { result: HomiResult }) {
       </div>
 
       {escopo !== "corretor" && corretores.length > 1 && (
-        <div className="h-32 rounded-lg border border-border/70 bg-card/60 p-1.5">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={corretores.slice(0, 6).map((c) => ({ nome: (c.nome || "—").split(" ")[0], VGV: c.vgv }))}>
-              <XAxis dataKey="nome" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v: any) => money(Number(v))} contentStyle={{ fontSize: 11 }} />
-              <Bar dataKey="VGV" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        corretores.some((c) => (c.vgv ?? 0) > 0) ? (
+          <div className="h-32 rounded-lg border border-border/70 bg-card/60 p-1.5">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={corretores.slice(0, 6).map((c) => ({ nome: (c.nome || "—").split(" ")[0], VGV: c.vgv }))}>
+                <XAxis dataKey="nome" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(v: any) => money(Number(v))} contentStyle={{ fontSize: 11 }} />
+                <Bar dataKey="VGV" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="rounded-lg border border-dashed border-border/70 bg-card/40 px-3 py-2.5 text-xs text-muted-foreground">
+            Sem VGV assinado no período — o gráfico por corretor aparece na primeira venda assinada.
+          </p>
+        )
       )}
+
 
     </HomiCard>
   );
