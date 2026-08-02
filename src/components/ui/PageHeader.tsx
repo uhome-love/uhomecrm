@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import HomiPageButton from "@/components/homi/HomiPageButton";
 
 interface PageHeaderProps {
   title: string;
