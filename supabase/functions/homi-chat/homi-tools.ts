@@ -356,6 +356,93 @@ function fmtBRL(v: number): string {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
 
+// ── Fase 3: períodos em BRT para o relatório de métricas ──
+function brtParts(d = new Date()) {
+  const s = d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const [y, m, day] = s.split("-").map(Number);
+  return { y, m, day, iso: s };
+}
+function ymd(y: number, m: number, d: number): string {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+function lastDay(y: number, m: number): number {
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+function periodoBRT(periodo: string): { start: string; end: string; label: string } {
+  const { y, m, day, iso } = brtParts();
+  if (periodo === "hoje") return { start: iso, end: iso, label: "hoje" };
+  if (periodo === "semana") {
+    const d = new Date(`${iso}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 6);
+    return { start: d.toISOString().slice(0, 10), end: iso, label: "últimos 7 dias" };
+  }
+  if (periodo === "mes_anterior") {
+    const py = m === 1 ? y - 1 : y;
+    const pm = m === 1 ? 12 : m - 1;
+    return { start: ymd(py, pm, 1), end: ymd(py, pm, lastDay(py, pm)), label: `${String(pm).padStart(2, "0")}/${py}` };
+  }
+  if (periodo === "ano") return { start: ymd(y, 1, 1), end: iso, label: `${y}` };
+  return { start: ymd(y, m, 1), end: ymd(y, m, day), label: `${String(m).padStart(2, "0")}/${y}` };
+}
+function periodoAnteriorBRT(periodo: string): { start: string; end: string } {
+  const cur = periodoBRT(periodo);
+  const s = new Date(`${cur.start}T12:00:00Z`);
+  const e = new Date(`${cur.end}T12:00:00Z`);
+  if (periodo === "mes_atual" || periodo === "mes_anterior") {
+    const y = s.getUTCFullYear();
+    const m = s.getUTCMonth() + 1;
+    const py = m === 1 ? y - 1 : y;
+    const pm = m === 1 ? 12 : m - 1;
+    return { start: ymd(py, pm, 1), end: ymd(py, pm, lastDay(py, pm)) };
+  }
+  const dias = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+  const pe = new Date(s.getTime() - 86400000);
+  const ps = new Date(pe.getTime() - (dias - 1) * 86400000);
+  return { start: ps.toISOString().slice(0, 10), end: pe.toISOString().slice(0, 10) };
+}
+async function resolverEscopoMetricas(userClient: any, uid: string): Promise<{ tipo: "global" | "gestor" | "corretor" }> {
+  try {
+    const { data } = await userClient.from("user_roles").select("role").eq("user_id", uid);
+    const roles = (data || []).map((r: any) => r.role);
+    if (roles.some((r: string) => ["admin", "diretor"].includes(r))) return { tipo: "global" };
+    if (roles.includes("gestor")) return { tipo: "gestor" };
+  } catch (e) {
+    console.error("[resolverEscopoMetricas]", e);
+  }
+  return { tipo: "corretor" };
+}
+function agregarMetricas(rows: any[]) {
+  const totais = {
+    leads_recebidos: 0,
+    visitas_agendadas: 0,
+    visitas_realizadas: 0,
+    visitas_no_show: 0,
+    vendas: 0,
+    vgv_assinado: 0,
+  };
+  for (const r of rows) {
+    totais.leads_recebidos += Number(r.leads_recebidos) || 0;
+    totais.visitas_agendadas += Number(r.visitas_agendadas) || 0;
+    totais.visitas_realizadas += Number(r.visitas_realizadas) || 0;
+    totais.visitas_no_show += Number(r.visitas_no_show) || 0;
+    totais.vendas += Number(r.vendas) || 0;
+    totais.vgv_assinado += Number(r.vgv_assinado) || 0;
+  }
+  const corretores = [...rows]
+    .map((r: any) => ({
+      nome: r.corretor_nome,
+      equipe: r.equipe_atual || r.equipe,
+      leads: Number(r.leads_recebidos) || 0,
+      visitas: Number(r.visitas_realizadas) || 0,
+      vendas: Number(r.vendas) || 0,
+      vgv: Number(r.vgv_assinado) || 0,
+    }))
+    .sort((a, b) => b.vgv - a.vgv || b.visitas - a.visitas);
+  return { totais, corretores };
+}
+
+
+
 // Contexto enxuto de um lead para os cards da fila de execução
 async function leadContextoCurto(userClient: any, leadIds: string[]) {
   const map = new Map<string, any>();
