@@ -206,7 +206,7 @@ export default function HomiWorkspace() {
                 accept="image/*,application/pdf"
                 multiple
                 className="hidden"
-                onChange={(e) => { anexar(e.target.files); e.target.value = ""; }}
+                onChange={(e) => { const fs = Array.from(e.target.files ?? []); e.target.value = ""; anexar(fs); }}
               />
               <Button
                 variant="ghost"
