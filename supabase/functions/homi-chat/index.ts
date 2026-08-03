@@ -39,11 +39,27 @@ serve(async (req) => {
     const knowledge = await loadEnterpriseKnowledge(supabase);
     const allEmpreendimentos = formatForList(knowledge);
 
-    // Build detailed knowledge for each empreendimento
-    const detailedKnowledge = knowledge
-      .filter(r => r.nome || r.codigo)
-      .map(r => formatForAssistant(knowledge, r.nome || r.codigo))
-      .join("\n\n---\n\n");
+    // ── Produto em foco (explícito, nunca inferido) ──
+    // Correspondência exata e case-insensitive contra nome OU código já carregados.
+    // Valor inválido = ausência de foco (sem erro, sem chute, sem log do valor).
+    const focoAlvo = typeof empreendimento === "string" ? empreendimento.trim().toLowerCase() : "";
+    const registroFoco = focoAlvo
+      ? knowledge.find((r) =>
+          (r.nome || "").trim().toLowerCase() === focoAlvo ||
+          (r.codigo || "").trim().toLowerCase() === focoAlvo
+        )
+      : undefined;
+    const empreendimentoValidado = registroFoco ? (registroFoco.nome || registroFoco.codigo) : null;
+    console.log("[homi-chat] produto em foco:", empreendimentoValidado ? "válido" : "ausente/inválido");
+
+    // Detalhe completo somente do produto em foco. Sem foco = sem dossiê.
+    const detailedKnowledge = empreendimentoValidado
+      ? formatForAssistant(knowledge, empreendimentoValidado)
+      : "";
+    const detalhesBlock = detailedKnowledge
+      ? `\n\nCONHECIMENTO DETALHADO DO EMPREENDIMENTO EM FOCO (${empreendimentoValidado}):\n${detailedKnowledge}`
+      : `\n\nNENHUM EMPREENDIMENTO EM FOCO: use apenas o resumo acima e a base de conhecimento. Não detalhe produto sem fonte; peça ao corretor qual empreendimento é o assunto quando a pergunta exigir detalhe.`;
+
 
     // ── RAG unificado (método, materiais, academia, scripts, empreendimentos, imóveis) ──
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content;
@@ -164,9 +180,8 @@ Se o corretor pedir ajuda, entregue: Mensagem pronta, ou Script de ligação, ou
 
 EMPREENDIMENTOS (RESUMO):
 ${allEmpreendimentos}
+${detalhesBlock}
 
-CONHECIMENTO DETALHADO DOS EMPREENDIMENTOS:
-${detailedKnowledge}
 
 Use somente os diferenciais documentados do empreendimento perguntado. Nunca transfira argumento ou diferencial de um produto para outro.
 
@@ -199,9 +214,12 @@ Você é o mesmo HOMI (mesmo conhecimento: Método Uhome, empreendimentos, imóv
 - Respostas curtas e decidíveis: 1 frase de leitura + no máximo 3 bullets. Relatório completo só se pedirem "aprofundar".`
       : "";
 
+    // customSystem também recebe identidade + governança N1/N2 (HOMI_IDENTITY),
+    // sem duplicar no caminho padrão (que já a contém em systemPrompt).
     const finalSystemPrompt = (customSystem
-      ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + "\n\nDETALHES:\n" + detailedKnowledge + ragContext
+      ? HOMI_IDENTITY + "\n\n" + customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + detalhesBlock + ragContext
       : systemPrompt) + roleBlock;
+
 
     // Regra final de confiabilidade, válida para prompt padrão e customSystem.
     const VERACIDADE_COMERCIAL_BLOCK = `
@@ -217,12 +235,13 @@ VERACIDADE COMERCIAL — REGRA DURA:
     let materiaisSuggestions: any[] = [];
     try {
       if (lastUserMsg) {
-        const searchQuery = [empreendimento, lastUserMsg].filter(Boolean).join(" | ");
+        const searchQuery = [empreendimentoValidado, lastUserMsg].filter(Boolean).join(" | ");
         materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
           limit: 4,
-          empreendimentoNome: empreendimento,
+          empreendimentoNome: empreendimentoValidado ?? undefined,
         });
       }
+
     } catch (e) {
       console.error("[homi-chat] materiais context skipped:", e);
     }

@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { PanelLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useHomi, type HomiAnexo } from "@/contexts/HomiContext";
@@ -14,7 +15,28 @@ import PainelVivo from "@/components/homi/workspace/PainelVivo";
 import MessageList from "@/components/homi/workspace/MessageList";
 import Composer from "@/components/homi/workspace/Composer";
 
+/** Sentinela do seletor: "nenhum produto em foco" (Select não aceita value=""). */
+const NENHUM_FOCO = "__nenhum__";
 
+/**
+ * Produtos que o backend reconhece como foco válido (registros de
+ * empreendimento_overrides). Nome fora desta lista é tratado como ausência
+ * de foco pelo backend, sem erro.
+ */
+const EMPREENDIMENTOS_FOCO = [
+  "Átrio - ABF",
+  "Casa Bastian",
+  "Casa Tua",
+  "Lake Eyre",
+  "Las Casas",
+  "Melnick Day Alto Padrão",
+  "Melnick Day Compactos",
+  "Melnick Day Médio Padrão",
+  "Open Bosque",
+  "Orygem",
+  "Shift",
+  "Vértice - Las Casas",
+];
 
 export default function HomiWorkspace() {
   const location = useLocation();
@@ -24,7 +46,9 @@ export default function HomiWorkspace() {
   const {
     messages, sendMessage, isLoading, conversationId,
     loadConversation, startNewConversation, userName,
+    empreendimentoFoco, setEmpreendimentoFoco,
   } = useHomi();
+
   const { threads, fetchMessages, update, remove, reload } = useHomiThreads();
 
   const isMobile = useIsMobile();
@@ -86,7 +110,6 @@ export default function HomiWorkspace() {
     }
   };
 
-
   // Restaura a thread da URL (recarregar /homi/c/:id volta a mesma conversa)
   useEffect(() => {
     if (!threadId) {
@@ -125,7 +148,6 @@ export default function HomiWorkspace() {
     setAnexos([]);
   };
 
-
   // Prompt contextual vindo de outra página: /homi?p=...
   const [searchParams, setSearchParams] = useSearchParams();
   const promptRef = useRef<string | null>(null);
@@ -139,9 +161,6 @@ export default function HomiWorkspace() {
       window.setTimeout(() => setSearchParams({}, { replace: true }), 300);
     }
   }, [searchParams, setSearchParams, sendMessage]);
-
-
-
 
   const novaConversa = () => {
     loadedRef.current = null;
@@ -180,6 +199,26 @@ export default function HomiWorkspace() {
           <h1 className="min-w-0 flex-1 truncate text-sm font-medium">
             {threads.find(t => t.id === threadId)?.titulo || "HOMI"}
           </h1>
+
+          {/* Produto em foco — seleção explícita e opcional, só nesta sessão */}
+          <Select
+            value={empreendimentoFoco ?? NENHUM_FOCO}
+            onValueChange={(v) => setEmpreendimentoFoco(v === NENHUM_FOCO ? null : v)}
+          >
+            <SelectTrigger
+              className="h-8 w-[9.5rem] shrink-0 text-xs sm:w-44"
+              aria-label="Empreendimento em foco"
+            >
+              <SelectValue placeholder="Nenhum produto" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NENHUM_FOCO}>Nenhum produto</SelectItem>
+              {EMPREENDIMENTOS_FOCO.map((e) => (
+                <SelectItem key={e} value={e}>{e}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground xl:hidden" onClick={() => setPainelAberto(true)}>
             <Sparkles className="h-4 w-4" /> <span className="hidden sm:inline">Painel</span>
           </Button>
@@ -206,7 +245,6 @@ export default function HomiWorkspace() {
         </div>
 
       </main>
-
 
       {/* Painel vivo — desktop */}
       <aside className="hidden w-72 shrink-0 border-l border-border bg-muted/20 xl:block">

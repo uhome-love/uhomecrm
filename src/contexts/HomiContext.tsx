@@ -15,7 +15,6 @@ export type HomiAnexo = { nome: string; tipo: string; url?: string; dataUrl?: st
 
 export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[]; anexos?: HomiAnexo[]; _composerLabel?: string };
 
-
 export type KnowledgeSourceInfo = {
   source: "db" | "fallback" | "partial";
   db: number;
@@ -72,6 +71,9 @@ interface HomiContextType {
   // Começa uma conversa nova (limpa mensagens e id)
   startNewConversation: () => void;
 
+  // Produto em foco (seleção explícita, só na sessão — não persiste)
+  empreendimentoFoco: string | null;
+  setEmpreendimentoFoco: (nome: string | null) => void;
 
   // Floating launcher visibility (hidden while a fullscreen drawer is open on mobile)
   launcherHidden: boolean;
@@ -101,6 +103,8 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [knowledgeSource, setKnowledgeSource] = useState<KnowledgeSourceInfo>(null);
+  // Produto em foco: começa vazio, vive só na sessão (não vai para o banco).
+  const [empreendimentoFoco, setEmpreendimentoFoco] = useState<string | null>(null);
   const pendingMessageRef = useRef<string | null>(null);
 
   const homiRole: HomiRole = isAdmin ? "ceo" : isCorretor ? "corretor" : "gestor";
@@ -161,7 +165,6 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     setMessages(prev => [...prev, { role: "assistant", content: "", actions: [action], _composerLabel: label } as Message]);
   }, []);
 
-
   // Save conversation
   const saveConversation = useCallback(async (msgs: Message[], convId: string | null) => {
     if (!user || msgs.length < 2) return convId;
@@ -217,7 +220,15 @@ export function HomiProvider({ children }: { children: ReactNode }) {
         const resp = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ messages: payloadMessages, enableTools: true, stream: false, perfil: homiRole }),
+          body: JSON.stringify({
+            messages: payloadMessages,
+            enableTools: true,
+            stream: false,
+            perfil: homiRole,
+            // Produto em foco explícito; o backend valida e ignora valor inválido.
+            empreendimento: empreendimentoFoco,
+          }),
+
         });
 
         if (!resp.ok) {
@@ -244,7 +255,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       }
       return;
     }
-  }, [messages, isLoading, homiRole, currentPage, userName, conversationId, saveConversation]);
+  }, [messages, isLoading, homiRole, currentPage, userName, conversationId, saveConversation, empreendimentoFoco]);
 
   // Handle pending message after panel opens
   useEffect(() => {
@@ -258,26 +269,26 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   // Sem briefing automático: o Homi abre apenas com a saudação.
   // O corretor pede o resumo do dia sob demanda (atalho "⏰ Atrasados").
 
-
   const clearMessages = useCallback(() => {
     setMessages([]);
     setConversationId(null);
     setKnowledgeSource(null);
+    setEmpreendimentoFoco(null);
   }, []);
 
   const loadConversation = useCallback((id: string, msgs: Message[]) => {
     setConversationId(id);
     setMessages(Array.isArray(msgs) ? msgs : []);
     setKnowledgeSource(null);
+    setEmpreendimentoFoco(null);
   }, []);
 
   const startNewConversation = useCallback(() => {
     setConversationId(null);
     setMessages([]);
     setKnowledgeSource(null);
+    setEmpreendimentoFoco(null);
   }, []);
-
-
 
   // Proactive alerts
   const addProactiveAlert = useCallback((alert: Omit<ProactiveAlert, "id" | "createdAt">) => {
@@ -306,6 +317,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       currentPage, homiRole, userName,
       knowledgeSource,
       conversationId, loadConversation, startNewConversation,
+      empreendimentoFoco, setEmpreendimentoFoco,
 
       launcherHidden, setLauncherHidden,
     }}>
@@ -335,6 +347,8 @@ const NOOP_CONTEXT: HomiContextType = {
   knowledgeSource: null,
   loadConversation: () => {},
   startNewConversation: () => {},
+  empreendimentoFoco: null,
+  setEmpreendimentoFoco: () => {},
 
   conversationId: null,
   launcherHidden: false,

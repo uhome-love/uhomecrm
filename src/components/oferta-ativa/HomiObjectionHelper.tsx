@@ -53,7 +53,10 @@ export default function HomiObjectionHelper({ leadNome, leadEmpreendimento, sele
           body: JSON.stringify({
             messages: [{ role: "user", content: prompt }],
             mode: "arena_objection",
+            // Produto em foco estruturado (o backend valida; inválido = sem foco).
+            empreendimento: selectedEmp,
           }),
+
         }
       );
 
