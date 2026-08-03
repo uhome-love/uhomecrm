@@ -15,7 +15,7 @@ export const HOMI_REASONING_MODEL = "google/gemini-3.1-pro-preview";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 
-import { classificarChunk, sanitizeC4 } from "./homi-fontes.ts";
+import { classificarChunk, sanitizeC4, sanitizeMetadado, METADADO_NEUTRO } from "./homi-fontes.ts";
 
 export type HomiSourceType =
   | "documento"
@@ -41,6 +41,12 @@ export interface HomiChunk {
   source_type: string;
   source_url: string | null;
   similarity: number;
+  /**
+   * Metadado do chunk retornado pela RPC `buscar_conhecimento`.
+   * Usado apenas para ler `empreendimento` na classificação de fonte —
+   * chunk vinculado a produto é C4 mesmo com source_type="documento".
+   */
+  metadata?: Record<string, unknown> | null;
 }
 
 /** Gera embeddings via Lovable AI Gateway. Lança erro em falha terminal. */
