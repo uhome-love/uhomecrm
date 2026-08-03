@@ -146,13 +146,23 @@ export function TabProvider({ children }: { children: ReactNode }) {
     const existingIdx = currentTabs.findIndex((t) => t.id === resolved.key);
 
     if (existingIdx >= 0) {
-      // Tab already open — activate it
-      if (activeRef.current !== resolved.key) {
+      // Tab already open — sync stored path (query string may have changed)
+      const existing = currentTabs[existingIdx];
+      const pathChanged = existing.path !== path;
+      const tabChanged = activeRef.current !== resolved.key;
+
+      if (pathChanged) {
+        setTabs(currentTabs.map((t) => (t.id === resolved.key ? { ...t, path } : t)));
+      }
+      if (tabChanged) {
         setActiveTabId(resolved.key);
-        if (!skipNav) navigateRef.current(path);
+      }
+      if (!skipNav && (pathChanged || tabChanged)) {
+        navigateRef.current(path);
       }
       return;
     }
+
 
     // Build new tab
     const newTab: Tab = {
