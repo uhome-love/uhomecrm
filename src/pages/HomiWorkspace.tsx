@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useHomi, type HomiAnexo } from "@/contexts/HomiContext";
 import { useHomiThreads } from "@/hooks/useHomiThreads";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { HOMI_EMPREENDIMENTOS_FOCO } from "@/lib/empreendimentos";
 
 import ThreadSidebar from "@/components/homi/workspace/ThreadSidebar";
 import PainelVivo from "@/components/homi/workspace/PainelVivo";
@@ -194,7 +195,7 @@ export default function HomiWorkspace() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NENHUM_FOCO}>Nenhum produto</SelectItem>
-              {EMPREENDIMENTOS_FOCO.map((e) => (
+              {HOMI_EMPREENDIMENTOS_FOCO.map((e) => (
                 <SelectItem key={e} value={e}>{e}</SelectItem>
               ))}
             </SelectContent>
