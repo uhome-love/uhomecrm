@@ -47,12 +47,8 @@ export default function AdminPanel() {
   const [editJetimob, setEditJetimob] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // 360dialog config
-  const [dialogApiKey, setDialogApiKey] = useState("");
-  const [dialogSaved, setDialogSaved] = useState(false);
-  const [dialogTesting, setDialogTesting] = useState(false);
-  const [dialogConnected, setDialogConnected] = useState<boolean | null>(null);
-  const [savingKey, setSavingKey] = useState(false);
+
+
 
   // Typesense reindex
   const [reindexing, setReindexing] = useState(false);
