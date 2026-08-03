@@ -3,6 +3,7 @@
  * para HOMI citar materiais reais da base de conhecimento Uhome.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeC4 } from "./homi-fontes.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -126,22 +127,40 @@ export async function searchMateriaisForHomi(
 
 /**
  * Formata o bloco de prompt que o HOMI deve receber para citar materiais.
+ *
+ * Contrato de fontes: materiais são C4 (apoio). O metadado útil (título,
+ * empreendimento, categoria, tags) é preservado para que o HOMI consiga
+ * indicar o material certo, mas o TEXTO volátil do resumo/snippet é removido
+ * — material nunca vira fonte de preço, condição, unidade ou prazo.
  */
 export function formatMateriaisBlock(items: MaterialSuggestion[]): string {
   if (items.length === 0) return "";
+
+  let resumosOmitidos = 0;
+
   const lines = items.map((m, i) => {
     const emp = m.empreendimento ? ` — ${m.empreendimento}` : "";
     const cat = m.categoria ? ` [${m.categoria}]` : "";
-    const resumo = m.resumo_ia ? m.resumo_ia.slice(0, 180) : m.snippet.slice(0, 180);
+    const bruto = m.resumo_ia ? m.resumo_ia : m.snippet;
+    const limpo = sanitizeC4(bruto).texto.slice(0, 180);
+    if (!limpo && bruto) resumosOmitidos++;
+    const resumo = limpo || "(resumo omitido: continha dado sujeito a mudança — confirmar na fonte oficial vigente)";
     const tags = m.tags && m.tags.length > 0 ? ` #${m.tags.slice(0, 4).join(" #")}` : "";
     return `${i + 1}. "${m.titulo}"${emp}${cat}\n   Resumo: ${resumo}${tags}`;
   }).join("\n");
 
+  if (resumosOmitidos > 0) {
+    // Somente contagem — nunca texto, valor, nome ou PII.
+    console.log("[homi-fontes] materiais com resumo omitido:", resumosOmitidos);
+  }
+
   return `\n\n═══════════════════════════════════════
-📚 MATERIAIS UHOME RELEVANTES (base de conhecimento)
+📚 MATERIAIS UHOME RELEVANTES (C4 — apoio, não é fonte de dado volátil)
 ═══════════════════════════════════════
 Estes materiais da nossa base podem apoiar a resposta. Se algum fizer sentido para o momento do lead, MENCIONE explicitamente ("temos um material sobre X que ajuda") e sugira ao corretor enviar via "Gerar link comercial" no Hub de Materiais. Não invente materiais fora desta lista.
+Material, anúncio, book ou tabela listados aqui NÃO confirmam preço, condição, unidade, disponibilidade ou prazo: indique o material e oriente conferir a fonte oficial vigente.
 
 ${lines}
 ═══════════════════════════════════════`;
 }
+

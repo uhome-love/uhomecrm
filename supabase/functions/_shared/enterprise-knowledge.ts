@@ -14,6 +14,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { composeC2, semFichaPermanente } from "./homi-fontes.ts";
 
 export interface EnterpriseRecord {
   codigo: string;
@@ -213,8 +214,13 @@ export async function loadEnterpriseKnowledge(
 }
 
 /**
- * Format a single empreendimento for detailed AI assistant prompts.
- * Uses DB data when available, falls back to hardcoded.
+ * Format a single empreendimento for detailed AI assistant prompts (bloco C2).
+ *
+ * Contrato de fontes (ver _shared/homi-fontes.ts): composto SOMENTE por
+ * allowlist estrutural de campos permanentes. Campos voláteis (valor_min,
+ * valor_max) e free-text legado misto (descricao_completa, argumentos_venda,
+ * estrategia_conversao, objecoes) NÃO entram no prompt até curadoria humana.
+ * Nada é apagado do banco — apenas deixa de ser injetado.
  */
 export function formatForAssistant(
   records: EnterpriseRecord[],
@@ -226,37 +232,26 @@ export function formatForAssistant(
     r.codigo.toLowerCase() === empreendimentoName.toLowerCase()
   );
 
-  // If DB has descricao_completa, use it (canonical source)
-  if (record?.descricao_completa) {
-    return record.descricao_completa;
+  const nomeExibicao = record?.nome || record?.codigo || empreendimentoName;
+  const c2 = composeC2(record as unknown as Record<string, unknown> | undefined, nomeExibicao);
+
+  if (c2.omitidos > 0) {
+    // Somente contagem — nunca texto, valor ou nome.
+    console.log("[homi-fontes] C2 campos omitidos por volátil:", c2.omitidos);
   }
 
-  // Build from structured DB fields if available
-  if (record && (record.descricao || record.diferenciais?.length)) {
-    let text = `EMPREENDIMENTO: ${record.nome || record.codigo}`;
-    if (record.bairro) text += `\nLOCALIZAÇÃO: ${record.bairro} – Porto Alegre/RS`;
-    if (record.descricao) text += `\nCONCEITO: ${record.descricao}`;
-    if (record.tipologias) text += `\nTIPOLOGIAS: ${JSON.stringify(record.tipologias)}`;
-    if (record.perfil_cliente) text += `\nPERFIL DE CLIENTE IDEAL: ${record.perfil_cliente}`;
-    if (record.diferenciais?.length) text += `\nDIFERENCIAIS: ${record.diferenciais.join(", ")}`;
-    if (record.objecoes?.length) {
-      text += "\nOBJEÇÕES E RESPOSTAS:";
-      record.objecoes.forEach(o => {
-        text += `\n- "${o.objecao}" → ${o.resposta}`;
-      });
-    }
-    if (record.argumentos_venda) text += `\nARGUMENTOS DE VENDA: ${record.argumentos_venda}`;
-    if (record.estrategia_conversao) text += `\nESTRATÉGIA DE CONVERSÃO: ${record.estrategia_conversao}`;
-    return text;
-  }
+  if (c2.texto) return c2.texto;
 
-  // Fallback to hardcoded detailed knowledge
-  return FALLBACK_KNOWLEDGE[empreendimentoName]
-    || `Empreendimento da UHome: ${empreendimentoName}. Use técnicas de qualificação e convite para visita.`;
+  // Sem C2 utilizável: NÃO cair no FALLBACK_KNOWLEDGE hardcoded, que carrega
+  // metragem comercial, faixa de preço e prazo antigos.
+  return semFichaPermanente(nomeExibicao);
 }
 
 /**
- * Format a single empreendimento as a brief description (for homi-chat style).
+ * Format a single empreendimento as a brief description.
+ *
+ * NÃO é usada na composição de prompt desde o contrato de fontes: mantida
+ * para compatibilidade de API. Ver formatForList para o índice do prompt.
  */
 export function formatBrief(
   records: EnterpriseRecord[],
@@ -280,8 +275,11 @@ export function formatBrief(
 }
 
 /**
- * Format all empreendimentos as a bullet list for system prompts.
- * Uses brief format for each.
+ * Índice de empreendimentos para system prompts.
+ *
+ * Contrato de fontes: SOMENTE nome + bairro. Sem brief comercial, sem
+ * FALLBACK_BRIEF, sem preço, metragem comercial ou prazo. O detalhe vive no
+ * bloco C2 do produto em foco, não no índice.
  */
 export function formatForList(records: EnterpriseRecord[]): string {
   // Merge DB records with fallback names to ensure completeness
@@ -289,10 +287,20 @@ export function formatForList(records: EnterpriseRecord[]): string {
   records.forEach(r => allNames.add(r.nome || r.codigo));
   Object.keys(FALLBACK_BRIEF).forEach(name => allNames.add(name));
 
+  const bairroPorNome = new Map<string, string>();
+  records.forEach(r => {
+    const nome = r.nome || r.codigo;
+    if (nome && r.bairro) bairroPorNome.set(nome, r.bairro);
+  });
+
   return Array.from(allNames)
-    .map(name => `• ${name}: ${formatBrief(records, name)}`)
+    .map(name => {
+      const bairro = bairroPorNome.get(name);
+      return bairro ? `• ${name} — ${bairro}` : `• ${name}`;
+    })
     .join("\n");
 }
+
 
 /**
  * Knowledge source report for admin debug/validation.
