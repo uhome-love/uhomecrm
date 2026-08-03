@@ -761,6 +761,12 @@ export default function CeoDashboard() {
           </CardHeader>
 
           <CardContent className="space-y-4">
+            <StateWrapper
+              error={errors.negocios}
+              onRetry={reload}
+              errorTitle="Falha ao carregar o funil de negócios"
+              className="space-y-4"
+            >
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
               {negFunnelOrder.map((fase, idx) => {
                 const data = negocioFases.find((f: any) => f.fase === fase);
