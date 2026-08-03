@@ -961,6 +961,13 @@ export default function CeoDashboard() {
               <CardTitle className="text-xs font-semibold">Top Corretores — Oferta Ativa</CardTitle>
             </CardHeader>
             <CardContent>
+              <StateWrapper
+                error={errors.teams}
+                empty={corretoresRank.length === 0}
+                emptyTitle="Sem corretores no período"
+                onRetry={reload}
+                errorTitle="Falha ao carregar o ranking de corretores"
+              >
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
