@@ -68,8 +68,9 @@ export function V4PanelVisitas({ gestorId }: Props) {
   const { data, isLoading } = useDashboardGerenteV4Dia(gestorId, range);
   const visitas = data?.visitas ?? [];
 
-  const confirmadas = visitas.filter((v) => v.status === "confirmada").length;
-  const pendentes = visitas.filter((v) => v.status === "pendente" || v.status === "reagendada").length;
+  const marcadas = visitas.filter((v) => v.status === "marcada" || v.status === "confirmada").length;
+  const realizadas = visitas.filter((v) => v.status === "realizada").length;
+  const noShow = visitas.filter((v) => v.status === "no_show").length;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col">
