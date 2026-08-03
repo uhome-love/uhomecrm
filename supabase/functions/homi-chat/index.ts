@@ -39,11 +39,27 @@ serve(async (req) => {
     const knowledge = await loadEnterpriseKnowledge(supabase);
     const allEmpreendimentos = formatForList(knowledge);
 
-    // Build detailed knowledge for each empreendimento
-    const detailedKnowledge = knowledge
-      .filter(r => r.nome || r.codigo)
-      .map(r => formatForAssistant(knowledge, r.nome || r.codigo))
-      .join("\n\n---\n\n");
+    // ── Produto em foco (explícito, nunca inferido) ──
+    // Correspondência exata e case-insensitive contra nome OU código já carregados.
+    // Valor inválido = ausência de foco (sem erro, sem chute, sem log do valor).
+    const focoAlvo = typeof empreendimento === "string" ? empreendimento.trim().toLowerCase() : "";
+    const registroFoco = focoAlvo
+      ? knowledge.find((r) =>
+          (r.nome || "").trim().toLowerCase() === focoAlvo ||
+          (r.codigo || "").trim().toLowerCase() === focoAlvo
+        )
+      : undefined;
+    const empreendimentoValidado = registroFoco ? (registroFoco.nome || registroFoco.codigo) : null;
+    console.log("[homi-chat] produto em foco:", empreendimentoValidado ? "válido" : "ausente/inválido");
+
+    // Detalhe completo somente do produto em foco. Sem foco = sem dossiê.
+    const detailedKnowledge = empreendimentoValidado
+      ? formatForAssistant(knowledge, empreendimentoValidado)
+      : "";
+    const detalhesBlock = detailedKnowledge
+      ? `\n\nCONHECIMENTO DETALHADO DO EMPREENDIMENTO EM FOCO (${empreendimentoValidado}):\n${detailedKnowledge}`
+      : `\n\nNENHUM EMPREENDIMENTO EM FOCO: use apenas o resumo acima e a base de conhecimento. Não detalhe produto sem fonte; peça ao corretor qual empreendimento é o assunto quando a pergunta exigir detalhe.`;
+
 
     // ── RAG unificado (método, materiais, academia, scripts, empreendimentos, imóveis) ──
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content;
