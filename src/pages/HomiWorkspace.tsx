@@ -50,7 +50,9 @@ export default function HomiWorkspace() {
   const {
     messages, sendMessage, isLoading, conversationId,
     loadConversation, startNewConversation, userName,
+    empreendimentoFoco, setEmpreendimentoFoco,
   } = useHomi();
+
   const { threads, fetchMessages, update, remove, reload } = useHomiThreads();
 
   const isMobile = useIsMobile();
