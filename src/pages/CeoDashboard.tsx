@@ -175,6 +175,7 @@ export default function CeoDashboard() {
     teams, corretoresRank, origens, leadsPorEmpreendimento, leadsPorCorretor, visitasPorEmp,
     totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, agendaVisitas, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
+    error: dashError, partial, partialSources, errors,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
 
   /** Variação % vs. período anterior (null quando não há base de comparação). */
