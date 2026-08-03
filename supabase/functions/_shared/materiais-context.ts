@@ -3,7 +3,7 @@
  * para HOMI citar materiais reais da base de conhecimento Uhome.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sanitizeC4 } from "./homi-fontes.ts";
+import { sanitizeC4, sanitizeMetadado, METADADO_NEUTRO } from "./homi-fontes.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -128,37 +128,59 @@ export async function searchMateriaisForHomi(
 /**
  * Formata o bloco de prompt que o HOMI deve receber para citar materiais.
  *
- * Contrato de fontes: materiais são C4 (apoio). O metadado útil (título,
- * empreendimento, categoria, tags) é preservado para que o HOMI consiga
- * indicar o material certo, mas o TEXTO volátil do resumo/snippet é removido
- * — material nunca vira fonte de preço, condição, unidade ou prazo.
+ * Contrato de fontes: materiais são C4 (apoio). O metadado de NAVEGAÇÃO
+ * (empreendimento canônico, link) é preservado para o HOMI indicar o material
+ * certo — mas título, categoria e tags também passam pelo contrato central,
+ * porque um título como "Tabela — Unidade 302 por R$ 499.000" transmite
+ * afirmação volátil mesmo com o resumo limpo. Metadado suprimido vira rótulo
+ * neutro, nunca conteúdo inventado.
  */
 export function formatMateriaisBlock(items: MaterialSuggestion[]): string {
   if (items.length === 0) return "";
 
   let resumosOmitidos = 0;
+  let metadadosNeutralizados = 0;
 
   const lines = items.map((m, i) => {
+    // Empreendimento canônico pode permanecer (é identificador, não afirmação).
     const emp = m.empreendimento ? ` — ${m.empreendimento}` : "";
-    const cat = m.categoria ? ` [${m.categoria}]` : "";
+
+    const tituloLimpo = sanitizeMetadado(m.titulo, METADADO_NEUTRO) ?? METADADO_NEUTRO;
+    if (m.titulo && tituloLimpo !== m.titulo) metadadosNeutralizados++;
+
+    // Categoria e tags são descartadas quando voláteis (fallback null): não há
+    // rótulo neutro útil para elas e inventar um seria pior que omitir.
+    const catLimpa = sanitizeMetadado(m.categoria, null);
+    if (m.categoria && !catLimpa) metadadosNeutralizados++;
+    const cat = catLimpa ? ` [${catLimpa}]` : "";
+
     const bruto = m.resumo_ia ? m.resumo_ia : m.snippet;
     const limpo = sanitizeC4(bruto).texto.slice(0, 180);
     if (!limpo && bruto) resumosOmitidos++;
     const resumo = limpo || "(resumo omitido: continha dado sujeito a mudança — confirmar na fonte oficial vigente)";
-    const tags = m.tags && m.tags.length > 0 ? ` #${m.tags.slice(0, 4).join(" #")}` : "";
-    return `${i + 1}. "${m.titulo}"${emp}${cat}\n   Resumo: ${resumo}${tags}`;
+
+    const tagsLimpas = (m.tags ?? [])
+      .map((t) => sanitizeMetadado(t, null))
+      .filter((t): t is string => !!t);
+    if ((m.tags?.length ?? 0) > tagsLimpas.length) metadadosNeutralizados++;
+    const tags = tagsLimpas.length > 0 ? ` #${tagsLimpas.slice(0, 4).join(" #")}` : "";
+
+    return `${i + 1}. "${tituloLimpo}"${emp}${cat}\n   Resumo: ${resumo}${tags}`;
   }).join("\n");
 
-  if (resumosOmitidos > 0) {
-    // Somente contagem — nunca texto, valor, nome ou PII.
-    console.log("[homi-fontes] materiais com resumo omitido:", resumosOmitidos);
+  if (resumosOmitidos > 0 || metadadosNeutralizados > 0) {
+    // Somente contagens — nunca texto, valor, nome ou PII.
+    console.log(
+      "[homi-fontes] materiais com resumo omitido:", resumosOmitidos,
+      "metadados neutralizados:", metadadosNeutralizados,
+    );
   }
 
   return `\n\n═══════════════════════════════════════
 📚 MATERIAIS UHOME RELEVANTES (C4 — apoio, não é fonte de dado volátil)
 ═══════════════════════════════════════
 Estes materiais da nossa base podem apoiar a resposta. Se algum fizer sentido para o momento do lead, MENCIONE explicitamente ("temos um material sobre X que ajuda") e sugira ao corretor enviar via "Gerar link comercial" no Hub de Materiais. Não invente materiais fora desta lista.
-Material, anúncio, book ou tabela listados aqui NÃO confirmam preço, condição, unidade, disponibilidade ou prazo: indique o material e oriente conferir a fonte oficial vigente.
+Material, anúncio, book ou tabela listados aqui NÃO confirmam preço, condição, unidade, disponibilidade ou prazo: indique o material e oriente conferir a fonte oficial vigente. O link é apenas referência de onde o material está, não confirmação de que ele está atual.
 
 ${lines}
 ═══════════════════════════════════════`;
