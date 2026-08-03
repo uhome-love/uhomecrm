@@ -21,7 +21,10 @@ const TONE_BORDER: Record<StatTone, string> = {
 
 interface StatCardProps {
   label: string;
-  value: string | number;
+  /** Aceita nó (ex.: <Skeleton/>) para estados de carregamento. */
+  value: ReactNode;
+  /** Tooltip nativo opcional. */
+  title?: string;
   sub?: ReactNode;
   delta?: number;
   tone?: StatTone;
