@@ -260,7 +260,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       }
       return;
     }
-  }, [messages, isLoading, homiRole, currentPage, userName, conversationId, saveConversation]);
+  }, [messages, isLoading, homiRole, currentPage, userName, conversationId, saveConversation, empreendimentoFoco]);
 
   // Handle pending message after panel opens
   useEffect(() => {
