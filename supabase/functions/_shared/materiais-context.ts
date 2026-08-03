@@ -3,7 +3,7 @@
  * para HOMI citar materiais reais da base de conhecimento Uhome.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sanitizeC4 } from "./homi-fontes.ts";
+import { sanitizeC4, sanitizeMetadado, METADADO_NEUTRO } from "./homi-fontes.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -180,7 +180,7 @@ export function formatMateriaisBlock(items: MaterialSuggestion[]): string {
 📚 MATERIAIS UHOME RELEVANTES (C4 — apoio, não é fonte de dado volátil)
 ═══════════════════════════════════════
 Estes materiais da nossa base podem apoiar a resposta. Se algum fizer sentido para o momento do lead, MENCIONE explicitamente ("temos um material sobre X que ajuda") e sugira ao corretor enviar via "Gerar link comercial" no Hub de Materiais. Não invente materiais fora desta lista.
-Material, anúncio, book ou tabela listados aqui NÃO confirmam preço, condição, unidade, disponibilidade ou prazo: indique o material e oriente conferir a fonte oficial vigente.
+Material, anúncio, book ou tabela listados aqui NÃO confirmam preço, condição, unidade, disponibilidade ou prazo: indique o material e oriente conferir a fonte oficial vigente. O link é apenas referência de onde o material está, não confirmação de que ele está atual.
 
 ${lines}
 ═══════════════════════════════════════`;
