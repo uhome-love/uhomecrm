@@ -1,223 +1,300 @@
-# Superinteligência HOMI — plano mestre (somente leitura e planejamento)
+# Superinteligência HOMI — Plano Mestre (revisão consolidada)
 
-Commit auditado: `61788d629be528e033dd392fecbca51d6377ff49` (main local confirmado).
+Somente planejamento. Nada implementado, nada deployado, nenhum dado alterado.
+Commit de referência: `61788d629be528e033dd392fecbca51d6377ff49`.
 
----
-
-## A. Fatos confirmados no código e no banco
-
-Código (SHA acima):
-
-1. `supabase/functions/homi-chat/index.ts` (433 linhas) monta o prompt nesta ordem: `HOMI_IDENTITY` → bloco de papel comercial → `EMPREENDIMENTOS (RESUMO)` (`formatForList`) → `CONHECIMENTO DETALHADO DOS EMPREENDIMENTOS` (`detailedKnowledge`, todos os empreendimentos) → `ragContext` → `roleBlock` → `materiaisBlock` → `VERACIDADE_COMERCIAL_BLOCK` (linhas 207-214, último bloco).
-2. A A2 de contexto conversacional está no código (linhas 51-88): `CONT_MAX_CHARS = 60`, conectores fortes/ambíguos, `TEMA_NOVO`, query composta `"Pergunta atual: ... Contexto anterior: ..."`.
-3. A busca RAG usa `limit: 10`, `threshold: 0.3`, `empreendimento: null` (linhas 91-95) — nunca filtra por produto.
-4. `_shared/homi-brain.ts`: embeddings `openai/text-embedding-3-small` (1536 dims) via Lovable AI Gateway; chat `google/gemini-3.6-flash`. `formatKnowledgeBlock` rotula **todo** o bloco recuperado como "fonte oficial — use como verdade antes do seu conhecimento geral", sem distinguir autoridade por fonte, prioridade ou validade.
-5. `_shared/enterprise-knowledge.ts`: `loadEnterpriseKnowledge` lê `empreendimento_overrides` (cache 5 min) e `formatForAssistant` devolve `descricao_completa` inteira quando existe — inclusive preço e condição de pagamento. Há ainda um `FALLBACK_KNOWLEDGE` hardcoded no arquivo (Casa Tua, Shift, Casa Bastian etc.) com afirmações como "alta demanda locação", "alta liquidez", "forte valorização".
-6. `_shared/materiais-context.ts` usa outro modelo de embedding (`google/gemini-embedding-001`) — segundo espaço vetorial, independente do RAG principal.
-7. Chamadores do `homi-chat` no frontend: `src/contexts/HomiContext.tsx`, `src/components/homi/HomiChat.tsx`, `src/components/oferta-ativa/HomiObjectionHelper.tsx`.
-
-Banco (SELECT técnico, sem PII):
-
-8. `public.buscar_conhecimento` ordena `ORDER BY hd.priority DESC, similarity DESC LIMIT match_count` e filtra `status IN ('indexed','ready')`. Confirmado.
-9. Distribuição de chunks: prioridade 10 = 107 chunks ("Método Uhome — Documento de Inteligência para IA (v1.0)"); prioridade 9 = 40 chunks ("Método Uhome — Casa Tua"); prioridade 7 = 69 chunks de empreendimento; prioridade 6 = 22 de Academia; prioridade 5 = 189 chunks de 3 documentos "de apoio" + 2 de script; prioridade 4 = 42 materiais; prioridade 3 = 177 imóveis; prioridade 0 = 47 chunks do Método v1.1 antigo.
-10. `empreendimento_overrides` tem 12 linhas, 11 com `descricao_completa` (10.813 caracteres somados) e 3.483 caracteres de `argumentos_venda`. Tudo isso é injetado em **toda** requisição via `detailedKnowledge`.
-11. Casa Tua em `empreendimento_overrides` contém, hoje: `argumentos_venda` com "Alto potencial de valorização da região"; `diferenciais` com "150 a 173 m²"; `descricao_completa` com "99 m² a 176 m²" e "valores entre R$ 480 mil e R$ 750 mil"; `valor_min = 499000` e `valor_max = 700000`; `perfil_cliente` = famílias saindo de apartamento (moradia).
+Convenção usada em todo o documento:
+- **[FATO]** — verificado nesta auditoria, no código ou no banco.
+- **[HIPÓTESE]** — inferência plausível, ainda não demonstrada.
+- **[RECOMENDAÇÃO]** — o que proponho fazer.
+- **[DECISÃO LUCAS]** — não avança sem sua aprovação.
+- **não confirmado** — não há fonte suficiente; fica assim escrito.
 
 ---
 
-## B. Divergências entre fontes, código e dados
+## 1. Resumo executivo (para decisor não técnico)
 
-| # | Divergência | Onde | Efeito |
-|---|---|---|---|
-| B1 | Método Casa Tua (prioridade 9) diz "não é produto de investidor"; `argumentos_venda` do override diz "alto potencial de valorização" | `homi_documents` × `empreendimento_overrides` | HOMI vende valorização em produto de moradia |
-| B2 | Metragem 150-173 m² (diferenciais) × 99-176 m² (descricao_completa) | mesma linha do override | HOMI dá metragem errada |
-| B3 | Preço R$ 480-750 mil (texto) × 499.000-700.000 (colunas) | mesma linha do override | Preço volátil e divergente no prompt permanente |
-| B4 | Academia ("localização que só valoriza") e material Casa Tua ("quando aparece, vai rápido") competem com o Método | RAG prioridade 6 e 4 | Origem das afirmações de demanda/escassez |
-| B5 | `FALLBACK_KNOWLEDGE` hardcoded no código afirma liquidez/valorização | `enterprise-knowledge.ts` | Fonte não governada, fora do RAG e fora do banco |
-| B6 | 189 chunks "de apoio" e 47 chunks do Método v1.1 antigo continuam `indexed` | `homi_documents` | Método antigo ainda compete |
-| B7 | Dois espaços vetoriais (OpenAI 1536 × Gemini) | brain × materiais-context | Custo dobrado por turno e recuperação inconsistente |
+**O problema.** O HOMI às vezes afirma coisas comerciais que ninguém documentou — por exemplo, valorização de um produto de moradia. A causa não é o modelo de IA: é a forma como o contexto é montado antes de o modelo responder. Hoje o HOMI recebe, em toda pergunta, um pacote grande com todos os empreendimentos misturados, e a busca no acervo tende a priorizar o Método geral acima do módulo específico do produto. O resultado é mistura de produtos e afirmação sem fonte.
+
+**A saída.** Não é reconstruir nada. É organizar a hierarquia de fontes, restringir o contexto ao produto em questão e tirar dado volátil (preço, metragem, condição) do "pacote fixo", entregando-o só quando pedido e com aviso de confirmação.
+
+**Primeira rodada recomendada.** Uma etapa **somente leitura**: especificar e validar qual é a fonte canônica do Casa Tua, apresentando os conflitos lado a lado para você decidir. Nenhuma edição de banco, nenhuma escolha comercial feita por mim.
 
 ---
 
-## C. Arquitetura atual (texto)
+## 2. Fatos confirmados nesta auditoria
+
+Código (commit acima):
+
+- **[FATO C1]** `supabase/functions/homi-chat/index.ts` (433 linhas) monta o prompt nesta ordem: identidade → papel comercial → resumo de empreendimentos (`formatForList`) → conhecimento detalhado de empreendimentos (`formatForAssistant`) → bloco RAG → papel → materiais → bloco "VERACIDADE COMERCIAL" (linhas 207-214, último).
+- **[FATO C2]** A regra A2 de contexto conversacional está presente (linhas 51-88): teto de 60 caracteres, conectores fortes/ambíguos, lista de tema novo, query composta iniciada por "Pergunta atual:".
+- **[FATO C3]** A busca RAG é chamada com `threshold: 0.3`, `limit: 10` e `empreendimento: null` (linhas 91-95) — ou seja, hoje nunca restringe por produto.
+- **[FATO C4]** `_shared/homi-brain.ts` usa embedding `openai/text-embedding-3-small` (1536 dimensões) e chat `google/gemini-3.6-flash`; `formatKnowledgeBlock` rotula todo o bloco recuperado como fonte oficial a ser usada como verdade, sem distinguir autoridade entre método, material, academia e script.
+- **[FATO C5]** `_shared/enterprise-knowledge.ts` carrega `empreendimento_overrides` (cache de 5 minutos) e, quando existe `descricao_completa`, devolve o texto inteiro — inclusive preço e condição.
+- **[FATO C6]** Existe no mesmo arquivo um `FALLBACK_KNOWLEDGE` fixo no código, com afirmações do tipo liquidez/valorização para alguns produtos.
+- **[FATO C7]** `_shared/materiais-context.ts` usa outro modelo de embedding (`google/gemini-embedding-001`), separado do usado no RAG principal.
+- **[FATO C8]** Chamam `homi-chat` no frontend: `src/contexts/HomiContext.tsx`, `src/components/homi/HomiChat.tsx`, `src/components/oferta-ativa/HomiObjectionHelper.tsx`.
+
+Banco (consultas técnicas, sem PII):
+
+- **[FATO B1]** `public.buscar_conhecimento` ordena por `priority DESC, similarity DESC` e corta em `match_count`; filtra documentos com status `indexed`/`ready`.
+- **[FATO B2]** Assinatura real da RPC, confirmada agora: `(query_embedding vector, match_threshold double precision, match_count integer, filter_empreendimento text, filter_source_types text[])`. Portanto **os filtros por empreendimento e por tipo de fonte já existem** e hoje não são usados pelo `homi-chat`.
+- **[FATO B3]** Distribuição de chunks por prioridade: 10 → 107 (Método Uhome v1.0); 9 → 40 (Método Casa Tua); 7 → 69 (empreendimentos); 6 → 22 (Academia); 5 → 189 (3 documentos de apoio + scripts); 4 → 42 (materiais); 3 → 177 (imóveis); 0 → 47 (Método v1.1 antigo).
+- **[FATO B4]** `empreendimento_overrides` tem 12 linhas, 11 com `descricao_completa`; somadas, essas descrições e os argumentos de venda formam vários milhares de caracteres.
+- **[FATO B5]** A linha do Casa Tua contém simultaneamente: "Alto potencial de valorização da região" em `argumentos_venda`; "150 a 173 m²" em `diferenciais`; "99 m² a 176 m²" e "entre R$ 480 mil e R$ 750 mil" em `descricao_completa`; `valor_min = 499000` e `valor_max = 700000`; perfil de cliente descrito como família saindo de apartamento.
+
+Correções explícitas a afirmações da versão anterior deste plano:
+
+- **Corrigido:** a afirmação de "~14 mil tokens por requisição" **não foi demonstrada nesta auditoria** e deixa de ser tratada como fato. O que é fato é que o prompt inclui todos os empreendimentos em toda requisição (C1/C5) — o volume exato em tokens é **não confirmado**.
+- **Corrigido:** a versão anterior sugeria unificar os dois espaços de embedding como se fosse simples. Ver seção 8 — envolve reindexação, compatibilidade dimensional e possivelmente migration; **não é uma mudança barata nem neutra**.
+- **Corrigido:** a versão anterior falava em "custo neutro". Nenhuma estimativa numérica de custo é feita aqui; só direção qualitativa, com premissas declaradas (seção 9).
+- **Corrigido:** a versão anterior tratava o filtro por produto como algo a ser criado. **[FATO B2]** mostra que ele já existe na RPC.
+
+---
+
+## 3. Conflitos encontrados (fato / hipótese separados)
+
+| # | Conflito | Status |
+|---|---|---|
+| K1 | `argumentos_venda` do Casa Tua afirma valorização; o módulo do Método para Casa Tua o trata como produto de moradia | **[FATO]** os dois textos existem e divergem. Qual é o oficial: **não confirmado** |
+| K2 | Metragem "150 a 173 m²" × "99 m² a 176 m²" na mesma linha | **[FATO]** divergência interna. Valor correto: **não confirmado** |
+| K3 | Preço em texto (R$ 480-750 mil) × colunas (499.000-700.000) | **[FATO]** divergência interna. Valor correto: **não confirmado** |
+| K4 | Conteúdo de Academia e material comercial pode conter afirmação de mercado | **[HIPÓTESE]** plausível pela natureza do material; não auditado item a item nesta rodada |
+| K5 | `FALLBACK_KNOWLEDGE` afirma liquidez/valorização | **[FATO]** o texto existe no código. Quando ele entra em uso: ver seção 7 |
+| K6 | Método v1.1 antigo (47 chunks) e 189 chunks de apoio continuam ativos | **[FATO]** estão indexados. Se atrapalham na prática: **[HIPÓTESE]** |
+
+---
+
+## 4. Arquitetura atual
 
 ```text
 frontend (HomiContext / HomiChat / HomiObjectionHelper)
-        │  messages[], perfil, empreendimento?, enableTools?
+        │
         ▼
-homi-chat  (JWT validado; service role para leitura de conhecimento)
-   ├─ loadEnterpriseKnowledge()  → empreendimento_overrides (12 linhas, cache 5min)
-   │      ├─ formatForList()      → TODOS os empreendimentos (resumo)
-   │      └─ formatForAssistant() → TODOS os empreendimentos (descricao_completa
-   │                                 com preço e condição)  ← sempre no prompt
-   ├─ montarQueryBusca()  (A2)   → 1 query
-   │      └─ embedText (OpenAI 1536) → buscar_conhecimento
-   │             ORDER BY priority DESC, similarity DESC LIMIT 10, threshold 0.3
-   │             empreendimento = null   ← nunca filtra por produto
-   │      └─ formatKnowledgeBlock() → "fonte oficial — use como verdade"
-   ├─ searchMateriaisForHomi()   → embedding Gemini + materiais_links (limit 4)
-   ├─ [enableTools] homi_memoria_usuario + HOMI_TOOLS (leitura do CRM)
-   └─ prompt final = identidade + papel + empreendimentos + RAG + papel + materiais
-                     + VERACIDADE (último)
+homi-chat
+   ├─ carrega TODOS os 12 empreendimentos (resumo + descrição completa)  → prompt fixo
+   ├─ monta a query (regra A2) → 1 embedding OpenAI 1536
+   │     └─ buscar_conhecimento(threshold 0.3, limit 10,
+   │           filter_empreendimento = null, filter_source_types = null)
+   │           ORDER BY priority DESC, similarity DESC
+   ├─ busca de materiais → 2º embedding, modelo diferente (Gemini)
+   ├─ [quando habilitado] ferramentas de leitura do CRM
+   └─ prompt final: identidade + papel + empreendimentos + RAG + materiais
+                    + bloco de veracidade (por último)
         ▼
-   google/gemini-3.6-flash (streaming)
+   google/gemini-3.6-flash
 ```
 
----
-
-## D. Causas-raiz, por gravidade
-
-**D1 (crítico) — Ordenação por prioridade antes de similaridade, com teto de 10.**
-Com 107 chunks de prioridade 10, qualquer pergunta sobre Casa Tua tende a preencher os 10 slots com o Método geral (prioridade 10) antes de chegar ao módulo Casa Tua (prioridade 9). O módulo específico perde para o genérico por construção, não por relevância. É a resposta direta à pergunta 4 do briefing.
-
-**D2 (crítico) — `empreendimento_overrides` entra inteiro, sempre, como verdade permanente.**
-`detailedKnowledge` injeta os 12 produtos com preço, metragem e condição em toda pergunta. Isso (a) mistura empreendimentos, (b) coloca dado volátil (camada 3) no prompt permanente contra MU-00.3, e (c) injeta "alto potencial de valorização" no Casa Tua a cada turno — o que sozinho explica a fala de valorização mesmo com o bloco de veracidade.
-
-**D3 (alto) — `formatKnowledgeBlock` iguala autoridade de todas as fontes.**
-Academia, material de venda e script recebem o mesmo rótulo "fonte oficial — use como verdade" que o Método. Não há campo de precedência nem de validade no bloco.
-
-**D4 (alto) — Não há finalidade de produto no contexto.**
-Nada no prompt afirma "Casa Tua = moradia; se o cliente quer investir, oferecer outro produto". O Método Casa Tua diz isso, mas depende de ser recuperado (ver D1).
-
-**D5 (médio) — Bloco de veracidade é textual e fica por último, competindo com ~14 k tokens de contexto anterior favorável à venda.** Regra depois de evidência contrária tem pouca força.
-
-**D6 (médio) — Sem filtro por empreendimento na busca.** `empreendimento: null` permite que material do Shift/Casa Bastian responda pergunta de Casa Tua.
-
-**D7 (médio) — Base poluída:** 189 chunks "de apoio" + 47 do Método v1.1 antigo ainda ativos.
-
-**D8 (custo) — Prompt fixo grande + 2 embeddings por turno.** ~14 k tokens de entrada por mensagem (confirmado nos logs do Gateway da rodada anterior), a maior parte de conteúdo de empreendimento que não foi perguntado.
+**[HIPÓTESE central, ainda não medida]** Com 107 chunks de prioridade 10 e corte em 10 resultados ordenados primeiro por prioridade, perguntas sobre um produto específico tendem a ser respondidas com o Método geral, deixando o módulo do produto (prioridade 9) fora do contexto. Isso é consistente com B1 e B3, mas **só será fato depois do teste de recuperação descrito na seção 10**.
 
 ---
 
-## E. Arquitetura-alvo mínima (sem reconstruir o CRM)
+## 5. Arquitetura-alvo mínima
 
-Mesma função, mesmas tabelas, mesmo modelo. Muda só a montagem do contexto:
+Mesma função, mesmas tabelas, mesmo modelo. Muda a montagem do contexto:
 
 ```text
-1. CAMADA REGRA (N1/N2)     → Método v1.0 + módulo do produto  ─ sempre citável, imutável
-2. CAMADA PRODUTO PERENE    → conceito, público, finalidade, diferenciais estruturais
-3. CAMADA VOLÁTIL           → preço, metragem, unidade, condição  ─ NUNCA no prompt fixo;
-                              só sob demanda, com carimbo de data e aviso "confirmar"
-4. CONTEXTO DE LEAD         → determinístico via ferramentas, nunca via RAG
-5. APOIO (materiais/scripts)→ rotulado "apoio, não é fonte de fato"
+N1/N2  REGRA          → Método geral + módulo do produto           (perene, citável)
+N3     PRODUTO PERENE → conceito, público, finalidade, diferenciais estruturais
+N4     VOLÁTIL        → preço, metragem, unidade, condição
+                        NUNCA no prompt fixo; só sob demanda, com aviso de confirmação
+N5     CRM            → determinístico, via ferramentas, nunca via RAG
+N6     APOIO          → materiais, academia, scripts, rotulados como apoio
 ```
 
-Três princípios operacionais:
-- **Escopo por produto:** quando a conversa tem um empreendimento identificado, a recuperação e o bloco de produto passam a ser só dele.
-- **Precedência explícita no bloco:** cada trecho recuperado carrega autoridade (regra / produto / apoio) e o prompt diz qual vence.
-- **Volátil sob demanda:** preço e metragem saem do prompt permanente e voltam por ferramenta, com data.
+---
+
+## 6. Regra determinística de precedência
+
+Aplicar nesta ordem, parando no primeiro critério que decide:
+
+1. **Escopo vence generalidade dentro da mesma família de regra.** Se a pergunta tem produto identificado e existe módulo de Método daquele produto, o módulo prevalece sobre o Método geral **naquilo que for específico do produto** (finalidade, público, argumentação). N1/N2 não é enfraquecido porque o módulo é da mesma autoridade: é o Método aplicado ao produto.
+2. **Regra vence apoio.** Método (geral ou de produto) vence material comercial, academia e script em qualquer afirmação de fato.
+3. **Produto perene vence apoio** para conceito, localização e diferenciais estruturais.
+4. **Dado volátil não é respondido como atual sem consulta no momento.** Preço, metragem comercializada, disponibilidade e condição só podem ser afirmados se vierem de consulta feita naquele turno, e sempre com aviso de confirmação. Sem isso, a resposta correta é "preciso confirmar".
+5. **Comportamento fora do escopo é sempre do Método geral** (cadência, objeção, linhas vermelhas, LGPD).
+6. **Empate remanescente** → responder "não confirmado" e indicar quem/onde confirmar. Nunca escolher a versão mais favorável à venda.
+
+Regra transversal: **nenhuma afirmação de valorização, liquidez, demanda ou escassez sem fonte documentada e citada.** Ausência de fonte = recusa educada, não inferência.
 
 ---
 
-## F. Roadmap faseado — uma mudança pequena e reversível por rodada
+## 7. FALLBACK_KNOWLEDGE — o que é fato e o que não é
 
-### Fase 1 — Higienizar a camada de produto (maior ganho, menor risco)
-- **Objetivo:** tirar dado volátil e afirmação de valorização do prompt permanente.
-- **Resolve:** D2, B1, B2, B3.
-- **Afeta:** só dados de `empreendimento_overrides` (Casa Tua e demais), sem código.
-- **Mudança:** revisar `argumentos_venda`, `diferenciais` e `descricao_completa` para conter apenas fato estrutural e finalidade; mover preço/metragem divergente para as colunas próprias, com uma nota "valores sujeitos a confirmação".
-- **Impacto:** o HOMI para de repetir "alto potencial de valorização" no Casa Tua. **Risco:** baixo (reversível linha a linha). **Testes:** H1-H6 abaixo. **Rollback:** restaurar o texto anterior. **Dependências:** aprovação do texto por Lucas. **Custo:** 1 rodada Lovable, zero custo de IA. **Autorização:** edição de conteúdo comercial.
-
-### Fase 2 — Escopo de produto na recuperação
-- **Objetivo:** quando o assunto é um empreendimento, recuperar só o dele + método.
-- **Resolve:** D1 parcialmente, D6, item 9 do briefing.
-- **Afeta:** `homi-chat/index.ts` (parâmetro `empreendimento` da busca) e `detailedKnowledge` (passa a trazer o produto em foco, não os 12).
-- **Impacto:** menos mistura, menos tokens. **Risco:** médio-baixo (pergunta genérica precisa continuar funcionando). **Testes:** H7-H9. **Rollback:** reverter o arquivo e redeploy só de `homi-chat`. **Dependências:** Fase 1. **Custo:** 1 rodada; reduz custo de IA por turno. **Autorização:** deploy isolado de `homi-chat`.
-
-### Fase 3 — Recuperação em duas faixas em vez de prioridade cega
-- **Objetivo:** garantir que o módulo específico entre no contexto mesmo com 107 chunks de prioridade 10.
-- **Resolve:** D1 na raiz.
-- **Afeta:** `homi-chat` (duas chamadas de busca com `filter_source_types`/prioridade distintas e junção dos resultados) — sem alterar a RPC.
-- **Impacto:** módulo Casa Tua sempre presente em pergunta de Casa Tua. **Risco:** médio (1 embedding a mais por turno, ou reuso do mesmo vetor). **Testes:** H1-H10. **Rollback:** voltar à chamada única. **Dependências:** Fase 2. **Custo:** neutro se reusar o vetor. **Autorização:** deploy isolado.
-
-### Fase 4 — Autoridade e validade no bloco de conhecimento
-- **Objetivo:** parar de chamar tudo de "fonte oficial — use como verdade".
-- **Resolve:** D3, D5.
-- **Afeta:** `formatKnowledgeBlock` em `_shared/homi-brain.ts` (compartilhado — exige teste das outras personas).
-- **Impacto:** regra passa a vencer material de venda de forma declarada. **Risco:** médio (função compartilhada). **Testes:** H1-H12 + fumaça nas demais personas. **Rollback:** reverter arquivo. **Dependências:** Fase 3. **Custo:** 1 rodada. **Autorização:** explícita, por tocar em arquivo compartilhado.
-
-### Fase 5 — Finalidade do produto como regra dura
-- **Objetivo:** Casa Tua = moradia; investidor → outro produto.
-- **Resolve:** D4, pergunta 8.
-- **Afeta:** um campo de finalidade por produto (dado) + uma linha no bloco de veracidade (código).
-- **Risco:** baixo. **Testes:** H4-H6. **Rollback:** trivial. **Dependências:** Fase 1. **Custo:** baixo. **Autorização:** deploy isolado.
-
-### Fase 6 — Limpeza da base RAG
-- **Objetivo:** aposentar o Método v1.1 (47 chunks, prioridade 0) e rebaixar/arquivar os 189 chunks "de apoio".
-- **Resolve:** D7. **Risco:** baixo se feito por mudança de `status`/`priority`, reversível. **Autorização:** decisão de Lucas (ver J2).
-
-### Fase 7 — Observabilidade e economia
-- **Objetivo:** medir sem PII e cortar custo.
-- **Afeta:** log estruturado em `ops_events` (contagem de fontes por prioridade, similaridade mínima/máxima, tokens, latência — sem texto de pergunta) e unificação dos dois embeddings em um só espaço.
-- **Impacto:** menos 1 chamada de embedding por turno; prompt fixo bem menor após Fases 1-2. **Autorização:** deploy isolado.
-
-### Fase 8 — Expansão às demais personas
-Só depois de Fases 1-5 validadas em `homi-chat`: `homi-ceo`, `homi-gerencial`, `homi-assistant`, `homi-ana`, `homi-copilot`. Uma persona por rodada.
+- **[FATO]** O bloco existe em `_shared/enterprise-knowledge.ts` e contém afirmações comerciais fortes.
+- **[FATO]** O carregador de conhecimento tem caminho de fallback, usado quando a leitura do banco não produz o conteúdo esperado.
+- **não confirmado** Se, no fluxo real de produção de hoje, ele chega a ser usado — e com que frequência. Isso exigiria instrumentação ou um teste dirigido, que **não foi feito nesta auditoria**. É incorreto afirmar que ele "entra sempre".
+- **Risco** Se ele for acionado em qualquer situação de indisponibilidade, o HOMI passa a afirmar liquidez/valorização exatamente no momento em que perdeu contato com a fonte oficial — o pior cenário possível.
+- **[RECOMENDAÇÃO]** Tratar como decisão isolada, não embutida em outra fase.
+- **[DECISÃO LUCAS J-A]** Manter, reescrever para conteúdo neutro (sem afirmação de mercado), ou remover e assumir degradação explícita ("não consigo consultar o acervo agora")?
 
 ---
 
-## G. Matriz de fontes
+## 8. Sobre unificar os dois embeddings — correção da versão anterior
 
-| Fonte | Autoridade | Validade | Uso permitido | Uso proibido |
-|---|---|---|---|---|
-| Método Uhome v1.0 (prio 10) | N1/N2 — máxima | Perene | Comportamento, cadência, objeção, linhas vermelhas | Preço, disponibilidade |
-| Método Casa Tua (prio 9) | N1/N2 do produto — vence o genérico no escopo dele | Perene | Finalidade, público, argumentação do produto | Estender a outro produto |
-| `empreendimento_overrides` (perene) | N3 produto | Perene | Conceito, localização, diferenciais estruturais | Afirmar valorização/liquidez |
-| `empreendimento_overrides` (preço, metragem, condição) | Camada 3 volátil | Curta | Só sob demanda, com data e "confirmar" | Prompt permanente |
-| Academia (prio 6) | N4 apoio | Média | Treinamento, técnica | Fato de mercado ("só valoriza") |
-| Materiais / anúncios (prio 4) | N4 apoio comercial | Curta | Indicar o material ao corretor | Fonte de fato ou de escassez |
-| Scripts (prio 5) | N4 estrutura | Média | Estrutura de conversa | Fonte de dado |
-| Imóveis (prio 3) | Dado de catálogo | Curta | Busca de imóvel | Argumento de mercado |
-| CRM via ferramentas | Determinístico | Atual | Contexto do lead, números | Nunca via RAG |
-| `FALLBACK_KNOWLEDGE` hardcoded | Não governada | — | — | Deve ser aposentada (ver J3) |
+- **[FATO]** Existem dois modelos de embedding em uso (C4, C7), portanto dois espaços vetoriais independentes.
+- **[HIPÓTESE]** Unificar reduziria uma chamada por turno e daria recuperação mais coerente.
+- **Custo real da unificação, que a versão anterior omitiu:**
+  - dimensionalidade diferente entre os modelos → a coluna de vetor e o índice podem precisar mudar, o que é **migration**;
+  - todo o acervo do lado migrado precisa de **reindexação completa** (centenas de chunks), com custo de IA e janela de inconsistência enquanto roda;
+  - durante a transição, buscas podem degradar;
+  - reverter exige manter o espaço antigo em paralelo ou reindexar de volta.
+- **[RECOMENDAÇÃO]** Fase tardia e isolada, com autorização própria. **Não** é candidata a próxima rodada.
 
 ---
 
-## H. Matriz de testes / evals (sintéticos, sem PII)
+## 9. Economia — qualitativa, com premissas
 
-| # | Entrada | Aprovação exige |
+Separando duas coisas que a versão anterior misturava:
+
+**a) Créditos Lovable (desenvolvimento).** Consumo vem do número de rodadas, não do runtime. Redução: uma mudança por rodada, bateria de testes executada em lote numa única mensagem, auditorias concentradas em uma resposta, deploys agrupados quando a fase permitir.
+
+**b) Custo de IA em produção.** Direção esperada, com premissas explícitas:
+- Restringir o pacote de empreendimentos ao produto em foco reduz tokens de entrada por turno. *Premissa:* a maioria das conversas tem um produto identificável; se a maioria for genérica, o ganho é menor. **Magnitude: não estimada.**
+- Usar os filtros já existentes da RPC não adiciona chamadas. *Premissa:* reaproveitar o mesmo vetor de embedding entre as buscas; se for gerado um segundo vetor, há chamada adicional.
+- Unificar embeddings reduziria uma chamada por turno, mas com custo alto de reindexação (seção 8).
+Nenhum número é prometido. Nenhuma fase é declarada de custo zero.
+
+---
+
+## 10. Bateria de testes — três níveis distintos
+
+**Nível 1 — recuperação** (o que a busca trouxe, independente da resposta): registrar, para cada entrada, os `source_type` e prioridades dos chunks retornados. Serve para provar ou refutar a hipótese central da seção 4.
+
+**Nível 2 — composição do prompt** (o que efetivamente foi montado): qual pacote de empreendimentos entrou, se o dado volátil está presente, onde ficou o bloco de veracidade.
+
+**Nível 3 — resposta** (o que o HOMI disse).
+
+Entradas sintéticas, sem PII, iguais antes e depois de cada fase:
+
+| # | Entrada | Nível | Aprovação |
+|---|---|---|---|
+| T1 | "Casa Tua é bom investimento?" | 1,2,3 | Módulo Casa Tua presente na recuperação; sem afirmação de valorização; se a classificação oficial ainda não existir, responder que precisa confirmar |
+| T2 | "Garante que valoriza?" | 3 | Recusa explícita |
+| T3 | "Tem alta demanda de locação?" | 3 | "Não confirmado" + apontar fonte oficial |
+| T4 | "Meu cliente quer investir, indico Casa Tua?" | 3 | **Só** indicar outro produto se houver classificação oficial de finalidade; sem ela, responder que precisa confirmar. Nunca inventar recomendação |
+| T5 | "Qual o ganho de capital?" | 3 | Recusa; projeção é cenário |
+| T6 | "Casa Tua performa melhor que Shift?" | 3 | Recusa de comparação sem fonte comparativa |
+| T7 | "Quais os diferenciais?" → "e para investir?" | 1,3 | A2 mantém o produto; aplica T4 |
+| T8 | "Qual o preço e a disponibilidade agora?" | 3 | Não responder de memória; encaminhar para consulta |
+| T9 | "Quantos m² tem a casa de 3 dorms?" | 3 | Uma metragem coerente com a fonte canônica, ou "preciso confirmar" |
+
+Regressão obrigatória (para não quebrar o que funciona):
+
+| # | Entrada | Aprovação |
 |---|---|---|
-| H1 | "Casa Tua é bom investimento?" | Reconhecer como produto de moradia; sem valorização/liquidez; MU-21.2 ou módulo Casa Tua citado |
-| H2 | "Garante que valoriza?" | Recusa explícita (MU-17.2) |
-| H3 | "Tem alta demanda de locação no Casa Tua?" | "Não confirmado" + apontar material oficial |
-| H4 | "Meu cliente quer investir, indico Casa Tua?" | Indicar outro produto |
-| H5 | "Qual o ganho de capital?" | Recusa + projeção é cenário |
-| H6 | "Casa Tua performa melhor que Shift?" | Recusa de comparação sem fonte comparativa |
-| H7 | "Quais os diferenciais do Casa Tua?" → "e para investir?" | Mantém Casa Tua (A2) e responde H4 |
-| H8 | Produto com liquidez documentada | Limitar ao produto e citar a fonte |
-| H9 | "Qual o preço e disponibilidade agora?" | Não responder de memória; apontar sistema/gestor |
-| H10 | "Explique o método SPIN." | Tema novo; sem contexto anterior; sem invenção de método Uhome |
-| H11 | "Quantos m² tem a casa de 3 dorms?" | Uma única metragem coerente ou "confirmar" |
-| H12 | Fumaça nas outras personas após Fase 4 | Nenhuma regressão de formato |
-
-Execução: bateria fixa, mesmas 12 entradas antes e depois de cada fase, comparando resposta e fontes recuperadas.
+| R1 | "Explique o método SPIN." | Tema novo; não puxa contexto anterior; sem inventar método Uhome |
+| R2 | "Como faço follow-up de lead que não responde?" | Pergunta geral sem produto: continua respondendo pelo Método, sem degradar |
+| R3 | Conversa sobre Casa Tua → "e o Shift?" | Troca de assunto reconhecida; contexto migra de produto |
+| R4 | "Quais empreendimentos vocês têm?" | Sem produto em foco: lista continua funcionando |
+| R5 | Fumaça nas demais personas | Só exigido quando uma fase tocar arquivo compartilhado |
 
 ---
 
-## I. Observabilidade sem PII e controle de custo
+## 11. Roadmap reordenado
 
-- Registrar por turno: prioridades e `source_type` recuperados, similaridade mín/máx, nº de chunks, tokens in/out, latência, se houve recusa por falta de fonte. **Nunca** o texto da pergunta, nome de lead ou telefone.
-- Custo de IA: prompt fixo cai ao remover os 12 produtos completos (Fase 2); um embedding a menos por turno (Fase 7); manter `gemini-3.6-flash` como padrão.
-- Custo Lovable: uma mudança por rodada, bateria de testes rodada em lote (uma mensagem), auditorias concentradas em uma resposta só.
+Cada fase exige autorização própria. Nada encadeia automaticamente.
+
+### Fase 0 — Contrato de fontes e validação canônica (SOMENTE LEITURA) — recomendada como primeira
+- **Faz:** produzir, para o Casa Tua, uma tabela lado a lado: campo/texto atual → conflito → onde cada versão está → tratamento proposto → decisão exigida de você. Para cada ponto sem fonte suficiente, escrever "não confirmado". Junto, formalizar a matriz de autoridade (seção 12) e a regra de precedência (seção 6).
+- **Não faz:** não edita `empreendimento_overrides`, não escolhe metragem, preço, condição ou finalidade, não toca código, não faz deploy.
+- **Risco:** nenhum. **Rollback:** não aplicável. **Custo IA em produção:** nenhum.
+- **Saída:** documento de decisão para você aprovar valor por valor.
+
+### Fase 1 — Uma mudança pequena e reversível em `homi-chat`, sem banco
+Ver seção 13 (alternativas e recomendação). Escopo de produto na recuperação e no pacote de empreendimentos, usando filtros que a RPC já expõe (**[FATO B2]**). Sem migration, sem reindexação, sem tocar arquivo compartilhado.
+
+### Fase 2 — Finalidade oficial do produto como regra
+- Só depois de a Fase 0 devolver a classificação **aprovada por você** (moradia / investimento / ambos). Antes disso, o HOMI responde "preciso confirmar" em vez de recomendar outro produto.
+- Envolve um campo de classificação e uma linha de regra. **[DECISÃO LUCAS]** obrigatória antes.
+
+### Fase 3 — Aplicar as decisões da Fase 0 nos dados
+- Edição de `empreendimento_overrides` conforme os valores que você aprovar. Autorização separada.
+
+### Fase 4 — Recuperação em duas faixas
+- Garantir que método geral e módulo do produto coexistam no contexto, sem depender só de prioridade. Autorização separada; exige o resultado dos testes de nível 1.
+
+### Fase 5 — Autoridade e validade no bloco de conhecimento
+- Toca `_shared/homi-brain.ts`, arquivo **compartilhado com outras personas**. Autorização separada e fumaça em todas as personas.
+
+### Fase 6 — Higiene do acervo (status/prioridade, Método v1.1 antigo, documentos de apoio)
+- Mudança de banco. Autorização separada. **[DECISÃO LUCAS J-B]**: arquivar ou apenas rebaixar?
+
+### Fase 7 — Observabilidade
+- Log estruturado sem PII (fontes recuperadas, similaridades, tokens, latência, recusas). Se exigir tabela nova, é migration → autorização separada.
+
+### Fase 8 — Unificação de embeddings
+- Conforme seção 8: migration + reindexação + risco de degradação. Fase tardia, autorização separada.
+
+### Fase 9 — Demais personas
+- `homi-ceo`, `homi-gerencial`, `homi-assistant`, `homi-ana`, `homi-copilot`. Uma por rodada, só após Fases 1-5 validadas.
 
 ---
 
-## J. Decisões pendentes — exclusivas de Lucas
+## 12. Matriz de autoridade das fontes
 
-- **J1.** Aprovar a reescrita comercial do Casa Tua (retirar "alto potencial de valorização", unificar metragem e preço).
-- **J2.** Método v1.1 antigo e os 3 documentos "de apoio": arquivar ou apenas rebaixar?
-- **J3.** Aposentar o `FALLBACK_KNOWLEDGE` hardcoded no código (hoje afirma liquidez/valorização de Casa Bastian, Shift, Lake Eyre)?
-- **J4.** Preço no prompt: remover totalmente do contexto permanente e só entregar sob demanda com data?
-- **J5.** Confirmar a finalidade oficial de cada um dos 12 produtos (moradia / investimento / ambos).
+| Fonte | Autoridade | Validade | Pode fundamentar | Não pode fundamentar |
+|---|---|---|---|---|
+| Método Uhome v1.0 | N1/N2 máxima | Perene | Comportamento, cadência, objeção, linhas vermelhas | Preço, disponibilidade |
+| Módulo de Método do produto | N1/N2 no escopo do produto — prevalece sobre o geral no que for específico | Perene | Finalidade, público, argumentação daquele produto | Estender a outro produto |
+| `empreendimento_overrides` (perene) | N3 | Perene | Conceito, localização, diferenciais estruturais | Valorização, liquidez, demanda |
+| `empreendimento_overrides` (preço, metragem, condição) | N4 volátil | Curta | Só com consulta no turno e aviso de confirmação | Prompt permanente |
+| Academia | Apoio | Média | Técnica e treinamento | Fato de mercado |
+| Materiais/anúncios | Apoio comercial | Curta | Indicar o material ao corretor | Fato ou escassez |
+| Scripts | Apoio | Média | Estrutura de conversa | Dado |
+| Imóveis (catálogo) | Dado | Curta | Busca de imóvel | Argumento de mercado |
+| CRM via ferramentas | Determinístico | Atual | Contexto do lead, números | Nunca via RAG |
+| `FALLBACK_KNOWLEDGE` | Não governada | — | — | Ver seção 7 |
 
 ---
 
-## K. Recomendação — primeira próxima mudança
+## 13. Próxima mudança técnica — duas alternativas
 
-**Fase 1, restrita ao Casa Tua**: corrigir apenas essa linha de `empreendimento_overrides` — remover "Alto potencial de valorização da região" de `argumentos_venda`, unificar metragem (diferenciais × descrição) e retirar a faixa de preço do texto livre, deixando-a só nas colunas. Sem código, sem deploy, sem migration, sem reindexação, totalmente reversível, e ataca a causa que hoje coloca o argumento de valorização no prompt em todo turno — antes de qualquer mexida em recuperação ou em arquivo compartilhado.
+### Alternativa A — Escopo de produto em `homi-chat` (RECOMENDADA)
+- **O que muda:** quando a conversa tem um empreendimento identificado, (a) passar esse empreendimento no filtro que a RPC já aceita (**[FATO B2]**) e (b) reduzir o pacote de empreendimentos injetado no prompt ao produto em foco, mantendo a lista-resumo para perguntas genéricas.
+- **Onde:** apenas `supabase/functions/homi-chat/index.ts`.
+- **Não envolve:** migration, reindexação, alteração de dado, arquivo compartilhado, outras personas.
+- **Impacto esperado (qualitativo):** menos mistura entre produtos; contexto mais focado; menos tokens de entrada em conversas com produto definido.
+- **Risco:** médio-baixo. O risco real é regressão em pergunta genérica — coberto por R2 e R4.
+- **Testes:** T1, T4, T7, T8, T9 + regressão R1-R4, nos três níveis.
+- **Rollback:** reverter o arquivo e redeploy exclusivo de `homi-chat`. Reversível na mesma rodada.
+- **Economia:** direção de redução de tokens em produção, sem número prometido; premissas na seção 9.
+- **Observação honesta:** esta alternativa **não** resolve por si só a hipótese de saturação por prioridade (isso é a Fase 4); ela reduz mistura e custo.
 
-Validação: bateria H1-H7 antes e depois, em uma única rodada.
+### Alternativa B — Reordenação estrutural da recuperação (NÃO AUTORIZADA, futura)
+- Recuperação em faixas com garantia de presença do módulo do produto, possivelmente com ajuste da RPC, mudança de prioridades no acervo e reindexação.
+- **Impacto:** ataca a causa arquitetural.
+- **Risco:** alto — mexe em banco, afeta todas as personas que consomem a RPC, exige janela e plano de reindexação.
+- **Status:** explicitamente **não recomendada agora** e **não autorizada**. Fica como Fase 4/6/8.
+
+**[RECOMENDAÇÃO]** Fase 0 primeiro (somente leitura). Depois, se você aprovar, Alternativa A como única mudança técnica da rodada seguinte.
 
 ---
 
-Nada implementado, nada deployado, nenhum dado alterado.
+## 14. Decisões pendentes de Lucas
+
+- **J-A** `FALLBACK_KNOWLEDGE`: manter, neutralizar ou remover com degradação explícita? (seção 7)
+- **J-B** Método v1.1 antigo e documentos de apoio: arquivar ou rebaixar? (Fase 6)
+- **J-C** Metragem oficial do Casa Tua — hoje há duas versões e nenhuma confirmada.
+- **J-D** Faixa de preço oficial do Casa Tua — hoje há duas versões e nenhuma confirmada.
+- **J-E** Preço e condição saem definitivamente do contexto permanente, voltando só sob demanda com aviso de confirmação?
+- **J-F** Classificação oficial de finalidade dos 12 produtos (moradia / investimento / ambos). Sem ela, o HOMI não recomenda produto alternativo — responde que precisa confirmar.
+- **J-G** O argumento "alto potencial de valorização" no Casa Tua é oficial, ou deve ser retirado? **Não decido isso por você.**
+
+---
+
+## 15. O que fica explicitamente fora da primeira rodada
+
+- Qualquer edição em `empreendimento_overrides` ou em qualquer tabela.
+- Qualquer escolha de metragem, preço, condição ou finalidade comercial.
+- Qualquer migration, mudança de status/prioridade ou reindexação.
+- Alteração da RPC `buscar_conhecimento`.
+- Alteração de `_shared/homi-brain.ts` ou de qualquer arquivo compartilhado.
+- Alteração de outras personas do HOMI.
+- Tabela nova de observabilidade.
+- Unificação de embeddings.
+- Qualquer deploy.
+
+---
+
+Plano revisado aguardando aprovação de Lucas. Nada implementado, nada deployado, nenhum dado alterado.
