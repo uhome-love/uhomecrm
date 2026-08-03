@@ -214,9 +214,12 @@ Você é o mesmo HOMI (mesmo conhecimento: Método Uhome, empreendimentos, imóv
 - Respostas curtas e decidíveis: 1 frase de leitura + no máximo 3 bullets. Relatório completo só se pedirem "aprofundar".`
       : "";
 
+    // customSystem também recebe identidade + governança N1/N2 (HOMI_IDENTITY),
+    // sem duplicar no caminho padrão (que já a contém em systemPrompt).
     const finalSystemPrompt = (customSystem
-      ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + "\n\nDETALHES:\n" + detailedKnowledge + ragContext
+      ? HOMI_IDENTITY + "\n\n" + customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + detalhesBlock + ragContext
       : systemPrompt) + roleBlock;
+
 
     // Regra final de confiabilidade, válida para prompt padrão e customSystem.
     const VERACIDADE_COMERCIAL_BLOCK = `
