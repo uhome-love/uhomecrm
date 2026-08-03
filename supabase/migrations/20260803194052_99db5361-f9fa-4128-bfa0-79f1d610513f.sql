@@ -1,0 +1,1 @@
+SELECT cron.unschedule('visita-reminder-daily-09h');

@@ -139,36 +139,8 @@ Deno.serve(async (req) => {
         categoria: "visitas",
       });
 
-      // Send WhatsApp confirmation of reschedule
-      try {
-        const { data: setting } = await supabase
-          .from("integration_settings")
-          .select("value")
-          .eq("key", "360dialog_api_key")
-          .single();
 
-        if (setting?.value && visita.telefone) {
-          const phone = formatPhone(visita.telefone);
-          await fetch("https://waba-v2.360dialog.io/messages", {
-            method: "POST",
-            headers: {
-              "D360-API-KEY": setting.value,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              to: phone,
-              type: "text",
-              text: {
-                body: `Visita reagendada com sucesso! ✅\n\n📅 Nova data: ${formatDate(nova_data)} às ${nova_hora}\n📍 ${visita.empreendimento || "Empreendimento"}\n\nTe esperamos! 🏠`,
-              },
-            }),
-          });
-        }
-      } catch (e) {
-        console.error("WhatsApp reschedule notification error:", e);
-      }
+
 
       return new Response(JSON.stringify({ success: true, status: "reagendada", nova_data, nova_hora }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -47,12 +47,8 @@ export default function AdminPanel() {
   const [editJetimob, setEditJetimob] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // 360dialog config
-  const [dialogApiKey, setDialogApiKey] = useState("");
-  const [dialogSaved, setDialogSaved] = useState(false);
-  const [dialogTesting, setDialogTesting] = useState(false);
-  const [dialogConnected, setDialogConnected] = useState<boolean | null>(null);
-  const [savingKey, setSavingKey] = useState(false);
+
+
 
   // Typesense reindex
   const [reindexing, setReindexing] = useState(false);
@@ -88,18 +84,8 @@ export default function AdminPanel() {
     setLoading(false);
   }, []);
 
-  // Fetch 360dialog config
-  const fetchDialogConfig = useCallback(async () => {
-    const { data } = await supabase
-      .from("integration_settings")
-      .select("value")
-      .eq("key", "360dialog_api_key")
-      .single();
-    if (data?.value) {
-      setDialogApiKey(data.value);
-      setDialogSaved(true);
-    }
-  }, []);
+
+
 
   const fetchGestores = useCallback(async () => {
     const { data: gestorRoles } = await supabase.from("user_roles").select("user_id").in("role", ["gestor", "admin"]);
@@ -119,7 +105,7 @@ export default function AdminPanel() {
     return data;
   }, []);
 
-  useEffect(() => { fetchUsers(); fetchDialogConfig(); fetchGestores(); pollProgress(); }, [fetchUsers, fetchDialogConfig, fetchGestores, pollProgress]);
+  useEffect(() => { fetchUsers(); fetchGestores(); pollProgress(); }, [fetchUsers, fetchGestores, pollProgress]);
 
   // Auto-poll while running
   useEffect(() => {
@@ -153,57 +139,8 @@ export default function AdminPanel() {
     else { toast.success("ID Jetimob salvo!"); setEditingJetimob(null); fetchUsers(); }
   }, [jetimobInput, fetchUsers]);
 
-  // Save 360dialog API key
-  const saveDialogKey = useCallback(async () => {
-    if (!dialogApiKey.trim()) { toast.error("Insira a API key."); return; }
-    setSavingKey(true);
-    try {
-      const { data: existing } = await supabase
-        .from("integration_settings")
-        .select("id")
-        .eq("key", "360dialog_api_key")
-        .single();
 
-      if (existing) {
-        const { error } = await supabase
-          .from("integration_settings")
-          .update({ value: dialogApiKey.trim(), updated_at: new Date().toISOString() } as any)
-          .eq("key", "360dialog_api_key");
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("integration_settings")
-          .insert({ key: "360dialog_api_key", value: dialogApiKey.trim(), label: "360dialog WhatsApp API Key" } as any);
-        if (error) throw error;
-      }
-      setDialogSaved(true);
-      toast.success("API key salva!");
-    } catch (err: any) {
-      toast.error("Erro ao salvar API key.");
-    } finally { setSavingKey(false); }
-  }, [dialogApiKey]);
 
-  // Test 360dialog connection
-  const testDialogConnection = useCallback(async () => {
-    setDialogTesting(true);
-    setDialogConnected(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("whatsapp-360dialog", {
-        body: { action: "test" },
-      });
-      if (error) throw error;
-      if (data?.error) {
-        setDialogConnected(false);
-        toast.error(data.error);
-      } else {
-        setDialogConnected(true);
-        toast.success("Conexão com 360dialog OK!");
-      }
-    } catch (err: any) {
-      setDialogConnected(false);
-      toast.error("Falha ao testar conexão.");
-    } finally { setDialogTesting(false); }
-  }, []);
 
   // Create user
   const handleCreate = useCallback(async () => {
@@ -316,59 +253,8 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
-      {/* 360dialog Integration */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 shadow-card space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
-            <MessageSquare className="h-5 w-5 text-success" />
-          </div>
-          <div>
-            <h3 className="font-display font-semibold text-foreground">WhatsApp — 360dialog</h3>
-            <p className="text-xs text-muted-foreground">Configure sua API key para disparo de mensagens via WhatsApp Business</p>
-          </div>
-          {dialogConnected === true && (
-            <Badge variant="outline" className="ml-auto bg-success/10 text-success border-success/20 gap-1">
-              <CheckCircle className="h-3 w-3" /> Conectado
-            </Badge>
-          )}
-          {dialogConnected === false && (
-            <Badge variant="outline" className="ml-auto bg-destructive/10 text-destructive border-destructive/20 gap-1">
-              <XCircle className="h-3 w-3" /> Falha
-            </Badge>
-          )}
-        </div>
 
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-sm">API Key do 360dialog</Label>
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                value={dialogApiKey}
-                onChange={(e) => { setDialogApiKey(e.target.value); setDialogSaved(false); setDialogConnected(null); }}
-                placeholder="Cole sua D360-API-KEY aqui"
-                className="flex-1 font-mono text-sm"
-              />
-              <Button onClick={saveDialogKey} disabled={savingKey || !dialogApiKey.trim()} variant="outline" className="gap-1.5">
-                {savingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
-                Salvar
-              </Button>
-            </div>
-          </div>
 
-          {dialogSaved && (
-            <Button onClick={testDialogConnection} disabled={dialogTesting} variant="outline" size="sm" className="gap-1.5">
-              {dialogTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
-              {dialogTesting ? "Testando..." : "Testar Conexão"}
-            </Button>
-          )}
-
-          <p className="text-[11px] text-muted-foreground">
-            Obtenha sua API key no painel do <a href="https://hub.360dialog.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">360dialog Hub</a>. 
-            A chave será usada para enviar mensagens via WhatsApp Business API.
-          </p>
-        </div>
-      </motion.div>
 
       {/* Ferramentas do Sistema */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 shadow-card space-y-4">
