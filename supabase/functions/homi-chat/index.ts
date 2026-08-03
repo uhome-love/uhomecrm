@@ -12,6 +12,7 @@ import { loadEnterpriseKnowledge, formatForList, formatForAssistant, createServi
 import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
 import { HOMI_TOOLS, executeHomiTool } from "./homi-tools.ts";
 import { searchKnowledge, formatKnowledgeBlock, HOMI_IDENTITY, HOMI_CHAT_MODEL } from "../_shared/homi-brain.ts";
+import { GOVERNANCA_VOLATIL_BLOCK } from "../_shared/homi-fontes.ts";
 
 
 serve(async (req) => {
