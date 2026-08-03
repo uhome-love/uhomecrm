@@ -180,9 +180,8 @@ Se o corretor pedir ajuda, entregue: Mensagem pronta, ou Script de ligação, ou
 
 EMPREENDIMENTOS (RESUMO):
 ${allEmpreendimentos}
+${detalhesBlock}
 
-CONHECIMENTO DETALHADO DOS EMPREENDIMENTOS:
-${detailedKnowledge}
 
 Use somente os diferenciais documentados do empreendimento perguntado. Nunca transfira argumento ou diferencial de um produto para outro.
 
