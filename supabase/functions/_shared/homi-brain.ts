@@ -15,6 +15,8 @@ export const HOMI_REASONING_MODEL = "google/gemini-3.1-pro-preview";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 
+import { classificarChunk, sanitizeC4 } from "./homi-fontes.ts";
+
 export type HomiSourceType =
   | "documento"
   | "material"
@@ -105,19 +107,51 @@ export async function searchKnowledge(
   return (data ?? []) as HomiChunk[];
 }
 
-/** Bloco de contexto pronto para o system prompt, com fontes citáveis. */
+/**
+ * Bloco de contexto pronto para o system prompt, com fontes citáveis.
+ *
+ * Contrato de fontes (_shared/homi-fontes.ts):
+ * - C1 (Método/Academia/Scripts) entra INTEGRAL. Nunca sanitizado: o Método
+ *   ensina ancoragem e tratamento de objeção de preço, e isso é pedagógico.
+ * - C4 (empreendimento/material/imóvel) tem o trecho volátil removido antes
+ *   de compor. A parte permanente separável é preservada.
+ */
 export function formatKnowledgeBlock(chunks: HomiChunk[]): string {
   if (!chunks.length) return "";
-  const body = chunks
-    .map((c, i) => {
-      const label = SOURCE_LABELS[c.source_type] ?? c.source_type;
-      const url = c.source_url ? ` · ${c.source_url}` : "";
-      // Expõe o ID do bloco do Método (MU-xx.x) quando presente, para citação exata.
-      const mu = c.content.match(/\[MU-[\d.]+\]/)?.[0];
-      const muTag = mu ? ` · ${mu}` : "";
-      return `[${i + 1}] (${label} — ${c.title}${muTag}${url})\n${c.content}`;
-    })
-    .join("\n---\n");
+
+  let c4Sanitizados = 0;
+  let c4Descartados = 0;
+
+  const partes: string[] = [];
+  for (const c of chunks) {
+    const classe = classificarChunk(c.source_type);
+
+    let conteudo = c.content;
+    if (classe === "C4") {
+      const s = sanitizeC4(c.content);
+      if (s.removidos > 0) c4Sanitizados++;
+      if (!s.texto) {
+        c4Descartados++;
+        continue; // nada permanente sobrou neste chunk
+      }
+      conteudo = s.texto;
+    }
+
+    const label = SOURCE_LABELS[c.source_type] ?? c.source_type;
+    const url = c.source_url ? ` · ${c.source_url}` : "";
+    // Expõe o ID do bloco do Método (MU-xx.x) quando presente, para citação exata.
+    const mu = c.content.match(/\[MU-[\d.]+\]/)?.[0];
+    const muTag = mu ? ` · ${mu}` : "";
+    partes.push(`[${partes.length + 1}] (${classe} · ${label} — ${c.title}${muTag}${url})\n${conteudo}`);
+  }
+
+  if (c4Sanitizados || c4Descartados) {
+    // Somente contagens — nunca texto, valor, nome ou PII.
+    console.log("[homi-fontes] RAG C4 sanitizados:", c4Sanitizados, "descartados:", c4Descartados);
+  }
+
+  if (!partes.length) return "";
+  const body = partes.join("\n---\n");
 
   return `
 
@@ -128,7 +162,8 @@ REGRAS DE USO DA BASE:
 - Se a resposta estiver acima, use exatamente o que está escrito e cite a fonte no final em uma linha curta (ex: "Fonte: Método Uhome — MU-09.3").
 - Quando o trecho vier do Método Uhome, cite o ID do bloco (MU-xx.x).
 - Se não houver nada relevante acima, diga o que sabe e sugira o material/aula certa em vez de inventar.
-- Nunca invente preço, condição comercial, prazo de obra ou disponibilidade que não esteja na base.`;
+- Nunca invente preço, condição comercial, prazo de obra ou disponibilidade que não esteja na base.
+- Blocos marcados C4 tiveram trechos voláteis removidos por governança: a ausência de preço, condição, unidade ou prazo neles NÃO significa que o dado seja zero, gratuito ou indisponível — significa que precisa ser confirmado na fonte oficial vigente.`;
 }
 
 /** Identidade e método — igual para todos os HOMIs. */
