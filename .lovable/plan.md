@@ -1,14 +1,8 @@
-# HOMI — Etapa 2: proposta exata da mudança #1 (query da busca)
+# HOMI — Etapa 2 (revisada): query da busca RAG com contexto
 
-Nada foi alterado, nada foi deployado. Abaixo está o diff exato para revisão.
+Nada implementado, nada deployado. Um arquivo, um bloco: `supabase/functions/homi-chat/index.ts`.
 
-## 1. Arquivo alterado
-
-**Um único arquivo:** `supabase/functions/homi-chat/index.ts`
-
-Nenhum outro arquivo é tocado. `homi-brain.ts`, `homi-tools.ts`, o prompt, `HOMI_IDENTITY`, o modelo, threshold, limit, a RPC, embeddings, banco, RLS, frontend e as demais Edge Functions ficam **idênticos**.
-
-## 2. Trecho atual (linhas 48-58)
+## 1. Trecho atual (linhas 48-58)
 
 ```ts
     // ── RAG unificado (método, materiais, academia, scripts, empreendimentos, imóveis) ──
@@ -24,38 +18,47 @@ Nenhum outro arquivo é tocado. `homi-brain.ts`, `homi-tools.ts`, o prompt, `HOM
     }
 ```
 
-`lastUserMsg` continua sendo usado mais abaixo (linhas 169-174, busca de materiais). **Não mexo nele** — só acrescento uma variável nova para a busca de conhecimento.
-
-## 3. Trecho proposto
+## 2. Novo trecho exato
 
 ```ts
     // ── RAG unificado (método, materiais, academia, scripts, empreendimentos, imóveis) ──
-    const userTurns = (messages as any[]).filter((m) => m.role === "user" && typeof m.content === "string");
-    const lastUserMsg = userTurns[userTurns.length - 1]?.content;
-    const prevUserMsg = userTurns[userTurns.length - 2]?.content;
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content;
 
     /**
      * A pergunta atual é sempre a fonte principal da busca.
-     * A mensagem anterior só entra quando a atual é claramente uma continuação
-     * (curta, ou aberta por conector de continuidade). Assunto novo = só a atual.
+     * A mensagem anterior do usuário só entra quando a atual é claramente
+     * uma continuação. Assunto novo ou pergunta autossuficiente = só a atual.
      */
+    const userMsgs = (messages as any[]).filter((m) => m.role === "user");
+    const prevUserMsg = userMsgs[userMsgs.length - 2]?.content;
+
     const CTX_MAX = 200;   // caracteres do contexto anterior
     const ASK_MAX = 400;   // caracteres da pergunta atual
-    const CONT_INICIO = /^\s*(e\s|e$|ai\s|aí\s|no\s|na\s|pra\s|para\s|por\s|com\s|sem\s|tem\s|teria\s|e se\b|nesse\b|nessa\b|neste\b|nesta\b|isso\b|esse\b|essa\b|ele\b|ela\b|lá\b|ali\b|mesmo\b|tambem\b|também\b|outra\b|outro\b|qual deles\b|quanto\b)/i;
-    const TEMA_NOVO = /^\s*(agora|muda|mudando|outro assunto|deixa|esquece|nova pergunta|preciso de|faça|faz|me faz|me da|me dá|quero)\b/i;
+    const CONT_MAX_CHARS = 60;
+    const ELIPSE_MAX_PALAVRAS = 3;
+
+    // Conector FORTE: a frase só existe colada no turno anterior.
+    const CONT_FORTE = /^\s*(e|ou|mas|então|entao)\s|^\s*e\s*se\b|^\s*(e|ou)\s*(o|a)\s+(quê|que)\b/i;
+    // Conector AMBÍGUO / elipse: só puxa contexto se a pergunta for muito curta.
+    const CONT_AMBIGUO = /^\s*(por|pra|para|no|na|nos|nas|com|sem|de|do|da|nesse|nessa|neste|nesta|isso|esse|essa|ele|ela|lá|la|ali|mesmo|também|tambem|igual|quanto|qual)\b/i;
+    // Marcadores explícitos de troca de assunto.
+    const TEMA_NOVO = /^\s*(agora|muda|mudando|outro assunto|deixa|esquece|nova pergunta|preciso|quero|faça|faz|me faz|explique|explica|me explica|liste|lista|gere|gera|analise|analisa)\b/i;
 
     function montarQueryBusca(atual?: string, anterior?: string): string {
       const ask = (atual ?? "").trim().slice(0, ASK_MAX);
       if (!ask) return "";
-      const palavras = ask.split(/\s+/).length;
+      const ctxBruto = (anterior ?? "").trim();
+      if (!ctxBruto) return ask;
+      if (ask.length > CONT_MAX_CHARS) return ask;
+      if (TEMA_NOVO.test(ask)) return ask;
+
+      const palavras = ask.split(/\s+/).filter(Boolean).length;
       const ehContinuacao =
-        !!anterior &&
-        ask.length <= 80 &&
-        !TEMA_NOVO.test(ask) &&
-        (CONT_INICIO.test(ask) || palavras <= 5);
+        CONT_FORTE.test(ask) ||
+        (CONT_AMBIGUO.test(ask) && palavras <= ELIPSE_MAX_PALAVRAS);
       if (!ehContinuacao) return ask;
-      const ctx = anterior!.trim().slice(0, CTX_MAX);
-      return `Contexto anterior: ${ctx}\nPergunta atual: ${ask}`;
+
+      return `Pergunta atual: ${ask}\nContexto anterior: ${ctxBruto.slice(0, CTX_MAX)}`;
     }
 
     const ragQuery = montarQueryBusca(lastUserMsg, prevUserMsg);
@@ -70,71 +73,48 @@ Nenhum outro arquivo é tocado. `homi-brain.ts`, `homi-tools.ts`, o prompt, `HOM
     }
 ```
 
-Diferença efetiva: **muda apenas o texto passado como 1º argumento de `searchKnowledge`**. `limit`, `threshold` e `empreendimento` permanecem exatamente como estão.
+Pontos atendidos: `lastUserMsg` intocado (sem filtro de `typeof`), teto 60, sem fallback "≤5 palavras", conectores fortes separados dos ambíguos (ambíguo só com ≤3 palavras), e a query composta começa por `Pergunta atual:`.
 
-## 4. Regra usada, em português
+## 3. Tabela dos 12 testes
 
-A mensagem anterior só é anexada quando **todas** estas condições valem:
+Contexto anterior usado nos testes 1-9: **"Como respondo quando o cliente acha caro no Casa Tua?"** (abreviado abaixo como *[ctx]*).
 
-1. existe uma mensagem anterior **do próprio usuário, no chat atual** (nunca histórico de outra thread, nunca mensagem do assistente, nunca dado de lead);
-2. a pergunta atual tem **no máximo 80 caracteres**;
-3. a pergunta atual **não** abre com marcador de troca de assunto ("agora", "quero", "faça", "preciso de", "outro assunto"…);
-4. a pergunta atual **abre com conector de continuidade** ("e…", "por…", "nesse…", "tem outra…") **ou** tem **até 5 palavras**.
-
-Fora disso, a busca usa **só a pergunta atual** — comportamento idêntico ao de hoje.
-
-## 5. Limites de tamanho e segurança do contexto
-
-| Item | Valor |
-|---|---|
-| Contexto anterior | 200 caracteres (truncado) |
-| Pergunta atual | 400 caracteres (truncado) |
-| Query máxima | ~640 caracteres |
-| Mensagens consideradas | **2**, ambas do usuário, ambas do chat atual |
-| Histórico completo | nunca concatenado |
-| Dados de lead / PII | não entram — a função só lê o array `messages` que o próprio usuário digitou, exatamente como hoje |
-| Separação | rótulos explícitos `Contexto anterior:` / `Pergunta atual:` |
-| Tema antigo dominar pergunta nova | impedido pelo teto de 80 caracteres + regex de tema novo: pergunta completa nunca puxa contexto |
-
-## 6. Casos de teste — resultado esperado
-
-| # | Anterior | Atual | Continuação? | Query enviada ao `searchKnowledge` |
+| # | Pergunta atual | Regra acionada | Continuação? | Query enviada ao `searchKnowledge` |
 |---|---|---|---|---|
-| 1 | "Como respondo quando o cliente acha caro?" | "E no Casa Tua?" | **Sim** (14 chars, abre com "E ") | `Contexto anterior: Como respondo quando o cliente acha caro?` + `Pergunta atual: E no Casa Tua?` → recupera objeção de preço **e** Casa Tua |
-| 2 | "Qual argumento funciona melhor nesse empreendimento?" | "E para investir?" | **Sim** (16 chars, "E ") | mantém o empreendimento do turno anterior + finalidade investimento |
-| 3 | "Como confirmar uma visita?" | "Faça uma análise do meu funil desta semana." | **Não** (43 chars, abre com "Faça" = tema novo, 8 palavras) | só `Faça uma análise do meu funil desta semana.` |
-| 4 | — | "Como faço follow-up de um lead que não respondeu?" | **Não** (não há anterior) | só a mensagem atual — comportamento de hoje, intacto |
-| 5 | "Me dê três mensagens para uma objeção de localização." | "Por áudio?" | **Sim** (10 chars, "Por ", 2 palavras) | objeção de localização + adaptação para áudio |
-| 6 | "Fale sobre o Casa Tua." | "Agora quero analisar os contratos parados." | **Não** (abre com "Agora" = tema novo) | **Casa Tua não entra** na query |
+| 1 | `E no Casa Tua?` | FORTE (`e `), 14 chars | **Sim** | `Pergunta atual: E no Casa Tua?` ⏎ `Contexto anterior: [ctx]` |
+| 2 | `E para investir?` | FORTE (`e `), 16 chars | **Sim** | `Pergunta atual: E para investir?` ⏎ `Contexto anterior: [ctx]` |
+| 3 | `Por áudio?` | AMBÍGUO (`por`), 2 palavras | **Sim** | `Pergunta atual: Por áudio?` ⏎ `Contexto anterior: [ctx]` |
+| 4 | `No VIVID, quais diferenciais?` | AMBÍGUO (`no`), **4 palavras** > 3 | **Não** | `No VIVID, quais diferenciais?` |
+| 5 | `Preço do Lake Baikal?` | nenhum conector inicial | **Não** | `Preço do Lake Baikal?` |
+| 6 | `Explique o método SPIN.` | TEMA_NOVO (`explique`) | **Não** | `Explique o método SPIN.` |
+| 7 | `E se ele disser que é caro?` | FORTE (`e se`), 27 chars | **Sim** | `Pergunta atual: E se ele disser que é caro?` ⏎ `Contexto anterior: [ctx]` |
+| 8 | `Agora me mostra o funil da semana.` | TEMA_NOVO (`agora`) | **Não** | `Agora me mostra o funil da semana.` |
+| 9 | `Isso funciona?` | AMBÍGUO (`isso`), 2 palavras | **Sim** | `Pergunta atual: Isso funciona?` ⏎ `Contexto anterior: [ctx]` |
+| 10 | *(sem mensagem anterior)* `E no Casa Tua?` | sem contexto disponível | **Não** | `E no Casa Tua?` |
+| 11 | `E como eu conduzo a conversa quando ele diz que vai pensar melhor?` | FORTE, mas **66 chars** > 60 | **Não** | a própria pergunta, íntegra |
+| 12 | `Qual o valor do condomínio?` | nenhum conector (`qual` é ambíguo, mas 5 palavras) | **Não** | `Qual o valor do condomínio?` |
 
-Os 6 casos passam pela regra proposta sem exceção manual.
+Os 6 casos que você fixou (1, 2, 3, 4, 5, 6) saem exatamente como pedido.
 
-### Antes x depois, na prática
+## 4. Impacto
 
-- **Caso 1 hoje:** a query é literalmente `E no Casa Tua?` — o embedding disso é quase só o nome do empreendimento; volta ficha do Casa Tua e nada sobre objeção de preço. **Depois:** volta bloco do Método sobre ancoragem/objeção de preço + ficha do Casa Tua.
-- **Caso 3 hoje e depois:** idêntico. Nenhuma regressão possível em pergunta completa.
+- Muda **apenas o texto passado como 1º argumento** de `searchKnowledge`. `limit: 10`, `threshold: 0.3`, `empreendimento: null`, RPC, embeddings e modelo continuam idênticos.
+- Perguntas autossuficientes (a maioria) produzem query **byte a byte igual à de hoje** — zero regressão.
+- Perguntas de continuação curtas passam a recuperar o tema do turno anterior: hoje `E no Casa Tua?` embeda basicamente o nome do empreendimento; depois recupera também o bloco de objeção de preço.
+- Busca de materiais do Hub (l. 169-174) usa `lastUserMsg`, que segue com o mesmo valor de hoje — não é afetada.
+- Custo: +200 chars no embedding em uma fração pequena dos turnos.
 
-## 7. Riscos
+## 5. Risco
 
 | Risco | Gravidade | Mitigação |
 |---|---|---|
-| Falso positivo: pergunta nova, curta e começando com conector puxa contexto velho | Baixa | contexto entra rotulado e truncado em 200 chars; a pergunta atual continua dominando o embedding |
-| Falso negativo: continuação longa (>80 chars) não puxa contexto | Baixa | comportamento **igual ao de hoje** — não é regressão |
-| Query maior encarece embedding | Desprezível | +200 chars em uma fração das perguntas; mesmo modelo, mesma chamada |
-| Afetar a busca de materiais do Hub | Nenhum | `lastUserMsg` segue existindo com o mesmo valor; o bloco de materiais (l. 169-174) não é tocado |
+| Falso positivo: pergunta nova, ≤60 chars, iniciada por "e/ou/mas" puxa contexto velho | Baixa | contexto vem rotulado, truncado em 200 chars e **depois** da pergunta atual, que domina o embedding |
+| Falso negativo: continuação com mais de 60 chars não puxa contexto | Baixa | comportamento igual ao de hoje — não é regressão |
+| Conector ambíguo em pergunta de 3 palavras autossuficiente (ex.: `Para investidores?`) puxar contexto | Baixa | mesmo assim a pergunta atual lidera a query; efeito máximo é trazer 1-2 chunks a mais |
+| Escrita/estado | Nenhum | a mudança está sobre uma leitura (`searchKnowledge` → RPC) |
 
-Não há risco de escrita: a mudança está em cima de uma leitura (`searchKnowledge` → RPC `STABLE`).
+## 6. Rollback
 
-## 8. Rollback exato
+Reverter `supabase/functions/homi-chat/index.ts` ao commit anterior, ou substituir manualmente o bloco novo pelas 11 linhas do item 1. Sem migration, sem reindexação, sem estado a desfazer — rollback instantâneo.
 
-Reverter `supabase/functions/homi-chat/index.ts` para o commit anterior — ou, manualmente, trocar o bloco novo de volta pelas 11 linhas do item 2. Sem banco, sem migration, sem reindexação, sem estado a desfazer. Rollback instantâneo.
-
-## 9. Confirmação de escopo
-
-- 1 arquivo, 1 bloco, ~25 linhas, aditivas.
-- Prompt, `HOMI_IDENTITY`, modelo, threshold, limit, RPC, embeddings, ferramentas, banco, documentos, chunks, RLS, CRM, frontend, ações e outras Edge Functions: **inalterados**.
-- Nenhum deploy, nenhuma publicação. Aguardando sua aprovação para implementar.
-
-## 10. Pergunta antes de implementar
-
-O teto de **80 caracteres** é o único parâmetro discutível. Se quiser um gatilho mais conservador, baixo para 60 (aí "E para investir?" e "Por áudio?" continuam passando, mas frases médias nunca puxam contexto). Confirma 80 ou prefere 60?
+Aguardando sua aprovação para implementar.
