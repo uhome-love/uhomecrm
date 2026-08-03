@@ -667,6 +667,7 @@ export default function CeoDashboard() {
                   );
                 })}
               </div>
+              </StateWrapper>
             </CardContent>
           </Card>
 
