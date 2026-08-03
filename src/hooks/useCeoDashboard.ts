@@ -507,7 +507,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }, { data: allNegAtivos }] = await Promise.all([
         (supabase.from("visitas_unicas" as never) as any).select("id, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
         (supabase.from("visitas_unicas" as never) as any).select("id, status, corretor_id, origem").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
-        supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "ganho").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
+        supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "ganho").eq("status", "ativo").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
         supabase.from("negocios").select("id, fase, auth_user_id").in("auth_user_id", allMemberUserIds).eq("status", "ativo").in("fase", ["em_negociacao", "contrato"]).limit(1000),
       ]);
 
