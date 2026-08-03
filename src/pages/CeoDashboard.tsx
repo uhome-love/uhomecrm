@@ -1039,6 +1039,14 @@ export default function CeoDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              {/* Erro tem precedência: "Operação saudável" nunca pode mascarar falha de consulta */}
+              <StateWrapper
+                error={errors.pipeline}
+                onRetry={reload}
+                errorTitle="Não foi possível carregar os alertas"
+                errorDescription="Não é possível afirmar que a operação está saudável."
+                className="space-y-2"
+              >
               {alertas.length > 0 ? alertas.map((a, i) => (
                 <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg text-[11px] ${
                   a.tipo === "red" ? "bg-danger/5 text-danger" :
