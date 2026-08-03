@@ -43,50 +43,60 @@ Contexto CRM — lead, corretor, etapa, tarefas e eventos carregados determinist
 
 # ROADMAP — QUATRO ENTREGAS ECONÔMICAS
 
-## ENTREGA 1 — CATÁLOGO GOVERNADO DOS 14 PRODUTOS
-Objetivo: fazer o HOMI conhecer corretamente os 14 produtos e permitir foco nos seis faltantes.
+## ENTREGA 1 — CATÁLOGO GOVERNADO DE ATIVOS E HISTÓRICOS
+Objetivo: estruturar fichas permanentes versionadas dos produtos ativos e preservar históricos para atendimento de clientes existentes, sem confundir oferta vigente.
 
-Atuais: Casa Bastian, Casa Tua, Lake Eyre, Las Casas, Open Bosque, Orygem, Shift e Vértice – Las Casas.
-Novos: Vivid, Flow, Terrace, The Arch, Connect JW e Lake Baikal.
+### Fatos e decisões canônicas (03/08/2026)
+1. Não existem 14 produtos distintos e ativos.
+2. Ativos confirmados: Casa Tua, Shift, Vivid, Flow, Terrace, The Arch, Connect JW e Lake Baikal.
+3. Fora do ar, preservados somente para clientes existentes: Casa Bastian, Lake Eyre, Open Bosque e Orygem.
+4. Esses quatro históricos devem aparecer em grupo secundário "Fora do ar — clientes existentes"; nunca devem ser sugeridos como oferta ativa.
+5. Las Casas e Vértice são o mesmo cadastro histórico. Exibir uma única opção "Vértice – Las Casas"; "Las Casas" fica apenas como alias interno.
+6. Vivid e Terrace são empreendimentos distintos. Nunca fundir, criar alias ou migrar dados entre eles.
+7. O PDF institucional "Método Uhome — Fichas de Produto", criado em 01/08/2026, contém fichas de Casa Tua, Vivid, Connect João Wallig, The Arch e Lake Baikal.
+8. A ficha intitulada "VIVID Terrace", da Rua Walir Zottis, 385, pertence ao Vivid, não ao Terrace.
+9. Flow não consta nesse PDF.
+10. Terrace deve usar somente suas próprias fontes institucionais já identificadas (site Uhome, drive/book e materiais próprios), sem herdar dados do Vivid.
+11. O PDF é fonte para curadoria de conhecimento permanente, mas não é fonte viva de preço ou disponibilidade.
+12. Preço, unidade, disponibilidade, entrada, parcela, taxa, condição, aprovação, fase, prazo/entrega, agenda, acesso e financiamento são C3/operacionais: não entram na ficha permanente e só podem vir de fonte oficial vigente.
+13. Ainda não existe fonte viva comprovada no HOMI para preço/disponibilidade.
+14. Contexto de lead continua determinístico do CRM, nunca do RAG; nenhuma escrita autônoma.
 
-Escopo:
-1. Inventariar fontes oficiais por produto.
-2. Criar ficha permanente dos 6 novos.
-3. Revisar e normalizar as 8 atuais.
-4. Entregar a Lucas tabela única: campo, conteúdo, fonte e decisão.
-5. Gravar somente conteúdo aprovado em estrutura versionada.
-6. Integrar backend à ficha validada.
-7. Ampliar seletor de 8 para 14.
-8. Manter Oferta Ativa ampla, enviando foco somente quando governado.
+### Gate 0 — concluído
+- catálogo e status acima aprovados por Lucas;
+- Vivid/Terrace separados;
+- Vértice/Las Casas unificado;
+- nenhuma alteração de banco realizada.
 
-Estrutura recomendada:
-- tabela aditiva de ficha permanente;
-- empreendimento_id canônico;
-- versão;
-- ficha estruturada;
-- source_refs por campo;
-- validada_em;
-- validada_por UUID;
-- status;
-- created_at.
-Frontend não acessa diretamente. Backend lê somente ficha validada. Snapshot antes da escrita.
+### Gate 1 — curadoria em lote, antes de qualquer escrita
+Campos permitidos em C2: nome canônico, incorporadora/construtora, endereço/bairro, tipo, conceito curto, tipologias/metragens gerais, perfil, diferenciais, objeções permanentes, estratégia de conversão e fonte por campo.
+Campos proibidos: todos os C3 listados acima.
+Ordem:
+a) Casa Tua, Vivid, Connect JW, The Arch e Lake Baikal pelo PDF, removendo voláteis;
+b) Terrace apenas por fontes próprias;
+c) Flow pela apresentação, após validar origem/vigência;
+d) Shift pela ficha legada;
+e) históricos em prioridade menor, para clientes existentes.
+Campo sem fonte fica vazio. Lucas recebe uma única matriz consolidada para aprovar/corrigir. Só conteúdo aprovado avança.
 
-Critérios:
-- nomes canônicos, sem alias inventado;
-- fonte por campo;
-- nenhum C3 na ficha;
-- novo produto só aparece após ficha validada;
-- produto sem ficha vira sem foco;
-- Casa Tua/Shift seguem recusando preço atual sem fonte;
-- Método e A2 intactos.
+### Gate 2 — pacote técnico único, ainda dependente de autorização
+Commit 1 schema aditivo/versionado; Commit 2 dados aprovados; Commit 3 backend lendo apenas versão validada; Commit 4 seletor com grupos ativo/histórico e alias governado; Commit 5 testes.
+Requisitos: service role único escritor nesta fase, frontend sem leitura direta da tabela, snapshot antes de escrita, histórico preservado, nenhum acesso a lead, nenhuma escrita automática.
 
-Uma entrega/auditoria com commits separados:
-1. schema;
-2. fichas aprovadas;
-3. backend;
-4. seletor/contrato frontend;
-5. testes.
-Deploy conjunto só após todos os gates. Rollback por camada.
+### Gate 3 — deploy controlado, autorização separada
+auditoria do diff; snapshot; autorização explícita de Lucas para migration/dados; aplicação; deploy; smoke test curto sem PII; observação; rollback por camada.
+
+### Aceitação
+- cada produto aparece uma vez e no grupo correto;
+- Vivid e Terrace permanecem separados;
+- "Vértice – Las Casas" aparece uma vez;
+- históricos nunca são oferecidos espontaneamente;
+- C2 usa somente dados permanentes validados;
+- preço/disponibilidade/prazo orientam confirmação oficial;
+- investimento não gera garantia;
+- troca de produto não vaza contexto;
+- Método, SPIN, N1/N2, A2, ferramentas, perfis e Oferta Ativa permanecem intactos;
+- nenhuma PII ou escrita no CRM.
 
 ## ENTREGA 2 — FONTE OFICIAL VIVA PARA C3
 Objetivo: responder preço e disponibilidade atuais sem memória/material antigo.
