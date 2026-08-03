@@ -1068,6 +1068,7 @@ export default function CeoDashboard() {
         </div>
       </section>
 
+        </StateWrapper>
         </TabsContent>
 
         <TabsContent value="empresa" className="mt-0">
