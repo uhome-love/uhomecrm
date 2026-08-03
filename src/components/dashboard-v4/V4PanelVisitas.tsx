@@ -16,11 +16,8 @@ interface Props {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  confirmada: "bg-success-50 text-success-700 border-success-200",
   marcada: "bg-primary-50 text-primary-600 border-primary-200",
-  agendada: "bg-primary-50 text-primary-600 border-primary-200",
-  pendente: "bg-warning-50 text-warning-700 border-warning-200",
-  reagendada: "bg-warning-50 text-warning-700 border-warning-200",
+  confirmada: "bg-success-50 text-success-700 border-success-200",
   realizada: "bg-muted text-muted-foreground border-border",
   cancelada: "bg-destructive/10 text-destructive border-destructive/20",
   no_show: "bg-destructive/10 text-destructive border-destructive/20",
