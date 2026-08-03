@@ -950,11 +950,12 @@ export default function CeoDashboard() {
                 </tbody>
               </table>
             </div>
+            </StateWrapper>
           </CardContent>
         </Card>
 
         {/* Top Corretores */}
-        {corretoresRank.length > 0 && (
+        {(corretoresRank.length > 0 || errors.teams) && (
           <Card className="mt-3 bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold">Top Corretores — Oferta Ativa</CardTitle>
