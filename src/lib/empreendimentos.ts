@@ -46,3 +46,37 @@ export const EMPREENDIMENTOS: string[] = [
   "Vivid Terrace",
   "Vértice",
 ];
+
+/**
+ * Allowlist de produtos permitidos como FOCO DETALHADO do HOMI.
+ *
+ * Fonte única do contrato de foco (workspace /homi e Oferta Ativa).
+ * Não confundir com EMPREENDIMENTOS acima (lista comercial ampla da Oferta Ativa).
+ *
+ * Fora desta lista propositalmente, até validação oficial da ficha:
+ * - "Átrio - ABF" (ficha insuficiente)
+ * - "Melnick Day Alto Padrão" / "Melnick Day Compactos" / "Melnick Day Médio Padrão"
+ *   (registros de evento/conteúdo vencido)
+ */
+export const HOMI_EMPREENDIMENTOS_FOCO: string[] = [
+  "Casa Bastian",
+  "Casa Tua",
+  "Lake Eyre",
+  "Las Casas",
+  "Open Bosque",
+  "Orygem",
+  "Shift",
+  "Vértice - Las Casas",
+];
+
+/**
+ * Devolve o nome canônico do produto se ele estiver na allowlist de foco do HOMI
+ * (correspondência exata, case-insensitive). Caso contrário, null.
+ * Sem aliases, sem inferência.
+ */
+export function resolverFocoHomi(nome: unknown): string | null {
+  if (typeof nome !== "string") return null;
+  const alvo = nome.trim().toLowerCase();
+  if (!alvo) return null;
+  return HOMI_EMPREENDIMENTOS_FOCO.find((e) => e.toLowerCase() === alvo) ?? null;
+}
