@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
+import { EMPREENDIMENTOS, resolverFocoHomi } from "@/lib/empreendimentos";
 
 interface HomiResponse {
   id: number;
@@ -53,8 +53,9 @@ export default function HomiObjectionHelper({ leadNome, leadEmpreendimento, sele
           body: JSON.stringify({
             messages: [{ role: "user", content: prompt }],
             mode: "arena_objection",
-            // Produto em foco estruturado (o backend valida; inválido = sem foco).
-            empreendimento: selectedEmp,
+            // Produto em foco estruturado: só envia se estiver na allowlist
+            // governada do HOMI; fora dela vai null (sem dossiê detalhado).
+            empreendimento: resolverFocoHomi(selectedEmp),
           }),
 
         }
