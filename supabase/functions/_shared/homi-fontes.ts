@@ -229,7 +229,7 @@ export function composeC2(
     for (const d of difs) {
       const s = String(d ?? "").trim();
       if (!s) continue;
-      if (contemVolatil(s)) {
+      if (contemVolatilComercial(s)) {
         omitidos++;
         continue;
       }
@@ -271,6 +271,9 @@ export interface SanitizacaoC4 {
 /**
  * Sanitiza conteúdo comercial C4 (materiais, chunks de produto/imóvel).
  *
+ * Usa `contemVolatilComercial`, portanto também remove número monetário puro
+ * (`499000`, `2.200.000`) que a lista base não vê.
+ *
  * Remove o TRECHO volátil inteiro (linha ou frase) e preserva o restante
  * permanente quando separável. Nunca reescreve valores.
  * Não deve ser aplicada a conteúdo C1 (Método/Academia/Scripts).
@@ -289,7 +292,7 @@ export function sanitizeC4(texto: unknown): SanitizacaoC4 {
       linhasOut.push("");
       continue;
     }
-    if (!contemVolatil(linha)) {
+    if (!contemVolatilComercial(linha)) {
       linhasOut.push(linha);
       mantidos++;
       continue;
@@ -297,7 +300,7 @@ export function sanitizeC4(texto: unknown): SanitizacaoC4 {
     // A linha tem volátil: desce ao nível de frase para preservar o permanente.
     const frases = linha.split(/(?<=[.!?;])\s+/);
     const limpas = frases.filter((f) => {
-      if (contemVolatil(f)) {
+      if (contemVolatilComercial(f)) {
         removidos++;
         return false;
       }
@@ -311,13 +314,53 @@ export function sanitizeC4(texto: unknown): SanitizacaoC4 {
   return { texto: out, removidos, mantidos };
 }
 
+/** Rótulo neutro quando um metadado C4 precisa ser suprimido por inteiro. */
+export const METADADO_NEUTRO = "Material de apoio";
+
 /**
- * Classifica um chunk do RAG unificado.
- * C1 = conteúdo pedagógico/normativo (nunca sanitizado).
- * C4 = conteúdo comercial de produto/material/imóvel (sanitizável).
+ * Sanitiza um METADADO curto de C4 (título, categoria, tag).
+ *
+ * Metadado não é prosa: não dá para remover "a frase volátil" e manter o
+ * resto sem inventar conteúdo. Então é tudo-ou-nada — se contiver afirmação
+ * volátil (ex.: "Unidade 302 por R$ 499.000 — entrega 2029"), o metadado
+ * inteiro é substituído pelo `fallback` neutro, sem inventar texto novo.
+ *
+ * @param fallback string neutra quando suprimido; `null` descarta o metadado.
  */
-export function classificarChunk(sourceType: string | null | undefined): FonteClasse {
-  switch ((sourceType ?? "").toLowerCase()) {
+export function sanitizeMetadado(
+  texto: unknown,
+  fallback: string | null = METADADO_NEUTRO,
+): string | null {
+  if (typeof texto !== "string" || !texto.trim()) return fallback;
+  const t = texto.trim();
+  return contemVolatilComercial(t) ? fallback : t;
+}
+
+/** Contexto mínimo para classificar uma fonte. */
+export interface FonteContexto {
+  source_type?: string | null;
+  /** Produto vinculado. Quando preenchido, a fonte é comercial por definição. */
+  empreendimento?: string | null;
+}
+
+/**
+ * Classifica uma fonte do RAG unificado.
+ *
+ * Regra dura: VÍNCULO COM PRODUTO PREVALECE SOBRE source_type.
+ * Havia 47 chunks `documento` e 2 `script` com `empreendimento` preenchido —
+ * conteúdo comercial de produto que, classificado só por source_type, virava
+ * C1 e escapava inteiro da sanitização.
+ *
+ * - empreendimento preenchido            -> C4 (sempre)
+ * - documento / academia / script + null -> C1
+ * - empreendimento / material / imovel   -> C4 (sempre)
+ * - desconhecido                         -> C4 (falha para o lado seguro)
+ */
+export function classificarChunk(ctx: FonteContexto | null | undefined): FonteClasse {
+  const emp = ctx?.empreendimento;
+  if (typeof emp === "string" && emp.trim()) return "C4";
+
+  switch ((ctx?.source_type ?? "").toLowerCase()) {
     case "documento":
     case "academia":
     case "script":
