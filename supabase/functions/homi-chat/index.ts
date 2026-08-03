@@ -70,7 +70,7 @@ serve(async (req) => {
       ? formatForAssistant(knowledge, empreendimentoValidado)
       : "";
     const detalhesBlock = detailedKnowledge
-      ? `\n\nCONHECIMENTO DETALHADO DO EMPREENDIMENTO EM FOCO (${empreendimentoValidado}):\n${detailedKnowledge}`
+      ? `\n\nCONHECIMENTO PERMANENTE DO EMPREENDIMENTO EM FOCO (${empreendimentoValidado}) — C2, fonte legada não validada:\n${detailedKnowledge}`
       : `\n\nNENHUM EMPREENDIMENTO EM FOCO: use apenas o resumo acima e a base de conhecimento. Não detalhe produto sem fonte; peça ao corretor qual empreendimento é o assunto quando a pergunta exigir detalhe.`;
 
 
@@ -259,7 +259,10 @@ VERACIDADE COMERCIAL — REGRA DURA:
       console.error("[homi-chat] materiais context skipped:", e);
     }
     const materiaisBlock = formatMateriaisBlock(materiaisSuggestions);
-    const finalSystemPromptWithMateriais = finalSystemPrompt + materiaisBlock + VERACIDADE_COMERCIAL_BLOCK;
+    // GOVERNANCA_VOLATIL_BLOCK fecha o prompt em AMBOS os caminhos (padrão e
+    // customSystem), depois de materiais e veracidade, e aparece uma única vez.
+    const finalSystemPromptWithMateriais =
+      finalSystemPrompt + materiaisBlock + VERACIDADE_COMERCIAL_BLOCK + GOVERNANCA_VOLATIL_BLOCK;
 
     // ── Copilot mode: function-calling (non-streaming JSON) ──
     if (enableTools) {
