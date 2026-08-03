@@ -901,6 +901,13 @@ export default function CeoDashboard() {
             <CardTitle className="text-xs font-semibold">Performance por Equipe</CardTitle>
           </CardHeader>
           <CardContent>
+            <StateWrapper
+              error={errors.teams}
+              empty={teams.length === 0}
+              emptyTitle="Sem dados de equipe no período"
+              onRetry={reload}
+              errorTitle="Falha ao carregar a performance por equipe"
+            >
             <div className="overflow-x-auto">
               <table className="w-full text-[11px]">
                 <thead>
