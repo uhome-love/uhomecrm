@@ -1,183 +1,228 @@
-# Pacote Produtos Ativos (6) + Governança de Dados Voláteis do HOMI
+# PLANO MESTRE — EVOLUÇÃO DO HOMI E UHOME SALES
 
-## 1. Resumo executivo (leigo)
+Responsável pela decisão: Lucas Sarmento / Uhome Imóveis
+Sistema: Uhome Sales CRM + HOMI
+Repositório: uhome-love/uhomecrm
+Versão publicada de referência: 8dd9ae41e721f1846eadb9f6972cb18818f9f823
+Estado: Pacote A de governança de dados voláteis publicado e validado em produção.
 
-Hoje o HOMI só aceita foco detalhado em 8 produtos. Lucas quer somar 6 ativos: Vivid, Flow, Terrace, The Arch, Connect JW e Lake Baikal.
+## OBJETIVO
+Transformar o HOMI em inteligência comercial confiável e integrada ao Uhome Sales, capaz de orientar corretores e gestores sem colocar CRM, dados, Método Uhome ou operação em risco.
 
-Dois problemas reais impedem simplesmente "adicionar à lista":
+O HOMI deve conhecer o Método Uhome, receber produto e lead deterministicamente, separar conhecimento permanente de informação volátil, usar o CRM somente em leitura nesta fase, nunca inventar informação comercial e nunca escrever autonomamente no CRM.
 
-1. Esses 6 não têm ficha comercial nenhuma. O que existe no banco é uma frase de uma linha ("Empreendimento canônico da Uhome: Vivid (ativo)"), mais materiais (drives, anúncios, links). Se entrarem no seletor agora, o HOMI vai falar sobre eles sem base — ou pior, com base em texto publicitário.
-2. Onde existe ficha (Casa Tua, Shift, Lake Eyre etc.), ela carrega dado volátil antigo: faixa de preço fixa gravada em março/2026 e texto livre com preço/prazo. É exatamente daí que veio o preço que o HOMI afirmou.
+## REGRAS PERMANENTES
+1. O CRM é o coração da operação.
+2. Método Uhome e linhas vermelhas N1/N2 nunca são relativizados.
+3. Contexto de lead vem do CRM, nunca do RAG.
+4. RAG serve para Método, produto, scripts, objeções e conhecimento curado.
+5. Dados voláteis vêm apenas de fonte oficial vigente.
+6. Sem fonte atual, orientar confirmação humana; não inventar nem prometer ação inexistente.
+7. Nenhuma escrita autônoma no CRM nesta fase.
+8. Código, dados e produção são separáveis e reversíveis.
+9. Uma entrega pode ser ampla, mas deve ter commits e rollback por camada.
+10. Deploy, migration ou escrita em dados somente com autorização de Lucas.
 
-O plano resolve os dois: cria uma ficha permanente mínima (sem preço) para os 6, corta a saída de dado volátil de todas as fontes permanentes, e obriga o HOMI a responder "preciso confirmar a tabela atual" quando não houver fonte atual no sistema — porque hoje **não existe** tabela de preço/disponibilidade viva no CRM para esses produtos.
+## ARQUITETURA DE FONTES
+C1 — Método e governança: Método Uhome, SPIN, scripts, N1/N2, regras legais e políticas. Sempre presente.
+C2 — Ficha permanente: nome, incorporadora, localização, conceito, tipologia geral, perfil, diferenciais e objeções validadas. Versionada e com fonte por campo.
+C3 — Volátil: preço, unidade, disponibilidade, taxa, condição, parcela, entrada, prazo, fase e aprovação. Somente fonte oficial atual.
+C4 — Apoio: materiais, anúncios, books, links, vídeos e imagens. Não confirmam C3 nem vencem C1/C2.
+Contexto CRM — lead, corretor, etapa, tarefas e eventos carregados deterministicamente conforme tela e permissão; nunca por inferência semântica.
 
-## 2. Fatos confirmados (leitura desta sessão)
+## ESTADO ATUAL CONFIRMADO
+- A2 de continuidade conversacional publicada.
+- Produto em foco selecionado explicitamente no workspace.
+- Foco vive na sessão e é limpo em nova conversa, limpeza e carregamento.
+- RAG geral preserva documentos com empreendimento NULL.
+- HOMI_IDENTITY, N1/N2, ferramentas, perfil e multimodal ativos.
+- Governança de voláteis publicada: preço não gera número antigo; Método continua pedagógico.
+- Seletor possui 8 produtos governados.
+- Vivid, Flow, Terrace, The Arch, Connect JW e Lake Baikal estão ativos, mas sem ficha permanente aprovada.
+- Não existe hoje no banco fonte viva confiável de preço/disponibilidade para esses produtos.
 
-- HEAD = produção = `6bacd4f7fe64d460391820ff569cefb0067705ce`.
-- `src/lib/empreendimentos.ts`: `HOMI_EMPREENDIMENTOS_FOCO` com 8 nomes + `resolverFocoHomi` (match exato, case-insensitive). `HomiWorkspace.tsx` e `HomiObjectionHelper.tsx` consomem essa allowlist.
-- `supabase/functions/homi-chat/index.ts`: recebe `empreendimento`; aplica `FOCO_BLOQUEADO`; monta `allEmpreendimentos = formatForList(knowledge)` (**todos os produtos, sempre no prompt**) e `detalhesBlock` só do produto validado; depois RAG + materiais + `VERACIDADE_COMERCIAL_BLOCK`.
-- `_shared/enterprise-knowledge.ts`: carrega `empreendimento_overrides`; `formatForAssistant` devolve `descricao_completa` inteira quando existe; senão monta campos; senão cai no `FALLBACK_KNOWLEDGE` **hardcoded no arquivo**. `formatBrief`/`formatForList` também têm `FALLBACK_BRIEF` hardcoded.
-- `empreendimento_overrides` (13 registros, todos com `updated_at` de mar/mai 2026): contém `valor_min`/`valor_max` (ex.: Casa Tua 499.000–700.000; Lake Eyre 2,2M–4,8M; Orygem 880k–1,09M; Las Casas 293k–450k; Vértice 294k–338,8k) e textos longos em `descricao_completa`/`argumentos_venda`.
-- Nenhum dos 6 produtos novos existe em `empreendimento_overrides`. Nenhum deles está em `FALLBACK_KNOWLEDGE`/`FALLBACK_BRIEF`.
-- `homi_documents`, `category='empreendimento'`, para os 6 e para Casa Tua/Shift: conteúdo é literalmente `Empreendimento canônico da Uhome: <nome> (ativo)` (46–53 chars). Não é dossiê.
-- Materiais indexados (source_type=material) existentes: Flow (apresentação, "Tabela - Pré-lançamento", vídeo), Connect JW ("Disponibilidade e Tabela", drive, anúncio, link), The Arch ("Dispo e Tabela", drive), Terrace (drive, anúncio, vídeo, link), Lake Baikal (anúncio, imagens, vídeo), Vivid (presente em `homi_documents`, itens de apoio). São **links/anúncios**, não fonte estruturada com data de vigência.
-- `empreendimentos_canonicos`: os 6 existem, `ativo=true`, com IDs próprios (ex.: Vivid `8656f04a…`, Flow `0d4aa2d5…`, Terrace `3a177a9c…`, The Arch `5dc1dfd4…`, Connect JW `fa06971e…`, Lake Baikal `8654bd9d…`). Nomes canônicos batem 1:1 com os nomes usados em `homi_documents.empreendimento`.
-- `materiais_links` não tem nenhuma linha ligada por `empreendimento_id` a esses canônicos (vínculo dos materiais é por outra via/nome).
-- **Não foi encontrada nenhuma tabela viva de preço/tabela/disponibilidade por unidade** para esses produtos. `properties` não tem linhas casando por nome desses empreendimentos.
+# ROADMAP — QUATRO ENTREGAS ECONÔMICAS
 
-Hipótese (não confirmada): os materiais "Tabela"/"Disponibilidade" apontam para arquivos externos (drive/planilha), fora do banco.
+## ENTREGA 1 — CATÁLOGO GOVERNADO DOS 14 PRODUTOS
+Objetivo: fazer o HOMI conhecer corretamente os 14 produtos e permitir foco nos seis faltantes.
 
-## 3. Matriz dos 6 produtos
+Atuais: Casa Bastian, Casa Tua, Lake Eyre, Las Casas, Open Bosque, Orygem, Shift e Vértice – Las Casas.
+Novos: Vivid, Flow, Terrace, The Arch, Connect JW e Lake Baikal.
 
-| Produto | Nome canônico | Fonte permanente | Fonte volátil oficial | Qualidade | Lacunas | Decisão |
-|---|---|---|---|---|---|---|
-| Vivid | Vivid | nenhuma (só linha de 1 frase) | nenhuma no banco | inexistente | localização, conceito, tipologia, perfil, diferenciais | precisa conteúdo |
-| Flow | Flow | nenhuma | link "Tabela - Pré-lançamento" (externo, sem data de vigência) | inexistente | idem | precisa conteúdo |
-| Terrace | Terrace | nenhuma | nenhuma estruturada | inexistente | idem | precisa conteúdo |
-| The Arch | The Arch | nenhuma | link "Dispo e Tabela" (externo) | inexistente | idem | precisa conteúdo |
-| Connect JW | Connect JW | nenhuma | link "Disponibilidade e Tabela" (externo) | inexistente | idem | precisa conteúdo |
-| Lake Baikal | Lake Baikal | nenhuma (só anúncios/imagens) | nenhuma | inexistente | idem | precisa conteúdo |
+Escopo:
+1. Inventariar fontes oficiais por produto.
+2. Criar ficha permanente dos 6 novos.
+3. Revisar e normalizar as 8 atuais.
+4. Entregar a Lucas tabela única: campo, conteúdo, fonte e decisão.
+5. Gravar somente conteúdo aprovado em estrutura versionada.
+6. Integrar backend à ficha validada.
+7. Ampliar seletor de 8 para 14.
+8. Manter Oferta Ativa ampla, enviando foco somente quando governado.
 
-Nenhum está "pronto"; nenhum está "bloqueado". Todos ficam liberados assim que a ficha permanente mínima (seção 8) for aprovada por Lucas.
+Estrutura recomendada:
+- tabela aditiva de ficha permanente;
+- empreendimento_id canônico;
+- versão;
+- ficha estruturada;
+- source_refs por campo;
+- validada_em;
+- validada_por UUID;
+- status;
+- created_at.
+Frontend não acessa diretamente. Backend lê somente ficha validada. Snapshot antes da escrita.
 
-## 4. Diagnóstico das afirmações de preço/prazo (Casa Tua e Shift)
+Critérios:
+- nomes canônicos, sem alias inventado;
+- fonte por campo;
+- nenhum C3 na ficha;
+- novo produto só aparece após ficha validada;
+- produto sem ficha vira sem foco;
+- Casa Tua/Shift seguem recusando preço atual sem fonte;
+- Método e A2 intactos.
 
-Confirmado por leitura, sem consultar conversas:
+Uma entrega/auditoria com commits separados:
+1. schema;
+2. fichas aprovadas;
+3. backend;
+4. seletor/contrato frontend;
+5. testes.
+Deploy conjunto só após todos os gates. Rollback por camada.
 
-- **Casa Tua** — origem primária: `empreendimento_overrides` (`valor_min=499000`, `valor_max=700000`, `descricao_completa` e `argumentos_venda` longos, atualizados em 14/03/2026). Esse conteúdo entra inteiro via `formatForAssistant` → `detalhesBlock`.
-- **Shift** — `valor_min`/`valor_max` são NULL e `descricao_completa` existe; além disso o `FALLBACK_BRIEF["Shift"]` hardcoded entra em **todo** prompt via `formatForList`, e o `FALLBACK_KNOWLEDGE["Shift"]` entra quando a ficha do banco não cobre. Metragens/faixas do texto hardcoded viram "fato" para o modelo.
-- Prazo/fase: não existe campo estruturado; qualquer afirmação de prazo veio de texto livre (descrição/argumentos/material) ou do próprio modelo.
+## ENTREGA 2 — FONTE OFICIAL VIVA PARA C3
+Objetivo: responder preço e disponibilidade atuais sem memória/material antigo.
 
-Conclusão: o vazamento é **estrutural** — dado volátil está gravado dentro de fonte permanente e é injetado sem rótulo de data nem instrução de conferência. `VERACIDADE_COMERCIAL_BLOCK` cobre valorização/rentabilidade, não preço/prazo.
+Pré-condição: Lucas define fonte oficial — integração, planilha governada, API ou tabela operacional com responsável e vigência.
 
-## 5. Arquitetura atual vs alvo mínimo
+Contrato:
+- somente leitura;
+- atualização identificável;
+- produto/unidade canônicos;
+- validade/expiração;
+- ausência gera confirmação humana;
+- nenhuma aprovação de crédito;
+- nenhuma escrita automática.
 
-```text
-ATUAL
-foco (frontend allowlist 8) → homi-chat
-  ├ allEmpreendimentos = formatForList(TODOS)      ← briefs hardcoded, sem data
-  ├ detalhesBlock = formatForAssistant(foco)       ← descricao_completa + valor_min/max
-  ├ RAG (buscar_conhecimento)                      ← chunks de materiais/anúncios
-  └ materiaisBlock + VERACIDADE (só valorização)
+Critérios:
+- resposta informa fonte/vigência;
+- dado vencido não é usado;
+- conflito gera bloqueio seguro;
+- queda da fonte não derruba chat;
+- logs sem pergunta/resposta/PII.
 
-ALVO
-foco (allowlist única 14) → homi-chat
-  ├ índice de produtos: só NOME + bairro (sem preço, sem metragem)
-  ├ FICHA PERMANENTE do foco (C2): campos brancos, sem volátil, com data
-  ├ RAG geral preservado (empreendimento NULL continua entrando)
-  ├ materiais rotulados como C4 (apoio, nunca fonte de preço)
-  └ BLOCO VOLÁTIL (C3): "sem fonte atual no sistema → não afirmar, orientar conferência"
-```
+## ENTREGA 3 — CONTEXTO DETERMINÍSTICO DO LEAD EM LEITURA
+Objetivo: orientar o corretor com base no lead aberto sem confundir pessoas e sem RAG.
 
-## 6. Contrato de fontes C1–C4 e precedência
+Dados mínimos:
+- id do lead;
+- corretor responsável;
+- etapa;
+- empreendimento;
+- última interação/próxima tarefa;
+- visitas/status;
+- permissões.
 
-- **C1 — Método/regras gerais.** `HOMI_IDENTITY`, N1/N2, A2, RAG de documentos com `empreendimento IS NULL`. Nunca removido.
-- **C2 — Conhecimento permanente do produto.** Localização, conceito, tipologia geral, diferenciais, perfil, objeções. Só com fonte validada e datada. **Proibido conter preço, taxa, condição, unidade, prazo/fase.**
-- **C3 — Dados voláteis.** Preço, disponibilidade, unidade, taxa, condição, prazo/fase, aprovação. Só de fonte atual do sistema no momento da resposta. Hoje essa fonte **não existe** → resposta segura obrigatória (seção 7, item 8).
-- **C4 — Materiais de apoio.** Drives, anúncios, imagens, links. Citáveis como material; nunca vencem C1/C2/C3 e nunca fundamentam preço/prazo.
+Regras:
+- somente lead explicitamente aberto/selecionado;
+- nenhuma busca por nome aproximado;
+- RLS/permissões preservadas;
+- PII minimizada;
+- nenhuma escrita/envio automático;
+- operação separada do conhecimento comercial.
 
-Precedência: C3 (fonte atual) > C2 > C1 no que for factual de produto; C1 vence tudo no que for regra/comportamento. Ausência de dado vence qualquer suposição. N1 nunca relativizado.
+Resultado: HOMI explica situação, risco, prioridade e próxima ação recomendada; corretor decide e executa.
 
-## 7. Plano em 3 pacotes
+## ENTREGA 4 — EVALS, OBSERVABILIDADE E EXPANSÃO
+Evals fixos:
+- Método/SPIN;
+- N1;
+- preço/disponibilidade/taxa/prazo;
+- foco/troca;
+- produto inválido;
+- sem foco;
+- contexto do lead;
+- Oferta Ativa;
+- gestor/CEO;
+- ferramentas;
+- A2.
 
-### Pacote A — Corte do vazamento volátil (só código)
-- **Objetivo/benefício:** parar imediatamente afirmação de preço/prazo a partir de fonte permanente antiga. Vale mesmo se nada mais for feito.
-- **Arquivos:** `_shared/enterprise-knowledge.ts`, `homi-chat/index.ts`.
-- **Mudanças:** (a) `formatForAssistant` passa a emitir ficha saneada — remove `valor_min`/`valor_max` e filtra sentenças com padrão volátil (R$, %, "a partir de", "entrega", "obra", "parcela", "taxa"), marcando `[dado volátil removido — conferir tabela atual]`; (b) `formatForList` reduzido a `• Nome — bairro` (sem brief comercial); (c) novo `GOVERNANCA_VOLATIL_BLOCK` no prompt, ao lado do de veracidade, com a resposta segura padrão; (d) cada bloco C2 recebe cabeçalho `FICHA PERMANENTE (validada em <data>) — não contém preço/condição/prazo`.
-- **Dependências:** nenhuma. **Risco:** baixo; respostas ficam mais curtas e mais cautelosas.
-- **Testes:** matriz da seção 10, focos Casa Tua/Shift/Lake Eyre.
-- **Rollback:** `git revert` do commit. **Custo:** prompt menor (mais barato).
-- **Autorização:** Lucas aprova este plano.
+Métricas sem PII:
+- foco presente/válido;
+- C1/C2/C3/C4 usados;
+- quantidade de chunks;
+- tamanho de prompt;
+- latência/erro;
+- ferramenta;
+- recusas seguras;
+- sem armazenar texto bruto.
 
-### Pacote B — Ficha permanente dos 6 (dados + validação humana)
-- **Objetivo/benefício:** dar base real aos 6 antes de expô-los.
-- **Tabelas:** `empreendimento_overrides` (upsert de 6 registros, campos C2 apenas, `valor_min`/`valor_max` deixados NULL) + 3 colunas novas de governança: `ficha_validada_em date`, `ficha_validada_por text`, `ficha_versao int`.
-- **Por que overrides e não tabela nova:** é a única fonte que `formatForAssistant` já lê; criar tabela paralela duplicaria leitura, cache e risco de divergência. A alternativa aditiva (inserir dossiê em `homi_documents` e depender de RAG) foi descartada: RAG é probabilístico e não garante que a ficha do produto em foco apareça.
-- **Mudanças:** migration DDL das 3 colunas; conteúdo das fichas inserido **somente após aprovação escrita** de Lucas (seção 9).
-- **Dependências:** Pacote A no ar. **Risco:** médio (conteúdo humano); mitigado pela validação prévia e por `ficha_versao`.
-- **Testes:** foco em cada um dos 6 → resposta cita só o que está na ficha; pergunta de preço → resposta segura.
-- **Rollback:** `ficha_versao` anterior + delete dos 6 registros (não havia registro antes, rollback é limpo).
-- **Autorização:** Lucas aprova conteúdo das 6 fichas, campo a campo.
+Expansão só após estabilidade:
+- demais personas;
+- sugestões de tarefas;
+- rascunhos;
+- aprovação humana;
+- escrita assistida futura em fase separada.
 
-### Pacote C — Exposição dos 6 no foco (só código)
-- **Objetivo:** ligar os 6 no seletor e na Oferta Ativa, com contrato único.
-- **Arquivos:** `src/lib/empreendimentos.ts` (allowlist 8 → 14), `HomiWorkspace.tsx` e `HomiObjectionHelper.tsx` (nenhuma mudança além de já consumirem a allowlist), `homi-chat/index.ts` (validação server-side: aceitar foco só se existir ficha com `ficha_validada_em` não nula; senão tratar como sem foco).
-- **Reconhecimento de nome:** match exato case-insensitive contra `empreendimentos_canonicos.nome` (os 6 batem 1:1 com `homi_documents.empreendimento`). **Sem aliases.**
-- **Dependências:** A e B concluídos. **Risco:** baixo — o gate de `ficha_validada_em` impede exposição de produto sem ficha.
-- **Testes:** matriz completa. **Rollback:** reverter allowlist para 8.
-- **Autorização:** Lucas libera após ver as 6 fichas em produção.
+## MATRIZ DE TESTES
+Testar:
+1. sem foco;
+2. cada produto;
+3. foco inválido;
+4. troca;
+5. conversa carregada;
+6. preço;
+7. disponibilidade/unidade;
+8. taxa/condição;
+9. prazo/fase;
+10. investimento/valorização;
+11. SPIN/Método;
+12. N1/N2;
+13. Oferta Ativa;
+14. ferramentas/perfis;
+15. A2;
+16. queda da fonte oficial;
+17. permissões/LGPD;
+18. rollback.
+Primeiro testes locais/estáticos. IA real apenas bateria final pequena, aprovada e sem PII.
 
-## 8. Ficha permanente mínima (campos obrigatórios)
+## DEPLOY E ROLLBACK
+1. Preparar fora de produção.
+2. Auditar diff, dados e testes.
+3. Registrar SHA/snapshot.
+4. Publicar fora do pico.
+5. Smoke test sem PII.
+6. Observar erros, latência, recusa e foco.
+7. Reverter em qualquer falha crítica.
 
-Obrigatórios: nome canônico; incorporadora/construtora; endereço e bairro; tipo (apto/casa/studio/lote); conceito em 1–2 frases; tipologia geral (nº de dormitórios, faixa de metragem **sem preço**); perfil de cliente; 3–5 diferenciais; 2–3 objeções com resposta; estratégia de conversão; `ficha_validada_em`, `ficha_validada_por`, `ficha_versao`.
+Rollback imediato se houver:
+- preço/disponibilidade inventados;
+- Método/N1/N2 ausente;
+- produto anterior vazando;
+- erro no homi-chat;
+- perda de ferramentas/perfis;
+- acesso indevido;
+- escrita não autorizada;
+- degradação séria de latência.
 
-Proibidos na ficha: valor, faixa de preço, parcela, taxa, entrada, condição do mês, unidades disponíveis, prazo/fase de obra, promessa de valorização ou aprovação.
+## POLÍTICA ECONÔMICA
+1. ChatGPT/Codex diagnostica e audita via GitHub/consultas de leitura.
+2. Lovable apenas na implementação final indispensável.
+3. Não usar plan_mode do Lovable.
+4. Um prompt completo por entrega.
+5. No máximo uma correção consolidada.
+6. Testes em lote.
+7. Conferir saldo antes do agente pago.
+8. Não usar Lovable para explicações ou relatórios repetidos.
+9. Evitar screenshots quando teste estático bastar.
+10. Lucas aprova três gates: conteúdo, dados e deploy.
 
-## 9. Validação humana antes da escrita
+## PRÓXIMO PASSO
+Entrega 1:
+1. ChatGPT inventaria fontes e monta quadro das 14 fichas sem Lovable.
+2. Lucas aprova/corrige em uma revisão.
+3. Só então preparar pacote técnico único de schema, dados, backend, seletor e testes.
 
-1. Rascunho das 6 fichas montado **apenas** a partir de fonte identificável (material oficial da construtora / site Uhome), com a fonte citada por campo.
-2. Entrega em tabela para Lucas: campo → conteúdo → fonte.
-3. Lucas aprova, corrige ou marca "não confirmar" (campo fica vazio, nunca preenchido por inferência).
-4. Só então o upsert, com `ficha_validada_em` = data da aprovação e `ficha_versao` = 1.
+Durante inventário/aprovação: zero migration, código, dados ou produção.
 
-## 10. Matriz de testes (lote)
-
-Por produto (Vivid, Flow, Terrace, The Arch, Connect JW, Lake Baikal) e regressão (Casa Tua, Shift):
-1. "me fala sobre X" → só conteúdo da ficha, sem preço.
-2. "qual o preço de X" → resposta segura de conferência.
-3. "tem unidade disponível / qual unidade" → resposta segura.
-4. "qual a taxa / condição de pagamento" → resposta segura + N1 (não prometer aprovação/taxa).
-5. "quando entrega / qual a fase da obra" → resposta segura.
-6. "vale a pena investir / valorização" → sem garantia, sem transferência entre produtos.
-
-Transversais: sem foco (não detalha produto, pergunta qual é); foco inválido/bloqueado (Átrio, Melnick Day) → tratado como sem foco; troca de produto no meio da conversa → não carrega dado do anterior; SPIN/Método (C1 intacto, cita MU-xx.x); Oferta Ativa envia o mesmo foco governado; ferramentas/perfis (buscar_imovel, gestor/CEO) inalterados; A2 (conector forte/ambíguo) inalterado.
-
-Medição sem PII e sem custo alto: harness estático sobre o prompt montado (asserções de presença/ausência de padrões: `R$`, `%`, "entrega", "parcela") + logs por turno com tamanho do prompt e validade do foco. Nenhum texto de usuário armazenado.
-
-## 11. Deploy e sinais de rollback
-
-Ordem A → B → C, cada um em commit próprio, fora do horário de pico. Sinais de rollback: HOMI passa a recusar produto que tem ficha válida; some citação de MU-xx.x; erro em `homi-chat`; prompt cresce em vez de encolher; Oferta Ativa deixa de receber sugestão.
-
-## 12. Decisões necessárias de Lucas (3)
-
-1. Confirmar que **não existe** hoje fonte viva de preço/disponibilidade no CRM e que a resposta padrão será "preciso confirmar a tabela atual, te mando na sequência" (se existir planilha oficial fora do banco, indicar qual — muda o Pacote C).
-2. Aprovar o conteúdo das 6 fichas permanentes, campo a campo, antes de qualquer escrita.
-3. Aprovar o corte dos briefs comerciais hardcoded do `formatForList` (índice passa a ser só nome + bairro), aceitando respostas mais enxutas sobre produtos sem foco.
-
-## 13. Decisão
-
-**APROVAR PLANO PARA PREPARAR IMPLEMENTAÇÃO** — condicionado às 3 decisões acima. Nada implementado nesta sessão.
-
-## 14. Prompt exato do primeiro pacote (não executar agora)
-
-```text
-IMPLEMENTAÇÃO CONTROLADA — PACOTE A DO HOMI (CORTE DO VAZAMENTO VOLÁTIL)
-AUTORIZAÇÃO: preparar código, testes locais e commit para auditoria.
-NÃO FAZER DEPLOY, MIGRATION, ALTERAÇÃO DE DADOS OU MUDANÇA DE ALLOWLIST.
-
-Escopo — exatamente 2 arquivos:
-1. supabase/functions/_shared/enterprise-knowledge.ts
-   - formatForAssistant: nunca emitir valor_min/valor_max; filtrar do texto
-     sentenças com padrão volátil (R$, %, "a partir de", "parcela", "entrada",
-     "taxa", "entrega", "obra", "unidades", "disponív"), substituindo por
-     "[dado volátil removido — conferir tabela atual]".
-   - Prefixar a ficha com: "FICHA PERMANENTE (validada em <updated_at>) —
-     não contém preço, condição, unidade ou prazo."
-   - formatForList: passar a emitir apenas "• <nome> — <bairro ou 'Porto Alegre'>".
-     Não usar FALLBACK_BRIEF como texto comercial no prompt.
-2. supabase/functions/homi-chat/index.ts
-   - Adicionar GOVERNANCA_VOLATIL_BLOCK após VERACIDADE_COMERCIAL_BLOCK:
-     preço, disponibilidade, unidade, taxa, condição, prazo/fase e aprovação
-     só podem ser afirmados se vierem de fonte atual do sistema nesta resposta;
-     caso contrário responder que vai confirmar a tabela atual e seguir para a visita.
-     Nunca deduzir de material, anúncio, histórico da conversa ou memória do modelo.
-
-Preservar sem tocar: HOMI_IDENTITY, N1/N2, A2, RAG (documentos com
-empreendimento NULL continuam entrando), ferramentas, perfis, FOCO_BLOQUEADO,
-allowlist atual de 8 produtos.
-
-Testes obrigatórios: tsgo; harness estático verificando que o prompt montado
-para foco Casa Tua e Shift não contém "R$", faixa numérica de preço nem prazo;
-que o índice de produtos não contém texto comercial; que MU-xx.x e A2 seguem intactos.
-Reportar diff, resultados e SHA. Parar e aguardar auditoria.
-```
+## DECISÃO
+Plano mestre aprovado como direção recomendada.
+Próximo gate: inventário somente de leitura das fontes dos 14 produtos e montagem das fichas para aprovação de Lucas.
