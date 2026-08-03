@@ -153,57 +153,8 @@ export default function AdminPanel() {
     else { toast.success("ID Jetimob salvo!"); setEditingJetimob(null); fetchUsers(); }
   }, [jetimobInput, fetchUsers]);
 
-  // Save 360dialog API key
-  const saveDialogKey = useCallback(async () => {
-    if (!dialogApiKey.trim()) { toast.error("Insira a API key."); return; }
-    setSavingKey(true);
-    try {
-      const { data: existing } = await supabase
-        .from("integration_settings")
-        .select("id")
-        .eq("key", "360dialog_api_key")
-        .single();
 
-      if (existing) {
-        const { error } = await supabase
-          .from("integration_settings")
-          .update({ value: dialogApiKey.trim(), updated_at: new Date().toISOString() } as any)
-          .eq("key", "360dialog_api_key");
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("integration_settings")
-          .insert({ key: "360dialog_api_key", value: dialogApiKey.trim(), label: "360dialog WhatsApp API Key" } as any);
-        if (error) throw error;
-      }
-      setDialogSaved(true);
-      toast.success("API key salva!");
-    } catch (err: any) {
-      toast.error("Erro ao salvar API key.");
-    } finally { setSavingKey(false); }
-  }, [dialogApiKey]);
 
-  // Test 360dialog connection
-  const testDialogConnection = useCallback(async () => {
-    setDialogTesting(true);
-    setDialogConnected(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("whatsapp-360dialog", {
-        body: { action: "test" },
-      });
-      if (error) throw error;
-      if (data?.error) {
-        setDialogConnected(false);
-        toast.error(data.error);
-      } else {
-        setDialogConnected(true);
-        toast.success("Conexão com 360dialog OK!");
-      }
-    } catch (err: any) {
-      setDialogConnected(false);
-      toast.error("Falha ao testar conexão.");
-    } finally { setDialogTesting(false); }
-  }, []);
 
   // Create user
   const handleCreate = useCallback(async () => {
