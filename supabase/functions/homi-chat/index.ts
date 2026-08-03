@@ -42,15 +42,27 @@ serve(async (req) => {
     // ── Produto em foco (explícito, nunca inferido) ──
     // Correspondência exata e case-insensitive contra nome OU código já carregados.
     // Valor inválido = ausência de foco (sem erro, sem chute, sem log do valor).
+    //
+    // Bloqueio duro: registros sem ficha utilizável ou com conteúdo de evento
+    // vencido nunca viram foco detalhado, mesmo em chamada direta à função.
+    const FOCO_BLOQUEADO = [
+      "átrio - abf",
+      "melnick day alto padrão",
+      "melnick day compactos",
+      "melnick day médio padrão",
+    ];
     const focoAlvo = typeof empreendimento === "string" ? empreendimento.trim().toLowerCase() : "";
-    const registroFoco = focoAlvo
+    const registroFoco = focoAlvo && !FOCO_BLOQUEADO.includes(focoAlvo)
       ? knowledge.find((r) =>
           (r.nome || "").trim().toLowerCase() === focoAlvo ||
           (r.codigo || "").trim().toLowerCase() === focoAlvo
         )
       : undefined;
-    const empreendimentoValidado = registroFoco ? (registroFoco.nome || registroFoco.codigo) : null;
+    const nomeFoco = registroFoco ? (registroFoco.nome || registroFoco.codigo) : null;
+    const empreendimentoValidado =
+      nomeFoco && !FOCO_BLOQUEADO.includes(nomeFoco.trim().toLowerCase()) ? nomeFoco : null;
     console.log("[homi-chat] produto em foco:", empreendimentoValidado ? "válido" : "ausente/inválido");
+
 
     // Detalhe completo somente do produto em foco. Sem foco = sem dossiê.
     const detailedKnowledge = empreendimentoValidado
