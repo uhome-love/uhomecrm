@@ -1,68 +1,215 @@
-# Lote 2 — QW-F: shell de abas respeita a query string
+# Lote 4a — Unificar a definição de VGV assinado
 
-Escopo: **um único arquivo**, `src/contexts/TabContext.tsx`. Nenhuma página, hook, dado, CSS ou deploy.
+Definição única: `fase='ganho' AND status='ativo' AND data_assinatura BETWEEN período`.
 
-## Causa raiz (confirmada no código)
+## Fato medido no banco (leitura, hoje)
 
-`openTab` identifica a aba pelo `resolved.key` (derivado só do pathname). Quando a aba já existe e **já é a ativa**, a função faz `return` sem navegar e sem atualizar o `path` guardado no tab. Abrir `/materiais?emp=X` estando em `/materiais?emp=Y` não muda nada — nem URL, nem estado. A mesma classe de bug atinge `?tab`, `?secao`, `?status`.
+| fase | status | negócios com `data_assinatura` | VGV |
+|---|---|---|---|
+| ganho | ativo | 86 | R$ 51.175.014,19 |
+| ganho | arquivado | 5 | R$ 2.232.630,00 |
 
-Como o `AppLayout` mantém todas as abas montadas e as páginas leem os parâmetros da URL, basta a URL mudar para o painel reagir.
+Nenhum negócio fora de `fase='ganho'` tem `data_assinatura` preenchida. Logo:
+- acrescentar `fase='ganho'` onde falta **não muda número nenhum hoje** (é blindagem contra dado futuro);
+- acrescentar `status='ativo'` **remove 5 negócios / R$ 2.232.630** do histórico total. Por mês: junho/2026 −1 venda / −R$ 410.000; julho/2026 −0. Os outros 4 são anteriores a junho.
+- Não há `status='perdido'` com `data_assinatura`.
 
-## (a) Diff conceitual
+## (a) SQL por RPC
 
-### `openTab(path, skipNav)` — bloco "aba já existe"
+Formato: para cada função, o bloco alterado exato. O `CREATE OR REPLACE` a aplicar é **byte-idêntico ao `pg_get_functiondef` atual** exceto pelas linhas marcadas — nada mais de assinatura, `SECURITY DEFINER`, `search_path`, autorização ou demais CTEs muda. Nenhuma função troca de assinatura, então não há `DROP FUNCTION`.
 
-Hoje:
-1. Se a aba já é a ativa → `return` (nada acontece).
-2. Se não é a ativa → ativa e navega para `path`.
+### 1. `_kpi_team_window_core(uuid[], uuid[], date, date, date, date, boolean)`
 
-Passa a ser:
-1. Localiza a aba existente e compara o `path` recebido (já normalizado) com `tab.path` guardado.
-2. Se forem diferentes, atualiza o array de abas trocando **apenas** o `path` daquela aba (`setTabs` com map imutável); as demais propriedades (id, label, icon, closable, componentKey, pattern, noPadding) ficam idênticas.
-3. Se a aba não é a ativa, `setActiveTabId(resolved.key)`.
-4. Navega quando `!skipNav` **e** (a aba não era a ativa **ou** o `path` mudou). Se nada mudou (mesma aba, mesmo path), não navega — evita entradas duplicadas no histórico.
-5. `return`.
+Três pontos, todos no bloco de vendas:
 
-Também: `openTab` passa a declarar `hasAccess` nas dependências do `useCallback` (hoje o array está vazio; `hasAccess` é estável, então não muda comportamento — apenas correção de lint).
+```sql
+-- ramo p_include_partner_split = TRUE, CTE base:
+      WHERE n.fase = 'ganho' AND n.status = 'ativo'   -- << MUDA (era só fase='ganho')
+        AND n.data_assinatura BETWEEN p_start AND p_end
 
-### Efeito URL → Tab
+-- ramo ELSE (sem split):
+    SELECT COALESCE(SUM(COALESCE(vgv_final, vgv_estimado, 0)), 0), count(*)::int
+      INTO v_vgv, v_vendas_qtd
+    FROM negocios
+    WHERE corretor_id = ANY(p_team_prof)
+      AND fase = 'ganho' AND status = 'ativo'         -- << MUDA
+      AND data_assinatura BETWEEN p_start AND p_end;
 
-Hoje, quando a rota resolve para uma aba já aberta, o efeito só faz `setActiveTabId` se ela não for a ativa; o `tab.path` guardado nunca é sincronizado.
+-- período anterior (v_vgv_prev):
+    FROM negocios
+    WHERE corretor_id = ANY(p_team_prof)
+      AND fase = 'ganho' AND status = 'ativo'         -- << MUDA
+      AND data_assinatura BETWEEN p_prev_start AND p_prev_end;
+```
 
-Passa a ser: no ramo `if (existing)`, além de ativar a aba quando necessário, compara `existing.path` com o `normalizedFullPath` atual e, se diferente, atualiza o `path` da aba via `setTabs` (map imutável). **Não navega** nesse efeito — a URL já é a correta, aqui só se espelha estado.
+Efeito colateral desejado: `vendas.ticket_medio` e `vendas.delta_pct` passam a usar a base correta. Nada de `leads`, `visitas`, `negocios` ou `oferta_ativa` é tocado.
 
-Nada mais muda: `closeTab`, `activateTab`, MAX_TABS, role-gate, normalização de rotas legadas, redirect de `/`, persistência — tudo intacto.
+### 2. `rpc_perf_dashboard(date, date)` — CTE `vgv`
 
-## (b) Como o loop de navegação é evitado
+```sql
+  WITH vgv AS (
+    SELECT n.corretor_id AS profile_id,
+           COALESCE(SUM(COALESCE(n.vgv_final, n.vgv_estimado, 0)), 0) AS vgv_vendido,
+           COUNT(*) AS qtd_ganho
+      FROM public.negocios n
+     WHERE n.fase = 'ganho'
+       AND n.status = 'ativo'                          -- << LINHA NOVA
+       AND n.data_assinatura BETWEEN p_inicio AND p_fim
+     GROUP BY 1
+  ), ...
+```
 
-Três guardas somadas:
+A CTE `fases` (`qtd_contrato`/`qtd_negociacao`) já filtra `status='ativo'` — fica intacta. O diagnóstico `vgv_zerado` passa a considerar arquivado como não-venda (correto).
 
-1. **O efeito URL→Tab nunca navega quando a rota já é válida.** Ele só faz `setActiveTabId`/`setTabs` (estado), então não realimenta `location`.
-2. **`openTab` só navega quando algo realmente mudou** (`path` diferente ou aba diferente). Navegar para a mesma URL vira no-op.
-3. **`syncingRef` continua ativo**: quando o efeito precisa navegar (redirect de `/`, normalização legada, role-gate), ele marca a flag e a libera no `requestAnimationFrame` seguinte, ignorando o disparo de `location` que ele mesmo causou.
+### 3. `get_relatorio_vendas(uuid, date, date, date, date)` — 4 agregações
 
-Sequência típica: clique na sidebar → `openTab` atualiza `tab.path` + `navigate` → `location` muda → efeito roda, encontra a aba, vê que `existing.path` já é igual ao `normalizedFullPath` → nenhum `setState`, nenhuma navegação → fim.
+O headline vem de `_kpi_team_window_core` (corrigido no item 1). As quebras locais:
 
-## (c) Matriz de regressão (validada ao vivo no preview)
+```sql
+-- por_empreendimento
+    FROM negocios
+    WHERE corretor_id = ANY(v_team_prof)
+      AND fase = 'ganho' AND status = 'ativo'          -- << LINHA NOVA
+      AND data_assinatura BETWEEN p_start AND p_end
+    GROUP BY 1 ORDER BY vgv DESC NULLS LAST LIMIT 10
 
-| # | Cenário | Esperado |
+-- por_dia
+    FROM negocios
+    WHERE corretor_id = ANY(v_team_prof)
+      AND fase = 'ganho' AND status = 'ativo'          -- << LINHA NOVA
+      AND data_assinatura BETWEEN p_start AND p_end
+    GROUP BY 1
+
+-- comissao_real
+  FROM negocios n
+  JOIN pipeline_comissoes pc ON pc.pipeline_lead_id = n.pipeline_lead_id
+                            AND pc.corretor_id = n.corretor_id
+  WHERE n.corretor_id = ANY(v_team_prof)
+    AND n.fase = 'ganho' AND n.status = 'ativo'        -- << LINHA NOVA
+    AND n.data_assinatura BETWEEN p_start AND p_end;
+
+-- comissao_fallback
+  FROM negocios n
+  WHERE n.corretor_id = ANY(v_team_prof)
+    AND n.fase = 'ganho' AND n.status = 'ativo'        -- << LINHA NOVA
+    AND n.data_assinatura BETWEEN p_start AND p_end
+    AND NOT EXISTS (...)
+```
+
+### 4. `get_dashboard_gerente(uuid, text)` — 3 CTEs
+
+```sql
+  vendas_atual AS (
+    SELECT COALESCE(SUM(COALESCE(n.vgv_final, n.vgv_estimado, 0)), 0)::numeric AS v, COUNT(*)::int AS qtd
+    FROM negocios n JOIN prof p ON p.profile_id = n.corretor_id
+    WHERE n.fase = 'ganho' AND n.status = 'ativo'      -- << LINHA NOVA
+      AND n.data_assinatura BETWEEN v_p_start AND v_p_end
+  ),
+  vendas_prev AS (
+    ... WHERE n.fase = 'ganho' AND n.status = 'ativo'  -- << LINHA NOVA
+      AND n.data_assinatura BETWEEN v_prev_start AND v_prev_end
+  ),
+  -- segundo bloco WITH (ranking de corretores):
+  vendas_c AS (
+    SELECT p.auth_id, COALESCE(SUM(COALESCE(n.vgv_final, n.vgv_estimado, 0)),0)::numeric AS vgv
+    FROM prof p
+    LEFT JOIN negocios n ON n.corretor_id = p.profile_id
+     AND n.fase = 'ganho' AND n.status = 'ativo'       -- << LINHA NOVA (no ON, para preservar o LEFT JOIN)
+     AND n.data_assinatura BETWEEN v_p_start AND v_p_end
+    GROUP BY p.auth_id
+  ),
+```
+
+Importante: em `vendas_c` a condição entra no `ON`, nunca num `WHERE` — senão corretores sem venda somem do ranking.
+
+### 5. `get_dashboard_gerente_v4_kpis(uuid, text)` — 2 CTEs
+
+```sql
+  vendas_atual AS (SELECT COALESCE(SUM(COALESCE(n.vgv_final, n.vgv_estimado, 0)),0)::numeric AS v, COUNT(*)::int AS qtd
+    FROM negocios n WHERE (n.corretor_id = ANY(v_team_prof) OR n.gerente_id = v_gestor_prof)
+      AND n.fase = 'ganho' AND n.status = 'ativo'      -- << LINHA NOVA
+      AND n.data_assinatura BETWEEN v_p_start AND v_p_end),
+  vendas_prev AS (... AND n.fase = 'ganho' AND n.status = 'ativo'   -- << LINHA NOVA
+      AND n.data_assinatura BETWEEN v_prev_start AND v_prev_end),
+```
+
+### 6. `get_ranking_central(uuid, date, date)` — CTE `vendas`
+
+```sql
+  vendas AS (
+    SELECT corretor_id AS profile_id,
+           COUNT(*)::int AS qtd_vendas,
+           SUM(COALESCE(vgv_final,vgv_estimado))::numeric AS vgv
+    FROM negocios
+    WHERE corretor_id = ANY(v_team_prof)
+      AND fase = 'ganho' AND status = 'ativo'          -- << LINHA NOVA
+      AND data_assinatura BETWEEN p_start AND p_end
+    GROUP BY 1
+  ),
+```
+
+Aqui é `LEFT JOIN vendas v` na montagem final, então corretores sem venda continuam aparecendo com `COALESCE(...,0)`.
+
+## (b) Migrations
+
+Cabe em **1 única migration**: são 6 `CREATE OR REPLACE FUNCTION` puros, sem DDL de tabela, sem alteração de assinatura, sem dependências entre si (`get_relatorio_vendas` só chama `_kpi_team_window_core` em runtime). Um único reload do PostgREST. Fica dentro do limite de 2/dia.
+
+## (c) Frontend — `src/hooks/useCeoDashboard.ts`
+
+Linha 510, query `allNeg`:
+
+```diff
+- supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura")
+-   .in("auth_user_id", allMemberUserIds).eq("fase", "ganho")
+-   .gte("data_assinatura", range.start).lte("data_assinatura", range.end),
++ supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura")
++   .in("auth_user_id", allMemberUserIds).eq("fase", "ganho").eq("status", "ativo")
++   .gte("data_assinatura", range.start).lte("data_assinatura", range.end),
+```
+
+Único ponto tocado no arquivo. `allNegAtivos` (propostas em `em_negociacao`/`contrato`) já filtra `status='ativo'` e não muda.
+
+## (d) Rateio de parceria 50/50 — inconsistência (apenas relato, não muda neste lote)
+
+| Call-site | Aplica split de `pipeline_parcerias`? |
+|---|---|
+| `_kpi_team_window_core` (Central de Relatórios / `get_relatorio_vendas`) | **Sim**, quando chamado com `p_include_partner_split = true` (é o caso do relatório de vendas) |
+| `_kpi_team_window_core` com `p_include_partner_split = false` | Não — soma o valor cheio por `corretor_id` |
+| `v_vgv_prev` dentro do próprio `_kpi_team_window_core` | **Não** — o período anterior nunca usa split, mesmo quando o atual usa. Isso torna o `delta_pct` de vendas comparável só por aproximação |
+| `rpc_perf_dashboard` | Não |
+| `get_relatorio_vendas` (quebras `por_empreendimento`, `por_dia`, comissões) | Não — só o headline tem split |
+| `get_dashboard_gerente` (v3) | Não |
+| `get_dashboard_gerente_v4_kpis` | Não |
+| `get_ranking_central` | Não |
+| `useCeoDashboard.teamsData` | Não |
+| `get_kpis_por_periodo` / `v_kpi_negocios` (referência) | Não |
+
+Consequência atual: em negócio com parceria entre corretores de times diferentes, o ranking soma o valor cheio nos dois lados enquanto o headline do relatório de vendas soma metade. **Não altero nada disso no 4a** — fica como decisão separada (Lote 4b), porque envolve escolher qual comportamento vira o padrão e mexe na regra `mem://rules/business/vgv-fonte-unica-rateio`.
+
+## (e) Matriz de regressão
+
+Comparar, para o **mesmo período** (testar "Este mês", "Mês passado" — que contém o arquivado de junho — e "Últimos 90 dias"):
+
+| # | Onde | Esperado |
 |---|---|---|
-| 1 | Trocar entre abas na TabBar | Ativa a aba e restaura a URL com a query guardada |
-| 2 | Back/forward do browser | Aba correta ativa, URL e painel coerentes, sem loop |
-| 3 | `/materiais?emp=X` com a aba Materiais já ativa | URL muda e o painel troca de empreendimento |
-| 4 | Trocar `?emp` pela navegação interna da tela | URL e conteúdo acompanham |
-| 5 | Role-gate/redirect (`/` → home do papel; rota sem permissão) | Comportamento inalterado |
-| 6 | sessionStorage (`uhome_tabs_v1`) | `tab.path` persistido com a query mais recente; reload restaura ela |
-| 7 | MAX_TABS (8) e `closeTab` | Descarte da mais antiga e fechamento com foco na vizinha, inalterados |
-| 8 | `?tab` / `?secao` / `?status` (Central de Relatórios, Configurações, Pipeline) | Trocam a URL e o conteúdo estando a aba ativa |
-| 9 | Rotas legadas (`/pipeline` → `/pipeline-leads`, `/visitas` → `/agenda-visitas`) | Normalização segue funcionando, sem loop |
+| 1 | `/ceo` — card VGV Assinado × ranking de equipes × ranking de corretores | Somatório idêntico entre os três |
+| 2 | `get_kpis_por_periodo` (referência, não alterada) × cada RPC alterada | Mesmo total de VGV assinado e mesma contagem de vendas |
+| 3 | Dashboard do gerente v3 (`get_dashboard_gerente`) | KPI de vendas bate com o total do time no /ceo; ranking de corretores sem ninguém desaparecendo (LEFT JOIN preservado) |
+| 4 | Dashboard do gerente v4 (`get_dashboard_gerente_v4_kpis`) | `vendas_vgv`/`vendas_count` iguais aos da v3 no mesmo mês |
+| 5 | Central de Relatórios → Vendas | headline = soma de `por_dia` = soma de `por_empreendimento`; comissão recalculada coerente |
+| 6 | Performance Hub (`rpc_perf_dashboard`) | `vgv_vendido` por corretor bate com o ranking do /ceo |
+| 7 | Ranking Central (`get_ranking_central`) | Mesmo total; corretores zerados continuam listados |
+| 8 | KPIs não-vendas | Leads, visitas (criadas/marcadas/realizadas/no-show), negócios ativos, OA e presença **inalterados** em todas as telas |
+| 9 | VGV projetado (`vgv_gerado`/`vgv_estimado` por `data_criacao`) | Inalterado |
+| 10 | Junho/2026 especificamente | Queda de exatamente 1 venda / R$ 410.000 em todas as telas simultaneamente (era o arquivado) |
 
-## (d) Riscos
+Validação ao vivo no preview após o build, tela por tela, antes de declarar pronto.
 
-- **Histórico do browser mais verboso**: trocar query dentro da mesma aba agora empilha entradas. Mitigado por só navegar quando o path muda; se incomodar, dá para usar `replace` em troca de query na mesma aba (não incluído neste lote).
-- **Re-render extra** da lista de abas quando o path muda (array novo). Impacto desprezível; a `TabBar` só exibe label/ícone.
-- **Páginas que lêem a query só na montagem** (em vez de `useSearchParams`) continuariam presas — não é regressão, e o conserto seria na página, fora do escopo. Se algum caso aparecer no teste 8, reporto sem tocar no arquivo.
+## (f) Riscos
 
-## (e) Confirmação de escopo
-
-Só `src/contexts/TabContext.tsx` muda. **Não vou tocar** em `src/components/AppLayout.tsx` nem em `src/config/pageRegistry.ts` — se durante a validação ficar claro que um deles é necessário, paro e pergunto antes. Nenhuma página (incluindo `MateriaisPage.tsx`), hook, query, RPC, migration, `index.css` ou deploy.
+- **Queda de número esperada e quantificada**: −5 vendas / −R$ 2.232.630 no acumulado histórico; em janelas recentes, apenas junho/2026 muda (−1 / −R$ 410.000). Julho e agosto não mudam. Metas mensais de junho passarão a mostrar atingimento levemente menor — é a correção, não regressão.
+- **Consumidor que dependia do comportamento frouxo**: `ceo_metas_mensais` e comparativos históricos já salvos em `executive_reports`/`one_on_one_reports` continuam com o número antigo; relatórios PDF antigos vão divergir do CRM em junho. Não há recálculo retroativo neste lote.
+- **`vendas_c` do gerente v3**: se a condição for escrita no `WHERE` em vez do `ON`, corretores sem venda somem do ranking. Risco mitigado pela instrução explícita acima; será conferido no teste 3.
+- **`delta_pct` de vendas**: muda junto (período anterior também filtrado) — desejado, mas os percentuais de variação exibidos vão diferir dos de hoje.
+- **PostgREST reload**: 1 migration = 1 reload; agendar fora do pico se possível.
+- **Baixo risco de quebra estrutural**: nenhuma assinatura, retorno ou chave JSON muda; o frontend não precisa de ajuste além do item (c).
