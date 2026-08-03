@@ -109,7 +109,7 @@ export default function AdminPanel() {
     return data;
   }, []);
 
-  useEffect(() => { fetchUsers(); fetchDialogConfig(); fetchGestores(); pollProgress(); }, [fetchUsers, fetchDialogConfig, fetchGestores, pollProgress]);
+  useEffect(() => { fetchUsers(); fetchGestores(); pollProgress(); }, [fetchUsers, fetchGestores, pollProgress]);
 
   // Auto-poll while running
   useEffect(() => {
