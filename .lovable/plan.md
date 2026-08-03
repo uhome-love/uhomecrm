@@ -1,95 +1,68 @@
-# Lote 1 — Visual A-Safe (padronização visual, zero dado)
+# Lote 2 — QW-F: shell de abas respeita a query string
 
-## (a) Arquivos que serão tocados
+Escopo: **um único arquivo**, `src/contexts/TabContext.tsx`. Nenhuma página, hook, dado, CSS ou deploy.
 
-### 1. `src/components/ui/StateWrapper.tsx` (CRIAR)
-Casca única de estados de tela, aditiva. API:
+## Causa raiz (confirmada no código)
 
-```
-<StateWrapper
-  loading?        // boolean
-  error?          // boolean | Error | null
-  empty?          // boolean
-  stale?          // boolean  -> banner "dados podem estar desatualizados"
-  onRetry?        // () => void
-  skeleton?       // ReactNode custom; default = grade de <Skeleton/>
-  skeletonVariant? // "kpis" | "list" | "page"  (default "page")
-  loadingTitle?, errorTitle?, errorDescription?
-  emptyIcon?, emptyTitle?, emptyDescription?, emptyAction?
-  className?
->{children}</StateWrapper>
-```
+`openTab` identifica a aba pelo `resolved.key` (derivado só do pathname). Quando a aba já existe e **já é a ativa**, a função faz `return` sem navegar e sem atualizar o `path` guardado no tab. Abrir `/materiais?emp=X` estando em `/materiais?emp=Y` não muda nada — nem URL, nem estado. A mesma classe de bug atinge `?tab`, `?secao`, `?status`.
 
-Precedência: `error` > `loading` > `empty` > conteúdo. `stale` renderiza um banner discreto acima de `children` (não substitui conteúdo).
+Como o `AppLayout` mantém todas as abas montadas e as páginas leem os parâmetros da URL, basta a URL mudar para o painel reagir.
 
-### 2. `src/pages/CeoDashboard.tsx`
-- `MiniKpi` (definido inline, linhas ~71-111) passa a renderizar `StatCard` internamente — **a assinatura do MiniKpi e todas as ~15 chamadas ficam idênticas**, só o corpo muda (mapeia `variant` → `tone`, `delta` → `delta`, `sub` → `sub`, `onClick` → `onClick`). Isso preserva `forwardRef`/tooltips existentes.
-  - Ressalva técnica: o `StatCard` atual renderiza `<button>` quando há `onClick` e não repassa `ref`. Para não quebrar os wrappers com `ref`, o `MiniKpi` mantém a `<div ref>` externa e usa o `StatCard` dentro dela, ou passa `onClick` no wrapper. O `StatCard` **não será alterado** neste lote.
-  - Delta com seta ▲/▼/→ e regra `invertDelta` são preservados no `MiniKpi` (o `StatCard` só entra como casca de label/valor); onde o formato do `StatCard` não cobre, o `sub` recebe o nó de delta. Sem mudança de valor ou de semântica.
-- Trocas de hex por tokens: `bg-[#f0f0f5] dark:bg-[#0e1525]` → `bg-background`; `text-[#a1a1aa]` / `text-[#71717a]` / `text-[#52525b]` → `text-muted-foreground` (e `text-foreground/70` onde hoje é claramente mais escuro); `border-[#e8e8f0] dark:border-white/[0.07]` → `border-border`.
-- `negFunnelColors` (cores do funil de negócios) **não muda** — é cor semântica de gráfico.
-- `|| 0` e cálculos: intocados.
+## (a) Diff conceitual
 
-### 3. `src/components/corretor/CarteiraKpis.tsx`
-- `KpiBox` e `KpiBoxAmber` substituídos por `StatCard` (mesmos valores, mesmos `onClick`, mesmos `title`/hints, mesmo grid `grid-cols-2 sm:grid-cols-4`).
-- Hex de borda (`#4F46E5`, `#DC2626`, `#22c55e`, `#F59E0B`) e `style={{...}}` inline saem; a cor passa a vir de `tone`. O estado "ativo" do card âmbar vira `accent` + `active` do `StatCard` (aparência equivalente, sem `border 2px` inline).
-- `loading ? "—" : value` → `<Skeleton className="h-6 w-12" />` no lugar do valor.
-- `data ?? {zeros}` e `logDashboard` intocados.
-- Detalhe visual: o acento passa de `border-top 3px` para `border-left 3px` (padrão do `StatCard`). Se preferir manter no topo, avise — aí é preciso adicionar uma prop ao `StatCard` (fora do escopo autorizado).
+### `openTab(path, skipNav)` — bloco "aba já existe"
 
-### 4. `src/pages/CorretorDashboard.tsx`
-- Header de saudação: `style={{ background: "linear-gradient(135deg,#4969FF,#7C3AED,#3350E6)" }}` → classe utilitária baseada em tokens (`bg-gradient-to-br from-primary via-primary/90 to-primary`), mantendo `text-primary-foreground` no lugar de `text-white`.
-- Sem outras mudanças (blocos, ordem, hooks intocados).
+Hoje:
+1. Se a aba já é a ativa → `return` (nada acontece).
+2. Se não é a ativa → ativa e navega para `path`.
 
-### 5. `src/components/pipeline/PipelineHeader.tsx`
-- `bg-[#f7f7fb] dark:bg-[#141e30]` → `bg-muted/40 dark:bg-card`; `border-[#e8e8f0] dark:border-white/[0.07]` → `border-border`; `bg-[#e8e8f0] dark:bg-white/[0.07]` (divisores) → `bg-border`; `text-[#a1a1aa]/#71717a/#52525b` → `text-muted-foreground`.
-- Título "Pipeline": alinhar as 3 variantes (mobile/tablet/desktop) para o mesmo `text-[15px] font-bold tracking-[-0.3px] text-foreground` do padrão.
-- Pílulas, contagens, filtros, badges de campanha e o verde de "Ganhos": **intocados**.
+Passa a ser:
+1. Localiza a aba existente e compara o `path` recebido (já normalizado) com `tab.path` guardado.
+2. Se forem diferentes, atualiza o array de abas trocando **apenas** o `path` daquela aba (`setTabs` com map imutável); as demais propriedades (id, label, icon, closable, componentKey, pattern, noPadding) ficam idênticas.
+3. Se a aba não é a ativa, `setActiveTabId(resolved.key)`.
+4. Navega quando `!skipNav` **e** (a aba não era a ativa **ou** o `path` mudou). Se nada mudou (mesma aba, mesmo path), não navega — evita entradas duplicadas no histórico.
+5. `return`.
 
-### 6. `src/components/roleta/corretor/RoletaCorretorView.tsx` — **arquivo extra, precisa da sua autorização**
-`src/pages/RoletaLeads.tsx` tem apenas roteamento por papel; o spinner de tela cheia (`<Loader2 className="h-8 w-8 animate-spin">`, linha ~163) está no `RoletaCorretorView`. Proposta: trocar **somente esse spinner de página** por `<StateWrapper loading skeletonVariant="page">`. Os spinners inline de botões/seções (linhas ~245, 414, 422, 497, 543) ficam como estão. Sem sua autorização, `RoletaLeads.tsx` fica sem mudança efetiva.
+Também: `openTab` passa a declarar `hasAccess` nas dependências do `useCallback` (hoje o array está vazio; `hasAccess` é estável, então não muda comportamento — apenas correção de lint).
 
-### Fora do lote (recomendação)
-`GerenteDashboard` / `VisitasCard`: deixar de fora. São cards com layout próprio (progresso, listas, alturas) e alinhá-los ao `StatCard` traria risco de regressão de layout sem ganho proporcional neste lote.
+### Efeito URL → Tab
 
-## (b) Como o StateWrapper é construído sobre o que já existe
-- **loading** → skeletons de `@/components/ui/skeleton` (grades pré-montadas por `skeletonVariant`); `LoadingState` de `screen-states` fica disponível como fallback quando se quer o texto "Carregando..." em vez de skeleton.
-- **error** → `ErrorState` de `screen-states`, com `action={{ label: "Tentar de novo", onClick: onRetry }}`.
-- **empty** → `EmptyState` de `@/components/ui/EmptyState` (o de ícone em cápsula), com fallback de ícone `Inbox`.
-- **stale** → banner novo e pequeno dentro do próprio `StateWrapper` (`bg-warning-500/10 border-warning-500/30 text-foreground`), renderizado acima de `children`.
-- Nada é reescrito nem removido: `screen-states` continua funcionando para o Pipeline.
+Hoje, quando a rota resolve para uma aba já aberta, o efeito só faz `setActiveTabId` se ela não for a ativa; o `tab.path` guardado nunca é sincronizado.
 
-## (c) Mapeamento cor atual → `tone`
+Passa a ser: no ramo `if (existing)`, além de ativar a aba quando necessário, compara `existing.path` com o `normalizedFullPath` atual e, se diferente, atualiza o `path` da aba via `setTabs` (map imutável). **Não navega** nesse efeito — a URL já é a correta, aqui só se espelha estado.
 
-CeoDashboard (`MiniKpi.variant` → `tone`):
-| variant | tone |
-|---|---|
-| `default` | `neutral` |
-| `highlight` | `primary` |
-| `success` | `success` |
-| `warning` | `warning` |
+Nada mais muda: `closeTab`, `activateTab`, MAX_TABS, role-gate, normalização de rotas legadas, redirect de `/`, persistência — tudo intacto.
 
-CarteiraKpis:
-| Card | Hoje | tone |
+## (b) Como o loop de navegação é evitado
+
+Três guardas somadas:
+
+1. **O efeito URL→Tab nunca navega quando a rota já é válida.** Ele só faz `setActiveTabId`/`setTabs` (estado), então não realimenta `location`.
+2. **`openTab` só navega quando algo realmente mudou** (`path` diferente ou aba diferente). Navegar para a mesma URL vira no-op.
+3. **`syncingRef` continua ativo**: quando o efeito precisa navegar (redirect de `/`, normalização legada, role-gate), ele marca a flag e a libera no `requestAnimationFrame` seguinte, ignorando o disparo de `location` que ele mesmo causou.
+
+Sequência típica: clique na sidebar → `openTab` atualiza `tab.path` + `navigate` → `location` muda → efeito roda, encontra a aba, vê que `existing.path` já é igual ao `normalizedFullPath` → nenhum `setState`, nenhuma navegação → fim.
+
+## (c) Matriz de regressão (validada ao vivo no preview)
+
+| # | Cenário | Esperado |
 |---|---|---|
-| Para hoje | `#4F46E5` | `primary` |
-| Atrasadas | `#DC2626` | `danger` |
-| Leads sem tarefa | `#F59E0B` (+bg quando >0) | `warning` (+`accent`/`active` quando >0) |
-| Em dia | `#22c55e` | `success` |
-
-Cor de delta (verde/vermelho) e `invertDelta` permanecem exatamente com a regra atual.
+| 1 | Trocar entre abas na TabBar | Ativa a aba e restaura a URL com a query guardada |
+| 2 | Back/forward do browser | Aba correta ativa, URL e painel coerentes, sem loop |
+| 3 | `/materiais?emp=X` com a aba Materiais já ativa | URL muda e o painel troca de empreendimento |
+| 4 | Trocar `?emp` pela navegação interna da tela | URL e conteúdo acompanham |
+| 5 | Role-gate/redirect (`/` → home do papel; rota sem permissão) | Comportamento inalterado |
+| 6 | sessionStorage (`uhome_tabs_v1`) | `tab.path` persistido com a query mais recente; reload restaura ela |
+| 7 | MAX_TABS (8) e `closeTab` | Descarte da mais antiga e fechamento com foco na vizinha, inalterados |
+| 8 | `?tab` / `?secao` / `?status` (Central de Relatórios, Configurações, Pipeline) | Trocam a URL e o conteúdo estando a aba ativa |
+| 9 | Rotas legadas (`/pipeline` → `/pipeline-leads`, `/visitas` → `/agenda-visitas`) | Normalização segue funcionando, sem loop |
 
 ## (d) Riscos
-- **Densidade/tipografia**: `StatCard` usa `p-3` e valor `22px`; `MiniKpi` usa `p-3.5`/`text-xl` e `KpiBox` `text-2xl sm:text-3xl`. Os números do Dashboard do Corretor ficam visualmente menores. Mitigação: `className` por chamada para preservar a escala atual; valido lado a lado no preview.
-- **Acento topo → esquerda** no `CarteiraKpis` (mudança perceptível de estilo).
-- **`forwardRef` do MiniKpi**: usado com tooltips/refs no CeoDashboard; o wrapper `<div ref>` é mantido para não quebrar.
-- **Tokens vs. hex**: `#f0f0f5`/`#f7f7fb` não têm token idêntico; a aproximação é `bg-background` / `bg-muted/40`. Haverá diferença mínima de tom no claro — em troca de dark mode correto. **Nenhuma alteração em `index.css`.**
-- **Responsividade**: `StatCard` é fluido, os grids não mudam; risco baixo, mas valido mobile (390px), tablet e desktop.
-- **PipelineHeader** tem 3 variantes por breakpoint — cada troca de hex será replicada nas três; valido as três no preview.
 
-## (e) Confirmação
-Nenhum hook, query, RPC, filtro, definição de métrica ou valor será alterado. `|| 0`, `data ?? {zeros}` e o comportamento de "erro vira zero" ficam exatamente como estão — o `StateWrapper` entra apenas como casca e, neste lote, não é ligado a estado de erro real (exceto o loading da Roleta, se autorizado). Sem migration, sem banco, sem deploy, sem sidebar, sem `TabContext`, sem `index.css`.
+- **Histórico do browser mais verboso**: trocar query dentro da mesma aba agora empilha entradas. Mitigado por só navegar quando o path muda; se incomodar, dá para usar `replace` em troca de query na mesma aba (não incluído neste lote).
+- **Re-render extra** da lista de abas quando o path muda (array novo). Impacto desprezível; a `TabBar` só exibe label/ícone.
+- **Páginas que lêem a query só na montagem** (em vez de `useSearchParams`) continuariam presas — não é regressão, e o conserto seria na página, fora do escopo. Se algum caso aparecer no teste 8, reporto sem tocar no arquivo.
 
-## Pergunta antes de executar
-1. Autoriza incluir `src/components/roleta/corretor/RoletaCorretorView.tsx` (só o spinner de página)?
-2. `CarteiraKpis`: aceita o acento passando para a borda esquerda, ou prefere manter no topo (exigiria prop nova no `StatCard`)?
+## (e) Confirmação de escopo
+
+Só `src/contexts/TabContext.tsx` muda. **Não vou tocar** em `src/components/AppLayout.tsx` nem em `src/config/pageRegistry.ts` — se durante a validação ficar claro que um deles é necessário, paro e pergunto antes. Nenhuma página (incluindo `MateriaisPage.tsx`), hook, query, RPC, migration, `index.css` ou deploy.
