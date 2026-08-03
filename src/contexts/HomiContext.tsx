@@ -72,6 +72,11 @@ interface HomiContextType {
   // Começa uma conversa nova (limpa mensagens e id)
   startNewConversation: () => void;
 
+  // Produto em foco (seleção explícita, só na sessão — não persiste)
+  empreendimentoFoco: string | null;
+  setEmpreendimentoFoco: (nome: string | null) => void;
+
+
 
   // Floating launcher visibility (hidden while a fullscreen drawer is open on mobile)
   launcherHidden: boolean;
