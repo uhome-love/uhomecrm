@@ -821,6 +821,7 @@ export default function CeoDashboard() {
                 </div>
               ))}
             </div>
+            </StateWrapper>
           </CardContent>
         </Card>
 
