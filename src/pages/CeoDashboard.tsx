@@ -460,7 +460,22 @@ export default function CeoDashboard() {
 
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
-      {localPendentes.length > 0 && (
+      {errors.roleta && (
+        <Card className="border-danger/40 bg-[#f7f7fb] dark:bg-[#141e30]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Aprovações Pendentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StateWrapper
+              error={errors.roleta}
+              onRetry={() => { reloadRoleta(); }}
+              errorTitle="Falha ao carregar a fila de credenciamento"
+              errorDescription="Pode haver credenciamentos pendentes não exibidos."
+            />
+          </CardContent>
+        </Card>
+      )}
+      {!errors.roleta && localPendentes.length > 0 && (
         <Card className="border-primary/40 bg-[#f7f7fb] dark:bg-[#141e30]">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
