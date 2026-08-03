@@ -119,7 +119,7 @@ export function V4PanelVisitas({ gestorId }: Props) {
 
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
         <span className="text-muted-foreground">
-          {visitas.length} visitas · {confirmadas} confirmadas · {pendentes} pendentes
+          {visitas.length} visitas · {marcadas} marcadas · {realizadas} realizadas · {noShow} no-show
         </span>
         <Link
           to="/agenda-visitas"
