@@ -225,14 +225,11 @@ Rollback imediato se houver:
 9. Evitar screenshots quando teste estático bastar.
 10. Lucas aprova três gates: conteúdo, dados e deploy.
 
-## PRÓXIMO PASSO
-Entrega 1:
-1. ChatGPT inventaria fontes e monta quadro das 14 fichas sem Lovable.
-2. Lucas aprova/corrige em uma revisão.
-3. Só então preparar pacote técnico único de schema, dados, backend, seletor e testes.
+## PRÓXIMO PASSO SEGURO
+Concluir no ChatGPT/Codex uma única matriz das fichas permanentes e submetê-la a Lucas. Não implementar ainda. Implementação, migration, dados e deploy exigem autorizações posteriores específicas.
 
-Durante inventário/aprovação: zero migration, código, dados ou produção.
+Durante curadoria/aprovação: zero migration, código, dados ou produção.
 
 ## DECISÃO
 Plano mestre aprovado como direção recomendada.
-Próximo gate: inventário somente de leitura das fontes dos 14 produtos e montagem das fichas para aprovação de Lucas.
+Próximo gate: matriz consolidada das fichas permanentes dos produtos ativos (e históricos em prioridade menor) para aprovação de Lucas.
