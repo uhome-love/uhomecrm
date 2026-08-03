@@ -279,19 +279,23 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     setMessages([]);
     setConversationId(null);
     setKnowledgeSource(null);
+    setEmpreendimentoFoco(null);
   }, []);
 
   const loadConversation = useCallback((id: string, msgs: Message[]) => {
     setConversationId(id);
     setMessages(Array.isArray(msgs) ? msgs : []);
     setKnowledgeSource(null);
+    setEmpreendimentoFoco(null);
   }, []);
 
   const startNewConversation = useCallback(() => {
     setConversationId(null);
     setMessages([]);
     setKnowledgeSource(null);
+    setEmpreendimentoFoco(null);
   }, []);
+
 
 
 
