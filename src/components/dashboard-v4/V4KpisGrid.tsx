@@ -13,7 +13,7 @@ function CardSkeleton() {
   return <div className="h-[164px] rounded-2xl border border-border bg-card animate-pulse" />;
 }
 
-/** Card customizado de visitas: "X realizadas" + "Y agendadas · meta Z". */
+/** Card de visitas: 6 indicadores independentes vindos da fonte canônica (v_fato_visita). */
 function VisitasCard({ kpis }: { kpis: KpisTopV4 }) {
   const delta = kpis.visitas_delta_pct;
   const DeltaIcon = delta == null ? Minus : delta >= 0 ? TrendingUp : TrendingDown;
@@ -21,6 +21,29 @@ function VisitasCard({ kpis }: { kpis: KpisTopV4 }) {
     delta == null ? "text-muted-foreground" : delta >= 0 ? "text-success-700" : "text-danger-700";
   const meta = kpis.visitas_meta || 0;
   const pct = meta > 0 ? Math.min(100, (kpis.visitas_realizadas / meta) * 100) : null;
+  const taxa = kpis.visitas_taxa_pct;
+
+  const itens: { label: string; value: string; tone?: string; title?: string }[] = [
+    { label: "Criadas", value: kpis.visitas_criadas.toLocaleString("pt-BR") },
+    { label: "A realizar", value: kpis.visitas_a_realizar.toLocaleString("pt-BR") },
+    {
+      label: "Confirmadas",
+      value: kpis.visitas_confirmadas.toLocaleString("pt-BR"),
+      title:
+        kpis.visitas_confirmadas === 0 ? "Sem visitas confirmadas no período" : undefined,
+    },
+    { label: "Realizadas", value: kpis.visitas_realizadas.toLocaleString("pt-BR") },
+    {
+      label: "No-show",
+      value: kpis.visitas_no_show.toLocaleString("pt-BR"),
+      tone: kpis.visitas_no_show > 0 ? "text-danger-700" : undefined,
+    },
+    {
+      label: "Compareceu",
+      value: taxa == null ? "—" : `${taxa}%`,
+      tone: taxa != null && taxa >= 70 ? "text-success-700" : undefined,
+    },
+  ];
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
@@ -39,12 +62,10 @@ function VisitasCard({ kpis }: { kpis: KpisTopV4 }) {
         <span className="text-2xl font-bold text-foreground">
           {kpis.visitas_realizadas.toLocaleString("pt-BR")}
         </span>
-        <span className="text-xs text-muted-foreground">realizadas</span>
+        <span className="text-xs text-muted-foreground">
+          realizadas{meta > 0 && <> · meta {meta.toLocaleString("pt-BR")}</>}
+        </span>
       </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        de {kpis.visitas_total.toLocaleString("pt-BR")} no mês
-        {meta > 0 && <> · meta {meta.toLocaleString("pt-BR")}</>}
-      </p>
 
       {pct != null && (
         <div className="mt-3">
@@ -56,6 +77,19 @@ function VisitasCard({ kpis }: { kpis: KpisTopV4 }) {
           </div>
         </div>
       )}
+
+      <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-2 border-t border-border pt-3">
+        {itens.map((i) => (
+          <div key={i.label} title={i.title}>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              {i.label}
+            </p>
+            <p className={cn("text-sm font-semibold tabular-nums text-foreground", i.tone)}>
+              {i.value}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

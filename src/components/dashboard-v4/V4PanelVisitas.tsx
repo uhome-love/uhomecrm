@@ -16,11 +16,8 @@ interface Props {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  confirmada: "bg-success-50 text-success-700 border-success-200",
   marcada: "bg-primary-50 text-primary-600 border-primary-200",
-  agendada: "bg-primary-50 text-primary-600 border-primary-200",
-  pendente: "bg-warning-50 text-warning-700 border-warning-200",
-  reagendada: "bg-warning-50 text-warning-700 border-warning-200",
+  confirmada: "bg-success-50 text-success-700 border-success-200",
   realizada: "bg-muted text-muted-foreground border-border",
   cancelada: "bg-destructive/10 text-destructive border-destructive/20",
   no_show: "bg-destructive/10 text-destructive border-destructive/20",
@@ -71,8 +68,9 @@ export function V4PanelVisitas({ gestorId }: Props) {
   const { data, isLoading } = useDashboardGerenteV4Dia(gestorId, range);
   const visitas = data?.visitas ?? [];
 
-  const confirmadas = visitas.filter((v) => v.status === "confirmada").length;
-  const pendentes = visitas.filter((v) => v.status === "pendente" || v.status === "reagendada").length;
+  const marcadas = visitas.filter((v) => v.status === "marcada" || v.status === "confirmada").length;
+  const realizadas = visitas.filter((v) => v.status === "realizada").length;
+  const noShow = visitas.filter((v) => v.status === "no_show").length;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col">
@@ -121,7 +119,7 @@ export function V4PanelVisitas({ gestorId }: Props) {
 
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
         <span className="text-muted-foreground">
-          {visitas.length} visitas · {confirmadas} confirmadas · {pendentes} pendentes
+          {visitas.length} visitas · {marcadas} marcadas · {realizadas} realizadas · {noShow} no-show
         </span>
         <Link
           to="/agenda-visitas"

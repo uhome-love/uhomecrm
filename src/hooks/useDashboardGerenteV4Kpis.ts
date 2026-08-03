@@ -7,9 +7,12 @@ export interface KpisTopV4 {
   leads_meta: number;
   leads_delta_pct: number | null;
 
+  visitas_criadas: number;
+  visitas_a_realizar: number;
+  visitas_confirmadas: number;
   visitas_realizadas: number;
-  visitas_agendadas: number;
-  visitas_total: number;
+  visitas_no_show: number;
+  visitas_taxa_pct: number | null;
   visitas_meta: number;
   visitas_delta_pct: number | null;
 
