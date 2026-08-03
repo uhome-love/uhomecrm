@@ -235,12 +235,13 @@ VERACIDADE COMERCIAL — REGRA DURA:
     let materiaisSuggestions: any[] = [];
     try {
       if (lastUserMsg) {
-        const searchQuery = [empreendimento, lastUserMsg].filter(Boolean).join(" | ");
+        const searchQuery = [empreendimentoValidado, lastUserMsg].filter(Boolean).join(" | ");
         materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
           limit: 4,
-          empreendimentoNome: empreendimento,
+          empreendimentoNome: empreendimentoValidado,
         });
       }
+
     } catch (e) {
       console.error("[homi-chat] materiais context skipped:", e);
     }
