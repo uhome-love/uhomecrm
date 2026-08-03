@@ -357,6 +357,9 @@ const NOOP_CONTEXT: HomiContextType = {
   knowledgeSource: null,
   loadConversation: () => {},
   startNewConversation: () => {},
+  empreendimentoFoco: null,
+  setEmpreendimentoFoco: () => {},
+
 
   conversationId: null,
   launcherHidden: false,
