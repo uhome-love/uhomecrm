@@ -47,15 +47,55 @@ serve(async (req) => {
 
     // ── RAG unificado (método, materiais, academia, scripts, empreendimentos, imóveis) ──
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content;
+
+    /**
+     * A pergunta atual é sempre a fonte principal da busca.
+     * A mensagem anterior do usuário só entra quando a atual é claramente
+     * uma continuação. Assunto novo ou pergunta autossuficiente = só a atual.
+     */
+    const userMsgs = (messages as any[]).filter((m) => m.role === "user");
+    const prevUserMsg = userMsgs[userMsgs.length - 2]?.content;
+
+    const CTX_MAX = 200;   // caracteres do contexto anterior
+    const ASK_MAX = 400;   // caracteres da pergunta atual
+    const CONT_MAX_CHARS = 60;
+    const ELIPSE_MAX_PALAVRAS = 3;
+
+    // Conector FORTE: a frase só existe colada no turno anterior.
+    const CONT_FORTE = /^\s*(e|ou|mas|então|entao)\s|^\s*e\s*se\b|^\s*(e|ou)\s*(o|a)\s+(quê|que)\b/i;
+    // Conector AMBÍGUO / elipse: só puxa contexto se a pergunta for muito curta.
+    const CONT_AMBIGUO = /^\s*(por|pra|para|no|na|nos|nas|com|sem|de|do|da|nesse|nessa|neste|nesta|isso|esse|essa|ele|ela|lá|la|ali|mesmo|também|tambem|igual|quanto|qual)\b/i;
+    // Marcadores explícitos de troca de assunto.
+    const TEMA_NOVO = /^\s*(agora|muda|mudando|outro assunto|deixa|esquece|nova pergunta|preciso|quero|faça|faz|me faz|explique|explica|me explica|liste|lista|gere|gera|analise|analisa)\b/i;
+
+    function montarQueryBusca(atual?: string, anterior?: string): string {
+      const ask = (atual ?? "").trim().slice(0, ASK_MAX);
+      if (!ask) return "";
+      const ctxBruto = (anterior ?? "").trim();
+      if (!ctxBruto) return ask;
+      if (ask.length > CONT_MAX_CHARS) return ask;
+      if (TEMA_NOVO.test(ask)) return ask;
+
+      const palavras = ask.split(/\s+/).filter(Boolean).length;
+      const ehContinuacao =
+        CONT_FORTE.test(ask) ||
+        (CONT_AMBIGUO.test(ask) && palavras <= ELIPSE_MAX_PALAVRAS);
+      if (!ehContinuacao) return ask;
+
+      return `Pergunta atual: ${ask}\nContexto anterior: ${ctxBruto.slice(0, CTX_MAX)}`;
+    }
+
+    const ragQuery = montarQueryBusca(lastUserMsg, prevUserMsg);
     let ragContext = "";
-    if (lastUserMsg) {
-      const chunks = await searchKnowledge(supabase, lastUserMsg, {
+    if (ragQuery) {
+      const chunks = await searchKnowledge(supabase, ragQuery, {
         limit: 10,
         threshold: 0.3,
         empreendimento: null,
       });
       ragContext = formatKnowledgeBlock(chunks);
     }
+
 
     const systemPrompt = HOMI_IDENTITY + `
 
