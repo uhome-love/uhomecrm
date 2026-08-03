@@ -15,7 +15,6 @@ export type HomiAnexo = { nome: string; tipo: string; url?: string; dataUrl?: st
 
 export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[]; anexos?: HomiAnexo[]; _composerLabel?: string };
 
-
 export type KnowledgeSourceInfo = {
   source: "db" | "fallback" | "partial";
   db: number;
@@ -76,8 +75,6 @@ interface HomiContextType {
   empreendimentoFoco: string | null;
   setEmpreendimentoFoco: (nome: string | null) => void;
 
-
-
   // Floating launcher visibility (hidden while a fullscreen drawer is open on mobile)
   launcherHidden: boolean;
   setLauncherHidden: (hidden: boolean) => void;
@@ -109,7 +106,6 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   // Produto em foco: começa vazio, vive só na sessão (não vai para o banco).
   const [empreendimentoFoco, setEmpreendimentoFoco] = useState<string | null>(null);
   const pendingMessageRef = useRef<string | null>(null);
-
 
   const homiRole: HomiRole = isAdmin ? "ceo" : isCorretor ? "corretor" : "gestor";
   const currentPage = location.pathname;
@@ -168,7 +164,6 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     const label = tipo === "criar_tarefa" ? "Nova tarefa" : tipo === "criar_visita" ? "Marcar visita" : "Buscar imóvel";
     setMessages(prev => [...prev, { role: "assistant", content: "", actions: [action], _composerLabel: label } as Message]);
   }, []);
-
 
   // Save conversation
   const saveConversation = useCallback(async (msgs: Message[], convId: string | null) => {
@@ -274,7 +269,6 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   // Sem briefing automático: o Homi abre apenas com a saudação.
   // O corretor pede o resumo do dia sob demanda (atalho "⏰ Atrasados").
 
-
   const clearMessages = useCallback(() => {
     setMessages([]);
     setConversationId(null);
@@ -295,9 +289,6 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     setKnowledgeSource(null);
     setEmpreendimentoFoco(null);
   }, []);
-
-
-
 
   // Proactive alerts
   const addProactiveAlert = useCallback((alert: Omit<ProactiveAlert, "id" | "createdAt">) => {
@@ -327,7 +318,6 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       knowledgeSource,
       conversationId, loadConversation, startNewConversation,
       empreendimentoFoco, setEmpreendimentoFoco,
-
 
       launcherHidden, setLauncherHidden,
     }}>
@@ -359,7 +349,6 @@ const NOOP_CONTEXT: HomiContextType = {
   startNewConversation: () => {},
   empreendimentoFoco: null,
   setEmpreendimentoFoco: () => {},
-
 
   conversationId: null,
   launcherHidden: false,

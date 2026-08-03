@@ -38,10 +38,6 @@ const EMPREENDIMENTOS_FOCO = [
   "Vértice - Las Casas",
 ];
 
-
-
-
-
 export default function HomiWorkspace() {
   const location = useLocation();
   const threadId = location.pathname.match(/^\/homi\/c\/(.+)$/)?.[1];
@@ -114,7 +110,6 @@ export default function HomiWorkspace() {
     }
   };
 
-
   // Restaura a thread da URL (recarregar /homi/c/:id volta a mesma conversa)
   useEffect(() => {
     if (!threadId) {
@@ -153,7 +148,6 @@ export default function HomiWorkspace() {
     setAnexos([]);
   };
 
-
   // Prompt contextual vindo de outra página: /homi?p=...
   const [searchParams, setSearchParams] = useSearchParams();
   const promptRef = useRef<string | null>(null);
@@ -167,9 +161,6 @@ export default function HomiWorkspace() {
       window.setTimeout(() => setSearchParams({}, { replace: true }), 300);
     }
   }, [searchParams, setSearchParams, sendMessage]);
-
-
-
 
   const novaConversa = () => {
     loadedRef.current = null;
@@ -233,7 +224,6 @@ export default function HomiWorkspace() {
           </Button>
         </header>
 
-
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <MessageList messages={messages} isLoading={isLoading} userName={userName} onPrompt={enviar} />
         </div>
@@ -255,7 +245,6 @@ export default function HomiWorkspace() {
         </div>
 
       </main>
-
 
       {/* Painel vivo — desktop */}
       <aside className="hidden w-72 shrink-0 border-l border-border bg-muted/20 xl:block">
