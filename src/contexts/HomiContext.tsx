@@ -225,7 +225,15 @@ export function HomiProvider({ children }: { children: ReactNode }) {
         const resp = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ messages: payloadMessages, enableTools: true, stream: false, perfil: homiRole }),
+          body: JSON.stringify({
+            messages: payloadMessages,
+            enableTools: true,
+            stream: false,
+            perfil: homiRole,
+            // Produto em foco explícito; o backend valida e ignora valor inválido.
+            empreendimento: empreendimentoFoco,
+          }),
+
         });
 
         if (!resp.ok) {
