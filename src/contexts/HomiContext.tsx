@@ -106,7 +106,10 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [knowledgeSource, setKnowledgeSource] = useState<KnowledgeSourceInfo>(null);
+  // Produto em foco: começa vazio, vive só na sessão (não vai para o banco).
+  const [empreendimentoFoco, setEmpreendimentoFoco] = useState<string | null>(null);
   const pendingMessageRef = useRef<string | null>(null);
+
 
   const homiRole: HomiRole = isAdmin ? "ceo" : isCorretor ? "corretor" : "gestor";
   const currentPage = location.pathname;
