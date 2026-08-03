@@ -81,28 +81,27 @@ export default function CorretorDashboard() {
       {/* 1. Saudação HOMI (gradient inline — intocado) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div
-          className="rounded-2xl p-5 text-white relative overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED, #3350E6)" }}
+          className="rounded-2xl p-5 text-primary-foreground relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary"
         >
           <div className="flex items-center gap-4">
             {avatarSrc ? (
               <img
                 src={avatarSrc}
                 alt={profile?.nome || "Avatar"}
-                className="h-16 w-16 shrink-0 rounded-full object-cover border-2 border-white/30"
+                className="h-16 w-16 shrink-0 rounded-full object-cover border-2 border-primary-foreground/30"
               />
             ) : (
               <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-white font-black text-xl select-none border-2 border-white/30"
-                style={{ background: "rgba(255,255,255,0.15)" }}
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-primary-foreground font-black text-xl select-none border-2 border-primary-foreground/30"
+                style={{ background: "hsl(var(--primary-foreground) / 0.15)" }}
               >
                 {initials || "?"}
               </div>
             )}
             <div className="min-w-0 flex-1">
               <p className="text-lg font-bold truncate">Olá, {primeiroNome}! 👋</p>
-              <p className="text-sm text-white/80 italic leading-snug mt-0.5">"{motivation}"</p>
-              <p className="text-xs text-white/60 mt-1 capitalize">{dataFormatada}</p>
+              <p className="text-sm text-primary-foreground/80 italic leading-snug mt-0.5">"{motivation}"</p>
+              <p className="text-xs text-primary-foreground/60 mt-1 capitalize">{dataFormatada}</p>
             </div>
           </div>
         </div>
