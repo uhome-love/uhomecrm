@@ -67,7 +67,14 @@ function SectionLabel({ children, icon: Icon }: { children: string; icon: any })
   );
 }
 
-// ─── Mini KPI ───
+// ─── Mini KPI ─── (casca canônica StatCard; valores/lógica inalterados)
+const VARIANT_TONE = {
+  default: "neutral",
+  highlight: "primary",
+  success: "success",
+  warning: "warning",
+} as const;
+
 const MiniKpi = forwardRef<HTMLDivElement, {
   label: string; value: string | number; sub?: string;
   variant?: "default" | "highlight" | "success" | "warning";
@@ -77,34 +84,35 @@ const MiniKpi = forwardRef<HTMLDivElement, {
   /** Quando true, queda é boa (ex.: no-show). */
   invertDelta?: boolean;
 }>(({ label, value, sub, variant = "default", onClick, delta, invertDelta }, ref) => {
-  const colors = {
-    default: "text-foreground",
-    highlight: "text-primary",
-    success: "text-success-500",
-    warning: "text-warning-500",
-  };
   const showDelta = delta != null && Number.isFinite(delta);
   const positive = showDelta && (invertDelta ? delta! < 0 : delta! > 0);
   const neutral = showDelta && Math.round(delta!) === 0;
-  return (
-    <div
-      ref={ref}
-      onClick={onClick}
-      className={`bg-card border border-border rounded-xl p-3.5 border-l-[3px] border-l-primary ${onClick ? "cursor-pointer hover:border-primary/30 transition-colors" : ""}`}
+  const deltaNode = showDelta ? (
+    <span
+      className={`text-[10px] font-semibold leading-none ${neutral ? "text-muted-foreground" : positive ? "text-success-500" : "text-danger-500"}`}
+      title="vs. período anterior"
     >
-      <p className="text-[10px] font-medium text-muted-foreground tracking-wide mb-1 truncate">{label}</p>
-      <div className="flex items-baseline gap-1.5">
-        <p className={`text-xl font-[800] leading-none tracking-tight ${colors[variant]}`}>{value}</p>
-        {showDelta && (
-          <span
-            className={`text-[10px] font-semibold leading-none ${neutral ? "text-muted-foreground" : positive ? "text-success-500" : "text-danger"}`}
-            title="vs. período anterior"
-          >
-            {neutral ? "→" : delta! > 0 ? "▲" : "▼"} {Math.abs(Math.round(delta!))}%
-          </span>
-        )}
-      </div>
-      {sub && <p className="text-[10px] text-muted-foreground/70 mt-1 truncate">{sub}</p>}
+      {neutral ? "→" : delta! > 0 ? "▲" : "▼"} {Math.abs(Math.round(delta!))}%
+    </span>
+  ) : null;
+
+  return (
+    <div ref={ref}>
+      <StatCard
+        label={label}
+        value={value}
+        tone={VARIANT_TONE[variant]}
+        onClick={onClick}
+        sub={
+          deltaNode || sub ? (
+            <span className="inline-flex items-center gap-1.5">
+              {deltaNode}
+              {sub && <span className="text-muted-foreground/70 truncate">{sub}</span>}
+            </span>
+          ) : undefined
+        }
+        className="w-full p-3.5 rounded-xl [&>p:nth-child(1)]:normal-case [&>p:nth-child(1)]:truncate [&>p:nth-child(2)]:text-xl [&>p:nth-child(2)]:tracking-tight"
+      />
     </div>
   );
 });
