@@ -180,10 +180,31 @@ export default function HomiWorkspace() {
           <h1 className="min-w-0 flex-1 truncate text-sm font-medium">
             {threads.find(t => t.id === threadId)?.titulo || "HOMI"}
           </h1>
+
+          {/* Produto em foco — seleção explícita e opcional, só nesta sessão */}
+          <Select
+            value={empreendimentoFoco ?? NENHUM_FOCO}
+            onValueChange={(v) => setEmpreendimentoFoco(v === NENHUM_FOCO ? null : v)}
+          >
+            <SelectTrigger
+              className="h-8 w-[9.5rem] shrink-0 text-xs sm:w-44"
+              aria-label="Empreendimento em foco"
+            >
+              <SelectValue placeholder="Nenhum produto" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NENHUM_FOCO}>Nenhum produto</SelectItem>
+              {EMPREENDIMENTOS_FOCO.map((e) => (
+                <SelectItem key={e} value={e}>{e}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground xl:hidden" onClick={() => setPainelAberto(true)}>
             <Sparkles className="h-4 w-4" /> <span className="hidden sm:inline">Painel</span>
           </Button>
         </header>
+
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <MessageList messages={messages} isLoading={isLoading} userName={userName} onPrompt={enviar} />
