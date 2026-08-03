@@ -21,7 +21,10 @@ const TONE_BORDER: Record<StatTone, string> = {
 
 interface StatCardProps {
   label: string;
-  value: string | number;
+  /** Aceita nó (ex.: <Skeleton/>) para estados de carregamento. */
+  value: ReactNode;
+  /** Tooltip nativo opcional. */
+  title?: string;
   sub?: ReactNode;
   delta?: number;
   tone?: StatTone;
@@ -34,6 +37,7 @@ interface StatCardProps {
 export function StatCard({
   label,
   value,
+  title,
   sub,
   delta,
   tone = "neutral",
@@ -85,13 +89,13 @@ export function StatCard({
 
   if (onClick) {
     return (
-      <button type="button" aria-pressed={!!active} onClick={onClick} className={cardClass}>
+      <button type="button" title={title} aria-pressed={!!active} onClick={onClick} className={cardClass}>
         {inner}
       </button>
     );
   }
 
-  return <div className={cardClass}>{inner}</div>;
+  return <div title={title} className={cardClass}>{inner}</div>;
 }
 
 export default StatCard;

@@ -30,6 +30,7 @@ import {
   Ban,
 } from "lucide-react";
 import { subHours } from "date-fns";
+import { StateWrapper } from "@/components/ui/StateWrapper";
 
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
@@ -158,11 +159,7 @@ export function RoletaCorretorView() {
   }, [selectedJanela, checkNoturnaEligibility]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <StateWrapper loading skeletonVariant="page" className="py-4" />;
   }
 
   // Already credenciado and approved

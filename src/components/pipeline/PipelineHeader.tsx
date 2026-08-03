@@ -157,7 +157,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
 
   return (
-    <div className="shrink-0 bg-[#f7f7fb] dark:bg-[#141e30] border-b border-[#e8e8f0] dark:border-white/[0.07] sticky top-0" style={{ zIndex: 30 /* Z.headerSticky */ }}>
+    <div className="shrink-0 bg-muted/40 dark:bg-card border-b border-border sticky top-0" style={{ zIndex: 30 /* Z.headerSticky */ }}>
       {/* ── MOBILE HEADER (< md) ── */}
       <div className="md:hidden">
         {/* Line 1: Title + filters + novo */}
@@ -165,7 +165,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center shrink-0">
             <LayoutGrid className="h-3 w-3 text-white" />
           </div>
-          <span className="text-[15px] font-bold text-foreground shrink-0">Pipeline</span>
+          <span className="text-[15px] font-bold tracking-[-0.3px] text-foreground shrink-0">Pipeline</span>
           <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold shrink-0">{filteredLeadsCount}</span>
           <div className="flex-1 min-w-0" />
 
@@ -235,7 +235,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 className={`flex items-center gap-1 shrink-0 transition-colors h-8 px-3 rounded-full text-[11px] font-semibold border-none cursor-pointer ${
                   activeTab === tab.key
                     ? "bg-primary text-white"
-                    : "bg-slate-100 dark:bg-gray-800 text-[#71717a] dark:text-[#a1a1aa]"
+                    : "bg-slate-100 dark:bg-gray-800 text-muted-foreground"
                 }`}
               >
                 {tab.icon} {tab.label}
@@ -504,16 +504,16 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
       {/* ── DESKTOP HEADER (lg+) — Command Bar unificada ── */}
       <div className="hidden lg:block">
         {/* Linha 1 — Identidade · Navegação · Status · Ações primárias */}
-        <div className="flex items-center flex-wrap gap-y-1.5 min-h-12 py-1.5 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-3">
+        <div className="flex items-center flex-wrap gap-y-1.5 min-h-12 py-1.5 px-6 border-b border-border gap-3">
           {/* Identidade */}
           <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
             <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
-            <span className="text-[15px] font-bold text-foreground tracking-tight whitespace-nowrap">
+            <span className="text-[15px] font-bold text-foreground tracking-[-0.3px] whitespace-nowrap">
               Pipeline
             </span>
-            <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
+            <span className="text-[12px] text-muted-foreground font-medium shrink-0">{filteredLeadsCount} leads</span>
             <PipelineScopeBadge
               isAdmin={isAdmin}
               isDiretor={isDiretor}
@@ -524,11 +524,11 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
 
           {/* Divisor identidade ↔ navegação */}
-          <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0" />
+          <div className="w-px h-5 bg-border shrink-0" />
 
           {/* Navegação (abas) — segmented control */}
           <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
-            <div className="inline-flex items-center gap-0.5 rounded-lg border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] p-1">
+            <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-1">
               {roleTabs.map(tab => (
                 <button
                   key={tab.key}
@@ -536,7 +536,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-3 rounded-md text-xs border-none cursor-pointer ${
                     activeTab === tab.key
                       ? "bg-card text-foreground font-semibold shadow-sm"
-                      : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium hover:text-foreground"
+                      : "bg-transparent text-muted-foreground font-medium hover:text-foreground"
                   }`}
                 >
                   {tab.icon} {tab.label}
@@ -546,18 +546,18 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
             {/* Toggle Equipe / Minha carteira (gestor/admin, só Kanban) */}
             {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
-              <div className="inline-flex shrink-0 rounded-[7px] border border-[#e8e8f0] dark:border-white/[0.07] bg-card p-0.5 ml-1">
+              <div className="inline-flex shrink-0 rounded-[7px] border border-border bg-card p-0.5 ml-1">
                 <button
                   type="button"
                   onClick={() => setMinhaCarteira(false)}
-                  className={`px-2.5 h-7 text-[11px] font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
+                  className={`px-2.5 h-7 text-[11px] font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   Equipe
                 </button>
                 <button
                   type="button"
                   onClick={() => setMinhaCarteira(true)}
-                  className={`px-2.5 h-7 text-[11px] font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
+                  className={`px-2.5 h-7 text-[11px] font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   Minha carteira
                 </button>
@@ -640,23 +640,23 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         <div className="flex items-center flex-wrap gap-y-1.5 gap-x-2 min-h-11 py-1.5 px-6">
           {/* Busca */}
           <div className="relative w-[180px] xl:w-[220px]">
-            <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
+            <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               aria-label="Buscar lead, telefone ou empreendimento"
               placeholder="Buscar..."
               value={filters.search}
               onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-              className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-primary dark:focus:border-primary"
+              className="w-full outline-none h-9 rounded-lg bg-muted/40 border border-border pl-7 pr-2 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary dark:focus:border-primary"
             />
             {filters.search && (
               <button aria-label="Limpar busca" onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
-                <X className="h-3 w-3 text-[#a1a1aa] dark:text-[#52525b]" />
+                <X className="h-3 w-3 text-muted-foreground" />
               </button>
             )}
           </div>
 
           {/* Divisor busca ↔ filtros */}
-          <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0 mx-0.5" />
+          <div className="w-px h-5 bg-border shrink-0 mx-0.5" />
 
           {/* Grupo de filtros */}
           <div className="flex items-center gap-2">
@@ -689,12 +689,12 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           {/* Ordenação */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-[#a1a1aa] dark:text-[#52525b] hidden xl:inline">Ordenar por</span>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground hidden xl:inline">Ordenar por</span>
             <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
           </div>
 
           {/* Divisor ordenação ↔ ações globais */}
-          <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0 mx-0.5" />
+          <div className="w-px h-5 bg-border shrink-0 mx-0.5" />
 
           {/* Grupo de ações globais — Fila CEO · menu ⋯ */}
           <div className="flex items-center gap-1.5 shrink-0">
@@ -706,7 +706,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   className={`shrink-0 flex items-center gap-1.5 transition-colors h-9 px-2.5 rounded-lg text-xs font-semibold border cursor-pointer ${
                     filaCeoFilter
                       ? "bg-primary/10 text-primary border-primary"
-                      : "bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa] border-[#e8e8f0] dark:border-white/[0.07] hover:text-foreground"
+                      : "bg-muted/40 text-muted-foreground border-border hover:text-foreground"
                   }`}
                   title="Fila CEO"
                 >
@@ -726,7 +726,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   className={`w-full flex items-center justify-between transition-colors h-8 px-2.5 rounded-md text-xs font-semibold cursor-pointer border ${
                     filaCeoFilter
                       ? "bg-primary/10 text-primary border-primary"
-                      : "bg-transparent text-[#52525b] dark:text-[#a1a1aa] border-[#e8e8f0] dark:border-white/[0.07] hover:text-foreground"
+                      : "bg-transparent text-muted-foreground border-border hover:text-foreground"
                   }`}
                 >
                   {filaCeoFilter ? "Filtrando Fila CEO" : "Filtrar Fila CEO"}
@@ -752,7 +752,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Mais ações"
-                className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-[#a1a1aa] dark:text-[#52525b] bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] cursor-pointer hover:text-foreground"
+                className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-muted-foreground bg-muted/40 border border-border cursor-pointer hover:text-foreground"
               >
                 <MoreHorizontal size={15} strokeWidth={1.5} />
               </button>
