@@ -647,8 +647,36 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   const roletaPendentes = useMemo(() => roletaPendentesRaw ?? EMPTY_ARR, [roletaPendentesRaw]);
   const lastUpdate = new Date();
 
+  // ── Contrato de estado (aditivo) ──
+  // ESSENCIAL: falha derruba a tela (ErrorState). OPCIONAL: falha vira "parcial" (banner stale).
+  const errors = {
+    kpis: kpisError ?? null,
+    pipeline: pipelineError ?? null,
+    negocios: negociosError ?? null,
+    teams: teamsError ?? null,
+    extra: extraError ?? null,
+    visitasEmp: visitasEmpError ?? null,
+    vgvMes: vgvMesError ?? null,
+    prev: prevError ?? null,
+    roleta: roletaError ?? null,
+  };
+  const hardError = errors.kpis ?? errors.pipeline ?? errors.negocios ?? null;
+  const partialSources = [
+    errors.teams && "equipes",
+    errors.extra && "indicadores complementares",
+    errors.visitasEmp && "visitas por empreendimento",
+    errors.vgvMes && "VGV do mês",
+    errors.prev && "comparativo do período anterior",
+    errors.roleta && "fila de credenciamento",
+  ].filter(Boolean) as string[];
+
   return {
     loading: kpisFirstLoad, // true only on very first fetch, false after cache is populated
+    error: hardError,
+    isError: Boolean(hardError),
+    partial: partialSources.length > 0,
+    partialSources,
+    errors,
     lastUpdate,
     profile: profile || null,
     roletaPendentes,
