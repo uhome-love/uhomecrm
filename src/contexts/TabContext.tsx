@@ -269,6 +269,13 @@ export function TabProvider({ children }: { children: ReactNode }) {
         if (activeRef.current !== resolved.key) {
           setActiveTabId(resolved.key);
         }
+        // Keep stored path in sync with the URL (query string may have changed).
+        // No navigation here — the URL is already correct.
+        if (existing.path !== normalizedFullPath) {
+          setTabs(tabsRef.current.map((t) =>
+            t.id === resolved.key ? { ...t, path: normalizedFullPath } : t
+          ));
+        }
       } else {
         // Open as new tab without navigating (URL already correct)
         openTab(fullPath, true);
@@ -277,7 +284,8 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
     // Reset sync guard after this render
     requestAnimationFrame(() => { syncingRef.current = false; });
-  }, [location.pathname, openTab, roleLoading, roles, hasAccess]);
+  }, [location.pathname, location.search, openTab, roleLoading, roles, hasAccess]);
+
 
   return (
     <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, activateTab }}>
