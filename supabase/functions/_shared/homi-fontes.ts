@@ -87,10 +87,38 @@ const VOLATIL_PATTERNS: RegExp[] = [
   /\baprovado\s+(?:pelo|no)\s+banco\b/i,
 ];
 
-/** true quando o texto contém qualquer marcador de dado volátil. */
+/**
+ * Padrões adicionais aplicados APENAS a texto comercial C4 (e a prosa livre C2).
+ *
+ * Capturam número monetário "puro", sem `R$` e sem sufixo por extenso, que a
+ * lista base não vê: `499000`, `2200000`, `499.000`, `2.200.000`.
+ *
+ * NUNCA são aplicados a C1/Método: lá um `[MU-07.1]`, um ano (`2026`) ou uma
+ * numeração de bloco são pedagógicos e precisam ser preservados. Por isso a
+ * separação é explícita e não fica na lista base.
+ *
+ * Ano isolado (4 dígitos) fica de fora de propósito: `\d{5,}` começa em 5
+ * dígitos, e prazo/entrega já é capturado por palavra na lista base.
+ */
+const VOLATIL_C4_EXTRA: RegExp[] = [
+  /\b\d{5,}\b/,                       // 499000, 2200000
+  /\b\d{1,3}(?:\.\d{3})+\b/,          // 499.000, 2.200.000
+];
+
+/** true quando o texto contém qualquer marcador de dado volátil (lista base). */
 export function contemVolatil(texto: unknown): boolean {
   if (typeof texto !== "string" || !texto.trim()) return false;
   return VOLATIL_PATTERNS.some((re) => re.test(texto));
+}
+
+/**
+ * Detector para texto COMERCIAL: lista base + número monetário puro.
+ * Usado em C4 (chunks, materiais, metadados) e na prosa livre de C2.
+ * Não usar em C1.
+ */
+export function contemVolatilComercial(texto: unknown): boolean {
+  if (typeof texto !== "string" || !texto.trim()) return false;
+  return contemVolatil(texto) || VOLATIL_C4_EXTRA.some((re) => re.test(texto));
 }
 
 /**
@@ -106,7 +134,6 @@ export const C2_CAMPOS_PERMITIDOS = [
   "descricao",
   "perfil_cliente",
   "diferenciais",
-  "tipologias",
   "dormitorios",
   "area_privativa",
 ] as const;
@@ -118,6 +145,13 @@ export const C2_CAMPOS_PERMITIDOS = [
  * - descricao_completa / argumentos_venda / estrategia_conversao / objecoes:
  *   free-text legado que mistura permanente e volátil. Fica fora do prompt até
  *   curadoria humana campo a campo. Os dados seguem intactos no banco.
+ * - tipologias: jsonb legado de forma livre. Um item como
+ *   `{ tipo: "2 dorms", valor: 499000, entrega: 2029 }` perde as chaves ao ser
+ *   achatado e vira "2 dorms 499000 2029", furando a allowlist estrutural.
+ *   Interpretar JSON legado por heurística não é allowlist — é adivinhação.
+ *   Fica fora até existir campo estruturado curado (Pacote B). O dado
+ *   permanece intacto no banco. `dormitorios` e `area_privativa` (top-level,
+ *   já estruturados e separados) continuam cobrindo a necessidade básica.
  */
 export const C2_CAMPOS_NEGADOS = [
   "valor_min",
@@ -128,6 +162,7 @@ export const C2_CAMPOS_NEGADOS = [
   "argumentos_venda",
   "estrategia_conversao",
   "objecoes",
+  "tipologias",
 ] as const;
 
 export interface ComposicaoC2 {
@@ -139,25 +174,10 @@ export interface ComposicaoC2 {
   incluidos: number;
 }
 
-/** Achata `tipologias` (jsonb livre) em texto curto e legível, sem despejar JSON cru. */
-function textoTipologias(valor: unknown): string | null {
-  if (!valor) return null;
-  if (typeof valor === "string") return valor.trim() || null;
-  if (Array.isArray(valor)) {
-    const partes = valor
-      .map((t) => (typeof t === "string" ? t : typeof t === "object" && t ? Object.values(t).join(" ") : ""))
-      .map((s) => String(s).trim())
-      .filter(Boolean);
-    return partes.length ? partes.join("; ") : null;
-  }
-  if (typeof valor === "object") {
-    const partes = Object.entries(valor as Record<string, unknown>)
-      .map(([k, v]) => `${k}: ${String(v)}`)
-      .filter(Boolean);
-    return partes.length ? partes.join("; ") : null;
-  }
-  return null;
-}
+// NOTA: não existe mais `textoTipologias`. Achatar `tipologias` (jsonb legado
+// de forma livre) descartava as chaves e deixava números puros passarem. Ver
+// C2_CAMPOS_NEGADOS. Nesta fase o dossiê usa só `dormitorios`/`area_privativa`.
+
 
 /**
  * Compõe o bloco C2 (produto permanente) por allowlist estrutural.
@@ -175,12 +195,17 @@ export function composeC2(
   let omitidos = 0;
   let incluidos = 0;
 
-  /** Adiciona um campo permitido, omitindo-o por inteiro se contiver volátil. */
-  const push = (rotulo: string, bruto: unknown) => {
+  /**
+   * Adiciona um campo permitido, omitindo-o por inteiro se contiver volátil.
+   * `prosa=true` (padrão) usa o detector comercial, que também pega número
+   * monetário puro. Campos numéricos estruturados (dormitórios, área) usam a
+   * lista base, para que "240" m² ou "3" dorms não sejam confundidos.
+   */
+  const push = (rotulo: string, bruto: unknown, prosa = true) => {
     if (bruto === null || bruto === undefined) return;
     const texto = String(bruto).trim();
     if (!texto) return;
-    if (contemVolatil(texto)) {
+    if (prosa ? contemVolatilComercial(texto) : contemVolatil(texto)) {
       omitidos++;
       return;
     }
@@ -191,10 +216,9 @@ export function composeC2(
   if (registro.bairro) push("LOCALIZAÇÃO", `${registro.bairro} – Porto Alegre/RS`);
   push("CONCEITO", registro.descricao);
 
-  const tipos = textoTipologias(registro.tipologias);
-  push("TIPOLOGIAS", tipos);
-  if (registro.dormitorios) push("DORMITÓRIOS", registro.dormitorios);
-  if (registro.area_privativa) push("ÁREA PRIVATIVA (m²)", registro.area_privativa);
+  // `tipologias` NÃO entra nesta fase (ver C2_CAMPOS_NEGADOS).
+  if (registro.dormitorios) push("DORMITÓRIOS", registro.dormitorios, false);
+  if (registro.area_privativa) push("ÁREA PRIVATIVA (m²)", registro.area_privativa, false);
 
   push("PERFIL DE CLIENTE", registro.perfil_cliente);
 
