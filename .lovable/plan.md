@@ -1,241 +1,154 @@
-# FASE 0 — Contrato de fontes dos 12 empreendimentos (somente leitura)
+# Plano executivo integrado — HOMI / Uhome Sales
 
-Executada em lote único. Nada foi editado, deployado ou reindexado.
-Legenda: **[FATO]** verificado agora · **[HIPÓTESE]** inferência · **[REC]** recomendação · **[LUCAS]** decisão sua · **não confirmado** = sem fonte suficiente.
+## 1. Resumo executivo (leigo)
 
----
+Hoje o HOMI recebe, em toda pergunta, o dossiê de TODOS os empreendimentos dentro do prompt, e a busca na base de conhecimento é feita sem saber de qual produto se fala. Resultado: mistura de produto, prompt caro e respostas menos confiáveis. Além disso, existem hoje cinco telas/entradas de HOMI no código, mas só uma é a principal (`/homi`).
 
-## 1. Inventário do acervo (fatos)
+O plano faz quatro coisas: (a) o produto em foco passa a ser um dado explícito, não um palpite do texto; (b) só o dossiê do produto em foco entra no prompt, com um índice curto dos demais; (c) a busca traz sempre Método geral + módulo do produto (nunca filtro que apague o geral); (d) governança separando o que é perene, o que é volátil (preço, unidade, taxa — sempre do sistema) e o que é apoio. Tudo com testes, medição sem PII e rollback por pacote.
 
-**Fontes existentes hoje, por prioridade** (`homi_documents` + `homi_chunks`):
+## 2. Fatos confirmados (SHA `8c54aff9202c49490b329c7c8cccf93981e3f2ec`)
 
-| Prioridade | Tipo | Docs | Chunks | Tem campo `empreendimento` |
-|---|---|---|---|---|
-| 10 | documento — Método Uhome v1.0 | 1 | 107 | **não (NULL)** |
-| 9 | documento — Método Casa Tua | 1 | 40 | **não (NULL)** |
-| 7 | empreendimento | 69 | 69 (1 chunk cada) | sim (69) |
-| 6 | academia | 20 | 22 | não (NULL) |
-| 5 | documento "de apoio" (Apresentação, Manual Diário, Playbook) | 3 | 189 | não (NULL) |
-| 5 | script (Meday - Consultivo) | 1 | 2 | "Sem empreendimento" |
-| 4 | material | 42 | 42 | sim (42) |
-| 3 | imóvel | 178 (1 em `processing`) | 177 | não |
-| 0 | documento — Método v1.1 antigo | 1 | 47 | "Geral" |
+- `supabase/functions/homi-chat/index.ts` L34: body aceita `messages, empreendimento, stream, system, enableTools, perfil`.
+- L41-46: `loadEnterpriseKnowledge` → `allEmpreendimentos` (lista) e `detailedKnowledge` = `formatForAssistant` de TODOS os registros, concatenado.
+- L88-97: RAG principal com `limit: 10`, `threshold: 0.3`, `empreendimento: null`.
+- L~180-190: prompt injeta `EMPREENDIMENTOS (RESUMO)` + `CONHECIMENTO DETALHADO DOS EMPREENDIMENTOS` integralmente.
+- L~207-215: `customSystem` monta caminho alternativo com os mesmos blocos completos.
+- L~230: `VERACIDADE_COMERCIAL_BLOCK` aplicado ao prompt padrão e ao `customSystem` — trava vigente.
+- L56-90: A2 (montarQueryBusca) presente e ativa; heurística textual, não determinística.
+- `_shared/homi-brain.ts` L79-106: `searchKnowledge(supabase, query, {limit, threshold, empreendimento, sourceTypes})` → RPC `buscar_conhecimento`.
+- `_shared/materiais-context.ts`: busca própria de materiais, embeddings `google/gemini-embedding-001` (motor diferente do brain, que usa `openai/text-embedding-3-small`).
+- RPC real `buscar_conhecimento`: `WHERE ... AND (filter_empreendimento IS NULL OR hd.empreendimento = filter_empreendimento)`, `ORDER BY hd.priority DESC, similarity DESC LIMIT match_count`. Confirmado: filtro isolado remove tudo que tem `empreendimento IS NULL`.
+- Base indexada hoje: documento 6 docs (1 com prio 10 / 107 chunks; 1 prio 9 / 40; 3 prio 5 / 189; 1 prio 0 / 47), empreendimento 69 docs prio 7, material 42 prio 4, academia 20 prio 6, imóvel 178 prio 3, script 1 prio 5.
+- Documentos com `empreendimento IS NULL`: todos de `documento` (5 de 6), `academia` (20) e `imovel` (178).
+- Chave de nome divergente: `homi_documents.empreendimento` usa os 69 nomes canônicos; `empreendimento_overrides` tem 12 registros com nomes de outro padrão ("Las Casas", "Vértice - Las Casas", "Átrio - ABF", "Melnick Day" em três variantes). Não há hoje chave comum garantida entre as duas fontes.
+- Chamadores: `HomiContext.sendMessage` envia `{messages, enableTools:true, stream:false, perfil}`; `HomiChat.tsx` envia só `messages`; `HomiObjectionHelper` envia `{messages, mode:"arena_objection"}` e coloca `selectedEmp` apenas dentro do texto do prompt.
+- Rotas reais (`src/config/pageRegistry.ts` L169-172, L224-227): `/homi` (HomiWorkspace, principal, com `/homi/c/:threadId`), `/homi-assistente`, `/homi-gerente`, `/homi-ceo`, `/backoffice/homi-ana`.
+- Persistência: `homi_conversations` gravada em `HomiContext.saveConversation` (colunas `user_id, tipo, titulo, mensagens`) e também, em duplicidade, dentro de `HomiChat.tsx`. Não há coluna de produto em foco.
+- `HomiPanel`/balão flutuante: `AppLayout` L327 confirma que o balão foi removido; a conversa vive em `/homi`.
 
-Observações de fato:
-- Só **um** produto tem módulo próprio de Método: **Casa Tua** (prioridade 9, 40 chunks).
-- Os docs de `source_type='empreendimento'` (prioridade 7) têm **1 chunk cada** — são fichas muito curtas, não conhecimento profundo.
-- Materiais cobrem apenas 10 rótulos de produto: Casa Tua, The Arch, Connect JW, Terrace, Vivid, Lake Baikal, Grand Park Moinhos, Flow, Open Arvoredo, Campanha Investidores — **nenhum** coincide com metade dos 12 overrides.
-- Academia tem 1 aula de produto: "Casa Bastian e Shift — Investimento".
+## 3. Correções de premissas anteriores
 
-### Os 12 registros de `empreendimento_overrides`
+- "Todos os detalhes dos produtos entram no prompt": confirmado, e vale também no caminho `customSystem`.
+- O `empreendimento` do body hoje só influencia materiais — confirmado; ele NÃO chega à RPC.
+- Premissa a corrigir: não basta passar `empreendimento` para a RPC. A chave textual entre `homi_documents.empreendimento` e `empreendimento_overrides` diverge; qualquer contrato precisa resolver nome → canônico antes.
+- `HomiObjectionHelper` espera SSE, mas o backend só streama fora de `enableTools`; com `mode` desconhecido ele cai no caminho padrão. Comportamento a validar em teste, não afirmado como bug.
+- Ignorada, conforme instrução, a sugestão anterior de `method:UhomeGeneral`.
 
-| Código | Nome | Bairro | Segmento | valor_min/max | Módulo Método | Ficha p7 | Materiais | Academia |
-|---|---|---|---|---|---|---|---|---|
-| 39653-UH | Átrio - ABF | — | Produto Foco | — | não | sim ("Átrio") | não | não |
-| 4688-UH | Casa Bastian | Menino Deus | investimento | — | não | sim | não | sim (aula investimento) |
-| 52101-UH | Casa Tua | Alto Petrópolis | medio_alto | 499.000 / 700.000 | **sim (p9)** | sim | 8 materiais | não |
-| 58935-UH | Lake Eyre | Cristal | — | 2.200.000 / 4.800.000 | não | sim | não | não |
-| 41190-UH | Las Casas | Las Casas | medio_alto | 293.000 / 450.000 | não | não (só "Vértice Las Casas") | não | não |
-| 91245-UH | Melnick Day Alto Padrão | — | — | 1.500.000 / 5.000.000 | não | só "Melnick Day" | não | não |
-| 39808-UH | Melnick Day Compactos | — | — | 300.000 / 500.000 | não | idem | não | não |
-| 76953-UH | Melnick Day Médio Padrão | — | — | 400.000 / 1.000.000 | não | idem | não | não |
-| 32849-UH | Open Bosque | Passo Dareia | mcmv | 240.000 / 380.000 | não | sim | não (materiais são "Open Arvoredo") | não |
-| 57290-UH | Orygem | Teresópolis | medio_alto | 880.000 / 1.090.000 | não | sim | não | não |
-| 97325-UH | Shift | Auxiliadora | — | — | não | sim | não | sim (aula investimento) |
-| LAS-CASAS-UH | Vértice - Las Casas | Ecoville ZN | — | 294.000 / 338.800 | não | sim | não | não |
+## 4. Arquitetura atual
 
-**Campos perenes** em `empreendimento_overrides`: `nome`, `codigo`, `bairro`, `descricao`/`descricao_completa` (parte conceitual), `perfil_cliente`, `diferenciais`, `objecoes`, `estrategia_conversao`, `segmento_comercial`, `mapa_url`, `video_url`.
-**Campos voláteis**: `valor_min`, `valor_max`, `valor_venda`, `area_privativa`, `tipologias`, `dormitorios`, `suites`, `vagas`, `status_obra`, `previsao_entrega`, e todo trecho de preço/metragem/condição embutido em `descricao_completa` e `argumentos_venda`.
-
-**Ausências de fato:** Átrio - ABF está **vazio** (sem descrição, argumentos, diferenciais, preço, perfil). "Alto Lindóia" **não existe** em `empreendimento_overrides`, mas aparece no prompt via fallback (seção 5).
-
----
-
-## 2. Matriz lado a lado — conflitos por produto
-
-Autoridade: **A** = Método (N1/N2) · **B** = override perene (N3) · **C** = override volátil (N4) · **D** = fallback no código (não governada) · **E** = apoio (material/academia).
-Nenhuma data de validade comercial está registrada em nenhuma fonte — **[FATO]**: só há `updated_at` (12/03 a 21/05/2026). Validade comercial: **não confirmado** em todos os casos.
-
-### Casa Tua
-| Afirmação | Fonte B (override) | Fonte D (código) | Conflito | Risco | Tratamento [REC] | [LUCAS] |
-|---|---|---|---|---|---|---|
-| Metragem | `diferenciais`: "150 a 173 m²" · `descricao_completa`: "99 m² a 176 m²" | BRIEF: "99-176m²" · FALLBACK: "99, 127, 176 m²" | **sim, interno** | alto (informação errada ao cliente) | usar valor oficial único; volátil | J-1 |
-| Preço | colunas 499.000-700.000 · texto "R$ 480 mil a R$ 750 mil" | — | **sim, interno** | alto | remover do texto; volátil sob consulta | J-2 |
-| "Alto potencial de valorização da região" | `argumentos_venda` | — | contradiz módulo do Método (produto de moradia) | **alto (legal/comercial)** | remover ou comprovar | **J-A (bloqueia)** |
-| Finalidade | perfil = família saindo de apartamento (moradia) | idem | consistente | — | classificar oficialmente | J-B |
-
-Nota **[FATO]**: o bloco `diferenciais` do Casa Tua ("Casas de 2 e 3 Dorms | 150 a 173 m²") é **idêntico** ao do Orygem. **[HIPÓTESE]** cópia entre registros.
-
-### Open Bosque
-| Afirmação | B (override) | D (código) | Conflito | Risco | [REC] | [LUCAS] |
-|---|---|---|---|---|---|---|
-| Metragem | 31 a 63 m² | BRIEF: "47-80m²" | **sim** | alto | valor oficial único | J-1 |
-| Área de lazer/parque | "+22.000 m²" | BRIEF: "7.500m² de lazer" | **sim** | médio | idem | J-1 |
-| Preço | 240.000-380.000 (colunas) · texto "R$232 mil a R$350 mil" | — | **sim** | alto | volátil | J-2 |
-| "Potencial de valorização" / "Ideal para investimento" / "Melhor custo-benefício da região" | `argumentos_venda` | — | sem fonte | **alto** | comprovar ou remover | **J-A** |
-| Renda/parcela ("a partir de R$944", "Renda a partir de R$ 3.500", "ITBI grátis") | `diferenciais` | — | volátil em campo perene | alto (condição comercial) | mover para volátil | J-2 |
-| Ruído | `argumentos_venda` termina com "💡 Dica para seu CRM e IA…" | — | texto interno vazando para o prompt | médio | limpar | J-C (editorial) |
-
-### Casa Bastian
-| Afirmação | B | D | Conflito | Risco | [REC] |
-|---|---|---|---|---|---|
-| Metragem | diferenciais 23-27 / 32-38 m² · descrição 25-39 m² | BRIEF "14-36m²" | **sim, triplo** | alto | valor oficial único |
-| Preço | colunas vazias · descrição "R$ 319 mil a R$ 599 mil" | — | preço só em texto livre | alto | volátil |
-| "Alta liquidez para locação" | — | **BRIEF (código)** | sem fonte documental | **alto** | ver J-A |
-| Finalidade | `segmento_comercial = investimento` | idem | consistente | — | confirmar oficialmente |
-
-### Shift
-| Afirmação | B | D | Conflito | Risco |
-|---|---|---|---|---|
-| Metragem | diferenciais "23 a 108 m²" · descrição "24 a 26 m²" | BRIEF "24-108m²" | **sim** | alto |
-| Preço | colunas vazias · descrição "R$ 399 mil a R$ 499 mil" | — | só texto | alto |
-| "gerar locação via airbnb", "exclusividade", "alto padrão" | `argumentos_venda` | BRIEF "Life on Demand" | promessa de renda sem fonte; airbnb depende de regra condominial/municipal | **alto (legal)** | **J-A** |
-| Entrega "Abril/2029" | dentro de `diferenciais` (campo perene) | — | volátil em campo perene | médio |
-
-### Lake Eyre
-| Afirmação | B | D | Conflito | Risco |
-|---|---|---|---|---|
-| Metragem | descrição "129 a 176 m²" · `area_privativa` = 127 | BRIEF "127-326m²" | **sim, triplo** | alto |
-| Preço | colunas 2.200.000-4.800.000 · texto "R$ 2 mi a R$ 4 mi" | — | **sim** | alto |
-| Argumentos | `argumentos_venda` vazio | — | ausência | baixo |
-
-### Orygem
-| Afirmação | B | D | Conflito | Risco |
-|---|---|---|---|---|
-| Metragem | 150 e 173 m² (coerente entre campos) | BRIEF "150-173m²" | não | — |
-| Preço | colunas 880.000-1.090.000 · texto "a partir de R$ 871 mil / R$ 919 mil" | — | **sim** | alto |
-| Argumento | "excelente custo-benefício em relação a casas prontas" (comparação) | — | comparação sem fonte comparativa | médio | 
-
-### Las Casas × Vértice - Las Casas (dois registros)
-| Afirmação | Las Casas (41190-UH) | Vértice (LAS-CASAS-UH) | Conflito | Risco |
-|---|---|---|---|---|
-| Preço | 293.000-450.000 | 294.000-338.800 | **sim** (mesmo produto? não confirmado) | alto |
-| Lotes | "terrenos com diferentes metragens" | "132m² a 154m²" | parcial | médio |
-| "Potencial de valorização" / "Alta valorização região Ecoville" | sim | sim | sem fonte | **alto** | 
-| Identidade | ambos referenciam Las Casas/Ecoville | ficha p7 só "Vértice Las Casas" | duplicidade **não confirmada** | médio | **J-D** |
-
-### Melnick Day (3 registros)
-| Afirmação | Fonte | Conflito | Risco |
-|---|---|---|---|
-| "Descontos de até 30% que não se repetem" | argumentos (Alto Padrão e Médio) | condição comercial de **evento datado** tratada como perene | **alto (legal — oferta)** |
-| "Studios com alta demanda de locação", "Rentabilidade superior" | argumentos (Compactos) | sem fonte | **alto** |
-| Evento | fallback do código diz "21/março/2026" (data passada) | conteúdo vencido ainda no prompt | **alto** |
-| Natureza | é **evento**, não empreendimento (fallback afirma isso) | 3 linhas de produto para um evento | médio | **J-E** |
-
-### Átrio - ABF
-Todos os campos vazios. **não confirmado**: conceito, público, preço, metragem, finalidade. Risco: o HOMI só tem o nome + `segmento_comercial = "Produto Foco"`. **[REC]** marcar explicitamente como "sem ficha oficial — não responder sobre este produto".
-
----
-
-## 3. Matriz canônica proposta (sem preencher fato incerto)
-
-Estrutura a ser preenchida **por você**, não por mim:
-
-| Campo | Regra | Estado hoje |
-|---|---|---|
-| Finalidade (moradia / investimento / ambos) | perene; só oficial | **não confirmado** para os 12. Indícios: Casa Bastian e Shift marcados `investimento`; Casa Tua e Orygem indicam moradia; Open Bosque afirma as duas coisas |
-| Público | perene | existe texto em 10 de 12; Átrio e Las Casas ausentes |
-| Conceito | perene | existe em 11 de 12 |
-| Localização | perene | bairro ausente em Átrio e nos 3 Melnick Day |
-| Diferenciais estruturais | perene; **sem** preço, entrega, renda ou ITBI | hoje contaminados (Open Bosque, Shift) |
-| Preço | **volátil — consultar fonte oficial no momento** | divergente em 6 produtos |
-| Metragem | **volátil — consultar fonte oficial no momento** | divergente em 5 produtos |
-| Disponibilidade | **volátil — consultar fonte oficial no momento** | inexistente em `empreendimento_overrides` |
-| Condições (entrada, FGTS, desconto, ITBI) | **volátil — consultar fonte oficial no momento** | hoje em campo perene |
-| Valorização / demanda / liquidez / escassez / comparação | **proibido sem fonte documental citável** | hoje afirmado em Casa Tua, Open Bosque, Las Casas, Vértice, Shift, Melnick Day Compactos, Casa Bastian (via código) |
-
----
-
-## 4. Contrato global de fontes
-
-**Precedência determinística** — parar no primeiro critério que decide:
-1. Módulo de Método do produto (N1/N2 no escopo dele) prevalece sobre o Método geral **naquilo que é específico do produto**. Não enfraquece N1/N2 porque é a mesma autoridade aplicada ao caso.
-2. Método (geral ou de produto) vence qualquer apoio em afirmação de fato ou comportamento.
-3. Override perene (N3) decide conceito, público, localização e diferencial estrutural.
-4. Dado volátil (N4) só pode ser afirmado se consultado **naquele turno** em fonte oficial, e sempre com aviso de confirmação. Memória e RAG **nunca** valem como "atual".
-5. Contexto de lead: exclusivamente determinístico, via ferramentas do CRM. Nunca via RAG.
-6. Empate remanescente → "não confirmado" + indicar onde confirmar. Nunca escolher a versão mais favorável à venda.
-7. Fonte ausente → recusa educada e encaminhamento. Nunca inferência.
-
-**Uso permitido / proibido:** Método → comportamento e argumentação; nunca preço/disponibilidade. Override perene → conceito e diferencial; nunca valorização/liquidez. Override volátil → só sob consulta. Academia → técnica; nunca fato de mercado. Material/anúncio → indicar ao corretor; nunca fonte de fato. Script → estrutura; nunca dado. Imóveis → busca; nunca argumento de mercado. Fallback do código → ver seção 5.
-
----
-
-## 5. FALLBACK_KNOWLEDGE — condição exata de ativação (fato de código)
-
-**[FATO]** Existem **três** estruturas fixas no código (`_shared/enterprise-knowledge.ts`): `FALLBACK_KNOWLEDGE` (9 produtos: Casa Tua, Open Bosque, Melnick Day, Alto Lindóia, Orygem, Casa Bastian, Shift, Lake Eyre, Las Casas), `FALLBACK_BRIEF` (9 nomes) e `FALLBACK_HASHTAGS`.
-
-**[FATO] Condição exata:**
-- `formatForAssistant(records, nome)` retorna `FALLBACK_KNOWLEDGE[nome]` **somente quando não encontra registro no banco** com aquele nome/código (linha 254). No `homi-chat`, o bloco detalhado itera **apenas registros do banco**, então esse caminho **raramente é acionado ali** — mas é acionado em qualquer chamador que peça um nome que não existe no banco.
-- `formatForList(records)` **sempre** mescla as chaves de `FALLBACK_BRIEF` ao conjunto de nomes (linha ~287). Ou seja, **em toda requisição** a lista-resumo inclui os 9 nomes fixos, mesmo os que não existem no banco. `formatBrief` cai em `FALLBACK_BRIEF[nome]` quando o registro não tem descrição/bairro/dormitórios/diferenciais.
-- Conclusão honesta: **não é correto dizer que o texto detalhado do fallback entra sempre**; é correto dizer que **os nomes e os textos curtos do `FALLBACK_BRIEF` entram na lista em toda requisição** — inclusive "Alto Lindóia", que não existe nos 12 overrides.
-
-**Conflitos do fallback contra o banco** (fatos, já detalhados na seção 2): Open Bosque 47-80m² × 31-63m² e 7.500m² × 22.000m²; Casa Bastian 14-36m² × 23-39m²; Lake Eyre 127-326m² × 129-176m²; Melnick Day com data de evento passada (março/2026).
-
-**Riscos:** afirmações não governadas ("alta liquidez para locação", "urgência real", "melhor custo-benefício") entram no prompt sem passar por banco, sem data e sem dono; e um produto inexistente no cadastro (Alto Lindóia) é apresentado como oferta.
-
-**[REC]** Não alterar nada agora. Tratar como decisão isolada. **[LUCAS] J-F**: manter / neutralizar (tirar afirmação de mercado e data) / remover assumindo degradação explícita.
-
----
-
-## 6. Verificação técnica obrigatória — resultado (crítico)
-
-**[FATO] Condição WHERE exata da RPC** `public.buscar_conhecimento`:
-```sql
-AND (filter_empreendimento IS NULL OR hd.empreendimento = filter_empreendimento)
-AND (filter_source_types IS NULL OR hd.source_type = ANY(filter_source_types))
-ORDER BY hd.priority DESC, similarity DESC
-LIMIT match_count
+```text
+HomiWorkspace (/homi) ──> HomiContext.sendMessage ──┐
+HomiChat.tsx (legado)  ─────────────────────────────┤ POST homi-chat
+HomiObjectionHelper (OA) ───────────────────────────┘
+                                   │
+        ┌──────────────────────────┴───────────────────────────┐
+        │ detailedKnowledge = TODOS os produtos (sempre)        │
+        │ RAG: buscar_conhecimento(empreendimento=null, top 10) │
+        │ materiais: motor de embedding separado                │
+        │ + HOMI_IDENTITY + VERACIDADE + roleBlock              │
+        └───────────────────────────────────────────────────────┘
 ```
 
-**[FATO] Consequência decisiva:** filtrar por um produto **exclui** todos os documentos com `empreendimento IS NULL` — o que inclui **o Método Uhome v1.0 (107 chunks), o módulo Método Casa Tua (40 chunks), as 20 aulas da Academia e os 3 documentos de apoio**. Ou seja, usar `filter_empreendimento` hoje derruba justamente a camada N1/N2. **A Alternativa A, como estava escrita no plano anterior, é tecnicamente insegura e precisa ser ajustada.**
+## 5. Arquitetura-alvo mínima
 
-**[FATO] De onde o `homi-chat` obtém o produto em foco hoje:** apenas do campo `empreendimento` do corpo da requisição (linha 33), e ele é usado **somente** na busca de materiais (linha 220). Na chamada RAG principal é passado `empreendimento: null` (linha 94).
+```text
+Chamador ──> body { messages, perfil, produtoFoco? }
+                       │ resolve/valida produtoFoco (canônico)
+                       ▼
+     ┌────────── composição do prompt ───────────┐
+     │ SEMPRE: HOMI_IDENTITY + N1/N2 + veracidade │
+     │ SEMPRE: índice curto de todos os produtos  │
+     │ SE foco: dossiê só do produto em foco      │
+     └────────────────────────────────────────────┘
+                       │
+     recuperação em duas trilhas (uma chamada cada):
+     T1 geral  = buscar_conhecimento(emp=null)      → Método/Academia
+     T2 produto= buscar_conhecimento(emp=<canônico>) → módulo do produto
+                 merge, dedupe, corte por orçamento
+```
 
-**[FATO] Quem envia esse campo:** `HomiObjectionHelper.tsx` envia (produto selecionado na Oferta Ativa). `HomiChat.tsx` e `HomiContext.tsx` **não** enviam — nenhuma referência a `empreendimento` nesses arquivos.
+## 6. Matriz dos chamadores reais
 
-**Troca de assunto e ausência de produto:** no chat geral não há **nenhum** mecanismo determinístico para saber o produto em foco, nem para detectar que ele mudou.
+| Chamador | Rota/uso | Envia hoje | Status | Ação |
+|---|---|---|---|---|
+| `HomiContext.sendMessage` (via `/homi`, `HomiPageButton`, `PipelineLeadDetail`) | principal | messages, enableTools, stream, perfil | ATIVO | recebe contrato de produto em foco |
+| `HomiChat.tsx` | usado por `HomiAssistant` (`/homi-assistente`) e `HomiPanel` | messages | LEGADO | congelar; não evoluir |
+| `HomiObjectionHelper` | Oferta Ativa (`DialingModeWithScript`) | messages, mode | ATIVO secundário | passar `produtoFoco` estruturado |
+| `HomiCeoChat` / `HomiGerencialChat` | `/homi-ceo`, `/homi-gerente` | — | legado paralelo | fora do escopo desta rodada |
 
-> **BLOQUEIO DE PROJETO REGISTRADO:** a identificação do produto em foco **não é determinística** no `homi-chat` hoje. Não proponho heurística de texto. Enquanto isso não for resolvido por um caminho determinístico (produto vindo da tela/lead aberto, por exemplo), qualquer filtro por produto se aplicaria a um valor que quase nunca chega.
+## 7. Contrato de produto em foco
 
----
+- **Fonte**: campo novo e opcional no body (`produto_foco: { nome: string } | null`). Nunca inferido por regex no backend.
+- **Precedência** (mais forte primeiro): 1) seleção explícita do usuário na tela; 2) lead aberto (empreendimento do lead) quando o chat é aberto a partir dele; 3) contexto de tela dedicada a um produto; 4) nenhum foco.
+- **Validação**: backend resolve o texto contra a lista canônica; se não resolver, trata como ausente, registra sinal `produto_foco_invalido` e segue sem foco. Nunca erro para o usuário, nunca chute.
+- **Ausência**: comportamento atual preservado (índice curto + RAG geral); sem dossiê completo de todos.
+- **Troca**: nova seleção substitui o foco a partir do próximo turno; o histórico não é reescrito.
+- **Limpeza**: nova conversa começa sem foco; "limpar foco" é ação explícita.
+- **Persistência**: recomendação = persistir o foco por conversa (campo em `homi_conversations`) para que reabrir a thread não perca o contexto. Se Lucas preferir não migrar tabela agora, alternativa sem persistência: o foco vive só na sessão e some ao recarregar — funcional, porém pior em mobile.
 
-## 7. Pacote de decisões para Lucas
+## 8. Contrato de conhecimento e precedência
 
-### Bloqueiam a próxima fase técnica
-- **J-A — Afirmações de valorização, liquidez, demanda e desconto.** Hoje o HOMI recebe, como se fosse verdade oficial, frases como "alto potencial de valorização" (Casa Tua, Open Bosque, Las Casas, Vértice), "alta demanda de locação" e "rentabilidade superior" (Melnick Day Compactos), "gerar locação via airbnb" (Shift), "alta liquidez" (Casa Bastian, via código). Em linguagem simples: **o sistema está ensinando o corretor a prometer retorno.** Você confirma alguma dessas com documento? As não confirmadas devem sair?
-- **J-G — Produto em foco.** O HOMI não sabe, de forma confiável, sobre qual empreendimento você está falando. Você aceita que o produto passe a vir da tela/lead aberto (caminho determinístico), ou prefere que o corretor selecione o produto explicitamente?
-- **J-B — Finalidade oficial dos 12 produtos** (moradia / investimento / ambos). Sem isso, o HOMI **não pode** recomendar produto alternativo; vai responder "preciso confirmar".
+Camadas: **C1 Método/geral** (perene, `empreendimento IS NULL`) · **C2 módulo do produto** (perene do produto) · **C3 volátil** (preço, unidade, taxa, prazo, fase — sempre do sistema, nunca de memória nem de dossiê antigo) · **C4 apoio** (materiais, academia, scripts).
 
-### Importantes, não bloqueiam
-- **J-1 — Metragens oficiais**: Casa Tua, Open Bosque, Casa Bastian, Shift, Lake Eyre têm 2 ou 3 versões diferentes no sistema.
-- **J-2 — Preços e condições oficiais**, e se saem do texto permanente passando a ser consultados na hora.
-- **J-D — Las Casas e Vértice - Las Casas** são o mesmo produto com dois cadastros, ou dois produtos?
-- **J-E — Melnick Day**: é evento, e o material fala de desconto e data já passada. Mantém, atualiza ou desativa?
-- **J-F — Fallback no código** (seção 5).
-- **J-H — Átrio - ABF**: cadastro vazio. Marcar como "sem ficha, não responder"?
+Precedência de resposta: dado do sistema > C1/C2 > memória da conversa > nada inventado. C4 nunca vence C1/C2. Conteúdo com data vencida (ex.: evento de março/2026) não pode gerar urgência nem condição comercial; vira apoio histórico.
 
-### Editoriais, ficam para depois
-- Limpar "💡 Dica para seu CRM e IA" de dentro do argumento do Open Bosque.
-- Tirar entrega/ITBI/renda de dentro de "diferenciais".
-- Padronizar nomes entre override, ficha e material (Open Bosque × Open Arvoredo; Vivid × Vivid - Mocellin).
+Recuperação: nunca filtro isolado por empreendimento. Sempre duas trilhas somadas, com cota mínima garantida para C1 para que o Método não seja deslocado pelos 107 chunks de prioridade alta nem pelos módulos de produto.
 
----
+## 9. Roadmap (4 pacotes)
 
-## 8. Parecer final
+**P1 — Foco determinístico + dossiê enxuto (frontend + backend, mesmo PR)**
+Objetivo: parar de injetar todos os produtos e passar o foco de forma explícita. Arquivos: `homi-chat/index.ts`, `_shared/enterprise-knowledge.ts`, `HomiContext.tsx`, composer do workspace, `HomiObjectionHelper.tsx`. Sem migration. Benefício: menos mistura de produto, prompt menor. Risco: perder contexto em perguntas comparativas → mitigado pelo índice curto sempre presente. Testes: níveis 2 e 3 da matriz. Rollback: flag de composição volta ao dossiê completo. Autorização: Lucas.
 
-**Fatos confirmados:** a RPC exclui documentos gerais quando se filtra por produto; o produto em foco não chega ao `homi-chat` no chat geral; existem conflitos internos de metragem em 5 produtos e de preço em 6; há afirmações de valorização/liquidez sem fonte em 7 dos 12; o `FALLBACK_BRIEF` entra na lista em toda requisição e contém dados divergentes do banco e um produto inexistente; só Casa Tua tem módulo próprio de Método; as fichas de empreendimento são de 1 chunk.
+**P2 — Recuperação em duas trilhas + resolução de nome canônico**
+Objetivo: trazer Método + módulo do produto sem filtro destrutivo, e resolver a divergência de nomes entre `homi_documents` e `empreendimento_overrides`. Arquivos: `_shared/homi-brain.ts`, `homi-chat/index.ts`; possivelmente um mapa de aliases (preferir reaproveitar `empreendimento_aliases`/`empreendimentos_canonicos` já existentes em vez de criar tabela). Depende de P1. Risco: duplicidade de chunks → dedupe por `id`. Rollback: voltar a uma trilha.
 
-**Hipóteses:** que a saturação por prioridade seja a causa principal de o módulo específico não aparecer (ainda não medida); que o `diferenciais` do Casa Tua seja cópia do Orygem.
+**P3 — Governança de fontes (perene/volátil/apoio/vencido)**
+Objetivo: rotular e ordenar as fontes; impedir que volátil e conteúdo vencido virem afirmação. Toca `formatKnowledgeBlock`, prioridades e status em `homi_documents`. Envolve mudança de dados → PR separado, com inventário antes/depois. Rollback: restaurar prioridades registradas.
 
-**Riscos principais:** promessa de retorno financeiro sem lastro (legal), informação técnica errada ao cliente (metragem/preço), e oferta vencida sendo tratada como vigente (Melnick Day).
+**P4 — Evals e observabilidade sem PII**
+Objetivo: medir qualidade e custo. Log estruturado por turno: tem foco (sim/não), foco válido, nº de chunks por camada, tamanho do prompt em tokens, ferramentas chamadas, latência. Sem texto de pergunta, sem nome de lead, sem dado pessoal. Suíte de evals rodada antes e depois de cada deploy.
 
-**Já pode ser aprovado sem nova fonte:** o contrato de precedência (seção 4), a classificação perene × volátil (seção 3) e a regra de que dado volátil nunca é afirmado como atual sem consulta no momento.
+## 10. Agrupamento em PRs
 
-**Ainda depende de fonte oficial sua:** finalidade, metragem, preço, disponibilidade, condições e todo argumento de valorização/liquidez.
+- **PR1 = P1** (frontend + backend inseparáveis: o backend só ganha foco se o frontend enviar).
+- **PR2 = P2 + P4** (recuperação e sua medição andam juntas com segurança).
+- **PR3 = P3** isolado, porque altera dados e não só código.
+Não juntar P3 com P1/P2: mudança de dados e de código no mesmo PR impede isolar a causa de uma regressão.
 
-**Alternativa A permanece segura?** **Não, como estava escrita.** Precisa de dois ajustes: (a) não usar `filter_empreendimento` isoladamente, porque isso derrubaria o Método; e (b) resolver antes o bloqueio de identificação determinística do produto. A parte da Alternativa A que **continua segura** é reduzir o pacote de empreendimentos injetado no prompt quando houver produto conhecido — mas hoje ele quase nunca é conhecido, então o ganho seria pequeno. Recomendo tratar **J-A e J-G como pré-requisitos** antes de qualquer mudança técnica.
+## 11. Matriz de testes (3 níveis)
 
----
+| Caso | N1 recuperação | N2 prompt | N3 resposta |
+|---|---|---|---|
+| Sem produto | C1 presente | índice curto, sem dossiê completo | responde geral, sem citar produto errado |
+| Produto explícito | C1+C2 | dossiê só do foco | argumentos só do foco |
+| Produto inválido | igual a "sem produto" | sinal de inválido | sem erro visível |
+| Troca de produto | C2 novo | dossiê novo | não vaza o anterior |
+| Conversa carregada | foco restaurado (se P persistência) | idem | coerente após reload |
+| Casa Tua → investimento | C2 Casa Tua | — | recusa valorização sem fonte |
+| Garantia/aprovação de crédito | — | N1 presente | recusa (linha vermelha) |
+| Preço atual | — | regra C3 | remete ao sistema, não afirma |
+| SPIN / pergunta de método | C1 não deslocado | Método presente | responde com o Método |
+| Ferramentas (buscar_imovel, meu_dia) | — | bloco copiloto intacto | chama a ferramenta |
+| Gestor/CEO | — | roleBlock presente | linguagem de liderança |
+| Oferta Ativa (objeção) | C2 do `selectedEmp` | foco estruturado | resposta curta do produto certo |
+| Regressão A2 | continuação puxa contexto; tema novo não | — | comportamento idêntico ao atual |
 
-Fase 0 concluída somente em leitura. Aguardando decisões de Lucas. Nada implementado, nada deployado, nenhum dado alterado.
+## 12. Deploy controlado e sinais de rollback
+
+Ordem: PR1 → observar → PR2 → observar → PR3. Cada pacote atrás de um interruptor de composição que devolve o comportamento anterior sem novo deploy. Sinais de rollback: queda na taxa de resposta com fonte citada, aumento de recusas indevidas, sumiço de respostas de Método, aumento de erro/latência no gateway, ou qualquer caso vermelho na matriz de testes.
+
+## 13. Decisões de Lucas (5)
+
+1. Persistir o produto em foco por conversa (migration mínima) ou manter só na sessão?
+2. Precedência confirmada: seleção explícita > lead aberto > tela > nenhum?
+3. Sem foco, manter o índice curto de todos (recomendado) ou não citar produto algum?
+4. P3 pode alterar prioridade/status de documentos vencidos (ex.: evento de março/2026) ou só rotular?
+5. `HomiChat.tsx` / `/homi-assistente` ficam congelados como legado nesta rodada?
+
+## 14. Recomendação final
+
+APROVAR PLANO PARA PREPARAR IMPLEMENTAÇÃO — condicionado às decisões 1 a 3.
+
+## 15. Primeira solicitação futura de implementação
+
+Pacote PR1 completo em uma rodada: campo `produto_foco` no body; resolução/validação canônica no backend; `detailedKnowledge` limitado ao foco com índice curto sempre presente; envio do foco por `HomiContext` (seleção explícita + lead aberto) e por `HomiObjectionHelper`; interruptor de composição; suíte de testes N2/N3 dos casos da matriz. Nada de migration, nada de mudança de dados. Sem diff e sem execução agora.
