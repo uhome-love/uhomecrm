@@ -395,7 +395,8 @@ export default function CeoDashboard() {
     ganho: "#22C55E",
   };
 
-  if (loading && !profile) return <CeoDashboardSkeleton />;
+  // Loading/erro do conteúdo do dashboard são tratados pelo StateWrapper da aba,
+  // para o cabeçalho (saudação + filtro de data) continuar acessível.
 
   return (
     <div className="bg-background p-4 -m-4 sm:p-6 sm:-m-6 min-h-full space-y-5">
