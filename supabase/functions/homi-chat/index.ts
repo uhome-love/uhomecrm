@@ -157,7 +157,7 @@ TIPOS DE RESPOSTA:
 - Cliente visitou → conduzir para proposta
 
 PSICOLOGIA DE VENDAS:
-Sempre utilize gatilhos de venda como: escassez, oportunidade, valorização, qualidade de vida, investimento, segurança, praticidade. Mas nunca de forma agressiva. Sempre de forma consultiva.
+Use gatilhos de venda como escassez, oportunidade, valorização, qualidade de vida, investimento, segurança e praticidade somente quando houver fato documentado que os sustente para o produto e a situação perguntados. Gatilho nunca cria fato. Use de forma consultiva e nunca agressiva.
 
 TIPOS DE AJUDA QUE VOCÊ DEVE GERAR:
 Se o corretor pedir ajuda, entregue: Mensagem pronta, ou Script de ligação, ou Pergunta estratégica, ou Estratégia de follow up. Sempre focando na conversão.
@@ -168,7 +168,7 @@ ${allEmpreendimentos}
 CONHECIMENTO DETALHADO DOS EMPREENDIMENTOS:
 ${detailedKnowledge}
 
-Use sempre os diferenciais de cada produto quando ajudar o corretor.
+Use somente os diferenciais documentados do empreendimento perguntado. Nunca transfira argumento ou diferencial de um produto para outro.
 
 CONDUÇÃO PARA VISITA:
 Sempre que possível leve o atendimento para:
@@ -203,6 +203,16 @@ Você é o mesmo HOMI (mesmo conhecimento: Método Uhome, empreendimentos, imóv
       ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + "\n\nDETALHES:\n" + detailedKnowledge + ragContext
       : systemPrompt) + roleBlock;
 
+    // Regra final de confiabilidade, válida para prompt padrão e customSystem.
+    const VERACIDADE_COMERCIAL_BLOCK = `
+
+VERACIDADE COMERCIAL — REGRA DURA:
+- Só afirme valorização, rentabilidade, liquidez, demanda, escassez, desempenho ou ganho de capital quando o contexto disponível atribuir explicitamente esse fato ao empreendimento perguntado.
+- Nunca transfira argumento, dado, diferencial ou desempenho de um empreendimento para outro. Nunca crie comparação sem fonte comparativa explícita.
+- Projeção é cenário, nunca certeza, promessa ou garantia. Não invente percentual, resultado ou conclusão.
+- Se a fonte for insuficiente, diga objetivamente que não é possível confirmar e indique consultar o material oficial atualizado ou o gestor.
+- Verdade, fonte, regra legal e camadas N1/N2 sempre prevalecem sobre conversão e gatilhos de venda.`;
+
     // ── HOMI ↔ Materiais: injeta materiais relevantes do Hub ──
     let materiaisSuggestions: any[] = [];
     try {
@@ -217,7 +227,7 @@ Você é o mesmo HOMI (mesmo conhecimento: Método Uhome, empreendimentos, imóv
       console.error("[homi-chat] materiais context skipped:", e);
     }
     const materiaisBlock = formatMateriaisBlock(materiaisSuggestions);
-    const finalSystemPromptWithMateriais = finalSystemPrompt + materiaisBlock;
+    const finalSystemPromptWithMateriais = finalSystemPrompt + materiaisBlock + VERACIDADE_COMERCIAL_BLOCK;
 
     // ── Copilot mode: function-calling (non-streaming JSON) ──
     if (enableTools) {
