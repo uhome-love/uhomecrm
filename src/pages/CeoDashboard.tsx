@@ -994,6 +994,7 @@ export default function CeoDashboard() {
                   </tbody>
                 </table>
               </div>
+              </StateWrapper>
             </CardContent>
           </Card>
         )}
