@@ -444,6 +444,18 @@ export default function CeoDashboard() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-5 mt-0">
+        <StateWrapper
+          error={dashError}
+          loading={loading && !profile}
+          skeleton={<CeoDashboardSkeleton />}
+          stale={partial}
+          staleMessage={`Alguns dados não carregaram (${partialSources.join(", ")}). Os números abaixo podem estar incompletos.`}
+          onRetry={reload}
+          errorTitle="Não foi possível carregar o dashboard"
+          errorDescription="Uma das consultas essenciais falhou. Os números não são confiáveis agora."
+          className="space-y-5"
+        >
+
 
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
