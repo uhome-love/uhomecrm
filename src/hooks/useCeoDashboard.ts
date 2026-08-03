@@ -124,7 +124,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Roleta ──
-  const { data: roletaPendentesRaw, refetch: reloadRoleta } = useQuery({
+  const { data: roletaPendentesRaw, refetch: reloadRoleta, error: roletaError } = useQuery({
     queryKey: ["ceo-roleta", hoje],
     queryFn: async () => {
       const { data: creds } = await supabase.from("roleta_credenciamentos").select("*").eq("data", hoje).eq("status", "pendente").order("created_at");
@@ -169,7 +169,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
 
   // ── KPIs (current period) ──
-  const { data: kpis = EMPTY_KPIS, isFetching: kpisFetching, isLoading: kpisFirstLoad } = useQuery({
+  const { data: kpis = EMPTY_KPIS, isFetching: kpisFetching, isLoading: kpisFirstLoad, error: kpisError } = useQuery({
     queryKey: ["ceo-kpis", rangeKey],
     queryFn: () => fetchKPIs(range),
     enabled: !!user,
@@ -179,7 +179,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── KPIs (previous period for comparison) ──
-  const { data: prevKpis = null } = useQuery({
+  const { data: prevKpis = null, error: prevError } = useQuery({
     queryKey: ["ceo-kpis-prev", prevRangeKey],
     queryFn: () => fetchKPIs(prevRange),
     enabled: !!user,
@@ -188,7 +188,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Pipeline + Campanhas + Alertas + Origens ──
-  const { data: pipelineData } = useQuery({
+  const { data: pipelineData, error: pipelineError } = useQuery({
     queryKey: ["ceo-pipeline", user?.id, rangeKey],
     queryFn: async () => {
       const { startUtc, endUtc } = brtRangeToUTC(range);
@@ -383,7 +383,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   //  · em_negociacao / contrato → snapshot atual dos negócios ativos (pipeline vivo)
   //  · ganho → SOMENTE vendas com data_assinatura dentro do período (regra VGV fonte única)
   //  · VGV sempre vgv_final com fallback para vgv_estimado
-  const { data: negociosData } = useQuery({
+  const { data: negociosData, error: negociosError } = useQuery({
     queryKey: ["ceo-negocios", user?.id, range.start, range.end],
     queryFn: async () => {
       const [{ data: ativos }, { data: ganhosPeriodo }] = await Promise.all([
@@ -459,7 +459,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     const now = new Date();
     return { start: dateToBRT(startOfMonth(now)), end: dateToBRT(endOfMonth(now)) };
   }, []);
-  const { data: vgvMesAtual } = useQuery({
+  const { data: vgvMesAtual, error: vgvMesError } = useQuery({
     queryKey: ["ceo-vgv-mes", mesRange.start, mesRange.end],
     queryFn: async () => {
       const rows = await fetchOfficialKPIs(mesRange);
@@ -476,7 +476,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
 
   // ── Teams + Ranking ──
-  const { data: teamsData } = useQuery({
+  const { data: teamsData, error: teamsError } = useQuery({
     queryKey: ["ceo-teams", rangeKey],
     queryFn: async () => {
       const startTs = `${range.start}T00:00:00`;
@@ -569,7 +569,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Visitas por Empreendimento ──
-  const { data: visitasPorEmp = [] } = useQuery({
+  const { data: visitasPorEmp = [], error: visitasEmpError } = useQuery({
     queryKey: ["ceo-visitas-emp", rangeKey],
     queryFn: async () => {
       const startTs = `${range.start}T00:00:00`;
@@ -599,7 +599,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Extra KPIs ──
-  const { data: extraKpis } = useQuery({
+  const { data: extraKpis, error: extraError } = useQuery({
     queryKey: ["ceo-extra-kpis", rangeKey, hoje],
     queryFn: async () => {
       const { startUtc: startTs, endUtc: endTs } = brtRangeToUTC(range);
@@ -647,8 +647,36 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   const roletaPendentes = useMemo(() => roletaPendentesRaw ?? EMPTY_ARR, [roletaPendentesRaw]);
   const lastUpdate = new Date();
 
+  // ── Contrato de estado (aditivo) ──
+  // ESSENCIAL: falha derruba a tela (ErrorState). OPCIONAL: falha vira "parcial" (banner stale).
+  const errors = {
+    kpis: kpisError ?? null,
+    pipeline: pipelineError ?? null,
+    negocios: negociosError ?? null,
+    teams: teamsError ?? null,
+    extra: extraError ?? null,
+    visitasEmp: visitasEmpError ?? null,
+    vgvMes: vgvMesError ?? null,
+    prev: prevError ?? null,
+    roleta: roletaError ?? null,
+  };
+  const hardError = errors.kpis ?? errors.pipeline ?? errors.negocios ?? null;
+  const partialSources = [
+    errors.teams && "equipes",
+    errors.extra && "indicadores complementares",
+    errors.visitasEmp && "visitas por empreendimento",
+    errors.vgvMes && "VGV do mês",
+    errors.prev && "comparativo do período anterior",
+    errors.roleta && "fila de credenciamento",
+  ].filter(Boolean) as string[];
+
   return {
     loading: kpisFirstLoad, // true only on very first fetch, false after cache is populated
+    error: hardError,
+    isError: Boolean(hardError),
+    partial: partialSources.length > 0,
+    partialSources,
+    errors,
     lastUpdate,
     profile: profile || null,
     roletaPendentes,

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, CalendarCheck, CalendarDays, Briefcase, DollarSign, Users, Trophy } from "lucide-react";
 import { cn, formatBRLCompact } from "@/lib/utils";
+import { StateWrapper } from "@/components/ui/StateWrapper";
 
 const GERENTES = [
   { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", cor: "#3350E6", equipe: "bruno" },
@@ -62,6 +63,7 @@ interface CorretorRank {
 export default function TabEmpresa() {
   const [period, setPeriod] = useState<EmpPeriod>("hoje");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [teamData, setTeamData] = useState<TeamData[]>([]);
   const [totals, setTotals] = useState({ ligacoes: 0, vMarc: 0, vReal: 0, negocios: 0, vgv: 0 });
   const [ranking, setRanking] = useState<CorretorRank[]>([]);
@@ -70,6 +72,7 @@ export default function TabEmpresa() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       // 1. Get team members per gerente
       const { data: members } = await supabase
@@ -173,6 +176,7 @@ export default function TabEmpresa() {
       setRanking(rankList);
     } catch (e) {
       console.error("TabEmpresa load error", e);
+      setLoadError(e);
     } finally {
       setLoading(false);
     }
@@ -208,10 +212,16 @@ export default function TabEmpresa() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground text-sm">Carregando dados...</div>
-      ) : (
+      <StateWrapper
+        loading={loading}
+        error={loadError}
+        skeletonVariant="kpis"
+        onRetry={loadData}
+        errorTitle="Não foi possível carregar os dados da empresa"
+        className="space-y-5"
+      >
         <>
+
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <KpiBox icon={<Phone size={14} />} label="Ligações" value={totals.ligacoes.toLocaleString("pt-BR")} />
@@ -332,7 +342,7 @@ export default function TabEmpresa() {
             </Card>
           )}
         </>
-      )}
+      </StateWrapper>
     </div>
   );
 }

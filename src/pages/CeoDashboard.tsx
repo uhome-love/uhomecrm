@@ -32,6 +32,7 @@ void _formatBRLCompactLegacy; // M5 cleanup
 const formatBRLCompact = (v: number) => fmtMoney(v, "short");
 import { CeoDashboardSkeleton } from "@/components/ui/skeleton-dashboard";
 import KpiDetailDialog, { type KpiDetailType } from "@/components/ceo/KpiDetailDialog";
+import { StateWrapper } from "@/components/ui/StateWrapper";
 // PresencaSummaryCard removido do dashboard — KPIs agora vivem na página /roleta/presenca.
 
 
@@ -175,6 +176,7 @@ export default function CeoDashboard() {
     teams, corretoresRank, origens, leadsPorEmpreendimento, leadsPorCorretor, visitasPorEmp,
     totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, agendaVisitas, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
+    error: dashError, partial, partialSources, errors,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
 
   /** Variação % vs. período anterior (null quando não há base de comparação). */
@@ -393,7 +395,8 @@ export default function CeoDashboard() {
     ganho: "#22C55E",
   };
 
-  if (loading && !profile) return <CeoDashboardSkeleton />;
+  // Loading/erro do conteúdo do dashboard são tratados pelo StateWrapper da aba,
+  // para o cabeçalho (saudação + filtro de data) continuar acessível.
 
   return (
     <div className="bg-background p-4 -m-4 sm:p-6 sm:-m-6 min-h-full space-y-5">
@@ -442,10 +445,37 @@ export default function CeoDashboard() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-5 mt-0">
+        <StateWrapper
+          error={dashError}
+          loading={loading && !profile}
+          skeleton={<CeoDashboardSkeleton />}
+          stale={partial}
+          staleMessage={`Alguns dados não carregaram (${partialSources.join(", ")}). Os números abaixo podem estar incompletos.`}
+          onRetry={reload}
+          errorTitle="Não foi possível carregar o dashboard"
+          errorDescription="Uma das consultas essenciais falhou. Os números não são confiáveis agora."
+          className="space-y-5"
+        >
+
 
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
-      {localPendentes.length > 0 && (
+      {errors.roleta && (
+        <Card className="border-danger/40 bg-[#f7f7fb] dark:bg-[#141e30]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Aprovações Pendentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StateWrapper
+              error={errors.roleta}
+              onRetry={() => { reloadRoleta(); }}
+              errorTitle="Falha ao carregar a fila de credenciamento"
+              errorDescription="Pode haver credenciamentos pendentes não exibidos."
+            />
+          </CardContent>
+        </Card>
+      )}
+      {!errors.roleta && localPendentes.length > 0 && (
         <Card className="border-primary/40 bg-[#f7f7fb] dark:bg-[#141e30]">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -628,6 +658,13 @@ export default function CeoDashboard() {
 
             </CardHeader>
             <CardContent>
+              <StateWrapper
+                error={errors.pipeline}
+                empty={pipelineStages.length === 0}
+                emptyTitle="Sem etapas no período"
+                onRetry={reload}
+                errorTitle="Falha ao carregar o funil do pipeline"
+              >
               <div className="space-y-1.5">
                 {pipelineStages.map((s, idx) => {
                   const maxCount = Math.max(...pipelineStages.map(x => x.count), 1);
@@ -645,6 +682,7 @@ export default function CeoDashboard() {
                   );
                 })}
               </div>
+              </StateWrapper>
             </CardContent>
           </Card>
 
@@ -738,6 +776,12 @@ export default function CeoDashboard() {
           </CardHeader>
 
           <CardContent className="space-y-4">
+            <StateWrapper
+              error={errors.negocios}
+              onRetry={reload}
+              errorTitle="Falha ao carregar o funil de negócios"
+              className="space-y-4"
+            >
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
               {negFunnelOrder.map((fase, idx) => {
                 const data = negocioFases.find((f: any) => f.fase === fase);
@@ -792,6 +836,7 @@ export default function CeoDashboard() {
                 </div>
               ))}
             </div>
+            </StateWrapper>
           </CardContent>
         </Card>
 
@@ -871,6 +916,13 @@ export default function CeoDashboard() {
             <CardTitle className="text-xs font-semibold">Performance por Equipe</CardTitle>
           </CardHeader>
           <CardContent>
+            <StateWrapper
+              error={errors.teams}
+              empty={teams.length === 0}
+              emptyTitle="Sem dados de equipe no período"
+              onRetry={reload}
+              errorTitle="Falha ao carregar a performance por equipe"
+            >
             <div className="overflow-x-auto">
               <table className="w-full text-[11px]">
                 <thead>
@@ -913,16 +965,24 @@ export default function CeoDashboard() {
                 </tbody>
               </table>
             </div>
+            </StateWrapper>
           </CardContent>
         </Card>
 
         {/* Top Corretores */}
-        {corretoresRank.length > 0 && (
+        {(corretoresRank.length > 0 || errors.teams) && (
           <Card className="mt-3 bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold">Top Corretores — Oferta Ativa</CardTitle>
             </CardHeader>
             <CardContent>
+              <StateWrapper
+                error={errors.teams}
+                empty={corretoresRank.length === 0}
+                emptyTitle="Sem corretores no período"
+                onRetry={reload}
+                errorTitle="Falha ao carregar o ranking de corretores"
+              >
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
@@ -949,6 +1009,7 @@ export default function CeoDashboard() {
                   </tbody>
                 </table>
               </div>
+              </StateWrapper>
             </CardContent>
           </Card>
         )}
@@ -1024,6 +1085,14 @@ export default function CeoDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              {/* Erro tem precedência: "Operação saudável" nunca pode mascarar falha de consulta */}
+              <StateWrapper
+                error={errors.pipeline}
+                onRetry={reload}
+                errorTitle="Não foi possível carregar os alertas"
+                errorDescription="Não é possível afirmar que a operação está saudável."
+                className="space-y-2"
+              >
               {alertas.length > 0 ? alertas.map((a, i) => (
                 <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg text-[11px] ${
                   a.tipo === "red" ? "bg-danger/5 text-danger" :
@@ -1046,6 +1115,7 @@ export default function CeoDashboard() {
                   <span>VGV em risco (parados &gt;15d): {formatBRLCompact(vgvEmRisco)}</span>
                 </div>
               )}
+              </StateWrapper>
               <Button variant="outline" size="sm" className="w-full text-xs text-primary border-primary/20 mt-2" onClick={() => navigate("/central-relatorios?visao=executivo")}>
                 Ver Relatório Geral
               </Button>
@@ -1054,6 +1124,7 @@ export default function CeoDashboard() {
         </div>
       </section>
 
+        </StateWrapper>
         </TabsContent>
 
         <TabsContent value="empresa" className="mt-0">
