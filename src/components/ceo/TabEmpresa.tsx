@@ -332,7 +332,7 @@ export default function TabEmpresa() {
             </Card>
           )}
         </>
-      )}
+      </StateWrapper>
     </div>
   );
 }
