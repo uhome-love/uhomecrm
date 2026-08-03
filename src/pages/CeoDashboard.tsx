@@ -1069,6 +1069,7 @@ export default function CeoDashboard() {
                   <span>VGV em risco (parados &gt;15d): {formatBRLCompact(vgvEmRisco)}</span>
                 </div>
               )}
+              </StateWrapper>
               <Button variant="outline" size="sm" className="w-full text-xs text-primary border-primary/20 mt-2" onClick={() => navigate("/central-relatorios?visao=executivo")}>
                 Ver Relatório Geral
               </Button>
