@@ -146,13 +146,23 @@ export function TabProvider({ children }: { children: ReactNode }) {
     const existingIdx = currentTabs.findIndex((t) => t.id === resolved.key);
 
     if (existingIdx >= 0) {
-      // Tab already open — activate it
-      if (activeRef.current !== resolved.key) {
+      // Tab already open — sync stored path (query string may have changed)
+      const existing = currentTabs[existingIdx];
+      const pathChanged = existing.path !== path;
+      const tabChanged = activeRef.current !== resolved.key;
+
+      if (pathChanged) {
+        setTabs(currentTabs.map((t) => (t.id === resolved.key ? { ...t, path } : t)));
+      }
+      if (tabChanged) {
         setActiveTabId(resolved.key);
-        if (!skipNav) navigateRef.current(path);
+      }
+      if (!skipNav && (pathChanged || tabChanged)) {
+        navigateRef.current(path);
       }
       return;
     }
+
 
     // Build new tab
     const newTab: Tab = {
@@ -259,6 +269,13 @@ export function TabProvider({ children }: { children: ReactNode }) {
         if (activeRef.current !== resolved.key) {
           setActiveTabId(resolved.key);
         }
+        // Keep stored path in sync with the URL (query string may have changed).
+        // No navigation here — the URL is already correct.
+        if (existing.path !== normalizedFullPath) {
+          setTabs(tabsRef.current.map((t) =>
+            t.id === resolved.key ? { ...t, path: normalizedFullPath } : t
+          ));
+        }
       } else {
         // Open as new tab without navigating (URL already correct)
         openTab(fullPath, true);
@@ -267,7 +284,8 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
     // Reset sync guard after this render
     requestAnimationFrame(() => { syncingRef.current = false; });
-  }, [location.pathname, openTab, roleLoading, roles, hasAccess]);
+  }, [location.pathname, location.search, openTab, roleLoading, roles, hasAccess]);
+
 
   return (
     <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, activateTab }}>
