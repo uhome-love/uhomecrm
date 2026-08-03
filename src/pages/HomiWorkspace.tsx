@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { PanelLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useHomi, type HomiAnexo } from "@/contexts/HomiContext";
@@ -13,6 +14,31 @@ import ThreadSidebar from "@/components/homi/workspace/ThreadSidebar";
 import PainelVivo from "@/components/homi/workspace/PainelVivo";
 import MessageList from "@/components/homi/workspace/MessageList";
 import Composer from "@/components/homi/workspace/Composer";
+
+/** Sentinela do seletor: "nenhum produto em foco" (Select não aceita value=""). */
+const NENHUM_FOCO = "__nenhum__";
+
+/**
+ * Produtos que o backend reconhece como foco válido (registros de
+ * empreendimento_overrides). Nome fora desta lista é tratado como ausência
+ * de foco pelo backend, sem erro.
+ */
+const EMPREENDIMENTOS_FOCO = [
+  "Átrio - ABF",
+  "Casa Bastian",
+  "Casa Tua",
+  "Lake Eyre",
+  "Las Casas",
+  "Melnick Day Alto Padrão",
+  "Melnick Day Compactos",
+  "Melnick Day Médio Padrão",
+  "Open Bosque",
+  "Orygem",
+  "Shift",
+  "Vértice - Las Casas",
+];
+
+
 
 
 
