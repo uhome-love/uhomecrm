@@ -238,7 +238,7 @@ VERACIDADE COMERCIAL — REGRA DURA:
         const searchQuery = [empreendimentoValidado, lastUserMsg].filter(Boolean).join(" | ");
         materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
           limit: 4,
-          empreendimentoNome: empreendimentoValidado,
+          empreendimentoNome: empreendimentoValidado ?? undefined,
         });
       }
 
