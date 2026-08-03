@@ -326,6 +326,8 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       currentPage, homiRole, userName,
       knowledgeSource,
       conversationId, loadConversation, startNewConversation,
+      empreendimentoFoco, setEmpreendimentoFoco,
+
 
       launcherHidden, setLauncherHidden,
     }}>
