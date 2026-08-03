@@ -208,10 +208,16 @@ export default function TabEmpresa() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground text-sm">Carregando dados...</div>
-      ) : (
+      <StateWrapper
+        loading={loading}
+        error={loadError}
+        skeletonVariant="kpis"
+        onRetry={loadData}
+        errorTitle="Não foi possível carregar os dados da empresa"
+        className="space-y-5"
+      >
         <>
+
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <KpiBox icon={<Phone size={14} />} label="Ligações" value={totals.ligacoes.toLocaleString("pt-BR")} />
