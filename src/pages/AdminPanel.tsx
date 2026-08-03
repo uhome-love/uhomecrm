@@ -88,18 +88,8 @@ export default function AdminPanel() {
     setLoading(false);
   }, []);
 
-  // Fetch 360dialog config
-  const fetchDialogConfig = useCallback(async () => {
-    const { data } = await supabase
-      .from("integration_settings")
-      .select("value")
-      .eq("key", "360dialog_api_key")
-      .single();
-    if (data?.value) {
-      setDialogApiKey(data.value);
-      setDialogSaved(true);
-    }
-  }, []);
+
+
 
   const fetchGestores = useCallback(async () => {
     const { data: gestorRoles } = await supabase.from("user_roles").select("user_id").in("role", ["gestor", "admin"]);
