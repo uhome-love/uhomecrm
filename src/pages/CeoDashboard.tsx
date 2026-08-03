@@ -643,6 +643,13 @@ export default function CeoDashboard() {
 
             </CardHeader>
             <CardContent>
+              <StateWrapper
+                error={errors.pipeline}
+                empty={pipelineStages.length === 0}
+                emptyTitle="Sem etapas no período"
+                onRetry={reload}
+                errorTitle="Falha ao carregar o funil do pipeline"
+              >
               <div className="space-y-1.5">
                 {pipelineStages.map((s, idx) => {
                   const maxCount = Math.max(...pipelineStages.map(x => x.count), 1);
