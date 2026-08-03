@@ -18,25 +18,6 @@ import Composer from "@/components/homi/workspace/Composer";
 /** Sentinela do seletor: "nenhum produto em foco" (Select não aceita value=""). */
 const NENHUM_FOCO = "__nenhum__";
 
-/**
- * Produtos que o backend reconhece como foco válido (registros de
- * empreendimento_overrides). Nome fora desta lista é tratado como ausência
- * de foco pelo backend, sem erro.
- */
-const EMPREENDIMENTOS_FOCO = [
-  "Átrio - ABF",
-  "Casa Bastian",
-  "Casa Tua",
-  "Lake Eyre",
-  "Las Casas",
-  "Melnick Day Alto Padrão",
-  "Melnick Day Compactos",
-  "Melnick Day Médio Padrão",
-  "Open Bosque",
-  "Orygem",
-  "Shift",
-  "Vértice - Las Casas",
-];
 
 export default function HomiWorkspace() {
   const location = useLocation();
