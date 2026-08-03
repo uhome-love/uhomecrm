@@ -117,22 +117,32 @@ export async function searchKnowledge(
  * Bloco de contexto pronto para o system prompt, com fontes citáveis.
  *
  * Contrato de fontes (_shared/homi-fontes.ts):
- * - C1 (Método/Academia/Scripts) entra INTEGRAL. Nunca sanitizado: o Método
- *   ensina ancoragem e tratamento de objeção de preço, e isso é pedagógico.
- * - C4 (empreendimento/material/imóvel) tem o trecho volátil removido antes
- *   de compor. A parte permanente separável é preservada.
+ * - C1 (Método/Academia/Scripts SEM vínculo de produto) entra INTEGRAL. Nunca
+ *   sanitizado: o Método ensina ancoragem e tratamento de objeção de preço, e
+ *   isso é pedagógico.
+ * - C4 (empreendimento/material/imóvel, e QUALQUER chunk com `empreendimento`
+ *   no metadata) tem o trecho volátil removido antes de compor. A parte
+ *   permanente separável é preservada.
+ * - O TÍTULO do chunk também é sanitizado: um título como "Unidade 302 por
+ *   R$ 499.000" vazaria afirmação volátil mesmo com o corpo limpo.
  */
 export function formatKnowledgeBlock(chunks: HomiChunk[]): string {
   if (!chunks.length) return "";
 
   let c4Sanitizados = 0;
   let c4Descartados = 0;
+  let titulosNeutralizados = 0;
 
   const partes: string[] = [];
   for (const c of chunks) {
-    const classe = classificarChunk(c.source_type);
+    const classe = classificarChunk({
+      source_type: c.source_type,
+      empreendimento: (c.metadata?.empreendimento as string | undefined) ?? null,
+    });
 
     let conteudo = c.content;
+    let titulo = c.title;
+
     if (classe === "C4") {
       const s = sanitizeC4(c.content);
       if (s.removidos > 0) c4Sanitizados++;
@@ -141,19 +151,29 @@ export function formatKnowledgeBlock(chunks: HomiChunk[]): string {
         continue; // nada permanente sobrou neste chunk
       }
       conteudo = s.texto;
+
+      // Metadado é tudo-ou-nada: não dá para limpar parcialmente sem inventar.
+      const tituloLimpo = sanitizeMetadado(c.title, METADADO_NEUTRO);
+      if (tituloLimpo !== c.title) titulosNeutralizados++;
+      titulo = tituloLimpo ?? METADADO_NEUTRO;
     }
 
     const label = SOURCE_LABELS[c.source_type] ?? c.source_type;
     const url = c.source_url ? ` · ${c.source_url}` : "";
     // Expõe o ID do bloco do Método (MU-xx.x) quando presente, para citação exata.
-    const mu = c.content.match(/\[MU-[\d.]+\]/)?.[0];
+    // Só em C1: em C4 o corpo já foi sanitizado e não há citação de Método.
+    const mu = classe === "C1" ? c.content.match(/\[MU-[\d.]+\]/)?.[0] : undefined;
     const muTag = mu ? ` · ${mu}` : "";
-    partes.push(`[${partes.length + 1}] (${classe} · ${label} — ${c.title}${muTag}${url})\n${conteudo}`);
+    partes.push(`[${partes.length + 1}] (${classe} · ${label} — ${titulo}${muTag}${url})\n${conteudo}`);
   }
 
-  if (c4Sanitizados || c4Descartados) {
+  if (c4Sanitizados || c4Descartados || titulosNeutralizados) {
     // Somente contagens — nunca texto, valor, nome ou PII.
-    console.log("[homi-fontes] RAG C4 sanitizados:", c4Sanitizados, "descartados:", c4Descartados);
+    console.log(
+      "[homi-fontes] RAG C4 sanitizados:", c4Sanitizados,
+      "descartados:", c4Descartados,
+      "títulos neutralizados:", titulosNeutralizados,
+    );
   }
 
   if (!partes.length) return "";
@@ -161,12 +181,13 @@ export function formatKnowledgeBlock(chunks: HomiChunk[]): string {
 
   return `
 
-BASE DE CONHECIMENTO UHOME (fonte oficial — use como verdade antes do seu conhecimento geral):
+BASE DE CONHECIMENTO UHOME — C1 é método oficial; C4 é apoio não validado e não confirma dado volátil.
 ${body}
 
 REGRAS DE USO DA BASE:
-- Se a resposta estiver acima, use exatamente o que está escrito e cite a fonte no final em uma linha curta (ex: "Fonte: Método Uhome — MU-09.3").
-- Quando o trecho vier do Método Uhome, cite o ID do bloco (MU-xx.x).
+- Blocos C1 (Método/Manual/Academia/Scripts) são a fonte oficial de método: use exatamente o que está escrito e cite a fonte no final em uma linha curta (ex: "Fonte: Método Uhome — MU-09.3"). Quando o trecho vier do Método Uhome, cite o ID do bloco (MU-xx.x).
+- Blocos C4 (empreendimento, material, imóvel) são APOIO NÃO VALIDADO. Servem para localização, conceito, tipologia, perfil e diferenciais. NÃO valem como confirmação de preço, condição, taxa, unidade, disponibilidade ou prazo — nem quando trazem link.
+- Um link/URL listado é apenas referência de onde o material está. Não é confirmação de que o conteúdo dele está atual.
 - Se não houver nada relevante acima, diga o que sabe e sugira o material/aula certa em vez de inventar.
 - Nunca invente preço, condição comercial, prazo de obra ou disponibilidade que não esteja na base.
 - Blocos marcados C4 tiveram trechos voláteis removidos por governança: a ausência de preço, condição, unidade ou prazo neles NÃO significa que o dado seja zero, gratuito ou indisponível — significa que precisa ser confirmado na fonte oficial vigente.`;
