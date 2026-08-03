@@ -32,6 +32,7 @@ void _formatBRLCompactLegacy; // M5 cleanup
 const formatBRLCompact = (v: number) => fmtMoney(v, "short");
 import { CeoDashboardSkeleton } from "@/components/ui/skeleton-dashboard";
 import KpiDetailDialog, { type KpiDetailType } from "@/components/ceo/KpiDetailDialog";
+import { StateWrapper } from "@/components/ui/StateWrapper";
 // PresencaSummaryCard removido do dashboard — KPIs agora vivem na página /roleta/presenca.
 
 
