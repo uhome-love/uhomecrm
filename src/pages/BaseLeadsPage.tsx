@@ -47,10 +47,19 @@ export default function BaseLeadsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <Kpi label="Total na base" value={fmt(resumo?.total)} />
         <Kpi label="Inéditos" value={fmt(resumo?.inedito)} hint="Nunca tocados pelo CRM" />
-        <Kpi label="Já na Oferta Ativa" value={fmt(resumo?.na_oferta_ativa)} />
+        <Kpi
+          label="Em campanha ativa"
+          value={fmt((resumo?.na_oferta_ativa ?? 0) + (resumo?.ambos ?? 0))}
+          hint="Oferta Ativa liberada agora"
+        />
+        <Kpi
+          label="Já trabalhados"
+          value={fmt(resumo?.trabalhadoAntes)}
+          hint="Campanhas anteriores de Oferta Ativa"
+        />
         <Kpi label="Já no Pipeline" value={fmt(resumo?.no_pipeline)} />
-        <Kpi label="Sem produto" value={fmt(resumo?.semProduto)} hint="Precisam de revisão" />
       </div>
+
 
       {tab === "base" && <BaseLeadsExplorer />}
       {tab === "campanhas" && <CampanhasPanel />}
