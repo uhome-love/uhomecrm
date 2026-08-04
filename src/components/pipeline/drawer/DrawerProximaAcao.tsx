@@ -10,6 +10,8 @@ interface NextTaskLike {
   titulo?: string | null;
   descricao?: string | null;
   vence_em?: string | null;
+  /** Hora real de vencimento (HH:mm[:ss]) — sem ela o parse cai no meio-dia. */
+  hora_vencimento?: string | null;
 }
 
 interface Props {
@@ -29,7 +31,10 @@ interface Props {
 /** Detecta o tipo canônico (ligar/whatsapp/email/visita) a partir do tipo+titulo da tarefa. */
 export function parseNextActionType(task: NextTaskLike | null, fallbackText?: string | null):
   "ligar" | "whatsapp" | "email" | "visita" | "followup" | null {
-  const bag = `${task?.tipo ?? ""} ${task?.titulo ?? ""} ${task?.descricao ?? ""} ${fallbackText ?? ""}`.toLowerCase();
+  // Quando existe tarefa concreta, o tipo vem SÓ dela — o texto livre
+  // (lead.proxima_acao) pode estar defasado e sobrescrever o ícone certo.
+  const taskBag = `${task?.tipo ?? ""} ${task?.titulo ?? ""} ${task?.descricao ?? ""}`;
+  const bag = (taskBag.trim() ? taskBag : `${fallbackText ?? ""}`).toLowerCase();
   if (!bag.trim()) return null;
   if (/\b(ligaca|liga[rç]|call|telefon)/.test(bag)) return "ligar";
   if (/\b(whats|zap|wpp)/.test(bag)) return "whatsapp";
@@ -89,7 +94,17 @@ export default function DrawerProximaAcao({
   const tipo = parseNextActionType(nextTask, proximaAcaoTexto);
   const meta = tipo ? META[tipo] : { icon: "✅", label: nextTask.titulo || nextTask.descricao || "Próxima ação" };
 
-  const dueDate = parseDateBRTSafe(nextTask.vence_em ?? undefined);
+  const dueDate = (() => {
+    const base = parseDateBRTSafe(nextTask.vence_em ?? undefined);
+    if (!base) return base;
+    const hora = nextTask.hora_vencimento;
+    if (!hora) return base; // sem hora: mantém o comportamento atual (meio-dia)
+    const [h, m] = hora.split(":").map(Number);
+    if (Number.isNaN(h)) return base;
+    const withTime = new Date(base);
+    withTime.setHours(h, Number.isNaN(m) ? 0 : m, 0, 0);
+    return withTime;
+  })();
   const now = new Date();
   const overdue = !!dueDate && dueDate.getTime() < now.getTime();
   const relativo = dueDate

@@ -48,6 +48,10 @@ export function invalidateTaskQueries(qc: QueryClient, leadId?: string | null) {
   // criação/conclusão recente de tarefa. Sem refetchType:'all' porque só o
   // dashboard renderiza esse contador (única observer ativo).
   qc.invalidateQueries({ queryKey: ["corretor-leads-sem-tarefa"] });
+  // Widget "Cadência Sem Contato" no Lead Detail — a próxima tentativa é criada
+  // pelo gatilho do banco; sem este invalidate o painel ficava na tentativa
+  // antiga até dar F5.
+  qc.invalidateQueries({ queryKey: ["cadencia-sem-contato"], refetchType: "all" });
   if (leadId) {
     qc.invalidateQueries({ queryKey: ["homi-insight", leadId] });
   }

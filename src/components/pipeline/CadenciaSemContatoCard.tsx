@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { Phone, MessageCircle, RefreshCcw, AlertTriangle, CheckCircle2, Repeat } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { nowBRT } from "@/lib/brtTime";
 
@@ -51,17 +51,12 @@ function formatRelativo(target: string): string {
 }
 
 export default function CadenciaSemContatoCard({ leadId, stageTipo, leadNome, leadEmpreendimento }: CadenciaSemContatoCardProps) {
-  const [cadencia, setCadencia] = useState<CadenciaRow | null>(null);
-  const [passos, setPassos] = useState<PassoRow[]>([]);
-  const [prazoEstagnar, setPrazoEstagnar] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
-
   const isSemContato = stageTipo === "sem_contato";
 
-  useEffect(() => {
-    if (!isSemContato || !leadId) return;
-    let active = true;
-    (async () => {
+  const { data, isSuccess } = useQuery({
+    queryKey: ["cadencia-sem-contato", leadId],
+    enabled: isSemContato && !!leadId,
+    queryFn: async () => {
       const [cad, ps, lead] = await Promise.all([
         supabase
           .from("lead_cadencia_sem_contato")
@@ -78,16 +73,19 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo, leadNome, le
           .eq("id", leadId)
           .maybeSingle(),
       ]);
-      if (!active) return;
-      setCadencia((cad.data as CadenciaRow) ?? null);
-      setPassos((ps.data as PassoRow[]) ?? []);
-      setPrazoEstagnar((lead.data as { estagnado_prazo_em?: string | null } | null)?.estagnado_prazo_em ?? null);
-      setLoaded(true);
-    })();
-    return () => { active = false; };
-  }, [leadId, isSemContato]);
+      return {
+        cadencia: (cad.data as CadenciaRow) ?? null,
+        passos: (ps.data as PassoRow[]) ?? [],
+        prazoEstagnar: (lead.data as { estagnado_prazo_em?: string | null } | null)?.estagnado_prazo_em ?? null,
+      };
+    },
+  });
 
-  if (!isSemContato || !loaded) return null;
+  const cadencia = data?.cadencia ?? null;
+  const passos = data?.passos ?? [];
+  const prazoEstagnar = data?.prazoEstagnar ?? null;
+
+  if (!isSemContato || !isSuccess) return null;
 
   const concluida = cadencia?.status === "concluida";
   // tentativa_atual é o último passo executado; o passo "a fazer agora" é o próximo.
