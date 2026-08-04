@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -158,23 +159,17 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // ── Auth: validate JWT ──
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-    const _sbAuth = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
-    const { data: _claims, error: _claimsErr } = await _sbAuth.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (_claimsErr || !_claims?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    // ── Auth: usuário real obrigatório (anon key rejeitada) ──
+    const _auth = await requireRealUser(req, {});
+    if (_auth.error) return _auth.error;
 
-    const { messages, role, module, context } = await req.json();
+    const { messages, module, context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const userRole = role === "admin" ? "ceo" : (role || "gestor");
+    // Papel derivado do banco (user_roles), nunca do body
+    const dbRoles = _auth.roles ?? [];
+    const userRole = dbRoles.includes("admin") || dbRoles.includes("diretor") ? "ceo" : "gestor";
     const roleFormat = userRole === "ceo" ? CEO_FORMAT : GERENTE_FORMAT;
     const moduleContext = MODULE_CONTEXTS[module] || MODULE_CONTEXTS.general;
 

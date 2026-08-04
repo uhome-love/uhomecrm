@@ -157,7 +157,12 @@ Deno.serve(async (req) => {
       settingsMap[s.key] = s.value;
     });
 
-    const accessToken = settingsMap.meta_ads_access_token;
+    // Token vem do Vault via RPC interna (fallback legado: valor em texto na tabela)
+    let accessToken = settingsMap.meta_ads_access_token;
+    if (accessToken === "vault:meta_ads_access_token") {
+      const { data: vaultToken } = await supabase.rpc("get_meta_ads_token_internal");
+      accessToken = (vaultToken as string | null) || "";
+    }
     const accountId = settingsMap.meta_ads_account_id;
 
     if (!accessToken || !accountId) {

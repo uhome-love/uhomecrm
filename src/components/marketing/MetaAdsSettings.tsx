@@ -19,6 +19,7 @@ export default function MetaAdsSettings() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [tokenStatus, setTokenStatus] = useState<{ configured: boolean; last4: string | null; in_vault: boolean }>({ configured: false, last4: null, in_vault: false });
 
   useEffect(() => {
     loadSettings();
@@ -26,18 +27,13 @@ export default function MetaAdsSettings() {
 
   async function loadSettings() {
     if (!user) return;
-    const { data } = await supabase
-      .from("integration_settings")
-      .select("key, value")
-      .in("key", ["meta_ads_access_token", "meta_ads_account_id", "meta_ads_cpl_limit", "meta_ads_auto_sync"]);
-
-    const map: Record<string, string> = {};
-    (data || []).forEach((s) => { map[s.key] = s.value; });
-
-    if (map.meta_ads_access_token) setAccessToken(map.meta_ads_access_token);
-    if (map.meta_ads_account_id) setAccountId(map.meta_ads_account_id);
-    if (map.meta_ads_cpl_limit) setCplLimit(map.meta_ads_cpl_limit);
-    if (map.meta_ads_auto_sync) setAutoSync(map.meta_ads_auto_sync === "true");
+    // O token NUNCA é lido pelo navegador — só o status (configurado + últimos 4).
+    const { data } = await supabase.rpc("get_meta_ads_status");
+    const st = (data as any) || {};
+    setTokenStatus({ configured: !!st.configured, last4: st.last4 ?? null, in_vault: !!st.in_vault });
+    if (st.account_id) setAccountId(st.account_id);
+    if (st.cpl_limit) setCplLimit(st.cpl_limit);
+    setAutoSync(st.auto_sync === "true");
     setLoading(false);
   }
 
@@ -63,13 +59,18 @@ export default function MetaAdsSettings() {
   async function handleSave() {
     setSaving(true);
     try {
+      if (accessToken.trim()) {
+        const { error: tokenError } = await supabase.rpc("set_meta_ads_token", { p_token: accessToken.trim() });
+        if (tokenError) throw tokenError;
+        setAccessToken("");
+      }
       await Promise.all([
-        saveSetting("meta_ads_access_token", accessToken.trim()),
         saveSetting("meta_ads_account_id", accountId.trim()),
         saveSetting("meta_ads_cpl_limit", cplLimit),
         saveSetting("meta_ads_auto_sync", autoSync ? "true" : "false"),
       ]);
       toast.success("Configurações do Meta Ads salvas!");
+      await loadSettings();
     } catch {
       toast.error("Erro ao salvar configurações");
     }
@@ -119,10 +120,12 @@ export default function MetaAdsSettings() {
               type="password"
               value={accessToken}
               onChange={(e) => setAccessToken(e.target.value)}
-              placeholder="EAAxxxxxxx..."
+              placeholder={tokenStatus.configured ? "•••• (salvo — deixe vazio para manter)" : "EAAxxxxxxx..."}
             />
             <p className="text-[10px] text-muted-foreground">
-              Gere em developers.facebook.com → Marketing API
+              {tokenStatus.configured
+                ? `Token configurado${tokenStatus.in_vault ? " (cofre seguro)" : ` ····${tokenStatus.last4 ?? ""} — será movido para o cofre ao salvar um novo`}. Preencha apenas para substituir.`
+                : "Gere em developers.facebook.com → Marketing API"}
             </p>
           </div>
           <div className="space-y-2">

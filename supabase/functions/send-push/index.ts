@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,14 +15,11 @@ serve(async (req) => {
   }
 
   try {
-    // ── Auth: require Bearer token; verify_jwt=false at gateway, so accept any non-empty bearer.
-    // Internal callers (DB triggers) pass the service-role key from vault.
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ") || authHeader.length < 20) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // ── Auth híbrida: service-role/cron OU usuário real enviando push pra si mesmo.
+    // A anon key sozinha não é mais aceita.
+    const auth = await requireRealUser(req, { allowServiceRole: true });
+    if (auth.error) return auth.error;
+
 
     const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
     const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
@@ -42,6 +40,13 @@ serve(async (req) => {
     );
 
     const { user_id, title, body, data, url } = await req.json();
+
+    // Usuário real só pode disparar push pra si mesmo; service-role/cron pode pra qualquer um.
+    if (!auth.isServiceRole && user_id !== auth.userId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!user_id || !title) {
       return new Response(

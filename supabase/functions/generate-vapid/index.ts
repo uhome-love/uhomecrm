@@ -1,15 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Somente admin (ou service-role/cron) pode gerar chaves VAPID
+  const auth = await requireRealUser(req, { allowServiceRole: true, roles: ["admin"] });
+  if (auth.error) return auth.error;
+
+
 
   try {
     // Generate ECDH P-256 key pair for VAPID

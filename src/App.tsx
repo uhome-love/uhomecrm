@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { DateFilterProvider } from "@/contexts/DateFilterContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import { TabProvider } from "@/contexts/TabContext";
 import { lazy, Suspense } from "react";
@@ -108,16 +109,17 @@ const App = () => (
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
               <Route path="/placar-tv" element={<Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense>} />
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
-              <Route path="/diagnostico-rede" element={<Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense>} />
-              <Route path="/ceo/telemetria-rede" element={<Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense>} />
-              <Route path="/admin/ingestao" element={<Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense>} />
-              <Route path="/admin/uso-paginas" element={<Suspense fallback={<PageLoader />}><UsoPaginasPanel /></Suspense>} />
+              <Route path="/diagnostico-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
+              <Route path="/ceo/telemetria-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
+              <Route path="/admin/ingestao" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
+              <Route path="/admin/uso-paginas" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><UsoPaginasPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
 
 
               {/* Redirects */}
               <Route path="/fechamento-day" element={<Navigate to="/placar-do-dia" replace />} />
               <Route path="/gestao" element={<Navigate to="/gerente/dashboard" replace />} />
               <Route path="/index" element={<Navigate to="/" replace />} />
+              <Route path="/central-usuarios" element={<Navigate to="/meu-time" replace />} />
               <Route path="/index.html" element={<Navigate to="/" replace />} />
               <Route path="/relatorio-semanal" element={<Navigate to="/central-relatorios?secao=visao" replace />} />
               <Route path="/relatorios" element={<Navigate to="/central-relatorios?secao=relatorio-1a1" replace />} />

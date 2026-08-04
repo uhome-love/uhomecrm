@@ -47,6 +47,30 @@ export type Database = {
         }
         Relationships: []
       }
+      _rollback_b1final: {
+        Row: {
+          criado_em: string
+          definicao: string | null
+          id: string
+          objeto: string
+          tipo: string
+        }
+        Insert: {
+          criado_em?: string
+          definicao?: string | null
+          id?: string
+          objeto: string
+          tipo: string
+        }
+        Update: {
+          criado_em?: string
+          definicao?: string | null
+          id?: string
+          objeto?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       _rollback_onda1: {
         Row: {
           created_at: string
@@ -13628,6 +13652,8 @@ export type Database = {
           tipo: string
         }[]
       }
+      get_meta_ads_status: { Args: never; Returns: Json }
+      get_meta_ads_token_internal: { Args: never; Returns: string }
       get_my_calendar_integration: {
         Args: never
         Returns: {
@@ -14472,6 +14498,7 @@ export type Database = {
         Args: { p_ativo: boolean; p_empreendimento_id: string }
         Returns: undefined
       }
+      set_meta_ads_token: { Args: { p_token: string }; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       skip_oa_lead: {

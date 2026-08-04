@@ -13,22 +13,16 @@ import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materia
 import { HOMI_TOOLS, executeHomiTool } from "./homi-tools.ts";
 import { searchKnowledge, formatKnowledgeBlock, HOMI_IDENTITY, HOMI_CHAT_MODEL } from "../_shared/homi-brain.ts";
 import { GOVERNANCA_VOLATIL_BLOCK } from "../_shared/homi-fontes.ts";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // ── Auth: validate JWT ──
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    const _sbAuth = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
-    const { data: _claims, error: _claimsErr } = await _sbAuth.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (_claimsErr || !_claims?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    // ── Auth: usuário real obrigatório (anon key rejeitada) ──
+    const _auth = await requireRealUser(req, {});
+    if (_auth.error) return _auth.error;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const { messages, empreendimento, stream: wantStream = true, system: customSystem, enableTools = false, perfil = "corretor" } = await req.json();
@@ -266,11 +260,11 @@ VERACIDADE COMERCIAL — REGRA DURA:
 
     // ── Copilot mode: function-calling (non-streaming JSON) ──
     if (enableTools) {
-      const uid = (_claims.claims as any).sub as string;
+      const uid = _auth.userId as string;
       const userClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } },
+        { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } },
       );
 
       const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });

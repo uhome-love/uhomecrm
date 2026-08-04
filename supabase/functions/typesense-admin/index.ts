@@ -213,6 +213,7 @@ serve(async (req) => {
     const reqSecret = req.headers.get("x-sync-secret");
     const isSyncAuth = syncSecret && reqSecret === syncSecret;
 
+    let isPrivileged = !!isSyncAuth;
     if (!isSyncAuth) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
@@ -230,7 +231,12 @@ serve(async (req) => {
       if (authErr || !user) {
         return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      const { data: roleRows } = await getSupabaseAdmin()
+        .from("user_roles").select("role").eq("user_id", user.id);
+      const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
+      isPrivileged = roles.includes("admin") || roles.includes("diretor");
     }
+
 
     const TYPESENSE_HOST = Deno.env.get("TYPESENSE_HOST");
     const TYPESENSE_ADMIN_API_KEY = Deno.env.get("TYPESENSE_ADMIN_API_KEY");
@@ -241,6 +247,12 @@ serve(async (req) => {
     const body = await req.json();
     const { action } = body;
     const db = getSupabaseAdmin();
+
+    // Ações destrutivas exigem admin/diretor (ou o SYNC_SECRET interno)
+    if (["create_collection", "start_reindex"].includes(action) && !isPrivileged) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
 
     // ═══ CREATE COLLECTION ═══
     if (action === "create_collection") {
