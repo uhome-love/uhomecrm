@@ -386,7 +386,56 @@ Deno.serve(async (req) => {
     // Track vitrine events (non-blocking analytics)
     if (action === "track_event") {
       const { event_type, imovel_id } = body;
+
+      // ── Validação de payload ──
+      const ALLOWED_EVENTS = [
+        "view", "favorite", "whatsapp_click", "schedule_click", "compare_open",
+        "imovel_view", "share", "filter",
+      ];
+      if (event_type && !ALLOWED_EVENTS.includes(String(event_type))) {
+        return jsonResponse({ ok: true, ignored: true });
+      }
+      if (body.lead_nome && String(body.lead_nome).length > 80) {
+        body.lead_nome = String(body.lead_nome).slice(0, 80);
+      }
+      if (body.metadata && JSON.stringify(body.metadata).length > 2048) {
+        body.metadata = { truncated: true };
+      }
+
+      // ── Throttle por (vitrine, IP, tipo): 1 evento / 30s e teto 60/h ──
       if (vitrine_id && event_type) {
+        const ipRaw = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+        const ipHash = [...new Uint8Array(
+          await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ipRaw)),
+        )].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+
+        const nowMs = Date.now();
+        const { data: recentes } = await supabase
+          .from("vitrine_interacoes")
+          .select("tipo, created_at, metadata")
+          .eq("vitrine_id", vitrine_id)
+          .gte("created_at", new Date(nowMs - 3_600_000).toISOString())
+          .order("created_at", { ascending: false })
+          .limit(200);
+
+        const mine = (recentes ?? []).filter((r: any) => r?.metadata?.ip_hash === ipHash);
+        const cooldownHit = mine.some(
+          (r: any) => r.tipo === event_type && nowMs - new Date(r.created_at).getTime() < 30_000,
+        );
+        if (cooldownHit || mine.length >= 60) {
+          return jsonResponse({ ok: true, throttled: true });
+        }
+
+        // Notificação ao corretor no máximo 1 por vitrine a cada 15 min
+        const notifiedRecently = (recentes ?? []).some(
+          (r: any) => r?.metadata?.notified === true && nowMs - new Date(r.created_at).getTime() < 900_000,
+        );
+        body.metadata = { ...(body.metadata || {}), ip_hash: ipHash, notified: !notifiedRecently };
+        (body as any).__suppressNotify = notifiedRecently;
+      }
+
+      if (vitrine_id && event_type) {
+
         // Increment WhatsApp clicks counter
         if (event_type === "whatsapp_click") {
           supabase.from("vitrines")
