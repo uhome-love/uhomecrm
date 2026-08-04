@@ -260,11 +260,11 @@ VERACIDADE COMERCIAL — REGRA DURA:
 
     // ── Copilot mode: function-calling (non-streaming JSON) ──
     if (enableTools) {
-      const uid = (_claims.claims as any).sub as string;
+      const uid = _auth.userId as string;
       const userClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } },
+        { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } },
       );
 
       const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
