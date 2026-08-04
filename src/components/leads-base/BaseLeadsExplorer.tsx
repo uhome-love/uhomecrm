@@ -159,6 +159,50 @@ export function BaseLeadsExplorer() {
             {isLoading ? "Carregando…" : `${total.toLocaleString("pt-BR")} leads`}
           </span>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <Checkbox
+              checked={filtro.incluir_descartados ?? true}
+              onCheckedChange={(c) => set({ incluir_descartados: !!c })}
+            />
+            Incluir leads descartados
+          </label>
+          {(filtro.incluir_descartados ?? true) && (
+            <>
+              <span>Só descartados há mais de</span>
+              {JANELAS_DESCARTE.map((d) => (
+                <Button
+                  key={d}
+                  type="button"
+                  size="sm"
+                  variant={(filtro.descarte_min_dias ?? 90) === d ? "default" : "outline"}
+                  className="h-7 text-xs"
+                  onClick={() => set({ descarte_min_dias: d })}
+                >
+                  {d} dias
+                </Button>
+              ))}
+              <Input
+                type="number"
+                min={0}
+                className="h-7 w-[110px]"
+                placeholder="personalizado"
+                value={
+                  JANELAS_DESCARTE.includes(filtro.descarte_min_dias ?? 90)
+                    ? ""
+                    : (filtro.descarte_min_dias ?? "")
+                }
+                onChange={(e) => set({ descarte_min_dias: Number(e.target.value || 0) })}
+              />
+            </>
+          )}
+          <span className="ml-auto font-medium text-foreground">
+            {loadingElegiveis
+              ? "Calculando elegíveis…"
+              : `${(elegiveis?.total ?? 0).toLocaleString("pt-BR")} elegíveis para campanha`}
+          </span>
+        </div>
       </div>
 
       <div className="rounded-xl border bg-card overflow-hidden">
