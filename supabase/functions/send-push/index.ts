@@ -14,14 +14,11 @@ serve(async (req) => {
   }
 
   try {
-    // ── Auth: require Bearer token; verify_jwt=false at gateway, so accept any non-empty bearer.
-    // Internal callers (DB triggers) pass the service-role key from vault.
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ") || authHeader.length < 20) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // ── Auth híbrida: service-role/cron OU usuário real enviando push pra si mesmo.
+    // A anon key sozinha não é mais aceita.
+    const auth = await requireRealUser(req, { allowServiceRole: true });
+    if (auth.error) return auth.error;
+
 
     const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
     const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
