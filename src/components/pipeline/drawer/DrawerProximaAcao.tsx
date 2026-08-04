@@ -10,6 +10,8 @@ interface NextTaskLike {
   titulo?: string | null;
   descricao?: string | null;
   vence_em?: string | null;
+  /** Hora real de vencimento (HH:mm[:ss]) — sem ela o parse cai no meio-dia. */
+  hora_vencimento?: string | null;
 }
 
 interface Props {
