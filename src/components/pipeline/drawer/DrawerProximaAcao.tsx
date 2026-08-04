@@ -94,7 +94,17 @@ export default function DrawerProximaAcao({
   const tipo = parseNextActionType(nextTask, proximaAcaoTexto);
   const meta = tipo ? META[tipo] : { icon: "✅", label: nextTask.titulo || nextTask.descricao || "Próxima ação" };
 
-  const dueDate = parseDateBRTSafe(nextTask.vence_em ?? undefined);
+  const dueDate = (() => {
+    const base = parseDateBRTSafe(nextTask.vence_em ?? undefined);
+    if (!base) return base;
+    const hora = nextTask.hora_vencimento;
+    if (!hora) return base; // sem hora: mantém o comportamento atual (meio-dia)
+    const [h, m] = hora.split(":").map(Number);
+    if (Number.isNaN(h)) return base;
+    const withTime = new Date(base);
+    withTime.setHours(h, Number.isNaN(m) ? 0 : m, 0, 0);
+    return withTime;
+  })();
   const now = new Date();
   const overdue = !!dueDate && dueDate.getTime() < now.getTime();
   const relativo = dueDate
