@@ -40,20 +40,32 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
       .maybeSingle();
     if (plErr || !pl) return errorResponse("Lead não encontrado", 404);
 
-    // ── Ownership: só o dono do lead (ou gestão) pode gerar o dossiê ──
+    // ── Ownership: gestão OU lock ativo na fila da Oferta Ativa ──
+    const { data: _prof } = await sbAdminD
+      .from("profiles").select("id").eq("user_id", user.id).maybeSingle();
+
     const { data: _roleRows } = await sbAdminD
       .from("user_roles").select("role").eq("user_id", user.id);
-    const _roles = (_roleRows ?? []).map((r: { role: string }) => r.role);
-    const _isGestao = _roles.some((r) => ["admin", "gestor", "diretor"].includes(r));
-    if (!_isGestao) {
-      const { data: _prof } = await sbAdminD
-        .from("profiles").select("id").eq("user_id", user.id).maybeSingle();
-      const owners = [(pl as any).corretor_id].filter(Boolean);
-      const mine = [user.id, _prof?.id].filter(Boolean);
-      if (!owners.some((o: string) => mine.includes(o))) {
-        return errorResponse("Forbidden", 403);
-      }
+    const _isGestao = (_roleRows ?? []).some((r: { role: string }) =>
+      ["admin", "gestor", "diretor"].includes(r.role));
+
+    let _hasLock = false;
+    if (_prof?.id) {
+      const { data: _lock } = await sbAdminD
+        .from("oferta_ativa_fila")
+        .select("id")
+        .eq("pipeline_lead_id", pid)
+        .eq("locked_by", _prof.id)
+        .gt("locked_until", new Date().toISOString())
+        .limit(1)
+        .maybeSingle();
+      _hasLock = !!_lock;
     }
+
+    if (!_isGestao && !_hasLock) {
+      return errorResponse("Forbidden", 403);
+    }
+
 
 
     const diasDesc = pl.stage_changed_at
