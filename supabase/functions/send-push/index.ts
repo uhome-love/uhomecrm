@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,13 @@ serve(async (req) => {
     );
 
     const { user_id, title, body, data, url } = await req.json();
+
+    // Usuário real só pode disparar push pra si mesmo; service-role/cron pode pra qualquer um.
+    if (!auth.isServiceRole && user_id !== auth.userId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!user_id || !title) {
       return new Response(
