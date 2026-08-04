@@ -89,9 +89,11 @@ export function PassoIdentidade({
             id="camp-expira"
             type="datetime-local"
             value={state.expira}
+            disabled={!state.expira}
+            placeholder="Sem prazo"
             onChange={(e) => set({ expira: e.target.value })}
           />
-          <div className="flex gap-1.5 pt-0.5">
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
             {[1, 3, 7].map((d) => (
               <Button
                 key={d}
@@ -104,7 +106,21 @@ export function PassoIdentidade({
                 {d === 1 ? "24h" : `${d} dias`}
               </Button>
             ))}
+            <Button
+              type="button"
+              variant={state.expira ? "outline" : "default"}
+              size="sm"
+              className="h-6 text-[11px]"
+              onClick={() => set({ expira: state.expira ? "" : expiracaoEm(3) })}
+            >
+              Sem prazo
+            </Button>
           </div>
+          {!state.expira && (
+            <p className="text-[11px] text-muted-foreground">
+              Prazo indeterminado — a campanha fica ativa até ser encerrada manualmente.
+            </p>
+          )}
         </div>
       </div>
 
