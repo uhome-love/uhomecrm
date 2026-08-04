@@ -248,6 +248,12 @@ serve(async (req) => {
     const { action } = body;
     const db = getSupabaseAdmin();
 
+    // Ações destrutivas exigem admin/diretor (ou o SYNC_SECRET interno)
+    if (["create_collection", "start_reindex"].includes(action) && !isPrivileged) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+
     // ═══ CREATE COLLECTION ═══
     if (action === "create_collection") {
       await typesenseFetch(TYPESENSE_HOST, TYPESENSE_ADMIN_API_KEY, `/collections/${COLLECTION_NAME}`, { method: "DELETE" }).catch(() => {});
