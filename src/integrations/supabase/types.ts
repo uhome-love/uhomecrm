@@ -47,6 +47,30 @@ export type Database = {
         }
         Relationships: []
       }
+      _rollback_onda1: {
+        Row: {
+          created_at: string
+          definicao: string
+          id: number
+          objeto: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          definicao: string
+          id?: number
+          objeto: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          definicao?: string
+          id?: number
+          objeto?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       academia_aulas: {
         Row: {
           conteudo: Json | null
@@ -13053,6 +13077,7 @@ export type Database = {
         }
         Returns: Json
       }
+      assert_acts_as: { Args: { p_corretor_id: string }; Returns: undefined }
       atualizar_situacao_crm_base_leads: { Args: never; Returns: Json }
       auto_arquivar_descartes_24h: {
         Args: never
@@ -13601,6 +13626,14 @@ export type Database = {
           preco: number
           quartos: number
           tipo: string
+        }[]
+      }
+      get_my_calendar_integration: {
+        Args: never
+        Returns: {
+          account_email: string
+          connected_at: string
+          status: string
         }[]
       }
       get_my_profile_full: {
