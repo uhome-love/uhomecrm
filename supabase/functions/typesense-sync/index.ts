@@ -15,6 +15,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const denied = requireCronAuth(req);
+  if (denied) return denied;
+
+
   const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
 
   try {
