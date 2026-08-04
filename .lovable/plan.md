@@ -1,91 +1,59 @@
-# Melhoria 1 — Unificar a criação da próxima tarefa
+# Correção de 3 quirks visuais no drawer do Lead Detail
 
-Objetivo: o card "PRÓXIMA AÇÃO" (`DrawerProximaAcao`) e o chip de status pararem de ficar defasados depois de concluir uma tarefa pelo diálogo. Hoje há dois caminhos que criam a próxima tarefa e gravam campos diferentes no lead.
+Somente renderização e refresh de cache no frontend. Nenhuma regra de negócio, guardrail ou banco é alterado.
 
-## 1. O que cada caminho grava hoje (código real)
+## Arquivos tocados (4)
 
-### A) `NextActionModal.tsx` (opção "Agendar nova tarefa") — completo
-Insere em `pipeline_tarefas`:
-```ts
-pipeline_lead_id, titulo: tituloLabel, descricao, tipo, prioridade: "media",
-status: "pendente", responsavel_id: user.id, vence_em, hora_vencimento, created_by
+1. `src/components/pipeline/drawer/DrawerProximaAcao.tsx` (bugs 1 e 2)
+2. `src/components/pipeline/PipelineLeadDetail.tsx` (bug 2 — passar a hora; bug 1 — chamada de `parseNextActionType` nas Ações)
+3. `src/components/pipeline/CadenciaSemContatoCard.tsx` (bug 3 — passar a usar React Query)
+4. `src/lib/taskQueryUtils.ts` (bug 3 — invalidar a nova queryKey)
+
+## Bug 1 — tipo/ícone errado no card "Próxima Ação"
+
+Hoje `parseNextActionType()` monta o "bag" com `tipo + titulo + descricao + fallbackText` sempre, e o regex de `ligar` é avaliado antes de `whatsapp`. Um `lead.proxima_acao` defasado ("Ligar…") sobrepõe uma tarefa real de WhatsApp.
+
+Mudança conceitual (mesma função, mesma assinatura, mesma ordem de regex):
+
 ```
-E logo depois atualiza o lead:
-```ts
-await supabase.from("pipeline_leads").update({
-  proxima_acao: tituloLabel,
-  data_proxima_acao: tarefaData,
-  ultima_acao_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  ...(flagPatch ? { flag_status: flagPatch } : {}),
-}).eq("id", leadId);
-```
-`flagPatch` = merge de `flag_status` atual com `activePreset.syncFlagKey/Value` (presets de `taskPresets.ts`, ex. `status_atendimento=alinhamento_perfil`, `prazo=30`, `status_negociacao=proposta_enviada`).
-
-### B) `taskCompletion.ts::runTaskCompletion()` com `outcome='agendar'` — incompleto
-```ts
-if (outcome === "agendar" && nova_tarefa) {
-  const titulo = `${TIPO_LABELS[nova_tarefa.tipo]}: ${ctx.leadNome}${dateSuffix}`;
-  await ctx.addTarefa({ tipo, titulo, descricao, vence_em, hora_vencimento });
-  ...
-}
-```
-`ctx.addTarefa` é `usePipelineLeadData.addTarefa`, que insere em `pipeline_tarefas` e atualiza no lead **apenas**:
-```ts
-{ ultima_acao_at, updated_at }
-```
-Antes disso, `runTaskCompletion` já faz um touch de `{ ultima_acao_at, updated_at }` (passo 2).
-
-**Diferença — o que falta em B:** `proxima_acao`, `data_proxima_acao` e o `flag_status` do preset. Por isso o card fica defasado até um reload recalcular pela nextTask.
-
-## 2. Função única `createNextTask()`
-
-Novo arquivo `src/lib/createNextTask.ts`:
-
-```ts
-export interface CreateNextTaskInput {
-  leadId: string;
-  userId: string;
-  tipo: string;
-  titulo: string;
-  descricao?: string | null;
-  vence_em: string;            // YYYY-MM-DD BRT
-  hora_vencimento?: string | null;
-  prioridade?: string;         // default "media"
-  /** preset opcional — aplica flag_status[syncFlagKey] = syncFlagValue */
-  syncFlag?: { key: string; value: string } | null;
-}
-export async function createNextTask(input: CreateNextTaskInput):
-  Promise<{ ok: boolean; error?: string }>
+const hasTask = !!(task?.tipo || task?.titulo || task?.descricao);
+const bag = hasTask
+  ? `${task.tipo} ${task.titulo} ${task.descricao}`.toLowerCase()   // sem fallbackText
+  : `${fallbackText ?? ""}`.toLowerCase();
 ```
 
-O que grava (uma única vez, sempre igual nos dois caminhos):
-1. `INSERT pipeline_tarefas` com os mesmos campos do caminho A (status `pendente`, `responsavel_id`/`created_by` = userId).
-2. Se `syncFlag`: lê `pipeline_leads.flag_status`, faz merge.
-3. `UPDATE pipeline_leads` com `proxima_acao = titulo`, `data_proxima_acao = vence_em`, `ultima_acao_at`, `updated_at` e, quando houver, `flag_status`.
-4. Mantém a validação `isTaskDateTooFar` já existente onde ela hoje ocorre (Modal valida antes de chamar; no helper fica como guarda de segurança devolvendo `ok:false`).
+Sem tarefa concreta, o comportamento atual (usar o texto livre) é preservado. Como `PipelineLeadDetail` reusa a mesma função para escolher a ação primária do grid, o botão primário passa a acompanhar a tarefa real — efeito desejado e coerente.
 
-Sem toast, sem invalidate, sem reload dentro do helper — quem chama continua responsável por isso (preserva o comportamento atual de cada tela).
+## Bug 2 — horário 12:00 em vez da hora real
 
-### Onde passam a chamar
-- `NextActionModal.handleConfirm` (ramo `selected === "tarefa"`): substitui o insert + update inline por uma chamada a `createNextTask` com `syncFlag` derivado de `activePreset`. Toast, `resetForm`, `invalidateTaskQueries` e `onReload` permanecem exatamente como estão.
-- `taskCompletion.runTaskCompletion` (ramo `outcome === 'agendar' && nova_tarefa`): substitui `ctx.addTarefa(...)` por `createNextTask(...)`, mantendo a mesma composição de título (`TIPO_LABELS[tipo]: leadNome · dd/mm`) e a mesma descrição. `ctx.addTarefa` fica opcional na interface (não mais invocada nesse ramo) — os callers (`DrawerTasksTab`) já fazem `onReload()` + `invalidateTaskQueries` depois, então o refresh do card não muda.
-- `taskPresets.ts`: sem mudança funcional; só é a fonte do `syncFlag`.
+`vence_em` é só data; sem hora o parse cai no meio-dia. A hora real vive em `pipeline_tarefas.hora_vencimento` e hoje nem chega ao componente.
 
-Nada além disso muda: passos 5/6/7 de `runTaskCompletion` (stage, descartar, inativar), atividades, toasts e níveis de retorno ficam idênticos.
+- `NextTaskLike` ganha `hora_vencimento?: string | null`.
+- Ao montar `dueDate`: se `hora_vencimento` existir (formato `HH:mm[:ss]`), aplicar horas/minutos sobre a data parseada; senão, manter exatamente o comportamento atual.
+- Em `PipelineLeadDetail.tsx`, `nextTask` já vem de `leadData.tarefas` (que carrega `hora_vencimento`) — basta garantir que o campo é repassado; nenhuma query nova.
+- O mesmo critério de `overdue` do card passa a usar a data+hora composta (igual ao que o chip de status do drawer já faz nas linhas 449-460).
 
-## 3. Sem dupla escrita / sem tarefa duplicada
+## Bug 3 — widget "CADÊNCIA SEM CONTATO" defasado
 
-- No caminho A o insert inline é **removido** e trocado pelo helper → 1 insert.
-- No caminho B a chamada a `ctx.addTarefa` é **removida** e trocada pelo helper → 1 insert (hoje já é 1; não somamos outro).
-- O `UPDATE` de lead do helper é o mesmo que hoje já roda no caminho A; no caminho B ele apenas amplia o touch que já existia (mesma linha, campos a mais) — não gera linha nova nem histórico novo.
-- `completeLeadTask.ts` (atalho do card no Kanban) está fora do escopo fechado e não é tocado nesta melhoria.
+Causa confirmada: `CadenciaSemContatoCard` não usa React Query — busca com `useState` + `useEffect` que só roda quando `leadId` muda. Nenhum invalidate alcança esse componente, por isso ele fica na tentativa antiga até o F5.
 
-## 4. Guardrail Sem Contato (linha vermelha)
+Mudança conceitual:
 
-Confirmado no código: `TaskCompletionDialog` (linhas ~309-334) trata **toda** tarefa em `stage='sem_contato'` como cadência (`const isCadenciaTask = true`), força `outcome='concluir'` e não monta `nova_tarefa`. Como `createNextTask()` só é chamada dentro de `if (outcome === 'agendar' && nova_tarefa)`, o caminho Sem Contato **continua sem criar nem gravar próxima tarefa pela UI** — quem cria segue sendo o gatilho `trg_cadencia_sem_contato`.
+- Trocar o `useEffect` por um `useQuery` com key `["cadencia-sem-contato", leadId]`, mantendo exatamente as mesmas 3 leituras em `Promise.all` (`lead_cadencia_sem_contato`, `cadencia_sem_contato_passos`, `pipeline_leads.estagnado_prazo_em`), o mesmo `enabled` (só quando `stageTipo === "sem_contato"`) e a mesma renderização — zero mudança visual.
+- Em `invalidateTaskQueries()`, adicionar:
 
-Reforço opcional (defensivo, sem mudar comportamento): early-return no ramo 'agendar' quando o stage do lead for `sem_contato`. Não altera nenhum fluxo legítimo, apenas impede regressão futura.
+```
+qc.invalidateQueries({ queryKey: ["cadencia-sem-contato"], refetchType: "all" });
+```
 
-## Fora de escopo
-Cadência, trigger, migrations, visual, `TaskCompletionDialog` (nenhuma alteração), `completeLeadTask.ts`, publish.
+Assim, ao concluir a tentativa, o widget refaz a leitura e mostra "Tentativa 3/7" na hora, sem reload.
+
+Observação sobre o contador "Tentativas" do rodapé: ele vem de `callAttempts` (atividades do lead) e já é recarregado pelo `onReload` do drawer; se na validação ao vivo ele ainda ficar parado, o ajuste é apenas garantir que o `onReload` roda após a conclusão — não requer mudança de lógica.
+
+## Confirmações explícitas
+
+- Nada de `src/lib/createNextTask.ts` nem `src/lib/taskCompletion.ts` (o early-return de `sem_contato` fica intacto).
+- Nenhuma migration, nenhum trigger (`trg_cadencia_sc_*`), nenhuma edge function.
+- A criação da próxima tentativa em "Sem Contato" continua 100% pelo gatilho do banco; o widget passa apenas a *ler* o estado novo.
+- Nenhuma query nova ao banco além da que o widget já fazia (mesmas leituras, só com cache gerenciado).
+- Sem publish; typecheck ao final.
