@@ -24,7 +24,7 @@ function VisitasCard({ kpis }: { kpis: KpisTopV4 }) {
   const taxa = kpis.visitas_taxa_pct;
 
   const itens: { label: string; value: string; tone?: string; title?: string }[] = [
-    { label: "Criadas", value: kpis.visitas_criadas.toLocaleString("pt-BR") },
+    { label: "Total", value: kpis.visitas_criadas.toLocaleString("pt-BR") },
     { label: "A realizar", value: kpis.visitas_a_realizar.toLocaleString("pt-BR") },
     {
       label: "Confirmadas",
