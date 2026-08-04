@@ -18,6 +18,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { todayBRT } from "@/lib/utils";
+import { createNextTask } from "@/lib/createNextTask";
+
 import type {
   CompletionPayload,
   TipoProximaTarefa,
