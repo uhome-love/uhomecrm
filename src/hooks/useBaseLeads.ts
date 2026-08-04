@@ -16,6 +16,10 @@ export interface BaseLeadsFiltro {
   nunca_trabalhado?: boolean;
   com_telefone?: boolean;
   busca?: string | null;
+  /** Higiene: permitir descartes reengajáveis antigos (padrão true). */
+  incluir_descartados?: boolean;
+  /** Só descartes com mais de N dias entram (padrão 90). */
+  descarte_min_dias?: number;
 }
 
 export interface BaseLeadRow {
