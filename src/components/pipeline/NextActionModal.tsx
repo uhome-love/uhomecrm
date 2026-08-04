@@ -116,45 +116,29 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
           || TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label
           || tipoTarefa;
         const obsClean = obsTarefa.trim();
-        const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
-          pipeline_lead_id: leadId,
+        // Fonte única: cria a tarefa e grava proxima_acao/data_proxima_acao/ultima_acao_at
+        // (+ flag_status do preset). Nota: NÃO inserimos em pipeline_atividades para
+        // "Tarefa criada" — o evento é sintetizado a partir de pipeline_tarefas.
+        const res = await createNextTask({
+          leadId,
+          userId: user.id,
+          tipo: tipoTarefa,
           titulo: tituloLabel,
           descricao: obsClean || null,
-          tipo: tipoTarefa,
-          prioridade: "media",
-          status: "pendente",
-          responsavel_id: user.id,
           vence_em: tarefaData,
           hora_vencimento: tarefaHora || null,
-          created_by: user.id,
-        } as any);
-        if (insertErr) {
-          toast.error("Erro ao criar tarefa: " + insertErr.message);
+          stageTipo: currentStageTipo,
+          syncFlag:
+            activePreset?.syncFlagKey && activePreset?.syncFlagValue
+              ? { key: activePreset.syncFlagKey, value: activePreset.syncFlagValue }
+              : null,
+        });
+        if (!res.ok) {
+          toast.error("Erro ao criar tarefa: " + (res.error || "falha"));
           setSaving(false);
           return;
         }
-        // Nota: NÃO inserimos em pipeline_atividades para "Tarefa criada" —
-        // o evento é sintetizado a partir de pipeline_tarefas em LeadHistoricoTab.
 
-        // Sync flag_status do preset (ex: alinhamento_perfil, proposta_enviada, prazo=30)
-        let flagPatch: Record<string, string> | null = null;
-        if (activePreset?.syncFlagKey && activePreset?.syncFlagValue) {
-          const { data: leadRow } = await supabase
-            .from("pipeline_leads")
-            .select("flag_status")
-            .eq("id", leadId)
-            .maybeSingle();
-          const currentFlags = ((leadRow as any)?.flag_status ?? {}) as Record<string, string>;
-          flagPatch = { ...currentFlags, [activePreset.syncFlagKey]: activePreset.syncFlagValue };
-        }
-
-        await supabase.from("pipeline_leads").update({
-          proxima_acao: tituloLabel,
-          data_proxima_acao: tarefaData,
-          ultima_acao_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          ...(flagPatch ? { flag_status: flagPatch } : {}),
-        } as any).eq("id", leadId);
 
         toast.success("Tarefa agendada ✅");
       } else if (selected === "avancar") {
