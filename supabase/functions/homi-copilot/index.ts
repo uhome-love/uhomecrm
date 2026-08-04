@@ -35,10 +35,26 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
     );
     const { data: pl, error: plErr } = await sbAdminD
       .from("pipeline_leads")
-      .select("nome, empreendimento, motivo_descarte, reengajamento_status, stage_changed_at, lead_score, lead_temperatura, origem, campanha, objetivo_cliente, bairro_regiao, forma_pagamento, observacoes")
+      .select("nome, empreendimento, motivo_descarte, reengajamento_status, stage_changed_at, lead_score, lead_temperatura, origem, campanha, objetivo_cliente, bairro_regiao, forma_pagamento, observacoes, corretor_id, user_id")
       .eq("id", pid)
       .maybeSingle();
     if (plErr || !pl) return errorResponse("Lead não encontrado", 404);
+
+    // ── Ownership: só o dono do lead (ou gestão) pode gerar o dossiê ──
+    const { data: _roleRows } = await sbAdminD
+      .from("user_roles").select("role").eq("user_id", user.id);
+    const _roles = (_roleRows ?? []).map((r: { role: string }) => r.role);
+    const _isGestao = _roles.some((r) => ["admin", "gestor", "diretor"].includes(r));
+    if (!_isGestao) {
+      const { data: _prof } = await sbAdminD
+        .from("profiles").select("id").eq("user_id", user.id).maybeSingle();
+      const owners = [(pl as any).corretor_id, (pl as any).user_id].filter(Boolean);
+      const mine = [user.id, _prof?.id].filter(Boolean);
+      if (!owners.some((o: string) => mine.includes(o))) {
+        return errorResponse("Forbidden", 403);
+      }
+    }
+
 
     const diasDesc = pl.stage_changed_at
       ? Math.max(0, Math.floor((Date.now() - new Date(pl.stage_changed_at).getTime()) / 86_400_000))
