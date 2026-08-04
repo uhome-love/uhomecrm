@@ -24,7 +24,18 @@ O que está errado: 6 dos 7 leads estão **sem empreendimento canônico**, porqu
    - empreendimento (texto): `Casa Tua Canoas - Pré`
    - formulário por ID: `1766681441306699` (trava mais forte, imune a mudança de nome do formulário)
 2. Backfill: vincular ao Casa Tua Canoas os 6 leads da campanha que estão sem produto.
-3. Conferir depois: os 7 leads com o produto certo, e nenhum lead do Casa Tua Porto Alegre tocado.
+3. **Regra fixa nova:** lead com empreendimento identificado e **sem nenhum corretor alocado/ativo na roleta daquele empreendimento** vai direto para a **Fila do CEO** — nunca mais cai no rateio por segmento.
+4. Conferir depois: os 7 leads com o produto certo, e nenhum lead do Casa Tua Porto Alegre tocado.
+
+## Regra fixa: sem corretor no produto → Fila do CEO
+
+Hoje, quando o lead tem empreendimento mas ninguém está alocado (ou ninguém alocado está ativo na roleta naquele momento), o sistema cai para o rateio por segmento e o lead pode ir para um corretor que não trabalha aquele produto. Isso acaba.
+
+Novo comportamento:
+
+- Lead **com** empreendimento identificado e sem corretor alocado ativo → **Fila do CEO**, com motivo `sem_alocado_produto`, aguardando envio manual.
+- Lead **sem** empreendimento identificado → continua no rateio por segmento como hoje (site, portais, indicação).
+- Envio manual pelo CEO continua funcionando igual, sem trava.
 
 ## Ponto de atenção (fora do escopo, só aviso)
 
@@ -35,4 +46,7 @@ Existe 1 lead antigo (Marco Contreiras, 02/05) com o texto `Caasa Tua (canoas)` 
 - Data change (sem migration de schema): `INSERT` em `empreendimento_aliases` (`alias_raw`, `alias_norm = normalize_alias(...)`, `tipo`, `empreendimento_id`) com `ON CONFLICT DO NOTHING`.
 - Para o apelido por ID, `resolve_empreendimento_canonico` compara `tipo='formulario' AND alias_raw = p_form_id` (comparação crua), então o registro entra com `alias_raw = '1766681441306699'`.
 - Backfill: `UPDATE pipeline_leads SET empreendimento_canonico_id = '5f28344e-...' WHERE empreendimento_canonico_id IS NULL AND campanha = 'Casa Tua Canoas - Pré-venda'`.
-- Nenhuma função, RLS ou arquivo de frontend é alterado.
+- Migration na função `public.distribuir_lead_atomico`: quando `v_emp_canonico_id IS NOT NULL` e o pool de alocados ativos vier vazio, **não** setar `v_use_segmento := TRUE`; em vez disso gravar `aceite_status='pendente_distribuicao'`, `motivo_pendencia='sem_alocado_produto'`, registrar em `distribuicao_historico` (`pool='fila_ceo'`) e retornar sem distribuir. O ramo `p_force` (envio manual do CEO) permanece intacto.
+- Nenhuma RLS ou arquivo de frontend é alterado (o motivo `sem_alocado_produto` já é exibido na Fila do CEO).
+- Validação ao vivo: lead de teste de um empreendimento sem alocado → deve parar na Fila do CEO; lead de empreendimento com alocado ativo → distribui normal.
+
