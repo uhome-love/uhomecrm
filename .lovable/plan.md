@@ -1,59 +1,77 @@
-# Correção de 3 quirks visuais no drawer do Lead Detail
+# Oferta Ativa — filtro de inativados e descartes recentes (campanha Casa Tua)
 
-Somente renderização e refresh de cache no frontend. Nenhuma regra de negócio, guardrail ou banco é alterado.
+## O que está acontecendo hoje (verificado no banco)
 
-## Arquivos tocados (4)
+A criação de campanha da Base Única já é rígida demais: `preview_campanha_da_base_v2` e `criar_campanha_da_base_v2` excluem **qualquer** pessoa que exista em `pipeline_leads` — ativo, descartado, inativado ou arquivado — mais quem está em fila de Oferta Ativa. Não existe hoje nenhuma opção de escolher o que eliminar; é tudo ou nada.
 
-1. `src/components/pipeline/drawer/DrawerProximaAcao.tsx` (bugs 1 e 2)
-2. `src/components/pipeline/PipelineLeadDetail.tsx` (bug 2 — passar a hora; bug 1 — chamada de `parseNextActionType` nas Ações)
-3. `src/components/pipeline/CadenciaSemContatoCard.tsx` (bug 3 — passar a usar React Query)
-4. `src/lib/taskQueryUtils.ts` (bug 3 — invalidar a nova queryKey)
+Para o Casa Tua (6.197 registros com telefone na base):
 
-## Bug 1 — tipo/ícone errado no card "Próxima Ação"
-
-Hoje `parseNextActionType()` monta o "bag" com `tipo + titulo + descricao + fallbackText` sempre, e o regex de `ligar` é avaliado antes de `whatsapp`. Um `lead.proxima_acao` defasado ("Ligar…") sobrepõe uma tarefa real de WhatsApp.
-
-Mudança conceitual (mesma função, mesma assinatura, mesma ordem de regex):
-
-```
-const hasTask = !!(task?.tipo || task?.titulo || task?.descricao);
-const bag = hasTask
-  ? `${task.tipo} ${task.titulo} ${task.descricao}`.toLowerCase()   // sem fallbackText
-  : `${fallbackText ?? ""}`.toLowerCase();
+```text
+Inéditos (nunca entraram no CRM) ................ 3.825
+Já no pipeline .................................. 2.372
+  · com lead ativo em alguma etapa .............. 541
+  · só descarte/caiu ............................ 1.831
+      – descartados há mais de 90 dias ...........  362
+      – idem, fora de fila de OA .................  353
 ```
 
-Sem tarefa concreta, o comportamento atual (usar o texto livre) é preservado. Como `PipelineLeadDetail` reusa a mesma função para escolher a ação primária do grid, o botão primário passa a acompanhar a tarefa real — efeito desejado e coerente.
+Ou seja: hoje a campanha só consegue chegar aos 3.825 inéditos, e não há como puxar os descartes antigos que você quer trabalhar.
 
-## Bug 2 — horário 12:00 em vez da hora real
+## Regra que passa a valer
 
-`vence_em` é só data; sem hora o parse cai no meio-dia. A hora real vive em `pipeline_tarefas.hora_vencimento` e hoje nem chega ao componente.
+Público elegível de uma campanha = leads da base que:
 
-- `NextTaskLike` ganha `hora_vencimento?: string | null`.
-- Ao montar `dueDate`: se `hora_vencimento` existir (formato `HH:mm[:ss]`), aplicar horas/minutos sobre a data parseada; senão, manter exatamente o comportamento atual.
-- Em `PipelineLeadDetail.tsx`, `nextTask` já vem de `leadData.tarefas` (que carrega `hora_vencimento`) — basta garantir que o campo é repassado; nenhuma query nova.
-- O mesmo critério de `overdue` do card passa a usar a data+hora composta (igual ao que o chip de status do drawer já faz nas linhas 449-460).
+1. têm telefone (ou e-mail, conforme o filtro),
+2. **não** têm lead ativo no pipeline (qualquer etapa fora de descarte/caiu) — sempre bloqueado,
+3. **não** foram inativados (descarte definitivo / arquivamento permanente) — sempre bloqueado,
+4. **não** foram descartados nos últimos N dias (padrão 90) — configurável no assistente,
+5. não estão em fila de Oferta Ativa em andamento, opt-out ou produto extinto.
 
-## Bug 3 — widget "CADÊNCIA SEM CONTATO" defasado
+Descarte reengajável mais antigo que a janela volta a ser público legítimo de Oferta Ativa.
 
-Causa confirmada: `CadenciaSemContatoCard` não usa React Query — busca com `useState` + `useEffect` que só roda quando `leadId` muda. Nenhum invalidate alcança esse componente, por isso ele fica na tentativa antiga até o F5.
+Data do descarte: última mudança para etapa de descarte/caiu em `pipeline_historico` (cobre 96% dos casos), com fallback para `created_at` do lead. `updated_at`/`ultima_acao_at` não servem — foram tocados em massa e marcam todo mundo como "recente".
 
-Mudança conceitual:
+## Fases
 
-- Trocar o `useEffect` por um `useQuery` com key `["cadencia-sem-contato", leadId]`, mantendo exatamente as mesmas 3 leituras em `Promise.all` (`lead_cadencia_sem_contato`, `cadencia_sem_contato_passos`, `pipeline_leads.estagnado_prazo_em`), o mesmo `enabled` (só quando `stageTipo === "sem_contato"`) e a mesma renderização — zero mudança visual.
-- Em `invalidateTaskQueries()`, adicionar:
+### Fase 1 — Banco (1 migração, só funções)
 
+- `preview_campanha_da_base_v2` e `criar_campanha_da_base_v2` passam a aceitar no filtro:
+  - `incluir_descartados` (bool, padrão `true`)
+  - `descarte_min_dias` (int, padrão `90`)
+- Nova CTE de classificação por telefone (8 dígitos) e e-mail: `tem_ativo`, `tem_inativado` (tipo_descarte `definitivo` ou arquivado permanente), `descartado_em`.
+- Exclusão sempre: ativo, inativado, fila de OA, opt-out, produto extinto.
+- Exclusão condicional: descarte com menos de `descarte_min_dias`; e, se `incluir_descartados = false`, todo descarte.
+- Preview passa a devolver a higiene detalhada: `removidos_ativos`, `removidos_inativados`, `removidos_descarte_recente`, `removidos_oa`, além de `total` e `bruto`.
+
+### Fase 2 — Assistente de campanha (frontend)
+
+No passo "Público" do `CriarCampanhaDialog`:
+
+```text
+Higiene do público (sempre aplicada)
+  ✔ Sem leads ativos no pipeline     ✔ Sem inativados     ✔ Sem quem já está em fila de OA
+
+[✓] Incluir leads descartados
+     Só descartados há mais de [ 90 ] dias        (30 / 60 / 90 / 180 / 365 / personalizado)
+
+3.825 inéditos + 353 descartes antigos = 4.178 elegíveis
+Removidos: 541 ativos · 1.478 descartes recentes/inativados · 9 já em Oferta Ativa
 ```
-qc.invalidateQueries({ queryKey: ["cadencia-sem-contato"], refetchType: "all" });
-```
 
-Assim, ao concluir a tentativa, o widget refaz a leitura e mostra "Tentativa 3/7" na hora, sem reload.
+- Rodapé e card de resumo passam a exibir a quebra da higiene.
+- Mesmos controles no filtro da página Base Única, para a contagem exibida bater com a da campanha.
 
-Observação sobre o contador "Tentativas" do rodapé: ele vem de `callAttempts` (atividades do lead) e já é recarregado pelo `onReload` do drawer; se na validação ao vivo ele ainda ficar parado, o ajuste é apenas garantir que o `onReload` roda após a conclusão — não requer mudança de lógica.
+### Fase 3 — Validação ao vivo
 
-## Confirmações explícitas
+Criar a campanha real do Casa Tua com `incluir_descartados = true` e 90 dias, conferir por SQL que nenhum lead liberado tem lead ativo ou inativado no pipeline nem descarte com menos de 90 dias, e validar a tela do corretor.
 
-- Nada de `src/lib/createNextTask.ts` nem `src/lib/taskCompletion.ts` (o early-return de `sem_contato` fica intacto).
-- Nenhuma migration, nenhum trigger (`trg_cadencia_sc_*`), nenhuma edge function.
-- A criação da próxima tentativa em "Sem Contato" continua 100% pelo gatilho do banco; o widget passa apenas a *ler* o estado novo.
-- Nenhuma query nova ao banco além da que o widget já fazia (mesmas leituras, só com cache gerenciado).
-- Sem publish; typecheck ao final.
+## Detalhes técnicos
+
+- Arquivos: migração das duas funções `*_da_base_v2`; `src/hooks/useBaseLeads.ts` (tipos `BaseLeadsFiltro` + retorno do preview); `src/components/leads-base/CriarCampanhaDialog.tsx` (passo Público e rodapé); filtros do `BaseLeadsExplorer`.
+- Sem tabela nova, sem mudança no Mutirão ao vivo, sem alteração no cooldown por lead nem em `oferta_ativa_leads`.
+- Compatibilidade: filtros salvos sem os novos campos assumem `incluir_descartados = true` e 90 dias.
+
+## Decisões assumidas (avise se for diferente)
+
+- "Inativado" = descarte definitivo/arquivamento permanente — nunca volta para Oferta Ativa.
+- Descarte reengajável com mais de 90 dias é público válido; o Mutirão de sexta continua com o seu próprio fluxo, sem mudança.
