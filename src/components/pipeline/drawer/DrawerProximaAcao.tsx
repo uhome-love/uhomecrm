@@ -31,7 +31,10 @@ interface Props {
 /** Detecta o tipo canônico (ligar/whatsapp/email/visita) a partir do tipo+titulo da tarefa. */
 export function parseNextActionType(task: NextTaskLike | null, fallbackText?: string | null):
   "ligar" | "whatsapp" | "email" | "visita" | "followup" | null {
-  const bag = `${task?.tipo ?? ""} ${task?.titulo ?? ""} ${task?.descricao ?? ""} ${fallbackText ?? ""}`.toLowerCase();
+  // Quando existe tarefa concreta, o tipo vem SÓ dela — o texto livre
+  // (lead.proxima_acao) pode estar defasado e sobrescrever o ícone certo.
+  const taskBag = `${task?.tipo ?? ""} ${task?.titulo ?? ""} ${task?.descricao ?? ""}`;
+  const bag = (taskBag.trim() ? taskBag : `${fallbackText ?? ""}`).toLowerCase();
   if (!bag.trim()) return null;
   if (/\b(ligaca|liga[rç]|call|telefon)/.test(bag)) return "ligar";
   if (/\b(whats|zap|wpp)/.test(bag)) return "whatsapp";
