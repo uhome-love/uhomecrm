@@ -28,14 +28,37 @@ const SITUACAO_LABEL: Record<string, string> = {
   ambos: "Pipeline + OA",
 };
 
+const JANELAS_DESCARTE = [30, 60, 90, 180, 365];
+
 export function BaseLeadsExplorer() {
-  const [filtro, setFiltro] = useState<BaseLeadsFiltro>({ nunca_trabalhado: false, com_telefone: true });
+  const [filtro, setFiltro] = useState<BaseLeadsFiltro>({
+    nunca_trabalhado: false,
+    com_telefone: true,
+    incluir_descartados: true,
+    descarte_min_dias: 90,
+  });
   const [page, setPage] = useState(0);
   const [busca, setBusca] = useState("");
   const [criarAberto, setCriarAberto] = useState(false);
 
   const { data, isLoading } = useBaseLeads(filtro, page);
   const { data: emps } = useEmpreendimentosCanonicos();
+  const { data: elegiveis, isLoading: loadingElegiveis } = usePreviewCampanhaV2(
+    {
+      empreendimento_ids: filtro.empreendimento_canonico_id ? [filtro.empreendimento_canonico_id] : [],
+      formularios: [],
+      ano_min: filtro.ano_min ?? null,
+      ano_max: filtro.ano_max ?? null,
+      situacao: null,
+      nunca_trabalhado: !!filtro.nunca_trabalhado,
+      com_telefone: !!filtro.com_telefone,
+      com_email: false,
+      ordem_selecao: "recentes",
+      incluir_descartados: filtro.incluir_descartados ?? true,
+      descarte_min_dias: filtro.descarte_min_dias ?? 90,
+    },
+    true,
+  );
 
   const total = data?.total ?? 0;
   const pageSize = data?.pageSize ?? 50;
