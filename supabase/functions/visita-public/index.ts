@@ -211,9 +211,3 @@ function formatDate(dateStr: string): string {
   return `${d}/${m}/${y}`;
 }
 
-function formatPhone(phone: string): string {
-  let clean = phone.replace(/\D/g, "");
-  if (clean.startsWith("0")) clean = clean.substring(1);
-  if (!clean.startsWith("55")) clean = "55" + clean;
-  return clean;
-}
