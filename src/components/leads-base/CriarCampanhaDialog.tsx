@@ -41,6 +41,8 @@ const FILTRO_PADRAO: CampanhaFiltroV2 = {
   com_telefone: true,
   com_email: false,
   ordem_selecao: "recentes",
+  incluir_descartados: true,
+  descarte_min_dias: 90,
 };
 
 export function CriarCampanhaDialog({ open, onOpenChange, filtroInicial }: Props) {
