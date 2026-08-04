@@ -489,9 +489,10 @@ Deno.serve(async (req) => {
             });
         }
 
-        // Send WhatsApp alert for high-intent events
+        // Send WhatsApp alert for high-intent events (máx 1 por vitrine / 15 min)
         const HIGH_INTENT = ["favorite", "whatsapp_click", "schedule_click", "compare_open"];
-        if (HIGH_INTENT.includes(event_type)) {
+        if (HIGH_INTENT.includes(event_type) && !(body as any).__suppressNotify) {
+
           supabase.from("vitrines")
             .select("titulo, created_by, lead_nome")
             .eq("id", vitrine_id)
