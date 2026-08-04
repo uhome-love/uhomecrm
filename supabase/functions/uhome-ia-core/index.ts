@@ -163,11 +163,13 @@ serve(async (req) => {
     const _auth = await requireRealUser(req, {});
     if (_auth.error) return _auth.error;
 
-    const { messages, role, module, context } = await req.json();
+    const { messages, module, context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const userRole = role === "admin" ? "ceo" : (role || "gestor");
+    // Papel derivado do banco (user_roles), nunca do body
+    const dbRoles = _auth.roles ?? [];
+    const userRole = dbRoles.includes("admin") || dbRoles.includes("diretor") ? "ceo" : "gestor";
     const roleFormat = userRole === "ceo" ? CEO_FORMAT : GERENTE_FORMAT;
     const moduleContext = MODULE_CONTEXTS[module] || MODULE_CONTEXTS.general;
 
