@@ -13653,6 +13653,7 @@ export type Database = {
         }[]
       }
       get_meta_ads_status: { Args: never; Returns: Json }
+      get_meta_ads_token_internal: { Args: never; Returns: string }
       get_my_calendar_integration: {
         Args: never
         Returns: {
@@ -14497,6 +14498,7 @@ export type Database = {
         Args: { p_ativo: boolean; p_empreendimento_id: string }
         Returns: undefined
       }
+      set_meta_ads_token: { Args: { p_token: string }; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       skip_oa_lead: {
