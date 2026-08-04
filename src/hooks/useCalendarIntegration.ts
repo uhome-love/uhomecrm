@@ -21,17 +21,14 @@ export function useCalendarIntegration() {
     enabled: !!profileId,
     staleTime: 30_000,
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("corretor_calendar_integrations")
-        .select("account_email, status, connected_at")
-        .eq("corretor_id", profileId!) // FIX: tabela usa profiles.id (ver mem://arquitetura/database/id-mapping-logic)
-        .eq("provider", "google")
-        .maybeSingle();
+      // Tokens ficam ocultos: a RPC devolve apenas email/status/connected_at
+      const { data } = await (supabase as any).rpc("get_my_calendar_integration");
+      const row = Array.isArray(data) ? data[0] : data;
       return {
-        connected: data?.status === "active",
-        email: data?.account_email ?? null,
-        status: data?.status ?? null,
-        connected_at: data?.connected_at ?? null,
+        connected: row?.status === "active",
+        email: row?.account_email ?? null,
+        status: row?.status ?? null,
+        connected_at: row?.connected_at ?? null,
       };
     },
   });
