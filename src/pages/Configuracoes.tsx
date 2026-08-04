@@ -515,18 +515,19 @@ export default function Configuracoes() {
                   Ferramentas de Sistema
                 </CardTitle>
                 <CardDescription>
-                  Configurações avançadas do CRM — integrações, chaves e reindex. Visível apenas para CEO/Admin.
+                  Configurações avançadas do CRM — integrações, chaves e reindex. Agora centralizadas no Painel Admin.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
-                  <AdminPanel />
-                </Suspense>
+                <Button asChild>
+                  <Link to="/admin">Abrir Painel Admin</Link>
+                </Button>
               </CardContent>
             </Card>
           ) : (
             <p className="text-sm text-muted-foreground">Seção disponível apenas para CEO/Admin.</p>
           )}
+
         </>
       )}
 
