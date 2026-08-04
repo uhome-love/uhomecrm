@@ -31,10 +31,14 @@ export function PassoPublico({
   limite: number;
 }) {
   const total = preview?.total ?? 0;
-  const removidosCrm = preview?.removidos_crm ?? 0;
+  const removidosAtivos = preview?.removidos_ativos ?? 0;
+  const removidosInativados = preview?.removidos_inativados ?? 0;
+  const removidosDescarte = preview?.removidos_descarte_recente ?? 0;
   const removidosOa = preview?.removidos_oa ?? 0;
   const liberados = Math.min(total, limite);
   const anoAtual = new Date().getFullYear();
+  const JANELAS = [30, 60, 90, 180, 365];
+  const janelaPersonalizada = !JANELAS.includes(filtro.descarte_min_dias);
 
   return (
     <div className="space-y-3">
@@ -115,8 +119,8 @@ export function PassoPublico({
           ))}
         </div>
         <p className="text-[11px] text-muted-foreground">
-          A Oferta Ativa é reengajamento de base fria: quem já existe no CRM (ativo, descartado ou arquivado) e quem
-          já está numa fila de Oferta Ativa é removido automaticamente.
+          A Oferta Ativa é reengajamento de base fria: quem tem lead ativo no CRM, quem foi inativado
+          (descarte definitivo ou arquivado) e quem já está numa fila de Oferta Ativa é removido automaticamente.
         </p>
       </div>
 
@@ -133,19 +137,71 @@ export function PassoPublico({
           <Checkbox checked={filtro.nunca_trabalhado} onCheckedChange={(c) => set({ nunca_trabalhado: !!c })} />
           Apenas nunca liberados em campanha
         </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <Checkbox
+            checked={filtro.incluir_descartados}
+            onCheckedChange={(c) => set({ incluir_descartados: !!c })}
+          />
+          Incluir leads descartados
+        </label>
       </div>
+
+      {filtro.incluir_descartados && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Label className="text-xs font-normal text-muted-foreground">
+            Só descartados há mais de
+          </Label>
+          {JANELAS.map((d) => (
+            <Button
+              key={d}
+              type="button"
+              size="sm"
+              variant={filtro.descarte_min_dias === d ? "default" : "outline"}
+              className="h-7 text-xs"
+              onClick={() => set({ descarte_min_dias: d })}
+            >
+              {d} dias
+            </Button>
+          ))}
+          <Input
+            type="number"
+            min={0}
+            className="h-7 w-24"
+            placeholder="personalizado"
+            value={janelaPersonalizada ? filtro.descarte_min_dias : ""}
+            onChange={(e) => set({ descarte_min_dias: Number(e.target.value || 0) })}
+          />
+        </div>
+      )}
 
       <div className="rounded-lg border bg-muted/40 p-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Elegíveis para a campanha</span>
           <span className="font-medium">{loading ? "…" : total.toLocaleString("pt-BR")}</span>
         </div>
-        {(removidosCrm > 0 || removidosOa > 0) && (
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Removidos pela higiene automática</span>
-            <span className="font-mono">
-              {removidosCrm.toLocaleString("pt-BR")} no CRM · {removidosOa.toLocaleString("pt-BR")} na Oferta Ativa
-            </span>
+        {(removidosAtivos > 0 || removidosInativados > 0 || removidosDescarte > 0 || removidosOa > 0) && (
+          <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+            <div className="font-medium uppercase tracking-wide text-[10px]">Removidos pela higiene</div>
+            <div className="flex items-center justify-between">
+              <span>Com lead ativo no pipeline</span>
+              <span className="font-mono">{removidosAtivos.toLocaleString("pt-BR")}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Inativados (definitivo/arquivado)</span>
+              <span className="font-mono">{removidosInativados.toLocaleString("pt-BR")}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>
+                {filtro.incluir_descartados
+                  ? `Descartados há menos de ${filtro.descarte_min_dias} dias`
+                  : "Descartados (todos)"}
+              </span>
+              <span className="font-mono">{removidosDescarte.toLocaleString("pt-BR")}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Já em fila de Oferta Ativa</span>
+              <span className="font-mono">{removidosOa.toLocaleString("pt-BR")}</span>
+            </div>
           </div>
         )}
         <div className="flex items-center justify-between text-sm">

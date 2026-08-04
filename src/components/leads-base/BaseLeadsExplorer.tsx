@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   useBaseLeads,
   useEmpreendimentosCanonicos,
+  usePreviewCampanhaV2,
   type BaseLeadsFiltro,
 } from "@/hooks/useBaseLeads";
 import { CriarCampanhaDialog } from "./CriarCampanhaDialog";
@@ -28,14 +29,37 @@ const SITUACAO_LABEL: Record<string, string> = {
   ambos: "Pipeline + OA",
 };
 
+const JANELAS_DESCARTE = [30, 60, 90, 180, 365];
+
 export function BaseLeadsExplorer() {
-  const [filtro, setFiltro] = useState<BaseLeadsFiltro>({ nunca_trabalhado: false, com_telefone: true });
+  const [filtro, setFiltro] = useState<BaseLeadsFiltro>({
+    nunca_trabalhado: false,
+    com_telefone: true,
+    incluir_descartados: true,
+    descarte_min_dias: 90,
+  });
   const [page, setPage] = useState(0);
   const [busca, setBusca] = useState("");
   const [criarAberto, setCriarAberto] = useState(false);
 
   const { data, isLoading } = useBaseLeads(filtro, page);
   const { data: emps } = useEmpreendimentosCanonicos();
+  const { data: elegiveis, isLoading: loadingElegiveis } = usePreviewCampanhaV2(
+    {
+      empreendimento_ids: filtro.empreendimento_canonico_id ? [filtro.empreendimento_canonico_id] : [],
+      formularios: [],
+      ano_min: filtro.ano_min ?? null,
+      ano_max: filtro.ano_max ?? null,
+      situacao: null,
+      nunca_trabalhado: !!filtro.nunca_trabalhado,
+      com_telefone: !!filtro.com_telefone,
+      com_email: false,
+      ordem_selecao: "recentes",
+      incluir_descartados: filtro.incluir_descartados ?? true,
+      descarte_min_dias: filtro.descarte_min_dias ?? 90,
+    },
+    true,
+  );
 
   const total = data?.total ?? 0;
   const pageSize = data?.pageSize ?? 50;
@@ -133,6 +157,50 @@ export function BaseLeadsExplorer() {
           </div>
           <span className="ml-auto font-medium text-foreground">
             {isLoading ? "Carregando…" : `${total.toLocaleString("pt-BR")} leads`}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <Checkbox
+              checked={filtro.incluir_descartados ?? true}
+              onCheckedChange={(c) => set({ incluir_descartados: !!c })}
+            />
+            Incluir leads descartados
+          </label>
+          {(filtro.incluir_descartados ?? true) && (
+            <>
+              <span>Só descartados há mais de</span>
+              {JANELAS_DESCARTE.map((d) => (
+                <Button
+                  key={d}
+                  type="button"
+                  size="sm"
+                  variant={(filtro.descarte_min_dias ?? 90) === d ? "default" : "outline"}
+                  className="h-7 text-xs"
+                  onClick={() => set({ descarte_min_dias: d })}
+                >
+                  {d} dias
+                </Button>
+              ))}
+              <Input
+                type="number"
+                min={0}
+                className="h-7 w-[110px]"
+                placeholder="personalizado"
+                value={
+                  JANELAS_DESCARTE.includes(filtro.descarte_min_dias ?? 90)
+                    ? ""
+                    : (filtro.descarte_min_dias ?? "")
+                }
+                onChange={(e) => set({ descarte_min_dias: Number(e.target.value || 0) })}
+              />
+            </>
+          )}
+          <span className="ml-auto font-medium text-foreground">
+            {loadingElegiveis
+              ? "Calculando elegíveis…"
+              : `${(elegiveis?.total ?? 0).toLocaleString("pt-BR")} elegíveis para campanha`}
           </span>
         </div>
       </div>

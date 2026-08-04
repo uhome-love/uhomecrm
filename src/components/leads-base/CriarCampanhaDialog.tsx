@@ -41,6 +41,8 @@ const FILTRO_PADRAO: CampanhaFiltroV2 = {
   com_telefone: true,
   com_email: false,
   ordem_selecao: "recentes",
+  incluir_descartados: true,
+  descarte_min_dias: 90,
 };
 
 export function CriarCampanhaDialog({ open, onOpenChange, filtroInicial }: Props) {
@@ -85,6 +87,8 @@ export function CriarCampanhaDialog({ open, onOpenChange, filtroInicial }: Props
       situacao: null, // higiene automática: só entra quem não existe no CRM
       nunca_trabalhado: filtroInicial?.nunca_trabalhado ?? true,
       com_telefone: filtroInicial?.com_telefone ?? true,
+      incluir_descartados: filtroInicial?.incluir_descartados ?? true,
+      descarte_min_dias: filtroInicial?.descarte_min_dias ?? 90,
     });
     setIdent((s) => ({ ...s, nome: "", observacao: "", expira: expiracaoEm(3) }));
     setEscopo({ equipes: [], corretores: [], liberar: true });
