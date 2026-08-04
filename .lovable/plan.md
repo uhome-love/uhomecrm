@@ -2,14 +2,20 @@
 
 ## Conferência da campanha (só leitura, feita agora)
 
-Campanha confirmada: **Casa Tua Canoas - Pré-venda**, ID do Meta `120250824500980030` — é nova, e **todos** os leads de Canoas no CRM vieram dela (7 leads, o mais recente às 20:24 BRT).
+Sim, com certeza. Checagem cruzada no banco:
 
-Duas observações:
+- Existem **7 leads** ligados a Canoas e os 7 têm o **mesmo ID de campanha do Meta: `120250824500980030`** ("Casa Tua Canoas - Pré-venda") e o **mesmo formulário `1766681441306699`**. Nenhum outro nome de campanha aparece (contagem de campanhas distintas = 1).
+- Nenhum lead do Casa Tua Porto Alegre (campanha "Casa Tua - v3" e formulários antigos) entrou nesse grupo, e nenhum lead do formulário de Canoas foi parar no POA.
 
-- 5 leads são de hoje (04/08). Os outros 2 aparecem com data de 04/05 e 27/06 porque são contatos que **já existiam** no CRM: o Meta reenviou e o CRM atualizou os dados de campanha (atualizados hoje), mantendo a data de entrada original. Não são leads antigos desta campanha.
-- Conjuntos identificados: Semelhante 1%, Looklike - Leads Moradia 1%, Fuga do Aluguel.
+Um detalhe importante que a checagem revelou: **2 dos 7 são contatos que já existiam no CRM** e preencheram agora o formulário de Canoas — o histórico deles registra "NOVO INTERESSE 04/08 · Casa Tua Canoas - Pré":
+
+- Leonardo Bueno — antes estava em Casa Tua (Porto Alegre)
+- Ana Júlia Azambuja — antes estava em Vivid
+
+Ou seja: 100% dos 7 têm interesse na campanha de Canoas; 5 são contatos inéditos e 2 são reaproveitados de outros produtos (comportamento correto da regra de "novo interesse").
 
 O que está errado: 6 dos 7 leads estão **sem empreendimento canônico**, porque chegam com o formulário como ID cru (`1766681441306699`) e o texto do empreendimento cortado (`Casa Tua Canoas - Pré`), e não existe apelido para nenhum dos dois.
+
 
 ## O que vou fazer
 
