@@ -6,19 +6,12 @@
  */
 import { withCorsAndErrorHandling, requireApiKey, callAI } from "../_shared/ai-helpers.ts";
 import { jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 
 Deno.serve(withCorsAndErrorHandling("oa-session-coaching", async (req) => {
-  // ── Auth: validate JWT ──
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return errorResponse("Unauthorized", 401);
-  }
-  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-  const _sbAuth = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
-  const { data: _claims, error: _claimsErr } = await _sbAuth.auth.getClaims(authHeader.replace("Bearer ", ""));
-  if (_claimsErr || !_claims?.claims) {
-    return errorResponse("Unauthorized", 401);
-  }
+  // ── Auth: usuário real obrigatório (anon key rejeitada) ──
+  const _auth = await requireRealUser(req, {});
+  if (_auth.error) return _auth.error;
 
   const { session_metrics, corretor_nome } = await req.json();
 
