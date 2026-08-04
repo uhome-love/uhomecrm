@@ -35,7 +35,7 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
     );
     const { data: pl, error: plErr } = await sbAdminD
       .from("pipeline_leads")
-      .select("nome, empreendimento, motivo_descarte, reengajamento_status, stage_changed_at, lead_score, lead_temperatura, origem, campanha, objetivo_cliente, bairro_regiao, forma_pagamento, observacoes, corretor_id, user_id")
+      .select("nome, empreendimento, motivo_descarte, reengajamento_status, stage_changed_at, lead_score, lead_temperatura, origem, campanha, objetivo_cliente, bairro_regiao, forma_pagamento, observacoes, corretor_id")
       .eq("id", pid)
       .maybeSingle();
     if (plErr || !pl) return errorResponse("Lead não encontrado", 404);
@@ -48,7 +48,7 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
     if (!_isGestao) {
       const { data: _prof } = await sbAdminD
         .from("profiles").select("id").eq("user_id", user.id).maybeSingle();
-      const owners = [(pl as any).corretor_id, (pl as any).user_id].filter(Boolean);
+      const owners = [(pl as any).corretor_id].filter(Boolean);
       const mine = [user.id, _prof?.id].filter(Boolean);
       if (!owners.some((o: string) => mine.includes(o))) {
         return errorResponse("Forbidden", 403);
