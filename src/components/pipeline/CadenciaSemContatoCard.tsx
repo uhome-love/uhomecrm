@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { Phone, MessageCircle, RefreshCcw, AlertTriangle, CheckCircle2, Repeat } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { nowBRT } from "@/lib/brtTime";
 
