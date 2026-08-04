@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   useBaseLeads,
   useEmpreendimentosCanonicos,
+  usePreviewCampanhaV2,
   type BaseLeadsFiltro,
 } from "@/hooks/useBaseLeads";
 import { CriarCampanhaDialog } from "./CriarCampanhaDialog";
