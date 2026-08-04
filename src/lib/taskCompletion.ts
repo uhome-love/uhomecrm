@@ -18,6 +18,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { todayBRT } from "@/lib/utils";
+import { createNextTask } from "@/lib/createNextTask";
+
 import type {
   CompletionPayload,
   TipoProximaTarefa,
@@ -45,8 +47,9 @@ export interface TaskCompletionContext {
   leadId: string;
   leadNome: string;
   leadStageId?: string | null;
-  /** Cria a próxima tarefa quando outcome === 'agendar'. */
-  addTarefa: (input: {
+  /** @deprecated não é mais usado — a criação passou para createNextTask(). */
+  addTarefa?: (input: {
+
     tipo: TipoProximaTarefa;
     titulo: string;
     descricao?: string | null;
@@ -123,20 +126,45 @@ export async function runTaskCompletion(
   let toastMessage = "Tarefa concluída ✅";
   let level: TaskCompletionResult["level"] = "success";
 
-  // 4) Outcome: agendar → cria próxima tarefa
+  // 4) Outcome: agendar → cria próxima tarefa (fonte única: createNextTask)
   if (outcome === "agendar" && nova_tarefa) {
+    // Guardrail (regra 20/07/2026): em "Sem Contato" a próxima tarefa é criada
+    // SEMPRE pelo gatilho de banco (trg_cadencia_sem_contato), nunca pela UI.
+    let stageTipo: string | null = null;
+    if (ctx.leadStageId) {
+      const { data: stageRow } = await supabase
+        .from("pipeline_stages")
+        .select("tipo")
+        .eq("id", ctx.leadStageId)
+        .maybeSingle();
+      stageTipo = (stageRow as { tipo?: string } | null)?.tipo ?? null;
+    }
+    if (stageTipo === "sem_contato") {
+      return { toastMessage: "Tarefa concluída ✅", level: "success" };
+    }
+
     const [y, m, d] = (nova_tarefa.vence_em || "").split("-");
     const dateSuffix = y && m && d ? ` · ${d}/${m}` : "";
     const titulo = `${TIPO_LABELS[nova_tarefa.tipo] || nova_tarefa.tipo}: ${ctx.leadNome}${dateSuffix}`;
-    await ctx.addTarefa({
+    const res = await createNextTask({
+      leadId: ctx.leadId,
+      userId,
       tipo: nova_tarefa.tipo,
       titulo,
       descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
       vence_em: nova_tarefa.vence_em,
       hora_vencimento: nova_tarefa.hora_vencimento || null,
+      stageTipo,
     });
+    if (!res.ok) {
+      return {
+        toastMessage: "Tarefa concluída, mas a próxima não foi criada: " + (res.error || "falha"),
+        level: "warning",
+      };
+    }
     toastMessage = "Tarefa concluída e próxima agendada ✅";
   }
+
 
   // 5) Opcional: mover stage (agendar | concluir)
   if (
