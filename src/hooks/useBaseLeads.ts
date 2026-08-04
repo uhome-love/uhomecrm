@@ -323,7 +323,8 @@ export interface CampanhaFiltroV2 {
 
 export interface CampanhaConfigV2 {
   limite: number;
-  expira_em: string;
+  /** null = prazo indeterminado (campanha sem expiração). */
+  expira_em: string | null;
   liberar: boolean;
   observacao: string | null;
   template_id: string | null;
