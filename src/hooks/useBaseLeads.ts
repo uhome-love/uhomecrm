@@ -92,11 +92,18 @@ export function useBaseLeadsResumo() {
         .from("base_leads")
         .select("id", { count: "exact", head: true })
         .is("empreendimento_canonico_id", null);
+      // Já passou por alguma campanha de Oferta Ativa (histórico), mesmo que hoje não esteja em nenhuma
+      const { count: trabalhadoAntes } = await supabase
+        .from("base_leads")
+        .select("id", { count: "exact", head: true })
+        .not("oferta_ativa_lead_id", "is", null);
       return {
         total: total ?? 0,
         semProduto: semProduto ?? 0,
+        trabalhadoAntes: trabalhadoAntes ?? 0,
         ...Object.fromEntries(results),
       } as Record<string, number>;
+
     },
     staleTime: 5 * 60_000,
   });
