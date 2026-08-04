@@ -47,8 +47,9 @@ export interface TaskCompletionContext {
   leadId: string;
   leadNome: string;
   leadStageId?: string | null;
-  /** Cria a próxima tarefa quando outcome === 'agendar'. */
-  addTarefa: (input: {
+  /** @deprecated não é mais usado — a criação passou para createNextTask(). */
+  addTarefa?: (input: {
+
     tipo: TipoProximaTarefa;
     titulo: string;
     descricao?: string | null;
