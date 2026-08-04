@@ -339,6 +339,12 @@ export interface PreviewV2 {
   bruto: number;
   /** Removidos por já existirem no pipeline (ativos, descartados ou arquivados). */
   removidos_crm: number;
+  /** Removidos por terem lead ativo no pipeline. */
+  removidos_ativos: number;
+  /** Removidos por inativação permanente (descarte definitivo ou arquivado). */
+  removidos_inativados: number;
+  /** Removidos por descarte dentro da janela mínima. */
+  removidos_descarte_recente: number;
   /** Removidos por já estarem numa fila de Oferta Ativa. */
   removidos_oa: number;
   amostra: {
@@ -369,6 +375,9 @@ export function usePreviewCampanhaV2(filtro: CampanhaFiltroV2, enabled: boolean)
         total: r.total ?? 0,
         bruto: r.bruto ?? r.total ?? 0,
         removidos_crm: r.removidos_crm ?? 0,
+        removidos_ativos: r.removidos_ativos ?? 0,
+        removidos_inativados: r.removidos_inativados ?? 0,
+        removidos_descarte_recente: r.removidos_descarte_recente ?? 0,
         removidos_oa: r.removidos_oa ?? 0,
         amostra: r.amostra ?? [],
       };
