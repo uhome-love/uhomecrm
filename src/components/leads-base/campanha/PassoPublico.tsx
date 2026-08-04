@@ -119,8 +119,8 @@ export function PassoPublico({
           ))}
         </div>
         <p className="text-[11px] text-muted-foreground">
-          A Oferta Ativa é reengajamento de base fria: quem já existe no CRM (ativo, descartado ou arquivado) e quem
-          já está numa fila de Oferta Ativa é removido automaticamente.
+          A Oferta Ativa é reengajamento de base fria: quem tem lead ativo no CRM, quem foi inativado
+          (descarte definitivo ou arquivado) e quem já está numa fila de Oferta Ativa é removido automaticamente.
         </p>
       </div>
 
