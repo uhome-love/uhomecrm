@@ -315,6 +315,10 @@ export interface CampanhaFiltroV2 {
   com_telefone: boolean;
   com_email: boolean;
   ordem_selecao: "recentes" | "antigos" | "aleatorio";
+  /** Permitir descartes reengajáveis antigos (padrão true). */
+  incluir_descartados: boolean;
+  /** Janela mínima do descarte, em dias (padrão 90). */
+  descarte_min_dias: number;
 }
 
 export interface CampanhaConfigV2 {
