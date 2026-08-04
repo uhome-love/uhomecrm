@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { getSoundEnabled, setSoundEnabled, getCelebrationEnabled, setCelebrationEnabled } from "@/lib/celebrations";
 import { emitProfileUpdated } from "@/lib/profileEvents";
 
-const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 
 /** Seções das Configurações — estado sempre na URL (`?secao=`). */
 type ConfigSectionId = "perfil" | "notificacoes" | "integracoes" | "sistema";
