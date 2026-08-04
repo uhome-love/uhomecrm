@@ -34,6 +34,51 @@ serve(async (req) => {
   try {
     const { telefone, tipo, dados } = await req.json();
 
+    // --- Guard híbrido: cron/service-role OU gestor/admin autenticado (cobrança) ---
+    const cronDenied = requireCronAuth(req);
+    if (cronDenied) {
+      const COBRANCA_TIPOS = ["cobranca", "cobranca_visita"];
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (!authHeader.startsWith("Bearer ") || !COBRANCA_TIPOS.includes(String(tipo))) {
+        L.warn("Unauthorized call", { tipo });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const authClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(
+        authHeader.replace("Bearer ", ""),
+      );
+      const userId = claimsData?.claims?.sub;
+      if (claimsError || !userId) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const admin = getSupabase();
+      const { data: roles } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      const allowed = (roles ?? []).some((r: { role: string }) =>
+        ["admin", "gestor", "diretor"].includes(r.role)
+      );
+      if (!allowed) {
+        L.warn("Forbidden call", { tipo, userId });
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+
     const token = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || Deno.env.get("WHATSAPP_TOKEN");
     const phoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || Deno.env.get("WHATSAPP_PHONE_ID");
 
