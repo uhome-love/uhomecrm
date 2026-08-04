@@ -1,27 +1,32 @@
-# Regra fixa: sem corretor alocado e ativo no produto → Fila do CEO
+# Criar campanha de Oferta Ativa: corrigir erro de telefone duplicado + prazo indeterminado
 
-## Problema atual
+## 1. O erro "duplicate key ... idx_oa_leads_unique_phone_active"
 
-Hoje, quando um lead chega com empreendimento identificado, a distribuição tenta primeiro o pool de corretores **alocados naquele empreendimento** e que estão ativos na roleta. Se esse pool está vazio, ela **não** para: cai automaticamente num segundo pool por **segmento**, e o lead vai para qualquer corretor credenciado do segmento — mesmo sem foco no produto.
+O banco tem uma trava: o mesmo telefone não pode estar em duas campanhas de Oferta Ativa ao mesmo tempo (nos estados na fila / em cooldown / aproveitado). A criação da campanha hoje só evita telefones que estão em campanhas **liberadas e ainda dentro do prazo** — e faz essa comparação pelos **8 últimos dígitos**, enquanto a trava do banco compara o **telefone inteiro**.
 
-## Regra nova
+Verificado na base agora:
+- 3.278 leads de Oferta Ativa estão nesses estados em campanhas **pendentes ou já expiradas** — invisíveis para o filtro atual, mas ainda ocupando a trava.
+- 8 telefones estão duplicados dentro da própria Base Única, ou seja, a mesma criação pode tentar inserir o mesmo número duas vezes.
 
-Se o lead tem empreendimento identificado e **não existe nenhum corretor alocado nesse empreendimento ativo na roleta naquele momento**, o lead vai direto para a **Fila do CEO** (`pendente_distribuicao`), com o motivo "sem corretor alocado ativo neste produto". Nada de repassar para corretor sem foco.
+Qualquer um dos dois estoura o erro e a campanha inteira falha.
 
-Continua igual:
-- Lead com corretor alocado e ativo → distribui normalmente (rodízio por produto).
-- Lead **sem** empreendimento identificado → mantém o comportamento atual (pool por segmento), já que não há produto para checar.
-- Empreendimento inativo → Fila do CEO (já existia).
-- Despacho manual da Fila do CEO pelo CEO/gestor → inalterado.
+### Correção
+Atualizar as funções `criar_campanha_da_base_v2` e `preview_campanha_da_base_v2` (para o número do preview bater com o que realmente será criado):
+- Passar a excluir telefones que já estão ocupados em **qualquer** campanha (independentemente de a lista estar liberada, pendente ou expirada), comparando pelo telefone completo — exatamente o mesmo critério da trava do banco.
+- Deduplicar a seleção por telefone antes de inserir (um registro por número).
+- Como cinto de segurança, `ON CONFLICT DO NOTHING` na inserção, para nunca mais derrubar a criação inteira por causa de um número.
 
-## Onde o CEO vê
+Resultado: a campanha é criada sempre; números já em uso simplesmente não entram, e o total mostrado reflete o que entrou de fato.
 
-Na Fila do CEO o motivo aparece como "sem corretor alocado ativo neste produto" — o rótulo já existe na tela, então nenhuma mudança de frontend é necessária.
+## 2. Prazo indeterminado
+
+Hoje a campanha exige uma data de expiração. Vamos permitir campanha **sem prazo**:
+- Novo botão/opção "Sem prazo (indeterminado)" ao lado dos atalhos 24h / 3 dias / 7 dias no passo "2 · Campanha". Ao marcar, o campo de data é desabilitado e a campanha é gravada sem data de expiração.
+- O banco já aceita campanha sem prazo (`expira_em` nulo) e as regras de visibilidade e o encerramento automático já tratam "sem prazo" como sempre ativa — nenhuma mudança de banco é necessária para isso.
+- Encerramento manual continua disponível na aba Campanhas.
 
 ## Detalhes técnicos
 
-- Uma migration com `CREATE OR REPLACE FUNCTION public.distribuir_lead_atomico(...)`, mesma assinatura e mesmo corpo, com uma única alteração de fluxo:
-  - No ramo em que `v_emp_canonico_id IS NOT NULL` e o pool "alocado" não retorna ninguém, em vez de setar `v_use_segmento := TRUE`, define `v_failure_reason := 'sem_alocado_produto'` e segue para o bloco de Fila do CEO já existente (`aceite_status='pendente_distribuicao'`, `motivo_pendencia`, registro em `distribuicao_historico` com `pool='fila_ceo'`).
-  - O fallback por segmento passa a valer somente quando `v_emp_canonico_id IS NULL`.
-- Sem mudanças em `credenciar_por_alocacao`, roleta, edge functions ou frontend.
-- Validação após aplicar: conferir na Fila do CEO que leads de produto sem corretor alocado passam a entrar com o motivo novo, e que leads de produto com corretor alocado continuam sendo distribuídos normalmente.
+- Uma migration com `CREATE OR REPLACE FUNCTION` para `criar_campanha_da_base_v2` e `preview_campanha_da_base_v2`: CTE `oa` passa a ler `oferta_ativa_leads` por `telefone_normalizado` completo sem filtrar por status da lista; `sel` ganha `DISTINCT ON (telefone_normalizado)`; `INSERT ... ON CONFLICT DO NOTHING`.
+- Frontend: `PassoIdentidade.tsx` (campo `expira` aceita string vazia + atalho "Sem prazo"), `CriarCampanhaDialog.tsx` (envia `expira_em: null` quando vazio) e o tipo em `useBaseLeads.ts` (`expira_em: string | null`).
+- Validação: criar uma campanha real com o mesmo filtro que falhou e confirmar que ela é criada, mais uma campanha sem prazo aparecendo como ativa para os corretores.
