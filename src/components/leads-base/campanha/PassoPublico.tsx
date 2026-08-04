@@ -31,10 +31,14 @@ export function PassoPublico({
   limite: number;
 }) {
   const total = preview?.total ?? 0;
-  const removidosCrm = preview?.removidos_crm ?? 0;
+  const removidosAtivos = preview?.removidos_ativos ?? 0;
+  const removidosInativados = preview?.removidos_inativados ?? 0;
+  const removidosDescarte = preview?.removidos_descarte_recente ?? 0;
   const removidosOa = preview?.removidos_oa ?? 0;
   const liberados = Math.min(total, limite);
   const anoAtual = new Date().getFullYear();
+  const JANELAS = [30, 60, 90, 180, 365];
+  const janelaPersonalizada = !JANELAS.includes(filtro.descarte_min_dias);
 
   return (
     <div className="space-y-3">
