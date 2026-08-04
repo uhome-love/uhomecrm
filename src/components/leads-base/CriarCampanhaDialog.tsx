@@ -164,7 +164,7 @@ export function CriarCampanhaDialog({ open, onOpenChange, filtroInicial }: Props
                       filtro,
                       config: {
                         limite: ident.limite,
-                        expira_em: new Date(ident.expira).toISOString(),
+                        expira_em: ident.expira ? new Date(ident.expira).toISOString() : null,
                         liberar: escopo.liberar,
                         observacao: ident.observacao.trim() || null,
                         template_id: ident.template_id,
