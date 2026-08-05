@@ -95,7 +95,9 @@ export default function DiscardLeadDialog({
           .from("pipeline_leads")
           .update({
             motivo_descarte: motivoTexto,
+            motivo_descarte_code: motivo,
             tipo_descarte: "reengajavel",
+
             stage_id: descarteStage.id,
             stage_changed_at: nowIso,
             ultima_acao_at: nowIso,
