@@ -167,6 +167,22 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
           .select("id, nome, reativado_por_nutricao, corretor_id, empreendimento")
           .in("id", leadIds);
         leadsMap = Object.fromEntries((leads ?? []).map((l) => [l.id, l]));
+        // Base Única: o lead_id não existe em pipeline_leads — busca o nome na base
+        const faltando = leadIds.filter((id) => !leadsMap[id]);
+        if (faltando.length) {
+          const { data: base } = await supabase
+            .from("base_leads")
+            .select("id, nome")
+            .in("id", faltando);
+          (base ?? []).forEach((b: any) => {
+            leadsMap[b.id] = {
+              nome: b.nome ?? null,
+              reativado_por_nutricao: null,
+              corretor_id: null,
+              empreendimento: null,
+            };
+          });
+        }
       }
       const corretorIds = Array.from(
         new Set(Object.values(leadsMap).map((l) => l.corretor_id).filter(Boolean))
