@@ -565,6 +565,8 @@ Deno.serve(async (req) => {
     let removidosPorEventoRecente = 0;
     let duplicadosFilaRemovidos = 0;
     let totalBrutoCapturado: number | null = null;
+    const paginacaoInfo: Record<string, { paginas: number; linhas: number; cap: number }> = {};
+
     let totalAlvo = 0;
     let initialSent = 0;
     let initialFailed = 0;
