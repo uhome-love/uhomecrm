@@ -272,13 +272,15 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     setInativando(true);
     try {
       const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+      const reason = getReasonByCode(inativarMotivo);
       const labelRaw = inativarMotivo === "outro"
         ? (inativarObs.trim() || "Outro motivo")
-        : inativarMotivo;
+        : (reason?.label || inativarMotivo);
       const motivoTexto = buildMotivoDescarte(
         tipoDescarte === "definitivo" ? "definitivo" : "reengajavel",
         labelRaw,
       );
+
 
       if (tipoDescarte === "definitivo") {
         // Definitivo: arquiva o lead (some da carteira). Update direto, sem depender de onUpdate.
@@ -287,7 +289,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           .from("pipeline_leads")
           .update({
             motivo_descarte: motivoTexto,
+            motivo_descarte_code: inativarMotivo,
             tipo_descarte: "definitivo",
+
             arquivado: true,
             ultima_acao_at: nowIso,
           })
@@ -312,7 +316,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             stage_changed_at: nowIso,
             ultima_acao_at: nowIso,
             motivo_descarte: motivoTexto,
+            motivo_descarte_code: inativarMotivo,
             tipo_descarte: "reengajavel",
+
           })
           .eq("id", lead.id);
         if (error) throw error;
@@ -967,11 +973,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <Select value={inativarMotivo} onValueChange={setInativarMotivo}>
                 <SelectTrigger><SelectValue placeholder="Selecione o motivo..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Contato errado">📵 Contato errado</SelectItem>
-                  <SelectItem value="Não quer mais contato">🚫 Não quer mais contato</SelectItem>
-                  <SelectItem value="Solicitou retirada do nome">🗑️ Solicitou retirada do nome</SelectItem>
-                  <SelectItem value="outro">✏️ Outro motivo</SelectItem>
+                  {(tipoDescarte === "reengajavel"
+                    ? DISCARD_REASONS_REENGAJAVEL
+                    : DISCARD_REASONS_DEFINITIVO
+                  ).map((r) => (
+                    <SelectItem key={r.code} value={r.code}>{reasonDisplay(r)}</SelectItem>
+                  ))}
                 </SelectContent>
+
               </Select>
             </div>
             {inativarMotivo === "outro" && (
