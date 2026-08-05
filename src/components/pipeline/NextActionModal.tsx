@@ -148,15 +148,18 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
       } else if (selected === "descartar") {
         if (!motivoDescarte) { toast.error("Selecione o motivo"); setSaving(false); return; }
         const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
-        const labelRaw = motivoDescarte === "Outro"
+        const reason = getReasonByCode(motivoDescarte);
+        const labelRaw = motivoDescarte === "outro"
           ? (obsDescarte.trim() || "Outro motivo")
-          : motivoDescarte;
+          : (reason?.label || motivoDescarte);
         const motivoTexto = buildMotivoDescarte("reengajavel", labelRaw);
         await supabase.from("pipeline_leads").update({
           motivo_descarte: motivoTexto,
+          motivo_descarte_code: motivoDescarte,
           tipo_descarte: "reengajavel",
           updated_at: new Date().toISOString(),
         } as any).eq("id", leadId);
+
         if (descarteStage) {
           await onMove(leadId, descarteStage.id, motivoTexto);
         }
