@@ -130,29 +130,19 @@ export const PROXIMA_TAREFA_OPTIONS: ReadonlyArray<{
   { value: "email", label: "E-mail", Icon: Mail },
 ];
 
-/* ─────────── Motivos canônicos (aprovados pelo CEO 2026-05-22) ─────────── */
+/* ─────────── Motivos canônicos — fonte única em src/lib/discardReasons.ts ─────────── */
 
-export interface OutcomeReason {
-  readonly code: string;
-  readonly label: string;
-}
+import {
+  DISCARD_REASONS_REENGAJAVEL,
+  DISCARD_REASONS_DEFINITIVO,
+  type DiscardReason,
+} from "@/lib/discardReasons";
 
-export const DESCARTE_REASONS: ReadonlyArray<OutcomeReason> = [
-  { code: "nao_atende", label: "Não atende / não responde" },
-  { code: "sem_interesse_momento", label: "Sem interesse no momento" },
-  { code: "sem_condicao_financeira", label: "Sem condição financeira" },
-  { code: "imovel_nao_atende", label: "Imóvel não atende necessidade" },
-  { code: "desistiu_compra", label: "Desistiu da compra" },
-  { code: "outro", label: "Outro (especificar)" },
-];
+export type OutcomeReason = DiscardReason;
 
-export const INATIVAR_REASONS: ReadonlyArray<OutcomeReason> = [
-  { code: "nao_quer_contato", label: "Não quer mais contato" },
-  { code: "contato_invalido", label: "Contato errado / Número inválido" },
-  { code: "lgpd", label: "Solicitou retirada (LGPD)" },
-  { code: "lead_antigo", label: "Lead antigo sem retorno" },
-  { code: "outro", label: "Outro (especificar)" },
-];
+export const DESCARTE_REASONS: ReadonlyArray<OutcomeReason> = DISCARD_REASONS_REENGAJAVEL;
+export const INATIVAR_REASONS: ReadonlyArray<OutcomeReason> = DISCARD_REASONS_DEFINITIVO;
+
 
 /* ─────────── Quick dates ─────────── */
 
