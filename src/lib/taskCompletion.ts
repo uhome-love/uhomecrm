@@ -108,6 +108,10 @@ export async function runTaskCompletion(
     .update({ ultima_acao_at: now, updated_at: now } as never)
     .eq("id", ctx.leadId);
 
+  // 2b) Toque humano do corretor (aditivo)
+  await registrarToque(ctx.leadId);
+
+
   // 3) Atividade (sempre)
   await supabase.from("pipeline_atividades").insert({
     pipeline_lead_id: ctx.leadId,
