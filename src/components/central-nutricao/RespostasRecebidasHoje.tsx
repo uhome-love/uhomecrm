@@ -174,7 +174,7 @@ export default function RespostasRecebidasHoje({
           origem: viaBotao ? "botao_meta" : "texto_meta",
           quando: d.responded_at,
           lead_id: d.lead_id,
-          nome: lead?.nome || oa?.nome || null,
+          nome: lead?.nome || base?.nome || oa?.nome || foneMatch?.nome || null,
           phone: d.phone,
           texto: viaBotao ? `[botão] ${d.response_text || d.button_response}` : (d.response_text || "—"),
           classificacao,
