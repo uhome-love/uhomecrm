@@ -8139,6 +8139,7 @@ export type Database = {
           tipo_acao: string | null
           tipo_descarte: string | null
           ultima_acao_at: string | null
+          ultimo_toque_at: string | null
           updated_at: string
           valor_estimado: number | null
           visita_amanha_resposta: string | null
@@ -8253,6 +8254,7 @@ export type Database = {
           tipo_acao?: string | null
           tipo_descarte?: string | null
           ultima_acao_at?: string | null
+          ultimo_toque_at?: string | null
           updated_at?: string
           valor_estimado?: number | null
           visita_amanha_resposta?: string | null
@@ -8367,6 +8369,7 @@ export type Database = {
           tipo_acao?: string | null
           tipo_descarte?: string | null
           ultima_acao_at?: string | null
+          ultimo_toque_at?: string | null
           updated_at?: string
           valor_estimado?: number | null
           visita_amanha_resposta?: string | null
