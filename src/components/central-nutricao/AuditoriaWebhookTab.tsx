@@ -644,6 +644,7 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
               <div className="flex items-center gap-2">
                 <Radio className={`h-4 w-4 ${activeRun ? "text-blue-600 animate-pulse" : "text-muted-foreground"}`} />
                 <span className="text-sm font-semibold">Envios sendo processados</span>
+                <Badge variant="outline" className="text-[10px] font-normal">totais do disparo</Badge>
                 {isFetchingQueue && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
               </div>
               <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
