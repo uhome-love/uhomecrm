@@ -56,15 +56,19 @@ export default function DiscardLeadDialog({
     if (open) setTipo(defaultTipo);
   }, [open, defaultTipo]);
 
+  const reasons = tipo === "definitivo" ? DISCARD_REASONS_DEFINITIVO : DISCARD_REASONS_REENGAJAVEL;
+
   const reset = () => { setMotivo(""); setObs(""); setTipo(defaultTipo); };
 
   const handleConfirm = async () => {
     if (!motivo) { toast.error("Selecione um motivo"); return; }
     setSaving(true);
     try {
-      const labelRaw = motivo === "outro" ? (obs.trim() || "Outro motivo") : motivo;
+      const reason = getReasonByCode(motivo);
+      const labelRaw = motivo === "outro" ? (obs.trim() || "Outro motivo") : (reason?.label || motivo);
       const motivoTexto = buildMotivoDescarte(tipo, labelRaw);
       const nowIso = new Date().toISOString();
+
 
       if (tipo === "definitivo") {
         const { error } = await supabase
