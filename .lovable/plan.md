@@ -320,25 +320,26 @@ mexida em tarefa. Comparando com **toque real** (ligação, WhatsApp, visita, pr
 
 > **Atividade atualiza. Tarefa lembra. Dias sem atividade cobram.**
 
-Quatro estados — os três primeiros o corretor vê, o quarto **sai da mão dele**:
+Quatro estados — os três primeiros o corretor vê nas pílulas, o quarto **sai da mão dele**:
 
 ```text
-ATIVIDADE ──► contador zera
+ATIVIDADE REGISTRADA ──► contador zera ──► volta a EM DIA
      │
-0 ─ EM DIA ──► ATRASADO ──► EM ESTAGNAÇÃO ──► ESTAGNADO
-   (verde)     (âmbar)       (vermelho, 24h)   (sai do corretor → tela do gestor)
-                                                registrou = volta a Em dia
+0 ─ EM DIA ──► DESATUALIZADO ──► EM ESTAGNAÇÃO ──► ESTAGNADO
+   (verde)        (âmbar)        (vermelho, 24h)   (sai do corretor → tela do gestor)
 ```
 
-- **Em dia** — dentro do prazo da etapa.
-- **Atrasado** — passou o prazo; aparece em âmbar, sobe no Modo Foco.
-- **Em estagnação** — última chance: **24 horas** para registrar algo, com aviso claro
-  ("Você perde este lead em 24h") + notificação.
-- **Estagnado** — sai da carteira do corretor, **some do board dele** e cai na tela
+- **Em dia** — teve atividade dentro do prazo da etapa.
+- **Desatualizado** — passou o 1º prazo; âmbar, sobe no Modo Foco. Não perde nada.
+- **Em estagnação** — passou o 2º prazo: **24 horas** para registrar algo, com aviso na tela
+  ("Você perde este lead em 24h") + notificação no sino e no resumo diário.
+- **Estagnado** — sai da carteira, **some do board do corretor** e cai na tela
   `/leads-estagnados` do gestor, que decide: devolver, repassar, roleta ou descartar
   (RPC `decidir_lead_estagnado`, que já existe).
 
-Nada de "predisposição" — em tela, sempre "**há X dias sem contato**".
+**O que torna o lead atualizado é uma atividade registrada** — nada mais. Nada de "predisposição":
+em tela é sempre "**há X dias sem contato**".
+
 
 ### 12.3 O que conta como atividade
 
