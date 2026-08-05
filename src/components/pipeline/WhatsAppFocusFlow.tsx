@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { dateToBRT } from "@/lib/utils";
 import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 interface WhatsAppFocusFlowProps {
   isOpen: boolean;
