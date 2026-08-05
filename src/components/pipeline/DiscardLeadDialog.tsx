@@ -162,7 +162,7 @@ export default function DiscardLeadDialog({
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">O que fazer com o lead? *</Label>
-            <Select value={tipo} onValueChange={(v) => setTipo(v as "reengajavel" | "definitivo")}>
+            <Select value={tipo} onValueChange={(v) => { setTipo(v as "reengajavel" | "definitivo"); setMotivo(""); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="reengajavel">🔄 Descartar (nutrição/oferta ativa)</SelectItem>
