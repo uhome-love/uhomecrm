@@ -680,6 +680,11 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
 
             </div>
 
+            <p className="text-[10px] text-muted-foreground">
+              Contadores acima = totais reais do(s) disparo(s) exibido(s). A tabela mostra os últimos 400 registros.
+              {runningOutOfRange && " Há um disparo em andamento iniciado fora do período selecionado — ele continua sendo exibido aqui."}
+            </p>
+
             {queueActivity.length === 0 ? (
               <div className="text-center py-6 text-sm text-muted-foreground">
                 Nenhum item de fila encontrado para os disparos recentes.
