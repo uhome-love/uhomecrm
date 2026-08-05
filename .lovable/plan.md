@@ -448,11 +448,22 @@ mantém o recente no topo *dentro* do verde. Seletor com **Precisa de mim** (pad
 
 ### 12.8 Pílulas, filtros e Modo Foco
 
-Pílulas do header trocam de `em dia / sem tarefa / atrasado` para:
+As pílulas do header do Pipeline hoje são `em dia · sem tarefa · atrasado` (e a informacional
+Negócios). "Sem tarefa" morre — no modelo novo tarefa não é obrigatória. Ficam **3 pílulas de
+saúde**, exatamente na linguagem do corretor:
 
 ```text
-● Em dia (n)   ● Atrasado (n)   ● Em estagnação (n)   ● Compromisso hoje (n)
+● Em dia (n)      ● Desatualizado (n)      ● Em estagnação (n)
+   verde                 âmbar                    vermelho
 ```
+
+Regras das pílulas:
+- Somam sempre 100% da carteira visível — todo lead está em uma das três.
+- Clicar filtra o board (mesma mecânica de `?filtro=` que já existe).
+- **Estagnado não vira pílula do corretor** — o lead já saiu do board dele.
+- Um 4º chip opcional, informacional e separado das três: **📅 Compromisso hoje (n)**
+  (lembrete ou visita marcada para hoje). Fica visualmente destacado para não parecer saúde.
+- Gestor/CEO veem as mesmas três + **Estagnados (n)**, que abre `/leads-estagnados`.
 
 Mais o filtro numérico **"sem contato há mais de ___ dias"** (3 / 7 / 15 / 30 / 60), disponível
 para corretor, gestor e CEO, e exportável.
@@ -462,12 +473,13 @@ para corretor, gestor e CEO, e exportável.
 | Fila | Regra |
 |---|---|
 | 🔴 Em estagnação | 24h para não perder o lead |
-| 🟠 Atrasados | passou o prazo da etapa |
+| 🟠 Desatualizados | passou o prazo da etapa |
 | 🏠 Visita sem desfecho | visita realizada sem atividade depois (mantida) |
 | 📅 Compromissos de hoje | lembretes e visitas do dia |
 
 Cada card abre direto no Registrar atividade — 2 cliques por lead. Fechamento:
 "Você atualizou 12 leads hoje. 4 continuam sem contato há mais de 15 dias."
+
 
 ### 12.9 Cobrança e engajamento (referências de mercado)
 
