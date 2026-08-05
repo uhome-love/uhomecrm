@@ -40,6 +40,6 @@ Nada de reprocessamento ou reenvio de histórico. Os eventos já enviados contin
   - O gatilho `trg_pipeline_lead_capi_insert` continua existindo (não será dropado), para reversão em uma linha caso você queira voltar atrás.
 - Custo de dedup: os 5 casos de contato recriado no pipeline deixam de importar, já que `Lead` não é mais emitido.
 
-## Alternativa, se você preferir manter um sinal de entrada
+## Princípio acordado
 
-Em vez de eliminar o `Lead`, é possível renomeá-lo para um evento customizado (ex.: `LeadCRM`), que **não** soma na coluna "Leads" da Meta e serve só para conferência interna. Diga qual das duas opções prefere antes de eu aplicar.
+O Meta já sabe quem preencheu o formulário — não precisa que o CRM repita essa informação. O CRM passa a mandar **só o que evoluiu e qualificou** depois da entrada: `LeadQualificado`, `Schedule`, `ViewContent` e `Purchase`.
