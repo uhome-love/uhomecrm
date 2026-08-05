@@ -93,46 +93,52 @@ export default function RespostasRecebidasHoje({
         (leads ?? []).forEach((l: any) => (leadsMap[l.id] = l));
       }
 
-      // IDs sem match em pipeline_leads → provavelmente vieram de oferta_ativa_leads
+      // IDs sem match em pipeline_leads → podem ser da Base Única ou de oferta_ativa_leads
       const idsSemPipeline = leadIds.filter((id) => !leadsMap[id]);
       const oaMap: Record<string, { nome: string | null; status: string | null; telefone_normalizado: string | null }> = {};
+      const baseMap: Record<string, { nome: string | null; pipeline_lead_id: string | null }> = {};
       if (idsSemPipeline.length) {
-        const { data: oaRows } = await supabase
-          .from("oferta_ativa_leads")
-          .select("id, nome, status, telefone_normalizado")
-          .in("id", idsSemPipeline);
+        const [{ data: oaRows }, { data: baseRows }] = await Promise.all([
+          supabase.from("oferta_ativa_leads").select("id, nome, status, telefone_normalizado").in("id", idsSemPipeline),
+          supabase.from("base_leads").select("id, nome, sobrenome, pipeline_lead_id").in("id", idsSemPipeline),
+        ]);
         (oaRows ?? []).forEach((o: any) => (oaMap[o.id] = o));
-      }
-
-      // Fallback por telefone: pipeline_leads criados/reativados recentemente com o mesmo telefone
-      const phonesFallback = Array.from(new Set(
-        (disparos ?? [])
-          .filter((d: any) => d.lead_id && !leadsMap[d.lead_id])
-          .map((d: any) => (d.phone || "").replace(/\D/g, ""))
-          .filter(Boolean)
-      ));
-      const phoneReativMap: Record<string, boolean> = {};
-      if (phonesFallback.length) {
-        const { data: reativRows } = await supabase
-          .from("pipeline_leads")
-          .select("telefone_normalizado, reativado_por_nutricao, reativado_em")
-          .in("telefone_normalizado", phonesFallback)
-          .eq("reativado_por_nutricao", true)
-          .gte("reativado_em", sinceIso);
-        (reativRows ?? []).forEach((r: any) => {
-          if (r.telefone_normalizado) phoneReativMap[r.telefone_normalizado] = true;
+        (baseRows ?? []).forEach((b: any) => {
+          baseMap[b.id] = {
+            nome: [b.nome, b.sobrenome].filter(Boolean).join(" ").trim() || null,
+            pipeline_lead_id: b.pipeline_lead_id ?? null,
+          };
         });
       }
+
+      // Fallback por telefone (últimos 8 dígitos — ignora DDI/DDD divergentes)
+      const last8Map: Record<string, { id: string; nome: string | null }> = {};
+      let reativQ = supabase
+        .from("pipeline_leads")
+        .select("id, nome, telefone, telefone_normalizado, reativado_em")
+        .eq("reativado_por_nutricao", true)
+        .gte("reativado_em", sinceIso)
+        .limit(1000);
+      if (untilIso) reativQ = reativQ.lte("reativado_em", untilIso);
+      const { data: reativRows } = await reativQ;
+      (reativRows ?? []).forEach((r: any) => {
+        const digits = String(r.telefone_normalizado || r.telefone || "").replace(/\D/g, "");
+        if (digits.length >= 8) last8Map[digits.slice(-8)] = { id: r.id, nome: r.nome ?? null };
+      });
 
       const respostas: Resposta[] = [];
 
       (disparos ?? []).forEach((d: any) => {
         const lead = d.lead_id ? leadsMap[d.lead_id] : null;
         const oa = d.lead_id ? oaMap[d.lead_id] : null;
-        const phoneNorm = (d.phone || "").replace(/\D/g, "");
+        const base = d.lead_id ? baseMap[d.lead_id] : null;
+        const phoneDigits = (d.phone || "").replace(/\D/g, "");
+        const foneMatch = phoneDigits.length >= 8 ? last8Map[phoneDigits.slice(-8)] : undefined;
         const reativadoViaOA = !!oa && oa.status === "reativado";
-        const reativadoViaFone = !!phoneNorm && !!phoneReativMap[phoneNorm];
-        const reativado = !!lead?.reativado_por_nutricao || reativadoViaOA || reativadoViaFone;
+        const reativadoViaBase = !!base?.pipeline_lead_id;
+        const reativadoViaFone = !!foneMatch;
+        const reativado = !!lead?.reativado_por_nutricao || reativadoViaOA || reativadoViaBase || reativadoViaFone;
+
 
         const viaBotao = !!d.button_response;
         const classificacao: "sim" | "nao" | "outro" = viaBotao
