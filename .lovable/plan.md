@@ -320,25 +320,26 @@ mexida em tarefa. Comparando com **toque real** (ligação, WhatsApp, visita, pr
 
 > **Atividade atualiza. Tarefa lembra. Dias sem atividade cobram.**
 
-Quatro estados — os três primeiros o corretor vê, o quarto **sai da mão dele**:
+Quatro estados — os três primeiros o corretor vê nas pílulas, o quarto **sai da mão dele**:
 
 ```text
-ATIVIDADE ──► contador zera
+ATIVIDADE REGISTRADA ──► contador zera ──► volta a EM DIA
      │
-0 ─ EM DIA ──► ATRASADO ──► EM ESTAGNAÇÃO ──► ESTAGNADO
-   (verde)     (âmbar)       (vermelho, 24h)   (sai do corretor → tela do gestor)
-                                                registrou = volta a Em dia
+0 ─ EM DIA ──► DESATUALIZADO ──► EM ESTAGNAÇÃO ──► ESTAGNADO
+   (verde)        (âmbar)        (vermelho, 24h)   (sai do corretor → tela do gestor)
 ```
 
-- **Em dia** — dentro do prazo da etapa.
-- **Atrasado** — passou o prazo; aparece em âmbar, sobe no Modo Foco.
-- **Em estagnação** — última chance: **24 horas** para registrar algo, com aviso claro
-  ("Você perde este lead em 24h") + notificação.
-- **Estagnado** — sai da carteira do corretor, **some do board dele** e cai na tela
+- **Em dia** — teve atividade dentro do prazo da etapa.
+- **Desatualizado** — passou o 1º prazo; âmbar, sobe no Modo Foco. Não perde nada.
+- **Em estagnação** — passou o 2º prazo: **24 horas** para registrar algo, com aviso na tela
+  ("Você perde este lead em 24h") + notificação no sino e no resumo diário.
+- **Estagnado** — sai da carteira, **some do board do corretor** e cai na tela
   `/leads-estagnados` do gestor, que decide: devolver, repassar, roleta ou descartar
   (RPC `decidir_lead_estagnado`, que já existe).
 
-Nada de "predisposição" — em tela, sempre "**há X dias sem contato**".
+**O que torna o lead atualizado é uma atividade registrada** — nada mais. Nada de "predisposição":
+em tela é sempre "**há X dias sem contato**".
+
 
 ### 12.3 O que conta como atividade
 
@@ -352,21 +353,77 @@ mover de etapa sem registrar.
 Tecnicamente: campo novo `ultimo_toque_at` no lead, alimentado só por atividade real.
 `ultima_acao_at` continua existindo (não quebra nada) mas deixa de ser fonte de saúde.
 
-### 12.4 Régua de estagnação — decisão por etapa
+### 12.4 Régua de ociosidade — padrão claro por etapa
 
-| Etapa | Atrasado | Em estagnação | Estagnado |
+Uma regra só, aplicada igual em toda etapa, mudando apenas os números:
+
+```text
+0 ─── [ dias A ] ─── [ dias B ] ─── +24h ───►
+ EM DIA      DESATUALIZADO   EM ESTAGNAÇÃO   ESTAGNADO
+ verde           âmbar          vermelho     (sai do corretor)
+                                 ▲ aviso + notificação "você perde este lead em 24h"
+```
+
+`dias A` = ociosidade para ficar **desatualizado**. `dias B` = ociosidade para entrar **em
+estagnação**. `0` em qualquer campo = regra desligada naquela etapa.
+
+**Padrão inicial sugerido (o CEO pode mudar tudo na tela de configuração):**
+
+| Etapa | A · Desatualizado | B · Em estagnação | Estagna (sai do corretor)? |
 |---|---|---|---|
-| Novo Lead | 1 dia | — | segue regra de aceite/roleta atual |
+| Novo Lead | 1 dia | — | não (vale a regra de aceite/roleta atual) |
 | **Sem Contato** | *cadência automática atual, intocada* | — | fim da cadência (regra de banco de hoje) |
-| **Qualificação** | 15 dias sem atividade | entra em estagnação | **+24h** → sai do corretor |
-| **Aquecimento / Nutrição** | contador só informativo | **sem estagnação** | nunca perde por tempo |
-| **Visita** | 2 dias (só aviso) | **sem estagnação** — ciclo curto | — |
-| **Pós-Visita** | 3 dias (só aviso) | **sem estagnação** | — |
-| **Em Negociação / Contrato** | 3 dias (só aviso) | **sem estagnação** | — |
+| **Qualificação** | **7 dias** | **15 dias** | **sim** — +24h e sai |
+| **Aquecimento** | 15 dias (só cor) | 30 dias (só cor) | **não** |
+| **Nutrição** | — | — | **não** (contador pausado) |
+| **Visita** | 2 dias (só cor) | — | **não** — ciclo curto |
+| **Pós-Visita** | 3 dias (só cor) | — | **não** |
+| **Em Negociação** | 3 dias (só cor) | — | **não** (alerta vai ao gestor) |
+| **Contrato** | 5 dias (só cor) | — | **não** |
 
-Só **Qualificação** tira lead do corretor. Nas demais o contador existe para priorizar e para o
-gestor ler, nunca para punir. Valores ficam em `pipeline_estagnacao_config` (tabela já existe,
-hoje com 2 linhas: 15 e 30 dias), editáveis pelo gestor.
+Leitura simples para o time: **7 amarelo, 15 vermelho, 16 você perde — e isso só acontece na
+Qualificação.** Nas outras etapas a cor existe para priorizar, nunca para punir.
+
+Duas travas de bom senso:
+- **Lembrete/visita agendada para o futuro pausa a escalada** (comportamento "protegido" que o
+  `EstagnacaoStatusCard` já mostra hoje). Se o compromisso vencer sem atividade, a contagem volta.
+- Fim de semana e feriado (`public.feriados`) não contam, como já vale para SLA.
+
+### 12.4b Tela de configuração do CEO
+
+Botão **⚙️ Configurar ociosidade** no header do Pipeline (visível a admin/CEO/gestor conforme
+papel) e também em `/configuracoes?secao=pipeline`. Uma tabela editável, uma linha por etapa:
+
+```text
+┌ Ociosidade por etapa ─────────────────────────────────────────────┐
+│ Etapa            Desatualizado   Em estagnação   Estagna?  Aviso  │
+│ Novo Lead            [ 1 ]d          [ 0 ]d        [ ]     24h    │
+│ Sem Contato        cadência automática (não editável)             │
+│ Qualificação         [ 7 ]d          [15 ]d        [x]     24h    │
+│ Aquecimento          [15 ]d          [30 ]d        [ ]      —     │
+│ Nutrição           contagem pausada (não editável)                │
+│ Visita               [ 2 ]d          [ 0 ]d        [ ]      —     │
+│ Pós-Visita           [ 3 ]d          [ 0 ]d        [ ]      —     │
+│ Em Negociação        [ 3 ]d          [ 0 ]d        [ ]      —     │
+│ Contrato             [ 5 ]d          [ 0 ]d        [ ]      —     │
+│                                                                   │
+│ Prazo do aviso final: [24] horas   ( ) contar fim de semana       │
+│ Pré-visualização: com estes números, hoje 354 leads ficariam      │
+│ desatualizados e 12 entrariam em estagnação.                      │
+│                        [Restaurar padrão]  [Salvar]               │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+- Campos aceitam **0 a 365 dias**; `0` desliga aquele nível.
+- Validação: `estagnação ≥ desatualizado`; não deixa marcar "Estagna?" com estagnação = 0.
+- **Pré-visualização obrigatória** antes de salvar (quantos leads mudam de cor hoje) — evita ligar
+  um número que estoura a carteira do time.
+- Toda alteração fica registrada (quem mudou, de quanto para quanto) e é exibida no topo da tela.
+- Persiste em `pipeline_estagnacao_config` (tabela já existe, hoje com 2 linhas) estendida com as
+  colunas de dois níveis + flag de estagnar; nenhuma tabela nova.
+- Mudar o número **nunca estagna alguém retroativamente na hora**: quem passar a se enquadrar entra
+  primeiro em "em estagnação" e ainda tem as 24h de aviso.
+
 
 ### 12.5 Aquecimento — triagem antes de virar Nutrição
 
@@ -448,11 +505,22 @@ mantém o recente no topo *dentro* do verde. Seletor com **Precisa de mim** (pad
 
 ### 12.8 Pílulas, filtros e Modo Foco
 
-Pílulas do header trocam de `em dia / sem tarefa / atrasado` para:
+As pílulas do header do Pipeline hoje são `em dia · sem tarefa · atrasado` (e a informacional
+Negócios). "Sem tarefa" morre — no modelo novo tarefa não é obrigatória. Ficam **3 pílulas de
+saúde**, exatamente na linguagem do corretor:
 
 ```text
-● Em dia (n)   ● Atrasado (n)   ● Em estagnação (n)   ● Compromisso hoje (n)
+● Em dia (n)      ● Desatualizado (n)      ● Em estagnação (n)
+   verde                 âmbar                    vermelho
 ```
+
+Regras das pílulas:
+- Somam sempre 100% da carteira visível — todo lead está em uma das três.
+- Clicar filtra o board (mesma mecânica de `?filtro=` que já existe).
+- **Estagnado não vira pílula do corretor** — o lead já saiu do board dele.
+- Um 4º chip opcional, informacional e separado das três: **📅 Compromisso hoje (n)**
+  (lembrete ou visita marcada para hoje). Fica visualmente destacado para não parecer saúde.
+- Gestor/CEO veem as mesmas três + **Estagnados (n)**, que abre `/leads-estagnados`.
 
 Mais o filtro numérico **"sem contato há mais de ___ dias"** (3 / 7 / 15 / 30 / 60), disponível
 para corretor, gestor e CEO, e exportável.
@@ -462,12 +530,13 @@ para corretor, gestor e CEO, e exportável.
 | Fila | Regra |
 |---|---|
 | 🔴 Em estagnação | 24h para não perder o lead |
-| 🟠 Atrasados | passou o prazo da etapa |
+| 🟠 Desatualizados | passou o prazo da etapa |
 | 🏠 Visita sem desfecho | visita realizada sem atividade depois (mantida) |
 | 📅 Compromissos de hoje | lembretes e visitas do dia |
 
 Cada card abre direto no Registrar atividade — 2 cliques por lead. Fechamento:
 "Você atualizou 12 leads hoje. 4 continuam sem contato há mais de 15 dias."
+
 
 ### 12.9 Cobrança e engajamento (referências de mercado)
 
@@ -513,10 +582,12 @@ lead); ao gestor só chega estagnado; "% da carteira em dia" vira KPI de 1:1 e d
   Nada muda em tela; permite comparar número novo × atual antes de trocar.
 - **H2 — Registrar atividade**: diálogo único, lembrete opcional, fechamento automático de tarefa
   compatível. Primeiro em Qualificação.
-- **H3 — Saúde visual**: cores/labels no card, pílulas novas, filtro "sem contato há X dias",
-  nova ordenação.
+- **H3 — Saúde visual**: cores/labels no card, as 3 pílulas novas (Em dia · Desatualizado ·
+  Em estagnação), filtro "sem contato há X dias", nova ordenação.
 - **H4 — Modo Foco** por dias sem contato.
-- **H5 — Estagnação nova**: Qualificação 15d + 24h, saída para a tela do gestor, resumo diário.
+- **H5 — Configuração do CEO** (tela ⚙️ da 12.4b, com pré-visualização) **+ estagnação nova**:
+  Qualificação 7/15 + 24h, saída para a tela do gestor, resumo diário.
+
 - **H6 — Triagem do Aquecimento** (mutirão dos 557) e só então ligar cadências.
 - **H7 — Metas e placar** de atividade; aposentar o `NextActionModal` obrigatório.
 
