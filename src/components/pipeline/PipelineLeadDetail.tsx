@@ -1,3 +1,4 @@
+import { DISCARD_REASONS_REENGAJAVEL, DISCARD_REASONS_DEFINITIVO, getReasonByCode, reasonDisplay } from "@/lib/discardReasons";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { LeadFormRespostas } from "@/components/pipeline/drawer/LeadFormRespostas";
 import { useNavigate } from "react-router-dom";

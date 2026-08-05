@@ -1,3 +1,4 @@
+import { DISCARD_REASONS_REENGAJAVEL, reasonDisplay } from "@/lib/discardReasons";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
