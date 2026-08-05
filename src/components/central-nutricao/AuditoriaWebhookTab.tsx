@@ -714,7 +714,9 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                         <TableRow key={row.id} className={row.isFailed ? "bg-red-50/30" : ""}>
                           <TableCell className="text-xs whitespace-nowrap">{when ? formatBRT(when, "HH:mm:ss") : "—"}</TableCell>
                           <TableCell className="text-xs font-medium px-3 py-2">
-                            <div className="truncate max-w-[210px]" title={row.nome || ""}>{row.nome || "—"}</div>
+                            <div className="truncate max-w-[210px]" title={row.nome || row.phone || ""}>
+                              {row.nome || (row.phone ? `Contato ${row.phone.slice(-4)}` : "—")}
+                            </div>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{row.phone || "—"}</TableCell>
                           <TableCell className="text-xs">
