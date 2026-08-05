@@ -29,16 +29,14 @@ const TIPO_TAREFA_OPTIONS = [
   { value: "enviar_material", label: "Enviar material", emoji: "✉️" },
 ];
 
-const MOTIVOS_DESCARTE = [
-  "Sem interesse",
-  "Não atende / não responde",
-  "Comprou com concorrente",
-  "Sem condição financeira",
-  "Perfil incompatível",
-  "Lead duplicado",
-  "Número inválido",
-  "Outro",
-];
+import {
+  DISCARD_REASONS_REENGAJAVEL,
+  getReasonByCode,
+  reasonDisplay,
+} from "@/lib/discardReasons";
+
+const MOTIVOS_DESCARTE = DISCARD_REASONS_REENGAJAVEL;
+
 
 interface Props {
   open: boolean;
