@@ -85,6 +85,7 @@ const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
   casasdescoradas_casatua: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casasdescoradas-casatua.jpg",
   casatua_junho25k: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-junho25k.png",
   casatua_eventosabado: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-eventosabado.png",
+  casatua_novidadeterraco: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-novidadeterraco.png",
   atrio_lancamento: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/atrio-lancamento.png",
   vividterrace2: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/vividterrace2.png",
   lakebaical_novidade: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/lakebaical-novidade.png",
