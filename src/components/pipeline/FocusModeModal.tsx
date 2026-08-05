@@ -29,6 +29,8 @@ import FocusEmptyState from "./focus/FocusEmptyState";
 import FocusFooter from "./focus/FocusFooter";
 import FocusFirstTimeTip from "./focus/FocusFirstTimeTip";
 import { useFocusKeyboardShortcuts } from "@/hooks/useFocusKeyboardShortcuts";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 
 interface FocusModeModalProps {
