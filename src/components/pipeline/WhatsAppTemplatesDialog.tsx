@@ -5,6 +5,8 @@ import { MessageCircle, Copy, ExternalLink, Sparkles, Loader2, ChevronDown } fro
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 interface Props {
   open: boolean;
@@ -123,6 +125,8 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
         ultima_acao_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as any).eq("id", leadId).then(() => {});
+      registrarToque(leadId);
+
     }
 
     onOpenChange(false);
@@ -144,6 +148,8 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
         ultima_acao_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as any).eq("id", leadId).then(() => {});
+      registrarToque(leadId);
+
     }
     toast.success("💬 WhatsApp aberto");
     onOpenChange(false);

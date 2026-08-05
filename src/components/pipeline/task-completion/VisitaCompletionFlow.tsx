@@ -39,6 +39,8 @@ import { cn, dateToBRT } from "@/lib/utils";
 import { toast } from "sonner";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import type { CompletionPayload } from "./types";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 export type VisitaSubtipo =
   | "confirmar_visita"
@@ -213,6 +215,8 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
       .from("pipeline_leads")
       .update({ ultima_acao_at: now, updated_at: now } as never)
       .eq("id", leadId);
+    await registrarToque(leadId);
+
 
     const userId = (await supabase.auth.getUser()).data?.user?.id || "";
     await supabase.from("pipeline_atividades").insert({

@@ -5,6 +5,8 @@
 // ─────────────────────────────────────────────────────────────────
 import { supabase } from "@/integrations/supabase/client";
 import type { ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 export interface RouteLeadContext {
   pipelineLeadId: string;
@@ -115,6 +117,10 @@ export async function routeLeadAfterVisita(ctx: RouteLeadContext): Promise<boole
     console.error("[routeLeadAfterVisita] erro ao atualizar lead:", error);
     return false;
   }
+
+  // Toque humano do corretor (aditivo — registro do resultado da visita)
+  await registrarToque(ctx.pipelineLeadId);
+
 
   // 3) Histórico de movimentação (só quando muda de etapa)
   if (updatePayload.stage_id && oldStageId) {

@@ -29,6 +29,8 @@ import FocusEmptyState from "./focus/FocusEmptyState";
 import FocusFooter from "./focus/FocusFooter";
 import FocusFirstTimeTip from "./focus/FocusFirstTimeTip";
 import { useFocusKeyboardShortcuts } from "@/hooks/useFocusKeyboardShortcuts";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 
 interface FocusModeModalProps {
@@ -497,6 +499,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
         ultima_acao_at: now,
         updated_at: now,
       } as never).eq("id", currentLead.id);
+
+      // 2b) Toque humano do corretor (aditivo)
+      await registrarToque(currentLead.id);
+
 
       // 3) Activity capture (sempre)
       const tituloAtividade = `${completingOverdue.titulo} — ${resultado}`;

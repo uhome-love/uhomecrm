@@ -8,6 +8,8 @@
 // ─────────────────────────────────────────────────────────────────
 import { supabase } from "@/integrations/supabase/client";
 import type { CompletionPayload } from "@/components/pipeline/task-completion/types";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 export interface CompleteLeadTaskInput {
   tarefaId: string;
@@ -61,6 +63,11 @@ export async function completeLeadTask({
     await supabase.from("pipeline_leads")
       .update({ ultima_acao_at: now, updated_at: now } as never).eq("id", leadId);
   }
+
+  // Toque humano do corretor (aditivo — não substitui ultima_acao_at)
+  await registrarToque(leadId);
+
+
 
 
   await supabase.from("pipeline_atividades").insert({

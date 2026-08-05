@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { dateToBRT } from "@/lib/utils";
 import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 interface WhatsAppFocusFlowProps {
   isOpen: boolean;
@@ -155,7 +157,10 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
         updated_at: new Date().toISOString(),
       } as any).eq("id", lead.id),
     ]);
+    // Toque humano do corretor (aditivo)
+    await registrarToque(lead.id);
   }, [user, lead.id]);
+
 
   const handleCopy = async (msg: string) => {
     navigator.clipboard.writeText(msg);
