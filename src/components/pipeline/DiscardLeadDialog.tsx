@@ -139,13 +139,11 @@ export default function DiscardLeadDialog({
             <Select value={motivo} onValueChange={setMotivo}>
               <SelectTrigger><SelectValue placeholder="Selecione o motivo..." /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Contato errado">📵 Contato errado</SelectItem>
-                <SelectItem value="Não quer mais contato">🚫 Não quer mais contato</SelectItem>
-                <SelectItem value="Solicitou retirada do nome">🗑️ Solicitou retirada do nome</SelectItem>
-                <SelectItem value="Sem perfil">🎯 Sem perfil para o produto</SelectItem>
-                <SelectItem value="Sem retorno">📞 Sem retorno após tentativas</SelectItem>
-                <SelectItem value="outro">✏️ Outro motivo</SelectItem>
+                {reasons.map((r) => (
+                  <SelectItem key={r.code} value={r.code}>{reasonDisplay(r)}</SelectItem>
+                ))}
               </SelectContent>
+
             </Select>
           </div>
 
