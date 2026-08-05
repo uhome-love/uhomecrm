@@ -331,8 +331,9 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
                   </SelectTrigger>
                   <SelectContent>
                     {MOTIVOS_DESCARTE.map(m => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                      <SelectItem key={m.code} value={m.code}>{reasonDisplay(m)}</SelectItem>
                     ))}
+
                   </SelectContent>
                 </Select>
               </div>
