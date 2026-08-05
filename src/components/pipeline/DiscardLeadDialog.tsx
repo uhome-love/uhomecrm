@@ -75,7 +75,9 @@ export default function DiscardLeadDialog({
           .from("pipeline_leads")
           .update({
             motivo_descarte: motivoTexto,
+            motivo_descarte_code: motivo,
             tipo_descarte: "definitivo",
+
             arquivado: true,
             ultima_acao_at: nowIso,
           })
