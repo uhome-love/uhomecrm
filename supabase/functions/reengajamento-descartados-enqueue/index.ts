@@ -681,20 +681,39 @@ Deno.serve(async (req) => {
       const fetchPipelineAtivo = async (cap: number): Promise<Lead[]> => {
         const stageIds: string[] = (bodyAudience.stage_ids || []).filter(Boolean);
         if (stageIds.length === 0) throw new Error("audience.stage_ids vazio");
-        let q = supabase
-          .from("pipeline_leads")
-          .select("id, nome, telefone, email")
-          .in("stage_id", stageIds)
-          .eq("arquivado", false)
-          .not("telefone", "is", null);
-        if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
-        if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
-        if (empList.length) q = q.in("empreendimento", empList);
-        const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
-        if (error) throw error;
-        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" as const }));
+        const buildQuery = () => {
+          let q = supabase
+            .from("pipeline_leads")
+            .select("id, nome, telefone, email")
+            .in("stage_id", stageIds)
+            .eq("arquivado", false)
+            .not("telefone", "is", null);
+          if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
+          if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
+          if (empList.length) q = q.in("empreendimento", empList);
+          return q.order("created_at", { ascending: false });
+        };
+        // PostgREST corta respostas em ~1000 linhas: paginar para honrar `cap`.
+        const PAGE = 1000;
+        const rows: any[] = [];
+        let off = 0;
+        let pages = 0;
+        while (rows.length < cap) {
+          const upper = Math.min(off + PAGE, cap) - 1;
+          const { data: pageData, error } = await buildQuery().range(off, upper);
+          if (error) throw error;
+          pages++;
+          if (!pageData || pageData.length === 0) break;
+          rows.push(...pageData);
+          if (pageData.length < PAGE) break;
+          off += PAGE;
+        }
+        console.log(`fetchPipelineAtivo: ${rows.length} linhas brutas em ${pages} página(s) (cap ${cap})`);
+        paginacaoInfo.pipeline_ativo = { paginas: pages, linhas: rows.length, cap };
+        const cand = rows.map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" as const }));
         return dedupViaEventos(cand, `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`);
       };
+
 
       const fetchOfertaAtiva = async (cap: number): Promise<Lead[]> => {
         const listaIds: string[] = (bodyAudience.lista_ids && bodyAudience.lista_ids.length)
