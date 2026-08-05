@@ -92,9 +92,9 @@ function parseResponse(raw: string | null): { text: string; type: string | null 
   }
 }
 
-function KpiCell({ label, value, color, highlight }: { label: string; value: number; color: string; highlight?: boolean }) {
+function KpiCell({ label, value, color, highlight, hint }: { label: string; value: number; color: string; highlight?: boolean; hint?: string }) {
   return (
-    <div className={`text-center rounded-md px-2 py-1.5 ${highlight ? "bg-emerald-100/60 dark:bg-emerald-900/20" : ""}`}>
+    <div className={`text-center rounded-md px-2 py-1.5 ${highlight ? "bg-emerald-100/60 dark:bg-emerald-900/20" : ""}`} title={hint}>
       <div className="text-[10px] text-muted-foreground leading-tight">{label}</div>
       <div className={`text-lg font-bold leading-tight ${color}`}>{value}</div>
     </div>
@@ -167,6 +167,22 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
           .select("id, nome, reativado_por_nutricao, corretor_id, empreendimento")
           .in("id", leadIds);
         leadsMap = Object.fromEntries((leads ?? []).map((l) => [l.id, l]));
+        // Base Única: o lead_id não existe em pipeline_leads — busca o nome na base
+        const faltando = leadIds.filter((id) => !leadsMap[id]);
+        if (faltando.length) {
+          const { data: base } = await supabase
+            .from("base_leads")
+            .select("id, nome")
+            .in("id", faltando);
+          (base ?? []).forEach((b: any) => {
+            leadsMap[b.id] = {
+              nome: b.nome ?? null,
+              reativado_por_nutricao: null,
+              corretor_id: null,
+              empreendimento: null,
+            };
+          });
+        }
       }
       const corretorIds = Array.from(
         new Set(Object.values(leadsMap).map((l) => l.corretor_id).filter(Boolean))
@@ -245,23 +261,41 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     };
   }, [rows, total]);
 
-  // Recent dispatch runs (so the user can see if a dispatch ran at all, even with 0 sent)
+  // Recent dispatch runs (respeita o período; disparo em andamento sempre incluído)
   const { data: recentRuns } = useQuery({
-    queryKey: ["recent-dispatch-runs"],
+    queryKey: ["recent-dispatch-runs", from ?? null, to ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reengajamento_dispatch_runs")
-        .select("id, started_at, finished_at, status, total_alvo, enviados, falhas, ignorados, motivo_parada, audience_source, audience_payload, erros")
-        .order("started_at", { ascending: false })
-        .limit(10);
+      const cols =
+        "id, started_at, finished_at, status, total_alvo, enviados, falhas, ignorados, motivo_parada, audience_source, audience_payload, erros";
+      let q = supabase.from("reengajamento_dispatch_runs").select(cols);
+      if (from) q = q.gte("started_at", from);
+      if (to) q = q.lte("started_at", to);
+      const { data, error } = await q.order("started_at", { ascending: false }).limit(10);
       if (error) throw error;
-      return data ?? [];
+      const list = (data ?? []) as any[];
+
+      // Garante que um disparo em andamento apareça mesmo fora da janela do filtro
+      const { data: running } = await supabase
+        .from("reengajamento_dispatch_runs")
+        .select(cols)
+        .eq("status", "running")
+        .order("started_at", { ascending: false })
+        .limit(3);
+      const byId = new Map<string, any>();
+      [...(running ?? []), ...list].forEach((r: any) => byId.set(r.id, r));
+      return Array.from(byId.values()).sort(
+        (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+      );
     },
     refetchInterval: 10000,
   });
   const [showRuns, setShowRuns] = useState(false);
 
   const activeRun = recentRuns?.find((run: any) => run.status === "running") ?? null;
+  const runningOutOfRange = useMemo(() => {
+    if (!activeRun || !from) return false;
+    return new Date(activeRun.started_at).getTime() < new Date(from).getTime();
+  }, [activeRun, from]);
   const queueRunIds = useMemo(() => {
     const ids = new Set<string>();
     if (activeRun?.id) ids.add(activeRun.id);
@@ -273,27 +307,50 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     if (activeRun?.id) setShowRuns(true);
   }, [activeRun?.id]);
 
+  const [queueFilter, setQueueFilter] = useState<"all" | "sent" | "delivered" | "read" | "responded" | "failed">("all");
+
   // Envios sendo processados — usa reengajamento_meta_disparos (mesma fonte do "Resumo de hoje")
   const { data: queueActivity = [], isFetching: isFetchingQueue } = useQuery({
-    queryKey: ["reengajamento-envios-recentes", queueRunIds.join(",")],
+    queryKey: ["reengajamento-envios-recentes", queueRunIds.join(","), queueFilter],
     queryFn: async (): Promise<ProcRow[]> => {
       if (queueRunIds.length === 0) return [];
-      const { data, error } = await supabase
+      let q = supabase
         .from("reengajamento_meta_disparos")
         .select("id, run_id, lead_id, phone, template_name, audience_source, status, error_text, wamid, sent_at, delivered_at, read_at, responded_at, created_at")
-        .in("run_id", queueRunIds)
+        .in("run_id", queueRunIds);
+      // Mesmos predicados dos contadores (server-side), para filtro e número não brigarem
+      if (queueFilter === "sent") q = q.not("sent_at", "is", null);
+      else if (queueFilter === "delivered") q = q.not("delivered_at", "is", null);
+      else if (queueFilter === "read") q = q.not("read_at", "is", null);
+      else if (queueFilter === "responded") q = q.not("responded_at", "is", null);
+      else if (queueFilter === "failed") q = q.eq("status", "failed");
+
+      const { data, error } = await q
         .order("sent_at", { ascending: false, nullsFirst: false })
         .limit(400);
       if (error) throw error;
       const list = (data ?? []) as any[];
-      const leadIds = Array.from(new Set(list.map((d) => d.lead_id).filter(Boolean))) as string[];
-      let namesMap: Record<string, string> = {};
-      if (leadIds.length) {
+      const ids = Array.from(new Set(list.map((d) => d.lead_id).filter(Boolean))) as string[];
+      const namesMap: Record<string, string> = {};
+      if (ids.length) {
         const { data: leads } = await supabase
           .from("pipeline_leads")
           .select("id, nome")
-          .in("id", leadIds);
-        namesMap = Object.fromEntries((leads ?? []).map((l: any) => [l.id, l.nome ?? ""]));
+          .in("id", ids);
+        (leads ?? []).forEach((l: any) => {
+          if (l.nome) namesMap[l.id] = l.nome;
+        });
+        // Base Única: o id guardado não é de pipeline_leads
+        const missing = ids.filter((id) => !namesMap[id]);
+        if (missing.length) {
+          const { data: base } = await supabase
+            .from("base_leads")
+            .select("id, nome")
+            .in("id", missing);
+          (base ?? []).forEach((b: any) => {
+            if (b.nome) namesMap[b.id] = b.nome;
+          });
+        }
       }
       return list.map((d) => ({
         id: d.id,
@@ -310,43 +367,49 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
         read_at: d.read_at,
         responded_at: d.responded_at,
         created_at: d.created_at,
-        isSent: d.status !== "failed",
+        isSent: !!d.sent_at,
         isDelivered: !!d.delivered_at,
         isRead: !!d.read_at,
-        isResponded: d.status === "responded" || !!d.responded_at,
+        isResponded: !!d.responded_at,
         isFailed: d.status === "failed",
       })) as ProcRow[];
     },
     enabled: queueRunIds.length > 0,
     refetchInterval: activeRun ? 3000 : 10000,
+    placeholderData: keepPreviousData,
   });
 
-  const [queueFilter, setQueueFilter] = useState<"all" | "sent" | "delivered" | "read" | "responded" | "failed">("all");
+  const filteredQueue = queueActivity;
 
-  const filteredQueue = useMemo(() => {
-    switch (queueFilter) {
-      case "sent":
-        return queueActivity.filter((r) => r.isSent);
-      case "delivered":
-        return queueActivity.filter((r) => r.isDelivered);
-      case "read":
-        return queueActivity.filter((r) => r.isRead);
-      case "responded":
-        return queueActivity.filter((r) => r.isResponded);
-      case "failed":
-        return queueActivity.filter((r) => r.isFailed);
-      default:
-        return queueActivity;
-    }
-  }, [queueActivity, queueFilter]);
+  // Contadores REAIS do(s) disparo(s) — agregados no servidor, mesmas regras do Resumo de hoje
+  const { data: queueStats = { sent: 0, delivered: 0, read: 0, responded: 0, failed: 0 } } = useQuery({
+    queryKey: ["reengajamento-envios-contadores", queueRunIds.join(",")],
+    queryFn: async () => {
+      const base = () =>
+        supabase
+          .from("reengajamento_meta_disparos")
+          .select("id", { count: "exact", head: true })
+          .in("run_id", queueRunIds);
+      const [sent, delivered, read, responded, failed] = await Promise.all([
+        base().not("sent_at", "is", null),
+        base().not("delivered_at", "is", null),
+        base().not("read_at", "is", null),
+        base().not("responded_at", "is", null),
+        base().eq("status", "failed"),
+      ]);
+      return {
+        sent: sent.count ?? 0,
+        delivered: delivered.count ?? 0,
+        read: read.count ?? 0,
+        responded: responded.count ?? 0,
+        failed: failed.count ?? 0,
+      };
+    },
+    enabled: queueRunIds.length > 0,
+    refetchInterval: activeRun ? 5000 : 15000,
+    placeholderData: keepPreviousData,
+  });
 
-  const queueStats = useMemo(() => ({
-    sent: queueActivity.filter((r) => r.isSent).length,
-    delivered: queueActivity.filter((r) => r.isDelivered).length,
-    read: queueActivity.filter((r) => r.isRead).length,
-    responded: queueActivity.filter((r) => r.isResponded).length,
-    failed: queueActivity.filter((r) => r.isFailed).length,
-  }), [queueActivity]);
 
 
   
@@ -482,14 +545,18 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
             <Badge variant="outline" className="text-[10px]">{todayStats?.total ?? 0} disparos hoje</Badge>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
-            <KpiCell label="Enviados" value={todayStats?.sent ?? stats.waiting} color="text-neutral-700" />
-            <KpiCell label="Entregues" value={todayStats?.delivered ?? 0} color="text-blue-700" />
-            <KpiCell label="Lidos" value={todayStats?.read ?? 0} color="text-indigo-700" />
-            <KpiCell label="Responderam" value={todayStats?.responded ?? stats.responded} color="text-emerald-700" />
-            <KpiCell label="✅ SIM" value={todayStats?.sim ?? stats.sim} color="text-emerald-700" highlight />
-            <KpiCell label="❌ NÃO" value={todayStats?.nao ?? stats.nao} color="text-red-700" />
-            <KpiCell label="Falhas" value={todayStats?.failed ?? stats.failed} color="text-red-600" />
+            <KpiCell label="Enviados" value={todayStats?.sent ?? 0} color="text-neutral-700" hint="Mensagens com carimbo de envio para a Meta (inclui as que já foram entregues, lidas ou respondidas)." />
+            <KpiCell label="Entregues" value={todayStats?.delivered ?? 0} color="text-blue-700" hint="Mensagens com carimbo de entrega no WhatsApp." />
+            <KpiCell label="Lidos" value={todayStats?.read ?? 0} color="text-indigo-700" hint="Mensagens com carimbo de leitura pelo contato." />
+            <KpiCell label="Responderam" value={todayStats?.responded ?? 0} color="text-emerald-700" hint="Contatos que responderam ao disparo (botão ou texto livre)." />
+            <KpiCell label="✅ SIM" value={todayStats?.sim ?? 0} color="text-emerald-700" highlight hint="Contatos únicos com resposta positiva." />
+            <KpiCell label="❌ NÃO" value={todayStats?.nao ?? 0} color="text-red-700" hint="Contatos únicos com resposta negativa." />
+            <KpiCell label="Falhas" value={todayStats?.failed ?? 0} color="text-red-600" hint="Mensagens recusadas pela Meta ou com erro de envio." />
           </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Números acumulados do funil: quem foi lido também conta em entregues e enviados — não some as colunas.
+          </p>
+
         </CardContent>
       </Card>
 
@@ -593,6 +660,7 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
               <div className="flex items-center gap-2">
                 <Radio className={`h-4 w-4 ${activeRun ? "text-blue-600 animate-pulse" : "text-muted-foreground"}`} />
                 <span className="text-sm font-semibold">Envios sendo processados</span>
+                <Badge variant="outline" className="text-[10px] font-normal">totais do disparo</Badge>
                 {isFetchingQueue && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
               </div>
               <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
@@ -628,6 +696,11 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
 
             </div>
 
+            <p className="text-[10px] text-muted-foreground">
+              Contadores acima = totais reais do(s) disparo(s) exibido(s). A tabela mostra os últimos 400 registros.
+              {runningOutOfRange && " Há um disparo em andamento iniciado fora do período selecionado — ele continua sendo exibido aqui."}
+            </p>
+
             {queueActivity.length === 0 ? (
               <div className="text-center py-6 text-sm text-muted-foreground">
                 Nenhum item de fila encontrado para os disparos recentes.
@@ -657,7 +730,9 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                         <TableRow key={row.id} className={row.isFailed ? "bg-red-50/30" : ""}>
                           <TableCell className="text-xs whitespace-nowrap">{when ? formatBRT(when, "HH:mm:ss") : "—"}</TableCell>
                           <TableCell className="text-xs font-medium px-3 py-2">
-                            <div className="truncate max-w-[210px]" title={row.nome || ""}>{row.nome || "—"}</div>
+                            <div className="truncate max-w-[210px]" title={row.nome || row.phone || ""}>
+                              {row.nome || (row.phone ? `Contato ${row.phone.slice(-4)}` : "—")}
+                            </div>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{row.phone || "—"}</TableCell>
                           <TableCell className="text-xs">
