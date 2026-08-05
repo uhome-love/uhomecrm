@@ -125,6 +125,8 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
         ultima_acao_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as any).eq("id", leadId).then(() => {});
+      registrarToque(leadId);
+
     }
 
     onOpenChange(false);
