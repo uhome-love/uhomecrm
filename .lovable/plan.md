@@ -23,23 +23,37 @@ Uma única migração alterando a função `public._trg_pipeline_lead_capi_inser
 
 - **Parar de enviar o evento `Lead` para leads que vieram de formulário Meta** (`meta_lead_id` preenchido) — a Meta já os conta pelo formulário nativo.
 - **Parar de enviar `Lead` para origens não-Meta** (Manual, site, ImovelWeb, indicação, Reengajamento, Oferta Ativa) — esses leads não pertencem a nenhuma campanha e só inflam a métrica.
-- Na prática, o evento `Lead` do CRM deixa de ser emitido; o sinal de qualidade que o CRM manda para a Meta passa a ser só `LeadQualificado`, `Schedule`, `ViewContent` e `Purchase`, que são exatamente os eventos que o formulário nativo não tem como enviar.
+- Na prática, o evento `Lead` do CRM deixa de ser emitido; o CRM manda só o que aconteceu **depois** da entrada, que é o que o formulário nativo não tem como saber.
 
-Nada de reprocessamento ou reenvio de histórico. Os eventos já enviados continuam no relatório da Meta; o alinhamento entre "Leads" e "Resultados" aparece a partir do dia seguinte à aplicação.
+## Nomes dos eventos em português
+
+Hoje os eventos usam os nomes padrão do Meta, que são pouco intuitivos. Passam a ter nome próprio, autoexplicativo:
+
+| Hoje | Passa a ser | Quando dispara |
+|---|---|---|
+| `Lead` | (deixa de existir) | — |
+| `LeadQualificado` | `LeadQualificado` (mantém) | Lead entra na etapa Qualificação |
+| `Schedule` | `VisitaMarcada` | Visita agendada |
+| `ViewContent` | `VisitaRealizada` | Visita confirmada como realizada (era o nome genérico "viu conteúdo") |
+| `Purchase` | `Venda` | Negócio ganho / contrato assinado |
+
+Ponto importante antes de aprovar: `Schedule`, `ViewContent` e `Purchase` são eventos **padrão** do Meta e podem ser usados direto como objetivo de otimização de campanha. Renomeando, os quatro viram eventos **customizados** — continuam aparecendo no Gerenciador de Eventos e podem ser usados como otimização, mas exigem cadastro de conversão personalizada no dataset, e o histórico dos nomes antigos não é migrado (o gráfico recomeça com o nome novo). Se você usa hoje `Purchase` como evento de otimização em alguma campanha, ela precisa ser reapontada.
 
 ## Fora de escopo
 
-- Gatilho de qualificação (`_trg_pipeline_lead_capi`), `Schedule`, `ViewContent`, `Purchase` — permanecem como estão.
-- `enqueue_meta_capi_event`, tabela `meta_capi_queue`, dispatcher e endpoint público `meta-capi-track`.
+- `enqueue_meta_capi_event`, tabela `meta_capi_queue`, dispatcher e endpoint público `meta-capi-track` (o endpoint do site continua aceitando os nomes padrão).
 - Frontend: nenhuma alteração.
+- Nenhum dado histórico é reprocessado ou reenviado.
 
 ## Detalhes técnicos
 
-- Migração: `CREATE OR REPLACE FUNCTION public._trg_pipeline_lead_capi_insert()`.
-  - Corpo passa a ser um `RETURN NEW` imediato (nenhum enfileiramento de `Lead`), preservando o bloco `EXCEPTION WHEN OTHERS` com log em `ops_events` do restante do fluxo, conforme a regra "rastreamento nunca derruba entrada de lead".
-  - O gatilho `trg_pipeline_lead_capi_insert` continua existindo (não será dropado), para reversão em uma linha caso você queira voltar atrás.
-- Custo de dedup: os 5 casos de contato recriado no pipeline deixam de importar, já que `Lead` não é mais emitido.
+- Uma única migração, alterando 3 funções de gatilho:
+  - `_trg_pipeline_lead_capi_insert()` → corpo vira `RETURN NEW` imediato (não enfileira mais `Lead`). O gatilho não é dropado, para reversão em uma linha.
+  - `_trg_visita_capi()` → `Schedule` vira `VisitaMarcada`, `ViewContent` vira `VisitaRealizada`.
+  - `_trg_negocio_capi()` → `Purchase` vira `Venda`.
+- Todos preservam o bloco `EXCEPTION WHEN OTHERS` com log em `ops_events`, conforme a regra "rastreamento nunca derruba entrada de lead".
+- Deduplicação segue pelo `event_id` (hash lead + evento + timestamp) com `ON CONFLICT DO NOTHING`.
 
 ## Princípio acordado
 
-O Meta já sabe quem preencheu o formulário — não precisa que o CRM repita essa informação. O CRM passa a mandar **só o que evoluiu e qualificou** depois da entrada: `LeadQualificado`, `Schedule`, `ViewContent` e `Purchase`.
+O Meta já sabe quem preencheu o formulário — não precisa que o CRM repita essa informação. O CRM passa a mandar **só o que evoluiu e qualificou** depois da entrada: `LeadQualificado`, `VisitaMarcada`, `VisitaRealizada` e `Venda`.
