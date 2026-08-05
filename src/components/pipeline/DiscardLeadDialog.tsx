@@ -22,6 +22,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Ban, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { buildMotivoDescarte } from "@/lib/leadOutcome";
+import {
+  DISCARD_REASONS_REENGAJAVEL,
+  DISCARD_REASONS_DEFINITIVO,
+  getReasonByCode,
+  reasonDisplay,
+} from "@/lib/discardReasons";
 import { toast } from "sonner";
 import type { PipelineStage } from "@/hooks/usePipeline";
 
@@ -50,22 +56,28 @@ export default function DiscardLeadDialog({
     if (open) setTipo(defaultTipo);
   }, [open, defaultTipo]);
 
+  const reasons = tipo === "definitivo" ? DISCARD_REASONS_DEFINITIVO : DISCARD_REASONS_REENGAJAVEL;
+
   const reset = () => { setMotivo(""); setObs(""); setTipo(defaultTipo); };
 
   const handleConfirm = async () => {
     if (!motivo) { toast.error("Selecione um motivo"); return; }
     setSaving(true);
     try {
-      const labelRaw = motivo === "outro" ? (obs.trim() || "Outro motivo") : motivo;
+      const reason = getReasonByCode(motivo);
+      const labelRaw = motivo === "outro" ? (obs.trim() || "Outro motivo") : (reason?.label || motivo);
       const motivoTexto = buildMotivoDescarte(tipo, labelRaw);
       const nowIso = new Date().toISOString();
+
 
       if (tipo === "definitivo") {
         const { error } = await supabase
           .from("pipeline_leads")
           .update({
             motivo_descarte: motivoTexto,
+            motivo_descarte_code: motivo,
             tipo_descarte: "definitivo",
+
             arquivado: true,
             ultima_acao_at: nowIso,
           })
@@ -83,7 +95,9 @@ export default function DiscardLeadDialog({
           .from("pipeline_leads")
           .update({
             motivo_descarte: motivoTexto,
+            motivo_descarte_code: motivo,
             tipo_descarte: "reengajavel",
+
             stage_id: descarteStage.id,
             stage_changed_at: nowIso,
             ultima_acao_at: nowIso,
@@ -125,13 +139,11 @@ export default function DiscardLeadDialog({
             <Select value={motivo} onValueChange={setMotivo}>
               <SelectTrigger><SelectValue placeholder="Selecione o motivo..." /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Contato errado">📵 Contato errado</SelectItem>
-                <SelectItem value="Não quer mais contato">🚫 Não quer mais contato</SelectItem>
-                <SelectItem value="Solicitou retirada do nome">🗑️ Solicitou retirada do nome</SelectItem>
-                <SelectItem value="Sem perfil">🎯 Sem perfil para o produto</SelectItem>
-                <SelectItem value="Sem retorno">📞 Sem retorno após tentativas</SelectItem>
-                <SelectItem value="outro">✏️ Outro motivo</SelectItem>
+                {reasons.map((r) => (
+                  <SelectItem key={r.code} value={r.code}>{reasonDisplay(r)}</SelectItem>
+                ))}
               </SelectContent>
+
             </Select>
           </div>
 
@@ -150,7 +162,7 @@ export default function DiscardLeadDialog({
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">O que fazer com o lead? *</Label>
-            <Select value={tipo} onValueChange={(v) => setTipo(v as "reengajavel" | "definitivo")}>
+            <Select value={tipo} onValueChange={(v) => { setTipo(v as "reengajavel" | "definitivo"); setMotivo(""); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="reengajavel">🔄 Descartar (nutrição/oferta ativa)</SelectItem>

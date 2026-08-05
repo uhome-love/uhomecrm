@@ -1,3 +1,4 @@
+import { DISCARD_REASONS_REENGAJAVEL, reasonDisplay } from "@/lib/discardReasons";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -733,14 +734,11 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
           <Select value={motivo} onValueChange={setMotivo}>
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione o motivo..." /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="sem_interesse">Sem interesse</SelectItem>
-              <SelectItem value="nao_atende">Não atende / não responde</SelectItem>
-              <SelectItem value="sem_perfil">Sem perfil financeiro</SelectItem>
-              <SelectItem value="comprou_outro">Comprou com outro</SelectItem>
-              <SelectItem value="desistiu">Desistiu da compra</SelectItem>
-              <SelectItem value="duplicado">Lead duplicado</SelectItem>
-              <SelectItem value="outro">Outro</SelectItem>
+              {DISCARD_REASONS_REENGAJAVEL.map((r) => (
+                <SelectItem key={r.code} value={r.code}>{reasonDisplay(r)}</SelectItem>
+              ))}
             </SelectContent>
+
           </Select>
         </div>
         <div>

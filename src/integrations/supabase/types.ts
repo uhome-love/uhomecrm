@@ -8092,6 +8092,7 @@ export type Database = {
           modo_conducao: string
           modulo_atual: string
           motivo_descarte: string | null
+          motivo_descarte_code: string | null
           motivo_pendencia: string | null
           motivo_redistribuicao: string | null
           motivo_rejeicao: string | null
@@ -8205,6 +8206,7 @@ export type Database = {
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
+          motivo_descarte_code?: string | null
           motivo_pendencia?: string | null
           motivo_redistribuicao?: string | null
           motivo_rejeicao?: string | null
@@ -8318,6 +8320,7 @@ export type Database = {
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
+          motivo_descarte_code?: string | null
           motivo_pendencia?: string | null
           motivo_redistribuicao?: string | null
           motivo_rejeicao?: string | null

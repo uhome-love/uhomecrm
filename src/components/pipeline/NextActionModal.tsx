@@ -29,16 +29,14 @@ const TIPO_TAREFA_OPTIONS = [
   { value: "enviar_material", label: "Enviar material", emoji: "✉️" },
 ];
 
-const MOTIVOS_DESCARTE = [
-  "Sem interesse",
-  "Não atende / não responde",
-  "Comprou com concorrente",
-  "Sem condição financeira",
-  "Perfil incompatível",
-  "Lead duplicado",
-  "Número inválido",
-  "Outro",
-];
+import {
+  DISCARD_REASONS_REENGAJAVEL,
+  getReasonByCode,
+  reasonDisplay,
+} from "@/lib/discardReasons";
+
+const MOTIVOS_DESCARTE = DISCARD_REASONS_REENGAJAVEL;
+
 
 interface Props {
   open: boolean;
@@ -150,15 +148,18 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
       } else if (selected === "descartar") {
         if (!motivoDescarte) { toast.error("Selecione o motivo"); setSaving(false); return; }
         const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
-        const labelRaw = motivoDescarte === "Outro"
+        const reason = getReasonByCode(motivoDescarte);
+        const labelRaw = motivoDescarte === "outro"
           ? (obsDescarte.trim() || "Outro motivo")
-          : motivoDescarte;
+          : (reason?.label || motivoDescarte);
         const motivoTexto = buildMotivoDescarte("reengajavel", labelRaw);
         await supabase.from("pipeline_leads").update({
           motivo_descarte: motivoTexto,
+          motivo_descarte_code: motivoDescarte,
           tipo_descarte: "reengajavel",
           updated_at: new Date().toISOString(),
         } as any).eq("id", leadId);
+
         if (descarteStage) {
           await onMove(leadId, descarteStage.id, motivoTexto);
         }
@@ -333,8 +334,9 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
                   </SelectTrigger>
                   <SelectContent>
                     {MOTIVOS_DESCARTE.map(m => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                      <SelectItem key={m.code} value={m.code}>{reasonDisplay(m)}</SelectItem>
                     ))}
+
                   </SelectContent>
                 </Select>
               </div>

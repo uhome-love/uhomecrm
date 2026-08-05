@@ -80,6 +80,8 @@ export async function runTaskCompletion(
     nova_tarefa,
     novo_stage_id,
     reason_label,
+    reason_code,
+
   } = payload;
 
   const now = new Date().toISOString();
@@ -216,7 +218,9 @@ export async function runTaskCompletion(
         stage_changed_at: now,
         updated_at: now,
         motivo_descarte: motivo,
+        motivo_descarte_code: reason_code ?? null,
         tipo_descarte: "reengajavel",
+
         arquivado: false,
       } as never)
       .eq("id", ctx.leadId);
@@ -244,7 +248,9 @@ export async function runTaskCompletion(
       .from("pipeline_leads")
       .update({
         motivo_descarte: motivo,
+        motivo_descarte_code: reason_code ?? null,
         tipo_descarte: "definitivo",
+
         arquivado: true,
         ultima_acao_at: now,
         updated_at: now,
