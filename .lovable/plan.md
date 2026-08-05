@@ -582,10 +582,12 @@ lead); ao gestor só chega estagnado; "% da carteira em dia" vira KPI de 1:1 e d
   Nada muda em tela; permite comparar número novo × atual antes de trocar.
 - **H2 — Registrar atividade**: diálogo único, lembrete opcional, fechamento automático de tarefa
   compatível. Primeiro em Qualificação.
-- **H3 — Saúde visual**: cores/labels no card, pílulas novas, filtro "sem contato há X dias",
-  nova ordenação.
+- **H3 — Saúde visual**: cores/labels no card, as 3 pílulas novas (Em dia · Desatualizado ·
+  Em estagnação), filtro "sem contato há X dias", nova ordenação.
 - **H4 — Modo Foco** por dias sem contato.
-- **H5 — Estagnação nova**: Qualificação 15d + 24h, saída para a tela do gestor, resumo diário.
+- **H5 — Configuração do CEO** (tela ⚙️ da 12.4b, com pré-visualização) **+ estagnação nova**:
+  Qualificação 7/15 + 24h, saída para a tela do gestor, resumo diário.
+
 - **H6 — Triagem do Aquecimento** (mutirão dos 557) e só então ligar cadências.
 - **H7 — Metas e placar** de atividade; aposentar o `NextActionModal` obrigatório.
 
