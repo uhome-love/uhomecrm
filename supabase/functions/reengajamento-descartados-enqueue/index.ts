@@ -1043,7 +1043,9 @@ Deno.serve(async (req) => {
         duplicados_fila: duplicadosFilaRemovidos,
         elegiveis_calculados: totalAlvo,
         enfileirados: queueTotal ?? totalAlvo,
+        ...(Object.keys(paginacaoInfo).length ? { paginacao: paginacaoInfo } : {}),
       };
+
     };
 
     if (bodyRunId) {
