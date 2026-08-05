@@ -54,6 +54,10 @@ export default function QuickActionMenu({ leadId, leadNome, corretorId, children
       updated_at: new Date().toISOString(),
     } as any).eq("id", leadId);
 
+    // Toque humano do corretor (aditivo)
+    await registrarToque(leadId);
+
+
     // If "não atendeu", create a callback task in 2h
     if (action.createTask) {
       const venceEm = new Date();
