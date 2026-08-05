@@ -39,6 +39,8 @@ import { cn, dateToBRT } from "@/lib/utils";
 import { toast } from "sonner";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import type { CompletionPayload } from "./types";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 export type VisitaSubtipo =
   | "confirmar_visita"
