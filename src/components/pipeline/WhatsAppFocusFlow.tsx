@@ -157,7 +157,10 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
         updated_at: new Date().toISOString(),
       } as any).eq("id", lead.id),
     ]);
+    // Toque humano do corretor (aditivo)
+    await registrarToque(lead.id);
   }, [user, lead.id]);
+
 
   const handleCopy = async (msg: string) => {
     navigator.clipboard.writeText(msg);
