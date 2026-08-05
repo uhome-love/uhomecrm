@@ -213,6 +213,8 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
       .from("pipeline_leads")
       .update({ ultima_acao_at: now, updated_at: now } as never)
       .eq("id", leadId);
+    await registrarToque(leadId);
+
 
     const userId = (await supabase.auth.getUser()).data?.user?.id || "";
     await supabase.from("pipeline_atividades").insert({
