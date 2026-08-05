@@ -283,3 +283,122 @@ Toda fase é validada **ao vivo no preview**, etapa por etapa, com lead de teste
 - Fase E segue o plano PDN espelho já aprovado (`usePdn.ts`, `PdnGestor.tsx`, `PdnToolbar.tsx`), com o escopo restrito a Pós-Visita em diante.
 - `/descartes` é leitura + normalização em view/RPC; `motivo_descarte` histórico intacto.
 - Aviso/guia: componente novo + registro de leitura em tabela simples; sem impacto em nada existente.
+
+---
+
+## 12. A tarefa é a verdade do CRM? — resposta com números
+
+### 12.1 O que os dados mostram (últimos 30/90 dias)
+
+| Métrica | Valor |
+|---|---|
+| Tarefas criadas em 30 dias | **11.496** em 2.866 leads |
+| Atividades registradas em 30 dias | **9.675** em 2.928 leads |
+| Tarefas concluídas | 7.186 (62%) |
+| **Tarefas canceladas** | **2.588 (22,5%)** |
+| Pendentes | 1.780 — **556 atrasadas**, 115 há mais de 7 dias |
+| Tarefas por lead (90d) | média 4,6 · mediana 4 · máximo 33 · **554 leads com 10+** |
+
+Por tipo, o cancelamento denuncia onde a tarefa é burocracia e não trabalho:
+`marcar_visita` **82,6% canceladas**, `retornar_cliente` 85,7%, `contato` 31,6%, `follow_up` 24,3%. Ligação, que é trabalho real, é a mais concluída (73%).
+
+Correlação tarefa × avanço (safra 90 dias): Descarte 4,4 tarefas/lead · Aquecimento **7,1** · Pós-Visita 7,9 · Proposta 11,1 · **Venda 4,1**.
+**Quem vendeu teve MENOS tarefas que quem está travado no Aquecimento.** Volume de tarefa não é sinal de progresso — em muitos casos é sinal de lead que não anda.
+
+E o ritmo diário: em média **2,2 tarefas criadas para cada atividade registrada** (em 03/08: 725 tarefas × 340 atividades). O corretor está gerando mais agenda do que contato.
+
+### 12.2 Diagnóstico
+
+**Não, tarefa não deveria ser a verdade da atualização — e hoje ela é.**
+
+O que acontece na prática: o corretor precisa concluir uma tarefa para poder registrar o que fez, e precisa criar outra para o lead não "sumir". O CRM cobra o ritual, não o resultado. Consequências visíveis nos números:
+- 2.588 tarefas canceladas em 30 dias = trabalho de digitação jogado fora.
+- 554 leads com 10+ tarefas = leads que viraram esteira de follow-up sem nunca avançar.
+- 556 tarefas atrasadas = a lista do dia já nasce mentirosa, e o corretor aprende a ignorar.
+
+Concordo com você: **isso rouba foco do lead mais predisposto.** A fila é ordenada por "o que vence hoje", não por "quem está mais perto de comprar".
+
+### 12.3 O formato que eu proponho: **atividade é a verdade, tarefa é lembrete**
+
+Inversão de papéis, sem apagar nada do que existe:
+
+| Hoje | Proposto |
+|---|---|
+| Tarefa = obrigação para registrar | **Atividade = registro do que aconteceu** (1 clique) |
+| Concluir tarefa = única forma de atualizar | Registrar atividade **já atualiza** `ultima_acao_at`, substatus e fecha automaticamente a tarefa pendente compatível |
+| Criar próxima tarefa = obrigatório sempre | **Lembrete opcional**, sugerido, nunca bloqueante |
+| Fila do dia = tarefas vencendo | **Fila do dia = leads priorizados** (predisposição), com tarefas dentro |
+
+Como fica na tela:
+
+```text
+LEAD ─ barra de ação rápida (1 clique cada)
+[📞 Falei] [📵 Não atendeu] [💬 WhatsApp] [🏠 Marquei visita] [📄 Proposta]
+        │
+        ├─ grava ATIVIDADE (verdade)
+        ├─ atualiza último contato + substatus sugerido
+        ├─ fecha tarefa pendente compatível (sem diálogo)
+        └─ sugere lembrete: "voltar em 2 dias?"  [Sim] [Depois]  ← opcional
+```
+
+Regra de segurança que mantém a operação gerenciável: **o lembrete é opcional, mas o lead sem próximo passo aparece marcado** ("⏳ sem próximo passo") na coluna e no painel do gestor. Ou seja, não obrigamos o corretor a criar tarefa — mas o silêncio fica visível. É o mesmo efeito de cobrança, sem o ritual.
+
+**Tarefa automática continua existindo onde ela é regra de negócio, e só ali:**
+- Sem Contato (cadência do banco — intocada)
+- Visita (confirmar → registrar resultado — regra de 1 card por vez, intocada)
+- Retorno de nutrição
+- Em Negociação com prazo externo estourado
+
+### 12.4 Riscos e como mitigo
+
+| Risco | Mitigação |
+|---|---|
+| Corretor para de agendar e o lead esfria | Marcador "sem próximo passo" + painel do gestor + escalonamento automático depois de X dias sem atividade |
+| Gestor perde a régua de cobrança | A régua troca de base: passa a ser **atividades/dia e leads tocados/dia** (dado mais honesto — hoje já temos 9.675 atividades registradas) |
+| Relatórios de tarefa quebram | Nada é removido: `pipeline_tarefas` continua igual; só deixa de ser obrigatória. Central de Tarefas segue funcionando |
+| Perda de histórico | Ganho, não perda: atividade de 1 clique tende a ser registrada mais vezes do que hoje |
+
+### 12.5 O que muda na fila do dia (a parte que mais devolve foco)
+Modo Foco deixa de ser "tarefas que vencem" e passa a ser **ranking de predisposição**: sinal recente (respondeu/clicou), etapa avançada, visita realizada sem desfecho, tempo desde o último toque. Tarefa vencida entra como um dos sinais, não como o único. É isso que faz o corretor abrir primeiro quem está perto de comprar.
+
+**Fase H — Atividade como verdade** entra depois da Fase D, e é aplicada primeiro em Qualificação (onde estão os 691 leads e a maior parte do cancelamento), medindo por 2 semanas antes de expandir.
+
+---
+
+## 13. Qualificação visual dos fluxos
+
+- **Cabeçalho de etapa clicável**: hoje não há affordance. Adicionar seta discreta + contagem de "⚠ sem status", para o clique ser óbvio.
+- **Subfunil**: colunas mais estreitas que o Kanban principal, fundo levemente rebaixado e breadcrumb "Pipeline › Qualificação", para o corretor nunca achar que trocou de sistema.
+- **Card do lead**: hierarquia atual é plana. Nome forte, substatus como chip discreto, e um único sinal de urgência à esquerda (barra colorida) em vez de vários badges concorrendo.
+- **Temperatura de tempo**: borda esquerda neutra (0-3 dias) → âmbar (4-14) → vermelha (>14). Um só idioma visual de "está parado", usado igual no Kanban, no subfunil e no PDN.
+- **Nutrição**: identidade própria (verde/planta), cards mais baixos e sem sinal de urgência — é etapa de espera, não pode parecer atraso.
+- **PDN**: as 4 colunas com faixa de VGV no topo de cada uma, para o gestor ler dinheiro antes de ler quantidade.
+- **Barra de ação rápida**: botões grandes, ícone + verbo no passado ("Falei", "Não atendeu"), fixa no rodapé do detalhe do lead no mobile — hoje a ação principal fica escondida em menu.
+- **Estados vazios**: usar o `StateWrapper` que já existe em todas as telas novas, para erro nunca virar zero silencioso.
+
+---
+
+## 14. Validação ponta a ponta (obrigatória em cada fase)
+
+Roteiro fixo, executado ao vivo no preview com lead de teste, antes de qualquer fase ser dada como pronta:
+
+1. **Entrada**: lead novo pelo Meta → roleta/Fila do CEO → aceite → substatus inicial.
+2. **Qualificação**: mover no subfunil → confere `flag_status`, histórico e que a etapa não mudou.
+3. **Nutrição**: entrar com motivo/data → sai da carteira → aparece no painel → volta por data e por sinal → tarefa criada no retorno.
+4. **Visita**: agendar → confirmar → realizar/no-show → conferir agenda, regra 1 por cliente/dia e evento `Schedule`.
+5. **Pós-Visita → Negociação → Contrato → Ganho**: conferir espelho no PDN e observação do gestor aparecendo no lead.
+6. **Descarte/Inativar**: novo motivo grava código + texto; lead sai do board; aparece em `/descartes`.
+7. **Relatórios**: Performance, Dashboard do gestor v4, CEO e PDN batendo antes e depois (print do antes obrigatório).
+8. **Central de Tarefas e Agenda de Visitas**: contagens iguais às do dia anterior, fora o efeito esperado.
+9. **Mobile**: o corretor trabalha no celular — cada fase é validada em 440px também.
+10. **Rollback**: cada fase tem o caminho de volta escrito antes de subir.
+
+---
+
+## 15. Sugestões extras (para você decidir)
+
+- **Selo "Predisposição"** no card (sinal recente + etapa + tempo) — alimenta o Modo Foco e o ranking do dia.
+- **Meta de atividades/dia por corretor**, substituindo meta de tarefas concluídas.
+- **Alerta de lead parado por etapa** com prazo diferente por etapa (Qualificação 7d, Visita 3d, Negociação 5d), indo para o gestor e não para o corretor.
+- **Motivo de descarte obrigatório também na saída da nutrição** — para saber por que a nutrição não converteu.
+- **Relatório mensal "onde perdemos"**: descarte por etapa de origem × motivo × empreendimento, direto para o 1:1.
