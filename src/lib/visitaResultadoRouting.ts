@@ -116,6 +116,10 @@ export async function routeLeadAfterVisita(ctx: RouteLeadContext): Promise<boole
     return false;
   }
 
+  // Toque humano do corretor (aditivo — registro do resultado da visita)
+  await registrarToque(ctx.pipelineLeadId);
+
+
   // 3) Histórico de movimentação (só quando muda de etapa)
   if (updatePayload.stage_id && oldStageId) {
     await supabase.from("pipeline_historico").insert({
