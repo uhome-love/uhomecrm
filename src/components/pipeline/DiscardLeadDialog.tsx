@@ -22,6 +22,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Ban, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { buildMotivoDescarte } from "@/lib/leadOutcome";
+import {
+  DISCARD_REASONS_REENGAJAVEL,
+  DISCARD_REASONS_DEFINITIVO,
+  getReasonByCode,
+  reasonDisplay,
+} from "@/lib/discardReasons";
 import { toast } from "sonner";
 import type { PipelineStage } from "@/hooks/usePipeline";
 
