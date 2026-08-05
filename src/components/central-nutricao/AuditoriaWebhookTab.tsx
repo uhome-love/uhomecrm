@@ -92,9 +92,9 @@ function parseResponse(raw: string | null): { text: string; type: string | null 
   }
 }
 
-function KpiCell({ label, value, color, highlight }: { label: string; value: number; color: string; highlight?: boolean }) {
+function KpiCell({ label, value, color, highlight, hint }: { label: string; value: number; color: string; highlight?: boolean; hint?: string }) {
   return (
-    <div className={`text-center rounded-md px-2 py-1.5 ${highlight ? "bg-emerald-100/60 dark:bg-emerald-900/20" : ""}`}>
+    <div className={`text-center rounded-md px-2 py-1.5 ${highlight ? "bg-emerald-100/60 dark:bg-emerald-900/20" : ""}`} title={hint}>
       <div className="text-[10px] text-muted-foreground leading-tight">{label}</div>
       <div className={`text-lg font-bold leading-tight ${color}`}>{value}</div>
     </div>
