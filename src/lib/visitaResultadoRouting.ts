@@ -5,6 +5,8 @@
 // ─────────────────────────────────────────────────────────────────
 import { supabase } from "@/integrations/supabase/client";
 import type { ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 export interface RouteLeadContext {
   pipelineLeadId: string;
