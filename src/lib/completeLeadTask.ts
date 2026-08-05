@@ -8,6 +8,8 @@
 // ─────────────────────────────────────────────────────────────────
 import { supabase } from "@/integrations/supabase/client";
 import type { CompletionPayload } from "@/components/pipeline/task-completion/types";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 export interface CompleteLeadTaskInput {
   tarefaId: string;
