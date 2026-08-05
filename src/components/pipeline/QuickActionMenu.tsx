@@ -5,6 +5,8 @@ import { Zap, Phone, PhoneOff, MessageCircle, Mail, FileText, ClipboardList, Map
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { registrarToque } from "@/lib/registrarToque";
+
 
 interface Props {
   leadId: string;
