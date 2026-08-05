@@ -529,14 +529,18 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
             <Badge variant="outline" className="text-[10px]">{todayStats?.total ?? 0} disparos hoje</Badge>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
-            <KpiCell label="Enviados" value={todayStats?.sent ?? stats.waiting} color="text-neutral-700" />
-            <KpiCell label="Entregues" value={todayStats?.delivered ?? 0} color="text-blue-700" />
-            <KpiCell label="Lidos" value={todayStats?.read ?? 0} color="text-indigo-700" />
-            <KpiCell label="Responderam" value={todayStats?.responded ?? stats.responded} color="text-emerald-700" />
-            <KpiCell label="✅ SIM" value={todayStats?.sim ?? stats.sim} color="text-emerald-700" highlight />
-            <KpiCell label="❌ NÃO" value={todayStats?.nao ?? stats.nao} color="text-red-700" />
-            <KpiCell label="Falhas" value={todayStats?.failed ?? stats.failed} color="text-red-600" />
+            <KpiCell label="Enviados" value={todayStats?.sent ?? 0} color="text-neutral-700" hint="Mensagens com carimbo de envio para a Meta (inclui as que já foram entregues, lidas ou respondidas)." />
+            <KpiCell label="Entregues" value={todayStats?.delivered ?? 0} color="text-blue-700" hint="Mensagens com carimbo de entrega no WhatsApp." />
+            <KpiCell label="Lidos" value={todayStats?.read ?? 0} color="text-indigo-700" hint="Mensagens com carimbo de leitura pelo contato." />
+            <KpiCell label="Responderam" value={todayStats?.responded ?? 0} color="text-emerald-700" hint="Contatos que responderam ao disparo (botão ou texto livre)." />
+            <KpiCell label="✅ SIM" value={todayStats?.sim ?? 0} color="text-emerald-700" highlight hint="Contatos únicos com resposta positiva." />
+            <KpiCell label="❌ NÃO" value={todayStats?.nao ?? 0} color="text-red-700" hint="Contatos únicos com resposta negativa." />
+            <KpiCell label="Falhas" value={todayStats?.failed ?? 0} color="text-red-600" hint="Mensagens recusadas pela Meta ou com erro de envio." />
           </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Números acumulados do funil: quem foi lido também conta em entregues e enviados — não some as colunas.
+          </p>
+
         </CardContent>
       </Card>
 
