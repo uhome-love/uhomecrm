@@ -500,6 +500,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
         updated_at: now,
       } as never).eq("id", currentLead.id);
 
+      // 2b) Toque humano do corretor (aditivo)
+      await registrarToque(currentLead.id);
+
+
       // 3) Activity capture (sempre)
       const tituloAtividade = `${completingOverdue.titulo} — ${resultado}`;
       await supabase.from("pipeline_atividades").insert({
