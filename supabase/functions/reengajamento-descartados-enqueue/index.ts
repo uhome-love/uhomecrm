@@ -770,9 +770,38 @@ Deno.serve(async (req) => {
           janela_dedup_dias: Number(f.janela_dedup_dias || 30),
           template_name: canal === "meta" ? (metaTemplate || null) : null,
         };
-        const { data, error } = await supabase.rpc("selecionar_reengajamento_base", { p_filtro: filtro, p_limit: cap });
-        if (error) throw error;
-        const rows = (data || []) as any[];
+        // PostgREST corta QUALQUER resposta (inclusive RPC) em ~1000 linhas.
+        // Sem paginar, um pedido de 5.000 sempre voltava com 1.000 brutos.
+        const PAGE = 1000;
+        const rows: any[] = [];
+        const seenIds = new Set<string>();
+        const seenPhones = new Set<string>();
+        let off = 0;
+        let pages = 0;
+        while (rows.length < cap) {
+          const upper = Math.min(off + PAGE, cap) - 1;
+          const { data, error } = await supabase
+            .rpc("selecionar_reengajamento_base", { p_filtro: filtro, p_limit: cap })
+            .range(off, upper);
+          if (error) throw error;
+          const pageRows = (data || []) as any[];
+          pages++;
+          if (pageRows.length === 0) break;
+          for (const r of pageRows) {
+            const id = String(r.id);
+            const phoneKey = last8(r.telefone);
+            // ordem_selecao 'aleatorio' pode repetir entre páginas: dedup por id e telefone
+            if (seenIds.has(id)) continue;
+            if (phoneKey && seenPhones.has(phoneKey)) continue;
+            seenIds.add(id);
+            if (phoneKey) seenPhones.add(phoneKey);
+            rows.push(r);
+          }
+          if (pageRows.length < PAGE) break;
+          off += PAGE;
+        }
+        console.log(`fetchBaseUnica: ${rows.length} linhas brutas em ${pages} página(s) (cap ${cap})`);
+        paginacaoInfo.base_unica = { paginas: pages, linhas: rows.length, cap };
         totalBrutoCapturado = Math.max(totalBrutoCapturado || 0, rows.length);
         return rows.map((l: any) => ({
           id: l.id as string,
@@ -782,6 +811,7 @@ Deno.serve(async (req) => {
           ref: "base_lead" as const,
         }));
       };
+
 
       const fetchForSource = async (src: string, cap: number): Promise<Lead[]> => {
         if (src === "descartados") return fetchDescartados(cap);
