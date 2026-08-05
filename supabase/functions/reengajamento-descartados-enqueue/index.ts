@@ -565,6 +565,8 @@ Deno.serve(async (req) => {
     let removidosPorEventoRecente = 0;
     let duplicadosFilaRemovidos = 0;
     let totalBrutoCapturado: number | null = null;
+    const paginacaoInfo: Record<string, { paginas: number; linhas: number; cap: number }> = {};
+
     let totalAlvo = 0;
     let initialSent = 0;
     let initialFailed = 0;
@@ -681,20 +683,39 @@ Deno.serve(async (req) => {
       const fetchPipelineAtivo = async (cap: number): Promise<Lead[]> => {
         const stageIds: string[] = (bodyAudience.stage_ids || []).filter(Boolean);
         if (stageIds.length === 0) throw new Error("audience.stage_ids vazio");
-        let q = supabase
-          .from("pipeline_leads")
-          .select("id, nome, telefone, email")
-          .in("stage_id", stageIds)
-          .eq("arquivado", false)
-          .not("telefone", "is", null);
-        if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
-        if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
-        if (empList.length) q = q.in("empreendimento", empList);
-        const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
-        if (error) throw error;
-        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" as const }));
+        const buildQuery = () => {
+          let q = supabase
+            .from("pipeline_leads")
+            .select("id, nome, telefone, email")
+            .in("stage_id", stageIds)
+            .eq("arquivado", false)
+            .not("telefone", "is", null);
+          if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
+          if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
+          if (empList.length) q = q.in("empreendimento", empList);
+          return q.order("created_at", { ascending: false });
+        };
+        // PostgREST corta respostas em ~1000 linhas: paginar para honrar `cap`.
+        const PAGE = 1000;
+        const rows: any[] = [];
+        let off = 0;
+        let pages = 0;
+        while (rows.length < cap) {
+          const upper = Math.min(off + PAGE, cap) - 1;
+          const { data: pageData, error } = await buildQuery().range(off, upper);
+          if (error) throw error;
+          pages++;
+          if (!pageData || pageData.length === 0) break;
+          rows.push(...pageData);
+          if (pageData.length < PAGE) break;
+          off += PAGE;
+        }
+        console.log(`fetchPipelineAtivo: ${rows.length} linhas brutas em ${pages} página(s) (cap ${cap})`);
+        paginacaoInfo.pipeline_ativo = { paginas: pages, linhas: rows.length, cap };
+        const cand = rows.map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" as const }));
         return dedupViaEventos(cand, `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`);
       };
+
 
       const fetchOfertaAtiva = async (cap: number): Promise<Lead[]> => {
         const listaIds: string[] = (bodyAudience.lista_ids && bodyAudience.lista_ids.length)
@@ -751,9 +772,38 @@ Deno.serve(async (req) => {
           janela_dedup_dias: Number(f.janela_dedup_dias || 30),
           template_name: canal === "meta" ? (metaTemplate || null) : null,
         };
-        const { data, error } = await supabase.rpc("selecionar_reengajamento_base", { p_filtro: filtro, p_limit: cap });
-        if (error) throw error;
-        const rows = (data || []) as any[];
+        // PostgREST corta QUALQUER resposta (inclusive RPC) em ~1000 linhas.
+        // Sem paginar, um pedido de 5.000 sempre voltava com 1.000 brutos.
+        const PAGE = 1000;
+        const rows: any[] = [];
+        const seenIds = new Set<string>();
+        const seenPhones = new Set<string>();
+        let off = 0;
+        let pages = 0;
+        while (rows.length < cap) {
+          const upper = Math.min(off + PAGE, cap) - 1;
+          const { data, error } = await supabase
+            .rpc("selecionar_reengajamento_base", { p_filtro: filtro, p_limit: cap })
+            .range(off, upper);
+          if (error) throw error;
+          const pageRows = (data || []) as any[];
+          pages++;
+          if (pageRows.length === 0) break;
+          for (const r of pageRows) {
+            const id = String(r.id);
+            const phoneKey = last8(r.telefone);
+            // ordem_selecao 'aleatorio' pode repetir entre páginas: dedup por id e telefone
+            if (seenIds.has(id)) continue;
+            if (phoneKey && seenPhones.has(phoneKey)) continue;
+            seenIds.add(id);
+            if (phoneKey) seenPhones.add(phoneKey);
+            rows.push(r);
+          }
+          if (pageRows.length < PAGE) break;
+          off += PAGE;
+        }
+        console.log(`fetchBaseUnica: ${rows.length} linhas brutas em ${pages} página(s) (cap ${cap})`);
+        paginacaoInfo.base_unica = { paginas: pages, linhas: rows.length, cap };
         totalBrutoCapturado = Math.max(totalBrutoCapturado || 0, rows.length);
         return rows.map((l: any) => ({
           id: l.id as string,
@@ -763,6 +813,7 @@ Deno.serve(async (req) => {
           ref: "base_lead" as const,
         }));
       };
+
 
       const fetchForSource = async (src: string, cap: number): Promise<Lead[]> => {
         if (src === "descartados") return fetchDescartados(cap);
@@ -992,7 +1043,9 @@ Deno.serve(async (req) => {
         duplicados_fila: duplicadosFilaRemovidos,
         elegiveis_calculados: totalAlvo,
         enfileirados: queueTotal ?? totalAlvo,
+        ...(Object.keys(paginacaoInfo).length ? { paginacao: paginacaoInfo } : {}),
       };
+
     };
 
     if (bodyRunId) {
