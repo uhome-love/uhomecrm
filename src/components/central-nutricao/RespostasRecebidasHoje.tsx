@@ -150,9 +150,14 @@ export default function RespostasRecebidasHoje({
         let alerta: string | null = null;
         if (classificacao === "sim") {
           if (reativado) {
-            acao = reativadoViaOA || reativadoViaFone
+            acao = reativadoViaBase
+              ? "✅ Reativado da Base Única → Fila do CEO"
+              : reativadoViaOA
               ? "✅ Reativado via Oferta Ativa → Fila do CEO"
+              : reativadoViaFone
+              ? "✅ Reativado → Fila do CEO"
               : "✅ Reativado e enviado à roleta";
+
           } else {
             acao = "⚠️ SIM detectado mas lead não foi reativado";
             alerta = "Lead com resposta positiva não foi reativado";
