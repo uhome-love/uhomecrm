@@ -1069,29 +1069,6 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     }} />
                   </div>
 
-                  {/* Stats row */}
-                  <div className="flex items-center justify-between">
-                    {totalVGV > 0 ? (
-                      <span style={{
-                        fontSize: 11, fontWeight: 600, color: "hsl(var(--pipeline-text-muted))",
-                        fontFamily: "'DM Mono', monospace",
-                      }}>
-                        {formatVGV(totalVGV)}
-                      </span>
-                    ) : <span />}
-                    <div className="flex items-center gap-2">
-                      {avgTime && (
-                        <span style={{ fontSize: 11, color: "hsl(var(--pipeline-text-muted))" }}>
-                          ⏱ {avgTime}
-                        </span>
-                      )}
-                      {alerts.semCorretor > 0 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "hsl(var(--primary))" }}>
-                          👤{alerts.semCorretor}
-                        </span>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Drop placeholder pulsante */}
