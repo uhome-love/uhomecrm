@@ -145,6 +145,9 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   whatsappUnreadSet: Set<string>;
   cadenciaMap: Record<string, { tentativa: number; proxima_em: string | null }>;
   negociosMap: Record<string, { fase: string; vgv: number; fase_changed_at: string }>;
+  /** Mapa canônico id → nome, carregado UMA vez no board. */
+  canonicoNomes: Record<string, string>;
+
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER);
   const scrollRef = useRef<HTMLDivElement>(null);
