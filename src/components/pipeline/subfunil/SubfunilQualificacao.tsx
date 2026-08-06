@@ -182,7 +182,7 @@ export default function SubfunilQualificacao({
         </div>
       ) : (
         <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-2.5 h-full pb-3">
+          <div className="flex gap-4 h-full pb-3">
             {columns.map((col) => {
               const colLeads = leadsByColumn.get(col.key) ?? [];
               const isOver = dragOverCol === col.key;
@@ -190,7 +190,7 @@ export default function SubfunilQualificacao({
               return (
                 <div
                   key={col.key}
-                  className={`flex flex-col shrink-0 h-full rounded-xl border p-1.5 transition-colors ${
+                  className={`flex flex-col shrink-0 h-full rounded-2xl border p-2 transition-colors ${
                     isSemStatus
                       ? "border-amber-400/70 bg-amber-50/60 dark:bg-amber-500/5"
                       : isOver
