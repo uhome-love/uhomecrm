@@ -211,7 +211,7 @@ export default function SubfunilQualificacao({
                   }}
                 >
                   {/* Cabeçalho da coluna */}
-                  <div className="shrink-0 px-1.5 pt-1 pb-2">
+                  <div className="shrink-0 px-1.5 pt-1 pb-3">
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-[12px] font-semibold truncate ${
@@ -224,7 +224,7 @@ export default function SubfunilQualificacao({
                         {colLeads.length}
                       </span>
                     </div>
-                    <div className="mt-0.5 text-[10px] text-muted-foreground truncate">
+                    <div className="mt-1 text-[10px] text-muted-foreground truncate">
                       {isSemStatus
                         ? "Classifique — o cliente está em algum ponto abaixo"
                         : (FLUXO_HINT[col.key] ?? "")}
@@ -232,9 +232,9 @@ export default function SubfunilQualificacao({
                   </div>
 
                   {/* Cards */}
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1">
                     {colLeads.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-border py-6 text-center text-[10.5px] text-muted-foreground">
+                      <div className="rounded-xl border border-dashed border-border py-6 text-center text-[10.5px] text-muted-foreground">
                         {isSemStatus ? "Nenhum lead sem status" : "Arraste um lead para cá"}
                       </div>
                     )}
