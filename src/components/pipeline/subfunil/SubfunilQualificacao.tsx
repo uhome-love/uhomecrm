@@ -43,12 +43,12 @@ function splitLabel(label: string): { emoji: string; text: string } {
   return { emoji: "•", text: label };
 }
 
-/** Saúde vira MOLDURA do card (borda tingida + glow suave). */
-const SAUDE_FRAME: Record<SaudeEstado, string> = {
-  neutro: "border-border shadow-sm",
-  em_dia: "border-border shadow-sm",
-  desatualizado: "border-amber-300/70 dark:border-amber-500/40 shadow-md shadow-amber-500/20",
-  em_estagnacao: "border-red-300/80 dark:border-red-500/40 shadow-md shadow-red-500/25",
+/** Saúde vira BARRA lateral do card. */
+const SAUDE_BARRA: Record<SaudeEstado, string> = {
+  neutro: "bg-border",
+  em_dia: "bg-emerald-500",
+  desatualizado: "bg-amber-500",
+  em_estagnacao: "bg-red-500",
 };
 
 /** Dot do indicador de dias (sem fundo de pílula). */
@@ -72,6 +72,8 @@ interface Props {
   onClose: () => void;
   /** Recarrega os leads após gravar o substatus. */
   onChanged?: () => void;
+  /** Habilita o menu ⋮ (mesmo do Kanban). */
+  onMoveLead?: (leadId: string, newStageId: string, observacao?: string) => void;
 }
 
 export default function SubfunilQualificacao({
@@ -83,7 +85,9 @@ export default function SubfunilQualificacao({
   onSelectLead,
   onClose,
   onChanged,
+  onMoveLead,
 }: Props) {
+
   const dragLeadId = useRef<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
