@@ -38,13 +38,13 @@ export const DISCARD_REASONS: ReadonlyArray<DiscardReason> = [
   { code: "sem_perfil", label: "Sem perfil para o produto", emoji: "🎯", tipo: "reengajavel" },
   { code: "imovel_nao_atende", label: "Imóvel não atende necessidade", emoji: "🏚️", tipo: "reengajavel" },
   { code: "desistiu_compra", label: "Desistiu da compra", emoji: "🚪", tipo: "reengajavel" },
+  { code: "comprou_outro", label: "Comprou com outro", emoji: "🤝", tipo: "reengajavel" },
 
   // ── Definitivos (arquivam o lead) ──
   { code: "nao_quer_contato", label: "Não quer mais contato", emoji: "🚫", tipo: "definitivo" },
   { code: "contato_invalido", label: "Contato errado / Número inválido", emoji: "📵", tipo: "definitivo" },
   { code: "lgpd", label: "Solicitou retirada (LGPD)", emoji: "🗑️", tipo: "definitivo" },
   { code: "lead_antigo", label: "Lead antigo sem retorno", emoji: "🕰️", tipo: "definitivo" },
-  { code: "comprou_outro", label: "Comprou com outro", emoji: "🤝", tipo: "definitivo" },
   { code: "duplicado", label: "Lead duplicado", emoji: "👥", tipo: "definitivo" },
 
   // ── Coringa (aparece nas duas listas) ──
