@@ -68,6 +68,8 @@ function visitaAutoLabel(subtipo: string | null | undefined): string | null {
   return VISITA_AUTO_SUBTIPO_LABEL[subtipo] ?? null;
 }
 
+import { getSaudeToque, SAUDE_UI } from "@/lib/leadSaude";
+
 interface CardMinimalProps {
   lead: PipelineLead;
   stage?: PipelineStage;
@@ -255,6 +257,13 @@ const CardMinimal = memo(function CardMinimal({
   );
 
   const dias = useMemo(() => daysInStage(lead.stage_changed_at), [lead.stage_changed_at]);
+
+  // Saúde por TOQUE REAL (Onda 1 — só cor, não move/remove nada).
+  const saude = useMemo(
+    () => getSaudeToque(lead, stage?.tipo, proximaTarefa ?? null),
+    [lead.ultimo_toque_at, lead.created_at, stage?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
+  );
+  const saudeUi = saude.estado === "neutro" ? null : SAUDE_UI[saude.estado];
   const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
   const menuEnabled = !!(stages && onMoveLead);
@@ -366,6 +375,8 @@ const CardMinimal = memo(function CardMinimal({
           : "bg-card border border-border/60 hover:border-border",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
         stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
+        // Anel de urgência SECUNDÁRIO por saúde de toque (não substitui a borda esquerda).
+        saudeUi?.ring ?? "",
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
@@ -386,6 +397,14 @@ const CardMinimal = memo(function CardMinimal({
                 title={`Cadência Sem Contato — próxima ${cadenciaBadge.label}${cadenciaBadge.when ? ` em ${cadenciaBadge.when}` : ""}`}
               >
                 📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
+              </span>
+            )}
+            {saudeUi && (
+              <span
+                className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold ${saudeUi.pill}`}
+                title={`${saudeUi.label} — ${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
+              >
+                {saudeUi.emoji} {saudeUi.label}
               </span>
             )}
             {substatus && !hasSpecificTitle && (
