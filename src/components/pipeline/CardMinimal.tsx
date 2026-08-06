@@ -121,15 +121,14 @@ function resolveStatus(
 }
 
 
-// Borda 4px à esquerda — semantic-friendly Tailwind classes.
-const SIDEBAR_BY_STATUS: Record<StatusKey, string> = {
-  atrasada: "before:bg-red-500",
-  hoje: "before:bg-emerald-500",
-  futura: "before:bg-emerald-500",
-  sem: "before:bg-amber-500",
-  convertido: "before:bg-sky-500",
-  descarte: "before:bg-zinc-400 dark:before:bg-zinc-600",
+// Saúde por TOQUE = barra lateral esquerda (mesmo mapa do subfunil).
+const SAUDE_BARRA: Record<SaudeEstado, string> = {
+  neutro: "bg-border",
+  em_dia: "bg-emerald-500",
+  desatualizado: "bg-amber-500",
+  em_estagnacao: "bg-red-500",
 };
+
 
 
 function deduplicateEmp(raw: string): string {
