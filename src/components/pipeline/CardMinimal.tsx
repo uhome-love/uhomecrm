@@ -282,6 +282,13 @@ const CardMinimal = memo(function CardMinimal({
     [lead.ultimo_toque_at, lead.created_at, stage?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
   const diasSemToqueLabel = `${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`;
+  const saudeTexto =
+    saude.estado === "em_estagnacao"
+      ? "em estagnação"
+      : saude.diasSemToque === 0
+        ? "hoje"
+        : `há ${saude.diasSemToque}d`;
+
   const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
   const menuEnabled = !!(stages && onMoveLead);
