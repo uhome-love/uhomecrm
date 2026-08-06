@@ -345,21 +345,60 @@ export default function SubfunilQualificacao({
                             }
                           }}
                           aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
-                          className={`group relative cursor-pointer rounded-xl border bg-card p-3 hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${SAUDE_FRAME[saude.estado]}`}
+                          className="group relative overflow-hidden cursor-pointer rounded-xl border border-border bg-card p-3 pl-3.5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                         >
+                          {/* Saúde = barra lateral */}
+                          <span
+                            aria-hidden
+                            className={`absolute left-0 top-0 bottom-0 w-1 ${SAUDE_BARRA[saude.estado]}`}
+                          />
+
                           {savingId === lead.id && (
                             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60">
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             </div>
                           )}
 
-                          <div className="text-[14px] font-bold tracking-tight text-foreground truncate">
-                            {lead.nome || "Sem nome"}
+                          <div className="flex items-start gap-1.5">
+                            <div className="flex-1 min-w-0 text-[14px] font-bold tracking-tight text-foreground truncate">
+                              {lead.nome || "Sem nome"}
+                            </div>
+                            {onMoveLead && (
+                              <div
+                                className="shrink-0 -mt-0.5 -mr-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <CardOverflowMenu
+                                  lead={lead}
+                                  stages={stages}
+                                  onMoveLead={onMoveLead}
+                                  onOpenDetail={() => onSelectLead(lead)}
+                                  trigger={
+                                    <button
+                                      type="button"
+                                      onClick={(e) => e.stopPropagation()}
+                                      aria-label="Ações do lead"
+                                      className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 inline-flex items-center justify-center transition-colors"
+                                    >
+                                      <MoreVertical className="h-3.5 w-3.5" />
+                                    </button>
+                                  }
+                                />
+                              </div>
+                            )}
                           </div>
+
                           <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-muted-foreground min-w-0">
                             <Building2 className="h-3 w-3 opacity-60 shrink-0" />
                             <span className="truncate">{empreendimento || "Sem empreendimento"}</span>
                           </div>
+
+                          {lead.telefone && (
+                            <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted-foreground tabular-nums min-w-0">
+                              <Phone className="h-3 w-3 opacity-60 shrink-0" />
+                              <span className="truncate">{lead.telefone}</span>
+                            </div>
+                          )}
 
                           {/* Fileira meta: termômetro + dias sem toque */}
                           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
@@ -375,14 +414,6 @@ export default function SubfunilQualificacao({
                               <span className="tabular-nums">{saudeTexto}</span>
                             </span>
                           </div>
-
-                          {/* Próxima ação (só quando existe tarefa) */}
-                          {tarefa && (
-                            <div className="mt-2 text-[11px] text-muted-foreground inline-flex items-center gap-1.5 min-w-0">
-                              <CalendarClock className="h-3 w-3 opacity-60 shrink-0" />
-                              <span className="truncate">{formatNextAction(tarefa)}</span>
-                            </div>
-                          )}
 
                           {/* Rodapé */}
                           <div className="mt-2.5 pt-2.5 border-t border-border/60 flex items-center gap-2">
@@ -400,21 +431,16 @@ export default function SubfunilQualificacao({
                             <span className="text-[12px] font-semibold text-muted-foreground whitespace-nowrap">
                               {corretor ? corretor.split(" ")[0] : "Sem corretor"}
                             </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // TODO Build 3: RegistrarAtividadeDialog
-                                onSelectLead(lead);
-                              }}
-                              className="ml-auto shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 transition-colors"
-                            >
-                              <Zap className="h-3 w-3" />
-                              Registrar
-                            </button>
+                            {tarefa && (
+                              <span className="ml-auto min-w-0 text-[11px] text-muted-foreground truncate inline-flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3 opacity-60 shrink-0" />
+                                <span className="truncate">{formatNextAction(tarefa)}</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
+
                     })}
 
                   </div>
