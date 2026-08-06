@@ -76,6 +76,9 @@ interface CardMinimalProps {
   corretorNome?: string;
   corretorAvatarUrl?: string;
   parceiroNome?: string;
+  /** Nome do empreendimento CANÔNICO, resolvido por MAPA no board (sem query por card). */
+  empreendimentoCanonico?: string;
+
   proximaTarefa?: CardMinimalProximaTarefa | null;
   /** Estado da cadência "Sem Contato" (tentativa atual + quando vence a próxima). */
   cadencia?: { tentativa: number; proxima_em: string | null } | null;
