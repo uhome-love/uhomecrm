@@ -252,6 +252,7 @@ export default function SubfunilQualificacao({
               const colLeads = leadsByColumn.get(col.key) ?? [];
               const isOver = dragOverCol === col.key;
               const isSemStatus = col.key === SEM_STATUS;
+              const { emoji, text } = splitLabel(col.label);
               return (
                 <div
                   key={col.key}
@@ -260,7 +261,7 @@ export default function SubfunilQualificacao({
                       ? "border-amber-400/70 bg-amber-50/60 dark:bg-amber-500/5"
                       : isOver
                         ? "border-primary bg-primary/5"
-                        : "border-border/60 bg-muted/30"
+                        : "border-border bg-muted/40"
                   }`}
                   style={{ width: COLUMN_WIDTH }}
                   onDragOver={(e) => {
@@ -278,14 +279,17 @@ export default function SubfunilQualificacao({
                   {/* Cabeçalho da coluna */}
                   <div className="shrink-0 px-1.5 pt-1 pb-3">
                     <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-card border border-border inline-flex items-center justify-center text-[12px] shrink-0">
+                        {emoji}
+                      </span>
                       <span
-                        className={`text-[12px] font-semibold truncate ${
+                        className={`text-[12.5px] font-bold truncate ${
                           isSemStatus ? "text-amber-600 dark:text-amber-400" : "text-foreground"
                         }`}
                       >
-                        {col.label}
+                        {text}
                       </span>
-                      <span className="ml-auto text-[12px] font-bold text-primary tabular-nums">
+                      <span className="ml-auto shrink-0 text-[11px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 tabular-nums">
                         {colLeads.length}
                       </span>
                     </div>
@@ -297,7 +301,8 @@ export default function SubfunilQualificacao({
                   </div>
 
                   {/* Cards */}
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 pt-1 px-1 -mx-1">
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 pt-1 px-1 -mx-1">
+
                     {colLeads.length === 0 && (
                       <div className="rounded-xl border border-dashed border-border py-6 text-center text-[10.5px] text-muted-foreground">
                         {isSemStatus ? "Nenhum lead sem status" : "Arraste um lead para cá"}
