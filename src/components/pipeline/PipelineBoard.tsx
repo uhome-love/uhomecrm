@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2, LayoutGrid } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
 import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS, PIPELINE_STAGE_BG } from "@/lib/celebrations";
 import { toast } from "sonner";
@@ -39,6 +39,8 @@ interface PipelineBoardProps {
   tarefasMap?: Record<string, { id?: string; titulo?: string; tipo: string; subtipo?: string | null; vence_em: string | null; hora_vencimento: string | null; origem?: string | null }>;
   // Quando true, mostra APENAS a coluna Ganho (visão de leads vendidos/ganhos).
   showGanhos?: boolean;
+  /** Abre o subfunil de Qualificação (Onda 1) — botão no header da coluna. */
+  onOpenSubfunil?: () => void;
 }
 
 // Etapas-âncora / legadas que NÃO viram coluna no board ativo.
@@ -239,7 +241,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   );
 });
 
-export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, showGanhos = false }: PipelineBoardProps) {
+export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, showGanhos = false, onOpenSubfunil }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
