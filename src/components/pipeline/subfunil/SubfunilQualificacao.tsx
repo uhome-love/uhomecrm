@@ -407,7 +407,7 @@ export default function SubfunilQualificacao({
                                 // TODO Build 3: RegistrarAtividadeDialog
                                 onSelectLead(lead);
                               }}
-                              className="ml-auto shrink-0 bg-[#0F1B3D] text-white dark:bg-[#26356B] rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                              className="ml-auto shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 transition-colors"
                             >
                               <Zap className="h-3 w-3" />
                               Registrar
