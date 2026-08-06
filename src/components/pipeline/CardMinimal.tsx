@@ -68,7 +68,7 @@ function visitaAutoLabel(subtipo: string | null | undefined): string | null {
   return VISITA_AUTO_SUBTIPO_LABEL[subtipo] ?? null;
 }
 
-import { getSaudeToque, SAUDE_UI } from "@/lib/leadSaude";
+import { getSaudeToque, type SaudeEstado } from "@/lib/leadSaude";
 
 interface CardMinimalProps {
   lead: PipelineLead;
