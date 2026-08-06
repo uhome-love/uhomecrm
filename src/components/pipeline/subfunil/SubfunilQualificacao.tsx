@@ -21,7 +21,7 @@ import { formatNextAction } from "@/lib/formatNextAction";
 import TermometroBadge from "../TermometroBadge";
 
 const SEM_STATUS = "__sem_status__";
-const COLUMN_WIDTH = 300;
+const COLUMN_WIDTH = 272;
 
 /** Dica de fluxo (para onde o lead vai depois) por substatus. */
 const FLUXO_HINT: Record<string, string> = {
@@ -32,21 +32,31 @@ const FLUXO_HINT: Record<string, string> = {
   alinhando_visita: "→ vira etapa Visita",
 };
 
-/** Pílula soft de saúde por estado (dot + texto). */
-const SAUDE_PILL: Record<Exclude<SaudeEstado, "neutro">, { pill: string; dot: string }> = {
-  em_dia: {
-    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-    dot: "bg-emerald-500",
-  },
-  desatualizado: {
-    pill: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-    dot: "bg-amber-500",
-  },
-  em_estagnacao: {
-    pill: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
-    dot: "bg-red-500",
-  },
+/** Quebra "📞 Contato inicial" em emoji + texto. */
+function splitLabel(label: string): { emoji: string; text: string } {
+  const parts = label.trim().split(/\s+/);
+  if (parts.length > 1 && !/^[\wÀ-ÿ]/.test(parts[0])) {
+    return { emoji: parts[0], text: parts.slice(1).join(" ") };
+  }
+  return { emoji: "•", text: label };
+}
+
+/** Saúde vira MOLDURA do card (borda tingida + glow suave). */
+const SAUDE_FRAME: Record<SaudeEstado, string> = {
+  neutro: "border-border shadow-sm",
+  em_dia: "border-border shadow-sm",
+  desatualizado: "border-amber-300/70 dark:border-amber-500/40 shadow-md shadow-amber-500/20",
+  em_estagnacao: "border-red-300/80 dark:border-red-500/40 shadow-md shadow-red-500/25",
 };
+
+/** Dot do indicador de dias (sem fundo de pílula). */
+const SAUDE_DOT: Record<SaudeEstado, string> = {
+  neutro: "bg-muted-foreground/50",
+  em_dia: "bg-emerald-500",
+  desatualizado: "bg-amber-500",
+  em_estagnacao: "bg-red-500",
+};
+
 
 
 interface Props {
@@ -242,6 +252,7 @@ export default function SubfunilQualificacao({
               const colLeads = leadsByColumn.get(col.key) ?? [];
               const isOver = dragOverCol === col.key;
               const isSemStatus = col.key === SEM_STATUS;
+              const { emoji, text } = splitLabel(col.label);
               return (
                 <div
                   key={col.key}
@@ -250,7 +261,7 @@ export default function SubfunilQualificacao({
                       ? "border-amber-400/70 bg-amber-50/60 dark:bg-amber-500/5"
                       : isOver
                         ? "border-primary bg-primary/5"
-                        : "border-border/60 bg-muted/30"
+                        : "border-border bg-muted/40"
                   }`}
                   style={{ width: COLUMN_WIDTH }}
                   onDragOver={(e) => {
@@ -268,14 +279,17 @@ export default function SubfunilQualificacao({
                   {/* Cabeçalho da coluna */}
                   <div className="shrink-0 px-1.5 pt-1 pb-3">
                     <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-card border border-border inline-flex items-center justify-center text-[12px] shrink-0">
+                        {emoji}
+                      </span>
                       <span
-                        className={`text-[12px] font-semibold truncate ${
+                        className={`text-[12.5px] font-bold truncate ${
                           isSemStatus ? "text-amber-600 dark:text-amber-400" : "text-foreground"
                         }`}
                       >
-                        {col.label}
+                        {text}
                       </span>
-                      <span className="ml-auto text-[12px] font-bold text-primary tabular-nums">
+                      <span className="ml-auto shrink-0 text-[11px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 tabular-nums">
                         {colLeads.length}
                       </span>
                     </div>
@@ -287,7 +301,8 @@ export default function SubfunilQualificacao({
                   </div>
 
                   {/* Cards */}
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 pt-1 px-1 -mx-1">
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 pt-1 px-1 -mx-1">
+
                     {colLeads.length === 0 && (
                       <div className="rounded-xl border border-dashed border-border py-6 text-center text-[10.5px] text-muted-foreground">
                         {isSemStatus ? "Nenhum lead sem status" : "Arraste um lead para cá"}
@@ -295,8 +310,6 @@ export default function SubfunilQualificacao({
                     )}
                     {colLeads.map((lead) => {
                       const saude = getSaudeToque(lead, "qualificacao", tarefasMap?.[lead.id] ?? null);
-                      const saudePill =
-                        saude.estado === "neutro" ? null : SAUDE_PILL[saude.estado];
                       const saudeTexto =
                         saude.estado === "em_estagnacao"
                           ? "em estagnação"
@@ -332,15 +345,15 @@ export default function SubfunilQualificacao({
                             }
                           }}
                           aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
-                          className="group relative cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                          className={`group relative cursor-pointer rounded-xl border bg-card p-3 hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${SAUDE_FRAME[saude.estado]}`}
                         >
                           {savingId === lead.id && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60">
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60">
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             </div>
                           )}
 
-                          <div className="text-[15px] font-bold tracking-tight text-foreground truncate">
+                          <div className="text-[14px] font-bold tracking-tight text-foreground truncate">
                             {lead.nome || "Sem nome"}
                           </div>
                           <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-muted-foreground min-w-0">
@@ -348,21 +361,19 @@ export default function SubfunilQualificacao({
                             <span className="truncate">{empreendimento || "Sem empreendimento"}</span>
                           </div>
 
-                          {/* Fileira meta: termômetro + saúde */}
-                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                          {/* Fileira meta: termômetro + dias sem toque */}
+                          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                             <TermometroBadge
                               temperatura={lead.temperatura}
                               score={lead.oportunidade_score}
                             />
-                            {saudePill && (
-                              <span
-                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${saudePill.pill}`}
-                                title={`${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
-                              >
-                                <span className={`h-1.5 w-1.5 rounded-full ${saudePill.dot}`} />
-                                <span className="tabular-nums">{saudeTexto}</span>
-                              </span>
-                            )}
+                            <span
+                              className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground"
+                              title={`${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${SAUDE_DOT[saude.estado]}`} />
+                              <span className="tabular-nums">{saudeTexto}</span>
+                            </span>
                           </div>
 
                           {/* Próxima ação (só quando existe tarefa) */}
@@ -374,15 +385,15 @@ export default function SubfunilQualificacao({
                           )}
 
                           {/* Rodapé */}
-                          <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2">
+                          <div className="mt-2.5 pt-2.5 border-t border-border/60 flex items-center gap-2">
                             {avatar ? (
                               <img
                                 src={avatar}
                                 alt={corretor ?? "Corretor"}
-                                className="h-[26px] w-[26px] rounded-full object-cover shrink-0"
+                                className="h-6 w-6 rounded-full object-cover shrink-0"
                               />
                             ) : (
-                              <span className="h-[26px] w-[26px] rounded-full bg-gradient-to-br from-primary to-cyan-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                              <span className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-cyan-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
                                 {iniciais || "—"}
                               </span>
                             )}
@@ -396,7 +407,7 @@ export default function SubfunilQualificacao({
                                 // TODO Build 3: RegistrarAtividadeDialog
                                 onSelectLead(lead);
                               }}
-                              className="ml-auto shrink-0 bg-[#0F1B3D] text-white dark:bg-[#26356B] rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                              className="ml-auto shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 transition-colors"
                             >
                               <Zap className="h-3 w-3" />
                               Registrar
