@@ -225,6 +225,12 @@ export function useNegocios() {
     const negocio = negocios.find(n => n.id === negocioId);
     if (!negocio || negocio.fase === novaFase) return;
 
+    // Ganho exige data de assinatura real — nunca preenchida automaticamente.
+    if (novaFase === FASE_GANHO && !dataAssinatura) {
+      toast.error("Informe a data de assinatura para marcar o negócio como Ganho.");
+      return;
+    }
+
     // Optimistic
     setNegocios(prev => prev.map(n =>
       n.id === negocioId
@@ -233,9 +239,8 @@ export function useNegocios() {
     ));
 
     const updatePayload: Record<string, any> = { fase: novaFase, updated_at: new Date().toISOString() };
-    // Always set data_assinatura when moving to GANHO (negócio fechado)
     if (novaFase === FASE_GANHO) {
-      updatePayload.data_assinatura = dataAssinatura || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      updatePayload.data_assinatura = dataAssinatura;
     }
     // Perdido/caído sai do board ativo (status perdido)
     if (novaFase === NEGOCIO_FASE_PERDIDO) {
@@ -249,12 +254,13 @@ export function useNegocios() {
 
     if (error) {
       console.error("Error moving negocio:", error);
-      toast.error("Erro ao mover negócio");
+      toast.error(error.message || "Erro ao mover negócio");
       setNegocios(prev => prev.map(n =>
         n.id === negocioId ? { ...n, fase: negocio.fase } : n
       ));
       return;
     }
+
 
     const faseInfo = NEGOCIOS_FASES.find(f => f.key === novaFase);
     toast(`${faseInfo?.icon || "📍"} ${negocio.nome_cliente} → ${faseInfo?.label || novaFase}`, {

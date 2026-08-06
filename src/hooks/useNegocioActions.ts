@@ -42,14 +42,18 @@ export function useNegocioActions(reload?: () => void | Promise<void>) {
     async (negocio: Negocio, novaFase: string, dataAssinatura?: string) => {
       if (negocio.fase === novaFase) return;
 
+      // Ganho exige data de assinatura real — nunca preenchida automaticamente.
+      if (novaFase === FASE_GANHO && !dataAssinatura) {
+        toast.error("Informe a data de assinatura para marcar o negócio como Ganho.");
+        return;
+      }
+
       const updatePayload: Record<string, any> = {
         fase: novaFase,
         updated_at: new Date().toISOString(),
       };
       if (novaFase === FASE_GANHO) {
-        updatePayload.data_assinatura =
-          dataAssinatura ||
-          new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        updatePayload.data_assinatura = dataAssinatura;
       }
       if (novaFase === NEGOCIO_FASE_PERDIDO) {
         updatePayload.status = "perdido";
@@ -62,9 +66,10 @@ export function useNegocioActions(reload?: () => void | Promise<void>) {
 
       if (error) {
         console.error("Error moving negocio:", error);
-        toast.error("Erro ao mover negócio");
+        toast.error(error.message || "Erro ao mover negócio");
         return;
       }
+
 
       const faseInfo = NEGOCIOS_FASES.find((f) => f.key === novaFase);
       toast(`${faseInfo?.icon || "📍"} ${negocio.nome_cliente} → ${faseInfo?.label || novaFase}`, {

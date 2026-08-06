@@ -98,13 +98,19 @@ export async function syncPipelineStageFromPdn(
   row: PdnRow,
   grupo: PdnDestino,
   userId: string | null,
-  opts?: { motivo?: string },
+  opts?: { motivo?: string; dataAssinatura?: string },
 ): Promise<{ negocioId: string | null; pipelineLeadId: string | null } | null> {
+  // Ganho exige data de assinatura real — nunca "hoje" por inferência.
+  if (grupo === "ganho" && !opts?.dataAssinatura) {
+    toast.error("Para marcar Ganho é obrigatório informar a data de assinatura. Faça pelo lead, em “Confirmar Ganho”.");
+    return null;
+  }
   const pipelineLeadId = await resolvePipelineLeadId(row);
   if (!pipelineLeadId) {
     toast.error("Este item não está vinculado a um lead do pipeline");
     return null;
   }
+
   const nowIso = new Date().toISOString();
   const stageTipo = GRUPO_TO_STAGE_TIPO[grupo];
 
@@ -208,12 +214,14 @@ export async function syncPipelineStageFromPdn(
     const negPatch: Record<string, unknown> = { updated_at: nowIso, status: "ativo" };
     if (fase) negPatch.fase = fase;
     if (grupo === "ganho") {
-      negPatch.data_assinatura = new Date().toISOString().slice(0, 10);
+      // Data de assinatura é obrigatória e nunca inferida — vem do fluxo "Confirmar Ganho" no lead.
+      negPatch.data_assinatura = opts?.dataAssinatura;
       if (row.vgv > 0) negPatch.vgv_final = row.vgv;
     }
     const { error: negUpdErr } = await supabase.from("negocios").update(negPatch as any).eq("id", negocioId);
     if (negUpdErr) console.warn("[pdnSync] update negócio falhou (não bloqueia)", negUpdErr);
   }
+
 
   // 1.b) Se é regressão com motivo informado, grava motivo_queda no negócio
   //      ANTES do UPDATE do pipeline_lead — assim o trigger
