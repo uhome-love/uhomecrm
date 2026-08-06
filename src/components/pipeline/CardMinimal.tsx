@@ -530,18 +530,19 @@ const CardMinimal = memo(function CardMinimal({
             {canQuickComplete && (
               <button
                 type="button"
-                aria-label="Concluir tarefa"
-                title="Concluir tarefa"
+                aria-label="Registrar atividade"
+                title="Registrar atividade"
                 disabled={completingBusy}
                 onClick={(e) => {
                   e.stopPropagation();
                   setCompletingOpen(true);
                 }}
-                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-colors disabled:opacity-60"
+                className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white shadow-[0_4px_12px_rgba(99,102,241,.4)] hover:brightness-105 active:translate-y-px transition-all disabled:opacity-60"
               >
-                <Check className="h-3 w-3" strokeWidth={3} />
+                <Zap className="h-3.5 w-3.5" strokeWidth={2.5} fill="currentColor" />
               </button>
             )}
+
           </div>
         </>
       )}
