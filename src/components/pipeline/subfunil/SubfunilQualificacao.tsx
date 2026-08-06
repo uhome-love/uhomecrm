@@ -310,8 +310,6 @@ export default function SubfunilQualificacao({
                     )}
                     {colLeads.map((lead) => {
                       const saude = getSaudeToque(lead, "qualificacao", tarefasMap?.[lead.id] ?? null);
-                      const saudePill =
-                        saude.estado === "neutro" ? null : SAUDE_PILL[saude.estado];
                       const saudeTexto =
                         saude.estado === "em_estagnacao"
                           ? "em estagnação"
