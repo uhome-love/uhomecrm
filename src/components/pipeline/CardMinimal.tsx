@@ -22,8 +22,10 @@ import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT, formatBRT } from "@/lib/brtTime";
-import { Handshake, Phone, Zap } from "lucide-react";
+import { Building2, Handshake, Phone, Zap } from "lucide-react";
+import TermometroBadge from "./TermometroBadge";
 import CardOverflowMenu from "./CardOverflowMenu";
+
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 import { useAuth } from "@/hooks/useAuth";
