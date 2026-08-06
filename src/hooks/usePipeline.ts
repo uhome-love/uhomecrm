@@ -27,6 +27,9 @@ export interface PipelineLead {
   segmento_id: string | null;
   produto_id?: string | null;
   empreendimento: string | null;
+  /** Produto CANÔNICO (empreendimentos_canonicos.id) — resolvido em mapa no board. */
+  empreendimento_canonico_id?: string | null;
+
   stage_id: string;
   stage_changed_at: string;
   ordem_no_stage: number;
