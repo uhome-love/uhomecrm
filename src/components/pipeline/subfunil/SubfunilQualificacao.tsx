@@ -250,8 +250,25 @@ export default function SubfunilQualificacao({
                     )}
                     {colLeads.map((lead) => {
                       const saude = getSaudeToque(lead, "qualificacao", tarefasMap?.[lead.id] ?? null);
-                      const saudeUi = saude.estado === "neutro" ? null : SAUDE_UI[saude.estado];
+                      const saudePill =
+                        saude.estado === "neutro" ? null : SAUDE_PILL[saude.estado];
+                      const saudeTexto =
+                        saude.estado === "em_estagnacao"
+                          ? "em estagnação"
+                          : saude.diasSemToque === 0
+                            ? "hoje"
+                            : `há ${saude.diasSemToque}d`;
                       const corretor = lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined;
+                      const avatar = lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined;
+                      const iniciais = (corretor ?? "")
+                        .trim()
+                        .split(/\s+/)
+                        .slice(0, 2)
+                        .map((p) => p[0］ ?? "")
+                        .join("")
+                        .toUpperCase();
+                      const tarefa = tarefasMap?.[lead.id];
+                      const empreendimento = empreendimentoCanonico[lead.id];
                       return (
                         <div
                           key={lead.id}
@@ -270,75 +287,80 @@ export default function SubfunilQualificacao({
                             }
                           }}
                           aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
-                          className="group relative cursor-pointer rounded-xl border border-border/60 bg-card p-3 pl-3.5 shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          className="group relative cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                          {/* Barra de urgência */}
-                          <span
-                            aria-hidden
-                            className={`absolute left-1 top-2 bottom-2 w-[3px] rounded-full ${BARRA_BY_SAUDE[saude.estado]}`}
-                          />
                           {savingId === lead.id && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60">
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60">
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             </div>
                           )}
 
-                          <div className="flex items-start gap-2 min-w-0">
-                            <div className="min-w-0 flex-1">
-                              <div className="text-[13px] font-semibold text-foreground leading-tight truncate">
-                                {lead.nome || "Sem nome"}
-                              </div>
-                              <div className="mt-0.5 text-[10.5px] text-muted-foreground truncate">
-                                {lead.empreendimento || "Sem empreendimento"}
-                              </div>
-                            </div>
+                          <div className="text-[15px] font-bold tracking-tight text-foreground truncate">
+                            {lead.nome || "Sem nome"}
+                          </div>
+                          <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-muted-foreground min-w-0">
+                            <Building2 className="h-3 w-3 opacity-60 shrink-0" />
+                            <span className="truncate">{empreendimento || "Sem empreendimento"}</span>
+                          </div>
+
+                          {/* Fileira meta: termômetro + saúde */}
+                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                             <TermometroBadge
                               temperatura={lead.temperatura}
                               score={lead.oportunidade_score}
                             />
-                          </div>
-
-                          {/* Linha de saúde por toque */}
-                          <div className="mt-2 flex items-center gap-1.5 min-w-0">
-                            {saudeUi && (
+                            {saudePill && (
                               <span
-                                className="text-[10.5px] font-medium text-muted-foreground truncate tabular-nums"
-                                title={`${saudeUi.label} — ${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${saudePill.pill}`}
+                                title={`${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
                               >
-                                {saudeUi.emoji}{" "}
-                                {saude.estado === "em_estagnacao"
-                                  ? "em estagnação"
-                                  : saude.estado === "em_dia"
-                                    ? saude.diasSemToque === 0
-                                      ? "hoje"
-                                      : `há ${saude.diasSemToque}d`
-                                    : `${saude.diasSemToque}d`}
-                              </span>
-                            )}
-                            {corretor && (
-                              <span className="ml-auto text-[10px] text-muted-foreground truncate max-w-[90px]">
-                                {corretor.split(" ")[0]}
+                                <span className={`h-1.5 w-1.5 rounded-full ${saudePill.dot}`} />
+                                <span className="tabular-nums">{saudeTexto}</span>
                               </span>
                             )}
                           </div>
 
-                          {/* Rodapé: ação rápida */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // TODO Build 3: abrir RegistrarAtividadeDialog
-                              onSelectLead(lead);
-                            }}
-                            className="mt-2 w-full h-7 rounded-md bg-primary/10 text-primary text-[11px] font-semibold inline-flex items-center justify-center gap-1 hover:bg-primary/15 transition-colors"
-                          >
-                            <Zap className="h-3 w-3" />
-                            Registrar
-                          </button>
+                          {/* Próxima ação (só quando existe tarefa) */}
+                          {tarefa && (
+                            <div className="mt-2 text-[11px] text-muted-foreground inline-flex items-center gap-1.5 min-w-0">
+                              <CalendarClock className="h-3 w-3 opacity-60 shrink-0" />
+                              <span className="truncate">{formatNextAction(tarefa)}</span>
+                            </div>
+                          )}
 
+                          {/* Rodapé */}
+                          <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2">
+                            {avatar ? (
+                              <img
+                                src={avatar}
+                                alt={corretor ?? "Corretor"}
+                                className="h-[26px] w-[26px] rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <span className="h-[26px] w-[26px] rounded-full bg-gradient-to-br from-primary to-cyan-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                                {iniciais || "—"}
+                              </span>
+                            )}
+                            <span className="text-[12px] font-semibold text-muted-foreground truncate">
+                              {corretor ? corretor.split(" ")[0] : "Sem corretor"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO Build 3: RegistrarAtividadeDialog
+                                onSelectLead(lead);
+                              }}
+                              className="ml-auto shrink-0 bg-foreground text-background rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                            >
+                              <Zap className="h-3 w-3" />
+                              Registrar
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
+
                   </div>
                 </div>
               );
