@@ -433,11 +433,16 @@ const CardMinimal = memo(function CardMinimal({
               </span>
             )}
           </div>
-          {empreendimento && (
-            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-              {empreendimento}
+          {empreendimentoLabel && (
+            <div
+              className="mt-1 flex items-center gap-1.5 text-[11.5px] text-muted-foreground min-w-0"
+              title={empreendimentoLabel}
+            >
+              <Building2 className="h-3 w-3 opacity-60 shrink-0" />
+              <span className="truncate">{empreendimentoLabel}</span>
             </div>
           )}
+
           {negocioBadge && (
             <div
               className={`inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-px text-[9px] font-semibold ${negocioBadge.tone}`}
