@@ -98,13 +98,19 @@ export async function syncPipelineStageFromPdn(
   row: PdnRow,
   grupo: PdnDestino,
   userId: string | null,
-  opts?: { motivo?: string },
+  opts?: { motivo?: string; dataAssinatura?: string },
 ): Promise<{ negocioId: string | null; pipelineLeadId: string | null } | null> {
+  // Ganho exige data de assinatura real — nunca "hoje" por inferência.
+  if (grupo === "ganho" && !opts?.dataAssinatura) {
+    toast.error("Para marcar Ganho é obrigatório informar a data de assinatura. Faça pelo lead, em “Confirmar Ganho”.");
+    return null;
+  }
   const pipelineLeadId = await resolvePipelineLeadId(row);
   if (!pipelineLeadId) {
     toast.error("Este item não está vinculado a um lead do pipeline");
     return null;
   }
+
   const nowIso = new Date().toISOString();
   const stageTipo = GRUPO_TO_STAGE_TIPO[grupo];
 
