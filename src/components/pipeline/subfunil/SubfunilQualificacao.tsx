@@ -11,7 +11,7 @@ import { useMemo, useRef, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import CardMinimal, { type CardMinimalProximaTarefa } from "./CardMinimal";
+import CardMinimal, { type CardMinimalProximaTarefa } from "../CardMinimal";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { QUALIFICACAO_SUBSTATUS, normalizeStatusAtendimento } from "@/lib/leadHelpers";
 
