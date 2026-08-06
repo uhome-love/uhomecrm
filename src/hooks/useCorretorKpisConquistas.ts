@@ -66,6 +66,7 @@ export function useCorretorKpisConquistas() {
             .select("id", { count: "exact", head: true })
             .eq("corretor_id", profileId)
             .eq("fase", "ganho")
+            .eq("status", "ativo")
             .gte("data_assinatura", inicioMes)
         : Promise.resolve({ count: 0, error: null } as any);
 

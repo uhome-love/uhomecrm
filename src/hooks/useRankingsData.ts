@@ -284,6 +284,7 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
         .from("negocios")
         .select("auth_user_id, pipeline_lead_id, vgv_final, vgv_estimado, data_assinatura, fase")
         .eq("fase", "ganho")
+        .eq("status", "ativo")
         .or(
           profileChunk.length
             ? `auth_user_id.in.(${ids.join(",")}),corretor_id.in.(${profileChunk.join(",")})`
@@ -318,6 +319,7 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
         .from("negocios")
         .select("auth_user_id, pipeline_lead_id, vgv_final, vgv_estimado, data_assinatura, fase")
         .eq("fase", "ganho")
+        .eq("status", "ativo")
         .in("pipeline_lead_id", partnerLeadIds);
       if (start) q = q.gte("data_assinatura", start);
       if (end) q = q.lte("data_assinatura", end);
