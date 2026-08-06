@@ -260,25 +260,25 @@ export default function SubfunilQualificacao({
                             }
                           }}
                           aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
-                          className="group relative cursor-pointer overflow-hidden rounded-lg border border-border/60 bg-card px-2.5 py-2 pl-3 shadow-sm hover:border-border hover:shadow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          className="group relative cursor-pointer rounded-xl border border-border/60 bg-card p-3 pl-3.5 shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                          {/* Barra de urgência (3px) */}
+                          {/* Barra de urgência */}
                           <span
                             aria-hidden
-                            className={`absolute left-0 top-0 bottom-0 w-[3px] ${BARRA_BY_SAUDE[saude.estado]}`}
+                            className={`absolute left-1 top-2 bottom-2 w-[3px] rounded-full ${BARRA_BY_SAUDE[saude.estado]}`}
                           />
                           {savingId === lead.id && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/60">
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60">
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             </div>
                           )}
 
-                          <div className="flex items-start gap-1.5 min-w-0">
+                          <div className="flex items-start gap-2 min-w-0">
                             <div className="min-w-0 flex-1">
-                              <div className="text-[12.5px] font-bold text-foreground leading-tight truncate">
+                              <div className="text-[12.5px] font-semibold text-foreground leading-tight truncate">
                                 {lead.nome || "Sem nome"}
                               </div>
-                              <div className="text-[10.5px] text-muted-foreground truncate">
+                              <div className="mt-0.5 text-[10.5px] text-muted-foreground truncate">
                                 {lead.empreendimento || "Sem empreendimento"}
                               </div>
                             </div>
@@ -289,10 +289,10 @@ export default function SubfunilQualificacao({
                           </div>
 
                           {/* Linha de saúde por toque */}
-                          <div className="mt-1 flex items-center gap-1.5 min-w-0">
+                          <div className="mt-2 flex items-center gap-1.5 min-w-0">
                             {saudeUi && (
                               <span
-                                className="text-[10.5px] font-medium text-muted-foreground truncate"
+                                className="text-[10.5px] font-medium text-muted-foreground truncate tabular-nums"
                                 title={`${saudeUi.label} — ${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
                               >
                                 {saudeUi.emoji}{" "}
@@ -310,8 +310,8 @@ export default function SubfunilQualificacao({
                             )}
                           </div>
 
-                          {/* Rodapé: ação rápida */}
-                          <div className="mt-1.5 flex">
+                          {/* Rodapé: ação rápida (só no hover) */}
+                          <div className="mt-2 flex opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -324,6 +324,7 @@ export default function SubfunilQualificacao({
                               Registrar
                             </button>
                           </div>
+
                         </div>
                       );
                     })}
