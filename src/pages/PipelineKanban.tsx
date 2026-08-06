@@ -825,8 +825,10 @@ export default function PipelineKanban() {
                   parcerias={parcerias}
                   tarefasMap={kanbanTarefasMap}
                   onSelectLead={setSelectedLead}
+                  onMoveLead={pipeline.moveLead}
                   onClose={() => setSubfunilOpen(false)}
                   onChanged={() => pipeline.reload()}
+
                 />
               ) : activeTab === "kanban" ? (
                 <PipelineBoard
