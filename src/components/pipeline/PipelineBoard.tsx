@@ -225,6 +225,12 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 proximaTarefa={tarefasMap[lead.id] || null}
                 cadencia={cadenciaMap[lead.id] || null}
                 negocioInfo={negociosMap[lead.id] || null}
+                empreendimentoCanonico={
+                  lead.empreendimento_canonico_id
+                    ? canonicoNomes[lead.empreendimento_canonico_id]
+                    : undefined
+                }
+
                 onDragStart={() => !selectionMode && handleDragStart(lead.id)}
                 onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
               />
