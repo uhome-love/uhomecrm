@@ -262,7 +262,7 @@ const CardMinimal = memo(function CardMinimal({
     () => getSaudeToque(lead, stage?.tipo, proximaTarefa ?? null),
     [lead.ultimo_toque_at, lead.created_at, stage?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
-  const saudeUi = saude.estado === "neutro" ? null : SAUDE_UI[saude.estado];
+  const diasSemToqueLabel = `${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`;
   const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
   const menuEnabled = !!(stages && onMoveLead);
