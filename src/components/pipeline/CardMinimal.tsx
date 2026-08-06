@@ -608,9 +608,18 @@ const CardMinimal = memo(function CardMinimal({
             </div>
           )}
           <span className="truncate text-[11px] font-medium text-foreground/80">
-            {corretorNome}
+            {corretorNome.trim().split(/\s+/)[0] || corretorNome}
           </span>
+          {proximaTarefa && (
+            <span
+              className="ml-auto text-[11px] text-muted-foreground truncate max-w-[55%]"
+              title={fullActionLabel}
+            >
+              {formatNextAction(proximaTarefa)}
+            </span>
+          )}
         </div>
+
       )}
 
       {canQuickComplete && (
