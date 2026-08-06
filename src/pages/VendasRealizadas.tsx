@@ -255,6 +255,7 @@ export default function VendasRealizadas() {
       let query = supabase.from("negocios")
         .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
         .eq("fase", "ganho")
+        .eq("status", "ativo")
         .gte("data_assinatura", dateRange.start)
         .lte("data_assinatura", dateRange.end)
         .order("data_assinatura", { ascending: false });
@@ -268,7 +269,7 @@ export default function VendasRealizadas() {
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
             .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
-            .in("id", partnerDealIds).eq("fase", "ganho");
+            .in("id", partnerDealIds).eq("fase", "ganho").eq("status", "ativo");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
       } else if (isGestor && !isAdmin) {
@@ -291,7 +292,7 @@ export default function VendasRealizadas() {
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
             .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
-            .in("id", partnerDealIds).eq("fase", "ganho");
+            .in("id", partnerDealIds).eq("fase", "ganho").eq("status", "ativo");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
       }

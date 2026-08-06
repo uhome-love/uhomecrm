@@ -246,6 +246,7 @@ export default function CheckpointGerente() {
       supabase.from("visitas_unicas" as any).select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim).eq("status", "realizada"),
       supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, data_assinatura, corretor_id")
         .eq("fase", "ganho")
+        .eq("status", "ativo")
         .gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim)
         .or(`corretor_id.in.(${allCorretorIds.join(",")}),gerente_id.eq.${user.id}`),
       supabase.from("ceo_metas_mensais").select("*").eq("gerente_id", user.id).eq("mes", mesAtual).maybeSingle(),
