@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2 } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
 import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS, PIPELINE_STAGE_BG } from "@/lib/celebrations";
 import { toast } from "sonner";
@@ -39,8 +39,6 @@ interface PipelineBoardProps {
   tarefasMap?: Record<string, { id?: string; titulo?: string; tipo: string; subtipo?: string | null; vence_em: string | null; hora_vencimento: string | null; origem?: string | null }>;
   // Quando true, mostra APENAS a coluna Ganho (visão de leads vendidos/ganhos).
   showGanhos?: boolean;
-  /** Abre o subfunil de Qualificação (Onda 1) — botão no header da coluna. */
-  onOpenSubfunil?: () => void;
 }
 
 // Etapas-âncora / legadas que NÃO viram coluna no board ativo.
@@ -123,7 +121,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   stageLeads, stage, stages, segmentos, corretorNomes, corretorAvatars, parcerias,
   selectionMode, selectedLeads, arrivedLeadId,
   onToggleSelect, onSelectLead, onMoveLead, onTransferred, stageIndexMap, handleDragStart,
-  tarefasMap, whatsappUnreadSet, cadenciaMap, negociosMap, canonicoNomes,
+  tarefasMap, whatsappUnreadSet, cadenciaMap, negociosMap,
 }: {
   stageLeads: PipelineLead[];
   stage: PipelineStage;
@@ -145,9 +143,6 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   whatsappUnreadSet: Set<string>;
   cadenciaMap: Record<string, { tentativa: number; proxima_em: string | null }>;
   negociosMap: Record<string, { fase: string; vgv: number; fase_changed_at: string }>;
-  /** Mapa canônico id → nome, carregado UMA vez no board. */
-  canonicoNomes: Record<string, string>;
-
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -225,12 +220,6 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 proximaTarefa={tarefasMap[lead.id] || null}
                 cadencia={cadenciaMap[lead.id] || null}
                 negocioInfo={negociosMap[lead.id] || null}
-                empreendimentoCanonico={
-                  lead.empreendimento_canonico_id
-                    ? canonicoNomes[lead.empreendimento_canonico_id]
-                    : undefined
-                }
-
                 onDragStart={() => !selectionMode && handleDragStart(lead.id)}
                 onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
               />
@@ -250,7 +239,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   );
 });
 
-export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, showGanhos = false, onOpenSubfunil }: PipelineBoardProps) {
+export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, showGanhos = false }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
@@ -424,22 +413,6 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     }
     return map;
   }, [negociosRows]);
-
-  // Empreendimentos CANÔNICOS: tabela pequena, carregada UMA vez no nível do board
-  // e passada como MAPA pros cards (NUNCA uma query por card — o board renderiza centenas).
-  const { data: canonicoNomes = {} as Record<string, string> } = useQuery({
-    queryKey: ["empreendimentos-canonicos-nomes"],
-    queryFn: async () => {
-      const { data } = await supabase.from("empreendimentos_canonicos").select("id, nome");
-      const map: Record<string, string> = {};
-      for (const c of (data ?? []) as Array<{ id: string; nome: string }>) map[c.id] = c.nome;
-      return map;
-    },
-    staleTime: 30 * 60_000,
-    refetchOnWindowFocus: false,
-  });
-
-
 
 
 
@@ -1057,16 +1030,6 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     }}>
                       {stageLeads.length}
                     </span>
-                    {stage.tipo === "qualificacao" && onOpenSubfunil && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onOpenSubfunil(); }}
-                        aria-label="Abrir subfunil de Qualificação"
-                        title="Abrir subfunil de Qualificação"
-                        className="ml-1 p-1 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <LayoutGrid className="h-3.5 w-3.5" />
-                      </button>
-                    )}
                     {stage.tipo === "descarte" && stageLeads.length > 0 && (isGestor || isAdmin) && (
                       <button
                         onClick={() => setSweepConfirmOpen(true)}
@@ -1094,6 +1057,29 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     }} />
                   </div>
 
+                  {/* Stats row */}
+                  <div className="flex items-center justify-between">
+                    {totalVGV > 0 ? (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, color: "hsl(var(--pipeline-text-muted))",
+                        fontFamily: "'DM Mono', monospace",
+                      }}>
+                        {formatVGV(totalVGV)}
+                      </span>
+                    ) : <span />}
+                    <div className="flex items-center gap-2">
+                      {avgTime && (
+                        <span style={{ fontSize: 11, color: "hsl(var(--pipeline-text-muted))" }}>
+                          ⏱ {avgTime}
+                        </span>
+                      )}
+                      {alerts.semCorretor > 0 && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "hsl(var(--primary))" }}>
+                          👤{alerts.semCorretor}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Drop placeholder pulsante */}
@@ -1133,8 +1119,6 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     whatsappUnreadSet={whatsappUnreadSet}
                     cadenciaMap={cadenciaMap}
                     negociosMap={negociosMap}
-                    canonicoNomes={canonicoNomes}
-
                   />
                 )}
               </div>

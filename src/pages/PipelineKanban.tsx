@@ -3,7 +3,6 @@ import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
-import SubfunilQualificacao from "@/components/pipeline/subfunil/SubfunilQualificacao";
 import { loadSortOrder, type SortOrder } from "@/components/pipeline/PipelineSortDropdown";
 import PipelineMobileView from "@/components/pipeline/PipelineMobileView";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -71,16 +70,6 @@ export default function PipelineKanban() {
   // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
   // possamos passar scopeCorretorIds e empurrar o filtro pra query do server.
   const [gestorFilter, setGestorFilter] = useState<string>("todos");
-  // Subfunil de Qualificação (Onda 1) — espelhado em ?view=subfunil.
-  const subfunilOpen = searchParams.get("view") === "subfunil";
-  const setSubfunilOpen = useCallback((open: boolean) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (open) next.set("view", "subfunil");
-      else next.delete("view");
-      return next;
-    }, { replace: true });
-  }, [setSearchParams]);
   const { isGestor, isAdmin, isDiretor, isCorretor, loading: roleLoading, roles } = useUserRole();
   // Diretoria enxerga o escritório inteiro, como o CEO (visão de oversight).
   // isCeoView unifica admin (CEO) + diretor para escopo e visões globais.
@@ -816,21 +805,7 @@ export default function PipelineKanban() {
           <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
             <ErrorBoundary onError={(err) => console.error("[PipelineBoard] Render crash:", err.message, err.stack)}>
             <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "#94A3B8" }} /></div>}>
-              {activeTab === "kanban" && subfunilOpen ? (
-                <SubfunilQualificacao
-                  stages={pipeline.stages || []}
-                  leads={filteredLeads || []}
-                  corretorNomes={pipeline.corretorNomes}
-                  corretorAvatars={pipeline.corretorAvatars}
-                  parcerias={parcerias}
-                  tarefasMap={kanbanTarefasMap}
-                  onSelectLead={setSelectedLead}
-                  onMoveLead={pipeline.moveLead}
-                  onClose={() => setSubfunilOpen(false)}
-                  onChanged={() => pipeline.reload()}
-
-                />
-              ) : activeTab === "kanban" ? (
+              {activeTab === "kanban" ? (
                 <PipelineBoard
                   stages={pipeline.stages || []}
                   leads={filteredLeads || []}
@@ -847,7 +822,6 @@ export default function PipelineKanban() {
                   sortOrder={sortOrder}
                   tarefasMap={kanbanTarefasMap}
                   showGanhos={ganhosFilter}
-                  onOpenSubfunil={() => setSubfunilOpen(true)}
                 />
               ) : activeTab === "time" ? (
                 authUser?.id ? (

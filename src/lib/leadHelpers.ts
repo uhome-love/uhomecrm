@@ -243,42 +243,6 @@ export const QUALIFICACAO_SUBSTATUS: SubstatusOption[] = [
   { value: "alinhando_visita", label: "📅 Alinhando visita" },
 ];
 
-/**
- * Mapa de compatibilidade — valores ANTIGOS de `flag_status.status_atendimento`
- * (gravados por telas legadas) → valor canônico de QUALIFICACAO_SUBSTATUS.
- * Usado apenas para LEITURA/exibição; nada é reescrito no banco.
- */
-export const LEGACY_STATUS_ATENDIMENTO: Record<string, string> = {
-  atendimento: "contato_inicial",
-  atendimento_inicial: "contato_inicial",
-  primeiro_contato: "contato_inicial",
-  qualificacao: "alinhamento_perfil",
-  alinhando_perfil: "alinhamento_perfil",
-  perfil: "alinhamento_perfil",
-  qualificacao_busca: "busca",
-  busca_imoveis: "busca",
-  buscando: "busca",
-  follow: "follow_up",
-  followup: "follow_up",
-  "follow-up": "follow_up",
-  agendando_visita: "alinhando_visita",
-  alinhando_visitas: "alinhando_visita",
-  possibilidade_visita: "alinhando_visita",
-};
-
-/**
- * Normaliza um `status_atendimento` para um valor canônico.
- * Retorna `null` quando o valor é vazio ou desconhecido (→ "Sem status").
- */
-export function normalizeStatusAtendimento(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const v = String(raw).trim().toLowerCase();
-  if (QUALIFICACAO_SUBSTATUS.some((o) => o.value === v)) return v;
-  return LEGACY_STATUS_ATENDIMENTO[v] ?? null;
-}
-
-
-
 /** Etapa Aquecimento → flag_status.prazo (dias) */
 export const AQUECIMENTO_SUBSTATUS: SubstatusOption[] = [
   { value: "30", label: "⏰ Retomar 30D" },

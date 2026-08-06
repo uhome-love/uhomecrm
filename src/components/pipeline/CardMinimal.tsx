@@ -22,10 +22,8 @@ import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT, formatBRT } from "@/lib/brtTime";
-import { Building2, Handshake, Phone, Zap } from "lucide-react";
-import TermometroBadge from "./TermometroBadge";
+import { Handshake, Phone, Check } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
-
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 import { useAuth } from "@/hooks/useAuth";
@@ -70,17 +68,12 @@ function visitaAutoLabel(subtipo: string | null | undefined): string | null {
   return VISITA_AUTO_SUBTIPO_LABEL[subtipo] ?? null;
 }
 
-import { getSaudeToque, type SaudeEstado } from "@/lib/leadSaude";
-
 interface CardMinimalProps {
   lead: PipelineLead;
   stage?: PipelineStage;
   corretorNome?: string;
   corretorAvatarUrl?: string;
   parceiroNome?: string;
-  /** Nome do empreendimento CANÔNICO, resolvido por MAPA no board (sem query por card). */
-  empreendimentoCanonico?: string;
-
   proximaTarefa?: CardMinimalProximaTarefa | null;
   /** Estado da cadência "Sem Contato" (tentativa atual + quando vence a próxima). */
   cadencia?: { tentativa: number; proxima_em: string | null } | null;
@@ -126,22 +119,15 @@ function resolveStatus(
 }
 
 
-// Saúde por TOQUE = barra lateral esquerda (mesmo mapa do subfunil).
-const SAUDE_BARRA: Record<SaudeEstado, string> = {
-  neutro: "bg-border",
-  em_dia: "bg-emerald-500",
-  desatualizado: "bg-amber-500",
-  em_estagnacao: "bg-red-500",
+// Borda 4px à esquerda — semantic-friendly Tailwind classes.
+const SIDEBAR_BY_STATUS: Record<StatusKey, string> = {
+  atrasada: "before:bg-red-500",
+  hoje: "before:bg-emerald-500",
+  futura: "before:bg-emerald-500",
+  sem: "before:bg-amber-500",
+  convertido: "before:bg-sky-500",
+  descarte: "before:bg-zinc-400 dark:before:bg-zinc-600",
 };
-
-const SAUDE_DOT: Record<SaudeEstado, string> = {
-  neutro: "bg-muted-foreground/50",
-  em_dia: "bg-emerald-500",
-  desatualizado: "bg-amber-500",
-  em_estagnacao: "bg-red-500",
-};
-
-
 
 
 function deduplicateEmp(raw: string): string {
@@ -206,8 +192,6 @@ const CardMinimal = memo(function CardMinimal({
   corretorNome,
   corretorAvatarUrl,
   parceiroNome,
-  empreendimentoCanonico,
-
   proximaTarefa,
   cadencia,
   negocioInfo,
@@ -265,30 +249,12 @@ const CardMinimal = memo(function CardMinimal({
     [lead.empreendimento]
   );
 
-  // Exibição: CANÔNICO (mapa do board) com fallback pro nome do formulário/campanha.
-  const empreendimentoLabel = empreendimentoCanonico || empreendimento;
-
-
   const telefoneFmt = useMemo(
     () => formatPhoneBR(lead.telefone || lead.telefone2 || ""),
     [lead.telefone, lead.telefone2]
   );
 
   const dias = useMemo(() => daysInStage(lead.stage_changed_at), [lead.stage_changed_at]);
-
-  // Saúde por TOQUE REAL (Onda 1 — só cor, não move/remove nada).
-  const saude = useMemo(
-    () => getSaudeToque(lead, stage?.tipo, proximaTarefa ?? null),
-    [lead.ultimo_toque_at, lead.created_at, stage?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
-  );
-  const diasSemToqueLabel = `${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`;
-  const saudeTexto =
-    saude.estado === "em_estagnacao"
-      ? "em estagnação"
-      : saude.diasSemToque === 0
-        ? "hoje"
-        : `há ${saude.diasSemToque}d`;
-
   const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
   const menuEnabled = !!(stages && onMoveLead);
@@ -392,22 +358,17 @@ const CardMinimal = memo(function CardMinimal({
       }}
       data-dragging={isDragging || undefined}
       className={[
-        "group relative overflow-hidden cursor-pointer rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
-        "p-3 pl-3.5 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm motion-reduce:transition-none",
+        "group relative cursor-pointer rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
+        "px-3.5 py-3 pl-4 hover:-translate-y-px active:scale-[0.985] active:shadow-sm motion-reduce:transition-none motion-reduce:active:scale-100",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
         parceiroNome
           ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
           : "bg-card border border-border/60 hover:border-border",
+        "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
+        stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
-      {/* Saúde por TOQUE = barra lateral esquerda (só-cor) */}
-      <span
-        aria-hidden
-        title={diasSemToqueLabel}
-        className={`absolute left-0 top-0 bottom-0 w-1 ${SAUDE_BARRA[saude.estado]}`}
-      />
-
       {/* Header: badges + nome + substatus · avatar do corretor + menu ··· */}
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="flex-1 min-w-0">
@@ -427,8 +388,6 @@ const CardMinimal = memo(function CardMinimal({
                 📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
               </span>
             )}
-            {/* Pílula de saúde removida — a saúde agora é a barra lateral esquerda. */}
-
             {substatus && !hasSpecificTitle && (
               <span className={`shrink-0 ${substatus.className}`}>
                 {substatus.label}
@@ -450,16 +409,11 @@ const CardMinimal = memo(function CardMinimal({
               </span>
             )}
           </div>
-          {empreendimentoLabel && (
-            <div
-              className="mt-1 flex items-center gap-1.5 text-[11.5px] text-muted-foreground min-w-0"
-              title={empreendimentoLabel}
-            >
-              <Building2 className="h-3 w-3 opacity-60 shrink-0" />
-              <span className="truncate">{empreendimentoLabel}</span>
+          {empreendimento && (
+            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+              {empreendimento}
             </div>
           )}
-
           {negocioBadge && (
             <div
               className={`inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-px text-[9px] font-semibold ${negocioBadge.tone}`}
@@ -490,24 +444,11 @@ const CardMinimal = memo(function CardMinimal({
 
       {/* Telefone com ícone discreto */}
       {telefoneFmt && (
-        <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted-foreground tabular-nums min-w-0">
-          <Phone className="h-3 w-3 opacity-60 shrink-0" />
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-foreground/80 min-w-0">
+          <Phone className="h-3 w-3 shrink-0 text-muted-foreground/70" />
           <span className="truncate">{telefoneFmt}</span>
         </div>
       )}
-
-      {/* Fileira meta: termômetro + dias sem toque (só-cor) */}
-      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-        <TermometroBadge temperatura={lead.temperatura} score={lead.oportunidade_score} />
-        <span
-          className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground"
-          title={diasSemToqueLabel}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${SAUDE_DOT[saude.estado]}`} />
-          <span className="tabular-nums">{saudeTexto}</span>
-        </span>
-      </div>
-
 
       {showActionLine && (
         <>
@@ -574,19 +515,18 @@ const CardMinimal = memo(function CardMinimal({
             {canQuickComplete && (
               <button
                 type="button"
-                aria-label="Registrar atividade"
-                title="Registrar atividade"
+                aria-label="Concluir tarefa"
+                title="Concluir tarefa"
                 disabled={completingBusy}
                 onClick={(e) => {
                   e.stopPropagation();
                   setCompletingOpen(true);
                 }}
-                className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white shadow-[0_4px_12px_rgba(99,102,241,.4)] hover:brightness-105 active:translate-y-px transition-all disabled:opacity-60"
+                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-colors disabled:opacity-60"
               >
-                <Zap className="h-3.5 w-3.5" strokeWidth={2.5} fill="currentColor" />
+                <Check className="h-3 w-3" strokeWidth={3} />
               </button>
             )}
-
           </div>
         </>
       )}
@@ -608,18 +548,9 @@ const CardMinimal = memo(function CardMinimal({
             </div>
           )}
           <span className="truncate text-[11px] font-medium text-foreground/80">
-            {corretorNome.trim().split(/\s+/)[0] || corretorNome}
+            {corretorNome}
           </span>
-          {proximaTarefa && (
-            <span
-              className="ml-auto text-[11px] text-muted-foreground truncate max-w-[55%]"
-              title={fullActionLabel}
-            >
-              {formatNextAction(proximaTarefa)}
-            </span>
-          )}
         </div>
-
       )}
 
       {canQuickComplete && (
