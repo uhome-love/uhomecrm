@@ -10,7 +10,7 @@
 // linha de saúde por toque e barra de urgência — tudo só-cor.
 // ─────────────────────────────────────────────────────────────────
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Building2, CalendarClock, Loader2, Search, Zap } from "lucide-react";
+import { ArrowLeft, Building2, CalendarClock, Loader2, MoreVertical, Phone, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { CardMinimalProximaTarefa } from "../CardMinimal";
@@ -19,6 +19,8 @@ import { QUALIFICACAO_SUBSTATUS, normalizeStatusAtendimento } from "@/lib/leadHe
 import { getSaudeToque, type SaudeEstado } from "@/lib/leadSaude";
 import { formatNextAction } from "@/lib/formatNextAction";
 import TermometroBadge from "../TermometroBadge";
+import CardOverflowMenu from "../CardOverflowMenu";
+
 
 const SEM_STATUS = "__sem_status__";
 const COLUMN_WIDTH = 272;
