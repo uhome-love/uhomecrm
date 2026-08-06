@@ -9,14 +9,15 @@
 // Camada visual: card compacto próprio (não usa CardMinimal), termômetro,
 // linha de saúde por toque e barra de urgência — tudo só-cor.
 // ─────────────────────────────────────────────────────────────────
-import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, Loader2, Zap } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Building2, CalendarClock, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { CardMinimalProximaTarefa } from "../CardMinimal";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { QUALIFICACAO_SUBSTATUS, normalizeStatusAtendimento } from "@/lib/leadHelpers";
-import { getSaudeToque, SAUDE_UI, type SaudeEstado } from "@/lib/leadSaude";
+import { getSaudeToque, type SaudeEstado } from "@/lib/leadSaude";
+import { formatNextAction } from "@/lib/formatNextAction";
 import TermometroBadge from "../TermometroBadge";
 
 const SEM_STATUS = "__sem_status__";
@@ -31,13 +32,22 @@ const FLUXO_HINT: Record<string, string> = {
   alinhando_visita: "→ vira etapa Visita",
 };
 
-/** Cor da barra de urgência (3px) por estado de saúde. */
-const BARRA_BY_SAUDE: Record<SaudeEstado, string> = {
-  em_dia: "bg-emerald-500/70",
-  desatualizado: "bg-amber-500",
-  em_estagnacao: "bg-red-500",
-  neutro: "bg-border",
+/** Pílula soft de saúde por estado (dot + texto). */
+const SAUDE_PILL: Record<Exclude<SaudeEstado, "neutro">, { pill: string; dot: string }> = {
+  em_dia: {
+    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    dot: "bg-emerald-500",
+  },
+  desatualizado: {
+    pill: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+    dot: "bg-amber-500",
+  },
+  em_estagnacao: {
+    pill: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
+    dot: "bg-red-500",
+  },
 };
+
 
 interface Props {
   stages: PipelineStage[];
@@ -56,6 +66,7 @@ export default function SubfunilQualificacao({
   stages,
   leads,
   corretorNomes,
+  corretorAvatars,
   tarefasMap,
   onSelectLead,
   onClose,
@@ -66,6 +77,8 @@ export default function SubfunilQualificacao({
   const [savingId, setSavingId] = useState<string | null>(null);
   // Override otimista local: leadId → status_atendimento gravado agora.
   const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
+  // leadId → nome CANÔNICO do empreendimento (não o nome do formulário/campanha).
+  const [empreendimentoCanonico, setEmpreendimentoCanonico] = useState<Record<string, string>>({});
 
   const qualificacaoStage = useMemo(
     () => stages.find((s) => s.tipo === "qualificacao"),
@@ -76,6 +89,54 @@ export default function SubfunilQualificacao({
     () => (qualificacaoStage ? leads.filter((l) => l.stage_id === qualificacaoStage.id) : []),
     [leads, qualificacaoStage]
   );
+
+  // Enriquecimento só-visual: resolve o empreendimento CANÔNICO (nome do produto),
+  // e não `pipeline_leads.empreendimento` (que guarda o nome do formulário/campanha).
+  useEffect(() => {
+    let cancelled = false;
+    const stageId = qualificacaoStage?.id;
+    if (!stageId) {
+      setEmpreendimentoCanonico({});
+      return;
+    }
+    (async () => {
+      const [canonRes, leadsRes] = await Promise.all([
+        supabase.from("empreendimentos_canonicos").select("id, nome"),
+        (async () => {
+          const rows: Array<{ id: string; empreendimento_canonico_id: string | null }> = [];
+          for (let from = 0; from < 5000; from += 1000) {
+            const { data, error } = await supabase
+              .from("pipeline_leads")
+              .select("id, empreendimento_canonico_id")
+              .eq("stage_id", stageId)
+              .range(from, from + 999);
+            if (error || !data || data.length === 0) break;
+            rows.push(...(data as typeof rows));
+            if (data.length < 1000) break;
+          }
+          return rows;
+        })(),
+      ]);
+      if (cancelled) return;
+      const nomes: Record<string, string> = {};
+      for (const c of (canonRes.data ?? []) as Array<{ id: string; nome: string }>) {
+        nomes[c.id] = c.nome;
+      }
+      const map: Record<string, string> = {};
+      for (const row of leadsRes) {
+        const nome = row.empreendimento_canonico_id
+          ? nomes[row.empreendimento_canonico_id]
+          : undefined;
+        if (nome) map[row.id] = nome;
+      }
+      setEmpreendimentoCanonico(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [qualificacaoStage?.id]);
+
+
 
   // "Sem status" vem PRIMEIRO (é o que precisa de classificação).
   const columns = useMemo(
@@ -147,33 +208,32 @@ export default function SubfunilQualificacao({
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Header — padrão PageHeader canônico */}
-      <div className="shrink-0 flex items-start gap-3 border-b border-border pb-4 mb-3">
+      <div className="shrink-0 flex items-center gap-3 border-b border-border pb-5 mb-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Voltar
+        </button>
         <div className="w-10 h-10 rounded-[11px] bg-primary/10 text-primary flex items-center justify-center text-lg shrink-0">
           🔎
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
+          <h2 className="text-xl font-bold tracking-tight text-foreground leading-snug">
             Subfunil de Qualificação
           </h2>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             Arraste o lead entre as colunas para dizer onde o cliente está — grava só o substatus,
             não muda a etapa.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs font-semibold text-primary bg-primary/10 rounded-full px-2.5 py-1 tabular-nums">
-            {qualificacaoLeads.length} leads
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Voltar ao Kanban
-          </button>
-        </div>
+        <span className="shrink-0 text-xs font-semibold text-primary bg-primary/10 rounded-full px-2.5 py-1 tabular-nums">
+          {qualificacaoLeads.length} leads
+        </span>
       </div>
+
 
 
       {!qualificacaoStage ? (
@@ -240,8 +300,25 @@ export default function SubfunilQualificacao({
                     )}
                     {colLeads.map((lead) => {
                       const saude = getSaudeToque(lead, "qualificacao", tarefasMap?.[lead.id] ?? null);
-                      const saudeUi = saude.estado === "neutro" ? null : SAUDE_UI[saude.estado];
+                      const saudePill =
+                        saude.estado === "neutro" ? null : SAUDE_PILL[saude.estado];
+                      const saudeTexto =
+                        saude.estado === "em_estagnacao"
+                          ? "em estagnação"
+                          : saude.diasSemToque === 0
+                            ? "hoje"
+                            : `há ${saude.diasSemToque}d`;
                       const corretor = lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined;
+                      const avatar = lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined;
+                      const iniciais = (corretor ?? "")
+                        .trim()
+                        .split(/\s+/)
+                        .slice(0, 2)
+                        .map((p) => p[0] ?? "")
+                        .join("")
+                        .toUpperCase();
+                      const tarefa = tarefasMap?.[lead.id];
+                      const empreendimento = empreendimentoCanonico[lead.id];
                       return (
                         <div
                           key={lead.id}
@@ -260,75 +337,80 @@ export default function SubfunilQualificacao({
                             }
                           }}
                           aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
-                          className="group relative cursor-pointer rounded-xl border border-border/60 bg-card p-3 pl-3.5 shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          className="group relative cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                          {/* Barra de urgência */}
-                          <span
-                            aria-hidden
-                            className={`absolute left-1 top-2 bottom-2 w-[3px] rounded-full ${BARRA_BY_SAUDE[saude.estado]}`}
-                          />
                           {savingId === lead.id && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60">
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60">
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             </div>
                           )}
 
-                          <div className="flex items-start gap-2 min-w-0">
-                            <div className="min-w-0 flex-1">
-                              <div className="text-[13px] font-semibold text-foreground leading-tight truncate">
-                                {lead.nome || "Sem nome"}
-                              </div>
-                              <div className="mt-0.5 text-[10.5px] text-muted-foreground truncate">
-                                {lead.empreendimento || "Sem empreendimento"}
-                              </div>
-                            </div>
+                          <div className="text-[15px] font-bold tracking-tight text-foreground truncate">
+                            {lead.nome || "Sem nome"}
+                          </div>
+                          <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-muted-foreground min-w-0">
+                            <Building2 className="h-3 w-3 opacity-60 shrink-0" />
+                            <span className="truncate">{empreendimento || "Sem empreendimento"}</span>
+                          </div>
+
+                          {/* Fileira meta: termômetro + saúde */}
+                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                             <TermometroBadge
                               temperatura={lead.temperatura}
                               score={lead.oportunidade_score}
                             />
-                          </div>
-
-                          {/* Linha de saúde por toque */}
-                          <div className="mt-2 flex items-center gap-1.5 min-w-0">
-                            {saudeUi && (
+                            {saudePill && (
                               <span
-                                className="text-[10.5px] font-medium text-muted-foreground truncate tabular-nums"
-                                title={`${saudeUi.label} — ${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${saudePill.pill}`}
+                                title={`${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
                               >
-                                {saudeUi.emoji}{" "}
-                                {saude.estado === "em_estagnacao"
-                                  ? "em estagnação"
-                                  : saude.estado === "em_dia"
-                                    ? saude.diasSemToque === 0
-                                      ? "hoje"
-                                      : `há ${saude.diasSemToque}d`
-                                    : `${saude.diasSemToque}d`}
-                              </span>
-                            )}
-                            {corretor && (
-                              <span className="ml-auto text-[10px] text-muted-foreground truncate max-w-[90px]">
-                                {corretor.split(" ")[0]}
+                                <span className={`h-1.5 w-1.5 rounded-full ${saudePill.dot}`} />
+                                <span className="tabular-nums">{saudeTexto}</span>
                               </span>
                             )}
                           </div>
 
-                          {/* Rodapé: ação rápida */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // TODO Build 3: abrir RegistrarAtividadeDialog
-                              onSelectLead(lead);
-                            }}
-                            className="mt-2 w-full h-7 rounded-md bg-primary/10 text-primary text-[11px] font-semibold inline-flex items-center justify-center gap-1 hover:bg-primary/15 transition-colors"
-                          >
-                            <Zap className="h-3 w-3" />
-                            Registrar
-                          </button>
+                          {/* Próxima ação (só quando existe tarefa) */}
+                          {tarefa && (
+                            <div className="mt-2 text-[11px] text-muted-foreground inline-flex items-center gap-1.5 min-w-0">
+                              <CalendarClock className="h-3 w-3 opacity-60 shrink-0" />
+                              <span className="truncate">{formatNextAction(tarefa)}</span>
+                            </div>
+                          )}
 
+                          {/* Rodapé */}
+                          <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2">
+                            {avatar ? (
+                              <img
+                                src={avatar}
+                                alt={corretor ?? "Corretor"}
+                                className="h-[26px] w-[26px] rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <span className="h-[26px] w-[26px] rounded-full bg-gradient-to-br from-primary to-cyan-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                                {iniciais || "—"}
+                              </span>
+                            )}
+                            <span className="text-[12px] font-semibold text-muted-foreground truncate">
+                              {corretor ? corretor.split(" ")[0] : "Sem corretor"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO Build 3: RegistrarAtividadeDialog
+                                onSelectLead(lead);
+                              }}
+                              className="ml-auto shrink-0 bg-foreground text-background rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                            >
+                              <Zap className="h-3 w-3" />
+                              Registrar
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
+
                   </div>
                 </div>
               );
