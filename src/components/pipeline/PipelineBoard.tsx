@@ -1030,6 +1030,16 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     }}>
                       {stageLeads.length}
                     </span>
+                    {stage.tipo === "qualificacao" && onOpenSubfunil && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onOpenSubfunil(); }}
+                        aria-label="Abrir subfunil de Qualificação"
+                        title="Abrir subfunil de Qualificação"
+                        className="ml-1 p-1 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <LayoutGrid className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     {stage.tipo === "descarte" && stageLeads.length > 0 && (isGestor || isAdmin) && (
                       <button
                         onClick={() => setSweepConfirmOpen(true)}
