@@ -134,6 +134,14 @@ const SAUDE_BARRA: Record<SaudeEstado, string> = {
   em_estagnacao: "bg-red-500",
 };
 
+const SAUDE_DOT: Record<SaudeEstado, string> = {
+  neutro: "bg-muted-foreground/50",
+  em_dia: "bg-emerald-500",
+  desatualizado: "bg-amber-500",
+  em_estagnacao: "bg-red-500",
+};
+
+
 
 
 function deduplicateEmp(raw: string): string {
