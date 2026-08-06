@@ -22,8 +22,10 @@ import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT, formatBRT } from "@/lib/brtTime";
-import { Handshake, Phone, Zap } from "lucide-react";
+import { Building2, Handshake, Phone, Zap } from "lucide-react";
+import TermometroBadge from "./TermometroBadge";
 import CardOverflowMenu from "./CardOverflowMenu";
+
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 import { useAuth } from "@/hooks/useAuth";
@@ -76,6 +78,9 @@ interface CardMinimalProps {
   corretorNome?: string;
   corretorAvatarUrl?: string;
   parceiroNome?: string;
+  /** Nome do empreendimento CANÔNICO, resolvido por MAPA no board (sem query por card). */
+  empreendimentoCanonico?: string;
+
   proximaTarefa?: CardMinimalProximaTarefa | null;
   /** Estado da cadência "Sem Contato" (tentativa atual + quando vence a próxima). */
   cadencia?: { tentativa: number; proxima_em: string | null } | null;
@@ -128,6 +133,14 @@ const SAUDE_BARRA: Record<SaudeEstado, string> = {
   desatualizado: "bg-amber-500",
   em_estagnacao: "bg-red-500",
 };
+
+const SAUDE_DOT: Record<SaudeEstado, string> = {
+  neutro: "bg-muted-foreground/50",
+  em_dia: "bg-emerald-500",
+  desatualizado: "bg-amber-500",
+  em_estagnacao: "bg-red-500",
+};
+
 
 
 
@@ -193,6 +206,8 @@ const CardMinimal = memo(function CardMinimal({
   corretorNome,
   corretorAvatarUrl,
   parceiroNome,
+  empreendimentoCanonico,
+
   proximaTarefa,
   cadencia,
   negocioInfo,
@@ -250,6 +265,10 @@ const CardMinimal = memo(function CardMinimal({
     [lead.empreendimento]
   );
 
+  // Exibição: CANÔNICO (mapa do board) com fallback pro nome do formulário/campanha.
+  const empreendimentoLabel = empreendimentoCanonico || empreendimento;
+
+
   const telefoneFmt = useMemo(
     () => formatPhoneBR(lead.telefone || lead.telefone2 || ""),
     [lead.telefone, lead.telefone2]
@@ -263,6 +282,13 @@ const CardMinimal = memo(function CardMinimal({
     [lead.ultimo_toque_at, lead.created_at, stage?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
   const diasSemToqueLabel = `${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`;
+  const saudeTexto =
+    saude.estado === "em_estagnacao"
+      ? "em estagnação"
+      : saude.diasSemToque === 0
+        ? "hoje"
+        : `há ${saude.diasSemToque}d`;
+
   const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
   const menuEnabled = !!(stages && onMoveLead);
@@ -424,11 +450,16 @@ const CardMinimal = memo(function CardMinimal({
               </span>
             )}
           </div>
-          {empreendimento && (
-            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-              {empreendimento}
+          {empreendimentoLabel && (
+            <div
+              className="mt-1 flex items-center gap-1.5 text-[11.5px] text-muted-foreground min-w-0"
+              title={empreendimentoLabel}
+            >
+              <Building2 className="h-3 w-3 opacity-60 shrink-0" />
+              <span className="truncate">{empreendimentoLabel}</span>
             </div>
           )}
+
           {negocioBadge && (
             <div
               className={`inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-px text-[9px] font-semibold ${negocioBadge.tone}`}
@@ -459,11 +490,24 @@ const CardMinimal = memo(function CardMinimal({
 
       {/* Telefone com ícone discreto */}
       {telefoneFmt && (
-        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-foreground/80 min-w-0">
-          <Phone className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+        <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted-foreground tabular-nums min-w-0">
+          <Phone className="h-3 w-3 opacity-60 shrink-0" />
           <span className="truncate">{telefoneFmt}</span>
         </div>
       )}
+
+      {/* Fileira meta: termômetro + dias sem toque (só-cor) */}
+      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+        <TermometroBadge temperatura={lead.temperatura} score={lead.oportunidade_score} />
+        <span
+          className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground"
+          title={diasSemToqueLabel}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${SAUDE_DOT[saude.estado]}`} />
+          <span className="tabular-nums">{saudeTexto}</span>
+        </span>
+      </div>
+
 
       {showActionLine && (
         <>
@@ -564,9 +608,18 @@ const CardMinimal = memo(function CardMinimal({
             </div>
           )}
           <span className="truncate text-[11px] font-medium text-foreground/80">
-            {corretorNome}
+            {corretorNome.trim().split(/\s+/)[0] || corretorNome}
           </span>
+          {proximaTarefa && (
+            <span
+              className="ml-auto text-[11px] text-muted-foreground truncate max-w-[55%]"
+              title={fullActionLabel}
+            >
+              {formatNextAction(proximaTarefa)}
+            </span>
+          )}
         </div>
+
       )}
 
       {canQuickComplete && (

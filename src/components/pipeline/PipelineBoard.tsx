@@ -123,7 +123,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   stageLeads, stage, stages, segmentos, corretorNomes, corretorAvatars, parcerias,
   selectionMode, selectedLeads, arrivedLeadId,
   onToggleSelect, onSelectLead, onMoveLead, onTransferred, stageIndexMap, handleDragStart,
-  tarefasMap, whatsappUnreadSet, cadenciaMap, negociosMap,
+  tarefasMap, whatsappUnreadSet, cadenciaMap, negociosMap, canonicoNomes,
 }: {
   stageLeads: PipelineLead[];
   stage: PipelineStage;
@@ -145,6 +145,9 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   whatsappUnreadSet: Set<string>;
   cadenciaMap: Record<string, { tentativa: number; proxima_em: string | null }>;
   negociosMap: Record<string, { fase: string; vgv: number; fase_changed_at: string }>;
+  /** Mapa canônico id → nome, carregado UMA vez no board. */
+  canonicoNomes: Record<string, string>;
+
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -222,6 +225,12 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 proximaTarefa={tarefasMap[lead.id] || null}
                 cadencia={cadenciaMap[lead.id] || null}
                 negocioInfo={negociosMap[lead.id] || null}
+                empreendimentoCanonico={
+                  lead.empreendimento_canonico_id
+                    ? canonicoNomes[lead.empreendimento_canonico_id]
+                    : undefined
+                }
+
                 onDragStart={() => !selectionMode && handleDragStart(lead.id)}
                 onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
               />
@@ -415,6 +424,22 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     }
     return map;
   }, [negociosRows]);
+
+  // Empreendimentos CANÔNICOS: tabela pequena, carregada UMA vez no nível do board
+  // e passada como MAPA pros cards (NUNCA uma query por card — o board renderiza centenas).
+  const { data: canonicoNomes = {} as Record<string, string> } = useQuery({
+    queryKey: ["empreendimentos-canonicos-nomes"],
+    queryFn: async () => {
+      const { data } = await supabase.from("empreendimentos_canonicos").select("id, nome");
+      const map: Record<string, string> = {};
+      for (const c of (data ?? []) as Array<{ id: string; nome: string }>) map[c.id] = c.nome;
+      return map;
+    },
+    staleTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+
 
 
 
@@ -1108,6 +1133,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     whatsappUnreadSet={whatsappUnreadSet}
                     cadenciaMap={cadenciaMap}
                     negociosMap={negociosMap}
+                    canonicoNomes={canonicoNomes}
+
                   />
                 )}
               </div>

@@ -27,6 +27,9 @@ export interface PipelineLead {
   segmento_id: string | null;
   produto_id?: string | null;
   empreendimento: string | null;
+  /** Produto CANÔNICO (empreendimentos_canonicos.id) — resolvido em mapa no board. */
+  empreendimento_canonico_id?: string | null;
+
   stage_id: string;
   stage_changed_at: string;
   ordem_no_stage: number;
@@ -281,7 +284,7 @@ export function usePipeline(
     loadingLeadsRef.current = true;
     try {
 
-    const selectFields = "id, nome, telefone, telefone2, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, imovel_codigo, imovel_url, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, ultimo_toque_at, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, flag_status, is_redistribuicao";
+    const selectFields = "id, nome, telefone, telefone2, email, segmento_id, empreendimento, empreendimento_canonico_id, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, imovel_codigo, imovel_url, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, ultimo_toque_at, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, flag_status, is_redistribuicao";
     // Página de 1000 para todos: a query principal (arquivado=false, order by
     // updated_at, índice idx_pipeline_leads_updated) roda em <1ms no servidor;
     // o gargalo era o número de idas ao servidor. 1000/página corta ~1811 leads
