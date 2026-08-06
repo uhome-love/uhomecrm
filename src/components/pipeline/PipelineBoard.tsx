@@ -416,6 +416,22 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     return map;
   }, [negociosRows]);
 
+  // Empreendimentos CANÔNICOS: tabela pequena, carregada UMA vez no nível do board
+  // e passada como MAPA pros cards (NUNCA uma query por card — o board renderiza centenas).
+  const { data: canonicoNomes = {} as Record<string, string> } = useQuery({
+    queryKey: ["empreendimentos-canonicos-nomes"],
+    queryFn: async () => {
+      const { data } = await supabase.from("empreendimentos_canonicos").select("id, nome");
+      const map: Record<string, string> = {};
+      for (const c of (data ?? []) as Array<{ id: string; nome: string }>) map[c.id] = c.nome;
+      return map;
+    },
+    staleTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+
+
 
 
   // Fluxo ÚNICO: todas as etapas ativas viram coluna, exceto Descarte/Caiu
