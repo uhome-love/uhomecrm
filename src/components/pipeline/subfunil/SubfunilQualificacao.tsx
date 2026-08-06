@@ -1,21 +1,43 @@
 // ─────────────────────────────────────────────────────────────────
-// SubfunilQualificacao — Onda 1 / Build 1
+// SubfunilQualificacao — Onda 1 / Build 1 (mecânica) + revisão visual
 //
-// Tela cheia com os substatus da etapa Qualificação como colunas.
-// REGRA DE OURO: arrastar entre colunas grava APENAS
+// REGRA DE OURO (inalterada): arrastar entre colunas grava APENAS
 //   flag_status = { ...flag_status_atual, status_atendimento: <novo> }
 // Nunca altera stage_id / stage_changed_at / negocio_id, não cria tarefa,
 // não dispara transição de etapa. Risco zero para PDN/CAPI/roleta/relatórios.
+//
+// Camada visual: card compacto próprio (não usa CardMinimal), termômetro,
+// linha de saúde por toque e barra de urgência — tudo só-cor.
 // ─────────────────────────────────────────────────────────────────
 import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import CardMinimal, { type CardMinimalProximaTarefa } from "../CardMinimal";
+import type { CardMinimalProximaTarefa } from "../CardMinimal";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { QUALIFICACAO_SUBSTATUS, normalizeStatusAtendimento } from "@/lib/leadHelpers";
+import { getSaudeToque, SAUDE_UI, type SaudeEstado } from "@/lib/leadSaude";
+import TermometroBadge from "../TermometroBadge";
 
 const SEM_STATUS = "__sem_status__";
+const COLUMN_WIDTH = 220;
+
+/** Dica de fluxo (para onde o lead vai depois) por substatus. */
+const FLUXO_HINT: Record<string, string> = {
+  contato_inicial: "→ Alinhando perfil",
+  alinhamento_perfil: "→ Busca de imóveis",
+  busca: "→ Follow up / Visita",
+  follow_up: "→ Alinhando visita",
+  alinhando_visita: "→ vira etapa Visita",
+};
+
+/** Cor da barra de urgência (3px) por estado de saúde. */
+const BARRA_BY_SAUDE: Record<SaudeEstado, string> = {
+  em_dia: "bg-emerald-500/70",
+  desatualizado: "bg-amber-500",
+  em_estagnacao: "bg-red-500",
+  neutro: "bg-border",
+};
 
 interface Props {
   stages: PipelineStage[];
@@ -30,14 +52,10 @@ interface Props {
   onChanged?: () => void;
 }
 
-const COLUMN_WIDTH = 268;
-
 export default function SubfunilQualificacao({
   stages,
   leads,
   corretorNomes,
-  corretorAvatars,
-  parcerias,
   tarefasMap,
   onSelectLead,
   onClose,
@@ -59,10 +77,11 @@ export default function SubfunilQualificacao({
     [leads, qualificacaoStage]
   );
 
+  // "Sem status" vem PRIMEIRO (é o que precisa de classificação).
   const columns = useMemo(
     () => [
-      ...QUALIFICACAO_SUBSTATUS.map((o) => ({ key: o.value, label: o.label })),
       { key: SEM_STATUS, label: "⚠ Sem status" },
+      ...QUALIFICACAO_SUBSTATUS.map((o) => ({ key: o.value, label: o.label })),
     ],
     []
   );
@@ -127,7 +146,7 @@ export default function SubfunilQualificacao({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      {/* Header */}
+      {/* Header — breadcrumb + explicação do que o arrasto faz */}
       <div className="shrink-0 flex items-center gap-3 pb-3">
         <button
           type="button"
@@ -138,11 +157,14 @@ export default function SubfunilQualificacao({
           Voltar ao Kanban
         </button>
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground truncate">
-            🔎 Subfunil de Qualificação
-          </h2>
+          <div className="flex items-center gap-1 text-[12px] font-semibold text-foreground">
+            <span className="text-muted-foreground">Pipeline</span>
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <span>🔎 Qualificação</span>
+          </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            Arrastar aqui muda apenas o substatus — o lead continua na etapa Qualificação.
+            Arraste o lead entre as colunas para dizer onde o cliente está. Isso grava só o
+            substatus — não muda a etapa, nem mexe em relatório, roleta ou PDN.
           </p>
         </div>
         <span className="ml-auto text-xs font-semibold text-primary">
@@ -156,7 +178,7 @@ export default function SubfunilQualificacao({
         </div>
       ) : (
         <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-3 h-full pb-3">
+          <div className="flex gap-2.5 h-full pb-3">
             {columns.map((col) => {
               const colLeads = leadsByColumn.get(col.key) ?? [];
               const isOver = dragOverCol === col.key;
@@ -164,7 +186,13 @@ export default function SubfunilQualificacao({
               return (
                 <div
                   key={col.key}
-                  className="flex flex-col shrink-0 h-full"
+                  className={`flex flex-col shrink-0 h-full rounded-xl border p-1.5 transition-colors ${
+                    isSemStatus
+                      ? "border-amber-400/70 bg-amber-50/60 dark:bg-amber-500/5"
+                      : isOver
+                        ? "border-primary bg-primary/5"
+                        : "border-border/60 bg-muted/30"
+                  }`}
                   style={{ width: COLUMN_WIDTH }}
                   onDragOver={(e) => {
                     if (isSemStatus) return;
@@ -178,60 +206,123 @@ export default function SubfunilQualificacao({
                     void handleDrop(col.key);
                   }}
                 >
-                  <div
-                    className={`shrink-0 rounded-xl border px-3 py-2 mb-2 transition-colors ${
-                      isOver ? "border-primary bg-primary/5" : "border-border bg-card"
-                    }`}
-                  >
+                  {/* Cabeçalho da coluna */}
+                  <div className="shrink-0 px-1.5 pt-1 pb-2">
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-[12px] font-semibold truncate ${
-                          isSemStatus ? "text-amber-600" : "text-foreground"
+                          isSemStatus ? "text-amber-600 dark:text-amber-400" : "text-foreground"
                         }`}
                       >
                         {col.label}
                       </span>
-                      <span className="ml-auto text-[12px] font-bold text-primary">
+                      <span className="ml-auto text-[12px] font-bold text-primary tabular-nums">
                         {colLeads.length}
                       </span>
                     </div>
+                    <div className="mt-0.5 text-[10px] text-muted-foreground truncate">
+                      {isSemStatus
+                        ? "Classifique — o cliente está em algum ponto abaixo"
+                        : (FLUXO_HINT[col.key] ?? "")}
+                    </div>
                   </div>
 
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
+                  {/* Cards */}
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
                     {colLeads.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-border py-6 text-center text-[11px] text-muted-foreground">
+                      <div className="rounded-lg border border-dashed border-border py-6 text-center text-[10.5px] text-muted-foreground">
                         {isSemStatus ? "Nenhum lead sem status" : "Arraste um lead para cá"}
                       </div>
                     )}
-                    {colLeads.map((lead) => (
-                      <div
-                        key={lead.id}
-                        className="relative"
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.effectAllowed = "move";
-                          dragLeadId.current = lead.id;
-                        }}
-                      >
-                        {savingId === lead.id && (
-                          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60">
-                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                          </div>
-                        )}
-                        <CardMinimal
-                          lead={lead}
-                          stage={qualificacaoStage}
-                          corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
-                          corretorAvatarUrl={lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined}
-                          parceiroNome={parcerias?.[lead.id]}
-                          proximaTarefa={tarefasMap?.[lead.id] ?? null}
-                          onClick={() => onSelectLead(lead)}
-                          onDragStart={() => {
+                    {colLeads.map((lead) => {
+                      const saude = getSaudeToque(lead, "qualificacao", tarefasMap?.[lead.id] ?? null);
+                      const saudeUi = saude.estado === "neutro" ? null : SAUDE_UI[saude.estado];
+                      const corretor = lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined;
+                      return (
+                        <div
+                          key={lead.id}
+                          role="button"
+                          tabIndex={0}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "move";
                             dragLeadId.current = lead.id;
                           }}
-                        />
-                      </div>
-                    ))}
+                          onClick={() => onSelectLead(lead)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onSelectLead(lead);
+                            }
+                          }}
+                          aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
+                          className="group relative cursor-pointer overflow-hidden rounded-lg border border-border/60 bg-card px-2.5 py-2 pl-3 shadow-sm hover:border-border hover:shadow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
+                          {/* Barra de urgência (3px) */}
+                          <span
+                            aria-hidden
+                            className={`absolute left-0 top-0 bottom-0 w-[3px] ${BARRA_BY_SAUDE[saude.estado]}`}
+                          />
+                          {savingId === lead.id && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/60">
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            </div>
+                          )}
+
+                          <div className="flex items-start gap-1.5 min-w-0">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[12.5px] font-bold text-foreground leading-tight truncate">
+                                {lead.nome || "Sem nome"}
+                              </div>
+                              <div className="text-[10.5px] text-muted-foreground truncate">
+                                {lead.empreendimento || "Sem empreendimento"}
+                              </div>
+                            </div>
+                            <TermometroBadge
+                              temperatura={lead.temperatura}
+                              score={lead.oportunidade_score}
+                            />
+                          </div>
+
+                          {/* Linha de saúde por toque */}
+                          <div className="mt-1 flex items-center gap-1.5 min-w-0">
+                            {saudeUi && (
+                              <span
+                                className="text-[10.5px] font-medium text-muted-foreground truncate"
+                                title={`${saudeUi.label} — ${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
+                              >
+                                {saudeUi.emoji}{" "}
+                                {saude.estado === "em_estagnacao"
+                                  ? "em estagnação"
+                                  : saude.estado === "em_dia"
+                                    ? `há ${saude.diasSemToque}d`
+                                    : `${saude.diasSemToque}d`}
+                              </span>
+                            )}
+                            {corretor && (
+                              <span className="ml-auto text-[10px] text-muted-foreground truncate max-w-[90px]">
+                                {corretor.split(" ")[0]}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Rodapé: ação rápida */}
+                          <div className="mt-1.5 flex">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO Build 3: abrir RegistrarAtividadeDialog
+                                onSelectLead(lead);
+                              }}
+                              className="h-6 px-2 rounded-md border border-border/70 bg-muted/40 text-[10px] font-semibold text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                            >
+                              Registrar
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
