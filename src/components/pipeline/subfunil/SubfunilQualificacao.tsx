@@ -287,7 +287,7 @@ export default function SubfunilQualificacao({
                   </div>
 
                   {/* Cards */}
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1">
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 pt-1 px-1 -mx-1">
                     {colLeads.length === 0 && (
                       <div className="rounded-xl border border-dashed border-border py-6 text-center text-[10.5px] text-muted-foreground">
                         {isSemStatus ? "Nenhum lead sem status" : "Arraste um lead para cá"}
@@ -332,7 +332,7 @@ export default function SubfunilQualificacao({
                             }
                           }}
                           aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
-                          className="group relative cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          className="group relative cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                         >
                           {savingId === lead.id && (
                             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60">
