@@ -9,14 +9,15 @@
 // Camada visual: card compacto próprio (não usa CardMinimal), termômetro,
 // linha de saúde por toque e barra de urgência — tudo só-cor.
 // ─────────────────────────────────────────────────────────────────
-import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, Loader2, Zap } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Building2, CalendarClock, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { CardMinimalProximaTarefa } from "../CardMinimal";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { QUALIFICACAO_SUBSTATUS, normalizeStatusAtendimento } from "@/lib/leadHelpers";
-import { getSaudeToque, SAUDE_UI, type SaudeEstado } from "@/lib/leadSaude";
+import { getSaudeToque, type SaudeEstado } from "@/lib/leadSaude";
+import { formatNextAction } from "@/lib/formatNextAction";
 import TermometroBadge from "../TermometroBadge";
 
 const SEM_STATUS = "__sem_status__";
@@ -31,13 +32,22 @@ const FLUXO_HINT: Record<string, string> = {
   alinhando_visita: "→ vira etapa Visita",
 };
 
-/** Cor da barra de urgência (3px) por estado de saúde. */
-const BARRA_BY_SAUDE: Record<SaudeEstado, string> = {
-  em_dia: "bg-emerald-500/70",
-  desatualizado: "bg-amber-500",
-  em_estagnacao: "bg-red-500",
-  neutro: "bg-border",
+/** Pílula soft de saúde por estado (dot + texto). */
+const SAUDE_PILL: Record<Exclude<SaudeEstado, "neutro">, { pill: string; dot: string }> = {
+  em_dia: {
+    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    dot: "bg-emerald-500",
+  },
+  desatualizado: {
+    pill: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+    dot: "bg-amber-500",
+  },
+  em_estagnacao: {
+    pill: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
+    dot: "bg-red-500",
+  },
 };
+
 
 interface Props {
   stages: PipelineStage[];
