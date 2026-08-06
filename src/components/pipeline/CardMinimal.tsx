@@ -255,6 +255,10 @@ const CardMinimal = memo(function CardMinimal({
     [lead.empreendimento]
   );
 
+  // Exibição: CANÔNICO (mapa do board) com fallback pro nome do formulário/campanha.
+  const empreendimentoLabel = empreendimentoCanonico || empreendimento;
+
+
   const telefoneFmt = useMemo(
     () => formatPhoneBR(lead.telefone || lead.telefone2 || ""),
     [lead.telefone, lead.telefone2]
