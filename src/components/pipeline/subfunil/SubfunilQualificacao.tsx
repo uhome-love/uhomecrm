@@ -10,7 +10,7 @@
 // linha de saúde por toque e barra de urgência — tudo só-cor.
 // ─────────────────────────────────────────────────────────────────
 import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { CardMinimalProximaTarefa } from "../CardMinimal";
@@ -182,7 +182,7 @@ export default function SubfunilQualificacao({
         </div>
       ) : (
         <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-4 h-full pb-3">
+          <div className="flex gap-3 h-full pb-3">
             {columns.map((col) => {
               const colLeads = leadsByColumn.get(col.key) ?? [];
               const isOver = dragOverCol === col.key;
@@ -275,7 +275,7 @@ export default function SubfunilQualificacao({
 
                           <div className="flex items-start gap-2 min-w-0">
                             <div className="min-w-0 flex-1">
-                              <div className="text-[12.5px] font-semibold text-foreground leading-tight truncate">
+                              <div className="text-[13px] font-semibold text-foreground leading-tight truncate">
                                 {lead.nome || "Sem nome"}
                               </div>
                               <div className="mt-0.5 text-[10.5px] text-muted-foreground truncate">
@@ -299,7 +299,9 @@ export default function SubfunilQualificacao({
                                 {saude.estado === "em_estagnacao"
                                   ? "em estagnação"
                                   : saude.estado === "em_dia"
-                                    ? `há ${saude.diasSemToque}d`
+                                    ? saude.diasSemToque === 0
+                                      ? "hoje"
+                                      : `há ${saude.diasSemToque}d`
                                     : `${saude.diasSemToque}d`}
                               </span>
                             )}
@@ -310,20 +312,19 @@ export default function SubfunilQualificacao({
                             )}
                           </div>
 
-                          {/* Rodapé: ação rápida (só no hover) */}
-                          <div className="mt-2 flex opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // TODO Build 3: abrir RegistrarAtividadeDialog
-                                onSelectLead(lead);
-                              }}
-                              className="h-6 px-2 rounded-md border border-border/70 bg-muted/40 text-[10px] font-semibold text-muted-foreground hover:text-primary hover:border-primary transition-colors"
-                            >
-                              Registrar
-                            </button>
-                          </div>
+                          {/* Rodapé: ação rápida */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // TODO Build 3: abrir RegistrarAtividadeDialog
+                              onSelectLead(lead);
+                            }}
+                            className="mt-2 w-full h-7 rounded-md bg-primary/10 text-primary text-[11px] font-semibold inline-flex items-center justify-center gap-1 hover:bg-primary/15 transition-colors"
+                          >
+                            <Zap className="h-3 w-3" />
+                            Registrar
+                          </button>
 
                         </div>
                       );

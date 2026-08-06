@@ -42,11 +42,11 @@ export default function TermometroBadge({ temperatura, score, className = "" }: 
   return (
     <span
       title={tooltip}
-      className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[10px] font-semibold leading-none ${
+      className={`shrink-0 inline-flex items-center justify-center rounded-full h-5 w-5 text-[11px] leading-none ${
         TONE_BY_KEY[level.key] ?? "bg-muted text-muted-foreground"
       } ${className}`}
     >
-      {level.emoji} {level.label}
+      {level.emoji}
     </span>
   );
 }
