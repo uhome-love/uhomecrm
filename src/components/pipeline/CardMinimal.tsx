@@ -401,14 +401,8 @@ const CardMinimal = memo(function CardMinimal({
                 📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
               </span>
             )}
-            {saudeUi && (
-              <span
-                className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold ${saudeUi.pill}`}
-                title={`${saudeUi.label} — ${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
-              >
-                {saudeUi.emoji} {saudeUi.label}
-              </span>
-            )}
+            {/* Pílula de saúde removida — a saúde agora é a barra lateral esquerda. */}
+
             {substatus && !hasSpecificTitle && (
               <span className={`shrink-0 ${substatus.className}`}>
                 {substatus.label}
