@@ -345,15 +345,15 @@ export default function SubfunilQualificacao({
                             }
                           }}
                           aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
-                          className="group relative cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                          className={`group relative cursor-pointer rounded-xl border bg-card p-3 hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${SAUDE_FRAME[saude.estado]}`}
                         >
                           {savingId === lead.id && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60">
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60">
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             </div>
                           )}
 
-                          <div className="text-[15px] font-bold tracking-tight text-foreground truncate">
+                          <div className="text-[14px] font-bold tracking-tight text-foreground truncate">
                             {lead.nome || "Sem nome"}
                           </div>
                           <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-muted-foreground min-w-0">
@@ -361,21 +361,19 @@ export default function SubfunilQualificacao({
                             <span className="truncate">{empreendimento || "Sem empreendimento"}</span>
                           </div>
 
-                          {/* Fileira meta: termômetro + saúde */}
-                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                          {/* Fileira meta: termômetro + dias sem toque */}
+                          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                             <TermometroBadge
                               temperatura={lead.temperatura}
                               score={lead.oportunidade_score}
                             />
-                            {saudePill && (
-                              <span
-                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${saudePill.pill}`}
-                                title={`${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
-                              >
-                                <span className={`h-1.5 w-1.5 rounded-full ${saudePill.dot}`} />
-                                <span className="tabular-nums">{saudeTexto}</span>
-                              </span>
-                            )}
+                            <span
+                              className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground"
+                              title={`${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${SAUDE_DOT[saude.estado]}`} />
+                              <span className="tabular-nums">{saudeTexto}</span>
+                            </span>
                           </div>
 
                           {/* Próxima ação (só quando existe tarefa) */}
@@ -387,15 +385,15 @@ export default function SubfunilQualificacao({
                           )}
 
                           {/* Rodapé */}
-                          <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2">
+                          <div className="mt-2.5 pt-2.5 border-t border-border/60 flex items-center gap-2">
                             {avatar ? (
                               <img
                                 src={avatar}
                                 alt={corretor ?? "Corretor"}
-                                className="h-[26px] w-[26px] rounded-full object-cover shrink-0"
+                                className="h-6 w-6 rounded-full object-cover shrink-0"
                               />
                             ) : (
-                              <span className="h-[26px] w-[26px] rounded-full bg-gradient-to-br from-primary to-cyan-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                              <span className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-cyan-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
                                 {iniciais || "—"}
                               </span>
                             )}
