@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT, formatBRT } from "@/lib/brtTime";
-import { Handshake, Phone, Check } from "lucide-react";
+import { Handshake, Phone, Zap } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
@@ -68,7 +68,7 @@ function visitaAutoLabel(subtipo: string | null | undefined): string | null {
   return VISITA_AUTO_SUBTIPO_LABEL[subtipo] ?? null;
 }
 
-import { getSaudeToque, SAUDE_UI } from "@/lib/leadSaude";
+import { getSaudeToque, type SaudeEstado } from "@/lib/leadSaude";
 
 interface CardMinimalProps {
   lead: PipelineLead;
@@ -121,15 +121,14 @@ function resolveStatus(
 }
 
 
-// Borda 4px à esquerda — semantic-friendly Tailwind classes.
-const SIDEBAR_BY_STATUS: Record<StatusKey, string> = {
-  atrasada: "before:bg-red-500",
-  hoje: "before:bg-emerald-500",
-  futura: "before:bg-emerald-500",
-  sem: "before:bg-amber-500",
-  convertido: "before:bg-sky-500",
-  descarte: "before:bg-zinc-400 dark:before:bg-zinc-600",
+// Saúde por TOQUE = barra lateral esquerda (mesmo mapa do subfunil).
+const SAUDE_BARRA: Record<SaudeEstado, string> = {
+  neutro: "bg-border",
+  em_dia: "bg-emerald-500",
+  desatualizado: "bg-amber-500",
+  em_estagnacao: "bg-red-500",
 };
+
 
 
 function deduplicateEmp(raw: string): string {
@@ -263,7 +262,7 @@ const CardMinimal = memo(function CardMinimal({
     () => getSaudeToque(lead, stage?.tipo, proximaTarefa ?? null),
     [lead.ultimo_toque_at, lead.created_at, stage?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
-  const saudeUi = saude.estado === "neutro" ? null : SAUDE_UI[saude.estado];
+  const diasSemToqueLabel = `${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`;
   const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
   const menuEnabled = !!(stages && onMoveLead);
@@ -367,19 +366,22 @@ const CardMinimal = memo(function CardMinimal({
       }}
       data-dragging={isDragging || undefined}
       className={[
-        "group relative cursor-pointer rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
-        "px-3.5 py-3 pl-4 hover:-translate-y-px active:scale-[0.985] active:shadow-sm motion-reduce:transition-none motion-reduce:active:scale-100",
+        "group relative overflow-hidden cursor-pointer rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
+        "p-3 pl-3.5 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm motion-reduce:transition-none",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
         parceiroNome
           ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
           : "bg-card border border-border/60 hover:border-border",
-        "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
-        stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
-        // Anel de urgência SECUNDÁRIO por saúde de toque (não substitui a borda esquerda).
-        saudeUi?.ring ?? "",
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
+      {/* Saúde por TOQUE = barra lateral esquerda (só-cor) */}
+      <span
+        aria-hidden
+        title={diasSemToqueLabel}
+        className={`absolute left-0 top-0 bottom-0 w-1 ${SAUDE_BARRA[saude.estado]}`}
+      />
+
       {/* Header: badges + nome + substatus · avatar do corretor + menu ··· */}
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="flex-1 min-w-0">
@@ -399,14 +401,8 @@ const CardMinimal = memo(function CardMinimal({
                 📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
               </span>
             )}
-            {saudeUi && (
-              <span
-                className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold ${saudeUi.pill}`}
-                title={`${saudeUi.label} — ${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
-              >
-                {saudeUi.emoji} {saudeUi.label}
-              </span>
-            )}
+            {/* Pílula de saúde removida — a saúde agora é a barra lateral esquerda. */}
+
             {substatus && !hasSpecificTitle && (
               <span className={`shrink-0 ${substatus.className}`}>
                 {substatus.label}
@@ -534,18 +530,19 @@ const CardMinimal = memo(function CardMinimal({
             {canQuickComplete && (
               <button
                 type="button"
-                aria-label="Concluir tarefa"
-                title="Concluir tarefa"
+                aria-label="Registrar atividade"
+                title="Registrar atividade"
                 disabled={completingBusy}
                 onClick={(e) => {
                   e.stopPropagation();
                   setCompletingOpen(true);
                 }}
-                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-colors disabled:opacity-60"
+                className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white shadow-[0_4px_12px_rgba(99,102,241,.4)] hover:brightness-105 active:translate-y-px transition-all disabled:opacity-60"
               >
-                <Check className="h-3 w-3" strokeWidth={3} />
+                <Zap className="h-3.5 w-3.5" strokeWidth={2.5} fill="currentColor" />
               </button>
             )}
+
           </div>
         </>
       )}
