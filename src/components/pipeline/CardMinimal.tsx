@@ -196,6 +196,8 @@ const CardMinimal = memo(function CardMinimal({
   corretorNome,
   corretorAvatarUrl,
   parceiroNome,
+  empreendimentoCanonico,
+
   proximaTarefa,
   cadencia,
   negocioInfo,
