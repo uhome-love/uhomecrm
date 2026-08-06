@@ -21,7 +21,7 @@ import { formatNextAction } from "@/lib/formatNextAction";
 import TermometroBadge from "../TermometroBadge";
 
 const SEM_STATUS = "__sem_status__";
-const COLUMN_WIDTH = 236;
+const COLUMN_WIDTH = 300;
 
 /** Dica de fluxo (para onde o lead vai depois) por substatus. */
 const FLUXO_HINT: Record<string, string> = {
@@ -391,7 +391,7 @@ export default function SubfunilQualificacao({
                                 {iniciais || "—"}
                               </span>
                             )}
-                            <span className="text-[12px] font-semibold text-muted-foreground truncate">
+                            <span className="text-[12px] font-semibold text-muted-foreground whitespace-nowrap">
                               {corretor ? corretor.split(" ")[0] : "Sem corretor"}
                             </span>
                             <button
@@ -401,7 +401,7 @@ export default function SubfunilQualificacao({
                                 // TODO Build 3: RegistrarAtividadeDialog
                                 onSelectLead(lead);
                               }}
-                              className="ml-auto shrink-0 bg-foreground text-background rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                              className="ml-auto shrink-0 bg-[#0F1B3D] text-white dark:bg-[#26356B] rounded-full h-7 px-3 text-[11.5px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
                             >
                               <Zap className="h-3 w-3" />
                               Registrar
