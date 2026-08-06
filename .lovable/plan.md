@@ -1,83 +1,99 @@
-# Onda 1 — Camada visual + Registrar Atividade (SÓ-COR)
+# Card novo ("Airy") no Kanban principal — CardMinimal
 
-Regra desta onda: nada aqui remove, move ou devolve lead. A régua de estagnação continua lendo `ultima_acao_at` (RPC `get_pipeline_estagnacao` / `decidir_lead_estagnado`). `ultimo_toque_at` entra apenas como **cor, pílula, filtro e ordenação**.
+Objetivo: dar ao card do board de etapas (`src/components/pipeline/CardMinimal.tsx`) a mesma cara do card do subfunil, e acrescentar uma flag de SUBSTATUS visível sem abrir o subfunil. Visual + uma etiqueta. Sem migration. Sem mexer em mecânica.
 
-## (a) Como as telas leem hoje — arquivos reais
+---
 
-Kanban / board
-- `src/pages/PipelineKanban.tsx` — orquestra tudo: carrega leads via `usePipeline`, monta `tarefasMap` (`ProximaTarefa` por lead) com `fetchInBatchesWithRetry`, aplica `getLeadStatusFilter`, filtros e sort, e passa para o board.
-- `src/components/pipeline/PipelineBoard.tsx` (1162 linhas) — colunas por etapa, drag/drop (`handleDrop` → `needsTransitionPopup` → `completeTransition` / `handleTransitionConfirm`). É aqui que substatus já é gravado em `flag_status` (`status_atendimento`, `status_negociacao`, `status_contrato`, `prazo`).
-- `src/components/pipeline/CardMinimal.tsx` (600 linhas) — card: borda esquerda 4px por status de tarefa (vermelho atrasada / emerald em dia / âmbar sem tarefa), próxima ação, substatus via `getLeadSubstatusBadge`.
-- `src/components/pipeline/PipelineMobileView.tsx` — mesma lógica de status em lista.
+## (a) Como o CardMinimal está montado hoje
 
-Substatus (fonte única)
-- `src/lib/leadHelpers.ts` — `QUALIFICACAO_SUBSTATUS` (contato_inicial, alinhamento_perfil, busca, follow_up, alinhando_visita), demais etapas, e `getLeadSubstatusBadge`.
-- `src/components/pipeline/LeadFlagBadges.tsx` — mapa paralelo `FLAG_CONFIGS` (duplicação de rótulos com leadHelpers).
-- `src/components/pipeline/LeadFlagControls.tsx` — edição de substatus no drawer.
+Leitura do arquivo (619 linhas) — estado atual confirmado:
 
-Saúde / estagnação
-- `src/lib/taskQueryUtils.ts` → `getLeadStatusFilter` devolve `em_dia | desatualizado | tarefa_atrasada` (baseado em tarefa, não em toque).
-- `src/hooks/useLeadsParados.ts` — dias parados por `ultima_acao_at` (3-5 warning / 6+ danger); uso local, não move nada.
-- `src/hooks/usePipelineEstagnacao.ts` — RPC `get_pipeline_estagnacao` + `decidir_lead_estagnado` (tela `/leads-estagnados`, `EstagnacaoStatusCard.tsx`). **É a régua real — intocada nesta onda.**
-- `src/components/pipeline/PipelineManagerActions.tsx` — contadores "sem tarefa" / "atrasadas".
+**Moldura e cores**
+- Container `rounded-2xl`, borda, e uma **barra esquerda 4px via `before:`** cuja cor vem de `resolveStatus(proximaTarefa, stage.tipo)` → `SIDEBAR_BY_STATUS`: vermelho (atrasada), esmeralda (hoje/futura), âmbar (sem tarefa), sky (convertido), zinc (descarte). Em `novo_lead` a barra é fixa `#4F46E5`.
+- Parceria muda o fundo/borda para roxo.
+- Saúde por toque já existe, mas como camada **secundária**: `getSaudeToque(...)` → `SAUDE_UI[estado].ring` (anel âmbar/vermelho ao redor do card) + uma **pílula** "🟠 Desatualizado".
 
-Termômetro / score
-- `usePipeline` seleciona `temperatura` e `oportunidade_score` (colunas de `pipeline_leads`); `selectFields` **não inclui `ultimo_toque_at`** hoje.
-- `src/components/ScoreBadge.tsx` — sem nenhum consumidor no app (import zero). `src/lib/leadScoring.ts` (calculateLeadScore/SLA) também está sem consumidor no Pipeline. `src/lib/scoreTemperatureLabels.ts` é a camada legível já pronta.
-- Ordenação `temperatura` já existe em `src/lib/pipelineSortOrder.ts` + `PipelineSortDropdown.tsx`.
+**Zoo de badges (linha superior, `flex-wrap`)**
+1. `NOVO` (só em `novo_lead`);
+2. cadência Sem Contato `📲 T3 · agora` (semáforo por `cadencia.tentativa` / `proxima_em`);
+3. pílula de saúde (`🟢/🟠/🔴 + label`);
+4. substatus (`getLeadSubstatusBadge`) — hoje só aparece **quando não há título específico de tarefa**.
+Depois: nome + chip de parceria; empreendimento (`lead.empreendimento`, campo do formulário, passado por `deduplicateEmp`); selo de negócio `◆ sub-status · VGV · imóvel · Nd`.
 
-Registrar atividade (hoje espalhado)
-- `QuickActionMenu.tsx` — insere em `pipeline_atividades`, atualiza `ultima_acao_at` e chama `registrarToque`.
-- `NextActionModal.tsx`, `src/lib/taskCompletion.ts`, `src/lib/completeLeadTask.ts`, `task-completion/VisitaCompletionFlow.tsx`, `FocusModeModal.tsx`, `WhatsAppTemplatesDialog.tsx`, `WhatsAppFocusFlow.tsx`, `src/lib/visitaResultadoRouting.ts` — todos já chamam `registrarToque` (Onda 0).
-- `src/lib/registrarToque.ts` — helper único, já publicado.
+**Telefone** já existe (`Phone` + `formatPhoneBR`).
 
-## (b) Plano de build faseado — tudo SEM migration
+**Linha de ação** (oculta em convertido/descarte): ícone da ação + rótulo (`ACTION_LABEL` ou título específico de tarefa `qualificacao_*` / `visita_auto`) + quando (`agora/hoje 14:30/amanhã…`) + `Nd` dias na etapa + o **✅ verde**.
 
-`flag_status`, `ultimo_toque_at`, `temperatura` e `oportunidade_score` já existem. Nenhum build abaixo precisa de migration.
+**Rodapé**: avatar + nome COMPLETO do corretor.
 
-**Build 1 — Subfunil de Qualificação (Fase B)**
-- Novo `src/components/pipeline/subfunil/SubfunilQualificacao.tsx`: tela cheia com 6 colunas = 5 valores de `QUALIFICACAO_SUBSTATUS` + "⚠ Sem status".
-- Entrada: botão no header da coluna Qualificação (`PipelineBoard`) e/ou `?view=subfunil` no `PipelineKanban` (reusa o padrão de query string já existente).
-- Drop grava **apenas** `flag_status.status_atendimento` (merge do objeto atual) via update em `pipeline_leads`. Não toca `stage_id`, `stage_changed_at`, `negocio_id`, nem cria tarefa.
-- Mapa de compatibilidade `LEGACY_STATUS_ATENDIMENTO` em `leadHelpers.ts` para valores antigos (ex.: `atendimento`/`qualificacao`/`follow`/`alinhando_perfil` → canônico); valor desconhecido cai na coluna "Sem status" sem ser reescrito automaticamente.
-- Reusa `CardMinimal` para os cards.
+**`CardOverflowMenu`** já é usado (topo direito), habilitado só quando `stages` e `onMoveLead` chegam por prop.
 
-**Build 2 — Camada de saúde por toque (só leitura/cor)**
-- `usePipeline`: adicionar `ultimo_toque_at` ao `selectFields` e ao tipo `PipelineLead`.
-- Novo `src/lib/leadSaude.ts`: `getSaudeToque(lead)` → `em_dia | desatualizado | em_estagnacao` + `diasSemToque`, thresholds em constantes (padrão 3 / 7, configurável no arquivo). Puro, sem side-effect.
-- `CardMinimal`: pílula de saúde + borda de urgência **adicional** — a borda esquerda por tarefa continua como está (não substituir), a urgência entra como cor/anel secundário. Nenhuma remoção de lead.
+**O ✅ (conclusão 3-em-1) — lógica de negócio, não visual**
+- Aparece quando existe `proximaTarefa.id` E status é `atrasada` ou `hoje`.
+- Abre `TaskCompletionDialog` e, no confirm, chama `completeLeadTask()`, que numa tacada só:
+  1. marca `pipeline_tarefas.status='concluida'`;
+  2. grava substatus em `flag_status` (quando o dialog devolve `status_etapa`) + `ultima_acao_at`;
+  3. chama `registrarToque(leadId)` → `ultimo_toque_at` (é o que alimenta a saúde do card);
+  4. insere registro em `pipeline_atividades`;
+  5. se `outcome='agendar'`: cria a próxima tarefa;
+  6. se veio `novo_stage_id`: **move de etapa** + grava `pipeline_historico`;
+  7. `outcome='descartar'` → move para Descarte com motivo; `outcome='inativar'` → arquiva.
+- Guardrail Sem Contato: na etapa Sem Contato a próxima tarefa é criada **só pelo gatilho de banco** (`trg_cadencia_sem_contato`); `createNextTask` tem esse aviso e o early-return. O ✅ do card não deve virar um caminho paralelo de criação nessa etapa.
 
-**Build 3 — Diálogo único "Registrar atividade"**
-- Novo `src/components/pipeline/RegistrarAtividadeDialog.tsx`, extraindo a lógica que hoje está inline no `QuickActionMenu` (insert em `pipeline_atividades` + `ultima_acao_at` + `registrarToque`) para `src/lib/registrarAtividade.ts`.
-- `QuickActionMenu` passa a consumir esse helper (comportamento idêntico), e o card ganha a ação única "Registrar" (Nutrir só aparece em Aquecimento).
-- Fluxo de conclusão de tarefa 3-em-1 (`completeLeadTask` / `TaskCompletionDialog` / `NextActionModal`) **não é alterado** — só continua chamando `registrarToque` como já faz.
+Conclusão: **tudo dentro do ✅ é lógica de negócio** (tarefas, atividades, toque, etapa, descarte). O visual pode mudar livremente; o comportamento não.
 
-**Build 4 — Termômetro reconciliado + filtro + ordenação**
-- Novo `src/components/pipeline/TermometroBadge.tsx`: lê `temperatura` (rótulo do corretor) e `oportunidade_score` (via `scoreTemperatureLabels.ts`), mostra um badge só + tooltip com o "porquê" (fatores de `leadScoring.ts`, camada legível).
-- Deletar `src/components/ScoreBadge.tsx` (zero imports hoje — remoção segura).
-- Filtro "sem contato há X dias" (3/7/15/30/60) em `PipelineAdvancedFilters.tsx`, calculado sobre `ultimo_toque_at` no client.
-- Ordenação: acrescentar "Precisa de atenção" em `pipelineSortOrder.ts` + `PipelineSortDropdown.tsx` (mantendo `atividade`, `temperatura`, `mais_recente` intactos, e o localStorage tolerando o valor novo).
+---
 
-Ordem sugerida: 1 → 2 → 3 → 4, validando no preview a cada build.
+## (b) Plano faseado (builds pequenos, um de cada vez)
 
-## (c) Reusa vs cria novo
+**Build 1 — Moldura e saúde (SUBSTITUI)**
+- REMOVE a pílula de saúde e o `ring` de urgência.
+- SUBSTITUI a barra `before:` por status-de-tarefa pela **barra lateral de saúde** `w-1` (`SAUDE_BARRA` por `saude.estado`), igual ao subfunil. Padroniza `rounded-xl`, `p-3 pl-3.5`, hover leve.
+- MANTÉM o realce roxo de parceria (é sinal de propriedade compartilhada, não de saúde).
+- Efeito colateral aceito e explícito: a cor da barra deixa de significar "tarefa atrasada" e passa a significar "sem toque". O atraso continua legível na linha de ação (texto vermelho + "agora").
 
-Reusa: `flag_status`, `QUALIFICACAO_SUBSTATUS`/`leadHelpers`, `CardMinimal`, `PipelineBoard` (só entrada do subfunil), `registrarToque`, `scoreTemperatureLabels`, `leadScoring`, `pipelineSortOrder`, `PipelineAdvancedFilters`, `usePipeline`.
+**Build 2 — Corpo do card (REUSA + ADICIONA)**
+- Empreendimento passa a ser o **canônico** (`empreendimento_canonico_id → empreendimentos_canonicos.nome`) com ícone `Building2`. Resolução por mapa carregado uma vez no board (mesmo padrão do subfunil), passado por prop ao card — sem query por card.
+- Telefone com ícone `Phone` (já existe, só reposiciona/estiliza).
+- Fileira meta: `TermometroBadge` + indicador de dias com dot ("hoje" / "há Xd" / "em estagnação").
+- Rodapé: avatar + **primeiro nome** do corretor, e a **próxima ação à direita** (`formatNextAction`).
 
-Cria novo: `subfunil/SubfunilQualificacao.tsx`, `lib/leadSaude.ts`, `RegistrarAtividadeDialog.tsx`, `lib/registrarAtividade.ts`, `TermometroBadge.tsx`, constante `LEGACY_STATUS_ATENDIMENTO`.
+**Build 3 — Flag de substatus + limpeza do zoo (NOVO + REMOVE)**
+- ADICIONA a etiqueta de substatus (`getLeadSubstatusBadge`) **sempre que existir**, tirando a condição `&& !hasSpecificTitle` — vale para Qualificação, Visita, Em Negociação e Contrato.
+- REMOVE por redundância: pílula de saúde (já é a barra + o texto de dias) e o `Nd` de dias-na-etapa da linha de ação (o indicador de dias sem toque cobre a leitura).
+- MANTÉM: `NOVO`, cadência `📲 Tn` (é informação de banco que não aparece em outro lugar), chip de parceria, selo `◆` de negócio.
 
-Remove: `src/components/ScoreBadge.tsx`.
+**Build 4 — Ajuste fino**
+- Densidade/espaçamentos, truncagem, `title` de acessibilidade, e validação ao vivo em todas as etapas (Novo Lead, Sem Contato, Qualificação, Visita, Pós-Visita, Em Negociação, Contrato, Ganhos, Descarte).
+
+---
+
+## (c) DECISÃO a confirmar — o ✅ fica ou sai?
+
+O que ele faz hoje está descrito em (a): é um atalho que conclui a tarefa **e** pode registrar atividade, marcar toque, mudar substatus, mover de etapa, descartar ou inativar — tudo pelo `TaskCompletionDialog`.
+
+Risco de remover agora: é hoje o caminho mais usado para gravar `ultimo_toque_at` e `pipeline_atividades` a partir do board. Tirar antes de existir o botão "Registrar atividade" equivalente **cega a própria saúde do card** (todo mundo vira vermelho) e derruba o registro de atividade do dia a dia.
+
+Três opções:
+1. **Manter como está** (recomendado para esta leva): visual novo, ✅ intacto no rodapé/linha de ação.
+2. **Manter, mas renomear a intenção**: mesmo botão, rótulo/ícone de "Registrar" — prepara o discurso de atividade sem trocar o motor.
+3. **Remover o ✅** — só depois que "Registrar atividade" existir no card e escrever toque + atividade. Isto é escopo de Onda 2.
+
+Preciso da sua escolha antes do Build 3.
+
+---
 
 ## (d) Riscos e o que NÃO tocar
 
-Riscos
-- Duplicação de rótulos entre `leadHelpers.getLeadSubstatusBadge` e `LeadFlagBadges.FLAG_CONFIGS` — o subfunil consome só `leadHelpers`; unificar fica para depois.
-- Merge de `flag_status`: sempre `{...atual, status_atendimento}` — sobrescrever o objeto inteiro apagaria `tipologia`, `prazo`, `status_visita`.
-- Board de 1162 linhas: entrada do subfunil deve ser um botão + rota, sem refatorar `handleDrop`.
-- Adicionar coluna ao `selectFields` aumenta payload marginalmente; sem impacto de RLS.
+Não serão alterados: drag/drop e `onDragStart`/`onDrop` do board, transições de etapa, `pipeline_tarefas`, `completeLeadTask`, `createNextTask`, o guardrail Sem Contato, escrita de `ultima_acao_at` / `ultimo_toque_at`, PDN, CAPI, roleta, filtros, toggles e o cabeçalho de coluna.
 
-NÃO tocar: `get_pipeline_estagnacao`, `decidir_lead_estagnado`, `usePipelineEstagnacao`, `LeadsEstagnados.tsx`, `EstagnacaoStatusCard`, `CadenciaSemContatoCard` e o guardrail Sem Contato; `pipeline_tarefas` e todo o fluxo 3-em-1 (`completeLeadTask`, `taskCompletion`, `TaskCompletionDialog`, `NextActionModal`); `handleTransitionConfirm` (descarte/caiu/negócio/visita); PDN, CAPI, roleta, relatórios; qualquer escrita de `ultima_acao_at`; nenhuma migration.
+Riscos a vigiar:
+- **Performance**: o card é renderizado às centenas. A resolução do empreendimento canônico deve ser um mapa do board, nunca uma query por card, e o `memo` do componente precisa continuar valendo.
+- **Perda de sinal de atraso**: mitigada mantendo o texto vermelho + "agora" na ação.
+- **Regressão de clique**: o ⋮ e o ✅ precisam manter `stopPropagation` para não abrir o drawer nem disparar drop.
+
+---
 
 ## (e) Confirmação
 
-Nada nesta onda liga remoção, devolução ou movimentação automática por estagnação — isso é Onda 2. `ultimo_toque_at` é usado somente para pílula, borda, filtro e ordenação (visual e client-side). A régua atual segue 100% em `ultima_acao_at`, com as mesmas RPCs e as mesmas escritas de hoje.
+Nada aqui liga remoção ou estagnação automática. `getSaudeToque` é função pura, só-cor; a régua real (`get_pipeline_estagnacao` / `decidir_lead_estagnado`) continua lendo `ultima_acao_at` e não é tocada. Esta leva é **visual + a etiqueta de substatus**. Automação é Onda 2.
