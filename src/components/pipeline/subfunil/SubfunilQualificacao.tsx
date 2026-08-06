@@ -20,7 +20,7 @@ import { getSaudeToque, SAUDE_UI, type SaudeEstado } from "@/lib/leadSaude";
 import TermometroBadge from "../TermometroBadge";
 
 const SEM_STATUS = "__sem_status__";
-const COLUMN_WIDTH = 220;
+const COLUMN_WIDTH = 236;
 
 /** Dica de fluxo (para onde o lead vai depois) por substatus. */
 const FLUXO_HINT: Record<string, string> = {
