@@ -18,6 +18,14 @@ const TONE_BY_KEY: Record<string, string> = {
   em_chamas: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
 };
 
+/** Rótulo curto exibido na pílula (o nível completo fica no title). */
+const SHORT_LABEL: Record<string, string> = {
+  frio: "Frio",
+  morno: "Morno",
+  quente: "Quente",
+  em_chamas: "Em chamas",
+};
+
 interface Props {
   temperatura?: string | null;
   score?: number | null;
@@ -42,11 +50,12 @@ export default function TermometroBadge({ temperatura, score, className = "" }: 
   return (
     <span
       title={tooltip}
-      className={`shrink-0 inline-flex items-center justify-center rounded-full h-5 w-5 text-[11px] leading-none ${
+      className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none ${
         TONE_BY_KEY[level.key] ?? "bg-muted text-muted-foreground"
       } ${className}`}
     >
-      {level.emoji}
+      <span aria-hidden>{level.emoji}</span>
+      {SHORT_LABEL[level.key] ?? level.label}
     </span>
   );
 }
