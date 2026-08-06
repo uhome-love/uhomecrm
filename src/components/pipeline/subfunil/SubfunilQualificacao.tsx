@@ -264,7 +264,7 @@ export default function SubfunilQualificacao({
                         .trim()
                         .split(/\s+/)
                         .slice(0, 2)
-                        .map((p) => p[0］ ?? "")
+                        .map((p) => p[0] ?? "")
                         .join("")
                         .toUpperCase();
                       const tarefa = tarefasMap?.[lead.id];
