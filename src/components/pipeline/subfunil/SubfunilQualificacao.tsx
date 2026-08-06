@@ -193,33 +193,32 @@ export default function SubfunilQualificacao({
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Header — padrão PageHeader canônico */}
-      <div className="shrink-0 flex items-start gap-3 border-b border-border pb-4 mb-3">
+      <div className="shrink-0 flex items-center gap-3 border-b border-border pb-5 mb-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Voltar
+        </button>
         <div className="w-10 h-10 rounded-[11px] bg-primary/10 text-primary flex items-center justify-center text-lg shrink-0">
           🔎
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
+          <h2 className="text-xl font-bold tracking-tight text-foreground leading-snug">
             Subfunil de Qualificação
           </h2>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             Arraste o lead entre as colunas para dizer onde o cliente está — grava só o substatus,
             não muda a etapa.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs font-semibold text-primary bg-primary/10 rounded-full px-2.5 py-1 tabular-nums">
-            {qualificacaoLeads.length} leads
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Voltar ao Kanban
-          </button>
-        </div>
+        <span className="shrink-0 text-xs font-semibold text-primary bg-primary/10 rounded-full px-2.5 py-1 tabular-nums">
+          {qualificacaoLeads.length} leads
+        </span>
       </div>
+
 
 
       {!qualificacaoStage ? (
