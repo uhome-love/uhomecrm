@@ -475,11 +475,24 @@ const CardMinimal = memo(function CardMinimal({
 
       {/* Telefone com ícone discreto */}
       {telefoneFmt && (
-        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-foreground/80 min-w-0">
-          <Phone className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+        <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted-foreground tabular-nums min-w-0">
+          <Phone className="h-3 w-3 opacity-60 shrink-0" />
           <span className="truncate">{telefoneFmt}</span>
         </div>
       )}
+
+      {/* Fileira meta: termômetro + dias sem toque (só-cor) */}
+      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+        <TermometroBadge temperatura={lead.temperatura} score={lead.oportunidade_score} />
+        <span
+          className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground"
+          title={diasSemToqueLabel}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${SAUDE_DOT[saude.estado]}`} />
+          <span className="tabular-nums">{saudeTexto}</span>
+        </span>
+      </div>
+
 
       {showActionLine && (
         <>
