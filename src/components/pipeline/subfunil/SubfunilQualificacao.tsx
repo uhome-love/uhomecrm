@@ -10,7 +10,7 @@
 // linha de saúde por toque e barra de urgência — tudo só-cor.
 // ─────────────────────────────────────────────────────────────────
 import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { CardMinimalProximaTarefa } from "../CardMinimal";
