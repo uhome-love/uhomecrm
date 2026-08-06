@@ -366,19 +366,22 @@ const CardMinimal = memo(function CardMinimal({
       }}
       data-dragging={isDragging || undefined}
       className={[
-        "group relative cursor-pointer rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
-        "px-3.5 py-3 pl-4 hover:-translate-y-px active:scale-[0.985] active:shadow-sm motion-reduce:transition-none motion-reduce:active:scale-100",
+        "group relative overflow-hidden cursor-pointer rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
+        "p-3 pl-3.5 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm motion-reduce:transition-none",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
         parceiroNome
           ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
           : "bg-card border border-border/60 hover:border-border",
-        "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
-        stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
-        // Anel de urgência SECUNDÁRIO por saúde de toque (não substitui a borda esquerda).
-        saudeUi?.ring ?? "",
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
+      {/* Saúde por TOQUE = barra lateral esquerda (só-cor) */}
+      <span
+        aria-hidden
+        title={diasSemToqueLabel}
+        className={`absolute left-0 top-0 bottom-0 w-1 ${SAUDE_BARRA[saude.estado]}`}
+      />
+
       {/* Header: badges + nome + substatus · avatar do corretor + menu ··· */}
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="flex-1 min-w-0">
