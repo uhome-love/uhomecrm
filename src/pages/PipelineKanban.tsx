@@ -71,6 +71,16 @@ export default function PipelineKanban() {
   // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
   // possamos passar scopeCorretorIds e empurrar o filtro pra query do server.
   const [gestorFilter, setGestorFilter] = useState<string>("todos");
+  // Subfunil de Qualificação (Onda 1) — espelhado em ?view=subfunil.
+  const subfunilOpen = searchParams.get("view") === "subfunil";
+  const setSubfunilOpen = useCallback((open: boolean) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (open) next.set("view", "subfunil");
+      else next.delete("view");
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const { isGestor, isAdmin, isDiretor, isCorretor, loading: roleLoading, roles } = useUserRole();
   // Diretoria enxerga o escritório inteiro, como o CEO (visão de oversight).
   // isCeoView unifica admin (CEO) + diretor para escopo e visões globais.
