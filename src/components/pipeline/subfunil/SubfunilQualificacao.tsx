@@ -66,6 +66,7 @@ export default function SubfunilQualificacao({
   stages,
   leads,
   corretorNomes,
+  corretorAvatars,
   tarefasMap,
   onSelectLead,
   onClose,
@@ -76,6 +77,8 @@ export default function SubfunilQualificacao({
   const [savingId, setSavingId] = useState<string | null>(null);
   // Override otimista local: leadId → status_atendimento gravado agora.
   const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
+  // leadId → nome CANÔNICO do empreendimento (não o nome do formulário/campanha).
+  const [empreendimentoCanonico, setEmpreendimentoCanonico] = useState<Record<string, string>>({});
 
   const qualificacaoStage = useMemo(
     () => stages.find((s) => s.tipo === "qualificacao"),
@@ -86,6 +89,39 @@ export default function SubfunilQualificacao({
     () => (qualificacaoStage ? leads.filter((l) => l.stage_id === qualificacaoStage.id) : []),
     [leads, qualificacaoStage]
   );
+
+  // Enriquecimento só-visual: resolve o empreendimento canônico dos leads em tela.
+  const leadIdsKey = useMemo(
+    () => qualificacaoLeads.map((l) => l.id).sort().join(","),
+    [qualificacaoLeads]
+  );
+  useEffect(() => {
+    let cancelled = false;
+    const ids = leadIdsKey ? leadIdsKey.split(",") : [];
+    if (ids.length === 0) {
+      setEmpreendimentoCanonico({});
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase
+        .from("pipeline_leads")
+        .select("id, empreendimentos_canonicos:empreendimento_canonico_id(nome)")
+        .in("id", ids);
+      if (cancelled || error || !data) return;
+      const map: Record<string, string> = {};
+      for (const row of data as unknown as Array<{
+        id: string;
+        empreendimentos_canonicos: { nome: string } | null;
+      }>) {
+        if (row.empreendimentos_canonicos?.nome) map[row.id] = row.empreendimentos_canonicos.nome;
+      }
+      setEmpreendimentoCanonico(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [leadIdsKey]);
+
 
   // "Sem status" vem PRIMEIRO (é o que precisa de classificação).
   const columns = useMemo(
