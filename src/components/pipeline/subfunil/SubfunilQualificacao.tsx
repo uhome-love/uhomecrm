@@ -90,37 +90,52 @@ export default function SubfunilQualificacao({
     [leads, qualificacaoStage]
   );
 
-  // Enriquecimento só-visual: resolve o empreendimento canônico dos leads em tela.
-  const leadIdsKey = useMemo(
-    () => qualificacaoLeads.map((l) => l.id).sort().join(","),
-    [qualificacaoLeads]
-  );
+  // Enriquecimento só-visual: resolve o empreendimento CANÔNICO (nome do produto),
+  // e não `pipeline_leads.empreendimento` (que guarda o nome do formulário/campanha).
   useEffect(() => {
     let cancelled = false;
-    const ids = leadIdsKey ? leadIdsKey.split(",") : [];
-    if (ids.length === 0) {
+    const stageId = qualificacaoStage?.id;
+    if (!stageId) {
       setEmpreendimentoCanonico({});
       return;
     }
     (async () => {
-      const { data, error } = await supabase
-        .from("pipeline_leads")
-        .select("id, empreendimentos_canonicos:empreendimento_canonico_id(nome)")
-        .in("id", ids);
-      if (cancelled || error || !data) return;
+      const [canonRes, leadsRes] = await Promise.all([
+        supabase.from("empreendimentos_canonicos").select("id, nome"),
+        (async () => {
+          const rows: Array<{ id: string; empreendimento_canonico_id: string | null }> = [];
+          for (let from = 0; from < 5000; from += 1000) {
+            const { data, error } = await supabase
+              .from("pipeline_leads")
+              .select("id, empreendimento_canonico_id")
+              .eq("stage_id", stageId)
+              .range(from, from + 999);
+            if (error || !data || data.length === 0) break;
+            rows.push(...(data as typeof rows));
+            if (data.length < 1000) break;
+          }
+          return rows;
+        })(),
+      ]);
+      if (cancelled) return;
+      const nomes: Record<string, string> = {};
+      for (const c of (canonRes.data ?? []) as Array<{ id: string; nome: string }>) {
+        nomes[c.id] = c.nome;
+      }
       const map: Record<string, string> = {};
-      for (const row of data as unknown as Array<{
-        id: string;
-        empreendimentos_canonicos: { nome: string } | null;
-      }>) {
-        if (row.empreendimentos_canonicos?.nome) map[row.id] = row.empreendimentos_canonicos.nome;
+      for (const row of leadsRes) {
+        const nome = row.empreendimento_canonico_id
+          ? nomes[row.empreendimento_canonico_id]
+          : undefined;
+        if (nome) map[row.id] = nome;
       }
       setEmpreendimentoCanonico(map);
     })();
     return () => {
       cancelled = true;
     };
-  }, [leadIdsKey]);
+  }, [qualificacaoStage?.id]);
+
 
 
   // "Sem status" vem PRIMEIRO (é o que precisa de classificação).
