@@ -10,7 +10,7 @@
 // linha de saúde por toque e barra de urgência — tudo só-cor.
 // ─────────────────────────────────────────────────────────────────
 import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { CardMinimalProximaTarefa } from "../CardMinimal";
@@ -20,7 +20,7 @@ import { getSaudeToque, SAUDE_UI, type SaudeEstado } from "@/lib/leadSaude";
 import TermometroBadge from "../TermometroBadge";
 
 const SEM_STATUS = "__sem_status__";
-const COLUMN_WIDTH = 220;
+const COLUMN_WIDTH = 236;
 
 /** Dica de fluxo (para onde o lead vai depois) por substatus. */
 const FLUXO_HINT: Record<string, string> = {
@@ -146,31 +146,35 @@ export default function SubfunilQualificacao({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      {/* Header — breadcrumb + explicação do que o arrasto faz */}
-      <div className="shrink-0 flex items-center gap-3 pb-3">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg text-xs font-medium border border-border bg-muted/40 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Voltar ao Kanban
-        </button>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1 text-[12px] font-semibold text-foreground">
-            <span className="text-muted-foreground">Pipeline</span>
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <span>🔎 Qualificação</span>
-          </div>
-          <p className="text-[11px] text-muted-foreground truncate">
-            Arraste o lead entre as colunas para dizer onde o cliente está. Isso grava só o
-            substatus — não muda a etapa, nem mexe em relatório, roleta ou PDN.
+      {/* Header — padrão PageHeader canônico */}
+      <div className="shrink-0 flex items-start gap-3 border-b border-border pb-4 mb-3">
+        <div className="w-10 h-10 rounded-[11px] bg-primary/10 text-primary flex items-center justify-center text-lg shrink-0">
+          🔎
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
+            Subfunil de Qualificação
+          </h2>
+          <p className="text-[13px] text-muted-foreground">
+            Arraste o lead entre as colunas para dizer onde o cliente está — grava só o substatus,
+            não muda a etapa.
           </p>
         </div>
-        <span className="ml-auto text-xs font-semibold text-primary">
-          {qualificacaoLeads.length} leads
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-semibold text-primary bg-primary/10 rounded-full px-2.5 py-1 tabular-nums">
+            {qualificacaoLeads.length} leads
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Voltar ao Kanban
+          </button>
+        </div>
       </div>
+
 
       {!qualificacaoStage ? (
         <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
@@ -178,7 +182,7 @@ export default function SubfunilQualificacao({
         </div>
       ) : (
         <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-2.5 h-full pb-3">
+          <div className="flex gap-4 h-full pb-3">
             {columns.map((col) => {
               const colLeads = leadsByColumn.get(col.key) ?? [];
               const isOver = dragOverCol === col.key;
@@ -186,7 +190,7 @@ export default function SubfunilQualificacao({
               return (
                 <div
                   key={col.key}
-                  className={`flex flex-col shrink-0 h-full rounded-xl border p-1.5 transition-colors ${
+                  className={`flex flex-col shrink-0 h-full rounded-2xl border p-2 transition-colors ${
                     isSemStatus
                       ? "border-amber-400/70 bg-amber-50/60 dark:bg-amber-500/5"
                       : isOver
@@ -207,7 +211,7 @@ export default function SubfunilQualificacao({
                   }}
                 >
                   {/* Cabeçalho da coluna */}
-                  <div className="shrink-0 px-1.5 pt-1 pb-2">
+                  <div className="shrink-0 px-1.5 pt-1 pb-3">
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-[12px] font-semibold truncate ${
@@ -220,7 +224,7 @@ export default function SubfunilQualificacao({
                         {colLeads.length}
                       </span>
                     </div>
-                    <div className="mt-0.5 text-[10px] text-muted-foreground truncate">
+                    <div className="mt-1 text-[10px] text-muted-foreground truncate">
                       {isSemStatus
                         ? "Classifique — o cliente está em algum ponto abaixo"
                         : (FLUXO_HINT[col.key] ?? "")}
@@ -228,9 +232,9 @@ export default function SubfunilQualificacao({
                   </div>
 
                   {/* Cards */}
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1">
                     {colLeads.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-border py-6 text-center text-[10.5px] text-muted-foreground">
+                      <div className="rounded-xl border border-dashed border-border py-6 text-center text-[10.5px] text-muted-foreground">
                         {isSemStatus ? "Nenhum lead sem status" : "Arraste um lead para cá"}
                       </div>
                     )}
@@ -256,25 +260,25 @@ export default function SubfunilQualificacao({
                             }
                           }}
                           aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
-                          className="group relative cursor-pointer overflow-hidden rounded-lg border border-border/60 bg-card px-2.5 py-2 pl-3 shadow-sm hover:border-border hover:shadow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          className="group relative cursor-pointer rounded-xl border border-border/60 bg-card p-3 pl-3.5 shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                          {/* Barra de urgência (3px) */}
+                          {/* Barra de urgência */}
                           <span
                             aria-hidden
-                            className={`absolute left-0 top-0 bottom-0 w-[3px] ${BARRA_BY_SAUDE[saude.estado]}`}
+                            className={`absolute left-1 top-2 bottom-2 w-[3px] rounded-full ${BARRA_BY_SAUDE[saude.estado]}`}
                           />
                           {savingId === lead.id && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/60">
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60">
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             </div>
                           )}
 
-                          <div className="flex items-start gap-1.5 min-w-0">
+                          <div className="flex items-start gap-2 min-w-0">
                             <div className="min-w-0 flex-1">
-                              <div className="text-[12.5px] font-bold text-foreground leading-tight truncate">
+                              <div className="text-[12.5px] font-semibold text-foreground leading-tight truncate">
                                 {lead.nome || "Sem nome"}
                               </div>
-                              <div className="text-[10.5px] text-muted-foreground truncate">
+                              <div className="mt-0.5 text-[10.5px] text-muted-foreground truncate">
                                 {lead.empreendimento || "Sem empreendimento"}
                               </div>
                             </div>
@@ -285,10 +289,10 @@ export default function SubfunilQualificacao({
                           </div>
 
                           {/* Linha de saúde por toque */}
-                          <div className="mt-1 flex items-center gap-1.5 min-w-0">
+                          <div className="mt-2 flex items-center gap-1.5 min-w-0">
                             {saudeUi && (
                               <span
-                                className="text-[10.5px] font-medium text-muted-foreground truncate"
+                                className="text-[10.5px] font-medium text-muted-foreground truncate tabular-nums"
                                 title={`${saudeUi.label} — ${saude.diasSemToque} ${saude.diasSemToque === 1 ? "dia" : "dias"} sem toque`}
                               >
                                 {saudeUi.emoji}{" "}
@@ -306,8 +310,8 @@ export default function SubfunilQualificacao({
                             )}
                           </div>
 
-                          {/* Rodapé: ação rápida */}
-                          <div className="mt-1.5 flex">
+                          {/* Rodapé: ação rápida (só no hover) */}
+                          <div className="mt-2 flex opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -320,6 +324,7 @@ export default function SubfunilQualificacao({
                               Registrar
                             </button>
                           </div>
+
                         </div>
                       );
                     })}
