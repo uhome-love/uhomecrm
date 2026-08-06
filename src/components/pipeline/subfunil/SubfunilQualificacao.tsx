@@ -21,7 +21,7 @@ import { formatNextAction } from "@/lib/formatNextAction";
 import TermometroBadge from "../TermometroBadge";
 
 const SEM_STATUS = "__sem_status__";
-const COLUMN_WIDTH = 300;
+const COLUMN_WIDTH = 272;
 
 /** Dica de fluxo (para onde o lead vai depois) por substatus. */
 const FLUXO_HINT: Record<string, string> = {
@@ -32,21 +32,31 @@ const FLUXO_HINT: Record<string, string> = {
   alinhando_visita: "→ vira etapa Visita",
 };
 
-/** Pílula soft de saúde por estado (dot + texto). */
-const SAUDE_PILL: Record<Exclude<SaudeEstado, "neutro">, { pill: string; dot: string }> = {
-  em_dia: {
-    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-    dot: "bg-emerald-500",
-  },
-  desatualizado: {
-    pill: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-    dot: "bg-amber-500",
-  },
-  em_estagnacao: {
-    pill: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
-    dot: "bg-red-500",
-  },
+/** Quebra "📞 Contato inicial" em emoji + texto. */
+function splitLabel(label: string): { emoji: string; text: string } {
+  const parts = label.trim().split(/\s+/);
+  if (parts.length > 1 && !/^[\wÀ-ÿ]/.test(parts[0])) {
+    return { emoji: parts[0], text: parts.slice(1).join(" ") };
+  }
+  return { emoji: "•", text: label };
+}
+
+/** Saúde vira MOLDURA do card (borda tingida + glow suave). */
+const SAUDE_FRAME: Record<SaudeEstado, string> = {
+  neutro: "border-border shadow-sm",
+  em_dia: "border-border shadow-sm",
+  desatualizado: "border-amber-300/70 dark:border-amber-500/40 shadow-md shadow-amber-500/20",
+  em_estagnacao: "border-red-300/80 dark:border-red-500/40 shadow-md shadow-red-500/25",
 };
+
+/** Dot do indicador de dias (sem fundo de pílula). */
+const SAUDE_DOT: Record<SaudeEstado, string> = {
+  neutro: "bg-muted-foreground/50",
+  em_dia: "bg-emerald-500",
+  desatualizado: "bg-amber-500",
+  em_estagnacao: "bg-red-500",
+};
+
 
 
 interface Props {
