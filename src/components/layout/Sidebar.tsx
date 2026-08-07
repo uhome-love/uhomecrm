@@ -392,7 +392,7 @@ export default function Sidebar({
     return () => window.removeEventListener("storage", handler);
   }, [isManagerRole]);
 
-  // "Mutirão ao vivo" só entra no menu enquanto existir sessão ao vivo.
+  // "Mutirão ao vivo" é item fixo no menu; a flag só controla o selo "AO VIVO".
   const { mutiraoAtivo } = useMutiraoAtivo();
 
   const baseGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
@@ -404,15 +404,15 @@ export default function Sidebar({
     label: "⚡ Mutirão ao vivo",
     path: "/oferta-ativa-ao-vivo",
     icon: <Radio size={15} strokeWidth={1.5} />,
+    ...(mutiraoAtivo ? { badge: "AO VIVO" } : {}),
   };
-  const withMutirao: NavGroup[] = mutiraoAtivo
-    ? rawGroups.map((g) =>
-        (g.title === "Leads" || g.title === "Leads & Visitas" || g.title === "Modo Corretor") &&
-        !g.items.some((i) => i.path === mutiraoItem.path)
-          ? { ...g, items: [...g.items, mutiraoItem] }
-          : g,
-      )
-    : rawGroups;
+  const withMutirao: NavGroup[] = rawGroups.map((g) =>
+    (g.title === "Leads" || g.title === "Leads & Visitas" || g.title === "Modo Corretor") &&
+    !g.items.some((i) => i.path === mutiraoItem.path)
+      ? { ...g, items: [...g.items, mutiraoItem] }
+      : g,
+  );
+
   const groups = withMutirao.map(g => ({
     ...g,
     items: g.items.map(item =>
