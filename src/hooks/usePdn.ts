@@ -253,33 +253,16 @@ export function usePdn(mes: string) {
     }
     setScopeAuthIds(corretorAuthIds);
 
-    // Etapas de negócio do pipeline
-    const { data: stages } = await supabase
-      .from("pipeline_stages")
-      .select("id, tipo")
-      .in("tipo", ["pos_visita", "proposta", "contrato_gerado", "venda"]);
-    const stageGrupo: Record<string, PdnGrupo> = {};
-    for (const s of stages || []) stageGrupo[(s as any).id] = STAGE_TIPO_TO_GRUPO[(s as any).tipo];
-    const stageIds = Object.keys(stageGrupo);
-
-    if (stageIds.length === 0) {
-      setDeals([]);
-      setLoadingDeals(false);
-      dealsLoadedOnceRef.current = true;
-      return;
-    }
-
-    let leadQuery = supabase
-      .from("pipeline_leads")
-      .select("id, nome, corretor_id, stage_id, stage_changed_at, updated_at")
-      .in("stage_id", stageIds)
-      .eq("arquivado", false)
+    // Fonte única de leitura: view consolidada v_pdn_linhas
+    let linhasQuery = (supabase as any)
+      .from("v_pdn_linhas")
+      .select("pipeline_lead_id, nome, corretor_auth_id, grupo, stage_changed_at, negocio_id, empreendimento, vgv, data_assinatura, observacoes_negocio, negocio_vendido, primeira_venda_em")
       .limit(2000);
     if (corretorAuthIds) {
       if (corretorAuthIds.length === 0) { setDeals([]); setLoadingDeals(false); dealsLoadedOnceRef.current = true; return; }
-      leadQuery = leadQuery.in("corretor_id", corretorAuthIds);
+      linhasQuery = linhasQuery.in("corretor_auth_id", corretorAuthIds);
     }
-    const { data: leads, error: leadErr } = await leadQuery;
+    const { data: linhas, error: leadErr } = await linhasQuery;
     if (leadErr) {
       console.error("Erro ao carregar pipeline do PDN:", leadErr);
       setLoadingDeals(false);
@@ -287,54 +270,20 @@ export function usePdn(mes: string) {
       return;
     }
 
-    const leadIds = (leads || []).map((l: any) => l.id);
-    // Negócios vinculados (VGV / empreendimento / assinatura)
-    const negocioByLead: Record<string, any> = {};
-    if (leadIds.length > 0) {
-      const { data: negs } = await supabase
-        .from("negocios")
-        .select("id, pipeline_lead_id, empreendimento, vgv_final, vgv_estimado, data_assinatura, observacoes, status, fase")
-        .in("pipeline_lead_id", leadIds);
-      for (const n of negs || []) {
-        if ((n as any).status === "perdido") continue;
-        negocioByLead[(n as any).pipeline_lead_id] = n;
-      }
-    }
-
-    // 1ª entrada na etapa de venda (Ganho), lida do histórico — fallback estável para o mês
-    const vendaStageIds = Object.keys(stageGrupo).filter((sid) => stageGrupo[sid] === "ganho");
-    const primeiraVendaByLead: Record<string, string> = {};
-    if (leadIds.length > 0 && vendaStageIds.length > 0) {
-      const { data: hist } = await supabase
-        .from("pipeline_historico")
-        .select("pipeline_lead_id, created_at, stage_novo_id")
-        .in("pipeline_lead_id", leadIds)
-        .in("stage_novo_id", vendaStageIds)
-        .order("created_at", { ascending: true });
-      for (const h of hist || []) {
-        const lid = (h as any).pipeline_lead_id;
-        if (!primeiraVendaByLead[lid]) primeiraVendaByLead[lid] = (h as any).created_at;
-      }
-    }
-
-    const dealRows: PipelineDeal[] = (leads || []).map((l: any) => {
-      const n = negocioByLead[l.id];
-      const grupo = stageGrupo[l.stage_id];
-      return {
-        id: l.id,
-        nome: l.nome || "—",
-        corretorAuthId: l.corretor_id || null,
-        grupo,
-        stageChangedAt: l.stage_changed_at || l.updated_at || "",
-        negocioId: n ? n.id : null,
-        empreendimento: n?.empreendimento || "—",
-        vgv: Number(n?.vgv_final ?? n?.vgv_estimado ?? 0) || 0,
-        dataAssinatura: n?.data_assinatura || null,
-        primeiraVendaEm: primeiraVendaByLead[l.id] || null,
-        observacoesNegocio: n?.observacoes || "",
-        negocioVendido: n?.fase === "ganho",
-      };
-    });
+    const dealRows: PipelineDeal[] = (linhas || []).map((r: any) => ({
+      id: r.pipeline_lead_id,
+      nome: r.nome || "—",
+      corretorAuthId: r.corretor_auth_id || null,
+      grupo: r.grupo as PdnGrupo,
+      stageChangedAt: r.stage_changed_at || "",
+      negocioId: r.negocio_id || null,
+      empreendimento: r.empreendimento || "—",
+      vgv: Number(r.vgv ?? 0) || 0,
+      dataAssinatura: r.data_assinatura || null,
+      primeiraVendaEm: r.primeira_venda_em || null,
+      observacoesNegocio: r.observacoes_negocio || "",
+      negocioVendido: !!r.negocio_vendido,
+    }));
     setDeals(dealRows);
     setLoadingDeals(false);
     dealsLoadedOnceRef.current = true;
