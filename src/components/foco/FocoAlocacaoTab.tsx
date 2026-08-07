@@ -28,6 +28,7 @@ export function FocoAlocacaoTab() {
   const scope: "all" | "gerente" = isAdmin || isDiretor ? "all" : "gerente";
 
   const empQ = useEmpreendimentosCanonicos();
+  const empAllQ = useEmpreendimentosCanonicos({ includeInactive: true });
   const corrQ = useCorretoresComAlocacao(scope, user?.id);
   const { from, to } = useMemo(last30dRange, []);
   const perfQ = useFocoPerformance(from, to, !!corrQ.data?.length);
@@ -96,6 +97,7 @@ export function FocoAlocacaoTab() {
                 key={r.user_id}
                 corretor={r}
                 empreendimentos={empQ.data || []}
+                todosEmpreendimentos={empAllQ.data || []}
                 canEdit={canEdit}
                 saving={setAlocacao.isPending}
                 perfSummary={perfByUser.get(r.user_id)}
