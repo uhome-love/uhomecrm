@@ -60,7 +60,7 @@ function buildMonthOptions(): { value: string; label: string }[] {
   return out;
 }
 
-type SortKey = "nome" | "data" | "vgv" | "corretor" | "status";
+type KpiFilter = null | "ganho" | "contrato" | "risco" | "negociacao";
 type KpiFilter = null | "ganho" | "contrato" | "risco" | "negociacao";
 
 
