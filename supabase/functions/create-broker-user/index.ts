@@ -611,11 +611,33 @@ serve(async (req) => {
       const errors = results.filter((r) => r.status === "rejected");
       if (errors.length > 0) console.error("Some deletions failed:", errors);
 
+      // Referências históricas ao profile (FK sem cascade) — soltar antes de apagar o perfil
+      if (profileId) {
+        const hist = await Promise.allSettled([
+          supabase.from("oferta_ativa_fila").update({ ultimo_corretor_id: null }).eq("ultimo_corretor_id", profileId),
+          supabase.from("oferta_ativa_fila").update({ locked_by: null }).eq("locked_by", profileId),
+          supabase.from("oferta_ativa_fila").update({ claimed_by: null }).eq("claimed_by", profileId),
+          supabase.from("roleta_distribuicoes").update({ corretor_id: null }).eq("corretor_id", profileId),
+          supabase.from("roleta_fila").delete().eq("corretor_id", profileId),
+          supabase.from("roleta_credenciamentos").delete().eq("aprovado_por", profileId),
+          supabase.from("roleta_presencas").update({ validado_por: null }).eq("validado_por", profileId),
+          supabase.from("oferta_ativa_participantes").update({ gerente_id: null }).eq("gerente_id", profileId),
+        ]);
+        const histErr = hist.filter((r) => r.status === "rejected");
+        if (histErr.length > 0) console.error("Historical unlink failed:", histErr);
+      }
+
       await supabase.from("user_roles").delete().eq("user_id", target_user_id);
-      await supabase.from("profiles").delete().eq("user_id", target_user_id);
+      const { error: profileDelError } = await supabase.from("profiles").delete().eq("user_id", target_user_id);
+      if (profileDelError) {
+        throw new Error(
+          `Não foi possível excluir o perfil (registros vinculados impedem): ${profileDelError.message}`
+        );
+      }
 
       const { error: deleteError } = await supabase.auth.admin.deleteUser(target_user_id);
       if (deleteError) throw new Error(`Erro ao excluir usuário: ${deleteError.message}`);
+
 
       await logAudit("delete_user", target_user_id, null, { reassign_to, absorb_team_to, lead_destination, descarte: descarteResumo });
 
