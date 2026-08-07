@@ -113,6 +113,7 @@ export function usePdnDivergencias(scopeAuthIds: string[] | null | undefined) {
             nome: lead.nome || n.nome_cliente || "—",
             detalhe: `Negócio em "${n.fase}" mas lead está na etapa "${atual.nome}"`,
             corretorAuthId: lead.corretor_id || null,
+            faseAlvo: TIPO_TO_FASE[atual.tipo] || null,
           });
         }
       }
