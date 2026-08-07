@@ -17,6 +17,8 @@ interface TemplateRule {
 
 const RULES: TemplateRule[] = [
   { match: (t) => t.includes("lakebaical") || t.includes("lake baical") || t.includes("lakebaikal"), empreendimento: "Lake Baikal" },
+  // Canoas precisa vir ANTES da regra genérica de Casa Tua (POA)
+  { match: (t) => t.includes("casatuacanoas") || t.includes("casa tua canoas") || t.includes("casa_tua_canoas"), empreendimento: "Casa Tua Canoas" },
   { match: (t) => t.includes("casatua") || t.includes("casa tua") || t.includes("casa_tua"), empreendimento: "Casa Tua" },
   { match: (t) => t.includes("vivid"), empreendimento: "Vivid Terrace" },
   { match: (t) => t.includes("atrio") || t.includes("átrio"), empreendimento: "Átrio" },
