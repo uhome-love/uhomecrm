@@ -122,6 +122,7 @@ export default function ImoveisPage() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { pathname } = useLocation();
   const { filters, setFilter, setFilters, resetFilters } = useImoveisSearchStore();
 
   // Sync URL → store on mount
@@ -131,12 +132,16 @@ export default function ImoveisPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync store → URL on filter change
+  // Sync store → URL on filter change — só quando esta página é a rota ativa
+  // (as abas ficam montadas em segundo plano e apagariam a query string de outra tela)
   const debouncedFilters = useDebounce(filters, 400);
+  const isRotaAtiva = pathname.startsWith("/imoveis");
   useEffect(() => {
+    if (!isRotaAtiva) return;
     const params = filtersToParams(debouncedFilters);
     setSearchParams(params, { replace: true });
-  }, [debouncedFilters, setSearchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedFilters, isRotaAtiva]);
 
   // ── View state ──
   const [page, setPage] = useState(0);
