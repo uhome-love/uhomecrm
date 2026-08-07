@@ -45,6 +45,9 @@ import { PdnDivergencias } from "@/components/pdn/PdnDivergencias";
 import { usePdnDivergencias } from "@/hooks/pdn/usePdnDivergencias";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
+import { GrupoBloco } from "@/components/pdn/planilha/PdnGrupoBloco";
+import { ArquivadosView } from "@/components/pdn/PdnArquivados";
+import type { SortKey } from "@/components/pdn/planilha/constants";
 
 
 // ─── Opções de mês (últimos 12) ───────────────────────────────────────────────
@@ -60,7 +63,6 @@ function buildMonthOptions(): { value: string; label: string }[] {
   return out;
 }
 
-type KpiFilter = null | "ganho" | "contrato" | "risco" | "negociacao";
 type KpiFilter = null | "ganho" | "contrato" | "risco" | "negociacao";
 
 
