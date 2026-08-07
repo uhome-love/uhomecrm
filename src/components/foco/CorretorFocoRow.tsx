@@ -7,22 +7,33 @@ import type { CorretorRow, EmpreendimentoCanonico } from "@/hooks/useFocoCorreto
 
 interface Props {
   corretor: CorretorRow;
+  /** Somente ativos — alimentam o seletor de adicionar. */
   empreendimentos: EmpreendimentoCanonico[];
+  /** Ativos + inativos — usados só para exibir chips herdados. */
+  todosEmpreendimentos?: EmpreendimentoCanonico[];
   canEdit: boolean;
   saving: boolean;
   onSave: (empreendimentos: string[]) => void;
   perfSummary?: { leads: number; visitasRealizadas: number; vendas: number };
 }
 
-export function CorretorFocoRow({ corretor, empreendimentos, canEdit, saving, onSave, perfSummary }: Props) {
+export function CorretorFocoRow({ corretor, empreendimentos, todosEmpreendimentos, canEdit, saving, onSave, perfSummary }: Props) {
   const [draft, setDraft] = useState<string[]>(corretor.alocacao);
   const options: EmpreendimentoOption[] = useMemo(
     () => empreendimentos.map((e) => ({ id: e.id, nome: e.nome, segmento: e.segmento_nome })),
     [empreendimentos]
   );
 
-  const empMap = useMemo(() => new Map(empreendimentos.map((e) => [e.id, e])), [empreendimentos]);
-  const dirty = JSON.stringify([...draft].sort()) !== JSON.stringify([...corretor.alocacao].sort());
+  const ativosSet = useMemo(() => new Set(empreendimentos.map((e) => e.id)), [empreendimentos]);
+  const empMap = useMemo(
+    () => new Map((todosEmpreendimentos?.length ? todosEmpreendimentos : empreendimentos).map((e) => [e.id, e])),
+    [todosEmpreendimentos, empreendimentos]
+  );
+
+  // Só empreendimentos ativos podem ser gravados (a RPC recusa inativos).
+  const draftAtivos = useMemo(() => draft.filter((id) => ativosSet.has(id)), [draft, ativosSet]);
+  const dirty =
+    JSON.stringify([...draftAtivos].sort()) !== JSON.stringify([...corretor.alocacao].sort());
   const isEmpty = draft.length === 0;
 
   const initials = corretor.nome.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -53,16 +64,26 @@ export function CorretorFocoRow({ corretor, empreendimentos, canEdit, saving, on
         )}
         {draft.map((id) => {
           const emp = empMap.get(id);
-          if (!emp) return null;
+          const inativo = !ativosSet.has(id);
+          const nome = emp?.nome ?? "Empreendimento removido";
           return (
-            <Badge key={id} variant="secondary" className="text-[11px] gap-1 pr-1">
-              {emp.nome}
+            <Badge
+              key={id}
+              variant={inativo ? "outline" : "secondary"}
+              className={
+                inativo
+                  ? "text-[11px] gap-1 pr-1 text-muted-foreground border-dashed"
+                  : "text-[11px] gap-1 pr-1"
+              }
+              title={inativo ? "Empreendimento inativo — não será salvo" : undefined}
+            >
+              {nome}{inativo ? " (inativo)" : ""}
               {canEdit && (
                 <button
                   type="button"
                   onClick={() => setDraft(draft.filter((d) => d !== id))}
                   className="hover:text-destructive"
-                  aria-label={`Remover ${emp.nome}`}
+                  aria-label={`Remover ${nome}`}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -94,7 +115,7 @@ export function CorretorFocoRow({ corretor, empreendimentos, canEdit, saving, on
             size="sm"
             variant={dirty ? "default" : "outline"}
             disabled={!dirty || saving}
-            onClick={() => onSave(draft)}
+            onClick={() => onSave(draftAtivos)}
             className="h-7 text-xs gap-1"
           >
             <Save className="h-3 w-3" /> Salvar
