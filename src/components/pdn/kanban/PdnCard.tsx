@@ -3,9 +3,14 @@ import { formatBRT } from "@/lib/brtTime";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  AlertTriangle, Sparkles, Flame, CalendarClock, TrendingDown,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertTriangle, Sparkles, Flame, CalendarClock, TrendingDown, MoreVertical,
+  RotateCcw, ArrowRight,
 } from "lucide-react";
-import type { PdnRow } from "@/hooks/usePdn";
+import { PDN_GRUPOS, type PdnGrupo, type PdnRow } from "@/hooks/usePdn";
 
 const PRIORIDADE_META: Record<string, { label: string; cls: string }> = {
   alta: { label: "Alta", cls: "bg-red-500/15 text-red-600 dark:text-red-400" },
@@ -23,10 +28,14 @@ interface Props {
   onDragEnd: () => void;
   onQueda: (row: PdnRow) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
+  /** Move o card de etapa (mesmo caminho do drag & drop) — usado pelo menu de 1 toque. */
+  onMoverPara?: (row: PdnRow, grupo: PdnGrupo) => void;
+  onReativar?: (row: PdnRow) => void;
 }
 
 export function PdnCard({
   r, selected, onToggleSelected, onClick, onDragStart, onDragEnd, onQueda,
+  onMoverPara, onReativar,
 }: Props) {
   const prio = r.prioridade ? PRIORIDADE_META[r.prioridade] : null;
 
