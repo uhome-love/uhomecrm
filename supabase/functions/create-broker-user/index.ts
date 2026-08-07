@@ -459,7 +459,14 @@ serve(async (req) => {
           .eq("gerente_id", target_user_id);
       }
 
-      if (reassign_to) {
+      let descarteResumo: any = null;
+      if (lead_destination === "descarte") {
+        const gerenteDestino = reassign_to || (await gerenteOf(target_user_id));
+        if (!gerenteDestino) {
+          throw new Error("Este corretor não tem gerente definido. Informe um destino para os leads avançados e negócios.");
+        }
+        descarteResumo = await descartarCarteira(target_user_id, gerenteDestino);
+      } else if (reassign_to) {
         await assertCanManage(reassign_to).catch(() => {
           if (!isAdmin) throw new Error("O corretor destino não pertence à sua equipe");
         });
@@ -477,9 +484,14 @@ serve(async (req) => {
       await supabase.from("profiles").update({ ativo: false }).eq("user_id", target_user_id);
       await supabase.from("team_members").update({ status: "inativo" }).eq("user_id", target_user_id);
 
-      await logAudit("inactivate_user", target_user_id, { ativo: true }, { ativo: false, reassign_to, absorb_team_to });
+      await logAudit("inactivate_user", target_user_id, { ativo: true }, { ativo: false, reassign_to, absorb_team_to, lead_destination, descarte: descarteResumo });
 
-      return new Response(JSON.stringify({ success: true, message: "Usuário inativado e dados repassados." }), {
+      return new Response(JSON.stringify({
+        success: true,
+        message: descarteResumo
+          ? `Usuário inativado. ${descarteResumo.descartados} lead(s) para Descarte, ${descarteResumo.repassados} lead(s) avançados ao gerente, ${descarteResumo.tarefas_canceladas} tarefa(s) cancelada(s).`
+          : "Usuário inativado e dados repassados.",
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
