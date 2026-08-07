@@ -24,7 +24,7 @@ serve(async (req) => {
       action, jetimob_user_id, email, nome, senha, gerente_id, role,
       target_user_id, reassign_to, telefone, cpf, creci,
       reassign_leads, reassign_negocios, reassign_tarefas,
-      absorb_team_to,
+      absorb_team_to, lead_destination,
     } = body;
 
     // Verify caller
