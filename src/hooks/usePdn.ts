@@ -642,22 +642,19 @@ export function usePdn(mes: string) {
     payload.updated_at = new Date().toISOString();
 
     const insertRow = async () => {
+      // Só vínculo + nota. Nada de cópia de nome/etapa/VGV/corretor/empreendimento:
+      // esses dados vêm sempre do pipeline/negócio (PDN é derivação, não planilha).
       const { error } = await supabase.from("pdn_entries").insert({
         gerente_id: user.id,
         negocio_id: row.negocioId,
-        pipeline_lead_id: row.negocioId ? null : row.pipelineLeadId,
+        pipeline_lead_id: row.pipelineLeadId,
         mes,
-        nome: row.nome,
-        situacao: row.grupoOrigem,
-        empreendimento: row.empreendimento === "—" ? null : row.empreendimento,
-        vgv: row.vgv,
-        corretor: row.corretor === "—" ? null : row.corretor,
-        equipe: row.equipe === "—" ? null : row.equipe,
         ...payload,
-      });
+      } as any);
       if (error) { toast.error(`Erro ao salvar: ${error.message}`); return false; }
       return true;
     };
+
 
     let ok: boolean;
     if (row.overrideId) {
@@ -730,17 +727,18 @@ export function usePdn(mes: string) {
     const isPreVisita = grupo === "qualificacao" || grupo === "aquecimento";
     const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
     if (!result) return;
-    // Alinha a nota do gestor com a nova etapa e garante o vínculo com o lead real.
+    // Garante apenas o VÍNCULO da nota com o lead/negócio real — a etapa nunca
+    // é copiada para a nota (a etapa é lida do pipeline).
     if (row.overrideId && !isPreVisita) {
-      const patch: Record<string, unknown> = {
-        situacao: grupo,
-        updated_at: new Date().toISOString(),
-      };
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (result.pipelineLeadId && !row.pipelineLeadId) patch.pipeline_lead_id = result.pipelineLeadId;
       if (result.negocioId && !row.negocioId) patch.negocio_id = result.negocioId;
-      const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
-      if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
+      if (Object.keys(patch).length > 1) {
+        const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
+        if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
+      }
     }
+
     await Promise.all([loadDeals(), loadEntries()]);
   }, [marcarQueda, loadEntries, loadDeals, user?.id]);
 
