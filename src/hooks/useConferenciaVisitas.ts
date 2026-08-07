@@ -56,7 +56,7 @@ export function useConferenciaVisitas(mes: string) {
       const [leadsRes, profilesRes] = await Promise.all([
         leadIds.length
           ? supabase.from("pipeline_leads")
-              .select("id, status, stage_id, pipeline_stages!inner(tipo, nome)")
+              .select("id, arquivado, stage_id, pipeline_stages!inner(tipo, nome)")
               .in("id", leadIds)
           : Promise.resolve({ data: [] as any[] }),
         corretorIds.length
@@ -88,7 +88,7 @@ export function useConferenciaVisitas(mes: string) {
         const lead = v.pipeline_lead_id ? leadMap.get(v.pipeline_lead_id) : null;
         const stageTipo = lead?.pipeline_stages?.tipo ?? null;
         const stageNome = lead?.pipeline_stages?.nome ?? null;
-        const leadStatus = lead?.status ?? null;
+        const leadStatus = lead?.arquivado ? "arquivado" : null;
         const negFase = v.pipeline_lead_id ? negocioMap.get(v.pipeline_lead_id) ?? null : null;
 
         let bucket: VisitaConferencia["bucket"];
