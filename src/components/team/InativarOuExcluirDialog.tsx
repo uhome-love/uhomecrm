@@ -31,6 +31,9 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmName, setConfirmName] = useState("");
+  const [destino, setDestino] = useState<"repassar" | "descarte">("repassar");
+  const [gerenteAlvo, setGerenteAlvo] = useState<{ id: string; nome: string } | null>(null);
+  const [previewDescarte, setPreviewDescarte] = useState<{ frios: number; quentes: number; tarefas: number }>({ frios: 0, quentes: 0, tarefas: 0 });
 
   const isDelete = mode === "delete";
   const title = isDelete ? "Excluir usuário definitivamente" : "Inativar usuário";
@@ -38,7 +41,8 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
 
   useEffect(() => {
     if (!open || !user) return;
-    setReassignTo(""); setAbsorbTeamTo(""); setConfirmName("");
+    setReassignTo(""); setAbsorbTeamTo(""); setConfirmName(""); setDestino("repassar");
+    setGerenteAlvo(null); setPreviewDescarte({ frios: 0, quentes: 0, tarefas: 0 });
     (async () => {
       setLoading(true);
       const [tmCount, corretorRoles, leads, negA, negB, tar] = await Promise.all([
@@ -49,7 +53,7 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
           ? supabase.from("negocios").select("id", { count: "exact", head: true }).eq("corretor_id", user.profile_id).neq("fase", "ganho").neq("status", "perdido")
           : Promise.resolve({ count: 0 } as any),
         supabase.from("negocios").select("id", { count: "exact", head: true }).eq("auth_user_id", user.user_id).neq("fase", "ganho").neq("status", "perdido"),
-        supabase.from("pipeline_tarefas").select("id", { count: "exact", head: true }).eq("responsavel_id", user.user_id).eq("concluida", false),
+        supabase.from("pipeline_tarefas").select("id", { count: "exact", head: true }).eq("responsavel_id", user.user_id).neq("status", "concluida").neq("status", "cancelada"),
       ]);
       setTeamCount(tmCount.count || 0);
       setImpact({
@@ -74,19 +78,58 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
           setGerentes((profs || []).map((p) => ({ user_id: p.user_id, nome: p.nome || "Gerente" })));
         } else setGerentes([]);
       }
+
+      // Gerente do corretor (recebe os leads avançados quando o destino é Descarte)
+      const { data: tm } = await supabase.from("team_members")
+        .select("gerente_id").eq("user_id", user.user_id).maybeSingle();
+      if (tm?.gerente_id) {
+        const { data: gp } = await supabase.from("profiles")
+          .select("nome").eq("user_id", tm.gerente_id).maybeSingle();
+        setGerenteAlvo({ id: tm.gerente_id, nome: gp?.nome || "Gerente" });
+      }
+
+      // Prévia do descarte: frios × avançados
+      const [{ data: stagesData }, { data: leadRows }] = await Promise.all([
+        supabase.from("pipeline_stages").select("id, tipo").eq("pipeline_tipo", "leads"),
+        supabase.from("pipeline_leads").select("id, stage_id, negocio_id").eq("corretor_id", user.user_id),
+      ]);
+      const avancados = new Set((stagesData || []).filter((s: any) => ["proposta", "contrato_gerado", "venda"].includes(s.tipo)).map((s: any) => s.id));
+      const intocaveis = new Set((stagesData || []).filter((s: any) => ["descarte", "caiu"].includes(s.tipo)).map((s: any) => s.id));
+      const frios: string[] = []; let quentes = 0;
+      (leadRows || []).forEach((l: any) => {
+        if (intocaveis.has(l.stage_id)) return;
+        if (l.negocio_id || avancados.has(l.stage_id)) quentes += 1;
+        else frios.push(l.id);
+      });
+      let tarefasFrios = 0;
+      for (let i = 0; i < frios.length; i += 200) {
+        const { count } = await supabase.from("pipeline_tarefas")
+          .select("id", { count: "exact", head: true })
+          .in("pipeline_lead_id", frios.slice(i, i + 200))
+          .neq("status", "concluida").neq("status", "cancelada");
+        tarefasFrios += count || 0;
+      }
+      setPreviewDescarte({ frios: frios.length, quentes, tarefas: tarefasFrios });
+
       setLoading(false);
     })();
   }, [open, user]);
 
   if (!user) return null;
 
-  const requiresReassign = isDelete;
+  const isDescarte = destino === "descarte";
+  const requiresReassign = isDelete && !isDescarte;
   const requiresAbsorb = teamCount > 0;
   const nameMatches = !isDelete || confirmName.trim().toLowerCase() === (user.nome || "").trim().toLowerCase();
   const hasData = impact.leads > 0 || impact.negocios > 0 || impact.tarefas > 0;
+  const precisaDestinoAvancados = isDescarte && !gerenteAlvo;
 
   const handleSubmit = async () => {
     if (requiresReassign && !reassignTo) { toast.error("Escolha o corretor destino."); return; }
+    if (precisaDestinoAvancados && !reassignTo) {
+      toast.error("Este corretor não tem gerente. Escolha quem recebe os leads avançados e negócios.");
+      return;
+    }
     if (requiresAbsorb && !absorbTeamTo) { toast.error("Escolha o gerente que vai absorver o time."); return; }
     if (isDelete && !nameMatches) { toast.error("Digite o nome exato para confirmar."); return; }
     setSubmitting(true);
@@ -95,9 +138,12 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
         action: isDelete ? "delete_user" : "inactivate_user",
         target_user_id: user.user_id,
       };
+      if (isDescarte) body.lead_destination = "descarte";
       if (reassignTo) {
         body.reassign_to = reassignTo;
-        body.reassign_leads = true; body.reassign_negocios = true; body.reassign_tarefas = true;
+        if (!isDescarte) {
+          body.reassign_leads = true; body.reassign_negocios = true; body.reassign_tarefas = true;
+        }
       }
       if (absorbTeamTo) body.absorb_team_to = absorbTeamTo;
 
@@ -169,9 +215,54 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
               </div>
             )}
 
-            {(hasData || requiresReassign) && (
+            {/* Destino da carteira */}
+            <div className="space-y-2">
+              <Label>Destino da carteira</Label>
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDestino("repassar")}
+                  className={`rounded-lg border p-3 text-left text-sm transition ${destino === "repassar" ? "border-primary bg-primary/5" : "hover:bg-muted/40"}`}
+                >
+                  <div className="font-medium">Repassar tudo para outro corretor</div>
+                  <div className="text-xs text-muted-foreground">Leads, negócios e tarefas vão para o corretor escolhido.</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDestino("descarte")}
+                  className={`rounded-lg border p-3 text-left text-sm transition ${destino === "descarte" ? "border-primary bg-primary/5" : "hover:bg-muted/40"}`}
+                >
+                  <div className="font-medium">Descartar leads frios + avançados para o gerente</div>
+                  <div className="text-xs text-muted-foreground">
+                    Leads frios voltam para reengajamento; avançados e negócios vão para {gerenteAlvo?.nome || "o gerente"}.
+                  </div>
+                </button>
+              </div>
+
+              {isDescarte && (
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-1 text-xs">
+                  <div className="flex justify-between"><span>Leads que vão para Descarte</span><b>{previewDescarte.frios}</b></div>
+                  <div className="flex justify-between">
+                    <span>Leads avançados para {gerenteAlvo?.nome || "destino"}</span><b>{previewDescarte.quentes}</b>
+                  </div>
+                  <div className="flex justify-between"><span>Negócios em aberto repassados</span><b>{impact.negocios}</b></div>
+                  <div className="flex justify-between"><span>Tarefas pendentes canceladas</span><b>{previewDescarte.tarefas}</b></div>
+                  {precisaDestinoAvancados && (
+                    <div className="text-warning pt-1 border-t mt-1">
+                      ⚠ Este corretor não tem gerente definido. Escolha abaixo quem recebe os leads avançados e negócios.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {(hasData || requiresReassign || precisaDestinoAvancados) && (
               <div className="space-y-1.5">
-                <Label>Repassar leads / negócios / tarefas para {requiresReassign ? "*" : "(opcional)"}</Label>
+                <Label>
+                  {isDescarte
+                    ? `Destino dos leads avançados / negócios ${precisaDestinoAvancados ? "*" : "(opcional — sobrepõe o gerente)"}`
+                    : `Repassar leads / negócios / tarefas para ${requiresReassign ? "*" : "(opcional)"}`}
+                </Label>
                 <Select value={reassignTo} onValueChange={setReassignTo}>
                   <SelectTrigger><SelectValue placeholder="Selecionar corretor" /></SelectTrigger>
                   <SelectContent>
