@@ -117,13 +117,19 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
 
   if (!user) return null;
 
-  const requiresReassign = isDelete;
+  const isDescarte = destino === "descarte";
+  const requiresReassign = isDelete && !isDescarte;
   const requiresAbsorb = teamCount > 0;
   const nameMatches = !isDelete || confirmName.trim().toLowerCase() === (user.nome || "").trim().toLowerCase();
   const hasData = impact.leads > 0 || impact.negocios > 0 || impact.tarefas > 0;
+  const precisaDestinoAvancados = isDescarte && !gerenteAlvo;
 
   const handleSubmit = async () => {
     if (requiresReassign && !reassignTo) { toast.error("Escolha o corretor destino."); return; }
+    if (precisaDestinoAvancados && !reassignTo) {
+      toast.error("Este corretor não tem gerente. Escolha quem recebe os leads avançados e negócios.");
+      return;
+    }
     if (requiresAbsorb && !absorbTeamTo) { toast.error("Escolha o gerente que vai absorver o time."); return; }
     if (isDelete && !nameMatches) { toast.error("Digite o nome exato para confirmar."); return; }
     setSubmitting(true);
@@ -132,9 +138,12 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
         action: isDelete ? "delete_user" : "inactivate_user",
         target_user_id: user.user_id,
       };
+      if (isDescarte) body.lead_destination = "descarte";
       if (reassignTo) {
         body.reassign_to = reassignTo;
-        body.reassign_leads = true; body.reassign_negocios = true; body.reassign_tarefas = true;
+        if (!isDescarte) {
+          body.reassign_leads = true; body.reassign_negocios = true; body.reassign_tarefas = true;
+        }
       }
       if (absorbTeamTo) body.absorb_team_to = absorbTeamTo;
 
