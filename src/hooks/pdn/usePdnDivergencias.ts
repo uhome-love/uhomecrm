@@ -147,6 +147,7 @@ export function usePdnDivergencias(scopeAuthIds: string[] | null | undefined) {
             nome: l.nome || "—",
             detalhe: `Lead em "${stageById[l.stage_id]?.nome || "etapa de negócio"}" sem negócio criado`,
             corretorAuthId: l.corretor_id || null,
+            faseAlvo: TIPO_TO_FASE[stageById[l.stage_id]?.tipo || ""] || "em_negociacao",
           });
         }
       }
@@ -159,5 +160,53 @@ export function usePdnDivergencias(scopeAuthIds: string[] | null | undefined) {
 
   useEffect(() => { load(); }, [load]);
 
-  return { rows, loading, reload: load };
+  /**
+   * Correção pontual da divergência, sempre no sentido "pipeline manda":
+   * - lead_arquivado    → desarquiva o lead (o negócio ativo volta a aparecer)
+   * - fase_divergente   → alinha `negocios.fase` à etapa atual do lead
+   * - lead_sem_negocio  → cria o negócio faltante já na fase da etapa
+   * `negocio_sem_lead` não tem correção automática (exige escolher o lead).
+   */
+  const corrigir = useCallback(async (row: DivergenciaRow): Promise<boolean> => {
+    try {
+      if (row.tipo === "lead_arquivado" && row.pipelineLeadId) {
+        const { error } = await supabase
+          .from("pipeline_leads")
+          .update({ arquivado: false } as any)
+          .eq("id", row.pipelineLeadId);
+        if (error) throw error;
+      } else if (row.tipo === "fase_divergente" && row.negocioId && row.faseAlvo) {
+        const { error } = await supabase
+          .from("negocios")
+          .update({ fase: row.faseAlvo, updated_at: new Date().toISOString() } as any)
+          .eq("id", row.negocioId);
+        if (error) throw error;
+      } else if (row.tipo === "lead_sem_negocio" && row.pipelineLeadId) {
+        let corretorProfileId: string | null = null;
+        if (row.corretorAuthId) {
+          const { data: p } = await supabase
+            .from("profiles").select("id").eq("user_id", row.corretorAuthId).maybeSingle();
+          corretorProfileId = (p?.id as string | undefined) || null;
+        }
+        const { error } = await supabase.from("negocios").insert({
+          nome_cliente: row.nome || "Sem nome",
+          pipeline_lead_id: row.pipelineLeadId,
+          corretor_id: corretorProfileId,
+          fase: row.faseAlvo || "em_negociacao",
+          origem: "pdn_divergencias",
+          status: "ativo",
+        } as any);
+        if (error) throw error;
+      } else {
+        return false;
+      }
+      await load();
+      return true;
+    } catch (e) {
+      console.error("[pdnDivergencias] correção falhou", e);
+      return false;
+    }
+  }, [load]);
+
+  return { rows, loading, reload: load, corrigir };
 }
