@@ -69,11 +69,11 @@ export function PdnCard({
         />
       </div>
 
-      {!r.caiu && (
-        <div
-          className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-background/95 p-0.5 shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div
+        className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-background/95 p-0.5 shadow-sm transition-opacity md:opacity-0 md:group-hover:opacity-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {!r.caiu && (
           <Button
             variant="ghost"
             size="icon"
@@ -83,8 +83,46 @@ export function PdnCard({
           >
             <TrendingDown className="h-3 w-3" />
           </Button>
-        </div>
-      )}
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              title="Ações"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuLabel className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Mover para
+            </DropdownMenuLabel>
+            {PDN_GRUPOS.filter(g => g.key !== r.grupo).map(g => (
+              <DropdownMenuItem
+                key={g.key}
+                className="text-sm"
+                onSelect={() => onMoverPara?.(r, g.key)}
+                disabled={!onMoverPara}
+              >
+                <ArrowRight className="mr-2 h-3.5 w-3.5" style={{ color: g.cor }} />
+                {g.label}
+              </DropdownMenuItem>
+            ))}
+            {r.caiu && onReativar && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-sm" onSelect={() => onReativar(r)}>
+                  <RotateCcw className="mr-2 h-3.5 w-3.5" /> Reativar
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
 
       <div className="flex items-start justify-between gap-2 pr-8 pl-5">
         <span className="line-clamp-1 text-sm font-medium text-foreground">{r.nome}</span>
