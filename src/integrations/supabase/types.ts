@@ -14,6 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
+      _pdn_entries_backup_passo2: {
+        Row: {
+          caiu: boolean
+          construtora: string | null
+          corretor: string | null
+          corretor_avisado_em: string | null
+          corretor_avisado_etapa: string | null
+          created_at: string
+          created_from_visit: boolean
+          data_proxima_acao: string | null
+          data_visita: string | null
+          docs_status: string
+          empreendimento: string | null
+          equipe: string | null
+          gerente_id: string
+          grupo_override: string | null
+          id: string
+          linked_visit_id: string | null
+          mes: string
+          motivo_queda: string | null
+          negocio_id: string | null
+          nome: string | null
+          objecao_cliente: string | null
+          observacoes: string | null
+          oculto: boolean
+          pipeline_lead_id: string | null
+          prioridade: string | null
+          proxima_acao: string | null
+          proxima_acao_data: string | null
+          quando_assina: string | null
+          risco_manual: boolean
+          risco_motivo: string | null
+          situacao: string
+          status: string | null
+          status_pagamento: string | null
+          temperatura: string
+          tipo_visita: string | null
+          ultimo_contato: string | null
+          und: string | null
+          updated_at: string
+          valor_potencial: number | null
+          vgv: number | null
+        }
+        Insert: {
+          caiu: boolean
+          construtora?: string | null
+          corretor?: string | null
+          corretor_avisado_em?: string | null
+          corretor_avisado_etapa?: string | null
+          created_at: string
+          created_from_visit: boolean
+          data_proxima_acao?: string | null
+          data_visita?: string | null
+          docs_status: string
+          empreendimento?: string | null
+          equipe?: string | null
+          gerente_id: string
+          grupo_override?: string | null
+          id: string
+          linked_visit_id?: string | null
+          mes: string
+          motivo_queda?: string | null
+          negocio_id?: string | null
+          nome?: string | null
+          objecao_cliente?: string | null
+          observacoes?: string | null
+          oculto: boolean
+          pipeline_lead_id?: string | null
+          prioridade?: string | null
+          proxima_acao?: string | null
+          proxima_acao_data?: string | null
+          quando_assina?: string | null
+          risco_manual: boolean
+          risco_motivo?: string | null
+          situacao: string
+          status?: string | null
+          status_pagamento?: string | null
+          temperatura: string
+          tipo_visita?: string | null
+          ultimo_contato?: string | null
+          und?: string | null
+          updated_at: string
+          valor_potencial?: number | null
+          vgv?: number | null
+        }
+        Update: {
+          caiu?: boolean
+          construtora?: string | null
+          corretor?: string | null
+          corretor_avisado_em?: string | null
+          corretor_avisado_etapa?: string | null
+          created_at?: string
+          created_from_visit?: boolean
+          data_proxima_acao?: string | null
+          data_visita?: string | null
+          docs_status?: string
+          empreendimento?: string | null
+          equipe?: string | null
+          gerente_id?: string
+          grupo_override?: string | null
+          id?: string
+          linked_visit_id?: string | null
+          mes?: string
+          motivo_queda?: string | null
+          negocio_id?: string | null
+          nome?: string | null
+          objecao_cliente?: string | null
+          observacoes?: string | null
+          oculto?: boolean
+          pipeline_lead_id?: string | null
+          prioridade?: string | null
+          proxima_acao?: string | null
+          proxima_acao_data?: string | null
+          quando_assina?: string | null
+          risco_manual?: boolean
+          risco_motivo?: string | null
+          situacao?: string
+          status?: string | null
+          status_pagamento?: string | null
+          temperatura?: string
+          tipo_visita?: string | null
+          ultimo_contato?: string | null
+          und?: string | null
+          updated_at?: string
+          valor_potencial?: number | null
+          vgv?: number | null
+        }
+        Relationships: []
+      }
       _pilot_backfill_2026_07_26: {
         Row: {
           complexidade_after: number | null
@@ -7575,6 +7704,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_fato_venda"
             referencedColumns: ["negocio_id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
           },
         ]
       }
