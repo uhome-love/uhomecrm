@@ -73,10 +73,7 @@ export function PdnKanban({
     [rows, selected],
   );
 
-  function handleDrop(target: PdnGrupo) {
-    const r = dragRow.current;
-    dragRow.current = null;
-    setDragOver(null);
+  function moverPara(r: PdnRow, target: PdnGrupo) {
     if (!r || r.grupo === target) return;
 
     if (target === "caidos") { onQueda(r); return; }
@@ -136,7 +133,12 @@ export function PdnKanban({
               }`}
               onDragOver={(e) => { e.preventDefault(); setDragOver(g.key); }}
               onDragLeave={() => setDragOver(prev => (prev === g.key ? null : prev))}
-              onDrop={() => handleDrop(g.key)}
+              onDrop={() => {
+                const r = dragRow.current;
+                dragRow.current = null;
+                setDragOver(null);
+                if (r) moverPara(r, g.key);
+              }}
             >
               <div
                 className="flex items-center justify-between px-3 py-2"
@@ -184,6 +186,8 @@ export function PdnKanban({
                     onDragEnd={() => { dragRow.current = null; setDragOver(null); }}
                     onQueda={onQueda}
                     onAvisar={onAvisar}
+                    onMoverPara={moverPara}
+                    onReativar={onReativar}
                   />
                 ))}
               </div>
