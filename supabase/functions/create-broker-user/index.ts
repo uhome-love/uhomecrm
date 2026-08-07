@@ -524,7 +524,12 @@ serve(async (req) => {
         throw new Error("Apenas CEO/Diretora podem excluir usuários definitivamente. Use inativar.");
       }
       await assertCanManage(target_user_id);
-      if (!reassign_to) throw new Error("Informe para quem repassar os dados antes de excluir");
+      const modoDescarte = lead_destination === "descarte";
+      const gerenteDoAlvo = modoDescarte ? (reassign_to || (await gerenteOf(target_user_id))) : null;
+      if (!modoDescarte && !reassign_to) throw new Error("Informe para quem repassar os dados antes de excluir");
+      if (modoDescarte && !gerenteDoAlvo) {
+        throw new Error("Este corretor não tem gerente definido. Informe um destino para os leads avançados e negócios.");
+      }
 
       // Se target é gerente, exigir absorb_team_to
       const { count: teamCount } = await supabase
@@ -540,20 +545,24 @@ serve(async (req) => {
       }
 
       // Validate destination is within caller's scope
-      if (!isAdmin) {
+      if (!isAdmin && reassign_to) {
         const destG = await gerenteOf(reassign_to);
         if (!destG || !managedGerentes.includes(destG)) {
           throw new Error("O corretor destino não pertence à sua equipe");
         }
       }
 
-
-      // Repassar dados operacionais ao corretor destino
-      await reassignData(target_user_id, reassign_to, {
-        leads: reassign_leads !== false,
-        negocios: reassign_negocios !== false,
-        tarefas: reassign_tarefas !== false,
-      });
+      let descarteResumo: any = null;
+      if (modoDescarte) {
+        descarteResumo = await descartarCarteira(target_user_id, gerenteDoAlvo!);
+      } else {
+        // Repassar dados operacionais ao corretor destino
+        await reassignData(target_user_id, reassign_to, {
+          leads: reassign_leads !== false,
+          negocios: reassign_negocios !== false,
+          tarefas: reassign_tarefas !== false,
+        });
+      }
 
       const profileId = await profileIdOf(target_user_id);
 
