@@ -444,6 +444,7 @@ export default function AgendaVisitas() {
   const { integration, connect, disconnect, connecting, disconnecting } = useCalendarIntegration();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { pathname } = useLocation();
 
   // State
   const [period, setPeriod] = useState<Period>((searchParams.get("period") as Period) || "semana");
