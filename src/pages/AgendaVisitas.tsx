@@ -486,15 +486,20 @@ export default function AgendaVisitas() {
   }, []);
   const { visitas: allVisitas } = useVisitas({ startDate: pendingRange.from, endDate: pendingRange.to });
 
-  // Sync URL
+  // Sync URL — só quando esta página é a rota ativa.
+  // As abas ficam montadas em segundo plano; escrever na URL aqui apagaria
+  // a query string da tela que o usuário está vendo.
+  const isRotaAtiva = pathname === "/agenda-visitas" || pathname === "/visitas";
   useEffect(() => {
+    if (!isRotaAtiva) return;
     const params = new URLSearchParams();
     if (period !== "semana") params.set("period", period);
     if (searchTerm) params.set("q", searchTerm);
     if (kpiFilter) params.set("status", kpiFilter);
     if (equipeFilter) params.set("equipe", equipeFilter);
     setSearchParams(params, { replace: true });
-  }, [period, searchTerm, kpiFilter, equipeFilter, setSearchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, searchTerm, kpiFilter, equipeFilter, isRotaAtiva]);
 
   // Sync state from URL when navegação externa muda ?status= (TabProvider não remonta)
   useEffect(() => {
