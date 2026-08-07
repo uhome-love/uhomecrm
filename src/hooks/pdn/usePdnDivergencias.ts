@@ -19,6 +19,8 @@ export interface DivergenciaRow {
   nome: string;
   detalhe: string;
   corretorAuthId: string | null;
+  /** Fase canônica do negócio correspondente à etapa atual do lead (quando aplicável). */
+  faseAlvo?: string | null;
 }
 
 const FASES_ATIVAS = ["em_negociacao", "contrato"];
@@ -27,6 +29,12 @@ const FASE_TO_TIPO: Record<string, string> = {
   em_negociacao: "proposta",
   contrato: "contrato_gerado",
   ganho: "venda",
+};
+// pipeline_stages.tipo → negocios.fase canônica
+const TIPO_TO_FASE: Record<string, string> = {
+  proposta: "em_negociacao",
+  contrato_gerado: "contrato",
+  venda: "ganho",
 };
 
 export function usePdnDivergencias(scopeAuthIds: string[] | null | undefined) {
