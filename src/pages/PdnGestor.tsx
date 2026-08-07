@@ -82,7 +82,7 @@ export default function PdnGestor() {
     try { sessionStorage.setItem(`pdn:view:${isMobile ? "mobile" : "desktop"}`, view); } catch { /* ignore */ }
   }, [view, isMobile]);
   const { rows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, saveNegocioCampos, marcarQueda, mudarEtapa, avisarCorretor, descartarLead, inativarLead } = usePdn(mes);
-  const { rows: divergencias } = usePdnDivergencias(scopeAuthIds);
+  const { rows: divergencias, corrigir: corrigirDivergencia } = usePdnDivergencias(scopeAuthIds);
   // PDN é espelho do pipeline: não existe mais "esconder" nem "reativar" só na planilha.
   const reativarQueda = useCallback((_row: PdnRow) => {
     toast.info("O PDN espelha o pipeline — reative o lead direto no pipeline.");
