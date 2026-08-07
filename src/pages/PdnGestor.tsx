@@ -5,29 +5,9 @@ import { usePdnLive } from "@/hooks/pdn/usePdnLive";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { fmtMoney } from "@/lib/fmtMoney";
-import { formatBRT } from "@/lib/brtTime";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
-  ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
-  ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
-  RefreshCw, Users, Send, Copy, Megaphone, Archive, Undo2,
-} from "lucide-react";
+import { Loader2, Copy } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
 import { PdnToolbar } from "@/components/pdn/PdnToolbar";
@@ -35,8 +15,7 @@ import { PdnHeader, type PdnView } from "@/components/pdn/PdnHeader";
 import { PdnMetaMes } from "@/components/pdn/PdnMetaMes";
 import { PdnKpiCards } from "@/components/pdn/PdnKpiCards";
 import { PdnResumoEquipes } from "@/components/pdn/PdnResumoEquipes";
-import { MoneyInput } from "@/components/pdn/MoneyInput";
-import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
+import { PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { PdnRegredirDialog } from "@/components/pdn/PdnRegredirDialog";
