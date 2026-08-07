@@ -7537,6 +7537,99 @@ export type Database = {
       }
       pdn_entries: {
         Row: {
+          corretor_avisado_em: string | null
+          corretor_avisado_etapa: string | null
+          created_at: string
+          gerente_id: string
+          id: string
+          mes: string
+          negocio_id: string | null
+          observacoes: string | null
+          pipeline_lead_id: string | null
+          prioridade: string | null
+          proxima_acao: string | null
+          proxima_acao_data: string | null
+          risco_manual: boolean
+          risco_motivo: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          corretor_avisado_em?: string | null
+          corretor_avisado_etapa?: string | null
+          created_at?: string
+          gerente_id: string
+          id?: string
+          mes: string
+          negocio_id?: string | null
+          observacoes?: string | null
+          pipeline_lead_id?: string | null
+          prioridade?: string | null
+          proxima_acao?: string | null
+          proxima_acao_data?: string | null
+          risco_manual?: boolean
+          risco_motivo?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          corretor_avisado_em?: string | null
+          corretor_avisado_etapa?: string | null
+          created_at?: string
+          gerente_id?: string
+          id?: string
+          mes?: string
+          negocio_id?: string | null
+          observacoes?: string | null
+          pipeline_lead_id?: string | null
+          prioridade?: string | null
+          proxima_acao?: string | null
+          proxima_acao_data?: string | null
+          risco_manual?: boolean
+          risco_motivo?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdn_entries_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+        ]
+      }
+      pdn_entries_legado: {
+        Row: {
           caiu: boolean
           construtora: string | null
           corretor: string | null
@@ -7579,21 +7672,21 @@ export type Database = {
           vgv: number | null
         }
         Insert: {
-          caiu?: boolean
+          caiu: boolean
           construtora?: string | null
           corretor?: string | null
           corretor_avisado_em?: string | null
           corretor_avisado_etapa?: string | null
-          created_at?: string
-          created_from_visit?: boolean
+          created_at: string
+          created_from_visit: boolean
           data_proxima_acao?: string | null
           data_visita?: string | null
-          docs_status?: string
+          docs_status: string
           empreendimento?: string | null
           equipe?: string | null
           gerente_id: string
           grupo_override?: string | null
-          id?: string
+          id: string
           linked_visit_id?: string | null
           mes: string
           motivo_queda?: string | null
@@ -7601,22 +7694,22 @@ export type Database = {
           nome?: string | null
           objecao_cliente?: string | null
           observacoes?: string | null
-          oculto?: boolean
+          oculto: boolean
           pipeline_lead_id?: string | null
           prioridade?: string | null
           proxima_acao?: string | null
           proxima_acao_data?: string | null
           quando_assina?: string | null
-          risco_manual?: boolean
+          risco_manual: boolean
           risco_motivo?: string | null
-          situacao?: string
+          situacao: string
           status?: string | null
           status_pagamento?: string | null
-          temperatura?: string
+          temperatura: string
           tipo_visita?: string | null
           ultimo_contato?: string | null
           und?: string | null
-          updated_at?: string
+          updated_at: string
           valor_potencial?: number | null
           vgv?: number | null
         }
@@ -7662,71 +7755,7 @@ export type Database = {
           valor_potencial?: number | null
           vgv?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "pdn_entries_linked_visit_id_fkey"
-            columns: ["linked_visit_id"]
-            isOneToOne: false
-            referencedRelation: "v_fato_visita"
-            referencedColumns: ["visita_id"]
-          },
-          {
-            foreignKeyName: "pdn_entries_linked_visit_id_fkey"
-            columns: ["linked_visit_id"]
-            isOneToOne: false
-            referencedRelation: "v_kpi_visitas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pdn_entries_linked_visit_id_fkey"
-            columns: ["linked_visit_id"]
-            isOneToOne: false
-            referencedRelation: "visitas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pdn_entries_linked_visit_id_fkey"
-            columns: ["linked_visit_id"]
-            isOneToOne: false
-            referencedRelation: "visitas_unicas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pdn_entries_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "negocios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pdn_entries_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "v_fato_venda"
-            referencedColumns: ["negocio_id"]
-          },
-          {
-            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
-            columns: ["pipeline_lead_id"]
-            isOneToOne: false
-            referencedRelation: "pipeline_leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
-            columns: ["pipeline_lead_id"]
-            isOneToOne: false
-            referencedRelation: "v_descartes_recentes_90d"
-            referencedColumns: ["pipeline_lead_id"]
-          },
-          {
-            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
-            columns: ["pipeline_lead_id"]
-            isOneToOne: false
-            referencedRelation: "v_fato_lead"
-            referencedColumns: ["lead_id"]
-          },
-        ]
+        Relationships: []
       }
       perf_thresholds: {
         Row: {
@@ -13626,57 +13655,6 @@ export type Database = {
       get_corretor_daily_visitas: {
         Args: { p_user_id?: string }
         Returns: number
-      }
-      get_corretor_pdn: {
-        Args: { p_mes?: string }
-        Returns: {
-          caiu: boolean
-          construtora: string | null
-          corretor: string | null
-          corretor_avisado_em: string | null
-          corretor_avisado_etapa: string | null
-          created_at: string
-          created_from_visit: boolean
-          data_proxima_acao: string | null
-          data_visita: string | null
-          docs_status: string
-          empreendimento: string | null
-          equipe: string | null
-          gerente_id: string
-          grupo_override: string | null
-          id: string
-          linked_visit_id: string | null
-          mes: string
-          motivo_queda: string | null
-          negocio_id: string | null
-          nome: string | null
-          objecao_cliente: string | null
-          observacoes: string | null
-          oculto: boolean
-          pipeline_lead_id: string | null
-          prioridade: string | null
-          proxima_acao: string | null
-          proxima_acao_data: string | null
-          quando_assina: string | null
-          risco_manual: boolean
-          risco_motivo: string | null
-          situacao: string
-          status: string | null
-          status_pagamento: string | null
-          temperatura: string
-          tipo_visita: string | null
-          ultimo_contato: string | null
-          und: string | null
-          updated_at: string
-          valor_potencial: number | null
-          vgv: number | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "pdn_entries"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_corretor_pre_estagnacao: {
         Args: never

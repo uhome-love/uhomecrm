@@ -108,24 +108,13 @@ type PdnEntry = {
   pipeline_lead_id: string | null;
   gerente_id: string;
   mes: string;
-  nome: string;
-  situacao: string;
-  empreendimento: string | null;
-  vgv: number | null;
-  corretor: string | null;
-  equipe: string | null;
-  data_visita: string | null;
   status: string | null;
   observacoes: string | null;
   proxima_acao: string | null;
-  caiu: boolean | null;
-  motivo_queda: string | null;
   proxima_acao_data: string | null;
   prioridade: string | null;
   risco_manual: boolean | null;
   risco_motivo: string | null;
-  oculto: boolean | null;
-  grupo_override: string | null;
   corretor_avisado_em: string | null;
   corretor_avisado_etapa: string | null;
   updated_at: string | null;
@@ -230,7 +219,7 @@ export function usePdn(mes: string) {
     if (!entriesLoadedOnceRef.current) setLoadingEntries(true);
     const { data, error } = await supabase
       .from("pdn_entries")
-      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao, caiu, motivo_queda, proxima_acao_data, prioridade, risco_manual, risco_motivo, oculto, grupo_override, corretor_avisado_em, corretor_avisado_etapa, updated_at")
+      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, status, observacoes, proxima_acao, proxima_acao_data, prioridade, risco_manual, risco_motivo, corretor_avisado_em, corretor_avisado_etapa, updated_at")
       .order("created_at", { ascending: true });
     if (error) {
       console.error("Erro ao carregar PDN:", error);
