@@ -215,9 +215,54 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
               </div>
             )}
 
-            {(hasData || requiresReassign) && (
+            {/* Destino da carteira */}
+            <div className="space-y-2">
+              <Label>Destino da carteira</Label>
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDestino("repassar")}
+                  className={`rounded-lg border p-3 text-left text-sm transition ${destino === "repassar" ? "border-primary bg-primary/5" : "hover:bg-muted/40"}`}
+                >
+                  <div className="font-medium">Repassar tudo para outro corretor</div>
+                  <div className="text-xs text-muted-foreground">Leads, negócios e tarefas vão para o corretor escolhido.</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDestino("descarte")}
+                  className={`rounded-lg border p-3 text-left text-sm transition ${destino === "descarte" ? "border-primary bg-primary/5" : "hover:bg-muted/40"}`}
+                >
+                  <div className="font-medium">Descartar leads frios + avançados para o gerente</div>
+                  <div className="text-xs text-muted-foreground">
+                    Leads frios voltam para reengajamento; avançados e negócios vão para {gerenteAlvo?.nome || "o gerente"}.
+                  </div>
+                </button>
+              </div>
+
+              {isDescarte && (
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-1 text-xs">
+                  <div className="flex justify-between"><span>Leads que vão para Descarte</span><b>{previewDescarte.frios}</b></div>
+                  <div className="flex justify-between">
+                    <span>Leads avançados para {gerenteAlvo?.nome || "destino"}</span><b>{previewDescarte.quentes}</b>
+                  </div>
+                  <div className="flex justify-between"><span>Negócios em aberto repassados</span><b>{impact.negocios}</b></div>
+                  <div className="flex justify-between"><span>Tarefas pendentes canceladas</span><b>{previewDescarte.tarefas}</b></div>
+                  {precisaDestinoAvancados && (
+                    <div className="text-warning pt-1 border-t mt-1">
+                      ⚠ Este corretor não tem gerente definido. Escolha abaixo quem recebe os leads avançados e negócios.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {(hasData || requiresReassign || precisaDestinoAvancados) && (
               <div className="space-y-1.5">
-                <Label>Repassar leads / negócios / tarefas para {requiresReassign ? "*" : "(opcional)"}</Label>
+                <Label>
+                  {isDescarte
+                    ? `Destino dos leads avançados / negócios ${precisaDestinoAvancados ? "*" : "(opcional — sobrepõe o gerente)"}`
+                    : `Repassar leads / negócios / tarefas para ${requiresReassign ? "*" : "(opcional)"}`}
+                </Label>
                 <Select value={reassignTo} onValueChange={setReassignTo}>
                   <SelectTrigger><SelectValue placeholder="Selecionar corretor" /></SelectTrigger>
                   <SelectContent>
