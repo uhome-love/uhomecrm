@@ -727,17 +727,18 @@ export function usePdn(mes: string) {
     const isPreVisita = grupo === "qualificacao" || grupo === "aquecimento";
     const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null, opts);
     if (!result) return;
-    // Alinha a nota do gestor com a nova etapa e garante o vínculo com o lead real.
+    // Garante apenas o VÍNCULO da nota com o lead/negócio real — a etapa nunca
+    // é copiada para a nota (a etapa é lida do pipeline).
     if (row.overrideId && !isPreVisita) {
-      const patch: Record<string, unknown> = {
-        situacao: grupo,
-        updated_at: new Date().toISOString(),
-      };
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (result.pipelineLeadId && !row.pipelineLeadId) patch.pipeline_lead_id = result.pipelineLeadId;
       if (result.negocioId && !row.negocioId) patch.negocio_id = result.negocioId;
-      const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
-      if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
+      if (Object.keys(patch).length > 1) {
+        const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
+        if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
+      }
     }
+
     await Promise.all([loadDeals(), loadEntries()]);
   }, [marcarQueda, loadEntries, loadDeals, user?.id]);
 
