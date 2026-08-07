@@ -355,10 +355,15 @@ export default function PdnGestor() {
 
 
 
-      {/* Divergências entre PDN e Negócios (Fase 2) */}
+      {/* Reconciliação PDN x Negócios (Passo 6) — bloco fixo com correção por linha */}
       {!loading && (
         <PdnDivergencias
           rows={divergencias}
+          onCorrigir={async (d) => {
+            const ok = await corrigirDivergencia(d);
+            if (ok) await refreshAll();
+            return ok;
+          }}
           onOpenLead={(leadId) => {
             const r = rows.find(x => x.pipelineLeadId === leadId);
             if (r) setSelectedRow(r);
