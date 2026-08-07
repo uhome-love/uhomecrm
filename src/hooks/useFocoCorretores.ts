@@ -171,6 +171,8 @@ export function useSetAlocacao() {
     onError: (e: any) => {
       const msg = String(e?.message || e);
       if (msg.includes("forbidden")) toast.error("Você não tem permissão para alocar este corretor");
+      else if (msg.includes("invalid empreendimento_id"))
+        toast.error("Algum empreendimento da lista está inativo — remova o chip marcado como (inativo) e salve novamente.");
       else toast.error("Erro ao salvar: " + msg);
     },
   });
