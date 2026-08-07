@@ -173,6 +173,103 @@ serve(async (req) => {
       if (failed.length > 0) console.error("Some reassignments failed:", failed);
     }
 
+    // Helper: descartar a carteira fria do corretor e repassar os leads avançados
+    // (Em Negociação / Contrato / Ganho / com negócio) ao gerente dele.
+    async function descartarCarteira(fromUserId: string, gerenteDestino: string | null) {
+      const nowIso = new Date().toISOString();
+
+      const { data: stages } = await supabase
+        .from("pipeline_stages")
+        .select("id, tipo")
+        .eq("pipeline_tipo", "leads");
+      const descarteStage = (stages || []).find((s: any) => s.tipo === "descarte");
+      if (!descarteStage) throw new Error("Etapa de Descarte não encontrada.");
+      const avancados = new Set(
+        (stages || []).filter((s: any) => ["proposta", "contrato_gerado", "venda"].includes(s.tipo)).map((s: any) => s.id),
+      );
+      const intocaveis = new Set(
+        (stages || []).filter((s: any) => ["descarte", "caiu"].includes(s.tipo)).map((s: any) => s.id),
+      );
+
+      const { data: leads } = await supabase
+        .from("pipeline_leads")
+        .select("id, stage_id, negocio_id")
+        .eq("corretor_id", fromUserId);
+
+      const frios: string[] = [];
+      const quentes: string[] = [];
+      (leads || []).forEach((l: any) => {
+        if (intocaveis.has(l.stage_id)) return;
+        if (l.negocio_id || avancados.has(l.stage_id)) quentes.push(l.id);
+        else frios.push(l.id);
+      });
+
+      const chunk = (arr: string[], n = 200) => {
+        const out: string[][] = [];
+        for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+        return out;
+      };
+
+      // 1) Leads frios → Descarte (reengajável)
+      for (const part of chunk(frios)) {
+        await supabase.from("pipeline_leads").update({
+          stage_id: descarteStage.id,
+          tipo_descarte: "reengajavel",
+          motivo_descarte: "Descartado: Corretor desligado",
+          motivo_descarte_code: "outro",
+          stage_changed_at: nowIso,
+          updated_at: nowIso,
+        }).in("id", part);
+      }
+
+      // 2) Tarefas pendentes dos leads descartados → canceladas
+      let tarefasCanceladas = 0;
+      for (const part of chunk(frios)) {
+        const { count } = await supabase
+          .from("pipeline_tarefas")
+          .update({ status: "cancelada", updated_at: nowIso }, { count: "exact" })
+          .in("pipeline_lead_id", part)
+          .neq("status", "concluida")
+          .neq("status", "cancelada");
+        tarefasCanceladas += count || 0;
+      }
+
+      // 3) Leads avançados + negócios/tarefas/visitas → gerente
+      if (gerenteDestino && quentes.length > 0) {
+        for (const part of chunk(quentes)) {
+          await supabase.from("pipeline_leads")
+            .update({ corretor_id: gerenteDestino, updated_at: nowIso })
+            .in("id", part);
+        }
+        for (const part of chunk(quentes)) {
+          await supabase.from("pipeline_tarefas")
+            .update({ responsavel_id: gerenteDestino, updated_at: nowIso })
+            .in("pipeline_lead_id", part)
+            .neq("status", "concluida");
+        }
+      }
+      if (gerenteDestino) {
+        await reassignData(fromUserId, gerenteDestino, { leads: false, negocios: true, tarefas: true });
+      }
+
+      // 4) Notificar o gerente
+      if (gerenteDestino && quentes.length > 0) {
+        try {
+          await supabase.rpc("criar_notificacao", {
+            p_user_id: gerenteDestino,
+            p_tipo: "info",
+            p_categoria: "sistema",
+            p_titulo: "Leads recebidos por saída de corretor",
+            p_mensagem: `Você recebeu ${quentes.length} lead(s) em etapa avançada e os negócios em aberto de um corretor desligado. ${frios.length} lead(s) frios foram enviados para Descarte.`,
+            p_dados: { origem: "saida_corretor", leads_recebidos: quentes.length, leads_descartados: frios.length },
+            p_agrupamento_key: `saida_corretor:${fromUserId}`,
+          });
+        } catch (e) { console.error("Falha ao notificar gerente:", e); }
+      }
+
+      return { descartados: frios.length, repassados: quentes.length, tarefas_canceladas: tarefasCanceladas };
+    }
+
     // ── LOOKUP BROKER (admin only) ──────────────────────────────────────────
     if (action === "lookup_broker") {
       if (!isAdmin) throw new Error("Apenas administradores podem consultar corretores Jetimob");
