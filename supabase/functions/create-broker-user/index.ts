@@ -617,11 +617,13 @@ serve(async (req) => {
       const { error: deleteError } = await supabase.auth.admin.deleteUser(target_user_id);
       if (deleteError) throw new Error(`Erro ao excluir usuário: ${deleteError.message}`);
 
-      await logAudit("delete_user", target_user_id, null, { reassign_to, absorb_team_to });
+      await logAudit("delete_user", target_user_id, null, { reassign_to, absorb_team_to, lead_destination, descarte: descarteResumo });
 
       return new Response(JSON.stringify({
         success: true,
-        message: "Usuário excluído. Leads, negócios e tarefas foram repassados ao corretor escolhido.",
+        message: descarteResumo
+          ? `Usuário excluído. ${descarteResumo.descartados} lead(s) para Descarte, ${descarteResumo.repassados} lead(s) avançados ao gerente, ${descarteResumo.tarefas_canceladas} tarefa(s) cancelada(s).`
+          : "Usuário excluído. Leads, negócios e tarefas foram repassados ao corretor escolhido.",
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
