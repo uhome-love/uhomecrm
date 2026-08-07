@@ -7427,7 +7427,7 @@ export type Database = {
           mes: string
           motivo_queda: string | null
           negocio_id: string | null
-          nome: string
+          nome: string | null
           objecao_cliente: string | null
           observacoes: string | null
           oculto: boolean
@@ -7469,7 +7469,7 @@ export type Database = {
           mes: string
           motivo_queda?: string | null
           negocio_id?: string | null
-          nome: string
+          nome?: string | null
           objecao_cliente?: string | null
           observacoes?: string | null
           oculto?: boolean
@@ -7511,7 +7511,7 @@ export type Database = {
           mes?: string
           motivo_queda?: string | null
           negocio_id?: string | null
-          nome?: string
+          nome?: string | null
           objecao_cliente?: string | null
           observacoes?: string | null
           oculto?: boolean
@@ -13499,7 +13499,7 @@ export type Database = {
           mes: string
           motivo_queda: string | null
           negocio_id: string | null
-          nome: string
+          nome: string | null
           objecao_cliente: string | null
           observacoes: string | null
           oculto: boolean
