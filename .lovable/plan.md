@@ -1,38 +1,80 @@
-# Lia · Fase 1 — captura, desvio e webhook
+# Lia · Fase 2 — cérebro, travas, sala mínima e conversão
 
-Descrição anterior estava incompleta. Esta substitui e recupera o escopo aprovado.
+Interruptores continuam desligados: `ia_config.enviar_habilitado = false` e `captura_lia` vazia até a bateria de 20 passar.
 
-## Antes de subir: a versão do Evolution
+## Passo 0 — Mídias (antes do cérebro)
 
-O que dá para afirmar pelo código: as funções atuais registram webhook com o payload aninhado `{ webhook: { enabled, url, events } }` em `POST /webhook/set/{instancia}`, que é o formato da linha 2.x do Evolution. O formato antigo (campos planos) não é usado em lugar nenhum do projeto. Isso é indício forte de v2, **não é confirmação da versão exata** — e é a versão exata que decide se `webhook.headers` é honrado.
+Sete imagens já otimizadas, anexadas na conversa.
 
-Por isso o primeiro passo executável da Fase 1, antes de registrar qualquer webhook, é consultar o endpoint de versão do próprio servidor com as credenciais já existentes (`EVOLUTION_API_URL` / `EVOLUTION_API_KEY`) e registrar o resultado. Decisão amarrada ao retorno:
+1. Criar bucket público de Storage `lia-midias`.
+2. Subir os sete arquivos com nome estável (`01-mapa-implantacao.jpg` … `07-aerea-terreno.jpg`).
+3. Cadastrar sete linhas em `ia_midias` (`rotulo`, `url`, `tipo='imagem'`, `gatilho`, `ordem`, `ativo=true`):
 
-- **Suporta header customizado**: header como principal, query string como reserva. Ambos aceitos, qualquer um válido passa.
-- **Não suporta**: query string como principal, header aceito quando vier. Nada de 401 por ausência de header.
+| ordem | rótulo | gatilho |
+|---|---|---|
+| 1 | Mapa da implantação | condomínio, quantas casas, posição das casas |
+| 2 | Club House · piscina | lazer, piscina, família |
+| 3 | Club House · salão de festas | receber gente, festa |
+| 4 | Club House · academia | academia, treino |
+| 5 | Planta 3 dormitórios | 3 dormitórios, tamanho |
+| 6 | Planta 4 dormitórios | 4 dormitórios, tamanho |
+| 7 | Aérea do terreno | onde fica, localização |
 
-Nos dois casos vale a mesma regra final: além do segredo, **checagem do nome da instância** no corpo do evento — só `uhome-lia-canoas` é aceita. Evento de outra instância é descartado com 200, não com 401, para não poluir o retry do Evolution.
+Teto de **3 mídias por conversa** permanece em código (`ia_config.max_midias_conversa`); sete peças cadastradas não viram sete envios. O link do Google Maps é texto e não conta no teto.
 
-## Escopo da Fase 1
+## Passo 1 — Contexto montado por código
 
-1. **Desvio na entrada do lead da campanha.** `receive-meta-lead` e `meta-leads-backfill` passam a consultar `ia_config.captura_lia` antes de gravar. Se `campaign_id` (ou `form_id`) casar com a lista, o lead **não** vai para `pipeline_leads` nem para a roleta: vai para `ia_leads`, já com `meta_lead_id`, `campaign_id` e `form_id` gravados, para não esbarrar na guarda do CAPI depois. Se o `campaign_id` casar mas o `form_id` for desconhecido, grava mesmo assim e emite alerta.
-2. **Checagem de telefone na entrada, três desfechos.** Antes de criar em `ia_leads`:
-   - telefone já existe no pipeline como lead ativo → segue o caminho normal do pipeline, a Lia não assume, registra o motivo;
-   - telefone consta em opt-out (`meta_supressao` por `telefone_last8`, e `base_leads.opt_out_motivo`) → entra em `ia_leads` já com etapa `bloqueado`, sem nenhum envio;
-   - telefone inédito → entra em `ia_leads` na etapa de entrada.
-3. **Poll da Graph API a cada minuto, como rede de segurança.** `lia-cron` consulta os formulários da campanha da Lia por leads recentes e cria o que o webhook do Meta tiver perdido. Idempotente por `meta_lead_id` — reprocessar não duplica.
-4. **`lia-webhook`** — recebe os eventos de mensagem do Evolution da instância `uhome-lia-canoas`, com o esquema de segredo decidido acima, grava em `ia_mensagens` vinculado ao `ia_leads`, e **não escreve nada no pipeline**. Nenhuma chamada ao modelo nesta fase.
-5. **Agendamento do cron pelo cofre**, com segredo próprio `lia_cron_secret` — não reaproveita o do CAPI, para manter raio de dano separado. Nenhuma chave de projeto em texto na definição do job.
-6. **Interruptores como fecharam a Fase 0**: kill switch geral ativo, `enviar_habilitado = false`, `captura_lia` com as listas **vazias**. Com as listas vazias, o desvio existe no código mas não desvia nada — o comportamento de hoje continua idêntico até alguém preencher.
+`lia-brain` monta o contexto (nunca o modelo): dados do `ia_leads`, últimas N mensagens de `ia_mensagens`, `ia_perfil_busca`, `ia_apresentacoes` em aberto, mídias já enviadas, hora BRT e janelas vigentes. O modelo recebe apenas esse bloco + prompt.
 
-## O portão
+## Passo 2 — Prompt do arquivo com verificação de hash
 
-A Fase 1 sobe hoje e **não fecha hoje**. O fechamento é o teste de fumaça com o chip novo e dedicado conectado na instância `uhome-lia-canoas`: mensagem real entra, aparece em `ia_mensagens` com o vínculo certo, nada sai, e um lead de teste da campanha cai em `ia_leads` em vez de na roleta. Sem o número, `captura_lia` fica vazia.
+Lê `prompt/lia-canoas-v3.1.txt` em bytes crus, calcula SHA-256 e compara com `ia_prompt_versoes`. Divergência → registra `ops_events` e **não envia** (bloqueio duro, não aviso).
 
-## Backlog de segurança (sweep separado)
+## Passo 3 — Debounce com teto e lock por lead
 
-`edge-health-alert-1h` não tem nenhuma checagem além do gateway — confirmado no código, o próprio cabeçalho diz `verify_jwt=false, sem validação custom`. Classificação: execução não autorizada. Entra no sweep junto com os demais crons HTTP no mesmo padrão.
+Agrupa mensagens em rajada: espera `debounce_segundos`, com corte em `debounce_teto_segundos`. Lock por `ia_lead_id` (advisory lock) garante um turno por vez; mensagem que chega durante o turno entra na próxima rodada.
 
-## Depois da Fase 1
+## Passo 4 — Travas depois do modelo, antes do envio
 
-Escolher o modelo, subir as quatro peças de mídia e rodar a bateria de 20 para gravar a linha de base — itens 16 a 18 são gate duro. Só então a Lia atende em modo sombra.
+Ordem fixa, todas após a resposta do modelo:
+1. Kill switch global (`enviar_habilitado`) e modo sombra.
+2. Lead `pausado` / `assumido_por` / `opt_out` / etapa `bloqueado`.
+3. Janela de envio (08h–23h59 BRT) e janela de agenda (10h–20h).
+4. Teto de mensagens por turno e teto de 3 mídias por conversa.
+5. Linhas vermelhas: nunca negar ser IA de forma enganosa, nunca pedir documento/CPF, respeitar opt-out.
+6. Idempotência por `idempotency_key` em `ia_mensagens`.
+
+Qualquer trava reprovada: grava `ia_eventos` com motivo e não envia.
+
+## Passo 5 — Validação de `etapa_ia`
+
+Saída do modelo validada com `isEtapaIaEmissivel` (seis valores de `etapas.ts`). Valor fora da lista → etapa ignorada, lead permanece na etapa atual, evento registrado.
+
+## Passo 6 — Sala ao vivo mínima (modo sombra)
+
+Aba nova em `/admin/lia`: lista de conversas com etapa, última mensagem, e o painel de turno mostrando o que a Lia **teria enviado** (texto, mídias escolhidas, etapa proposta) com o motivo de cada trava aplicada. Botões: pausar lead, assumir lead.
+
+## Passo 7 — Conversão de volta ao Meta
+
+- `LeadQualificado` no **aceite da apresentação** (`ia_apresentacoes.aceite_em`).
+- `VisitaMarcada` na **confirmação da data** (`confirmada_em`).
+- Enfileira por `enqueue_meta_capi_event` com `meta_lead_id` do `ia_leads` (por isso ele é gravado desde a Fase 0); idempotência por par `(lead_id, event_name)`.
+
+## Passo 8 — Bateria de 20 (correção de sequência)
+
+A bateria **roda ao final da Fase 2**, não antes: sem cérebro não há o que medir. Essa primeira execução é a **linha de base** para toda mudança de prompt seguinte.
+
+Escolha do modelo por medição:
+1. Bateria completa com `google/gemini-3.6-flash` (valor atual em `ia_config.lia_model`).
+2. Mesma bateria com um modelo de faixa acima.
+3. Comparação item a item devolvida a você. Troca de modelo é update em `ia_config`, sem deploy.
+
+Portões: itens **16, 17 e 18** (robô / documento-CPF / opt-out) são portão duro nos dois modelos — qualquer falha bloqueia. Itens 1–15, 19 e 20: mínimo 15/17.
+
+Só após a bateria passar é que os interruptores são ligados.
+
+## Notas técnicas
+
+- Sem migration nova prevista, exceto criação do bucket e inserts em `ia_midias` (dados, não schema).
+- Nenhuma escrita em `pipeline_leads` nesta fase — a caixa `ia_*` segue isolada.
+- Timezone BRT em todas as janelas e carimbos.
