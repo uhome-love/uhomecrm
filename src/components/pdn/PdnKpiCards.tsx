@@ -23,7 +23,7 @@ export function PdnKpiCards({
 }) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-      <SummaryCard label="VGV Total" value={fmtMoney(resumo.vgvTotal, "short")} accent="text-foreground" icon={<Wallet className="h-4 w-4" />} active={kpiFilter === null} onClick={() => onToggle(null)} />
+      <SummaryCard label="VGV Negociação+" value={fmtMoney(resumo.vgvTotal, "short")} sub="sem Pós-Visita" accent="text-foreground" icon={<Wallet className="h-4 w-4" />} active={kpiFilter === null} onClick={() => onToggle(null)} />
       <SummaryCard label="Ganhos" value={fmtMoney(resumo.byGrupo.ganho.vgv, "short")} sub={`${resumo.byGrupo.ganho.count} negócios`} accent="text-emerald-500" icon={<FileSignature className="h-4 w-4" />} active={kpiFilter === "ganho"} onClick={() => onToggle("ganho")} />
       <SummaryCard label="Contrato" value={fmtMoney(resumo.byGrupo.contrato.vgv, "short")} sub={`${resumo.byGrupo.contrato.count} contratos`} accent="text-cyan-500" active={kpiFilter === "contrato"} onClick={() => onToggle("contrato")} />
       <SummaryCard label="Forecast ponderado" value={fmtMoney(resumo.forecast, "short")} accent="text-primary" icon={<TrendingUp className="h-4 w-4" />} active={kpiFilter === "negociacao"} onClick={() => onToggle("negociacao")} />
