@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PDN_GRUPOS, type PdnGrupo, type PdnRow } from "@/hooks/usePdn";
@@ -8,8 +7,6 @@ import { Undo2, TrendingDown, RotateCcw, Trash2 } from "lucide-react";
 
 interface Props {
   row: PdnRow;
-  riscoManual: boolean; setRiscoManual: (v: boolean) => void;
-  riscoMotivo: string; setRiscoMotivo: (v: string) => void;
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onLimparEtapa: (row: PdnRow) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
@@ -25,7 +22,7 @@ interface Props {
  * quando o gestor publica uma observação ou muda a etapa.
  */
 export function PdnTabEtapa({
-  row, riscoManual, setRiscoManual, riscoMotivo, setRiscoMotivo,
+  row,
   onMudarEtapa, onLimparEtapa, onQueda, onReativar, onRemove, onClose,
 }: Props) {
   return (
@@ -42,16 +39,6 @@ export function PdnTabEtapa({
           </SelectContent>
         </Select>
         <p className="text-[11px] text-muted-foreground">Mudar a etapa aqui move o lead no pipeline real e avisa o corretor.</p>
-      </div>
-
-      <div className="rounded-lg border p-3">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" checked={riscoManual} onChange={(e) => setRiscoManual(e.target.checked)} className="h-4 w-4" />
-          Marcar em risco
-        </label>
-        {riscoManual && (
-          <Textarea value={riscoMotivo} onChange={(e) => setRiscoMotivo(e.target.value)} className="mt-2 min-h-[60px]" placeholder="Motivo do risco…" />
-        )}
       </div>
 
       {row.caiu ? (
