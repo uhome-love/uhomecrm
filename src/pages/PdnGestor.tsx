@@ -323,6 +323,7 @@ export default function PdnGestor() {
         refreshing={refreshing}
         onRefresh={handleRefresh}
         onExport={exportCSV}
+        isMobile={isMobile}
       />
 
       {view !== "meta" && (
