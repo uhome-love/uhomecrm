@@ -445,6 +445,8 @@ Deno.serve(async (req) => {
     let totalLeads = 0;
     let reprocessed = 0;
     let skipped = 0;
+    let liaCapturados = 0;
+
     let formErrors = 0;   // formulários antigos/inacessíveis (não são leads perdidos)
     let leadErrors = 0;   // leads que o receive-meta-lead recusou (precisa investigar)
     const leadErrorSamples: { form: string; lead_id: string; status: number; body: string }[] = [];
