@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       const { data: dup } = await supabase
         .from("ia_mensagens")
         .select("id")
-        .eq("external_id", externalId)
+        .eq("evolution_message_id", externalId)
         .maybeSingle();
       if (dup) return json({ ok: true, ignored: "duplicada", ia_mensagem_id: dup.id });
     }
@@ -152,12 +152,13 @@ Deno.serve(async (req) => {
       .from("ia_mensagens")
       .insert({
         ia_lead_id: iaLead.id,
-        direcao: fromMe ? "saida" : "entrada",
+        direcao: fromMe ? "out" : "in",
         conteudo: texto,
-        tipo_midia: tipo,
-        external_id: externalId,
+        tipo: tipo || "texto",
+        evolution_message_id: externalId,
+        idempotency_key: externalId ? `evo:${externalId}` : null,
         autor: fromMe ? "humano" : "lead",
-        payload_bruto: payload,
+        timestamp_origem: new Date().toISOString(),
       })
       .select("id")
       .single();
