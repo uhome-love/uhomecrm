@@ -8,6 +8,8 @@ export interface CapiSaude {
   eventos24h: { event_name: string; total: number }[];
   bloqueios24h: { total: number; recentesMeta: number };
   ultimoEvento: string | null;
+  venda7d: { ganhosTotal: number; ganhosElegiveis: number; eventos: number; semEvento: number };
+  selftest: { resultado: "passou" | "falhou" | "nao_aplicavel" | null; em: string | null };
 }
 
 /** Saúde do rastreamento de conversão (Meta CAPI) — janelas fixas: 7d cobertura, 24h eventos. */
@@ -20,7 +22,7 @@ export function useCapiSaude(paused = false) {
       const corte7d = new Date(agora - 7 * 24 * 3600_000).toISOString();
       const corte24h = new Date(agora - 24 * 3600_000).toISOString();
 
-      const [leadsRes, eventosRes, bloqueiosRes] = await Promise.all([
+      const [leadsRes, eventosRes, bloqueiosRes, coberturaRes, selftestRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
           .select("meta_lead_id,origem")
@@ -38,6 +40,13 @@ export function useCapiSaude(paused = false) {
           .eq("category", "capi_bloqueado_sem_lead_id")
           .gte("created_at", corte24h)
           .limit(2000),
+        supabase.rpc("capi_venda_cobertura_7d"),
+        supabase
+          .from("ops_events")
+          .select("ctx,created_at")
+          .eq("fn", "capi_guarda_selftest")
+          .order("created_at", { ascending: false })
+          .limit(1),
       ]);
 
       const leadsMeta = (leadsRes.data ?? []).filter((l) => {
@@ -53,7 +62,11 @@ export function useCapiSaude(paused = false) {
         porEvento.set(e.event_name, (porEvento.get(e.event_name) ?? 0) + 1);
       }
 
-      const bloqueios = bloqueiosRes.data ?? [];
+      // Linhas sintéticas do autoteste ficam fora de todos os contadores.
+      const bloqueios = (bloqueiosRes.data ?? []).filter((b) => {
+        const ctx = (b.ctx ?? {}) as Record<string, unknown>;
+        return String(ctx.selftest ?? "") !== "true";
+      });
       const recentesMeta = bloqueios.filter((b) => {
         const ctx = (b.ctx ?? {}) as Record<string, unknown>;
         const origem = String(ctx.origem ?? "").toLowerCase();
@@ -63,6 +76,10 @@ export function useCapiSaude(paused = false) {
         const ehMeta = ORIGENS_META.some((m) => origem === m || origem.includes(m));
         return ehMeta && criado > agora - 7 * 24 * 3600_000;
       }).length;
+
+      const cob = (coberturaRes.data ?? {}) as Record<string, unknown>;
+      const selfRow = selftestRes.data?.[0];
+      const selfCtx = (selfRow?.ctx ?? {}) as Record<string, unknown>;
 
       return {
         coberturaMeta: {
@@ -75,7 +92,18 @@ export function useCapiSaude(paused = false) {
           .sort((a, b) => b.total - a.total),
         bloqueios24h: { total: bloqueios.length, recentesMeta },
         ultimoEvento: eventosRes.data?.[0]?.created_at ?? null,
+        venda7d: {
+          ganhosTotal: Number(cob.ganhos_total ?? 0),
+          ganhosElegiveis: Number(cob.ganhos_elegiveis ?? 0),
+          eventos: Number(cob.eventos_venda_7d ?? 0),
+          semEvento: Array.isArray(cob.sem_evento) ? (cob.sem_evento as unknown[]).length : 0,
+        },
+        selftest: {
+          resultado: (selfCtx.resultado as CapiSaude["selftest"]["resultado"]) ?? null,
+          em: selfRow?.created_at ?? null,
+        },
       };
     },
   });
 }
+
