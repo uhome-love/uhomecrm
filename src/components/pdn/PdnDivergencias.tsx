@@ -64,6 +64,14 @@ export function PdnDivergencias({ rows, onOpenLead, onCorrigir }: Props) {
           {GRUPOS.map(g => {
             const list = byTipo[g.tipo] || [];
             if (list.length === 0) return null;
+            // Sem ação automática possível: fica como aviso discreto de uma linha.
+            if (g.tipo === "negocio_sem_lead") {
+              return (
+                <p key={g.tipo} className="text-[11px] text-muted-foreground">
+                  {list.length} {g.label.toLowerCase()} — {g.hint}
+                </p>
+              );
+            }
             return (
               <div key={g.tipo}>
                 <div className="mb-1 text-xs font-semibold text-foreground">
