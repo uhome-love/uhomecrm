@@ -13,7 +13,7 @@
  * Quatro desfechos da checagem de telefone:
  *   1. dono_ativo            → card bloqueado + avisa o dono + segue no pipeline
  *   2. opt_out               → card bloqueado, nenhum envio, não vai ao pipeline
- *   3. descartado_liberado   → Lia atende (telefone só em Descarte/Inativo/arquivado)
+ *   3. descartado_liberado   → Lia atende (telefone só em Descarte/Caiu/arquivado)
  *   4. inedito               → Lia atende
  *
  * Nada aqui envia mensagem. Envio depende de ia_config.enviar_habilitado.
@@ -136,7 +136,7 @@ async function checarTelefone(
   // (b) Telefone no pipeline?
   const { data: leads } = await admin
     .from("pipeline_leads")
-    .select("id, nome, corretor_id, stage_id, arquivado, inativo")
+    .select("id, nome, corretor_id, stage_id, arquivado")
     .eq("telefone", telefone)
     .order("created_at", { ascending: false })
     .limit(5);
@@ -148,7 +148,6 @@ async function checarTelefone(
 
   const isFechado = (r: Record<string, unknown>) =>
     r.arquivado === true ||
-    r.inativo === true ||
     r.stage_id === DESCARTE_STAGE_ID ||
     r.stage_id === CAIU_STAGE_ID;
 
@@ -164,7 +163,7 @@ async function checarTelefone(
     };
   }
 
-  // Só existe em Descarte / Caiu / Inativo / arquivado → a Lia atende.
+  // Só existe em Descarte / Caiu / arquivado → a Lia atende.
   return {
     resultado: "descartado_liberado",
     detalhe: { pipeline_lead_id: rows[0].id, telefone_last8: l8 },
