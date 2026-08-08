@@ -64,9 +64,41 @@ Caixa isolada, dono único, sem escrever no pipeline dos corretores. Passagem pa
 
 ---
 
+## Parte 3c — Levantamento dos IDs da campanha (08/08, só leitura)
+
+Tudo abaixo veio de leitura na Graph API e no banco. Nada foi alterado.
+
+- **Campanha** `120250952101260030` = "Casa Tua Canoas - Lia", objetivo `OUTCOME_LEADS`, **ACTIVE**, criada 08/08/2026 11:35 BRT.
+- **Página**: `114448536946480` (UHome). Veio do `promoted_object` do conjunto `120250952101340030` (que também aponta o pixel `1426170849536314`, evento `SCHEDULE`).
+- **Formulário**: `2244706092956252` — "Uhome - Casa Tua Canoas - Pré-lançamento-insta-LIA", **ACTIVE**, criado **08/08/2026 11:36 BRT**, `leads_count = 0`, página UHome. Campos: nome completo, telefone, e-mail. Confere com o que você descreveu.
+- **Permissão**: o token do `receive-meta-lead` tem **`leads_retrieval` concedida**, e a leitura real funcionou — `GET /2244706092956252/leads` retornou `{"data": []}` (vazio porque ainda não há lead), **não** erro de permissão. Também tem token de página para a UHome, que é o que a listagem de formulários exige.
+- **`roleta_campanhas`**: a campanha **não está lá**. Essa tabela nem casa por ID — as colunas são `empreendimento` (texto), `segmento_id`, `ativo`, `ignorar_segmento`, e a única linha relacionada é `empreendimento = 'Casa Tua'` (ativo, sem segmento). Nada foi removido.
+
+**Achado que reforça a sua regra**: a campanha da Lia tem **vários conjuntos** (`...290030`, `...340030`, `...350030`) e **todos os anúncios apontam para o mesmo formulário** `2244706092956252` hoje. Basta um criativo novo para nascer um segundo formulário dentro da mesma campanha — exatamente o caso que o casamento só por `form_id` deixaria escapar.
+
+### O que isso vira na Fase 0
+
+`ia_config.captura_lia` (jsonb), com duas listas:
+
+```text
+campaign_ids: ["120250952101260030"]
+form_ids:     ["2244706092956252"]
+```
+
+Regras da captura, aplicadas em `receive-meta-lead` e `meta-leads-backfill`:
+
+1. Casa por **`campaign_id` OU `form_id`** — nunca só por formulário.
+2. **Alerta obrigatório**: `form_id` desconhecido cujo `campaign_id` está na lista da Lia **não é tratado como lead comum** — vai para a caixa da Lia, registra `ia_eventos` + `ops_events` e dispara aviso ao CEO, porque é o sinal de que criativo novo criou formulário novo e a lista precisa ser atualizada.
+3. **A campanha da Lia não entra em `roleta_campanhas`.** Cadastrar ali é o erro que manda o lead direto para corretor sem passar pela mesa de decisão. Fica registrado como proibição do plano.
+4. **Enquanto as duas listas estiverem vazias, o comportamento do sistema é idêntico ao de hoje.** Elas só são preenchidas depois do teste de fumaça da Fase 1.
+
+---
+
 ## Parte 4 — Fases
 
-**Fase 0 · Fundação (1 migration).** `ia_leads` (com `pausado`, `assumido_por`), `ia_mensagens` (com `idempotency_key` única), `ia_eventos`, `ia_followups`, `ia_perfil_busca`, `ia_apresentacoes`, `ia_midias`, `ia_config` (linha única), `ia_prompt_versoes`. Enum próprio de etapa (`entrada, bloqueado, atendendo, sem_resposta, qualificado, perfil_busca, nutricao, desqualificado, migrado`). GRANT + RLS restrita a `admin` e `service_role`. `ia_config` já nasce com: kill switch `enviar_habilitado=false`, `debounce_segundos`, segredo do webhook, `form_ids_lia` vazio, agenda, canal de notificação. Junto: alerta de ingestão com as duas condições, e o prompt versionado em `supabase/functions/lia-brain/prompt/`.
+**Fase 0 · Fundação (1 migration).** `ia_leads` (com `pausado`, `assumido_por`), `ia_mensagens` (com `idempotency_key` única), `ia_eventos`, `ia_followups`, `ia_perfil_busca`, `ia_apresentacoes`, `ia_midias`, `ia_config` (linha única), `ia_prompt_versoes`. Enum próprio de etapa (`entrada, bloqueado, atendendo, sem_resposta, qualificado, perfil_busca, nutricao, desqualificado, migrado`). GRANT + RLS restrita a `admin` e `service_role`. `ia_config` já nasce com: kill switch `enviar_habilitado=false`, `debounce_segundos`, segredo do webhook, **`captura_lia` com as duas listas vazias** (os IDs da Parte 3c entram como dado, não como migration), agenda, canal de notificação. Junto: alerta de ingestão com as duas condições, e o prompt versionado em `supabase/functions/lia-brain/prompt/`.
+
+
 
 **Fase 1 · Entrada e caixa.** `lia-webhook` autenticado (query + instância + header quando houver), `lia-cron` de minuto, desvio em `receive-meta-lead` e `meta-leads-backfill` por `ia_config.form_ids_lia` (lista vazia = comportamento idêntico ao de hoje). Checagem de telefone na entrada. **Portão: teste de fumaça manual antes de qualquer form_id entrar.** Testes com inserção manual em `ia_leads`.
 
