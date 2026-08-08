@@ -18,6 +18,8 @@ import { KpiCardsReceive } from "@/components/admin/ingestao/KpiCardsReceive";
 import { DestinoLeadsCard } from "@/components/admin/ingestao/DestinoLeadsCard";
 import { AlertasSidebar } from "@/components/admin/ingestao/AlertasSidebar";
 import { EventosRecentesTable } from "@/components/admin/ingestao/EventosRecentesTable";
+import { CapiSaudeCard } from "@/components/admin/ingestao/CapiSaudeCard";
+import { useCapiSaude } from "@/hooks/useCapiSaude";
 
 export default function IngestaoPanel() {
   const { isAdmin, loading: roleLoading } = useUserRole();
@@ -33,6 +35,7 @@ export default function IngestaoPanel() {
   const eventos = useEventosRecentes(periodo, paused);
   const edgeStats = useIngestaoEdgeStats(periodo, paused);
   const alertasSaude = useEdgeHealthAlertasAtivos(paused);
+  const capiSaude = useCapiSaude(paused);
 
   useEffect(() => {
     if (kpis.dataUpdatedAt) setLastUpdate(new Date(kpis.dataUpdatedAt));
@@ -83,6 +86,8 @@ export default function IngestaoPanel() {
           alertasSaudeLoading={alertasSaude.isLoading}
         />
       </div>
+
+      <CapiSaudeCard data={capiSaude.data} loading={capiSaude.isLoading} />
 
       <EventosRecentesTable rows={eventos.data} loading={eventos.isLoading} />
     </div>
