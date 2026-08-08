@@ -236,17 +236,44 @@ async function acaoTurno(supabase: SupabaseClient, iaLeadId: string) {
     .limit(1)
     .maybeSingle();
 
-  const entradas = ctx.historico.filter((m) => m.direcao === "in");
-  const pendentes = entradas.filter(
+  let entradas = ctx.historico.filter((m) => m.direcao === "in");
+  let pendentes = entradas.filter(
     (m) => !ultimoTurno || new Date(m.created_at) > new Date(ultimoTurno.created_at),
   );
   if (pendentes.length === 0) return json({ ok: true, status: "sem_mensagem_nova" });
 
-  const idadeSeg = (Date.now() - new Date(pendentes[pendentes.length - 1].created_at).getTime()) / 1000;
-  const esperaTotal = (Date.now() - new Date(pendentes[0].created_at).getTime()) / 1000;
-  if (idadeSeg < (cfg.debounce_segundos ?? 12) && esperaTotal < (cfg.debounce_teto_segundos ?? 45)) {
-    return json({ ok: true, status: "aguardando_debounce", idade_seg: Math.round(idadeSeg) });
+  const debounceSeg = cfg.debounce_segundos ?? 12;
+  const tetoSeg = cfg.debounce_teto_segundos ?? 45;
+  const corte = pendentes[0].created_at;
+
+  // Espera o silêncio aqui mesmo, com corte no teto. Devolver "aguardando" e
+  // torcer por outra chamada deixaria o cliente sem resposta quando ele manda
+  // uma mensagem só.
+  for (;;) {
+    const idadeSeg = (Date.now() - new Date(pendentes[pendentes.length - 1].created_at).getTime()) / 1000;
+    const esperaTotal = (Date.now() - new Date(corte).getTime()) / 1000;
+    if (idadeSeg >= debounceSeg || esperaTotal >= tetoSeg) break;
+    await new Promise((r) => setTimeout(r, 2000));
+    const { data: novas } = await supabase
+      .from("ia_mensagens")
+      .select("direcao, autor, conteudo, tipo, created_at")
+      .eq("ia_lead_id", iaLeadId)
+      .eq("direcao", "in")
+      .gte("created_at", corte)
+      .order("created_at", { ascending: true });
+    if (novas && novas.length > 0) {
+      pendentes = novas;
+      entradas = novas;
+    }
   }
+
+  // Recarrega a conversa: a rajada pode ter crescido durante a espera.
+  const ctxFinal = await montarContexto(supabase, iaLeadId);
+  ctx.historico = ctxFinal.historico;
+  ctx.enviadas = ctxFinal.enviadas;
+  ctx.midiasEnviadas = ctxFinal.midiasEnviadas;
+  void entradas;
+
 
 
   // Lock por lead (compare-and-swap em updated_at): dois turnos ao mesmo tempo
