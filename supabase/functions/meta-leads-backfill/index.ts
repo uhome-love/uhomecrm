@@ -545,7 +545,9 @@ Deno.serve(async (req) => {
       timed_out: timedOut,
       total_leads_found: totalLeads,
       reprocessed,
+      lia_capturados: liaCapturados,
       skipped_dedup: skipped,
+
       // form_errors: formulários antigos/sem acesso no Meta — esperado, NÃO são leads perdidos.
       form_errors: formErrors,
       // lead_errors: leads recusados pelo receive-meta-lead — investigar via lead_error_samples.
