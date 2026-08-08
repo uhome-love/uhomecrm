@@ -19,13 +19,11 @@ import { PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { PdnRegredirDialog } from "@/components/pdn/PdnRegredirDialog";
-import { ConferenciaVisitasMes } from "@/components/pdn/ConferenciaVisitasMes";
 import { PdnDivergencias } from "@/components/pdn/PdnDivergencias";
 import { usePdnDivergencias } from "@/hooks/pdn/usePdnDivergencias";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
 import { GrupoBloco } from "@/components/pdn/planilha/PdnGrupoBloco";
-import { ArquivadosView } from "@/components/pdn/PdnArquivados";
 import type { SortKey } from "@/components/pdn/planilha/constants";
 
 
@@ -51,6 +49,8 @@ export default function PdnGestor() {
   const [mes, setMes] = useState(monthOptions[0].value);
   const [filtroRisco, setFiltroRisco] = useState(false);
   const [filtroNovos, setFiltroNovos] = useState(false);
+  // Caídos do mês ficam ocultos por padrão (antiga aba "Arquivados" virou filtro).
+  const [mostrarCaidos, setMostrarCaidos] = useState(false);
   const [filtroCorretor, setFiltroCorretor] = useState<string>("todos");
   const [filtroEquipe, setFiltroEquipe] = useState<string>("todas");
   const [sortKey, setSortKey] = useState<SortKey>("data");
@@ -72,13 +72,16 @@ export default function PdnGestor() {
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       const key = `pdn:view:${isMob ? "mobile" : "desktop"}`;
       const saved = sessionStorage.getItem(key) as PdnView | null;
-      return saved ?? (isMob ? "kanban" : "planilha");
+      const valid: PdnView[] = isMob ? ["planilha", "kanban", "meta"] : ["planilha", "meta"];
+      return saved && valid.includes(saved) ? saved : (isMob ? "kanban" : "planilha");
     } catch { return "planilha"; }
   });
 
   const { isDiretor, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
   useEffect(() => {
+    // Kanban é visão mobile: no desktop volta para a planilha.
+    if (!isMobile && view === "kanban") { setView("planilha"); return; }
     try { sessionStorage.setItem(`pdn:view:${isMobile ? "mobile" : "desktop"}`, view); } catch { /* ignore */ }
   }, [view, isMobile]);
   const { rows, scopeAuthIds, resumo, duplicados, loading, refreshAll, saveOverride, saveNegocioCampos, marcarQueda, mudarEtapa, avisarCorretor, descartarLead, inativarLead } = usePdn(mes);
@@ -194,6 +197,7 @@ export default function PdnGestor() {
       if (filtroEquipe !== "todas" && r.equipe !== filtroEquipe) return false;
       if (filtroCorretor !== "todos" && r.corretor !== filtroCorretor) return false;
       if (kpiFilter === "risco" && !r.emRisco) return false;
+      if (r.grupo === "caidos" && !mostrarCaidos) return false;
       return true;
     });
     const dir = sortDir === "asc" ? 1 : -1;
@@ -210,7 +214,7 @@ export default function PdnGestor() {
       return av > bv ? dir : -dir;
     });
     return list;
-  }, [rows, filtroRisco, filtroNovos, filtroEquipe, filtroCorretor, kpiFilter, sortKey, sortDir]);
+  }, [rows, filtroRisco, filtroNovos, filtroEquipe, filtroCorretor, kpiFilter, sortKey, sortDir, mostrarCaidos]);
 
   // Grupos visíveis conforme filtro de KPI
   const gruposVisiveis = useMemo<PdnGrupo[]>(() => {
@@ -237,7 +241,7 @@ export default function PdnGestor() {
     URL.revokeObjectURL(url);
   }
 
-  const handleSave = (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv">>) => {
+  const handleSave = (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "empreendimento" | "vgv">>) => {
     // saveOverride grava em pdn_entries por overrideId (manual) ou cria overlay (pipeline).
     saveOverride(row, patch);
   };
@@ -321,12 +325,12 @@ export default function PdnGestor() {
         onExport={exportCSV}
       />
 
-      {view !== "meta" && view !== "visitas" && (
+      {view !== "meta" && (
         <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
       )}
 
       {/* Toolbar unificada — só faz sentido em Planilha/Kanban (não em Meta/Visitas) */}
-      {view !== "meta" && view !== "visitas" && (
+      {view !== "meta" && (
         <PdnToolbar
           filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
           setFilters={(patch) => {
@@ -344,7 +348,8 @@ export default function PdnGestor() {
           kpiFilter={kpiFilter}
           onClearKpi={() => setKpiFilter(null)}
           caidosCount={rows.filter(r => r.grupo === "caidos").length}
-          onOpenArquivados={() => setView("arquivados")}
+          caidosAtivo={mostrarCaidos}
+          onOpenArquivados={() => setMostrarCaidos(v => !v)}
           view={view}
           showResetLarguras={!isMobile && colsCustomized}
           onResetLarguras={resetColWidths}
@@ -403,18 +408,6 @@ export default function PdnGestor() {
         </div>
       ) : view === "meta" ? (
         <PdnMetaMes mes={mes} rows={rows} />
-      ) : view === "visitas" ? (
-        <ConferenciaVisitasMes mes={mes} onOpenLead={(leadId) => {
-          const r = rows.find(x => x.pipelineLeadId === leadId);
-          if (r) setSelectedRow(r);
-        }} />
-      ) : view === "arquivados" ? (
-        <ArquivadosView
-          caidosRows={rows.filter(r => r.grupo === "caidos")}
-          onRestaurar={reativarQueda}
-          onReativar={reativarQueda}
-          onOpen={setSelectedRow}
-        />
       ) : view === "kanban" ? (
         <PdnKanban
           rows={filtered}
