@@ -15,6 +15,8 @@ import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
 import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
 import { parseFormRespostas, formatFormRespostas } from "../_shared/formRespostas.ts";
+import { capturarLeadLia } from "../_shared/liaCapture.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
