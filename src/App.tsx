@@ -65,6 +65,7 @@ const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"))
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
 const IngestaoPanel = lazyRetry(() => import("./pages/admin/IngestaoPanel"));
 const UsoPaginasPanel = lazyRetry(() => import("./pages/admin/UsoPaginasPanel"));
+const LiaConexao = lazyRetry(() => import("./pages/admin/LiaConexao"));
 
 
 const queryClient = new QueryClient({
@@ -113,6 +114,7 @@ const App = () => (
               <Route path="/ceo/telemetria-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/admin/ingestao" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/admin/uso-paginas" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><UsoPaginasPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
+              <Route path="/admin/lia" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><LiaConexao /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
 
 
               {/* Redirects */}
