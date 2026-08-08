@@ -94,15 +94,45 @@ Regras da captura, aplicadas em `receive-meta-lead` e `meta-leads-backfill`:
 
 ---
 
+## Parte 3d — As três verificações (08/08, só leitura)
+
+**1. Como `roleta_campanhas` casa — é `ILIKE` com curinga dos dois lados, mas na direção que te protege.**
+O código (`receive-meta-lead`, linhas 446, 476 e 775) faz `.ilike("empreendimento", "%" + textoDoLead + "%")`, ou seja: **a coluna da tabela é comparada contra o texto do lead como padrão**. A linha ativa tem `empreendimento = 'Casa Tua'`; o lead da Lia chega como "Casa Tua Canoas - Lia" (ou o nome do formulário). `'Casa Tua' ILIKE '%Casa Tua Canoas - Lia%'` é **falso** — a coluna teria que conter o texto do lead, e não o contrário. Então **hoje não há colisão**: a campanha da Lia não casa com a linha 'Casa Tua'.
+
+Mas você está certo no princípio, por dois motivos: (a) é `contém`, e basta alguém cadastrar amanhã uma linha `'Casa Tua Canoas - Lia'` ou `'Casa Tua Canoas'` para o casamento acontecer em silêncio; (b) a separação estaria dependendo de uma camada só. **Aceito a segunda camada e ela entra na Fase 0**: lista `captura_lia.campaign_ids` é consultada **antes** de qualquer resolução de empreendimento/segmento — se o `campaign_id` do lead está lá, o fluxo desvia para a caixa da Lia e **nunca chega** em `roleta_campanhas`, `jetimob_campaign_map` ou `distribuir_lead_atomico`. Exclusão explícita por ID, não por texto.
+
+**2. Otimização dos conjuntos — são cinco, não três, e o cenário é pior do que você supôs.**
+
+```text
+conjunto              nome                        optimization_goal  billing_event  evento do pixel
+120250952101350030    Fuga do Aluguel             QUALITY_LEAD       IMPRESSIONS    SCHEDULE      (PAUSED)
+120250952101340030    Remarketing                 QUALITY_LEAD       IMPRESSIONS    SCHEDULE      (ACTIVE)
+120250952101330030    Familia buscando casa.      QUALITY_LEAD       IMPRESSIONS    OTHER / LeadQualificado (ACTIVE)
+120250952101320030    Looklike - Leads Moradia 1% QUALITY_LEAD       IMPRESSIONS    OTHER / LeadQualificado (ACTIVE)
+120250952101290030    Semelhante 1%               QUALITY_LEAD       IMPRESSIONS    OTHER / LeadQualificado (ACTIVE)
+```
+
+Todos com `pixel_id = 1426170849536314`, `page_id = 114448536946480`, `lead_ads_form_event_source_type = onsite_crm_single_event`, `destination_type = ON_AD`.
+
+Leitura: **todos otimizam por `QUALITY_LEAD`**, isto é, o Meta aprende com um evento de conversão vindo do CRM, não com o volume de formulários preenchidos. Dois conjuntos esperam **`Schedule`** e três esperam o evento personalizado **`LeadQualificado`**. Sua conclusão se confirma e vai além: **enquanto a caixa da Lia não devolver conversão, cinco conjuntos entregam no escuro** — e o mais crítico é que o evento certo depende do conjunto, então mandar só um dos dois deixa metade da campanha sem sinal.
+
+Portanto, **o envio de conversão sai da Fase 5 e vira requisito da Fase 2**: no momento em que a Lia marca a apresentação, a caixa dispara **`Schedule`**; no momento em que ela classifica o lead como qualificado, dispara **`LeadQualificado`**. Os dois com `lead_id` do Meta (match perfeito, sem depender de hash), pelo mesmo caminho CAPI que já existe (dataset `1426170849536314`, `event_time = now()`, janela de 7 dias). Isso é escrita **para fora** do CRM, não no pipeline dos corretores, então não conflita com o isolamento da caixa.
+
+**3. Nome da chave padronizado.** `ia_config.captura_lia` agora é o nome único, corrigido na Fase 1 e nas Decisões travadas. `form_ids_lia` não existe mais no plano.
+
+---
+
 ## Parte 4 — Fases
+
+
 
 **Fase 0 · Fundação (1 migration).** `ia_leads` (com `pausado`, `assumido_por`), `ia_mensagens` (com `idempotency_key` única), `ia_eventos`, `ia_followups`, `ia_perfil_busca`, `ia_apresentacoes`, `ia_midias`, `ia_config` (linha única), `ia_prompt_versoes`. Enum próprio de etapa (`entrada, bloqueado, atendendo, sem_resposta, qualificado, perfil_busca, nutricao, desqualificado, migrado`). GRANT + RLS restrita a `admin` e `service_role`. `ia_config` já nasce com: kill switch `enviar_habilitado=false`, `debounce_segundos`, segredo do webhook, **`captura_lia` com as duas listas vazias** (os IDs da Parte 3c entram como dado, não como migration), agenda, canal de notificação. Junto: alerta de ingestão com as duas condições, e o prompt versionado em `supabase/functions/lia-brain/prompt/`.
 
 
 
-**Fase 1 · Entrada e caixa.** `lia-webhook` autenticado (query + instância + header quando houver), `lia-cron` de minuto, desvio em `receive-meta-lead` e `meta-leads-backfill` por `ia_config.form_ids_lia` (lista vazia = comportamento idêntico ao de hoje). Checagem de telefone na entrada. **Portão: teste de fumaça manual antes de qualquer form_id entrar.** Testes com inserção manual em `ia_leads`.
+**Fase 1 · Entrada e caixa.** `lia-webhook` autenticado (query + instância + header quando houver), `lia-cron` de minuto, desvio em `receive-meta-lead` e `meta-leads-backfill` por **`ia_config.captura_lia`** (`campaign_ids` OU `form_ids`; ambas vazias = comportamento idêntico ao de hoje). Checagem de telefone na entrada. **Portão: teste de fumaça manual antes de qualquer ID entrar nas listas.** Testes com inserção manual em `ia_leads`.
 
-**Fase 2 · Cérebro, travas e sala mínima.** `lia-brain` com contexto montado por código e prompt lido do arquivo em git, saída em contrato JSON validado antes de gravar. Debounce + lock por lead antes da chamada. Travas em código depois do modelo e antes do envio: kill switch global, `pausado`/`assumido_por`, agenda real BRT, janela 08h–23h59 com colapso da madrugada, repetição, travessão e frases proibidas, arredondamento para baixo, 3 mensagens/turno em sequência confirmada, 3 mídias/conversa, zero áudio, idempotência de envio, opt-out gravado (Parte 2) antes do envio de encerramento. Sala ao vivo mínima para sombra. Linha de base de 20 perguntas gravada antes; testes determinísticos escritos aqui.
+**Fase 2 · Cérebro, travas, sala mínima e conversão de volta.** `lia-brain` com contexto montado por código e prompt lido do arquivo em git, saída em contrato JSON validado antes de gravar. Debounce + lock por lead antes da chamada. Travas em código depois do modelo e antes do envio: kill switch global, `pausado`/`assumido_por`, agenda real BRT, janela 08h–23h59 com colapso da madrugada, repetição, travessão e frases proibidas, arredondamento para baixo, 3 mensagens/turno em sequência confirmada, 3 mídias/conversa, zero áudio, idempotência de envio, opt-out gravado (Parte 2) antes do envio de encerramento. **Conversão CAPI de volta (Parte 3d.2): `Schedule` ao marcar apresentação e `LeadQualificado` ao qualificar, com `lead_id` do Meta** — sem isso os cinco conjuntos otimizam no escuro. Sala ao vivo mínima para sombra. Linha de base de 20 perguntas gravada antes; testes determinísticos escritos aqui.
 
 **Fase 3 · Tela `/lia` completa (admin).** Quadro por etapa · sala ao vivo com realtime, assumir e pausar · fila de follow-up · mesa de decisão com os resumos de sete campos · saúde e freio (kill switch que existe desde a Fase 0, contador de conversas esperando). Nada entra em dashboard, forecast ou métrica de corretor.
 
@@ -119,4 +149,4 @@ Fase 0 e Fase 4 são as únicas migrations, em dias diferentes (limite de 2/dia 
 `pipeline_leads`, `pipeline_stages`, triggers e RLS existentes, roleta e distribuição, `evolution-webhook` atual, `whatsapp_mensagens` (exceto `autor` na Fase 4), reengajamento e Oferta Ativa. Exceção única e obrigatória: a gravação de opt-out em `base_leads` e `meta_supressao`.
 
 ### Decisões travadas
-Instância `uhome-lia-canoas`, número novo e dedicado (a definir pelo Lucas antes do teste de fumaça). `form_ids_lia` nasce vazia. Fase 0 confirmada como primeira rodada, com o kill switch dentro dela.
+Instância `uhome-lia-canoas`, número novo e dedicado (a definir pelo Lucas antes do teste de fumaça). **`ia_config.captura_lia`** nasce com `campaign_ids` e `form_ids` vazias (nome único da chave, usado em Fase 0, Fase 1 e aqui). Fase 0 confirmada como primeira rodada, com o kill switch dentro dela.
