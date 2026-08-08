@@ -62,7 +62,11 @@ Uma migration (DDL: substitui a função, adiciona colunas):
 
 ### `meta-capi-track` — desativar, não limpar
 
-A fila tem **7 eventos com `action_source: website` em toda a história**, e só **1 é de fato do site** (ViewContent, 30/07, que foi o teste de implantação). Os outros 6 são do CRM, de 28/07. **Nenhuma chamada real em 30 dias.** Como não existe site, a função é um caminho de eventos sem guarda esperando alguém reativar sem lembrar da regra. Proposta: **remover a edge function `meta-capi-track`** em vez de limpar `ct`/`st` nela. Se um dia existir site, ela volta já nascendo com a guarda.
+A fila tem **7 eventos com `action_source: website` em toda a história**, e só **1 é de fato do site** (ViewContent, 30/07, que foi o teste de implantação). Os outros 6 são do CRM, de 28/07. **Nenhuma chamada real em 30 dias.**
+
+**Grep do repositório inteiro por `meta-capi-track`: zero chamadas em código.** As únicas ocorrências são os documentos de plano antigos e o próprio `supabase/functions/meta-capi-track/index.ts` — nenhuma tela do CRM, nenhum hook, nenhuma outra função invoca. Remover não quebra nada em silêncio.
+
+Ação: **remover a edge function `meta-capi-track`** (arquivo + função implantada) em vez de limpar `ct`/`st` nela. Se um dia existir site, ela volta já nascendo com a guarda.
 
 ## Bloco 3 · Detecção (migration própria, separada da Lia)
 
