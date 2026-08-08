@@ -118,13 +118,19 @@ export default function LiaConexao() {
 
   return (
     <div className="container mx-auto max-w-3xl p-4 space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold">Lia · conexão do número</h1>
-        <p className="text-sm text-muted-foreground">
-          Chip dedicado da Casa Tua Canoas. A caixa da Lia é isolada: as mensagens vão para
-          <code className="mx-1 text-[11px]">ia_mensagens</code>, nunca para o pipeline.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Lia · conexão do número</h1>
+          <p className="text-sm text-muted-foreground">
+            Chip dedicado da Casa Tua Canoas. A caixa da Lia é isolada: as mensagens vão para
+            <code className="mx-1 text-[11px]">ia_mensagens</code>, nunca para o pipeline.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <a href="/admin/lia/sala">Sala ao vivo</a>
+        </Button>
       </header>
+
 
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-3">
