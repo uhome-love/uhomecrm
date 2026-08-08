@@ -506,8 +506,11 @@ Deno.serve(async (req) => {
           });
           const r = await resp.json().catch(() => ({}));
           if (resp.ok) {
-            if (typeof r.action === "string" && r.action.startsWith("skipped")) skipped++;
+            // Lead da campanha da Lia: desviado para a caixa isolada ia_leads.
+            if (r.action === "lia_capturado") liaCapturados++;
+            else if (typeof r.action === "string" && r.action.startsWith("skipped")) skipped++;
             else reprocessed++;
+
           } else {
             leadErrors++;
             if (leadErrorSamples.length < 15) {
