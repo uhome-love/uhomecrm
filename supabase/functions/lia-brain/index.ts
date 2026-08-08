@@ -22,7 +22,14 @@ const EVO_URL = Deno.env.get("EVOLUTION_API_URL");
 const EVO_KEY = Deno.env.get("EVOLUTION_API_KEY");
 const CRON_SECRET = Deno.env.get("LIA_CRON_SECRET");
 
-const PROMPT_PATH = new URL("./prompt/lia-canoas-v3.1.txt", import.meta.url);
+// O .txt continua sendo a fonte no Git; o .b64.ts carrega os MESMOS bytes
+// porque o runtime do edge não empacota arquivos de texto soltos.
+function bytesDoPrompt(): Uint8Array {
+  const bin = atob(LIA_PROMPT_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
