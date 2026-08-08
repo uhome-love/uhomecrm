@@ -211,7 +211,13 @@ Deno.serve(async (req) => {
       .gte("created_at", corte24h)
       .limit(2000);
 
-    const recentesMeta = (bloqueios ?? []).filter((b: { ctx: Record<string, unknown> | null }) => {
+    // Linhas sintéticas do autoteste NUNCA entram em contador nem em alerta.
+    const bloqueiosReais = (bloqueios ?? []).filter(
+      (b: { ctx: Record<string, unknown> | null }) =>
+        String((b.ctx ?? {}).selftest ?? "") !== "true",
+    );
+
+    const recentesMeta = bloqueiosReais.filter((b: { ctx: Record<string, unknown> | null }) => {
       const ctx = b.ctx ?? {};
       const origem = String(ctx.origem ?? "").toLowerCase();
       const criado = ctx.lead_created_at ? new Date(String(ctx.lead_created_at)).getTime() : 0;
@@ -235,12 +241,90 @@ Deno.serve(async (req) => {
       if (ok) disparados.push("guarda_lead_recente");
     }
 
+    // ── 4. Venda vigiada por realidade (ganho elegível x evento enviado) ──
+    let cobertura: Record<string, unknown> | null = null;
+    try {
+      const { data: cob } = await supabase.rpc("capi_venda_cobertura_7d");
+      cobertura = (cob ?? null) as Record<string, unknown> | null;
+      const maduros = Number(cobertura?.ganhos_elegiveis_maduros ?? 0);
+      const semEvento = (cobertura?.sem_evento ?? []) as Record<string, unknown>[];
+
+      if (maduros > 0 && semEvento.length > 0) {
+        // Se algum desses leads foi barrado pela guarda, o alerta diz isso.
+        const { data: barrados } = await supabase
+          .from("ops_events")
+          .select("ctx")
+          .eq("category", "capi_bloqueado_sem_lead_id")
+          .gte("created_at", corte7d)
+          .limit(500);
+        const barradosVenda = (barrados ?? []).filter(
+          (b: { ctx: Record<string, unknown> | null }) =>
+            String((b.ctx ?? {}).selftest ?? "") !== "true" &&
+            String((b.ctx ?? {}).event_name ?? "") === "Venda",
+        ).length;
+
+        const nomes = semEvento
+          .slice(0, 5)
+          .map((n) => String(n.cliente ?? n.negocio_id))
+          .join(", ");
+
+        const ok = await notificarAdmins(
+          "capi_venda_sem_evento",
+          "🚨 Venda no CRM sem conversão enviada",
+          `${semEvento.length} de ${maduros} venda(s) elegível(is) dos últimos 7 dias ` +
+            `não têm evento Venda enviado ao Meta: ${nomes}. ` +
+            (barradosVenda > 0
+              ? `${barradosVenda} evento(s) de Venda foram barrados por falta do identificador do anúncio — corrija a ingestão.`
+              : `Verifique o gatilho de Venda.`),
+          {
+            rule: "capi_venda_sem_evento",
+            ganhos_total: cobertura?.ganhos_total ?? null,
+            ganhos_elegiveis: cobertura?.ganhos_elegiveis ?? null,
+            ganhos_elegiveis_maduros: maduros,
+            eventos_venda_7d: cobertura?.eventos_venda_7d ?? null,
+            sem_evento: semEvento.slice(0, 10),
+            barrados_venda_7d: barradosVenda,
+          },
+        );
+        if (ok) disparados.push("venda_sem_evento");
+      }
+    } catch (e) {
+      console.error("[capi-health-alert] cobertura de venda falhou", e);
+    }
+
+    // ── 5. Autoteste da guarda (1x por dia) ─────────────────────────────
+    let selftest: Record<string, unknown> | null = null;
+    const { data: testeHoje } = await supabase
+      .from("ops_events")
+      .select("id")
+      .eq("fn", "capi_guarda_selftest")
+      .gte("created_at", new Date(agora - 24 * 3600_000).toISOString())
+      .limit(1);
+
+    if ((testeHoje ?? []).length === 0) {
+      const { data: res, error: errSelf } = await supabase.rpc("capi_guarda_selftest");
+      selftest = (res ?? null) as Record<string, unknown> | null;
+      if (errSelf) console.error("[capi-health-alert] selftest erro", errSelf.message);
+      if (String(selftest?.resultado ?? "") === "falhou") {
+        const ok = await notificarAdmins(
+          "capi_guarda_falhou",
+          "🚨 A guarda do rastreamento parou de barrar",
+          `O autoteste diário enviou um evento de teste em um lead sem identificador de anúncio ` +
+            `e ele NÃO foi barrado. Conversões inválidas podem estar indo ao Meta.`,
+          { rule: "capi_guarda_falhou", ...(selftest ?? {}) },
+        );
+        if (ok) disparados.push("guarda_falhou");
+      }
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
         disparados,
         bloqueios_recentes_meta_24h: recentesMeta.length,
-        bloqueios_total_24h: (bloqueios ?? []).length,
+        bloqueios_total_24h: bloqueiosReais.length,
+        cobertura_venda: cobertura,
+        selftest,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
