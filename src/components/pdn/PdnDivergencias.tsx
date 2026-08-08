@@ -20,8 +20,9 @@ interface Props {
 }
 
 export function PdnDivergencias({ rows, onOpenLead, onCorrigir }: Props) {
-  // Reconciliação é bloco fixo do topo: abre expandido para o gestor resolver antes de operar.
-  const [open, setOpen] = useState(true);
+  // Bloco fixo do topo, porém RECOLHIDO por padrão para não empurrar a planilha
+  // para fora da tela; o contador já sinaliza que há itens a resolver.
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const byTipo = useMemo(() => {
@@ -63,6 +64,14 @@ export function PdnDivergencias({ rows, onOpenLead, onCorrigir }: Props) {
           {GRUPOS.map(g => {
             const list = byTipo[g.tipo] || [];
             if (list.length === 0) return null;
+            // Sem ação automática possível: fica como aviso discreto de uma linha.
+            if (g.tipo === "negocio_sem_lead") {
+              return (
+                <p key={g.tipo} className="text-[11px] text-muted-foreground">
+                  {list.length} {g.label.toLowerCase()} — {g.hint}
+                </p>
+              );
+            }
             return (
               <div key={g.tipo}>
                 <div className="mb-1 text-xs font-semibold text-foreground">

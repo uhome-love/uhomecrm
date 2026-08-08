@@ -91,7 +91,9 @@ export function usePdnDivergencias(scopeAuthIds: string[] | null | undefined) {
         if (!lead) continue;
         if (!inScope(lead.corretor_id)) continue;
 
-        if (lead.arquivado) {
+        // Venda ganha com lead arquivado é o fluxo NORMAL (o negócio já entra no PDN
+        // pela data de assinatura) — não é divergência.
+        if (lead.arquivado && n.fase !== "ganho") {
           out.push({
             tipo: "lead_arquivado",
             negocioId: n.id,
@@ -102,6 +104,9 @@ export function usePdnDivergencias(scopeAuthIds: string[] | null | undefined) {
           });
           continue;
         }
+        if (lead.arquivado) continue; // ganho arquivado: nada a reconciliar
+
+
 
         const esperado = FASE_TO_TIPO[n.fase];
         const atual = stageById[lead.stage_id];
