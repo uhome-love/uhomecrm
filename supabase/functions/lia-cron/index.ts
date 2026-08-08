@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const action = new URL(req.url).searchParams.get("action") || "poll";
-  const autorizado = auth(req) || (action === "evolution_version" && (await isAdmin(req)));
+  const autorizado = (await auth(req)) || (action === "evolution_version" && (await isAdmin(req)));
   if (!autorizado) return json({ error: "Unauthorized" }, 401);
 
   const supabase = createClient(
