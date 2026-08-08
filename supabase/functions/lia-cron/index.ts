@@ -34,14 +34,28 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function auth(req: Request): boolean {
-  const secret = Deno.env.get("LIA_CRON_SECRET");
+async function auth(req: Request): Promise<boolean> {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const provided = req.headers.get("x-lia-cron-secret");
-  if (secret && provided && provided === secret) return true;
+  const envSecret = Deno.env.get("LIA_CRON_SECRET");
+  if (envSecret && provided && provided === envSecret) return true;
+
   const bearer = (req.headers.get("Authorization") || "").replace("Bearer ", "");
-  return !!serviceKey && bearer === serviceKey;
+  if (serviceKey && bearer === serviceKey) return true;
+
+  // Segredo do cofre (usado pelo pg_cron, nunca gravado em texto no agendamento).
+  if (provided) {
+    try {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey!);
+      const { data } = await admin.rpc("get_lia_cron_secret");
+      if (data && String(data) === provided) return true;
+    } catch {
+      // ignora — cai no 401
+    }
+  }
+  return false;
 }
+
 
 async function metaGet(path: string, token: string, params: Record<string, string> = {}) {
   const url = new URL(`${META_BASE}/${path}`);
