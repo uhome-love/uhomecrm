@@ -100,7 +100,7 @@ Regras da captura, aplicadas em `receive-meta-lead` e `meta-leads-backfill`:
 
 
 
-**Fase 1 · Entrada e caixa.** `lia-webhook` autenticado (query + instância + header quando houver), `lia-cron` de minuto, desvio em `receive-meta-lead` e `meta-leads-backfill` por `ia_config.form_ids_lia` (lista vazia = comportamento idêntico ao de hoje). Checagem de telefone na entrada. **Portão: teste de fumaça manual antes de qualquer form_id entrar.** Testes com inserção manual em `ia_leads`.
+**Fase 1 · Entrada e caixa.** `lia-webhook` autenticado (query + instância + header quando houver), `lia-cron` de minuto, desvio em `receive-meta-lead` e `meta-leads-backfill` por **`ia_config.captura_lia`** (`campaign_ids` OU `form_ids`; ambas vazias = comportamento idêntico ao de hoje). Checagem de telefone na entrada. **Portão: teste de fumaça manual antes de qualquer ID entrar nas listas.** Testes com inserção manual em `ia_leads`.
 
 **Fase 2 · Cérebro, travas e sala mínima.** `lia-brain` com contexto montado por código e prompt lido do arquivo em git, saída em contrato JSON validado antes de gravar. Debounce + lock por lead antes da chamada. Travas em código depois do modelo e antes do envio: kill switch global, `pausado`/`assumido_por`, agenda real BRT, janela 08h–23h59 com colapso da madrugada, repetição, travessão e frases proibidas, arredondamento para baixo, 3 mensagens/turno em sequência confirmada, 3 mídias/conversa, zero áudio, idempotência de envio, opt-out gravado (Parte 2) antes do envio de encerramento. Sala ao vivo mínima para sombra. Linha de base de 20 perguntas gravada antes; testes determinísticos escritos aqui.
 
