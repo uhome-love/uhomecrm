@@ -151,11 +151,22 @@ Sua recomendação vale, invertida: **padronizar os cinco conjuntos em `LeadQual
 
 Observação de higiene, fora do escopo da Lia: `Schedule` teve 266 `skipped` de 392, e `Lead` 486 de 1037 — a maior parte dos eventos históricos nunca chegou ao Meta (janela de 7 dias no backfill). Não muda nada agora, só explica por que o dataset parece magro.
 
-**3. Critério corrigido: o evento sai na apresentação marcada e confirmada, não na qualificação.**
-Aceito e travado. No desenho da Lia, "qualificado" é interesse validado — sinal mole; ensinar o Meta com ele traz volume de quem diz "interessante" e some. Então o disparo acontece **um só, no momento em que o lead confirma a apresentação**. Se depois quisermos sinal mais fundo, o candidato é **apresentação realizada** (`VisitaRealizada`, que já existe), nunca a qualificação.
+**3. Corrigido: são dois eventos, com gatilhos diferentes.**
+Não é um evento só. A caixa da Lia dispara:
 
-**4. Idempotência do evento: um por par (`lead_id`, `event_name`), gravado antes do envio.**
-A base já tem metade disso: `meta_capi_queue.event_id` é chave primária, então retry do worker não duplica *o mesmo* event_id. O que falta é a trava semântica — nada impede dois `event_id` diferentes para o mesmo lead e mesmo evento. Na Fase 2 a caixa da Lia grava a intenção **antes** de chamar a CAPI, com unicidade por `(lead_id, event_name)`, e o envio é derivado dessa linha. Conversão dobrada distorce aprendizado e custo por resultado.
+```text
+evento            gatilho                                       profundidade
+LeadQualificado   lead ACEITA a apresentação (quer a chamada)   volume — equivale à etapa Qualificação do pipeline
+VisitaMarcada     data confirmada                               fundo — menos volume, é o alvo futuro da otimização
+```
+
+O corte é o aceite, não o interesse. "Achei interessante" é conversa, não qualificação — e é exatamente o sinal mole que traria volume de quem some. O prompt e o contrato de saída da Lia (responsabilidade do Lucas) passam a separar `interesse_validado` de `apresentacao.aceita`, e é **`apresentacao.aceita`** que aciona `LeadQualificado`.
+
+Os dois vão com **`lead_id` do Meta** e com **parâmetro de origem identificando a caixa da Lia**, para separar Lia de corretor na leitura sem mexer no código depois. Sinal mais fundo no futuro: `VisitaRealizada`, que já existe e já dispara.
+
+**4. Idempotência: um evento por par (`lead_id`, `event_name`), gravado antes do envio.**
+Como agora são **dois** eventos por lead, a unicidade é obrigatoriamente pelo par — travar só por lead bloquearia o segundo evento. A base já tem metade da proteção: `meta_capi_queue.event_id` é chave primária, então retry do worker não duplica o mesmo `event_id`. Falta a trava semântica: nada impede dois `event_id` diferentes para o mesmo lead e mesmo evento. Na Fase 2 a caixa grava a intenção **antes** de chamar a CAPI, com unicidade por `(lead_id, event_name)`, e o envio é derivado dessa linha. Conversão dobrada distorce aprendizado e custo por resultado.
+
 
 ---
 
@@ -201,7 +212,7 @@ O custo escondido está nos **617 fila_ceo**, concentrados justamente nos nomes 
 
 **Fase 1 · Entrada e caixa.** `lia-webhook` autenticado (query + instância + header quando houver), `lia-cron` de minuto, desvio em `receive-meta-lead` e `meta-leads-backfill` por **`ia_config.captura_lia`** (`campaign_ids` OU `form_ids`; ambas vazias = comportamento idêntico ao de hoje). Checagem de telefone na entrada. **Portão: teste de fumaça manual antes de qualquer ID entrar nas listas.** Testes com inserção manual em `ia_leads`.
 
-**Fase 2 · Cérebro, travas, sala mínima e conversão de volta.** `lia-brain` com contexto montado por código e prompt lido do arquivo em git, saída em contrato JSON validado antes de gravar. Debounce + lock por lead antes da chamada. Travas em código depois do modelo e antes do envio: kill switch global, `pausado`/`assumido_por`, agenda real BRT, janela 08h–23h59 com colapso da madrugada, repetição, travessão e frases proibidas, arredondamento para baixo, 3 mensagens/turno em sequência confirmada, 3 mídias/conversa, zero áudio, idempotência de envio, opt-out gravado (Parte 2) antes do envio de encerramento. **Conversão CAPI de volta (Parte 3e): disparo único no momento em que o lead confirma a apresentação, com `lead_id` do Meta, gravado na caixa antes do envio com unicidade por (`lead_id`, `event_name`).** Sala ao vivo mínima para sombra. Linha de base de 20 perguntas gravada antes; testes determinísticos escritos aqui. **Fim da Fase 2 = condição de despause da campanha, junto com o teste de fumaça da Fase 1 e a padronização dos cinco conjuntos em `LeadQualificado`.**
+**Fase 2 · Cérebro, travas, sala mínima e conversão de volta.** `lia-brain` com contexto montado por código e prompt lido do arquivo em git, saída em contrato JSON validado antes de gravar (com `interesse_validado` e `apresentacao.aceita` separados). Debounce + lock por lead antes da chamada. Travas em código depois do modelo e antes do envio: kill switch global, `pausado`/`assumido_por`, agenda real BRT, janela 08h–23h59 com colapso da madrugada, repetição, travessão e frases proibidas, arredondamento para baixo, 3 mensagens/turno em sequência confirmada, 3 mídias/conversa, zero áudio, idempotência de envio, opt-out gravado (Parte 2) antes do envio de encerramento. **Conversão CAPI de volta (Parte 3e): `LeadQualificado` no aceite da apresentação e `VisitaMarcada` na data confirmada, ambos com `lead_id` do Meta e parâmetro de origem da caixa da Lia, gravados antes do envio com unicidade por (`lead_id`, `event_name`).** Sala ao vivo mínima para sombra. Linha de base de 20 perguntas gravada antes; testes determinísticos escritos aqui. **Fim da Fase 2 = condição de despause da campanha, junto com o teste de fumaça da Fase 1 e a saída dos dois conjuntos de `Schedule` para `LeadQualificado`.**
 
 **Fase 3 · Tela `/lia` completa (admin).** Quadro por etapa · sala ao vivo com realtime, assumir e pausar · fila de follow-up · mesa de decisão com os resumos de sete campos · saúde e freio (kill switch que existe desde a Fase 0, contador de conversas esperando). Nada entra em dashboard, forecast ou métrica de corretor.
 
