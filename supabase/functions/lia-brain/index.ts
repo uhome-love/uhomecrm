@@ -184,12 +184,25 @@ async function chamarModelo(
   if (!res.ok) return { ok: false, motivo: `gateway_${res.status}: ${(await res.text()).slice(0, 200)}` };
 
   const data = await res.json();
+  const bruto = data.choices?.[0]?.message?.content ?? "";
   try {
-    const saida = JSON.parse(data.choices?.[0]?.message?.content ?? "{}") as SaidaModelo;
-    return { ok: true, saida };
+    const obj = JSON.parse(bruto || "{}") as Record<string, unknown>;
+    // O modelo às vezes agrupa em "mensagens": aceita as duas formas em vez de
+    // devolver turno vazio.
+    const mensagem = typeof obj.mensagem === "string" && obj.mensagem.trim()
+      ? obj.mensagem
+      : Array.isArray(obj.mensagens)
+      ? (obj.mensagens as unknown[]).filter((x) => typeof x === "string").join("\n\n")
+      : typeof obj.texto === "string"
+      ? obj.texto
+      : "";
+    if (!mensagem.trim()) console.log("lia-brain saida sem mensagem:", bruto.slice(0, 500));
+    return { ok: true, saida: { ...(obj as unknown as SaidaModelo), mensagem } };
   } catch {
+    console.log("lia-brain resposta nao json:", bruto.slice(0, 500));
     return { ok: false, motivo: "resposta_nao_json" };
   }
+
 }
 
 // ── Envio ──────────────────────────────────────────────────────────────────
