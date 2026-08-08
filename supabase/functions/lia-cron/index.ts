@@ -68,16 +68,36 @@ function normalizePhone(raw: string): string | null {
   return digits;
 }
 
+/** Diagnóstico read-only liberado para admin logado (além do segredo de cron). */
+async function isAdmin(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get("Authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) return false;
+  const token = authHeader.slice(7);
+  try {
+    const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data, error } = await anon.auth.getClaims(token);
+    if (error || !data?.claims?.sub) return false;
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: ok } = await admin.rpc("has_role", { _user_id: data.claims.sub, _role: "admin" });
+    return ok === true;
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (!auth(req)) return json({ error: "Unauthorized" }, 401);
+
+  const action = new URL(req.url).searchParams.get("action") || "poll";
+  const autorizado = auth(req) || (action === "evolution_version" && (await isAdmin(req)));
+  if (!autorizado) return json({ error: "Unauthorized" }, 401);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
-
-  const action = new URL(req.url).searchParams.get("action") || "poll";
 
   // ── Sonda de versão do Evolution (decide o esquema de segredo) ──
   if (action === "evolution_version") {
@@ -88,6 +108,8 @@ Deno.serve(async (req) => {
     const body = await r.text();
     return json({ status: r.status, body: body.slice(0, 500) });
   }
+
+
 
   try {
     const { data: cfg } = await supabase
