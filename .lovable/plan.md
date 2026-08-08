@@ -1,116 +1,68 @@
-# Nova Gestão Comercial — tarefa obrigatória → atividade real (versão definitiva)
+# Lia · agente de atendimento WhatsApp (Casa Tua Santos Ferreira, Canoas)
 
-Decisões fechadas incorporadas. Nada foi editado no código.
-
-## Diagnóstico (B0 — confirmado lendo código e banco)
-
-- **Cor do card hoje = tarefa, não contato.** `src/components/pipeline/CardMinimal.tsx:92-130`: vermelho = tarefa atrasada · verde = tarefa hoje/futura · âmbar = sem tarefa. Mesma regra em `PipelineAdvancedFilters.tsx` e `PipelineFiltroBadges.tsx`. Criar tarefa "limpa" o lead sem nenhum contato ter acontecido.
-- **Segundo cronômetro:** estagnação via RPCs `get_lead_estagnacao_status` / `get_pipeline_estagnacao` sobre `estagnado`, `estagnado_aviso_em`, `estagnado_prazo_em` + `_pipeline_referencia_estagnacao` / `_pipeline_ultima_acao_humana`, com "proteção" quando existe tarefa futura (`_pipeline_tem_tarefa_pendente_futura`).
-- **`ultima_acao_at` é inutilizável como toque:** trigger `trg_update_lead_ultima_acao` (BEFORE UPDATE, sem WHEN) carimba `now()` em qualquer update do lead, e ~25 pontos do front escrevem manualmente.
-- **`ultimo_toque_at` existe e está limpo, mas é write-only:** só `src/lib/registrarToque.ts` grava; nenhuma régua lê.
-- **`pipeline_atividades` não atualiza o lead** (triggers na tabela: só `trg_cadencia_sc_avancar_acao` e `trg_perf_primeiro_contato`).
-- **KPIs presos a tarefa:** `src/lib/taskBuckets.ts` → `useCorretorKpisCarteira.ts` (`leads_sem_tarefa`, `leads_em_dia`) → `CarteiraKpis.tsx`, `CaminhosCards.tsx`, `useTarefasHoje.ts`.
-- **Cadência Sem Contato avança por tarefa concluída** (`fn_cadencia_sc_recalcular_por_tarefas`, 7 passos → `aguardando_descarte`); `fn_cadencia_sc_avancar_acao` está explicitamente neutralizada ("atividades humanas NÃO avançam tentativa").
-- **Playbook por etapa já está morto:** a função `trg_pipeline_playbook_on_stage_change()` existe mas **nenhum trigger está anexado** (0 linhas em `pg_trigger`); 0 tarefas geradas em 90 dias.
-- **Notificação:** entrega pronta (`criar_notificacao` → `notifications` → `trg_push_on_notification` → edge `send-push` → `push_subscriptions`). Falta só o agendador por horário de tarefa.
-- **.ics: não existe nada reaproveitável.** `src/pages/VisitaConfirmacao.tsx` não gera arquivo de calendário; o que existe é OAuth Google (`calendar-create-event`, `google-oauth-*`, `corretor_calendar_integrations`) — outro caminho, que fica parqueado.
-
-### Conflitos entre as decisões e o código
-1. **"Visita agendada conta como toque"** — hoje o agendamento não chama `registrarToque`. Precisa de trigger em `visitas` (INSERT) e não só na realização.
-2. **"Concluir lembrete não conta como toque"** — hoje `completeLeadTask.ts` / `taskCompletion.ts` chamam `registrarToque` e escrevem `ultima_acao_at`. Tem que sair na Fase 2.
-3. **"Sem Contato estagna pela cadência"** — a cadência hoje avança por **tarefa concluída**, não por atividade. Precisa inverter para contar `pipeline_atividades` (Fase 2), senão o corretor que liga de verdade não avança tentativa.
-4. **Estagnação por etapa** — `pipeline_estagnacao_config` é por etapa, então o recorte (só SC/Qualificação/Aquecimento, 21d) cabe sem mudar estrutura: basta zerar/desligar a config das demais.
-5. **Denominador do "% em dia"** — hoje não existe RPC única; cada tela calcula do seu jeito. Precisa nascer na Fase 0/1.
+Caixa isolada, dono único, sem escrever no pipeline dos corretores. Passagem para o pipeline só por botão.
 
 ---
 
-## Regras definitivas (cravadas)
+## Parte 1 — Os cinco levantamentos (feitos, resultado real)
 
-**Prazo "em dia" por etapa (dias sem toque):**
+**1) `receive-meta-lead` falhando em silêncio — a falha existiu, mas já passou.**
+Contagem semanal dos últimos 90 dias em `pipeline_leads`:
 
-| Etapa | Prazo |
-|---|---|
-| Novo Lead | 1d |
-| Sem Contato | 2d |
-| Qualificação | 7d |
-| Aquecimento | 15d |
-| Visita | 2d |
-| Em Negociação | 7d |
-| Contrato | 7d |
+```text
+semana        backfill   webhook(ig+fb+meta_ads)
+04/05 a 08/06      0..16      30 / 228 / 221 / 204 / 178 / 123
+15/06            202             9
+22/06            203             6
+29/06            278             5
+06/07            118            89
+13/07 em diante    9      211 / 283 / 306 / 269
+```
 
-Cores: dentro do prazo = verde · até 2× o prazo = âmbar · acima = vermelho.
+O número "745 backfill x 207 webhook" é a janela 15/06–10/07, quando o webhook parou e o backfill segurou tudo. De 13/07 até hoje o webhook voltou: nos últimos 30 dias são **1.128 pelo webhook contra 58 pelo backfill** (o backfill agora só cata resíduo, que é o papel dele). Não há erro recorrente no log: em 30 dias, `receive-meta-lead` registra 23 `meta_native_webhook_partial` e 2 `Lead insert failed`, todos em 30/07 e nada depois.
+Conclusão: não é bug aberto, foi **queda de assinatura do webhook no app Meta** naquele período. O que falta é **detecção** — hoje ninguém é avisado quando o webhook para. Proponho na Fase 0 um alerta simples: se em 6h houver leads via backfill e zero via webhook, alerta no `/admin/ingestao` + push ao CEO. Sem isso, a Lia herdaria o mesmo silêncio.
 
-**Relógio (borda 1):** `COALESCE(ultimo_toque_at, distribuido_em, stage_changed_at, created_at)`. Lead novo conta desde a chegada; nunca fica "sem cor".
+**2) `evolution-webhook` sem autenticação.**
+O código já lê `apikey` do header ou da query, compara com `EVOLUTION_API_KEY` e **só loga** (`auth-log-only`, `ops_events.evolution_webhook_auth_missing`) — nunca recusa. Não dá para confirmar a versão do Evolution pelo código (só existe `EVOLUTION_API_URL` como segredo). Portanto o `lia-webhook` nasce com autenticação por **duas vias em série, sem depender de header customizado**: segredo obrigatório na **query string** da URL do webhook (`?k=<LIA_WEBHOOK_SECRET>`, suportado por qualquer versão) **mais** validação do `apikey` quando presente, mais checagem de que a `instance` do payload é a instância da Lia e nada mais. Se a versão em uso suportar header customizado, ele vira uma terceira camada sem mudar nada. Não estendo o `evolution-webhook` atual.
 
-**Etapas terminais (borda 2):** Ganho, Caiu e Descarte (e `arquivado = true`) ficam **fora do colorido e fora do denominador** do "% em dia".
+**3) Instâncias Evolution.**
+`whatsapp_instancias` está **vazia** (0 linhas) e `whatsapp_mensagens` tem tráfego de uma única instância, `uhome-27f9fc2d`, parado desde **09/06/2026**. Ou seja: não há instância viva para reaproveitar. A Lia precisa de instância nova e dedicada, sugestão `uhome-lia-canoas`, com número novo, registrada em `ia_config`. Preciso da sua confirmação do número.
 
-**Toque conta:** ligação · WhatsApp do corretor · e-mail · **visita agendada** (no momento do agendamento) · visita realizada · ⚡ atividade registrada.
-**Toque NÃO conta:** anotação · HOMI/automático/campanha · criar ou concluir lembrete · mudança de etapa.
+**4) Autoria da Lia em `whatsapp_mensagens`.**
+Colunas hoje: `lead_id, corretor_id, instance_name, direction (in|out|note), body, media_url, whatsapp_message_id, timestamp, delivery_status, quoted_message_id, media_type`. **Não há coluna de autoria.** Durante o atendimento a conversa vive em `ia_mensagens` (a regra de privacidade em vigor manda logar em `whatsapp_mensagens` só quem está em `pipeline_leads`). Na migração, a menor mudança aditiva possível: **uma coluna `autor text NULL`** em `whatsapp_mensagens`, preenchida com `'lia'` nas linhas replicadas e `NULL` em todo o resto. Nada existente muda de comportamento.
 
-**Estagnação (ponto de decisão, nunca descarte automático):** só em **Sem Contato** (pela cadência existente: 7 tentativas → `aguardando_descarte`, **não** pelos 21d — borda 4), **Qualificação** e **Aquecimento** (21 dias sem toque). Visita, Em Negociação e Contrato coloriram pelo toque e **nunca** estagnam sozinhos.
-
-**Visita distante (borda 3):** o agendamento carimba o toque; se a visita é daqui a 20 dias e a etapa Visita esfria em 2d, o lead **esfria mesmo** — a cobertura é o item "confirmar visita" na agenda, que aparece no dia certo. Não seguramos verde artificialmente. Abordagem confirmada.
-
-**Fórmula única de "% em dia" (borda 5):**
-`leads ativos (não terminais, não arquivados) cujo relógio está dentro do prazo da etapa ÷ leads ativos`.
-Vive em **uma** função SQL: `public.lead_saude(lead)` (faixa por etapa) + RPC `rpc_carteira_saude(p_escopo, p_user_id)` que devolve `total / em_dia / esfriando / frio / pct_em_dia`. Corretor, gestor e CEO chamam a **mesma** RPC, mudando só o escopo (self / equipe via `team_members` / geral). Espelho em TS: `src/lib/leadSaude.ts` (mesmos limiares, BRT via `@/lib/brtTime`).
-
-**Lembrete:** `pipeline_tarefas.tipo='lembrete'`, inerte para a saúde. Vencido e não cumprido **fica visível como atrasado** na agenda. Oferta pós-⚡ (pulável): Amanhã · Em 2 dias · Semana que vem · **Escolher data** · Agora não.
+**5) Opt-out hoje.**
+Não existe `nao_recontatar` em `pipeline_leads` (só `telefone`, `telefone2`, `telefone_normalizado`). O opt-out real está em dois lugares: `base_leads.opt_out` / `opt_out_motivo` e `meta_supressao` (com `telefone_last8`). Como você previu, é **por telefone**, não por card — e é assim que a Lia vai checar: normaliza, e consulta `meta_supressao` + `base_leads.opt_out` + `pipeline_leads.telefone_normalizado` + `ia_leads`, na entrada **e** antes de cada envio.
 
 ---
 
-## Fase 0 — instrumentação e painel-sombra (1 migration)
+## Parte 2 — Plano de build
 
-**Migration 1**
-- Trigger `AFTER INSERT ON pipeline_atividades` → carimba `ultimo_toque_at` só para tipos de contato humano (não HOMI/automático).
-- Trigger `AFTER INSERT ON visitas` → carimba `ultimo_toque_at` (visita agendada = toque).
-- Backfill único de `ultimo_toque_at` a partir de atividades / WhatsApp saída do corretor / visitas — **nunca** de `ultima_acao_at`.
-- `public.lead_saude_prazo(stage_tipo)` + `public.lead_saude(lead_id)` (função de faixa) e `rpc_carteira_saude`.
+### Fase 0 · Fundação (1 migration)
+Cria as tabelas novas, todas aditivas, nenhuma alteração em `pipeline_leads`, stages, roleta, distribuição ou RLS existente: `ia_leads`, `ia_mensagens`, `ia_eventos`, `ia_followups`, `ia_perfil_busca`, `ia_apresentacoes`, `ia_config`, `ia_prompt_versoes`. Todas com `GRANT` + RLS restrita a `admin` (o enum é `admin/diretor/gestor/corretor/backoffice/rh`; CEO = admin) e `service_role` para as functions. Etapa IA como enum próprio (`entrada, bloqueado, atendendo, sem_resposta, qualificado, perfil_busca, nutricao, desqualificado, migrado`) — etapa fora da lista é recusada pelo banco, não vira gravação genérica. Junto: alerta de webhook Meta parado (item 1) e commit do prompt em `supabase/functions/lia-brain/prompt/lia-canoas-v3.1.txt`.
 
-**Sem migration**
-- `src/lib/leadSaude.ts` (espelho TS puro dos limiares).
-- **Painel-sombra** (rota admin, escondida): por corretor, saúde-por-tarefa atual × saúde-por-toque nova + % de leads sem `ultimo_toque_at`. Roda ~1 semana. **É o gate da borda 6** — só viramos a chave quando a cobertura estiver aceitável.
+### Fase 1 · Entrada e caixa
+`lia-webhook` (autenticado como no item 2), `lia-cron` de minuto em minuto (poll da Graph API escopado aos `form_id` da Lia + fila de follow-up + confirmações) e o desvio nas duas functions existentes: `receive-meta-lead` e `meta-leads-backfill` consultam `ia_config.form_ids_lia`; se bater, grava em `ia_leads` e para ali. Lista vazia = comportamento idêntico ao de hoje. Checagem de telefone na entrada com os três desfechos (atende / Bloqueado com aviso ao dono / atende salvo opt-out).
 
-**Não tocar:** `trg_update_lead_ultima_acao`, cadência, playbook, RLS de `pipeline_tarefas`.
-**Risco:** backfill subestimar toques antigos → mitigado pelo período de sombra.
+### Fase 2 · Cérebro e travas
+`lia-brain`: contexto montado por código (nunca por tool call), chamada pelo Lovable AI Gateway com constante única `LIA_MODEL`, saída no contrato JSON da seção 7, validada antes de qualquer gravação. As travas rodam **depois** do modelo e **antes** do envio, em código: agenda real em BRT (10h–20h, mínimo 2h, nunca passado), janela de envio 08h–23h59 com colapso da fila da madrugada em um envio, texto repetido, travessão e frases proibidas, arredondamento para baixo, teto de 3 mensagens/turno e 3 mídias/conversa, zero áudio, opt-out gravado antes do envio de encerramento, flag `qualificado LIA`.
 
-## Fase 1 — ⚡ central + saúde por toque + agenda (1 migration)
+### Fase 3 · Tela `/lia` (admin)
+Quadro por etapa com contagem e tempo médio · sala ao vivo com realtime e os botões assumir e pausar · fila de follow-up com cancelar e antecipar · mesa de decisão com os resumos de sete campos · saúde e freio com estado da instância, volume, erro, bloqueios, janelas e kill switch de um clique. Nada disso entra em dashboard, forecast ou métrica de corretor.
 
-- **⚡ Registrar atividade** vira modal único (`tipo_contato` + `resultado`), reaproveitando `QuickActionMenu.tsx` e o fluxo do `FocusModeModal`; ao final, oferta pulável de lembrete com as 5 opções (incl. data personalizada).
-- **Concluir lembrete → prompt do ⚡ (ajuste novo, só frontend).** Ao marcar um lembrete concluído, aparece "Registrou o contato? [⚡ Registrar] [Só concluir]".
-  - "Só concluir": marca `status='concluida'` e **nada mais** — sem atividade, sem toque, sem cor.
-  - "⚡ Registrar": abre o modal ⚡; quem carimba o toque é o INSERT em `pipeline_atividades` (trigger da Fase 0), nunca o completar do lembrete.
-  - Arquivos: `src/lib/completeLeadTask.ts`, `src/lib/taskCompletion.ts`, `src/components/pipeline/task-completion/TaskCompletionDialog.tsx`, `src/components/corretor/TarefasHojeLateral.tsx`, `src/pages/MinhasTarefas.tsx`, `CardMinimal.tsx` (atalho de check).
-  - **Gotcha crítico:** hoje `completeLeadTask.ts` **sempre** insere em `pipeline_atividades` ao concluir qualquer tarefa (linhas ~72-84) além de chamar `registrarToque` e escrever `ultima_acao_at`. Com o trigger da Fase 0 no ar, concluir lembrete passaria a carimbar toque **automaticamente**. Portanto o caminho "lembrete" precisa ser separado já na Fase 1: sem INSERT de atividade, sem `registrarToque`, sem `ultima_acao_at`. Isso antecipa parte da limpeza da Fase 2 e é a condição para o invariante valer.
-- `CardMinimal.tsx`, `PipelineAdvancedFilters.tsx`, `PipelineFiltroBadges.tsx` passam a usar `src/lib/leadSaude.ts`. Etapas terminais sem cor.
-- **Agenda do corretor** agrega 4 fontes (lembretes · confirmar visitas · nudge Sem Contato · leads esfriando), somente leitura; lembrete vencido aparece como atrasado.
-- **Migration 2:** cron + edge function `lembrete-notify` (varre `pipeline_tarefas` por `vence_em` + `hora_vencimento` em BRT, chama `criar_notificacao`; entrega já existente até o push). Auth via `_shared/cron-auth.ts`.
-- **Botão "Adicionar à agenda" (.ics)** nas visitas — gerado 100% no client (`Blob` + download), sem OAuth, sem backend. Não existe nada reaproveitável hoje; é código novo pequeno em `src/lib/icsVisita.ts` + botão em `VisitaRow.tsx` e `VisitaConfirmacao.tsx`. Webcal e Google OAuth: **parqueados**.
-- **Risco:** virada de cor é visível para o time todo — publicar junto do aviso de mudança.
+### Fase 4 · Migração (1 migration: coluna `autor` + RPC idempotente)
+Botão com destino, etapa de entrada e se a Lia segue nas confirmações. RPC única e idempotente (chave: `ia_leads.id`, dois cliques não geram dois cards): cria o card com atribuição manual direta (já bypassa a roleta), replica a thread em `whatsapp_mensagens` com `autor='lia'`, grava o resumo como `direction='note'`, cria a visita, registra em `pipeline_historico` e marca `migrado` com o ponteiro. Telefone já ativo: anexa ao card existente e notifica o dono. Perfil de busca e transferência vão para a mesa, nunca para a roleta. Notificações ao CEO (push, in-app, WhatsApp) em qualificado, perfil capturado e transferência, com escalonamento em D-1 para apresentação sem dono.
 
-## Fase 2 — tarefa vira lembrete, Sem Contato re-surge, playbook aposentado (2 migrations, dias separados)
+### Fase 5 · Testes e liberação
+Linha de base de 20 perguntas gravada antes de qualquer mudança de comportamento. Os testes determinísticos da seção 10 como suíte no repositório; **um teste de linha vermelha reprovado bloqueia o release**, sem média ponderada. Liberação em sombra → assistido → autônomo, com volume subindo devagar.
 
-- Tarefas manuais existentes migram para `tipo='lembrete'`; `completeLeadTask.ts` e `taskCompletion.ts` **param** de chamar `registrarToque`, de escrever `ultima_acao_at` e de inserir atividade no caminho lembrete (o caminho ⚡ continua inserindo).
-- **Migration 3 — cadência Sem Contato com auto-lembretes, avanço por atividade.**
-  - Os 7 passos continuam materializados como tarefas, mas com `tipo='lembrete'` + `origem='cadencia_sem_contato'` (**auto-lembrete**): aparecem na agenda, são inertes para a saúde.
-  - `fn_cadencia_sc_recalcular_por_tarefas` **deixa de contar tarefas concluídas**; `fn_cadencia_sc_avancar_acao` (em `pipeline_atividades`) volta a avançar `tentativa_atual` a partir de atividades humanas do lead na etapa Sem Contato. Ao avançar, cancela o auto-lembrete pendente e cria o do passo seguinte (T+1); em T7 → `aguardando_descarte`.
-  - **Concluir ou dispensar o auto-lembrete não avança a cadência e não conta toque** — só some da agenda; a cadência recria o passo corrente na próxima varredura se a tentativa não avançou.
-  - **Gotcha "tarefa-fantasma":** hoje existe `trg_cadencia_sc_recalcular_tarefas` em `pipeline_tarefas` (INSERT/UPDATE/DELETE) chamando o recálculo a cada mexida em qualquer tarefa do lead — é exatamente o que geraria lembrete duplicado ao concluir. Esse trigger tem de ser **dropado** nesta migration; o recálculo passa a ter dois gatilhos apenas: entrada na etapa (`fn_cadencia_sc_stage`) e nova atividade.
-  - `CadenciaSemContatoCard.tsx` vira nudge na agenda; "resolver" = ⚡. Fim de relógio único: SC estagna pela cadência, não pelos 21d.
-- **Migration 4:** estagnação unificada — `_pipeline_referencia_estagnacao` passa a usar o relógio de toque, remove-se a "proteção por tarefa futura" (`_pipeline_tem_tarefa_pendente_futura`), e `pipeline_estagnacao_config` fica ativa **só** em Sem Contato, Qualificação (21d) e Aquecimento (21d). Drop da função órfã de playbook.
-- Frontend: remover UI de playbook; `EstagnacaoStatusCard.tsx` deixa de falar em "tarefa agendada — contagem pausada".
-- **Risco:** alterar a cadência mexe em fluxo com 7 passos em produção — validar em lead de teste no preview antes de publicar.
+### Regras de execução
+Máximo 2 migrations por dia entre 08h e 19h BRT → Fase 0 e Fase 4 são as únicas migrations, em dias diferentes. Uma fase por rodada, validada no preview antes da próxima.
 
-## Fase 3 — consolidar KPIs e comunicar
+### O que NÃO é tocado
+`pipeline_leads`, `pipeline_stages`, triggers e RLS existentes, roleta e distribuição, `evolution-webhook` atual, `whatsapp_mensagens` (exceto a coluna aditiva `autor` na Fase 4), reengajamento e Oferta Ativa.
 
-- `taskBuckets.ts` / `useCorretorKpisCarteira.ts` / `CarteiraKpis.tsx` / `CaminhosCards.tsx` / CorretorDashboard / GerenteDashboard / dashboards CEO passam a consumir `rpc_carteira_saude`: **% da carteira em dia** e **leads atualizados hoje (BRT)** substituem "sem tarefa".
-- Onboarding "O CRM mudou": novo step em `src/hooks/useOnboarding.ts` + `OnboardingWidget.tsx` (infra `corretor_onboarding` já existe, sem tabela nova).
-- Limpeza: aposentar as escritas manuais redundantes de `ultima_acao_at` e avaliar restringir `trg_update_lead_ultima_acao`.
-
----
-
-## O que NÃO tocar
-RLS de `pipeline_tarefas` (duplicada, fora de escopo) · VGV / `v_fato_venda` / `v_pdn_linhas` / Vendas Realizadas · Roleta e Oferta Ativa · `team_members` como fonte única de hierarquia · papéis reais `admin/diretor/gestor/corretor/backoffice/rh` · Google Calendar OAuth (parqueado).
-
-## Regras de execução
-Máx 2 migrations/dia, 08–19h BRT · BRT em toda lógica temporal (`@/lib/brtTime`) · 1 mudança por rodada · validar no preview antes de publicar · Fase 1 só começa depois que o painel-sombra da Fase 0 confirmar a cobertura de `ultimo_toque_at`.
+### Decisões que preciso de você
+1. Número e nome da instância dedicada (sugestão `uhome-lia-canoas`).
+2. Os `form_id` da campanha da Lia.
+3. Confirmar a Fase 0 como primeira rodada.
