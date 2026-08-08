@@ -14,6 +14,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { ETAPAS_IA_EMISSIVEIS, isEtapaIaEmissivel, LIA_PROMPT_VERSAO } from "./etapas.ts";
 import { avaliarTravasDeSaida, type Trava } from "./travas.ts";
 import { alertarAdminsLia } from "../_shared/liaAlert.ts";
+import { LIA_PROMPT_B64 } from "./prompt/lia-canoas-v3.1.b64.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -61,7 +62,7 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 async function carregarPrompt(supabase: SupabaseClient): Promise<
   { ok: true; texto: string; hash: string } | { ok: false; motivo: string }
 > {
-  const bytes = await Deno.readFile(PROMPT_PATH);
+  const bytes = bytesDoPrompt();
   const hash = await sha256Hex(bytes);
 
   const { data: versao } = await supabase
