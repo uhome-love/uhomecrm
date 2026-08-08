@@ -119,4 +119,4 @@ Fase 0 e Fase 4 são as únicas migrations, em dias diferentes (limite de 2/dia 
 `pipeline_leads`, `pipeline_stages`, triggers e RLS existentes, roleta e distribuição, `evolution-webhook` atual, `whatsapp_mensagens` (exceto `autor` na Fase 4), reengajamento e Oferta Ativa. Exceção única e obrigatória: a gravação de opt-out em `base_leads` e `meta_supressao`.
 
 ### Decisões travadas
-Instância `uhome-lia-canoas`, número novo e dedicado (a definir pelo Lucas antes do teste de fumaça). `form_ids_lia` nasce vazia. Fase 0 confirmada como primeira rodada, com o kill switch dentro dela.
+Instância `uhome-lia-canoas`, número novo e dedicado (a definir pelo Lucas antes do teste de fumaça). **`ia_config.captura_lia`** nasce com `campaign_ids` e `form_ids` vazias (nome único da chave, usado em Fase 0, Fase 1 e aqui). Fase 0 confirmada como primeira rodada, com o kill switch dentro dela.
