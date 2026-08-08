@@ -178,14 +178,22 @@ Deno.serve(async (req) => {
     // o retry do Evolution.
     if (!fromMe) {
       const brainUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/lia-brain`;
-      fetch(brainUrl, {
+      const chamada = fetch(brainUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
         },
         body: JSON.stringify({ action: "turno", ia_lead_id: iaLead.id }),
-      }).catch((err) => console.error("lia-brain trigger:", err));
+      })
+        .then(async (r) => console.log("lia-brain:", r.status, (await r.text()).slice(0, 300)))
+        .catch((err) => console.error("lia-brain trigger:", err));
+
+      // Sem waitUntil o isolate morre junto com a resposta e o cérebro nunca roda.
+      const rt = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+        .EdgeRuntime;
+      rt?.waitUntil?.(chamada);
+
     }
 
     return json({ ok: true, ia_lead_id: iaLead.id, ia_mensagem_id: inserted.id });
