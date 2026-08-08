@@ -1,93 +1,106 @@
-# Nova Gestão Comercial — tarefa obrigatória → atividade real
+# Nova Gestão Comercial — tarefa obrigatória → atividade real (versão definitiva)
 
-Diagnóstico feito lendo o código e o banco. Nada foi alterado.
+Decisões fechadas incorporadas. Nada foi editado no código.
 
-## B0 — respostas às perguntas
+## Diagnóstico (B0 — confirmado lendo código e banco)
 
-**A. Como a saúde do lead é calculada hoje**
-Existem **dois cronômetros concorrentes**:
+- **Cor do card hoje = tarefa, não contato.** `src/components/pipeline/CardMinimal.tsx:92-130`: vermelho = tarefa atrasada · verde = tarefa hoje/futura · âmbar = sem tarefa. Mesma regra em `PipelineAdvancedFilters.tsx` e `PipelineFiltroBadges.tsx`. Criar tarefa "limpa" o lead sem nenhum contato ter acontecido.
+- **Segundo cronômetro:** estagnação via RPCs `get_lead_estagnacao_status` / `get_pipeline_estagnacao` sobre `estagnado`, `estagnado_aviso_em`, `estagnado_prazo_em` + `_pipeline_referencia_estagnacao` / `_pipeline_ultima_acao_humana`, com "proteção" quando existe tarefa futura (`_pipeline_tem_tarefa_pendente_futura`).
+- **`ultima_acao_at` é inutilizável como toque:** trigger `trg_update_lead_ultima_acao` (BEFORE UPDATE, sem WHEN) carimba `now()` em qualquer update do lead, e ~25 pontos do front escrevem manualmente.
+- **`ultimo_toque_at` existe e está limpo, mas é write-only:** só `src/lib/registrarToque.ts` grava; nenhuma régua lê.
+- **`pipeline_atividades` não atualiza o lead** (triggers na tabela: só `trg_cadencia_sc_avancar_acao` e `trg_perf_primeiro_contato`).
+- **KPIs presos a tarefa:** `src/lib/taskBuckets.ts` → `useCorretorKpisCarteira.ts` (`leads_sem_tarefa`, `leads_em_dia`) → `CarteiraKpis.tsx`, `CaminhosCards.tsx`, `useTarefasHoje.ts`.
+- **Cadência Sem Contato avança por tarefa concluída** (`fn_cadencia_sc_recalcular_por_tarefas`, 7 passos → `aguardando_descarte`); `fn_cadencia_sc_avancar_acao` está explicitamente neutralizada ("atividades humanas NÃO avançam tentativa").
+- **Playbook por etapa já está morto:** a função `trg_pipeline_playbook_on_stage_change()` existe mas **nenhum trigger está anexado** (0 linhas em `pg_trigger`); 0 tarefas geradas em 90 dias.
+- **Notificação:** entrega pronta (`criar_notificacao` → `notifications` → `trg_push_on_notification` → edge `send-push` → `push_subscriptions`). Falta só o agendador por horário de tarefa.
+- **.ics: não existe nada reaproveitável.** `src/pages/VisitaConfirmacao.tsx` não gera arquivo de calendário; o que existe é OAuth Google (`calendar-create-event`, `google-oauth-*`, `corretor_calendar_integrations`) — outro caminho, que fica parqueado.
 
-1. **Cor do card (Kanban)** — 100% derivada de `pipeline_tarefas`, não de contato real.
-   `src/components/pipeline/CardMinimal.tsx:92-130`: vermelho = tarefa atrasada · verde = tarefa hoje/futura · **âmbar = sem tarefa pendente**. Mesma regra nos filtros (`PipelineAdvancedFilters.tsx`) e nos badges (`PipelineFiltroBadges.tsx`).
-2. **Estagnação** — calculada no banco pelas RPCs `get_lead_estagnacao_status` / `get_pipeline_estagnacao`, sobre `pipeline_leads.estagnado`, `estagnado_aviso_em`, `estagnado_prazo_em` + `_pipeline_referencia_estagnacao` + `_pipeline_ultima_acao_humana`. Aparece no drawer (`EstagnacaoStatusCard.tsx`) e em `/leads-estagnados` (`usePipelineEstagnacao.ts`).
-   Também depende de tarefa: tarefa pendente futura = **"protegido"**, pausa a contagem (`_pipeline_tem_tarefa_pendente_futura`); tarefa atrasada empurra a referência para `vence_em + 1 dia`.
-
-Ou seja: hoje **criar uma tarefa "limpa" a saúde do lead sem nenhum contato ter acontecido**. É exatamente o vício que a virada quer eliminar.
-
-**B. O que atualiza o "último toque"**
-- `ultima_acao_at` está **poluído**: existe o trigger `trg_update_lead_ultima_acao` (BEFORE UPDATE em `pipeline_leads`, sem `WHEN`) que carimba `now()` em *qualquer* update — mudança de etapa, atribuição, edição de campo. O próprio código já reconhece isso (`src/hooks/useFocusLeads.ts:29`). Além dele, ~25 pontos do front escrevem o campo manualmente.
-- `pipeline_atividades` **não** tem trigger que atualize o lead. Os triggers na tabela são só `trg_cadencia_sc_avancar_acao` e `trg_perf_primeiro_contato`.
-- `ultimo_toque_at` já existe e é gravado **só** por `src/lib/registrarToque.ts` (chamado em QuickActionMenu, WhatsApp, conclusão de tarefa). **Nenhuma régua/UI lê a coluna** — é write-only hoje. É a base limpa para a saúde por toque, mas **a cobertura precisa ser medida antes de virar a chave**.
-
-**C. Dependência de `pipeline_tarefas` nos KPIs**
-`src/lib/taskBuckets.ts` (regra canônica) → `useCorretorKpisCarteira.ts` (`tarefas_hoje / tarefas_atrasadas / leads_sem_tarefa / leads_em_dia`) → `CarteiraKpis.tsx`, `CaminhosCards.tsx`; e `useTarefasHoje.ts` → `TarefasHojeLateral.tsx`.
-Se tarefa deixar de significar saúde, quebram junto: cor do card, filtros do Kanban, os 4 KPIs de carteira e a "proteção" da estagnação.
-
-**D. Cadência Sem Contato**
-`trg_cadencia_sc_stage` cria o estado em `lead_cadencia_sem_contato` e a 1ª tarefa (`origem='cadencia_sem_contato'`) ao entrar na etapa. O avanço é **derivado de tarefa concluída**: `fn_cadencia_sc_recalcular_por_tarefas` conta tarefas `origem='cadencia_sem_contato' AND status='concluida'` (até 7), cria a próxima e, em T7, marca `aguardando_descarte`. `fn_cadencia_sc_avancar_acao` (em `pipeline_atividades`) está explicitamente neutralizada: atividade humana **não** avança tentativa. Concluir = só marcar a tarefa como concluída.
-Isto é o oposto do modelo novo — a cadência precisa passar a avançar por **atividade**, não por checkbox.
-
-**E. Playbook por etapa — já está morto**
-A função `trg_pipeline_playbook_on_stage_change()` existe, mas **nenhum trigger está anexado a ela** (0 linhas em `pg_trigger`). `pipeline_playbooks` (3) e `pipeline_playbook_tarefas` (8) têm dados, e 0 tarefas geradas em 90 dias. Não há o que desligar: só remover UI e código morto.
-
-**F. Onboarding reutilizável**
-Sim: `corretor_onboarding` + `src/hooks/useOnboarding.ts` (steps hardcoded + auto-detecção) + `OnboardingWidget.tsx` / `src/pages/Onboarding.tsx`. Serve para o "O CRM mudou" — basta um step novo, sem tabela nova.
-
-**G. Notificar lembrete na hora**
-A entrega já existe ponta a ponta: `criar_notificacao` → `notifications` → trigger `trg_push_on_notification` → edge `send-push` → `push_subscriptions`. **Falta apenas o agendador** que varra `pipeline_tarefas` por `vence_em + hora_vencimento` e dispare. Padrão a copiar: `stalled-deals-notify`.
-
-**F(reconciliação). Saúde por toque x estagnado**
-São **dois sinais concorrentes** hoje (cor por tarefa + estagnação por RPC). A unificação correta é: **um único relógio = `ultimo_toque_at`**; "estagnado" deixa de ser um segundo cronômetro e vira apenas o **estágio final** do mesmo relógio (tranquilo → esfriando → frio → estagnado), sem a "proteção por tarefa futura".
+### Conflitos entre as decisões e o código
+1. **"Visita agendada conta como toque"** — hoje o agendamento não chama `registrarToque`. Precisa de trigger em `visitas` (INSERT) e não só na realização.
+2. **"Concluir lembrete não conta como toque"** — hoje `completeLeadTask.ts` / `taskCompletion.ts` chamam `registrarToque` e escrevem `ultima_acao_at`. Tem que sair na Fase 2.
+3. **"Sem Contato estagna pela cadência"** — a cadência hoje avança por **tarefa concluída**, não por atividade. Precisa inverter para contar `pipeline_atividades` (Fase 2), senão o corretor que liga de verdade não avança tentativa.
+4. **Estagnação por etapa** — `pipeline_estagnacao_config` é por etapa, então o recorte (só SC/Qualificação/Aquecimento, 21d) cabe sem mudar estrutura: basta zerar/desligar a config das demais.
+5. **Denominador do "% em dia"** — hoje não existe RPC única; cada tela calcula do seu jeito. Precisa nascer na Fase 0/1.
 
 ---
 
-## Trilha B (dados/cálculo) x Trilha A-Dependent (UI)
+## Regras definitivas (cravadas)
 
-| Item | Trilha B | Trilha A-Dependent |
-|---|---|---|
-| Saúde por toque | `ultimo_toque_at` confiável + função canônica de faixa | cor do card, filtros, badges |
-| ⚡ Atividade central | trigger `pipeline_atividades → ultimo_toque_at` | modal ⚡ único, oferta de lembrete |
-| Lembrete inerte | `pipeline_tarefas.tipo='lembrete'` sem efeito em saúde | agenda, drawer, dashboard |
-| Sem Contato | avanço por atividade | card vira nudge |
-| KPIs | nova RPC de carteira por toque | CorretorDashboard / GerenteDashboard |
+**Prazo "em dia" por etapa (dias sem toque):**
+
+| Etapa | Prazo |
+|---|---|
+| Novo Lead | 1d |
+| Sem Contato | 2d |
+| Qualificação | 7d |
+| Aquecimento | 15d |
+| Visita | 2d |
+| Em Negociação | 7d |
+| Contrato | 7d |
+
+Cores: dentro do prazo = verde · até 2× o prazo = âmbar · acima = vermelho.
+
+**Relógio (borda 1):** `COALESCE(ultimo_toque_at, distribuido_em, stage_changed_at, created_at)`. Lead novo conta desde a chegada; nunca fica "sem cor".
+
+**Etapas terminais (borda 2):** Ganho, Caiu e Descarte (e `arquivado = true`) ficam **fora do colorido e fora do denominador** do "% em dia".
+
+**Toque conta:** ligação · WhatsApp do corretor · e-mail · **visita agendada** (no momento do agendamento) · visita realizada · ⚡ atividade registrada.
+**Toque NÃO conta:** anotação · HOMI/automático/campanha · criar ou concluir lembrete · mudança de etapa.
+
+**Estagnação (ponto de decisão, nunca descarte automático):** só em **Sem Contato** (pela cadência existente: 7 tentativas → `aguardando_descarte`, **não** pelos 21d — borda 4), **Qualificação** e **Aquecimento** (21 dias sem toque). Visita, Em Negociação e Contrato coloriram pelo toque e **nunca** estagnam sozinhos.
+
+**Visita distante (borda 3):** o agendamento carimba o toque; se a visita é daqui a 20 dias e a etapa Visita esfria em 2d, o lead **esfria mesmo** — a cobertura é o item "confirmar visita" na agenda, que aparece no dia certo. Não seguramos verde artificialmente. Abordagem confirmada.
+
+**Fórmula única de "% em dia" (borda 5):**
+`leads ativos (não terminais, não arquivados) cujo relógio está dentro do prazo da etapa ÷ leads ativos`.
+Vive em **uma** função SQL: `public.lead_saude(lead)` (faixa por etapa) + RPC `rpc_carteira_saude(p_escopo, p_user_id)` que devolve `total / em_dia / esfriando / frio / pct_em_dia`. Corretor, gestor e CEO chamam a **mesma** RPC, mudando só o escopo (self / equipe via `team_members` / geral). Espelho em TS: `src/lib/leadSaude.ts` (mesmos limiares, BRT via `@/lib/brtTime`).
+
+**Lembrete:** `pipeline_tarefas.tipo='lembrete'`, inerte para a saúde. Vencido e não cumprido **fica visível como atrasado** na agenda. Oferta pós-⚡ (pulável): Amanhã · Em 2 dias · Semana que vem · **Escolher data** · Agora não.
 
 ---
 
-## Plano faseado
+## Fase 0 — instrumentação e painel-sombra (1 migration)
 
-### Fase 0 — B0: instrumentação, sem virar chave (1 migration)
-- Trigger `AFTER INSERT ON pipeline_atividades` → carimba `ultimo_toque_at` (e nada mais) quando a atividade é de contato humano.
-- Backfill único de `ultimo_toque_at` a partir de `_pipeline_ultima_acao_humana` (atividades, anotações, whatsapp, visitas) — não usar `ultima_acao_at`.
-- **Painel-sombra** (só leitura, escondido atrás de flag/role admin): comparar, por corretor, a saúde-por-tarefa atual x saúde-por-toque. Rodar ~1 semana antes da Fase 1.
-- Não tocar: `trg_update_lead_ultima_acao`, cadência, RLS de `pipeline_tarefas`.
-- Arquivos: novo `src/lib/leadSaude.ts` (função pura de faixa, BRT via `@/lib/brtTime`), nova aba admin de comparação.
+**Migration 1**
+- Trigger `AFTER INSERT ON pipeline_atividades` → carimba `ultimo_toque_at` só para tipos de contato humano (não HOMI/automático).
+- Trigger `AFTER INSERT ON visitas` → carimba `ultimo_toque_at` (visita agendada = toque).
+- Backfill único de `ultimo_toque_at` a partir de atividades / WhatsApp saída do corretor / visitas — **nunca** de `ultima_acao_at`.
+- `public.lead_saude_prazo(stage_tipo)` + `public.lead_saude(lead_id)` (função de faixa) e `rpc_carteira_saude`.
 
-### Fase 1 — ⚡ central + saúde por toque + agenda
-- `⚡ Registrar atividade` vira **modal único** com `tipo_contato` + `resultado`, reaproveitando `QuickActionMenu.tsx` e `FocusModeModal`; ao final, oferta pulável de lembrete (amanhã / 2 dias / semana).
-- `CardMinimal.tsx` passa a colorir por `ultimo_toque_at` (faixas por etapa); filtros e badges seguem a mesma função de `src/lib/leadSaude.ts`.
-- Nova **Agenda do corretor** agregando as 4 fontes (lembretes · confirmar visitas · nudge Sem Contato · leads esfriando), só leitura.
-- Migration: cron + edge `lembrete-notify` (varre `vence_em`+`hora_vencimento` em BRT, chama `criar_notificacao`).
-- Risco: leads sem histórico ficam "frios" no dia 1 — mitigado pelo backfill da Fase 0.
+**Sem migration**
+- `src/lib/leadSaude.ts` (espelho TS puro dos limiares).
+- **Painel-sombra** (rota admin, escondida): por corretor, saúde-por-tarefa atual × saúde-por-toque nova + % de leads sem `ultimo_toque_at`. Roda ~1 semana. **É o gate da borda 6** — só viramos a chave quando a cobertura estiver aceitável.
 
-### Fase 2 — tarefa → lembrete, Sem Contato re-surge, playbook aposentado
-- Tarefas manuais existentes migram para `tipo='lembrete'`; concluir lembrete deixa de mexer em saúde (retirar `registrarToque`/`ultima_acao_at` de `completeLeadTask.ts` e `taskCompletion.ts`).
-- Cadência Sem Contato: `fn_cadencia_sc_recalcular_por_tarefas` deixa de contar tarefas concluídas e passa a contar **atividades registradas** (reativando `fn_cadencia_sc_avancar_acao` com a nova regra). O card vira nudge na agenda; "resolver" = ⚡.
-- Estagnação: remover a "proteção por tarefa futura" de `_pipeline_referencia_estagnacao` / `_pipeline_tem_tarefa_pendente_futura` e passar a referência para `ultimo_toque_at`.
-- Playbook: remover UI e a função órfã (não há trigger ativo).
+**Não tocar:** `trg_update_lead_ultima_acao`, cadência, playbook, RLS de `pipeline_tarefas`.
+**Risco:** backfill subestimar toques antigos → mitigado pelo período de sombra.
 
-### Fase 3 — consolidar
-- KPIs novos: **% da carteira em dia** e **leads atualizados hoje (BRT)** substituem "sem tarefa" em `taskBuckets.ts`, `useCorretorKpisCarteira.ts`, CorretorDashboard e GerenteDashboard.
-- Step "O CRM mudou" em `useOnboarding.ts` + `OnboardingWidget`.
+## Fase 1 — ⚡ central + saúde por toque + agenda (1 migration)
+
+- **⚡ Registrar atividade** vira modal único (`tipo_contato` + `resultado`), reaproveitando `QuickActionMenu.tsx` e o fluxo do `FocusModeModal`; ao final, oferta pulável de lembrete com as 5 opções (incl. data personalizada).
+- `CardMinimal.tsx`, `PipelineAdvancedFilters.tsx`, `PipelineFiltroBadges.tsx` passam a usar `src/lib/leadSaude.ts`. Etapas terminais sem cor.
+- **Agenda do corretor** agrega 4 fontes (lembretes · confirmar visitas · nudge Sem Contato · leads esfriando), somente leitura; lembrete vencido aparece como atrasado.
+- **Migration 2:** cron + edge function `lembrete-notify` (varre `pipeline_tarefas` por `vence_em` + `hora_vencimento` em BRT, chama `criar_notificacao`; entrega já existente até o push). Auth via `_shared/cron-auth.ts`.
+- **Botão "Adicionar à agenda" (.ics)** nas visitas — gerado 100% no client (`Blob` + download), sem OAuth, sem backend. Não existe nada reaproveitável hoje; é código novo pequeno em `src/lib/icsVisita.ts` + botão em `VisitaRow.tsx` e `VisitaConfirmacao.tsx`. Webcal e Google OAuth: **parqueados**.
+- **Risco:** virada de cor é visível para o time todo — publicar junto do aviso de mudança.
+
+## Fase 2 — tarefa vira lembrete, Sem Contato re-surge, playbook aposentado (2 migrations, dias separados)
+
+- Tarefas manuais existentes migram para `tipo='lembrete'`; `completeLeadTask.ts` e `taskCompletion.ts` **param** de chamar `registrarToque` e de escrever `ultima_acao_at`.
+- **Migration 3:** cadência Sem Contato passa a avançar por **atividade** — `fn_cadencia_sc_recalcular_por_tarefas` deixa de contar tarefas concluídas e `fn_cadencia_sc_avancar_acao` volta a avançar tentativa a partir de `pipeline_atividades`. O card `CadenciaSemContatoCard.tsx` vira nudge na agenda; "resolver" = ⚡. Fim de relógio único: SC estagna pela cadência, não pelos 21d.
+- **Migration 4:** estagnação unificada — `_pipeline_referencia_estagnacao` passa a usar o relógio de toque, remove-se a "proteção por tarefa futura" (`_pipeline_tem_tarefa_pendente_futura`), e `pipeline_estagnacao_config` fica ativa **só** em Sem Contato, Qualificação (21d) e Aquecimento (21d). Drop da função órfã de playbook.
+- Frontend: remover UI de playbook; `EstagnacaoStatusCard.tsx` deixa de falar em "tarefa agendada — contagem pausada".
+- **Risco:** alterar a cadência mexe em fluxo com 7 passos em produção — validar em lead de teste no preview antes de publicar.
+
+## Fase 3 — consolidar KPIs e comunicar
+
+- `taskBuckets.ts` / `useCorretorKpisCarteira.ts` / `CarteiraKpis.tsx` / `CaminhosCards.tsx` / CorretorDashboard / GerenteDashboard / dashboards CEO passam a consumir `rpc_carteira_saude`: **% da carteira em dia** e **leads atualizados hoje (BRT)** substituem "sem tarefa".
+- Onboarding "O CRM mudou": novo step em `src/hooks/useOnboarding.ts` + `OnboardingWidget.tsx` (infra `corretor_onboarding` já existe, sem tabela nova).
 - Limpeza: aposentar as escritas manuais redundantes de `ultima_acao_at` e avaliar restringir `trg_update_lead_ultima_acao`.
 
 ---
 
-## Não tocar
-RLS de `pipeline_tarefas` (duplicada, fora de escopo) · regras de VGV / `v_pdn_linhas` / Vendas Realizadas · Roleta e Oferta Ativa · `team_members` como fonte de hierarquia · papéis reais (`admin` = CEO).
+## O que NÃO tocar
+RLS de `pipeline_tarefas` (duplicada, fora de escopo) · VGV / `v_fato_venda` / `v_pdn_linhas` / Vendas Realizadas · Roleta e Oferta Ativa · `team_members` como fonte única de hierarquia · papéis reais `admin/diretor/gestor/corretor/backoffice/rh` · Google Calendar OAuth (parqueado).
 
-## Decisões de produto que preciso de você
-1. **Limiares de "em dia" por etapa** (sugestão: Novo Lead 1d · Sem Contato 1d · Qualificação 3d · Aquecimento 7d · Visita 3d · Negociação 5d · Contrato 7d).
-2. **O que conta como toque**: só ligação/WhatsApp/e-mail/visita, ou anotação também conta?
-3. **WhatsApp automático/HOMI conta como toque?** (recomendo: não — só humano).
-4. Lembrete vencido e não cumprido: aparece atrasado na agenda ou some?
-5. "Estagnado" continua existindo como estágio final do mesmo relógio (recomendado) ou vira só rótulo do gestor?
+## Regras de execução
+Máx 2 migrations/dia, 08–19h BRT · BRT em toda lógica temporal (`@/lib/brtTime`) · 1 mudança por rodada · validar no preview antes de publicar · Fase 1 só começa depois que o painel-sombra da Fase 0 confirmar a cobertura de `ultimo_toque_at`.
