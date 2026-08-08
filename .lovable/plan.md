@@ -151,11 +151,22 @@ Sua recomendação vale, invertida: **padronizar os cinco conjuntos em `LeadQual
 
 Observação de higiene, fora do escopo da Lia: `Schedule` teve 266 `skipped` de 392, e `Lead` 486 de 1037 — a maior parte dos eventos históricos nunca chegou ao Meta (janela de 7 dias no backfill). Não muda nada agora, só explica por que o dataset parece magro.
 
-**3. Critério corrigido: o evento sai na apresentação marcada e confirmada, não na qualificação.**
-Aceito e travado. No desenho da Lia, "qualificado" é interesse validado — sinal mole; ensinar o Meta com ele traz volume de quem diz "interessante" e some. Então o disparo acontece **um só, no momento em que o lead confirma a apresentação**. Se depois quisermos sinal mais fundo, o candidato é **apresentação realizada** (`VisitaRealizada`, que já existe), nunca a qualificação.
+**3. Corrigido: são dois eventos, com gatilhos diferentes.**
+Não é um evento só. A caixa da Lia dispara:
 
-**4. Idempotência do evento: um por par (`lead_id`, `event_name`), gravado antes do envio.**
-A base já tem metade disso: `meta_capi_queue.event_id` é chave primária, então retry do worker não duplica *o mesmo* event_id. O que falta é a trava semântica — nada impede dois `event_id` diferentes para o mesmo lead e mesmo evento. Na Fase 2 a caixa da Lia grava a intenção **antes** de chamar a CAPI, com unicidade por `(lead_id, event_name)`, e o envio é derivado dessa linha. Conversão dobrada distorce aprendizado e custo por resultado.
+```text
+evento            gatilho                                       profundidade
+LeadQualificado   lead ACEITA a apresentação (quer a chamada)   volume — equivale à etapa Qualificação do pipeline
+VisitaMarcada     data confirmada                               fundo — menos volume, é o alvo futuro da otimização
+```
+
+O corte é o aceite, não o interesse. "Achei interessante" é conversa, não qualificação — e é exatamente o sinal mole que traria volume de quem some. O prompt e o contrato de saída da Lia (responsabilidade do Lucas) passam a separar `interesse_validado` de `apresentacao.aceita`, e é **`apresentacao.aceita`** que aciona `LeadQualificado`.
+
+Os dois vão com **`lead_id` do Meta** e com **parâmetro de origem identificando a caixa da Lia**, para separar Lia de corretor na leitura sem mexer no código depois. Sinal mais fundo no futuro: `VisitaRealizada`, que já existe e já dispara.
+
+**4. Idempotência: um evento por par (`lead_id`, `event_name`), gravado antes do envio.**
+Como agora são **dois** eventos por lead, a unicidade é obrigatoriamente pelo par — travar só por lead bloquearia o segundo evento. A base já tem metade da proteção: `meta_capi_queue.event_id` é chave primária, então retry do worker não duplica o mesmo `event_id`. Falta a trava semântica: nada impede dois `event_id` diferentes para o mesmo lead e mesmo evento. Na Fase 2 a caixa grava a intenção **antes** de chamar a CAPI, com unicidade por `(lead_id, event_name)`, e o envio é derivado dessa linha. Conversão dobrada distorce aprendizado e custo por resultado.
+
 
 ---
 
