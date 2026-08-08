@@ -1,0 +1,2 @@
+ALTER TABLE public.ia_prompt_versoes ADD COLUMN IF NOT EXISTS hash_sha256 text;
+COMMENT ON COLUMN public.ia_prompt_versoes.hash_sha256 IS 'SHA-256 dos BYTES CRUS do arquivo do prompt (sem normalizar quebra de linha, sem trim). O carregador recalcula sobre os bytes lidos e alerta se divergir.';

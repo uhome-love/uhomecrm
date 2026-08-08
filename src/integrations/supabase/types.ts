@@ -4144,6 +4144,7 @@ export type Database = {
           ativada_em: string | null
           ativada_por: string | null
           created_at: string
+          hash_sha256: string | null
           id: string
           observacoes: string | null
           versao: string
@@ -4154,6 +4155,7 @@ export type Database = {
           ativada_em?: string | null
           ativada_por?: string | null
           created_at?: string
+          hash_sha256?: string | null
           id?: string
           observacoes?: string | null
           versao: string
@@ -4164,6 +4166,7 @@ export type Database = {
           ativada_em?: string | null
           ativada_por?: string | null
           created_at?: string
+          hash_sha256?: string | null
           id?: string
           observacoes?: string | null
           versao?: string
