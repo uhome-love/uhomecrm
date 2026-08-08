@@ -77,6 +77,11 @@ Vive em **uma** função SQL: `public.lead_saude(lead)` (faixa por etapa) + RPC 
 ## Fase 1 — ⚡ central + saúde por toque + agenda (1 migration)
 
 - **⚡ Registrar atividade** vira modal único (`tipo_contato` + `resultado`), reaproveitando `QuickActionMenu.tsx` e o fluxo do `FocusModeModal`; ao final, oferta pulável de lembrete com as 5 opções (incl. data personalizada).
+- **Concluir lembrete → prompt do ⚡ (ajuste novo, só frontend).** Ao marcar um lembrete concluído, aparece "Registrou o contato? [⚡ Registrar] [Só concluir]".
+  - "Só concluir": marca `status='concluida'` e **nada mais** — sem atividade, sem toque, sem cor.
+  - "⚡ Registrar": abre o modal ⚡; quem carimba o toque é o INSERT em `pipeline_atividades` (trigger da Fase 0), nunca o completar do lembrete.
+  - Arquivos: `src/lib/completeLeadTask.ts`, `src/lib/taskCompletion.ts`, `src/components/pipeline/task-completion/TaskCompletionDialog.tsx`, `src/components/corretor/TarefasHojeLateral.tsx`, `src/pages/MinhasTarefas.tsx`, `CardMinimal.tsx` (atalho de check).
+  - **Gotcha crítico:** hoje `completeLeadTask.ts` **sempre** insere em `pipeline_atividades` ao concluir qualquer tarefa (linhas ~72-84) além de chamar `registrarToque` e escrever `ultima_acao_at`. Com o trigger da Fase 0 no ar, concluir lembrete passaria a carimbar toque **automaticamente**. Portanto o caminho "lembrete" precisa ser separado já na Fase 1: sem INSERT de atividade, sem `registrarToque`, sem `ultima_acao_at`. Isso antecipa parte da limpeza da Fase 2 e é a condição para o invariante valer.
 - `CardMinimal.tsx`, `PipelineAdvancedFilters.tsx`, `PipelineFiltroBadges.tsx` passam a usar `src/lib/leadSaude.ts`. Etapas terminais sem cor.
 - **Agenda do corretor** agrega 4 fontes (lembretes · confirmar visitas · nudge Sem Contato · leads esfriando), somente leitura; lembrete vencido aparece como atrasado.
 - **Migration 2:** cron + edge function `lembrete-notify` (varre `pipeline_tarefas` por `vence_em` + `hora_vencimento` em BRT, chama `criar_notificacao`; entrega já existente até o push). Auth via `_shared/cron-auth.ts`.
@@ -85,8 +90,13 @@ Vive em **uma** função SQL: `public.lead_saude(lead)` (faixa por etapa) + RPC 
 
 ## Fase 2 — tarefa vira lembrete, Sem Contato re-surge, playbook aposentado (2 migrations, dias separados)
 
-- Tarefas manuais existentes migram para `tipo='lembrete'`; `completeLeadTask.ts` e `taskCompletion.ts` **param** de chamar `registrarToque` e de escrever `ultima_acao_at`.
-- **Migration 3:** cadência Sem Contato passa a avançar por **atividade** — `fn_cadencia_sc_recalcular_por_tarefas` deixa de contar tarefas concluídas e `fn_cadencia_sc_avancar_acao` volta a avançar tentativa a partir de `pipeline_atividades`. O card `CadenciaSemContatoCard.tsx` vira nudge na agenda; "resolver" = ⚡. Fim de relógio único: SC estagna pela cadência, não pelos 21d.
+- Tarefas manuais existentes migram para `tipo='lembrete'`; `completeLeadTask.ts` e `taskCompletion.ts` **param** de chamar `registrarToque`, de escrever `ultima_acao_at` e de inserir atividade no caminho lembrete (o caminho ⚡ continua inserindo).
+- **Migration 3 — cadência Sem Contato com auto-lembretes, avanço por atividade.**
+  - Os 7 passos continuam materializados como tarefas, mas com `tipo='lembrete'` + `origem='cadencia_sem_contato'` (**auto-lembrete**): aparecem na agenda, são inertes para a saúde.
+  - `fn_cadencia_sc_recalcular_por_tarefas` **deixa de contar tarefas concluídas**; `fn_cadencia_sc_avancar_acao` (em `pipeline_atividades`) volta a avançar `tentativa_atual` a partir de atividades humanas do lead na etapa Sem Contato. Ao avançar, cancela o auto-lembrete pendente e cria o do passo seguinte (T+1); em T7 → `aguardando_descarte`.
+  - **Concluir ou dispensar o auto-lembrete não avança a cadência e não conta toque** — só some da agenda; a cadência recria o passo corrente na próxima varredura se a tentativa não avançou.
+  - **Gotcha "tarefa-fantasma":** hoje existe `trg_cadencia_sc_recalcular_tarefas` em `pipeline_tarefas` (INSERT/UPDATE/DELETE) chamando o recálculo a cada mexida em qualquer tarefa do lead — é exatamente o que geraria lembrete duplicado ao concluir. Esse trigger tem de ser **dropado** nesta migration; o recálculo passa a ter dois gatilhos apenas: entrada na etapa (`fn_cadencia_sc_stage`) e nova atividade.
+  - `CadenciaSemContatoCard.tsx` vira nudge na agenda; "resolver" = ⚡. Fim de relógio único: SC estagna pela cadência, não pelos 21d.
 - **Migration 4:** estagnação unificada — `_pipeline_referencia_estagnacao` passa a usar o relógio de toque, remove-se a "proteção por tarefa futura" (`_pipeline_tem_tarefa_pendente_futura`), e `pipeline_estagnacao_config` fica ativa **só** em Sem Contato, Qualificação (21d) e Aquecimento (21d). Drop da função órfã de playbook.
 - Frontend: remover UI de playbook; `EstagnacaoStatusCard.tsx` deixa de falar em "tarefa agendada — contagem pausada".
 - **Risco:** alterar a cadência mexe em fluxo com 7 passos em produção — validar em lead de teste no preview antes de publicar.
