@@ -13766,6 +13766,8 @@ export type Database = {
       can_access_lead: { Args: { p_lead_id: string }; Returns: boolean }
       can_access_negocio: { Args: { p_negocio_id: string }; Returns: boolean }
       cap_do_dia: { Args: never; Returns: number }
+      capi_guarda_selftest: { Args: never; Returns: Json }
+      capi_venda_cobertura_7d: { Args: never; Returns: Json }
       check_descartes_excessivos: { Args: never; Returns: undefined }
       check_phone_duplicate: {
         Args: { p_telefone: string }

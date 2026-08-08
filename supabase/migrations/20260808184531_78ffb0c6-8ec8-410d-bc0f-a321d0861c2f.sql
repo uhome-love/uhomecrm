@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.capi_venda_cobertura_7d() FROM anon;

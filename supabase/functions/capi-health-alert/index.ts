@@ -1,13 +1,18 @@
 // capi-health-alert — vigilância do rastreamento de conversão (Meta CAPI).
 //
-// Roda de hora em hora e dispara três alertas, todos com notificação in-app
+// Roda de hora em hora e dispara alertas, todos com notificação in-app
 // (o push sai automático via trigger trg_push_on_notification):
 //
 //   1. Evento silencioso — evento que vinha chegando e ficou >6h sem chegar.
+//      (Venda NÃO entra aqui: é vigiado por realidade, na regra 4.)
 //   2. Campanha gastando sem lead — campanha com gasto hoje e zero lead em 6h.
 //   3. Guarda barrando lead recente — bloqueios de lead criado nos últimos
 //      7 dias e de origem Meta acima de 3 em 24h (isso é bug de ingestão;
 //      lead antigo barrado é o comportamento esperado e fica silencioso).
+//      Linhas sintéticas do autoteste (ctx.selftest = true) são ignoradas.
+//   4. Venda sem evento — ganho elegível (lead com meta_lead_id) nos últimos
+//      7 dias sem evento Venda correspondente, com tolerância de 6h de fila.
+//   5. Autoteste da guarda — 1x por dia prova que a guarda ainda barra.
 //
 // Auth: requireCronAuth (x-cron-secret ou bearer = service role).
 
@@ -20,11 +25,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
+// Venda fica fora: silêncio de 6h em venda é normal. Ver regra 4.
 const EVENTOS_ESCADA = [
   "LeadQualificado",
   "VisitaMarcada",
   "VisitaRealizada",
-  "Venda",
 ];
 
 const SILENCIO_HORAS = 6;
@@ -32,11 +37,11 @@ const DEDUP_HORAS = 24;
 const GASTO_MINIMO_BRL = 20;
 const GUARDA_LIMITE_24H = 3;
 // Evento so e considerado "silencioso" se tinha cadencia real antes (>=10 em 7 dias).
-// Venda e evento raro: 6h sem venda e normal, nao e falha de rastreamento.
 const MIN_EVENTOS_7D = 10;
 const AD_ACCOUNT = "act_901395618608094";
 
 const ORIGENS_META = ["ig", "fb", "meta_ads", "meta_backfill", "facebook leads ads"];
+
 
 function horaBRT(): number {
   return Number(
@@ -206,7 +211,13 @@ Deno.serve(async (req) => {
       .gte("created_at", corte24h)
       .limit(2000);
 
-    const recentesMeta = (bloqueios ?? []).filter((b: { ctx: Record<string, unknown> | null }) => {
+    // Linhas sintéticas do autoteste NUNCA entram em contador nem em alerta.
+    const bloqueiosReais = (bloqueios ?? []).filter(
+      (b: { ctx: Record<string, unknown> | null }) =>
+        String((b.ctx ?? {}).selftest ?? "") !== "true",
+    );
+
+    const recentesMeta = bloqueiosReais.filter((b: { ctx: Record<string, unknown> | null }) => {
       const ctx = b.ctx ?? {};
       const origem = String(ctx.origem ?? "").toLowerCase();
       const criado = ctx.lead_created_at ? new Date(String(ctx.lead_created_at)).getTime() : 0;
@@ -230,12 +241,90 @@ Deno.serve(async (req) => {
       if (ok) disparados.push("guarda_lead_recente");
     }
 
+    // ── 4. Venda vigiada por realidade (ganho elegível x evento enviado) ──
+    let cobertura: Record<string, unknown> | null = null;
+    try {
+      const { data: cob } = await supabase.rpc("capi_venda_cobertura_7d");
+      cobertura = (cob ?? null) as Record<string, unknown> | null;
+      const maduros = Number(cobertura?.ganhos_elegiveis_maduros ?? 0);
+      const semEvento = (cobertura?.sem_evento ?? []) as Record<string, unknown>[];
+
+      if (maduros > 0 && semEvento.length > 0) {
+        // Se algum desses leads foi barrado pela guarda, o alerta diz isso.
+        const { data: barrados } = await supabase
+          .from("ops_events")
+          .select("ctx")
+          .eq("category", "capi_bloqueado_sem_lead_id")
+          .gte("created_at", corte7d)
+          .limit(500);
+        const barradosVenda = (barrados ?? []).filter(
+          (b: { ctx: Record<string, unknown> | null }) =>
+            String((b.ctx ?? {}).selftest ?? "") !== "true" &&
+            String((b.ctx ?? {}).event_name ?? "") === "Venda",
+        ).length;
+
+        const nomes = semEvento
+          .slice(0, 5)
+          .map((n) => String(n.cliente ?? n.negocio_id))
+          .join(", ");
+
+        const ok = await notificarAdmins(
+          "capi_venda_sem_evento",
+          "🚨 Venda no CRM sem conversão enviada",
+          `${semEvento.length} de ${maduros} venda(s) elegível(is) dos últimos 7 dias ` +
+            `não têm evento Venda enviado ao Meta: ${nomes}. ` +
+            (barradosVenda > 0
+              ? `${barradosVenda} evento(s) de Venda foram barrados por falta do identificador do anúncio — corrija a ingestão.`
+              : `Verifique o gatilho de Venda.`),
+          {
+            rule: "capi_venda_sem_evento",
+            ganhos_total: cobertura?.ganhos_total ?? null,
+            ganhos_elegiveis: cobertura?.ganhos_elegiveis ?? null,
+            ganhos_elegiveis_maduros: maduros,
+            eventos_venda_7d: cobertura?.eventos_venda_7d ?? null,
+            sem_evento: semEvento.slice(0, 10),
+            barrados_venda_7d: barradosVenda,
+          },
+        );
+        if (ok) disparados.push("venda_sem_evento");
+      }
+    } catch (e) {
+      console.error("[capi-health-alert] cobertura de venda falhou", e);
+    }
+
+    // ── 5. Autoteste da guarda (1x por dia) ─────────────────────────────
+    let selftest: Record<string, unknown> | null = null;
+    const { data: testeHoje } = await supabase
+      .from("ops_events")
+      .select("id")
+      .eq("fn", "capi_guarda_selftest")
+      .gte("created_at", new Date(agora - 24 * 3600_000).toISOString())
+      .limit(1);
+
+    if ((testeHoje ?? []).length === 0) {
+      const { data: res, error: errSelf } = await supabase.rpc("capi_guarda_selftest");
+      selftest = (res ?? null) as Record<string, unknown> | null;
+      if (errSelf) console.error("[capi-health-alert] selftest erro", errSelf.message);
+      if (String(selftest?.resultado ?? "") === "falhou") {
+        const ok = await notificarAdmins(
+          "capi_guarda_falhou",
+          "🚨 A guarda do rastreamento parou de barrar",
+          `O autoteste diário enviou um evento de teste em um lead sem identificador de anúncio ` +
+            `e ele NÃO foi barrado. Conversões inválidas podem estar indo ao Meta.`,
+          { rule: "capi_guarda_falhou", ...(selftest ?? {}) },
+        );
+        if (ok) disparados.push("guarda_falhou");
+      }
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
         disparados,
         bloqueios_recentes_meta_24h: recentesMeta.length,
-        bloqueios_total_24h: (bloqueios ?? []).length,
+        bloqueios_total_24h: bloqueiosReais.length,
+        cobertura_venda: cobertura,
+        selftest,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
