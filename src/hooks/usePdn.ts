@@ -104,6 +104,8 @@ type PdnEntry = {
   mes: string;
   status: string | null;
   observacoes: string | null;
+  corretor_avisado_em: string | null;
+  corretor_avisado_etapa: string | null;
   updated_at: string | null;
 };
 
@@ -206,7 +208,7 @@ export function usePdn(mes: string) {
     if (!entriesLoadedOnceRef.current) setLoadingEntries(true);
     const { data, error } = await supabase
       .from("pdn_entries")
-      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, status, observacoes, updated_at")
+      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, status, observacoes, corretor_avisado_em, corretor_avisado_etapa, updated_at")
       .order("created_at", { ascending: true });
     if (error) {
       console.error("Erro ao carregar PDN:", error);
@@ -472,8 +474,8 @@ export function usePdn(mes: string) {
         diasParado: dias,
         emRisco,
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
-        avisadoEm: null,
-        avisadoEtapa: null,
+        avisadoEm: ov?.corretor_avisado_em ?? null,
+        avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
         etapaAtualLabel: GRUPO_LABEL[grupoNatural],
       });
 
@@ -510,8 +512,8 @@ export function usePdn(mes: string) {
         diasParado: 0,
         emRisco: false,
         novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
-        avisadoEm: null,
-        avisadoEtapa: null,
+        avisadoEm: ov?.corretor_avisado_em ?? null,
+        avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
         etapaAtualLabel: GRUPO_LABEL["ganho"],
       });
     }
@@ -536,10 +538,12 @@ export function usePdn(mes: string) {
 
   // ── Overlay: SOMENTE anotações internas do gestor (pdn_entries) ───────────────
   // Etapa, VGV, empreendimento, corretor e queda vêm do pipeline — nunca daqui.
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "status">>): Promise<boolean> => {
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "status" | "avisadoEm" | "avisadoEtapa">>): Promise<boolean> => {
     if (!user) return false;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
+    if (patch.avisadoEm !== undefined) payload.corretor_avisado_em = patch.avisadoEm || null;
+    if (patch.avisadoEtapa !== undefined) payload.corretor_avisado_etapa = patch.avisadoEtapa || null;
     if (patch.status !== undefined) payload.status = patch.status || null;
     if (Object.keys(payload).length === 0) return false;
     payload.updated_at = new Date().toISOString();

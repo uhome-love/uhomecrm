@@ -10,7 +10,7 @@ import { GRUPO_LABEL_UI, PREV_GRUPO } from "./constants";
 
 export function MobileCard({ r, onSave, onRemove, onQueda, onReativar, onMudarEtapa, onOpenRow, selected, onToggleSelected }: {
   r: PdnRow;
-  onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
+  onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "empreendimento" | "vgv">>) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;

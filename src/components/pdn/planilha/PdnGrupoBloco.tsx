@@ -79,7 +79,7 @@ export function GrupoBloco({
   isMobile: boolean;
   colWidths: Record<string, number>;
   onColResize: (key: string, w: number) => void;
-  onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
+  onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "empreendimento" | "vgv">>) => void;
   onSaveNegocio: (row: PdnRow, patch: { vgv?: number; empreendimento?: string }) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
