@@ -999,7 +999,9 @@ export default function AgendaVisitas() {
 
       {/* ═══════ DAY LIST ═══════ */}
       <div className="space-y-4">
-        {isLoading ? (
+        {viewMode === "conferencia" ? (
+          <ConferenciaVisitasMes mes={dateRange.from.slice(0, 7)} />
+        ) : isLoading ? (
           <div className="space-y-4">
             {[0, 1].map(g => (
               <div key={g} className="space-y-1">
