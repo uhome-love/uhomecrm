@@ -57,6 +57,64 @@ export function CapiSaudeCard({ data, loading }: Props) {
               </div>
             </div>
 
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Ganhos 7d (total)</p>
+                <p className="text-2xl font-bold">{data.venda7d.ganhosTotal}</p>
+                <p className="text-xs text-muted-foreground">vendas no CRM</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Ganhos elegíveis</p>
+                <p className="text-2xl font-bold">{data.venda7d.ganhosElegiveis}</p>
+                <p className="text-xs text-muted-foreground">lead com ID de anúncio</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Eventos Venda 7d</p>
+                <p
+                  className={`text-2xl font-bold ${
+                    data.venda7d.semEvento > 0 ? "text-destructive" : ""
+                  }`}
+                >
+                  {data.venda7d.eventos}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {data.venda7d.semEvento > 0
+                    ? `${data.venda7d.semEvento} venda(s) sem evento`
+                    : "escada completa"}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Autoteste da guarda</p>
+              {data.selftest.resultado === "falhou" ? (
+                <p className="text-sm font-medium text-destructive">
+                  Guarda FALHOU no último teste
+                </p>
+              ) : data.selftest.resultado === "nao_aplicavel" ? (
+                <p className="text-sm text-muted-foreground">
+                  Sem caso para testar (nenhum lead sem identificador)
+                </p>
+              ) : data.selftest.resultado === "passou" ? (
+                <p
+                  className={`text-sm font-medium ${
+                    data.selftest.em &&
+                    Date.now() - new Date(data.selftest.em).getTime() > 48 * 3600_000
+                      ? "text-destructive"
+                      : ""
+                  }`}
+                >
+                  Guarda testada ✓
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Ainda não executado</p>
+              )}
+              {data.selftest.em && (
+                <p className="text-xs text-muted-foreground">
+                  Último teste: {formatBRT(data.selftest.em, "dd/MM HH:mm")}
+                </p>
+              )}
+
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">
                 Eventos enfileirados nas últimas 24h
