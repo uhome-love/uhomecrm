@@ -4173,6 +4173,80 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_turnos: {
+        Row: {
+          bloqueado_por: string | null
+          contexto: Json | null
+          created_at: string
+          editado: boolean
+          enviado_em: string | null
+          enviado_por: string | null
+          etapa_aplicada: boolean
+          etapa_proposta: string | null
+          horarios_ofertados: Json
+          ia_lead_id: string
+          id: string
+          midias: Json
+          modelo: string | null
+          prompt_versao: string | null
+          status: string
+          texto_editado: string | null
+          texto_proposto: string
+          travas: Json
+          updated_at: string
+        }
+        Insert: {
+          bloqueado_por?: string | null
+          contexto?: Json | null
+          created_at?: string
+          editado?: boolean
+          enviado_em?: string | null
+          enviado_por?: string | null
+          etapa_aplicada?: boolean
+          etapa_proposta?: string | null
+          horarios_ofertados?: Json
+          ia_lead_id: string
+          id?: string
+          midias?: Json
+          modelo?: string | null
+          prompt_versao?: string | null
+          status?: string
+          texto_editado?: string | null
+          texto_proposto: string
+          travas?: Json
+          updated_at?: string
+        }
+        Update: {
+          bloqueado_por?: string | null
+          contexto?: Json | null
+          created_at?: string
+          editado?: boolean
+          enviado_em?: string | null
+          enviado_por?: string | null
+          etapa_aplicada?: boolean
+          etapa_proposta?: string | null
+          horarios_ofertados?: Json
+          ia_lead_id?: string
+          id?: string
+          midias?: Json
+          modelo?: string | null
+          prompt_versao?: string | null
+          status?: string
+          texto_editado?: string | null
+          texto_proposto?: string
+          travas?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_turnos_ia_lead_id_fkey"
+            columns: ["ia_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ia_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       imoveis_interesse: {
         Row: {
           created_at: string | null
@@ -14452,6 +14526,14 @@ export type Database = {
           p_event_time?: string
           p_lead_event_source?: string
           p_lead_id: string
+        }
+        Returns: string
+      }
+      enqueue_meta_capi_event_lia: {
+        Args: {
+          p_event_name: string
+          p_event_time?: string
+          p_ia_lead_id: string
         }
         Returns: string
       }

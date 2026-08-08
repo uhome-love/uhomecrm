@@ -173,8 +173,23 @@ Deno.serve(async (req) => {
       .update({ ultima_mensagem_em: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq("id", iaLead.id);
 
-    // Fase 1 termina aqui: nada é respondido. O cérebro entra na Fase 2.
+    // Fase 2: acorda o cérebro. Ele decide sozinho se é hora (debounce, lock,
+    // travas) — o webhook só avisa e não espera resposta, para nunca segurar
+    // o retry do Evolution.
+    if (!fromMe) {
+      const brainUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/lia-brain`;
+      fetch(brainUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ action: "turno", ia_lead_id: iaLead.id }),
+      }).catch((err) => console.error("lia-brain trigger:", err));
+    }
+
     return json({ ok: true, ia_lead_id: iaLead.id, ia_mensagem_id: inserted.id });
+
   } catch (e) {
     console.error("lia-webhook error:", e);
     return json({ ok: false, error: (e as Error).message }, 200);
