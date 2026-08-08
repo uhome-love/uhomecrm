@@ -3,15 +3,15 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  ClipboardList, Download, LayoutGrid, RefreshCw, Table as TableIcon, Target, Archive, CalendarCheck,
+  ClipboardList, Download, LayoutGrid, RefreshCw, Table as TableIcon, Target,
 } from "lucide-react";
 
-export type PdnView = "planilha" | "kanban" | "meta" | "arquivados" | "visitas";
+export type PdnView = "planilha" | "kanban" | "meta";
 
 export function PdnHeader({
   mes, monthOptions, onChangeMes,
   view, onChangeView,
-  refreshing, onRefresh, onExport,
+  refreshing, onRefresh, onExport, isMobile = false,
 }: {
   mes: string;
   monthOptions: { value: string; label: string }[];
@@ -21,6 +21,8 @@ export function PdnHeader({
   refreshing: boolean;
   onRefresh: () => void;
   onExport: () => void;
+  /** Kanban só faz sentido no mobile; no desktop a planilha é a visão de gestão. */
+  isMobile?: boolean;
 }) {
   return (
     <div className="-mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-2.5 shadow-sm md:-mx-6 md:px-6">
@@ -43,17 +45,13 @@ export function PdnHeader({
           <Button variant={view === "planilha" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("planilha")}>
             <TableIcon className="mr-1.5 h-4 w-4" /> Planilha
           </Button>
-          <Button variant={view === "kanban" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("kanban")}>
-            <LayoutGrid className="mr-1.5 h-4 w-4" /> Kanban
-          </Button>
+          {isMobile && (
+            <Button variant={view === "kanban" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("kanban")}>
+              <LayoutGrid className="mr-1.5 h-4 w-4" /> Kanban
+            </Button>
+          )}
           <Button variant={view === "meta" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("meta")}>
             <Target className="mr-1.5 h-4 w-4" /> Meta
-          </Button>
-          <Button variant={view === "visitas" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("visitas")}>
-            <CalendarCheck className="mr-1.5 h-4 w-4" /> Conferência de Visitas
-          </Button>
-          <Button variant={view === "arquivados" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("arquivados")}>
-            <Archive className="mr-1.5 h-4 w-4" /> Arquivados
           </Button>
         </div>
         <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing}>
