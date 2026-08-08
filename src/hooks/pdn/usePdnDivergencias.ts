@@ -104,6 +104,9 @@ export function usePdnDivergencias(scopeAuthIds: string[] | null | undefined) {
           });
           continue;
         }
+        if (lead.arquivado) continue; // ganho arquivado: nada a reconciliar
+
+
 
         const esperado = FASE_TO_TIPO[n.fase];
         const atual = stageById[lead.stage_id];
