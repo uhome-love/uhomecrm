@@ -1,89 +1,75 @@
-# Lia · Fase 2 — cérebro, travas, sala mínima e conversão
+# Lia · fechar as duas brechas antes da bateria
 
-Interruptores continuam desligados: `ia_config.enviar_habilitado = false` e `captura_lia` vazia até a bateria de 20 passar.
+Sobre o teste ao vivo, respondendo antes do plano: a mensagem que entrou foi
+"Boa noite! Vi o anuncio, quero saber valor e se tem 4 dormitorios." O preço foi
+perguntado. A Lia não ofereceu valor sem ser questionada — o primeiro turno não
+é sinal ruim sobre o modelo. A bateria mede isso de qualquer forma.
 
-## Passo 0 — Mídias (antes do cérebro)
+Duas correções, ambas pré-condição para ligar o interruptor.
 
-Sete imagens já otimizadas, anexadas na conversa.
+## 1. O .b64.ts não pode divergir do .txt em silêncio
 
-1. Criar bucket público de Storage `lia-midias`.
-2. Subir os sete arquivos com nome estável (`01-mapa-implantacao.jpg` … `07-aerea-terreno.jpg`).
-3. Cadastrar sete linhas em `ia_midias` (`rotulo`, `url`, `tipo='imagem'`, `gatilho`, `ordem`, `ativo=true`):
+Hoje o hash prova que o que roda é a versão registrada, mas não prova que o
+`.txt` do repositório é o que roda. Editar o `.txt` sem regerar o `.b64.ts`
+deixa tudo verde e o ar rodando o prompt velho.
 
-| ordem | rótulo | gatilho |
-|---|---|---|
-| 1 | Mapa da implantação | condomínio, quantas casas, posição das casas |
-| 2 | Club House · piscina | lazer, piscina, família |
-| 3 | Club House · salão de festas | receber gente, festa |
-| 4 | Club House · academia | academia, treino |
-| 5 | Planta 3 dormitórios | 3 dormitórios, tamanho |
-| 6 | Planta 4 dormitórios | 4 dormitórios, tamanho |
-| 7 | Aérea do terreno | onde fica, localização |
+A verificação passa a ser mecânica, não lembrada:
 
-Teto de **3 mídias por conversa** permanece em código (`ia_config.max_midias_conversa`); sete peças cadastradas não viram sete envios. O link do Google Maps é texto e não conta no teto.
+- Um gerador (`scripts/lia-prompt.mjs --gerar`) reescreve o `.b64.ts` a partir
+  dos bytes do `.txt`.
+- Um verificador (`scripts/lia-prompt.mjs --verificar`) decodifica o `.b64.ts`,
+  compara byte a byte com o `.txt` e sai com erro quando divergirem, dizendo
+  qual comando regera.
+- O verificador entra no `prebuild` do `package.json`: divergiu, o build
+  quebra. Entra também como teste (`src/test/lia-prompt.test.ts`), para quebrar
+  em `npm test` mesmo sem build.
+- O hash registrado em `ia_prompt_versoes` passa a ser conferido pelo mesmo
+  verificador contra o comentário do arquivo gerado, fechando o triângulo
+  `.txt` = `.b64.ts` = registro no banco.
 
-## Passo 1 — Contexto montado por código
+Editar o prompt e esquecer de regerar deixa de ser silêncio e vira build
+vermelho.
 
-`lia-brain` monta o contexto (nunca o modelo): dados do `ia_leads`, últimas N mensagens de `ia_mensagens`, `ia_perfil_busca`, `ia_apresentacoes` em aberto, mídias já enviadas, hora BRT e janelas vigentes. O modelo recebe apenas esse bloco + prompt.
+## 2. Conversão sai do registro, nunca do JSON do modelo
 
-## Passo 2 — Prompt do arquivo com verificação de hash
+`registrarConversoes()` hoje dispara CAPI lendo `apresentacao_aceita` e
+`visita_confirmada_em` da resposta do modelo. Uma alucinação vira evento pago
+enviado ao Meta. Isso sai.
 
-Lê `prompt/lia-canoas-v3.1.txt` em bytes crus, calcula SHA-256 e compara com `ia_prompt_versoes`. Divergência → **bloqueio duro** (não envia) **+ alerta in-app e push para admins**, com dedup de 6h, no mesmo padrão do `capi-health-alert`. Divergência silenciosa não existe.
+- O JSON do modelo continua sendo lido, mas só como **sugestão**: gravada em
+  `ia_turnos.contexto` e mostrada na sala ao vivo como um aviso ("a Lia
+  entendeu que a apresentação foi aceita"). Não dispara nada.
+- O disparo passa a nascer do registro, por gatilho no banco sobre
+  `ia_apresentacoes`:
+  - `aceite_em` indo de vazio para preenchido → `LeadQualificado`.
+  - `confirmada_em` indo de vazio para preenchido → `VisitaMarcada`.
+  - O gatilho chama `enqueue_meta_capi_event_lia`, que já é idempotente pelo
+    par (lead, nome do evento) e já bloqueia sem `meta_lead_id`.
+- Quem preenche esses campos: a sala ao vivo ganha duas ações explícitas
+  ("Apresentação aceita" e "Confirmar data da visita"), e a data confirmada é
+  escolhida da lista de horários que o sistema gerou — a mesma lista que a
+  trava de horário já usa.
 
-## Passo 3 — Debounce com teto e lock por lead
+O modelo propõe, o código grava, o gatilho converte.
 
-Agrupa mensagens em rajada: espera `debounce_segundos`, com corte em `debounce_teto_segundos`. Pendente = mensagem do cliente posterior ao último turno. Lock por lead via compare-and-swap em `ia_leads.updated_at`: um turno por vez; mensagem que chega durante o turno entra na próxima rodada.
+## 3. Depois disso, a bateria nos dois modelos
 
-## Passo 4 — Travas depois do modelo, antes do envio
+Com as duas brechas fechadas, rodo os 20 turnos com o `google/gemini-3.6-flash`
+que está em `ia_config`, depois os mesmos 20 com um modelo de faixa acima
+(troca só no banco, sem deploy), e devolvo a comparação item a item. Itens 16,
+17 e 18 são portão duro nos dois. A primeira execução vira a linha de base.
 
-Ordem fixa, todas após a resposta do modelo:
-1. Kill switch global (`enviar_habilitado`) e modo sombra.
-2. Lead `pausado` / `assumido_por` / `opt_out` / etapa `bloqueado`.
-3. Janela de envio (08h–23h59 BRT) e janela de agenda (10h–20h).
-4. Teto de mensagens por turno e teto de 3 mídias por conversa (link do Maps é texto, não conta).
-5. Linhas vermelhas: nunca negar ser IA de forma enganosa, nunca pedir documento/CPF, respeitar opt-out.
-6. Idempotência por `idempotency_key` em `ia_mensagens`.
-7. **Travessão bloqueado na saída** (`—` e `–`).
-8. **Frases proibidas**: "ainda tem interesse", "tentei contato e não obtive retorno", "você não apareceu".
-9. **Arredondamento de metragem**: número maior que a área real é bloqueado; só passa área real exata ou número redondo (múltiplo de 5) abaixo dela. Pode 150, nunca 157.
-10. **Mensagem repetida**: texto igual a algum já enviado para o mesmo lead.
-11. **Horário escrito pelo modelo**: todo horário no texto tem de constar da lista de slots gerada pelo sistema (`ia_turnos.horarios_ofertados`).
+## Detalhes técnicos
 
-Qualquer trava reprovada: turno gravado como `bloqueado` em `ia_turnos` com código e detalhe, e nada é enviado. As travas 7 a 11 rodam **de novo** no envio manual da sala ao vivo: edição humana não é passe livre.
-
-## Passo 5 — Validação de `etapa_ia`
-
-Saída do modelo validada com `isEtapaIaEmissivel` (seis valores de `etapas.ts`). Valor fora da lista → etapa ignorada, lead permanece na etapa atual, evento registrado.
-
-## Passo 6 — Sala ao vivo (modo sombra) com enviar e editar
-
-`/admin/lia/sala`: abas Aguardando você / Bloqueados / Enviados. Cada turno mostra texto proposto, mídias, etapa proposta, modelo e as travas com motivo.
-- **Enviar como está** — o degrau da liberação: é isso que mede "80% enviadas sem edição em trinta conversas".
-- **Editar antes de enviar** — o texto editado é gravado em `ia_turnos.texto_editado` **ao lado** do `texto_proposto`, com `editado = true`, e o original continua visível.
-- **Descartar** — encerra o turno sem envio.
-
-## Passo 7 — Conversão de volta ao Meta
-
-- `LeadQualificado` no **aceite da apresentação**.
-- `VisitaMarcada` na **confirmação da data**.
-- Enfileira por `enqueue_meta_capi_event_lia` (irmã da função do pipeline, lendo `ia_leads` porque o lead da Lia ainda não existe no pipeline) com `meta_lead_id` gravado desde a Fase 0; sem `meta_lead_id` o evento é bloqueado e registrado. Idempotência por par `(ia_lead_id, event_name)`.
-
-
-## Passo 8 — Bateria de 20 (correção de sequência)
-
-A bateria **roda ao final da Fase 2**, não antes: sem cérebro não há o que medir. Essa primeira execução é a **linha de base** para toda mudança de prompt seguinte.
-
-Escolha do modelo por medição:
-1. Bateria completa com `google/gemini-3.6-flash` (valor atual em `ia_config.lia_model`).
-2. Mesma bateria com um modelo de faixa acima.
-3. Comparação item a item devolvida a você. Troca de modelo é update em `ia_config`, sem deploy.
-
-Portões: itens **16, 17 e 18** (robô / documento-CPF / opt-out) são portão duro nos dois modelos — qualquer falha bloqueia. Itens 1–15, 19 e 20: mínimo 15/17.
-
-Só após a bateria passar é que os interruptores são ligados.
-
-## Notas técnicas
-
-- Sem migration nova prevista, exceto criação do bucket e inserts em `ia_midias` (dados, não schema).
-- Nenhuma escrita em `pipeline_leads` nesta fase — a caixa `ia_*` segue isolada.
-- Timezone BRT em todas as janelas e carimbos.
+- `scripts/lia-prompt.mjs`: gerar e verificar, sem dependência nova; `prebuild`
+  no `package.json` e um teste vitest chamando o mesmo verificador.
+- Migration única (fora do horário de expediente, dentro do orçamento do dia):
+  função de gatilho + `AFTER UPDATE OF aceite_em, confirmada_em` e
+  `AFTER INSERT` em `public.ia_apresentacoes`, disparando só na transição de
+  nulo para valor, com `EXCEPTION WHEN OTHERS` para nunca derrubar a escrita.
+- `supabase/functions/lia-brain/index.ts`: remover a chamada de
+  `registrarConversoes`, manter a sugestão apenas em `ia_turnos.contexto`.
+- `src/pages/admin/LiaSalaAoVivo.tsx`: aviso de sugestão do modelo e as duas
+  ações que escrevem em `ia_apresentacoes`.
+- Nada disso liga o envio: `enviar_habilitado` continua falso e `captura_lia`
+  vazia.
