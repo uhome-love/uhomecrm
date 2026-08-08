@@ -31,6 +31,9 @@ const SILENCIO_HORAS = 6;
 const DEDUP_HORAS = 24;
 const GASTO_MINIMO_BRL = 20;
 const GUARDA_LIMITE_24H = 3;
+// Evento so e considerado "silencioso" se tinha cadencia real antes (>=10 em 7 dias).
+// Venda e evento raro: 6h sem venda e normal, nao e falha de rastreamento.
+const MIN_EVENTOS_7D = 10;
 const AD_ACCOUNT = "act_901395618608094";
 
 const ORIGENS_META = ["ig", "fb", "meta_ads", "meta_backfill", "facebook leads ads"];
@@ -131,7 +134,7 @@ Deno.serve(async (req) => {
         .eq("event_name", evento)
         .gte("created_at", corte7d)
         .lt("created_at", corteSilencio);
-      if ((anteriores ?? 0) === 0) continue; // nunca chegava: não é silêncio novo
+      if ((anteriores ?? 0) < MIN_EVENTOS_7D) continue; // sem cadência: silêncio é normal
 
       const ok = await notificarAdmins(
         `capi_evento_silencioso:${evento}`,
