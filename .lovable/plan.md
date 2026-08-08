@@ -87,5 +87,7 @@ Migration **distinta** da Fase 0 da Lia — se uma falhar, a outra não volta ju
 
 O conjunto **ativo, em outra campanha, ainda otimizando por `SCHEDULE`** — evento que ninguém dispara desde 06/08. Dois minutos no Gerenciador. Depois os dois conjuntos da campanha da Lia (pausada).
 
+**Consolidação de conjuntos ficou mais urgente, não menos.** Com o volume de `LeadQualificado` caindo ~20%, os conjuntos que otimizam por ele perdem 20% do sinal de conversão. O número está certo — é a inflação saindo — mas empurra os conjuntos mais magros para perto do piso da fase de aprendizado. Depois da limpeza eu levanto o volume de conversão **por conjunto** em 7 dias e trago a lista dos que ficaram sem massa para cortar/fundir.
+
 Também fora: enriquecer dados de usuário, valor monetário no evento de Venda, e qualquer coisa da Lia além da Fase 0 já combinada.
 
