@@ -14651,6 +14651,7 @@ export type Database = {
           tarefa_vencimento: string
         }[]
       }
+      get_lia_cron_secret: { Args: never; Returns: string }
       get_map_pins: {
         Args: {
           lat_max?: number
