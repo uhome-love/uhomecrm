@@ -3609,6 +3609,59 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_apresentacoes: {
+        Row: {
+          aceite_em: string | null
+          conduzida_por: string | null
+          confirmada_em: string | null
+          created_at: string
+          data_hora: string | null
+          ia_lead_id: string
+          id: string
+          lia_responsavel: boolean
+          link: string | null
+          observacoes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aceite_em?: string | null
+          conduzida_por?: string | null
+          confirmada_em?: string | null
+          created_at?: string
+          data_hora?: string | null
+          ia_lead_id: string
+          id?: string
+          lia_responsavel?: boolean
+          link?: string | null
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          aceite_em?: string | null
+          conduzida_por?: string | null
+          confirmada_em?: string | null
+          created_at?: string
+          data_hora?: string | null
+          ia_lead_id?: string
+          id?: string
+          lia_responsavel?: boolean
+          link?: string | null
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_apresentacoes_ia_lead_id_fkey"
+            columns: ["ia_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ia_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ia_call_results: {
         Row: {
           created_at: string
@@ -3679,6 +3732,443 @@ export type Database = {
             referencedColumns: ["pipeline_lead_id"]
           },
         ]
+      }
+      ia_config: {
+        Row: {
+          agenda_antecedencia_horas: number
+          agenda_fim: string
+          agenda_inicio: string
+          captura_lia: Json
+          debounce_segundos: number
+          debounce_teto_segundos: number
+          enviar_habilitado: boolean
+          id: boolean
+          instancia: string
+          janela_envio_fim: string
+          janela_envio_inicio: string
+          lia_model: string
+          max_mensagens_turno: number
+          max_midias_conversa: number
+          modo_liberacao: string
+          notificacao_canal: Json
+          prompt_versao: string
+          updated_at: string
+          webhook_secret: string | null
+          webhook_secret_anterior: string | null
+        }
+        Insert: {
+          agenda_antecedencia_horas?: number
+          agenda_fim?: string
+          agenda_inicio?: string
+          captura_lia?: Json
+          debounce_segundos?: number
+          debounce_teto_segundos?: number
+          enviar_habilitado?: boolean
+          id?: boolean
+          instancia?: string
+          janela_envio_fim?: string
+          janela_envio_inicio?: string
+          lia_model?: string
+          max_mensagens_turno?: number
+          max_midias_conversa?: number
+          modo_liberacao?: string
+          notificacao_canal?: Json
+          prompt_versao?: string
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_secret_anterior?: string | null
+        }
+        Update: {
+          agenda_antecedencia_horas?: number
+          agenda_fim?: string
+          agenda_inicio?: string
+          captura_lia?: Json
+          debounce_segundos?: number
+          debounce_teto_segundos?: number
+          enviar_habilitado?: boolean
+          id?: boolean
+          instancia?: string
+          janela_envio_fim?: string
+          janela_envio_inicio?: string
+          lia_model?: string
+          max_mensagens_turno?: number
+          max_midias_conversa?: number
+          modo_liberacao?: string
+          notificacao_canal?: Json
+          prompt_versao?: string
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_secret_anterior?: string | null
+        }
+        Relationships: []
+      }
+      ia_eventos: {
+        Row: {
+          ator: string
+          ator_user_id: string | null
+          created_at: string
+          detalhe: Json | null
+          etapa_de: Database["public"]["Enums"]["ia_etapa"] | null
+          etapa_para: Database["public"]["Enums"]["ia_etapa"] | null
+          ia_lead_id: string | null
+          id: string
+          motivo: string | null
+          tipo: string
+          trecho: string | null
+        }
+        Insert: {
+          ator?: string
+          ator_user_id?: string | null
+          created_at?: string
+          detalhe?: Json | null
+          etapa_de?: Database["public"]["Enums"]["ia_etapa"] | null
+          etapa_para?: Database["public"]["Enums"]["ia_etapa"] | null
+          ia_lead_id?: string | null
+          id?: string
+          motivo?: string | null
+          tipo: string
+          trecho?: string | null
+        }
+        Update: {
+          ator?: string
+          ator_user_id?: string | null
+          created_at?: string
+          detalhe?: Json | null
+          etapa_de?: Database["public"]["Enums"]["ia_etapa"] | null
+          etapa_para?: Database["public"]["Enums"]["ia_etapa"] | null
+          ia_lead_id?: string | null
+          id?: string
+          motivo?: string | null
+          tipo?: string
+          trecho?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_eventos_ia_lead_id_fkey"
+            columns: ["ia_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ia_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ia_followups: {
+        Row: {
+          agendado_para: string
+          cancelado_motivo: string | null
+          created_at: string
+          enviado_em: string | null
+          ia_lead_id: string
+          id: string
+          numero_toque: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agendado_para: string
+          cancelado_motivo?: string | null
+          created_at?: string
+          enviado_em?: string | null
+          ia_lead_id: string
+          id?: string
+          numero_toque: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agendado_para?: string
+          cancelado_motivo?: string | null
+          created_at?: string
+          enviado_em?: string | null
+          ia_lead_id?: string
+          id?: string
+          numero_toque?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_followups_ia_lead_id_fkey"
+            columns: ["ia_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ia_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ia_leads: {
+        Row: {
+          ad_id: string | null
+          adset_id: string | null
+          assumido_em: string | null
+          assumido_por: string | null
+          campaign_id: string | null
+          checagem_detalhe: Json | null
+          checagem_resultado: string | null
+          created_at: string
+          email: string | null
+          etapa: Database["public"]["Enums"]["ia_etapa"]
+          etapa_motivo: string | null
+          form_id: string
+          id: string
+          meta_lead_id: string
+          migrado_em: string | null
+          nome: string | null
+          opt_out: boolean
+          opt_out_at: string | null
+          origem: string
+          pausado: boolean
+          payload_bruto: Json | null
+          pipeline_lead_id: string | null
+          telefone: string | null
+          telefone_last8: string | null
+          telefone_normalizado: string | null
+          toques_enviados: number
+          ultima_mensagem_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          ad_id?: string | null
+          adset_id?: string | null
+          assumido_em?: string | null
+          assumido_por?: string | null
+          campaign_id?: string | null
+          checagem_detalhe?: Json | null
+          checagem_resultado?: string | null
+          created_at?: string
+          email?: string | null
+          etapa?: Database["public"]["Enums"]["ia_etapa"]
+          etapa_motivo?: string | null
+          form_id: string
+          id?: string
+          meta_lead_id: string
+          migrado_em?: string | null
+          nome?: string | null
+          opt_out?: boolean
+          opt_out_at?: string | null
+          origem?: string
+          pausado?: boolean
+          payload_bruto?: Json | null
+          pipeline_lead_id?: string | null
+          telefone?: string | null
+          telefone_last8?: string | null
+          telefone_normalizado?: string | null
+          toques_enviados?: number
+          ultima_mensagem_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ad_id?: string | null
+          adset_id?: string | null
+          assumido_em?: string | null
+          assumido_por?: string | null
+          campaign_id?: string | null
+          checagem_detalhe?: Json | null
+          checagem_resultado?: string | null
+          created_at?: string
+          email?: string | null
+          etapa?: Database["public"]["Enums"]["ia_etapa"]
+          etapa_motivo?: string | null
+          form_id?: string
+          id?: string
+          meta_lead_id?: string
+          migrado_em?: string | null
+          nome?: string | null
+          opt_out?: boolean
+          opt_out_at?: string | null
+          origem?: string
+          pausado?: boolean
+          payload_bruto?: Json | null
+          pipeline_lead_id?: string | null
+          telefone?: string | null
+          telefone_last8?: string | null
+          telefone_normalizado?: string | null
+          toques_enviados?: number
+          ultima_mensagem_em?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ia_mensagens: {
+        Row: {
+          autor: string
+          conteudo: string | null
+          created_at: string
+          delivery_status: string | null
+          direcao: string
+          erro: string | null
+          evolution_message_id: string | null
+          ia_lead_id: string
+          id: string
+          idempotency_key: string
+          media_url: string | null
+          timestamp_origem: string | null
+          tipo: string
+        }
+        Insert: {
+          autor?: string
+          conteudo?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          direcao: string
+          erro?: string | null
+          evolution_message_id?: string | null
+          ia_lead_id: string
+          id?: string
+          idempotency_key: string
+          media_url?: string | null
+          timestamp_origem?: string | null
+          tipo?: string
+        }
+        Update: {
+          autor?: string
+          conteudo?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          direcao?: string
+          erro?: string | null
+          evolution_message_id?: string | null
+          ia_lead_id?: string
+          id?: string
+          idempotency_key?: string
+          media_url?: string | null
+          timestamp_origem?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_mensagens_ia_lead_id_fkey"
+            columns: ["ia_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ia_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ia_midias: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          gatilho: string
+          id: string
+          ordem: number
+          rotulo: string
+          tipo: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          gatilho: string
+          id?: string
+          ordem?: number
+          rotulo: string
+          tipo?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          gatilho?: string
+          id?: string
+          ordem?: number
+          rotulo?: string
+          tipo?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      ia_perfil_busca: {
+        Row: {
+          autorizou_repasse: boolean
+          created_at: string
+          dormitorios: string | null
+          encaminhado_em: string | null
+          faixa_valor: string | null
+          finalidade: string | null
+          ia_lead_id: string
+          id: string
+          observacoes: string | null
+          prazo: string | null
+          regioes: string | null
+          tipo_imovel: string | null
+          updated_at: string
+        }
+        Insert: {
+          autorizou_repasse?: boolean
+          created_at?: string
+          dormitorios?: string | null
+          encaminhado_em?: string | null
+          faixa_valor?: string | null
+          finalidade?: string | null
+          ia_lead_id: string
+          id?: string
+          observacoes?: string | null
+          prazo?: string | null
+          regioes?: string | null
+          tipo_imovel?: string | null
+          updated_at?: string
+        }
+        Update: {
+          autorizou_repasse?: boolean
+          created_at?: string
+          dormitorios?: string | null
+          encaminhado_em?: string | null
+          faixa_valor?: string | null
+          finalidade?: string | null
+          ia_lead_id?: string
+          id?: string
+          observacoes?: string | null
+          prazo?: string | null
+          regioes?: string | null
+          tipo_imovel?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_perfil_busca_ia_lead_id_fkey"
+            columns: ["ia_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ia_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ia_prompt_versoes: {
+        Row: {
+          arquivo: string
+          ativa: boolean
+          ativada_em: string | null
+          ativada_por: string | null
+          created_at: string
+          id: string
+          observacoes: string | null
+          versao: string
+        }
+        Insert: {
+          arquivo: string
+          ativa?: boolean
+          ativada_em?: string | null
+          ativada_por?: string | null
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          versao: string
+        }
+        Update: {
+          arquivo?: string
+          ativa?: boolean
+          ativada_em?: string | null
+          ativada_por?: string | null
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          versao?: string
+        }
+        Relationships: []
       }
       imoveis_interesse: {
         Row: {
@@ -15083,6 +15573,16 @@ export type Database = {
         | "backoffice"
         | "rh"
         | "diretor"
+      ia_etapa:
+        | "entrada"
+        | "bloqueado"
+        | "atendendo"
+        | "sem_resposta"
+        | "qualificado"
+        | "perfil_busca"
+        | "nutricao"
+        | "desqualificado"
+        | "migrado"
       lead_priority: "alta" | "media" | "baixa" | "frio" | "perdido"
       message_channel: "whatsapp" | "sms" | "email"
       message_status: "pendente" | "enviado" | "entregue" | "falhou"
@@ -15238,6 +15738,17 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "gestor", "corretor", "backoffice", "rh", "diretor"],
+      ia_etapa: [
+        "entrada",
+        "bloqueado",
+        "atendendo",
+        "sem_resposta",
+        "qualificado",
+        "perfil_busca",
+        "nutricao",
+        "desqualificado",
+        "migrado",
+      ],
       lead_priority: ["alta", "media", "baixa", "frio", "perdido"],
       message_channel: ["whatsapp", "sms", "email"],
       message_status: ["pendente", "enviado", "entregue", "falhou"],

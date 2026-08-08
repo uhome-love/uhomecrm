@@ -1,0 +1,5 @@
+### LIA-Prompt-v3.1 — Casa Tua Santos Ferreira (Canoas)
+### PENDENTE: colar aqui o texto integral do documento LIA-Prompt-v3.1.
+### Este arquivo é a FONTE DE EXECUÇÃO do lia-brain (Fase 2).
+### O banco (ia_prompt_versoes) apenas registra qual versão está ativa — nunca guarda o texto.
+### Enquanto este arquivo estiver com este cabeçalho de pendência, o lia-brain não deve ser ativado.
