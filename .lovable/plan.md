@@ -122,7 +122,76 @@ Portanto, **o envio de conversão sai da Fase 5 e vira requisito da Fase 2**: no
 
 ---
 
+## Parte 3e — Condição de despause e regra de conversão (08/08, só leitura)
+
+**1. A campanha fica pausada até a Fase 2 concluída, não até a Fase 1.** Regra travada. As duas condições de despause, ambas obrigatórias:
+- teste de fumaça manual aprovado (Fase 1);
+- caixa da Lia devolvendo conversão real e verificada no Events Manager (Fase 2).
+Antes disso, cada real gasto ensina o Meta com sinal zero em `QUALITY_LEAD` e queima a fase de aprendizado dos cinco conjuntos.
+
+**2. `LeadQualificado` existe e dispara — mas achei um problema pior nos outros dois conjuntos.**
+O dataset `1426170849536314` tem histórico próprio do CRM, via `meta_capi_queue` (últimos 90 dias):
+
+```text
+evento              enfileirados  enviados  primeiro     último
+Lead                    1037         551    28/07        05/08
+LeadQualificado          398         398    04/08        08/08  (ativo agora)
+Schedule                 392         125    28/07        05/08  (parou)
+VisitaMarcada             37          37    05/08        08/08  (substituiu Schedule)
+VisitaRealizada           12          12    05/08        07/08
+ViewContent              216          78    28/07        05/08
+Venda / Purchase          17           9
+```
+
+Confirmado também no Events Manager (`/stats`): nas últimas 24h chegaram `LeadQualificado`, `VisitaMarcada` e `VisitaRealizada`.
+
+Conclusão diferente da que você previu, e mais grave: **os três conjuntos que otimizam por `LeadQualificado` estão bem — o evento é real e recente.** Quem está otimizando por evento morto são **os dois conjuntos de `SCHEDULE`**: em 05/08 o CRM trocou `Schedule` por `VisitaMarcada` e o evento padrão `Schedule` **não é mais emitido desde então**. Os conjuntos "Remarketing" (ativo) e "Fuga do Aluguel" (pausado) apontam para um evento que parou de existir há três dias.
+
+Sua recomendação vale, invertida: **padronizar os cinco conjuntos em `LeadQualificado`** (o que já tem histórico e volume), em vez de ressuscitar `Schedule`. Ajuste no Gerenciador de Anúncios, não no código. Isso vira item da Parte 5 e pré-requisito do despause.
+
+Observação de higiene, fora do escopo da Lia: `Schedule` teve 266 `skipped` de 392, e `Lead` 486 de 1037 — a maior parte dos eventos históricos nunca chegou ao Meta (janela de 7 dias no backfill). Não muda nada agora, só explica por que o dataset parece magro.
+
+**3. Critério corrigido: o evento sai na apresentação marcada e confirmada, não na qualificação.**
+Aceito e travado. No desenho da Lia, "qualificado" é interesse validado — sinal mole; ensinar o Meta com ele traz volume de quem diz "interessante" e some. Então o disparo acontece **um só, no momento em que o lead confirma a apresentação**. Se depois quisermos sinal mais fundo, o candidato é **apresentação realizada** (`VisitaRealizada`, que já existe), nunca a qualificação.
+
+**4. Idempotência do evento: um por par (`lead_id`, `event_name`), gravado antes do envio.**
+A base já tem metade disso: `meta_capi_queue.event_id` é chave primária, então retry do worker não duplica *o mesmo* event_id. O que falta é a trava semântica — nada impede dois `event_id` diferentes para o mesmo lead e mesmo evento. Na Fase 2 a caixa da Lia grava a intenção **antes** de chamar a CAPI, com unicidade por `(lead_id, event_name)`, e o envio é derivado dessa linha. Conversão dobrada distorce aprendizado e custo por resultado.
+
+---
+
+## Parte 3f — Brinde: o casamento silencioso (só leitura, 30 dias)
+
+Você estava certo, e o número é alto. `pipeline_leads` dos últimos 30 dias: **1.408 leads, 1.067 sem `segmento_id` (76%)**.
+
+Por campanha, o padrão é exatamente o que você descreveu:
+
+```text
+empreendimento do lead        leads   sem segmento
+Casa Tua - Qualificado v2       204        204  (100%)
+Casa Tua - v3                   154        153
+Casa Tua Canoas - Pré           105        105  (100%)
+Terrace v2 - Qualificado         89         89
+Casa Tua Porto Alegre - v3       59         59
+Connect JW - Qualificado         57         57
+Vivid - v3                       46         46
+...
+Flow                            128          4  (2%)
+```
+
+`Flow` é a exceção porque tem canonicalização forçada em código (linha 507 do `receive-meta-lead`), que reduz o nome ao termo exato antes do ILIKE. Todo nome comprido que não tem esse tratamento — ou seja, todos os outros — falha em silêncio.
+
+Dois atenuantes reais, e é por isso que ninguém notou:
+- **Nenhum lead ficou sem dono** (`corretor_id` nulo = 0 em 30 dias). A distribuição hoje roda majoritariamente por **alocação** (Foco Corretores), que resolve por `empreendimento_canonico_id`, e esse resolve bem: só 47 de 1.408 sem canônico.
+- Distribuições em 30 dias por pool: `alocado` 857, `fila_ceo` 617, `segmento` 241.
+
+O custo escondido está nos **617 fila_ceo**, concentrados justamente nos nomes compridos: Casa Tua Canoas - Pré (52), Casa Tua - v3 (52), Casa Tua Porto Alegre - v3 (25), Vivid - v3 (16), Connect JW - v2 (15). Ou seja: o roteamento por segmento morreu, a alocação segurou o que pôde, e o resto virou trabalho manual do CEO — todo dia, sem ninguém registrar como bug.
+
+**Isso não entra na Lia.** É um segundo plano, separado, com uma correção de uma linha na direção do ILIKE (ou casamento pelo canônico em vez do texto bruto) mais um backfill de segmento. Só sinalizo aqui porque é dinheiro e tempo do CEO saindo pelo ralo há pelo menos 30 dias. Me diz se quer que eu abra esse plano depois da Fase 0 da Lia.
+
+---
+
 ## Parte 4 — Fases
+
 
 
 
