@@ -42,6 +42,7 @@ A comparação é sempre entre coisas comparáveis: **só ganho elegível conta*
 - O alerta traz a lista dos negócios elegíveis sem evento correspondente, para ser acionável.
 - Como a checagem passa a ser por realidade, o `Venda` **sai do alerta de silêncio por tempo** — acaba o falso positivo de hoje, que disparou só por 6h sem venda.
 - Regra irmã no mesmo cheque: se um ganho elegível teve bloqueio registrado com `event_name = 'Venda'`, o alerta diz isso explicitamente — a venda existe, o evento foi barrado, e o caminho é corrigir a ingestão.
+- **Data de referência com fallback (ponto cego fechado).** O gatilho `enforce_data_assinatura_ganho()` só exige `data_assinatura` quando `status = 'ativo'`, e hoje existem **6 negócios em `ganho` com o campo vazio** (de 102). Sem fallback, esses ficariam fora da janela de 7 dias e um `Venda` faltando neles nunca alertaria. A janela passa a usar `COALESCE(data_assinatura, data da mudança para 'ganho', updated_at)`, sempre em BRT — usa a assinatura quando existe, cai para o horário da virada de fase quando não existe.
 
 No card de `/admin/ingestao`, três números lado a lado para a diferença ficar explicada em vez de parecer erro:
 
