@@ -445,6 +445,8 @@ Deno.serve(async (req) => {
     let totalLeads = 0;
     let reprocessed = 0;
     let skipped = 0;
+    let liaCapturados = 0;
+
     let formErrors = 0;   // formulários antigos/inacessíveis (não são leads perdidos)
     let leadErrors = 0;   // leads que o receive-meta-lead recusou (precisa investigar)
     const leadErrorSamples: { form: string; lead_id: string; status: number; body: string }[] = [];
@@ -506,8 +508,11 @@ Deno.serve(async (req) => {
           });
           const r = await resp.json().catch(() => ({}));
           if (resp.ok) {
-            if (typeof r.action === "string" && r.action.startsWith("skipped")) skipped++;
+            // Lead da campanha da Lia: desviado para a caixa isolada ia_leads.
+            if (r.action === "lia_capturado") liaCapturados++;
+            else if (typeof r.action === "string" && r.action.startsWith("skipped")) skipped++;
             else reprocessed++;
+
           } else {
             leadErrors++;
             if (leadErrorSamples.length < 15) {
@@ -540,7 +545,9 @@ Deno.serve(async (req) => {
       timed_out: timedOut,
       total_leads_found: totalLeads,
       reprocessed,
+      lia_capturados: liaCapturados,
       skipped_dedup: skipped,
+
       // form_errors: formulários antigos/sem acesso no Meta — esperado, NÃO são leads perdidos.
       form_errors: formErrors,
       // lead_errors: leads recusados pelo receive-meta-lead — investigar via lead_error_samples.
