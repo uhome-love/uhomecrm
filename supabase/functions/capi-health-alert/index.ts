@@ -1,13 +1,18 @@
 // capi-health-alert — vigilância do rastreamento de conversão (Meta CAPI).
 //
-// Roda de hora em hora e dispara três alertas, todos com notificação in-app
+// Roda de hora em hora e dispara alertas, todos com notificação in-app
 // (o push sai automático via trigger trg_push_on_notification):
 //
 //   1. Evento silencioso — evento que vinha chegando e ficou >6h sem chegar.
+//      (Venda NÃO entra aqui: é vigiado por realidade, na regra 4.)
 //   2. Campanha gastando sem lead — campanha com gasto hoje e zero lead em 6h.
 //   3. Guarda barrando lead recente — bloqueios de lead criado nos últimos
 //      7 dias e de origem Meta acima de 3 em 24h (isso é bug de ingestão;
 //      lead antigo barrado é o comportamento esperado e fica silencioso).
+//      Linhas sintéticas do autoteste (ctx.selftest = true) são ignoradas.
+//   4. Venda sem evento — ganho elegível (lead com meta_lead_id) nos últimos
+//      7 dias sem evento Venda correspondente, com tolerância de 6h de fila.
+//   5. Autoteste da guarda — 1x por dia prova que a guarda ainda barra.
 //
 // Auth: requireCronAuth (x-cron-secret ou bearer = service role).
 
@@ -20,11 +25,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
+// Venda fica fora: silêncio de 6h em venda é normal. Ver regra 4.
 const EVENTOS_ESCADA = [
   "LeadQualificado",
   "VisitaMarcada",
   "VisitaRealizada",
-  "Venda",
 ];
 
 const SILENCIO_HORAS = 6;
@@ -32,11 +37,11 @@ const DEDUP_HORAS = 24;
 const GASTO_MINIMO_BRL = 20;
 const GUARDA_LIMITE_24H = 3;
 // Evento so e considerado "silencioso" se tinha cadencia real antes (>=10 em 7 dias).
-// Venda e evento raro: 6h sem venda e normal, nao e falha de rastreamento.
 const MIN_EVENTOS_7D = 10;
 const AD_ACCOUNT = "act_901395618608094";
 
 const ORIGENS_META = ["ig", "fb", "meta_ads", "meta_backfill", "facebook leads ads"];
+
 
 function horaBRT(): number {
   return Number(
