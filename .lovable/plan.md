@@ -1,49 +1,66 @@
-# CAPI da Uhome — limpeza de payload, levantamento de origem e detecção
+# CAPI da Uhome — limpeza de payload, auditoria e detecção
 
-Independente da Lia. Só o Bloco 2 (payload) é execução de código; o resto é levantamento e observabilidade.
+Independente da Lia. Só o Bloco 2 é execução de código; o resto é levantamento e observabilidade.
 
-## O que já confirmei lendo banco e código agora
+## Levantamento fechado (leitura feita agora, nada alterado)
 
-- O payload é montado **inteiramente** em `public.enqueue_meta_capi_event` (Postgres). Nenhuma edge function monta `user_data`, exceto `meta-capi-track` (site, hoje sem uso real).
-- **Cidade/estado são fixos no código**: a função define `v_cidade := 'porto alegre'` e `v_uf := 'rs'` para todo lead, sempre. Confirmado — é dado falso, não dado faltando.
-- **IP e user-agent são do servidor**: a função lê `pipeline_leads.client_user_agent`/`client_ip_address`, e nos últimos 14 dias esses campos só contêm `Deno/2.1.4 (SupabaseEdgeRuntime)` (477 leads) e `Make/production` (6). Ou seja, 100% do que existe gravado é servidor, não cliente.
-- **Cobertura de `lead_id`** (14 dias, na fila): LeadQualificado 318/400 (79,5%), Lead 453/507, VisitaMarcada 32/37, VisitaRealizada 8/12, Venda 1/5.
-- **Pista de origem** (ainda não é a resposta final): dos leads criados nos últimos 14 dias sem `meta_lead_id`, a origem é Manual 14, Reengajamento 10, Oferta Ativa 9, site_uhome 9, imovelweb 8, outro 4, indicação 1 e **meta_ads 1**. Indica fortemente que os eventos sem `lead_id` são de leads que não vieram do Meta — mas o cruzamento evento↔lead ainda não foi feito (o `event_id` é um md5 e não guarda o id do lead), então isso entra como levantamento formal antes de qualquer correção.
-- A trava de 7 dias e o `event_id` como chave de idempotência estão corretos e não serão tocados.
+**Duplicidade (item 1) — não há inflação relevante.** O `_trg_pipeline_lead_capi()` dispara em **toda** transição para a etapa Qualificação (`NEW.stage_id IS DISTINCT FROM OLD.stage_id AND NEW.stage_id = <uuid Qualificação>`), não só na primeira — então repetição é possível por desenho. Na prática, nos últimos 14 dias: **401 eventos `LeadQualificado` para 398 leads distintos** (recomputei o `event_id` md5 para cruzar). Só 3 leads geraram evento repetido. A conta que não fechava era outra: os 82 eventos sem `lead_id` não vêm só de leads criados nos últimos 14 dias — a maioria é de lead antigo reativado.
 
-## Bloco 1 · Levantamento da origem dos eventos sem `lead_id` (sem corrigir nada)
+**Origem dos 82 `LeadQualificado` sem `lead_id` (14 dias):**
 
-Cruzar os `LeadQualificado` dos últimos 14 dias sem `lead_id` com o lead de origem, recomputando o `event_id` (md5 determinístico) para cada lead candidato, e devolver a quebra por `origem`, separando:
+| Origem | Eventos |
+|---|---|
+| Reengajamento | 39 |
+| meta_ads | 16 |
+| imovelweb | 6 |
+| Oferta Ativa | 5 |
+| Facebook Leads Ads | 4 |
+| site_uhome | 3 |
+| Manual | 3 |
+| outro / Formulário / Nutrição / Open Bosque / não informado | 6 |
 
-- leads que **não vieram do Meta** (site, ImovelWeb, indicação, manual, oferta ativa, reengajamento) — recomendação será parar de disparar;
-- leads que **vieram do Meta** mas perderam o `meta_lead_id` na ingestão — aí é bug de ingestão e conserta na entrada.
+Leitura: ~20 são de origem Meta (`meta_ads` + `Facebook Leads Ads`) e perderam o `meta_lead_id` — lead antigo, anterior à captura do identificador. Os 39 de Reengajamento são leads velhos de base, também sem identificador. O restante (~23) é claramente não-Meta.
 
-Entrego a tabela e a recomendação. Nenhuma mudança de comportamento neste bloco — as duas correções são opostas e a decisão é sua.
+**CEP (item 4) — não está fixo, mas está sempre vazio.** A função hasheia `pipeline_leads.cep`, ou seja, vem do cadastro real. Só que **0 de 1.410 leads dos últimos 30 dias têm CEP preenchido** — então `zp` nunca sai no payload. Não é dado falso, é campo morto. Não faz parte da correção; fica registrado.
 
-## Bloco 2 · Limpeza do payload (execução)
+**Cidade/estado — fixos no código.** `v_cidade := 'porto alegre'` e `v_uf := 'rs'` para todo lead, sempre. Dado falso.
 
-Uma migration que substitui `enqueue_meta_capi_event`, mudando só a montagem do `user_data`:
+**IP e user-agent — do servidor.** Nos últimos 14 dias os únicos valores gravados são `Deno/2.1.4 (SupabaseEdgeRuntime)` (477) e `Make/production` (6).
 
-1. **`ct`/`st` deixam de ser fixos.** Só entram se houver cidade/UF reais no cadastro do lead; caso contrário, omitidos. `country` (`br`) fica, porque é verdadeiro.
-2. **`client_ip_address` e `client_user_agent` só entram se forem do cliente.** Filtro em código: descarta valores de servidor (`Deno/`, `SupabaseEdgeRuntime`, `Make/`, vazio) e, na prática, hoje isso zera os dois campos até a ingestão passar a capturar o valor real do navegador.
-3. Tudo o mais (hashes de e-mail, telefone, nome, CEP, `fbc`/`fbp`, `lead_id`, trava de 7 dias, `event_id`) fica idêntico.
+## Regra permanente (item 3)
 
-Mesma limpeza aplicada em `supabase/functions/meta-capi-track/index.ts`, que também manda `ct`/`st` fixos.
+Em formulário instantâneo do Meta o lead **nunca toca a infraestrutura da Uhome** — preenche dentro do Instagram. `client_ip_address` e `client_user_agent` **não existem** para lead de anúncio e **não são pendência a resolver**. Proibido inventar valor para esses campos ou "reativar" a captura mais adiante. O identificador desse fluxo é o `lead_id`. Isso vai para a memória do projeto junto com o build.
 
-## Bloco 3 · Detecção (junto com a Fase 0 da Lia)
+## Bloco 2 · Limpeza do payload + rastreabilidade (execução)
 
-Vai na mesma migration da Fase 0 da Lia, para não gastar janela de migration:
+Uma migration (só DDL, substituindo a função) e uma coluna aditiva:
 
-- **Alerta de evento silencioso**: evento que vinha chegando e fica >6h sem chegar gera alerta (dedup 24h por evento), no mesmo padrão do `edge_health_aggregate` já existente.
-- **Alerta de campanha gastando sem lead**: campanha ativa com gasto e zero lead em 6h.
+1. **`ct`/`st` deixam de ser fixos.** Só entram se houver cidade/UF reais no cadastro do lead; senão, omitidos. `country` (`br`) fica, porque é verdadeiro.
+2. **`client_ip_address` e `client_user_agent` só entram se forem do cliente.** Filtro que descarta valores de servidor (`Deno/`, `SupabaseEdgeRuntime`, `Make/`, vazio). Na prática hoje isso zera os dois campos — e é o resultado correto, conforme a regra acima.
+3. **Nova coluna `lead_id_interno uuid` em `meta_capi_queue`** (aditiva, sem backfill), preenchida pela função em todo evento novo. Torna trivial qualquer auditoria futura de origem, duplicidade e cobertura, sem recomputar md5.
+4. Nada mais muda: hashes de e-mail/telefone/nome/CEP, `fbc`/`fbp`, `lead_id`, trava de 7 dias e `event_id` ficam idênticos.
+
+Mesma limpeza de `ct`/`st` em `supabase/functions/meta-capi-track/index.ts`.
+
+Os eventos sem `lead_id` **continuam disparando por enquanto** — a decisão de parar de disparar para origens não-Meta é sua, e agora está informada pela tabela acima.
+
+## Bloco 3 · Detecção (migration própria, separada da Lia)
+
+Migration **distinta** da Fase 0 da Lia, no mesmo dia se couber na janela (limite 2/dia) — se uma falhar, a outra não volta junto.
+
+- **Alerta de evento silencioso**: evento que vinha chegando e fica >6h sem chegar (dedup 24h por nome de evento), no padrão do `edge_health_aggregate`.
+- **Alerta de campanha gastando sem lead** em 6h.
 - **Painel** em `/admin/ingestao`: eventos por dia por tipo, cobertura de `lead_id` e taxa de descarte da fila.
 
-Canal do alerta: definido por você (só no sistema, ou também push no celular).
+Canal do alerta: sua decisão (só in-app, ou também push no celular).
 
-## Fora deste plano
+## Medição, com prazo realista (item 6)
 
-Bloco 2 do seu documento (trocar os conjuntos de `SCHEDULE` para `LeadQualificado` e consolidar os seis conjuntos da Lia em dois) é manual no Gerenciador de Anúncios. Também ficam de fora: enriquecer dados de usuário, valor monetário no evento de Venda e qualquer coisa da Lia além da Fase 0.
+- **48h após o Bloco 2**: reporto só cobertura de campo nos **eventos novos** — quantos saíram sem cidade/estado fixos, quantos sem IP/UA de servidor, e a cobertura de `lead_id`.
+- **7 dias após**: reavalio o `pixel_has_low_event_source_match_rate` no Diagnóstico, porque ele é calculado sobre janela e 48h não bastam para virar o indicador.
 
-## Medição (48h depois do Bloco 2)
+## Fora deste plano (seu, manual, hoje)
 
-Rodo de novo o Diagnóstico do dataset e reporto se `pixel_has_low_event_source_match_rate` saiu de reprovado, mais a cobertura de `lead_id` só nos eventos posteriores à limpeza.
+O conjunto **ativo, em outra campanha, ainda otimizando por `SCHEDULE`** — evento que ninguém dispara desde 06/08. Dois minutos no Gerenciador de Anúncios e é o melhor retorno por esforço da lista. Depois os dois conjuntos da campanha da Lia (pausada) e a consolidação dos seis em dois.
+
+Também fora: enriquecer dados de usuário, valor monetário no evento de Venda, e qualquer coisa da Lia além da Fase 0 já combinada.
