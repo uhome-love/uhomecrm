@@ -116,6 +116,7 @@ const App = () => (
               <Route path="/admin/ingestao" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/admin/uso-paginas" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><UsoPaginasPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/admin/lia" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><LiaConexao /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
+              <Route path="/admin/lia/sala" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><LiaSalaAoVivo /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
 
 
               {/* Redirects */}
