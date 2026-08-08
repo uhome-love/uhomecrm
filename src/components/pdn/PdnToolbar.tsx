@@ -22,8 +22,10 @@ interface Props {
   kpiFilter: string | null;
   onClearKpi: () => void;
   caidosCount?: number;
+  /** Toggle "mostrar caídos" na planilha (a antiga aba Arquivados). */
+  caidosAtivo?: boolean;
   onOpenArquivados?: () => void;
-  view: "planilha" | "kanban" | "meta" | "arquivados" | "visitas";
+  view: "planilha" | "kanban" | "meta";
   showResetLarguras: boolean;
   onResetLarguras: () => void;
 }
@@ -36,7 +38,7 @@ interface Props {
 export function PdnToolbar({
   filters, setFilters, showEquipeFilter, equipes, corretores,
   hits, vgvHits, total, kpiFilter, onClearKpi,
-  caidosCount = 0, onOpenArquivados,
+  caidosCount = 0, caidosAtivo = false, onOpenArquivados,
   view, showResetLarguras, onResetLarguras,
 }: Props) {
   const anyFilter = filters.soRisco || filters.soNovos || filters.equipe !== "todas" || filters.corretor !== "todos" || !!kpiFilter;
@@ -104,13 +106,13 @@ export function PdnToolbar({
 
       {caidosCount > 0 && onOpenArquivados && (
         <Button
-          variant="outline"
+          variant={caidosAtivo ? "secondary" : "outline"}
           size="sm"
           className="h-8 border-red-500/40 text-xs text-red-600 dark:text-red-400"
           onClick={onOpenArquivados}
-          title="Negócios marcados como caiu neste mês"
+          title="Mostrar/ocultar os negócios marcados como caiu neste mês"
         >
-          {caidosCount} caído{caidosCount > 1 ? "s" : ""}
+          {caidosAtivo ? "Ocultar" : "Mostrar"} {caidosCount} caído{caidosCount > 1 ? "s" : ""}
         </Button>
       )}
 

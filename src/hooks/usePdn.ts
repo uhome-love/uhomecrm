@@ -84,17 +84,11 @@ export interface PdnRow {
   equipe: string;
   status: string;             // status livre do gerente (overlay)
   observacoes: string;
-  proximaAcao: string;
   caiu: boolean;
   motivoQueda: string;
   diasParado: number;
   emRisco: boolean;
   // ── Camada de gestão do gestor (interna) ──
-  proximaAcaoData: string;   // YYYY-MM-DD
-  prioridade: "alta" | "media" | "baixa" | "";
-  riscoManual: boolean;
-  riscoMotivo: string;
-  proximaAcaoVencida: boolean;
   novoDesdeOntem: boolean;
   avisadoEm: string | null;  // quando o gestor avisou o corretor
   avisadoEtapa: string | null;
@@ -110,11 +104,6 @@ type PdnEntry = {
   mes: string;
   status: string | null;
   observacoes: string | null;
-  proxima_acao: string | null;
-  proxima_acao_data: string | null;
-  prioridade: string | null;
-  risco_manual: boolean | null;
-  risco_motivo: string | null;
   corretor_avisado_em: string | null;
   corretor_avisado_etapa: string | null;
   updated_at: string | null;
@@ -219,7 +208,7 @@ export function usePdn(mes: string) {
     if (!entriesLoadedOnceRef.current) setLoadingEntries(true);
     const { data, error } = await supabase
       .from("pdn_entries")
-      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, status, observacoes, proxima_acao, proxima_acao_data, prioridade, risco_manual, risco_motivo, corretor_avisado_em, corretor_avisado_etapa, updated_at")
+      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, status, observacoes, corretor_avisado_em, corretor_avisado_etapa, updated_at")
       .order("created_at", { ascending: true });
     if (error) {
       console.error("Erro ao carregar PDN:", error);
@@ -456,16 +445,13 @@ export function usePdn(mes: string) {
       const data = isGanho ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || "—";
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || "—";
-      const proximaAcao = ov?.proxima_acao || "";
-      const proximaAcaoData = ov?.proxima_acao_data || "";
       const observacoesRow = (ov?.observacoes ?? d.observacoesNegocio ?? "").toString().trim();
       const dias = diffDays(d.stageChangedAt);
-      const riscoManual = !!ov?.risco_manual;
       // Sinais de "foi tocado recentemente": próxima ação, observações preenchidas,
       // ou edição manual no override do PDN nos últimos 7 dias. Qualquer um zera o risco automático.
       const foiEditadoRecente = !!ov?.updated_at && diffDays(ov.updated_at) <= 7;
-      const temSinalDeAtualizacao = !!proximaAcao || !!observacoesRow || foiEditadoRecente;
-      const emRisco = riscoManual || (grupoBase !== "ganho" && !temSinalDeAtualizacao && dias > 7);
+      const temSinalDeAtualizacao = !!observacoesRow || foiEditadoRecente;
+      const emRisco = grupoBase !== "ganho" && !temSinalDeAtualizacao && dias > 7;
       out.push({
         id: `deal-${d.id}`,
         negocioId: d.negocioId,
@@ -483,16 +469,10 @@ export function usePdn(mes: string) {
         equipe,
         status: ov?.status || "",
         observacoes: ov?.observacoes ?? d.observacoesNegocio ?? "",
-        proximaAcao,
         caiu: false,
         motivoQueda: "",
         diasParado: dias,
         emRisco,
-        proximaAcaoData,
-        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
-        riscoManual,
-        riscoMotivo: ov?.risco_motivo || "",
-        proximaAcaoVencida: isVencida(proximaAcaoData),
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
@@ -527,16 +507,10 @@ export function usePdn(mes: string) {
         equipe,
         status: ov?.status || "",
         observacoes: ov?.observacoes ?? vd.observacoesNegocio ?? "",
-        proximaAcao: ov?.proxima_acao || "",
         caiu: false,
         motivoQueda: "",
         diasParado: 0,
         emRisco: false,
-        proximaAcaoData: ov?.proxima_acao_data || "",
-        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
-        riscoManual: !!ov?.risco_manual,
-        riscoMotivo: ov?.risco_motivo || "",
-        proximaAcaoVencida: false,
         novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
         avisadoEm: ov?.corretor_avisado_em ?? null,
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
@@ -564,18 +538,13 @@ export function usePdn(mes: string) {
 
   // ── Overlay: SOMENTE anotações internas do gestor (pdn_entries) ───────────────
   // Etapa, VGV, empreendimento, corretor e queda vêm do pipeline — nunca daqui.
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "avisadoEm" | "avisadoEtapa">>): Promise<boolean> => {
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "status" | "avisadoEm" | "avisadoEtapa">>): Promise<boolean> => {
     if (!user) return false;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
-    if (patch.proximaAcao !== undefined) payload.proxima_acao = patch.proximaAcao || null;
-    if (patch.status !== undefined) payload.status = patch.status || null;
-    if (patch.proximaAcaoData !== undefined) payload.proxima_acao_data = patch.proximaAcaoData || null;
-    if (patch.prioridade !== undefined) payload.prioridade = patch.prioridade || null;
-    if (patch.riscoManual !== undefined) payload.risco_manual = patch.riscoManual;
-    if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
     if (patch.avisadoEm !== undefined) payload.corretor_avisado_em = patch.avisadoEm || null;
     if (patch.avisadoEtapa !== undefined) payload.corretor_avisado_etapa = patch.avisadoEtapa || null;
+    if (patch.status !== undefined) payload.status = patch.status || null;
     if (Object.keys(payload).length === 0) return false;
     payload.updated_at = new Date().toISOString();
 

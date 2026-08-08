@@ -1,11 +1,12 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { ConferenciaVisitasMes } from "@/components/pdn/ConferenciaVisitasMes";
 import { useSearchParams, useLocation } from "react-router-dom";
 import {
   format, startOfDay, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth,
   addDays, isToday, isBefore,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw, ChevronDown, Link2, Link2Off, List, Columns3 } from "lucide-react";
+import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw, ChevronDown, Link2, Link2Off, List, Columns3, ClipboardCheck } from "lucide-react";
 import { useCalendarIntegration } from "@/hooks/useCalendarIntegration";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -453,7 +454,7 @@ export default function AgendaVisitas() {
   const [kpiFilter, setKpiFilter] = useState<string | null>(searchParams.get("status") || null);
   const [equipeFilter, setEquipeFilter] = useState<string | null>(searchParams.get("equipe") || null);
   const [scrollToDay, setScrollToDay] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"lista" | "semana">("lista");
+  const [viewMode, setViewMode] = useState<"lista" | "semana" | "conferencia">("lista");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   // Applied custom range — só aplica ao clicar "Aplicar" (evita refetch a cada tecla)
@@ -945,6 +946,17 @@ export default function AgendaVisitas() {
           >
             <Columns3 size={12} /> <span className="hidden sm:inline">Semana</span>
           </button>
+          <button
+            onClick={() => setViewMode("conferencia")}
+            title="Conferência do mês: onde cada visita parou"
+            aria-pressed={viewMode === "conferencia"}
+            className={cn(
+              "text-[11px] font-medium px-2 py-1 rounded-[6px] transition-all flex items-center gap-1",
+              viewMode === "conferencia" ? "bg-primary text-white" : "text-neutral-500 hover:text-foreground dark:hover:text-white"
+            )}
+          >
+            <ClipboardCheck size={12} /> <span className="hidden sm:inline">Conferência</span>
+          </button>
         </div>
       </div>
 
@@ -999,7 +1011,9 @@ export default function AgendaVisitas() {
 
       {/* ═══════ DAY LIST ═══════ */}
       <div className="space-y-4">
-        {isLoading ? (
+        {viewMode === "conferencia" ? (
+          <ConferenciaVisitasMes mes={dateRange.from.slice(0, 7)} />
+        ) : isLoading ? (
           <div className="space-y-4">
             {[0, 1].map(g => (
               <div key={g} className="space-y-1">
