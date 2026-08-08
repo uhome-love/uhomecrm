@@ -421,6 +421,43 @@ Deno.serve(async (req) => {
     const telefone = normalizePhone(phone);
     const isTestLead = isLikelyTestLead(name, email, message);
 
+    // ── Desvio de captura da Lia (Casa Tua Canoas) ──
+    // Listas vazias em ia_config.captura_lia = nada muda.
+    if (!isTestLead && telefone) {
+      try {
+        const lia = await capturarLeadLia(supabase, {
+          nome: name,
+          email,
+          telefone,
+          meta_lead_id: externalLeadId || null,
+          campaign_id: campaignId || null,
+          form_id: metaFormId || null,
+          adset_id: adsetId || null,
+          ad_id: adId || null,
+          payload_bruto: body,
+        });
+        if (lia.capturado) {
+          logOps("info", "business", "lia_captura", {
+            resultado: lia.resultado,
+            desviar: lia.desviar,
+            ia_lead_id: lia.ia_lead_id,
+            campaign_id: campaignId,
+            form_id: metaFormId,
+          });
+        }
+        if (lia.desviar) {
+          return new Response(
+            JSON.stringify({ success: true, action: "lia_capturado", resultado: lia.resultado, ia_lead_id: lia.ia_lead_id, trace_id: traceId }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      } catch (e) {
+        // Captura da Lia nunca derruba a entrada do lead.
+        L.warn("lia capture falhou", { campaignId }, e);
+      }
+    }
+
+
     // ── Resolve empreendimento (need to declare before logging) ──
     let empreendimento: string | null = null;
     let segmentoFromMap: string | null = null;
