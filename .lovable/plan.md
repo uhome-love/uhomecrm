@@ -82,6 +82,7 @@ Migration **distinta** da Fase 0 da Lia — se uma falhar, a outra não volta ju
 
 - **48h após o Bloco 2**: cobertura de campo nos **eventos novos** — quantos saíram sem cidade/estado fixos, quantos sem IP/UA de servidor, cobertura de `lead_id` (esperado: 100%) e quantos leads foram barrados, por origem.
 - **7 dias após**: reavalio o `pixel_has_low_event_source_match_rate` no Diagnóstico, porque ele é calculado sobre janela e 48h não bastam para virar o indicador.
+- **7 dias após — medição comercial, não só técnica.** Cobertura de campo e Diagnóstico dizem se o cano está limpo; só isto diz se veio lead melhor por ele. Reporto **`VisitaMarcada` por real gasto** e **`VisitaRealizada` por real gasto**, comparando as **duas semanas anteriores** ao Bloco 2 com as **duas seguintes**. Gasto vem de `marketing_entries` (investimento por período, BRT); os eventos vêm de `meta_capi_queue` com `status = 'sent'`. Levo os números absolutos junto, para a queda esperada de volume não ser lida como piora.
 
 ## Fora deste plano (seu, manual)
 
