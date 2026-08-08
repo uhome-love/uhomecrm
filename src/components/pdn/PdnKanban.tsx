@@ -19,7 +19,7 @@ const PROB_POR_GRUPO: Record<PdnGrupo, number> = {
   caidos: 0,
 };
 
-export type PdnSavePatch = Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>;
+export type PdnSavePatch = Partial<Pick<PdnRow, "status" | "observacoes">>;
 
 interface PdnKanbanProps {
   rows: PdnRow[];

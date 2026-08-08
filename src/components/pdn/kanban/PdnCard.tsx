@@ -12,12 +12,6 @@ import {
 } from "lucide-react";
 import { PDN_GRUPOS, type PdnGrupo, type PdnRow } from "@/hooks/usePdn";
 
-const PRIORIDADE_META: Record<string, { label: string; cls: string }> = {
-  alta: { label: "Alta", cls: "bg-red-500/15 text-red-600 dark:text-red-400" },
-  media: { label: "Média", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
-  baixa: { label: "Baixa", cls: "bg-slate-500/15 text-slate-600 dark:text-slate-400" },
-};
-
 interface Props {
   r: PdnRow;
   etapaLabel: string;
@@ -37,8 +31,6 @@ export function PdnCard({
   r, selected, onToggleSelected, onClick, onDragStart, onDragEnd, onQueda,
   onMoverPara, onReativar,
 }: Props) {
-  const prio = r.prioridade ? PRIORIDADE_META[r.prioridade] : null;
-
   const handleQueda = (e: React.MouseEvent) => {
     e.stopPropagation();
     onQueda(r);
@@ -141,13 +133,7 @@ export function PdnCard({
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-5 text-[11px] text-muted-foreground">
         <span className="line-clamp-1">{r.corretor}</span>
-        {prio && <span className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 ${prio.cls}`}><Flame className="h-2.5 w-2.5" />{prio.label}</span>}
         {r.emRisco && <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-1 py-0.5 text-amber-600 dark:text-amber-400"><AlertTriangle className="h-2.5 w-2.5" />Risco</span>}
-        {r.proximaAcaoData && (
-          <span className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 ${r.proximaAcaoVencida ? "bg-red-500/15 text-red-600 dark:text-red-400" : "bg-muted"}`}>
-            <CalendarClock className="h-2.5 w-2.5" />{formatBRT(r.proximaAcaoData, "dd/MM")}
-          </span>
-        )}
       </div>
     </div>
   );
