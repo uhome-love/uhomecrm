@@ -44,15 +44,37 @@ Caixa isolada, dono único, sem escrever no pipeline dos corretores. Passagem pa
 
 ---
 
+## Parte 3b — Sete adições (08/08, aceitas)
+
+**1. Debounce + lock por lead (Fase 2).** Antes de chamar o modelo, aguarda silêncio curto (`ia_config.debounce_segundos`, default 10, faixa 8–12) e agrupa tudo que chegou no intervalo numa única chamada. Lock por `ia_leads.id`: uma chamada ao cérebro por lead por vez; mensagem que chega durante a chamada entra no próximo turno em vez de abrir um paralelo.
+
+**2. Pausar e assumir por lead nascem na Fase 0/2.** Colunas `ia_leads.pausado` e `ia_leads.assumido_por` criadas na Fase 0 e **honradas pelo `lia-brain` na Fase 2**: lead pausado ou assumido por humano = a Lia grava o que chega e não envia nada. Freio fino existe desde o primeiro envio, não só na tela.
+
+**3. Sombra começa na Fase 2 — decisão travada.** Entra na Fase 2 uma **sala ao vivo mínima** em `/lia`: lista de conversas, thread em leitura, a sugestão que a Lia produziu, e um botão de enviar. Sem quadro, sem métricas, sem mesa de decisão — isso continua na Fase 3. Assim sombra e assistido rodam sem esperar a tela completa.
+
+**4. Ordem de envio.** As mensagens do turno saem **em sequência confirmada**: a seguinte só parte depois do retorno da anterior, com intervalo curto entre elas. Nada de envio paralelo.
+
+**5. Fonte do prompt.** O **arquivo em git é a fonte** que o `lia-brain` lê em execução. `ia_prompt_versoes` apenas **registra** qual versão está ativa, desde quando e quem trocou — o cérebro nunca lê texto de prompt do banco.
+
+**6. Comportamento com o freio puxado.** O que chega continua sendo gravado normalmente em `ia_mensagens` e **nada sai**. A saúde mostra o **contador de conversas esperando** (e a mais antiga), para o custo do freio ser visível.
+
+**7. Envio sem duplicar.** Chave de idempotência por mensagem enviada (`ia_mensagens.idempotency_key`, única): timeout do Evolution seguido de retry reaproveita a chave e não dobra a mensagem. A trava de texto repetido fica registrada como **segunda linha de defesa** para o mesmo problema, não como a única.
+
+**Detalhe:** `ia_config` é **linha única** por constraint (`id boolean PRIMARY KEY DEFAULT true CHECK (id)`), para não existir configuração fantasma.
+
+---
+
 ## Parte 4 — Fases
 
-**Fase 0 · Fundação (1 migration).** `ia_leads`, `ia_mensagens`, `ia_eventos`, `ia_followups`, `ia_perfil_busca`, `ia_apresentacoes`, `ia_midias`, `ia_config`, `ia_prompt_versoes`. Enum próprio de etapa (`entrada, bloqueado, atendendo, sem_resposta, qualificado, perfil_busca, nutricao, desqualificado, migrado`). GRANT + RLS restrita a `admin` e `service_role`. `ia_config` já nasce com: kill switch `enviar_habilitado=false`, segredo do webhook, `form_ids_lia` vazio, agenda, canal de notificação. Junto: alerta de ingestão com as duas condições, e o prompt versionado em `supabase/functions/lia-brain/prompt/`.
+**Fase 0 · Fundação (1 migration).** `ia_leads` (com `pausado`, `assumido_por`), `ia_mensagens` (com `idempotency_key` única), `ia_eventos`, `ia_followups`, `ia_perfil_busca`, `ia_apresentacoes`, `ia_midias`, `ia_config` (linha única), `ia_prompt_versoes`. Enum próprio de etapa (`entrada, bloqueado, atendendo, sem_resposta, qualificado, perfil_busca, nutricao, desqualificado, migrado`). GRANT + RLS restrita a `admin` e `service_role`. `ia_config` já nasce com: kill switch `enviar_habilitado=false`, `debounce_segundos`, segredo do webhook, `form_ids_lia` vazio, agenda, canal de notificação. Junto: alerta de ingestão com as duas condições, e o prompt versionado em `supabase/functions/lia-brain/prompt/`.
 
 **Fase 1 · Entrada e caixa.** `lia-webhook` autenticado (query + instância + header quando houver), `lia-cron` de minuto, desvio em `receive-meta-lead` e `meta-leads-backfill` por `ia_config.form_ids_lia` (lista vazia = comportamento idêntico ao de hoje). Checagem de telefone na entrada. **Portão: teste de fumaça manual antes de qualquer form_id entrar.** Testes com inserção manual em `ia_leads`.
 
-**Fase 2 · Cérebro e travas.** `lia-brain` com contexto montado por código, saída em contrato JSON validado antes de gravar. Travas em código depois do modelo e antes do envio: kill switch, agenda real BRT, janela 08h–23h59 com colapso da madrugada, repetição, travessão e frases proibidas, arredondamento para baixo, 3 mensagens/turno, 3 mídias/conversa, zero áudio, opt-out gravado (Parte 2) antes do envio de encerramento. Linha de base de 20 perguntas gravada antes; testes determinísticos escritos aqui.
+**Fase 2 · Cérebro, travas e sala mínima.** `lia-brain` com contexto montado por código e prompt lido do arquivo em git, saída em contrato JSON validado antes de gravar. Debounce + lock por lead antes da chamada. Travas em código depois do modelo e antes do envio: kill switch global, `pausado`/`assumido_por`, agenda real BRT, janela 08h–23h59 com colapso da madrugada, repetição, travessão e frases proibidas, arredondamento para baixo, 3 mensagens/turno em sequência confirmada, 3 mídias/conversa, zero áudio, idempotência de envio, opt-out gravado (Parte 2) antes do envio de encerramento. Sala ao vivo mínima para sombra. Linha de base de 20 perguntas gravada antes; testes determinísticos escritos aqui.
 
-**Fase 3 · Tela `/lia` (admin).** Quadro por etapa · sala ao vivo com realtime, assumir e pausar · fila de follow-up · mesa de decisão com os resumos de sete campos · saúde e freio (botão do kill switch que já existe desde a Fase 0). Nada entra em dashboard, forecast ou métrica de corretor.
+**Fase 3 · Tela `/lia` completa (admin).** Quadro por etapa · sala ao vivo com realtime, assumir e pausar · fila de follow-up · mesa de decisão com os resumos de sete campos · saúde e freio (kill switch que existe desde a Fase 0, contador de conversas esperando). Nada entra em dashboard, forecast ou métrica de corretor.
+
+
 
 **Fase 4 · Migração (1 migration: coluna `autor` + RPC idempotente).** Chave `ia_leads.id`. Cria card com atribuição manual (bypassa roleta), replica a thread **com timestamp original** e `autor='lia'`, resumo como `direction='note'`, cria a visita, registra em `pipeline_historico`, marca `migrado`. Telefone já ativo: anexa ao card existente e avisa o dono.
 
