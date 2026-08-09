@@ -16,7 +16,7 @@ const corsHeaders: Record<string, string> = {
 
 const META_API_VERSION = "v21.0";
 const META_BASE = `https://graph.facebook.com/${META_API_VERSION}`;
-const PAGE = 10000;
+const PAGE = 1000; // teto de linhas do PostgREST — paginação obrigatória
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
