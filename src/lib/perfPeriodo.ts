@@ -21,7 +21,7 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export type PeriodoTipo = "mes" | "trimestre" | "ano" | "d90" | "custom";
+export type PeriodoTipo = "dia" | "semana" | "mes" | "trimestre" | "ano" | "d90" | "custom";
 
 export interface PeriodoState {
   tipo: PeriodoTipo;
