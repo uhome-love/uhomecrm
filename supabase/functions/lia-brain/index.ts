@@ -405,8 +405,14 @@ async function acaoTurno(supabase: SupabaseClient, iaLeadId: string) {
   // reservado ao tráfego real de mensagens.
 
 
-  // Conversões de volta ao Meta: aceite da apresentação e confirmação da data.
-  await registrarConversoes(supabase, iaLeadId, saida);
+  // Conversão NÃO sai do JSON do modelo. O JSON é sugestão (fica no contexto do
+  // turno e aparece como aviso na sala ao vivo). Quem dispara CAPI é o gatilho
+  // sobre ia_apresentacoes. No autônomo, a saída JÁ APROVADA pelas travas
+  // preenche o registro; em sombra/assistido, quem preenche é a sala ao vivo.
+  const autonomo = cfg.modo_liberacao === "autonomo";
+  if (autonomo && !bloqueado) {
+    await gravarRegistroDaSaida(supabase, iaLeadId, saida, horarios);
+  }
 
   // Modo sombra: nunca envia sozinha. A sala ao vivo decide.
   if (cfg.modo_liberacao === "sombra" || bloqueado) {
@@ -416,21 +422,67 @@ async function acaoTurno(supabase: SupabaseClient, iaLeadId: string) {
   return await despacharTurno(supabase, turno.id, null, null);
 }
 
-// ── Conversões CAPI ────────────────────────────────────────────────────────
-async function registrarConversoes(supabase: SupabaseClient, iaLeadId: string, saida: SaidaModelo) {
-  if (saida.apresentacao_aceita) {
-    await supabase.rpc("enqueue_meta_capi_event_lia", {
-      p_ia_lead_id: iaLeadId,
-      p_event_name: "LeadQualificado",
-    });
+// ── Registro de apresentação (o que realmente converte) ────────────────────
+// O gatilho no banco lê aceite_em e confirmada_em. Aqui só se grava o que
+// passou pelas travas, e a data confirmada precisa estar na MESMA lista de
+// horários que a trava de horário usa.
+async function gravarRegistroDaSaida(
+  supabase: SupabaseClient,
+  iaLeadId: string,
+  saida: SaidaModelo,
+  horarios: string[],
+) {
+  const querAceite = saida.apresentacao_aceita === true;
+  const dataBruta = saida.visita_confirmada_em ?? null;
+
+  let confirmada: string | null = null;
+  if (dataBruta) {
+    const d = new Date(dataBruta);
+    if (!Number.isNaN(d.getTime())) {
+      const rotulo = hhmm(new Date(d.getTime() + BRT_OFFSET_MS));
+      const ofertados = new Set(horarios.map((h) => String(h).slice(0, 5)));
+      if (ofertados.has(rotulo)) confirmada = d.toISOString();
+      else {
+        await supabase.from("ia_eventos").insert({
+          ia_lead_id: iaLeadId,
+          tipo: "registro_recusado",
+          motivo: `Data ${rotulo} fora da lista de horários ofertados.`,
+          ator: "lia",
+        });
+      }
+    }
   }
-  if (saida.visita_confirmada_em) {
-    await supabase.rpc("enqueue_meta_capi_event_lia", {
-      p_ia_lead_id: iaLeadId,
-      p_event_name: "VisitaMarcada",
+
+  if (!querAceite && !confirmada) return;
+
+  const { data: existente } = await supabase
+    .from("ia_apresentacoes")
+    .select("id, aceite_em, confirmada_em")
+    .eq("ia_lead_id", iaLeadId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const patch: Record<string, unknown> = {};
+  if (querAceite && !existente?.aceite_em) patch.aceite_em = new Date().toISOString();
+  if (confirmada && !existente?.confirmada_em) {
+    patch.confirmada_em = confirmada;
+    patch.data_hora = confirmada;
+  }
+  if (Object.keys(patch).length === 0) return;
+
+  if (existente) {
+    await supabase.from("ia_apresentacoes").update(patch).eq("id", existente.id);
+  } else {
+    await supabase.from("ia_apresentacoes").insert({
+      ia_lead_id: iaLeadId,
+      status: confirmada ? "confirmada" : "aceita",
+      lia_responsavel: true,
+      ...patch,
     });
   }
 }
+
 
 // ── Despacho de um turno (usado pelo automático e pela sala ao vivo) ───────
 async function despacharTurno(
