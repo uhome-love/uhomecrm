@@ -15,10 +15,39 @@ export interface FunilLinha {
   gerente_auth_id: string | null;
   corretor_ativo: boolean;
   presenca_dias: number;
+  presenca_faltas: number;
+  presenca_saidas: number;
   dias_uteis: number;
+  /** dias úteis já decorridos do período (base honesta da presença) */
+  dias_uteis_decorridos: number;
   leads_recebidos: number;
   pipeline_ativo: number;
   descartes: number;
+  /** visitas que existiram no período (agendadas nele OU realizadas nele) */
+  visitas_total: number;
+  visitas_agendadas: number;
+  visitas_realizadas: number;
+  visitas_no_show: number;
+  negocios_abertos: number;
+  /** VGV de negócios ativos (em negociação + contrato, sem queda) */
+  vgv_gerado: number;
+  vendas: number;
+  vgv_assinado: number;
+}
+
+export interface FunilTotais {
+  corretores: number;
+  /** corretores ativos (base do % de presença) */
+  corretores_ativos: number;
+  presenca_dias: number;
+  presenca_faltas: number;
+  presenca_saidas: number;
+  dias_uteis: number;
+  dias_uteis_decorridos: number;
+  leads_recebidos: number;
+  pipeline_ativo: number;
+  descartes: number;
+  visitas_total: number;
   visitas_agendadas: number;
   visitas_realizadas: number;
   visitas_no_show: number;
@@ -28,21 +57,6 @@ export interface FunilLinha {
   vgv_assinado: number;
 }
 
-export interface FunilTotais {
-  corretores: number;
-  presenca_dias: number;
-  dias_uteis: number;
-  leads_recebidos: number;
-  pipeline_ativo: number;
-  descartes: number;
-  visitas_agendadas: number;
-  visitas_realizadas: number;
-  visitas_no_show: number;
-  negocios_abertos: number;
-  vgv_gerado: number;
-  vendas: number;
-  vgv_assinado: number;
-}
 
 const num = (v: unknown) => Number(v) || 0;
 
@@ -75,10 +89,14 @@ export function useFunilPerformance(filtro: FunilFiltro, enabled = true) {
         gerente_auth_id: (r.gerente_auth_id as string) ?? null,
         corretor_ativo: Boolean(r.corretor_ativo),
         presenca_dias: num(r.presenca_dias),
+        presenca_faltas: num(r.presenca_faltas),
+        presenca_saidas: num(r.presenca_saidas),
         dias_uteis: num(r.dias_uteis),
+        dias_uteis_decorridos: num(r.dias_uteis_decorridos) || num(r.dias_uteis),
         leads_recebidos: num(r.leads_recebidos),
         pipeline_ativo: num(r.pipeline_ativo),
         descartes: num(r.descartes),
+        visitas_total: num(r.visitas_total),
         visitas_agendadas: num(r.visitas_agendadas),
         visitas_realizadas: num(r.visitas_realizadas),
         visitas_no_show: num(r.visitas_no_show),
@@ -108,6 +126,7 @@ export function consolidarFunil(linhas: FunilLinha[]): FunilLinha[] {
       return;
     }
     cur.leads_recebidos += l.leads_recebidos;
+    cur.visitas_total += l.visitas_total;
     cur.visitas_agendadas += l.visitas_agendadas;
     cur.visitas_realizadas += l.visitas_realizadas;
     cur.visitas_no_show += l.visitas_no_show;
@@ -118,6 +137,8 @@ export function consolidarFunil(linhas: FunilLinha[]): FunilLinha[] {
     cur.negocios_abertos += l.negocios_abertos;
     cur.vgv_gerado += l.vgv_gerado;
     cur.presenca_dias = Math.max(cur.presenca_dias, l.presenca_dias);
+    cur.presenca_faltas = Math.max(cur.presenca_faltas, l.presenca_faltas);
+    cur.presenca_saidas = Math.max(cur.presenca_saidas, l.presenca_saidas);
   });
   return Array.from(map.values()).sort((a, b) => b.vgv_assinado - a.vgv_assinado);
 }
@@ -125,11 +146,16 @@ export function consolidarFunil(linhas: FunilLinha[]): FunilLinha[] {
 export function somarFunil(linhas: FunilLinha[]): FunilTotais {
   const t: FunilTotais = {
     corretores: new Set(linhas.map((l) => l.corretor_auth_id)).size,
+    corretores_ativos: new Set(linhas.filter((l) => l.corretor_ativo).map((l) => l.corretor_auth_id)).size,
     presenca_dias: 0,
+    presenca_faltas: 0,
+    presenca_saidas: 0,
     dias_uteis: linhas[0]?.dias_uteis ?? 0,
+    dias_uteis_decorridos: linhas[0]?.dias_uteis_decorridos ?? 0,
     leads_recebidos: 0,
     pipeline_ativo: 0,
     descartes: 0,
+    visitas_total: 0,
     visitas_agendadas: 0,
     visitas_realizadas: 0,
     visitas_no_show: 0,
@@ -140,9 +166,12 @@ export function somarFunil(linhas: FunilLinha[]): FunilTotais {
   };
   linhas.forEach((l) => {
     t.presenca_dias += l.presenca_dias;
+    t.presenca_faltas += l.presenca_faltas;
+    t.presenca_saidas += l.presenca_saidas;
     t.leads_recebidos += l.leads_recebidos;
     t.pipeline_ativo += l.pipeline_ativo;
     t.descartes += l.descartes;
+    t.visitas_total += l.visitas_total;
     t.visitas_agendadas += l.visitas_agendadas;
     t.visitas_realizadas += l.visitas_realizadas;
     t.visitas_no_show += l.visitas_no_show;
@@ -154,9 +183,13 @@ export function somarFunil(linhas: FunilLinha[]): FunilTotais {
   return t;
 }
 
-/** Presença agregada em % (dias presentes ÷ dias úteis do time). */
+/**
+ * Presença agregada em %:
+ * dias presentes ÷ (dias úteis JÁ DECORRIDOS × corretores ATIVOS).
+ */
 export function presencaPct(t: FunilTotais): number {
-  const base = t.dias_uteis * t.corretores;
+  const dias = t.dias_uteis_decorridos || t.dias_uteis;
+  const base = dias * (t.corretores_ativos || t.corretores);
   if (!base) return 0;
   return Math.min(100, (t.presenca_dias / base) * 100);
 }

@@ -15705,6 +15705,7 @@ export type Database = {
           corretor_nome: string
           descartes: number
           dias_uteis: number
+          dias_uteis_decorridos: number
           equipe: string
           equipe_atual: string
           gerente_auth_id: string
@@ -15712,12 +15713,15 @@ export type Database = {
           negocios_abertos: number
           pipeline_ativo: number
           presenca_dias: number
+          presenca_faltas: number
+          presenca_saidas: number
           vendas: number
           vgv_assinado: number
           vgv_gerado: number
           visitas_agendadas: number
           visitas_no_show: number
           visitas_realizadas: number
+          visitas_total: number
         }[]
       }
       rpc_placar_do_dia: { Args: never; Returns: Json }
