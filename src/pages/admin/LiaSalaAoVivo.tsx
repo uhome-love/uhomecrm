@@ -5,11 +5,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw, Send, Trash2, ShieldAlert, Image as ImageIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Loader2,
+  RefreshCw,
+  Send,
+  Trash2,
+  ShieldAlert,
+  CheckCircle2,
+  Image as ImageIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 
 type Trava = { codigo: string; detalhe: string };
+
+type ContextoTurno = {
+  apresentacao_aceita?: boolean;
+  visita_confirmada_em?: string | null;
+} | null;
 
 type Turno = {
   id: string;
@@ -24,11 +44,13 @@ type Turno = {
   bloqueado_por: string | null;
   modelo: string | null;
   horarios_ofertados: string[] | null;
+  contexto: ContextoTurno;
   enviado_em: string | null;
   created_at: string;
 };
 
 type LeadResumo = { id: string; nome: string | null; telefone: string | null; etapa: string };
+
 
 const FILTROS = [
   { valor: "proposto", rotulo: "Aguardando você" },
@@ -41,6 +63,7 @@ export default function LiaSalaAoVivo() {
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [leads, setLeads] = useState<Record<string, LeadResumo>>({});
   const [rascunhos, setRascunhos] = useState<Record<string, string>>({});
+  const [horarioEscolhido, setHorarioEscolhido] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(true);
   const [ocupado, setOcupado] = useState<string | null>(null);
 
@@ -112,6 +135,66 @@ export default function LiaSalaAoVivo() {
     },
     [carregar, rascunhos],
   );
+
+  // O que converte é o REGISTRO, não o JSON do modelo. Estas duas ações são o
+  // caminho humano (sombra e assistido); no autônomo o próprio cérebro grava,
+  // depois das travas. O gatilho no banco é quem manda o evento ao Meta.
+  const registrar = useCallback(
+    async (turno: Turno, campo: "aceite_em" | "confirmada_em", horario?: string) => {
+      setOcupado(turno.id);
+      try {
+        let quando = new Date().toISOString();
+        if (campo === "confirmada_em") {
+          if (!horario) throw new Error("Escolha um horário da lista gerada pelo sistema.");
+          const [hh, mm] = horario.split(":").map(Number);
+          const alvo = new Date();
+          alvo.setHours(hh, mm ?? 0, 0, 0);
+          if (alvo.getTime() < Date.now()) alvo.setDate(alvo.getDate() + 1);
+          quando = alvo.toISOString();
+        }
+
+        const { data: existente } = await supabase
+          .from("ia_apresentacoes")
+          .select("id, aceite_em, confirmada_em")
+          .eq("ia_lead_id", turno.ia_lead_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existente?.[campo]) {
+          toast.info("Esse registro já estava preenchido. O evento sai uma vez só.");
+          return;
+        }
+
+        const patch =
+          campo === "aceite_em"
+            ? { aceite_em: quando }
+            : { confirmada_em: quando, data_hora: quando };
+
+        const { error } = existente
+          ? await supabase.from("ia_apresentacoes").update(patch).eq("id", existente.id)
+          : await supabase.from("ia_apresentacoes").insert({
+              ia_lead_id: turno.ia_lead_id,
+              status: campo === "aceite_em" ? "aceita" : "confirmada",
+              lia_responsavel: true,
+              ...patch,
+            });
+        if (error) throw error;
+
+        toast.success(
+          campo === "aceite_em"
+            ? "Apresentação aceita registrada. O evento de lead qualificado sai pelo gatilho."
+            : `Visita confirmada para ${horario}. O evento de visita marcada sai pelo gatilho.`,
+        );
+      } catch (e) {
+        toast.error((e as Error).message);
+      } finally {
+        setOcupado(null);
+      }
+    },
+    [],
+  );
+
 
   const vazio = useMemo(() => !carregando && turnos.length === 0, [carregando, turnos]);
 
@@ -235,6 +318,68 @@ export default function LiaSalaAoVivo() {
                   </ul>
                 </div>
               )}
+
+              {/* Conversão sai daqui, do registro — nunca do que o modelo escreveu.
+                  O JSON do turno é só sugestão para o humano conferir. */}
+              <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Registro (é o que dispara a conversão no Meta)
+                </p>
+                {(turno.contexto?.apresentacao_aceita || turno.contexto?.visita_confirmada_em) && (
+                  <p className="text-xs text-muted-foreground">
+                    A Lia sugeriu:{" "}
+                    {turno.contexto?.apresentacao_aceita ? "apresentação aceita" : ""}
+                    {turno.contexto?.apresentacao_aceita && turno.contexto?.visita_confirmada_em
+                      ? " e "
+                      : ""}
+                    {turno.contexto?.visita_confirmada_em
+                      ? `visita em ${formatBRT(turno.contexto.visita_confirmada_em, "dd/MM HH:mm")}`
+                      : ""}
+                    . Sugestão não converte nada — confirme abaixo.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={ocupado === turno.id}
+                    onClick={() => void registrar(turno, "aceite_em")}
+                  >
+                    Apresentação aceita
+                  </Button>
+                  {(turno.horarios_ofertados?.length ?? 0) > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={horarioEscolhido[turno.id] ?? ""}
+                        onValueChange={(v) => setHorarioEscolhido((h) => ({ ...h, [turno.id]: v }))}
+                      >
+                        <SelectTrigger className="h-9 w-[150px]">
+                          <SelectValue placeholder="Horário ofertado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {turno.horarios_ofertados!.map((h) => (
+                            <SelectItem key={h} value={h}>
+                              {h}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={ocupado === turno.id || !horarioEscolhido[turno.id]}
+                        onClick={() =>
+                          void registrar(turno, "confirmada_em", horarioEscolhido[turno.id])
+                        }
+                      >
+                        Confirmar visita
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
 
               {turno.status !== "enviado" && (
                 <div className="flex flex-wrap items-center gap-2">
