@@ -130,7 +130,7 @@ const App = () => (
               <Route path="/relatorios-1-1" element={<Navigate to="/central-relatorios?secao=relatorio-1a1" replace />} />
               {/* Performance foi absorvida pela Central de Relatórios */}
               <Route path="/ranking" element={<Navigate to="/central-relatorios?secao=ranking" replace />} />
-              <Route path="/performance" element={<Navigate to="/central-relatorios?secao=visao" replace />} />
+              <Route path="/performance" element={<Navigate to="/central-relatorios?secao=funil" replace />} />
               <Route path="/marketing" element={<Navigate to="/dados-anuncios?aba=investimento" replace />} />
               {/* Fase 3 — páginas técnicas foram para Configurações / Central de Relatórios */}
               <Route path="/integracoes" element={<Navigate to="/configuracoes?secao=integracoes" replace />} />
