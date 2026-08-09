@@ -243,23 +243,11 @@ export function CompletionForm(props: CompletionFormProps) {
     (outcome === "agendar" && presetHandlesStatus);
   const step1Ready = !!resultado && descricaoValida && stageStatusReady;
 
-  /* ───── Fluxo Visita: substitui o corpo padrão ───── */
-  if (props.visitaFlow) {
-    return (
-      <VisitaCompletionFlow
-        subtipo={props.visitaFlow.subtipo}
-        tarefaId={props.visitaFlow.tarefaId}
-        leadId={leadId || ""}
-        leadNome={leadNome}
-        corretorId={props.visitaFlow.corretorId}
-        saving={saving}
-        onSaving={props.visitaFlow.onSavingChange}
-        onCancel={onCancel}
-        onConfirm={props.visitaFlow.onConfirmPayload}
-      />
-    );
-  }
-
+  /* ───── Fluxo Visita ─────
+   * IMPORTANTE: o `return` deste fluxo foi movido para DEPOIS de todos os hooks
+   * (logo antes do return principal). React exige que os hooks sejam chamados
+   * na MESMA ORDEM em todo render — um `return` antes deles quebrava essa regra
+   * e podia travar a tela ("Rendered fewer hooks than expected"). */
 
   const [suggestion, setSuggestion] = useState<null | {
     tipo: TipoProximaTarefa;
@@ -443,6 +431,24 @@ export function CompletionForm(props: CompletionFormProps) {
   const nomeJaNoTitulo =
     !!leadNome && tarefaTitulo.toLowerCase().includes(leadNome.toLowerCase());
   const subtitleText = `${tarefaTitulo}${leadNome && !nomeJaNoTitulo ? ` · ${leadNome}` : ""}`;
+
+  // Fluxo Visita: substitui o corpo padrão. Fica AQUI (depois de todos os hooks,
+  // ver nota lá em cima) para não violar as regras de hooks do React.
+  if (props.visitaFlow) {
+    return (
+      <VisitaCompletionFlow
+        subtipo={props.visitaFlow.subtipo}
+        tarefaId={props.visitaFlow.tarefaId}
+        leadId={leadId || ""}
+        leadNome={leadNome}
+        corretorId={props.visitaFlow.corretorId}
+        saving={saving}
+        onSaving={props.visitaFlow.onSavingChange}
+        onCancel={onCancel}
+        onConfirm={props.visitaFlow.onConfirmPayload}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col max-h-[90vh] max-[420px]:max-h-[92vh]">
