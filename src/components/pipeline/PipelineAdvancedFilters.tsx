@@ -15,6 +15,7 @@ import { format, differenceInHours, differenceInDays, startOfDay, startOfWeek, s
 import { ptBR } from "date-fns/locale";
 import { cn, differenceInDaysSafe, differenceInHoursSafe, parseDateTimeSafe } from "@/lib/utils";
 import { getLeadStatusFilter, type ProximaTarefa, type LeadClientStatus } from "@/lib/taskQueryUtils";
+import { leadSaudeClientStatus } from "@/lib/leadSaude";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 
 export interface PipelineFilters {
@@ -202,7 +203,7 @@ export function applyFilters(
     result = result.filter(l => {
       const stage = stages.find(s => s.id === l.stage_id);
       const proximaTarefa = tarefasMap?.[l.id] || null;
-      const status = getLeadStatusFilter(l, proximaTarefa, stage?.tipo);
+      const status = leadSaudeClientStatus(l, proximaTarefa, stage?.tipo);
       return status === filters.statusLead;
     });
   }

@@ -76,3 +76,20 @@ const VISUAL: Record<LeadSaude, SaudeVisual> = {
 export function saudeVisual(input: LeadSaudeInput): SaudeVisual {
   return VISUAL[leadSaude(input)];
 }
+
+/**
+ * Classificação compatível com LeadClientStatus (em_dia/desatualizado/tarefa_atrasada),
+ * porém pela SAÚDE POR TOQUE — não por tarefa. Drop-in dos call-sites do Pipeline:
+ *   verde/terminal → em_dia · ambar (esfriando) → desatualizado · vermelho (frio) → tarefa_atrasada.
+ * Assinatura de 3 args igual a getLeadStatusFilter (o 2º arg, tarefa, é ignorado).
+ */
+export function leadSaudeClientStatus(
+  lead: LeadSaudeInput,
+  _proximaTarefa?: unknown,
+  stageTipo?: string
+): "em_dia" | "desatualizado" | "tarefa_atrasada" {
+  const s = leadSaude({ ...lead, stage_tipo: stageTipo ?? lead.stage_tipo });
+  if (s === "verde" || s === "terminal") return "em_dia";
+  if (s === "ambar") return "desatualizado";
+  return "tarefa_atrasada";
+}

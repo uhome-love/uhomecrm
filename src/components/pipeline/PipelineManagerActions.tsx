@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, ClipboardList, AlertTriangle } from "lucide-rea
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { differenceInHours } from "date-fns";
 import { getLeadStatusFilter, type ProximaTarefa } from "@/lib/taskQueryUtils";
+import { leadSaudeClientStatus } from "@/lib/leadSaude";
 import { useNavigate } from "react-router-dom";
 
 interface Props {
@@ -21,7 +22,7 @@ export default function PipelineManagerActions({ leads, corretorNomes, tarefasMa
   const leadsSemTarefa = useMemo(() => {
     return leads.filter(l => {
       if (!l.corretor_id) return false;
-      const status = getLeadStatusFilter(l, tarefasMap[l.id] || null, stageTypeById[l.stage_id]);
+      const status = leadSaudeClientStatus(l, tarefasMap[l.id] || null, stageTypeById[l.stage_id]);
       if (status !== "desatualizado") return false;
       const hoursInSystem = differenceInHours(new Date(), new Date(l.created_at));
       return hoursInSystem >= 2;
@@ -32,7 +33,7 @@ export default function PipelineManagerActions({ leads, corretorNomes, tarefasMa
   const leadsTarefaAtrasada = useMemo(() => {
     return leads.filter(l => {
       if (!l.corretor_id) return false;
-      return getLeadStatusFilter(l, tarefasMap[l.id] || null, stageTypeById[l.stage_id]) === "tarefa_atrasada";
+      return leadSaudeClientStatus(l, tarefasMap[l.id] || null, stageTypeById[l.stage_id]) === "tarefa_atrasada";
     });
   }, [leads, tarefasMap, stageTypeById]);
 

@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchInBatchesWithRetry } from "@/lib/taskQueryUtils";
+import { leadSaudeClientStatus } from "@/lib/leadSaude";
 import { toast } from "sonner";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/lib/taskQueryUtils";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
@@ -380,7 +381,7 @@ export default function PipelineKanban() {
       result = result.filter(l => DEAL_TIPOS.has(stageMap.get(l.stage_id) || ""));
     }
     if (clientStatusFilter !== "todos") {
-      result = result.filter(l => getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
+      result = result.filter(l => leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
     }
     if (riscoFilter && riscoLeadIds) {
       result = result.filter(l => riscoLeadIds.has(l.id));
@@ -474,7 +475,7 @@ export default function PipelineKanban() {
     // classificação ficaria errada (tudo viraria "desatualizado"). Aguarda.
     if (pipeline.stages.length === 0) return counts;
     for (const l of preFilteredLeads) {
-      const s = getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageTypeById[l.stage_id]);
+      const s = leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, stageTypeById[l.stage_id]);
       counts[s]++;
     }
     return counts;

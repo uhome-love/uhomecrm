@@ -14,6 +14,7 @@
 import type { PipelineLead } from "@/hooks/usePipeline";
 import type { TimeAgregadoRow } from "@/hooks/useTimeAgregado";
 import { getLeadStatusFilter, type ProximaTarefa } from "@/lib/taskQueryUtils";
+import { leadSaudeClientStatus } from "@/lib/leadSaude";
 
 const EXCLUDED_TIPOS = new Set(["descarte", "convertido", "venda", "contrato_gerado"]);
 
@@ -48,7 +49,7 @@ export function calcGestorOwnRow(params: {
     } else if (t.vence_em === todayYMD) {
       paraHoje += 1;
     }
-    const status = getLeadStatusFilter(l, t, stageTipoById[l.stage_id]);
+    const status = leadSaudeClientStatus(l, t, stageTipoById[l.stage_id]);
     if (status === "tarefa_atrasada") atrasados += 1;
     else if (status === "em_dia") emDia += 1;
 
