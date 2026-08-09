@@ -14,7 +14,11 @@ const ABAS: { key: RankKey; label: string }[] = [
   { key: "visitas_realizadas", label: "Visitas realizadas" },
 ];
 
-const MEDALHAS = ["🥇", "🥈", "🥉"];
+const PODIO_TOM = [
+  "bg-warning-500/15 text-warning-700 dark:text-warning-500 border-warning-500/40",
+  "bg-muted text-muted-foreground border-border",
+  "bg-primary/10 text-primary border-primary/30",
+];
 
 const iniciais = (n: string | null) =>
   (n ?? "?")
@@ -74,7 +78,9 @@ export default function RankingsTabs({ linhas, loading, meuId }: Props) {
                 key={l.corretor_auth_id}
                 className={cn("p-4 text-center", i === 0 && "border-primary/60 shadow-md")}
               >
-                <div className="text-xl">{MEDALHAS[i]}</div>
+                <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-extrabold", PODIO_TOM[i])}>
+                  {i + 1}
+                </span>
                 <Avatar className="h-10 w-10 mx-auto my-2">
                   <AvatarImage src={l.avatar_url ?? undefined} />
                   <AvatarFallback className="text-[11px]">{iniciais(l.corretor_nome)}</AvatarFallback>
@@ -85,6 +91,7 @@ export default function RankingsTabs({ linhas, loading, meuId }: Props) {
             ))}
           </div>
 
+          {resto.length > 0 && (
           <Card className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -120,6 +127,7 @@ export default function RankingsTabs({ linhas, loading, meuId }: Props) {
               </tbody>
             </table>
           </Card>
+          )}
         </>
       )}
     </div>
