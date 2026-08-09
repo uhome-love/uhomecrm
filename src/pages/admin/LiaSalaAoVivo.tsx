@@ -63,6 +63,7 @@ export default function LiaSalaAoVivo() {
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [leads, setLeads] = useState<Record<string, LeadResumo>>({});
   const [rascunhos, setRascunhos] = useState<Record<string, string>>({});
+  const [horarioEscolhido, setHorarioEscolhido] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(true);
   const [ocupado, setOcupado] = useState<string | null>(null);
 
