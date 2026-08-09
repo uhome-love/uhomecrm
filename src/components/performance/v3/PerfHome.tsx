@@ -105,12 +105,10 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
         {kpis.map((k) => (
           <StatCard
             key={k.label}
-            label={
-              <span className="inline-flex items-center gap-1">
-                {k.label} <Ajuda texto={k.ajuda} />
-              </span>
-            }
+            label={k.label}
+            title={k.ajuda}
             value={k.value}
+
             tone={k.label === "VGV assinado" ? "primary" : "neutral"}
             sub={
               <span className="inline-flex items-center gap-1.5">
