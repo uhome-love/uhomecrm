@@ -64,10 +64,18 @@ conversa carregue histórico da outra.
 
 ## Critério de leitura
 
-- Itens 16, 17 e 18: portão duro nos dois modelos. Um reprovado bloqueia.
-- Nos outros 17: mínimo de 15 aprovados.
-- Cada item recebe aprovado/reprovado com a justificativa colada ao critério do
-  documento, não à minha impressão do texto.
+- Itens 16, 17 e 18: critério objetivo, eu pontuo. Portão duro nos dois modelos,
+  um reprovado bloqueia.
+- Itens 9, 12, 13 e 20 dependem de leitura do texto. Quando não for claramente
+  aprovado nem claramente reprovado, marco como **ambíguo**, colo o texto
+  integral e a decisão fica com o Lucas. Não invento veredito: o modelo julgando
+  a própria saída é enviesado, e um ambíguo honesto vale mais que um aprovado
+  otimista, porque essa linha de base é a régua de tudo que vier depois.
+- Nos 17 itens fora do portão duro, o mínimo é 15 aprovados; os ambíguos ficam
+  fora da conta até o Lucas decidir, e a contagem é apresentada com e sem eles.
+- Cada item recebe o veredito colado ao critério do documento, com a hora de
+  execução ao lado.
+
 
 ## Entrega
 
