@@ -167,6 +167,10 @@ export default function AppLayout() {
                   ? "bg-card border-b border-white/[0.05]"
                   : "bg-[#f0f0f5] border-b border-[#e4e4e9]"
               )}
+              // Área de segurança (notch/barra de status): em aparelho com notch a
+              // --sat > 0 e o cabeçalho cresce p/ não ficar escondido; em desktop/sem
+              // notch a --sat = 0 e nada muda. Depende de viewport-fit=cover no index.html.
+              style={{ paddingTop: "var(--sat)", height: "calc(3.5rem + var(--sat))" }}
             >
               <div className="flex items-center gap-3">
                 <SidebarTrigger className={theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]"} />
