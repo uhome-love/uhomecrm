@@ -15,10 +15,39 @@ export interface FunilLinha {
   gerente_auth_id: string | null;
   corretor_ativo: boolean;
   presenca_dias: number;
+  presenca_faltas: number;
+  presenca_saidas: number;
   dias_uteis: number;
+  /** dias úteis já decorridos do período (base honesta da presença) */
+  dias_uteis_decorridos: number;
   leads_recebidos: number;
   pipeline_ativo: number;
   descartes: number;
+  /** visitas que existiram no período (agendadas nele OU realizadas nele) */
+  visitas_total: number;
+  visitas_agendadas: number;
+  visitas_realizadas: number;
+  visitas_no_show: number;
+  negocios_abertos: number;
+  /** VGV de negócios ativos (em negociação + contrato, sem queda) */
+  vgv_gerado: number;
+  vendas: number;
+  vgv_assinado: number;
+}
+
+export interface FunilTotais {
+  corretores: number;
+  /** corretores ativos (base do % de presença) */
+  corretores_ativos: number;
+  presenca_dias: number;
+  presenca_faltas: number;
+  presenca_saidas: number;
+  dias_uteis: number;
+  dias_uteis_decorridos: number;
+  leads_recebidos: number;
+  pipeline_ativo: number;
+  descartes: number;
+  visitas_total: number;
   visitas_agendadas: number;
   visitas_realizadas: number;
   visitas_no_show: number;
@@ -28,21 +57,6 @@ export interface FunilLinha {
   vgv_assinado: number;
 }
 
-export interface FunilTotais {
-  corretores: number;
-  presenca_dias: number;
-  dias_uteis: number;
-  leads_recebidos: number;
-  pipeline_ativo: number;
-  descartes: number;
-  visitas_agendadas: number;
-  visitas_realizadas: number;
-  visitas_no_show: number;
-  negocios_abertos: number;
-  vgv_gerado: number;
-  vendas: number;
-  vgv_assinado: number;
-}
 
 const num = (v: unknown) => Number(v) || 0;
 
