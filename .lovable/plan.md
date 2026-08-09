@@ -25,7 +25,19 @@ Definições propostas (ficam escritas na tela, em "como calculamos"):
 Pipeline ativo é a única métrica de fotografia — fica marcada com ícone "snapshot" para ninguém ler como se fosse do período.
 
 
-### 2. Planilhas (tabelas densas, estilo CRM)
+### 2. Tela inicial de KPIs (nova home da Performance)
+Primeira aba da página: painel visual de destaque, no padrão do Dashboard do Gerente.
+- Faixa de KPIs grandes: Presença · Leads · Visitas totais · Visitas realizadas · Negócios abertos · VGV gerado · VGV assinado, cada um com comparativo vs. período anterior (seta e %).
+- Funil visual (Leads → Visitas → Visitas realizadas → Negócios → Vendas) com taxas entre etapas.
+- Evolução mensal de VGV assinado e visitas (gráfico de linha/área).
+- Mini-pódios: top 3 em Leads, Visitas e VGV, com link para a aba Rankings.
+- Cartões de atenção (semáforo): corretores sem visita, VGV zerado, descartes acima da faixa.
+
+### 3. Filtro de período
+Seletor único no topo, válido para toda a página e para as exportações: **Dia · Semana · Mês · Personalizado** (intervalo de datas), com navegação anterior/próximo e sempre em BRT. O período escolhido vai na URL, para compartilhar o link exato.
+
+### 4. Planilhas (tabelas densas, estilo CRM)
+
 - **Funil por corretor** — uma linha por corretor, colunas acima, agrupável/colapsável por equipe com linha de total da equipe e total geral.
 - **Funil por equipe** — versão consolidada.
 - **Conversão por equipe e por corretor** — `Leads → Visita` (%), `Visita → Venda` (%), `Leads → Venda` (%), mais ticket médio.
