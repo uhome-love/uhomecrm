@@ -4,8 +4,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { delta } from "@/lib/perfPeriodo";
 import { presencaPct, somarFunil, type FunilLinha } from "@/hooks/useFunilPerformance";
-import { AlertTriangle, HelpCircle } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertTriangle } from "lucide-react";
+
 
 const pct = (n: number, base: number) => (base > 0 ? (n / base) * 100 : 0);
 
