@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { searchMateriaisForHomi } from '../_shared/materiais-context.ts';
+import { requireRealUser } from '../_shared/ai-auth.ts';
 
 // Gera 3 variações de mensagem de follow-up personalizadas para um lead,
 // usando contexto do CRM (perfil, histórico WhatsApp, motivo de descarte)
@@ -19,6 +20,10 @@ interface Payload {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const _auth = await requireRealUser(req, {});
+  if (_auth.error) return _auth.error;
+
   if (req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405);
   }

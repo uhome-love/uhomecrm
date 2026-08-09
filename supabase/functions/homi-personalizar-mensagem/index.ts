@@ -6,9 +6,13 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { withCorsAndErrorHandling, requireApiKey, callAI } from "../_shared/ai-helpers.ts";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 import { jsonResponse, errorResponse } from "../_shared/cors.ts";
 
 Deno.serve(withCorsAndErrorHandling("homi-personalizar-mensagem", async (req) => {
+  const _auth = await requireRealUser(req, {});
+  if (_auth.error) return _auth.error;
+
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return errorResponse("Unauthorized", 401);
 
