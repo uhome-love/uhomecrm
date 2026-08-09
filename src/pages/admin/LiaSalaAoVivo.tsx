@@ -120,6 +120,66 @@ export default function LiaSalaAoVivo() {
     [carregar, rascunhos],
   );
 
+  // O que converte é o REGISTRO, não o JSON do modelo. Estas duas ações são o
+  // caminho humano (sombra e assistido); no autônomo o próprio cérebro grava,
+  // depois das travas. O gatilho no banco é quem manda o evento ao Meta.
+  const registrar = useCallback(
+    async (turno: Turno, campo: "aceite_em" | "confirmada_em", horario?: string) => {
+      setOcupado(turno.id);
+      try {
+        let quando = new Date().toISOString();
+        if (campo === "confirmada_em") {
+          if (!horario) throw new Error("Escolha um horário da lista gerada pelo sistema.");
+          const [hh, mm] = horario.split(":").map(Number);
+          const alvo = new Date();
+          alvo.setHours(hh, mm ?? 0, 0, 0);
+          if (alvo.getTime() < Date.now()) alvo.setDate(alvo.getDate() + 1);
+          quando = alvo.toISOString();
+        }
+
+        const { data: existente } = await supabase
+          .from("ia_apresentacoes")
+          .select("id, aceite_em, confirmada_em")
+          .eq("ia_lead_id", turno.ia_lead_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existente?.[campo]) {
+          toast.info("Esse registro já estava preenchido. O evento sai uma vez só.");
+          return;
+        }
+
+        const patch =
+          campo === "aceite_em"
+            ? { aceite_em: quando }
+            : { confirmada_em: quando, data_hora: quando };
+
+        const { error } = existente
+          ? await supabase.from("ia_apresentacoes").update(patch).eq("id", existente.id)
+          : await supabase.from("ia_apresentacoes").insert({
+              ia_lead_id: turno.ia_lead_id,
+              status: campo === "aceite_em" ? "aceita" : "confirmada",
+              lia_responsavel: true,
+              ...patch,
+            });
+        if (error) throw error;
+
+        toast.success(
+          campo === "aceite_em"
+            ? "Apresentação aceita registrada. O evento de lead qualificado sai pelo gatilho."
+            : `Visita confirmada para ${horario}. O evento de visita marcada sai pelo gatilho.`,
+        );
+      } catch (e) {
+        toast.error((e as Error).message);
+      } finally {
+        setOcupado(null);
+      }
+    },
+    [],
+  );
+
+
   const vazio = useMemo(() => !carregando && turnos.length === 0, [carregando, turnos]);
 
   return (
