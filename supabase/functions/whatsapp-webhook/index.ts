@@ -163,12 +163,12 @@ Deno.serve(async (req) => {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-      // ── Auth log-only (auditoria de segurança, 19/07/2026) ──
-      // Meta assina o payload com HMAC-SHA256 (App Secret) no header
-      // X-Hub-Signature-256, no formato "sha256=<hex>". Por enquanto só
-      // registramos quando ausente/inválida, sem bloquear — mesma
-      // estratégia já usada no evolution-webhook. Enforcement (401) fica
-      // para uma fase separada, após observação.
+      // ── Auth ENFORCEMENT — valida a assinatura HMAC-SHA256 da Meta ──
+      // Meta assina o payload com o App Secret no header X-Hub-Signature-256
+      // ("sha256=<hex>"). Depois do período em log-only e da correção do
+      // META_WEBHOOK_SECRET (08/08/2026, confirmada por ~1h30 sem falhas),
+      // passamos a BLOQUEAR (401) quando a assinatura é ausente/inválida —
+      // só a Meta real entra; requisições forjadas caem.
       {
         const appSecret = Deno.env.get("META_WEBHOOK_SECRET");
         const sigHeader = req.headers.get("x-hub-signature-256");
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
         }
         if (!authOk) {
           console.warn(
-            "[whatsapp-webhook][auth-log-only] assinatura ausente/inválida. " +
+            "[whatsapp-webhook][auth] assinatura ausente/inválida. " +
             `has_header=${!!sigHeader} secret_configured=${!!appSecret}`
           );
           await logAuthMissing(supabaseUrl, serviceKey, "whatsapp-webhook", "whatsapp_webhook_signature_missing", {
@@ -187,6 +187,15 @@ Deno.serve(async (req) => {
             secret_configured: !!appSecret,
             user_agent: req.headers.get("user-agent") || null,
           });
+          // Bloqueia SÓ quando há segredo configurado. Se o segredo sumir
+          // (misconfiguração do servidor), registra mas deixa passar — para
+          // não derrubar a integração da Meta por engano (fail-open seguro).
+          if (appSecret) {
+            return new Response(JSON.stringify({ error: "invalid signature" }), {
+              status: 401,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
         }
       }
 
