@@ -31,11 +31,11 @@ function modelo(linhas: FunilLinha[]) {
     g.membros.forEach((l) =>
       body.push([
         l.corretor_nome ?? "—",
-        `${l.presenca_dias}/${l.dias_uteis}`,
+        `${l.presenca_dias}/${l.dias_uteis_decorridos || l.dias_uteis}`,
         n(l.leads_recebidos),
         n(l.pipeline_ativo),
         n(l.descartes),
-        n(l.visitas_agendadas),
+        n(l.visitas_total),
         n(l.visitas_realizadas),
         n(l.negocios_abertos),
         fmtMoney(l.vgv_gerado, "short"),
@@ -48,7 +48,7 @@ function modelo(linhas: FunilLinha[]) {
       n(g.totais.leads_recebidos),
       n(g.totais.pipeline_ativo),
       n(g.totais.descartes),
-      n(g.totais.visitas_agendadas),
+      n(g.totais.visitas_total),
       n(g.totais.visitas_realizadas),
       n(g.totais.negocios_abertos),
       fmtMoney(g.totais.vgv_gerado, "short"),
@@ -63,7 +63,7 @@ export function gerarRelatorioHtml(linhas: FunilLinha[], meta: ReportMeta): stri
   const kpis = [
     ["Presença", `${Math.round(presencaPct(total))}%`],
     ["Leads recebidos", n(total.leads_recebidos)],
-    ["Visitas totais", n(total.visitas_agendadas)],
+    ["Visitas totais", n(total.visitas_total)],
     ["Visitas realizadas", n(total.visitas_realizadas)],
     ["Negócios abertos", n(total.negocios_abertos)],
     ["VGV gerado", fmtMoney(total.vgv_gerado, "short")],
@@ -117,7 +117,7 @@ export function baixarRelatorioPdf(linhas: FunilLinha[], meta: ReportMeta) {
   const resumo = [
     `Presença ${Math.round(presencaPct(total))}%`,
     `Leads ${n(total.leads_recebidos)}`,
-    `Visitas ${n(total.visitas_agendadas)} (${n(total.visitas_realizadas)} realizadas)`,
+    `Visitas ${n(total.visitas_total)} (${n(total.visitas_realizadas)} realizadas)`,
     `Negócios ${n(total.negocios_abertos)}`,
     `Gerado ${fmtMoney(total.vgv_gerado, "short")}`,
     `Assinado ${fmtMoney(total.vgv_assinado, "short")}`,

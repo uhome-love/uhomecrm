@@ -13,7 +13,7 @@ function Taxa({ v, bom, medio }: { v: number; bom: number; medio: number }) {
 }
 
 function LinhaConv({ nome, t, forte }: { nome: string; t: FunilTotais; forte?: boolean }) {
-  const leadVisita = rate(t.visitas_agendadas, t.leads_recebidos);
+  const leadVisita = rate(t.visitas_total, t.leads_recebidos);
   const visitaVenda = rate(t.vendas, t.visitas_realizadas);
   const leadVenda = rate(t.vendas, t.leads_recebidos);
   const ticket = t.vendas > 0 ? t.vgv_assinado / t.vendas : 0;
