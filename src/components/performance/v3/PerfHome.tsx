@@ -4,7 +4,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { delta } from "@/lib/perfPeriodo";
 import { presencaPct, somarFunil, type FunilLinha } from "@/hooks/useFunilPerformance";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const pct = (n: number, base: number) => (base > 0 ? (n / base) * 100 : 0);
 
@@ -23,6 +24,19 @@ function Delta({ v }: { v: number | null }) {
   );
 }
 
+function Ajuda({ texto }: { texto: string }) {
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <HelpCircle className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[240px] text-[11px] leading-snug">{texto}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 interface Props {
   linhas: FunilLinha[];
   linhasAnterior: FunilLinha[];
@@ -34,15 +48,22 @@ interface Props {
 export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }: Props) {
   const t = somarFunil(linhas);
   const p = somarFunil(linhasAnterior);
+  const diasBase = t.dias_uteis_decorridos || t.dias_uteis;
 
   const kpis = [
-    { label: "Presença", value: `${Math.round(presencaPct(t))}%`, sub: `${t.presenca_dias} dias · ${t.dias_uteis} úteis`, d: delta(presencaPct(t), presencaPct(p)) },
-    { label: "Leads recebidos", value: t.leads_recebidos.toLocaleString("pt-BR"), d: delta(t.leads_recebidos, p.leads_recebidos) },
-    { label: "Visitas totais", value: t.visitas_agendadas.toLocaleString("pt-BR"), d: delta(t.visitas_agendadas, p.visitas_agendadas) },
-    { label: "Visitas realizadas", value: t.visitas_realizadas.toLocaleString("pt-BR"), d: delta(t.visitas_realizadas, p.visitas_realizadas) },
-    { label: "Negócios abertos", value: t.negocios_abertos.toLocaleString("pt-BR"), d: delta(t.negocios_abertos, p.negocios_abertos) },
-    { label: "VGV gerado", value: fmtMoney(t.vgv_gerado, "short"), d: delta(t.vgv_gerado, p.vgv_gerado) },
-    { label: "VGV assinado", value: fmtMoney(t.vgv_assinado, "short"), d: delta(t.vgv_assinado, p.vgv_assinado) },
+    {
+      label: "Presença",
+      value: `${Math.round(presencaPct(t))}%`,
+      sub: `${t.presenca_dias} presenças · ${diasBase} dias úteis · ${t.corretores_ativos} ativos`,
+      d: delta(presencaPct(t), presencaPct(p)),
+      ajuda: "Dias em que os corretores estiveram na empresa, dividido pelos dias úteis já decorridos do período vezes o número de corretores ativos. Mesma fonte da página Presença.",
+    },
+    { label: "Leads recebidos", value: t.leads_recebidos.toLocaleString("pt-BR"), d: delta(t.leads_recebidos, p.leads_recebidos), ajuda: "Leads que entraram para os corretores dentro do período." },
+    { label: "Visitas totais", value: t.visitas_total.toLocaleString("pt-BR"), d: delta(t.visitas_total, p.visitas_total), ajuda: "Toda visita que existiu no período — agendada nele ou realizada nele, sem duplicar. Nunca menor que as realizadas." },
+    { label: "Visitas realizadas", value: t.visitas_realizadas.toLocaleString("pt-BR"), d: delta(t.visitas_realizadas, p.visitas_realizadas), ajuda: "Visitas que aconteceram dentro do período." },
+    { label: "Negócios abertos", value: t.negocios_abertos.toLocaleString("pt-BR"), d: delta(t.negocios_abertos, p.negocios_abertos), ajuda: "Negócios criados dentro do período." },
+    { label: "VGV gerado", value: fmtMoney(t.vgv_gerado, "short"), d: delta(t.vgv_gerado, p.vgv_gerado), ajuda: "Valor dos negócios ativos agora — em negociação e em contrato — excluindo os que caíram." },
+    { label: "VGV assinado", value: fmtMoney(t.vgv_assinado, "short"), d: delta(t.vgv_assinado, p.vgv_assinado), ajuda: "Vendas com contrato assinado no período, com rateio 50/50 em parcerias." },
   ];
 
   const etapas = [
@@ -51,6 +72,7 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
     { nome: "Negócios abertos", valor: t.negocios_abertos, taxa: `${pct(t.vendas, t.negocios_abertos).toFixed(1)}% assinam` },
     { nome: "Vendas assinadas", valor: t.vendas, taxa: "" },
   ];
+
   const max = Math.max(...etapas.map((e) => e.valor), 1);
 
   const semVisita = linhas.filter((l) => l.corretor_ativo && l.visitas_realizadas === 0).length;
