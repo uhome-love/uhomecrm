@@ -15264,6 +15264,10 @@ export type Database = {
         Args: { p_pipeline_lead_id: string }
         Returns: boolean
       }
+      lead_saude_status: {
+        Args: { p_ref: string; p_stage_tipo: string; p_ultimo_toque: string }
+        Returns: string
+      }
       lead_teve_contato_v3: { Args: { p_lead_id: string }; Returns: boolean }
       list_empreendimentos_nao_resolvidos: {
         Args: { p_dias?: number }
@@ -15642,6 +15646,10 @@ export type Database = {
               isSetofReturn: true
             }
           }
+      rpc_carteira_saude: {
+        Args: { p_gerente_id?: string; p_user_id?: string }
+        Returns: Json
+      }
       rpc_meta_audience_membros: {
         Args: { _definicao: Json; _limit?: number; _offset?: number }
         Returns: {
