@@ -27,7 +27,7 @@ interface PipelineBoardProps {
   corretorNomes: Record<string, string>;
   corretorAvatars?: Record<string, string>;
   parcerias: Record<string, string>;
-  onMoveLead: (leadId: string, newStageId: string, observacao?: string) => void;
+  onMoveLead: (leadId: string, newStageId: string, observacao?: string, dealDetails?: { vgvFinal?: number | null; dataAssinatura?: string | null; unidade?: string | null }) => void;
   onSelectLead: (lead: PipelineLead) => void;
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
   selectionMode?: boolean;
@@ -543,7 +543,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     dragLeadId.current = null;
     setDragOverStage(null);
   };
-  const completeTransition = useCallback((lid: string, stageId: string, observacao?: string) => {
+  const completeTransition = useCallback((lid: string, stageId: string, observacao?: string, dealDetails?: { vgvFinal?: number | null; dataAssinatura?: string | null; unidade?: string | null }) => {
     const lead = leads.find(l => l.id === lid);
     const targetStage = stages.find(s => s.id === stageId);
     trackPipelineEvent("pipeline_stage_changed", {
@@ -553,7 +553,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       to_stage: stageId,
       to_stage_tipo: targetStage?.tipo,
     });
-    onMoveLead(lid, stageId, observacao);
+    onMoveLead(lid, stageId, observacao, dealDetails);
 
     // Flash animation
     setFlashStage(stageId);
@@ -747,7 +747,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
 
     // ─── Normal transition (non-descarte) ───
-    completeTransition(result.leadId, result.targetStageId, result.observacao);
+    // Venda (Ganho): leva VGV/data/unidade reais do popup até o moveLead (grava vgv_final,
+    // data_assinatura real e unidade no negócio, em vez de forçar a data de hoje).
+    const dealDetails = extra.fecharVenda
+      ? { vgvFinal: (extra.vgvFinal as number) ?? null, dataAssinatura: (extra.dataAssinatura as string) ?? null, unidade: (extra.unidade as string) ?? null }
+      : undefined;
+    completeTransition(result.leadId, result.targetStageId, result.observacao, dealDetails);
 
     if (!lead) return;
 
