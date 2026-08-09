@@ -24,18 +24,7 @@ function Delta({ v }: { v: number | null }) {
   );
 }
 
-function Ajuda({ texto }: { texto: string }) {
-  return (
-    <TooltipProvider delayDuration={100}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <HelpCircle className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-        </TooltipTrigger>
-        <TooltipContent className="max-w-[240px] text-[11px] leading-snug">{texto}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
+
 
 interface Props {
   linhas: FunilLinha[];
