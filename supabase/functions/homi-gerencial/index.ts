@@ -28,6 +28,25 @@ serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, supabaseKey);
+
+    // Gate de papel: só gestão (admin/diretor/gestor) acessa dados gerenciais do time.
+    // Antes, qualquer usuário autenticado — inclusive um corretor comum — conseguia
+    // chamar esta função e receber, via service role, métricas e produtividade de
+    // TODA a equipe. Mesmo padrão do homi-ceo.
+    const { data: roleCheck } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .in("role", ["admin", "diretor", "gestor"])
+      .limit(1)
+      .maybeSingle();
+
+    if (!roleCheck) {
+      return new Response(JSON.stringify({ error: "Acesso restrito à gestão" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { messages, quickAction } = await req.json();
     const gerenteId = user.id;
 
