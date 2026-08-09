@@ -11,6 +11,11 @@ import { formatBRT } from "@/lib/brtTime";
 
 type Trava = { codigo: string; detalhe: string };
 
+type ContextoTurno = {
+  apresentacao_aceita?: boolean;
+  visita_confirmada_em?: string | null;
+} | null;
+
 type Turno = {
   id: string;
   ia_lead_id: string;
@@ -24,11 +29,13 @@ type Turno = {
   bloqueado_por: string | null;
   modelo: string | null;
   horarios_ofertados: string[] | null;
+  contexto: ContextoTurno;
   enviado_em: string | null;
   created_at: string;
 };
 
 type LeadResumo = { id: string; nome: string | null; telefone: string | null; etapa: string };
+
 
 const FILTROS = [
   { valor: "proposto", rotulo: "Aguardando você" },
