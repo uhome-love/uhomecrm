@@ -15491,6 +15491,14 @@ export type Database = {
         }[]
       }
       reengajamento_pick_next_run: { Args: never; Returns: string }
+      reengajamento_reset_rastreio: {
+        Args: {
+          p_empreendimento: string
+          p_lead_id: string
+          p_template: string
+        }
+        Returns: undefined
+      }
       reengajamento_resumo_hoje: { Args: never; Returns: Json }
       reengajamento_run_bump_enviados: {
         Args: { p_run_id: string }
