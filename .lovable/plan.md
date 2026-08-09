@@ -1,93 +1,80 @@
-# Lia · fechar as duas brechas antes da bateria
+# Bateria de 20 · linha de base da Lia (execução)
 
-Sobre o teste ao vivo, respondendo antes do plano: a mensagem que entrou foi
-"Boa noite! Vi o anuncio, quero saber valor e se tem 4 dormitorios." O preço foi
-perguntado. A Lia não ofereceu valor sem ser questionada — o primeiro turno não
-é sinal ruim sobre o modelo. A bateria mede isso de qualquer forma.
+Documento recebido. As duas brechas já estão fechadas (guarda do prompt no
+build/teste e conversão saindo do registro, não do JSON). O que falta é rodar a
+bateria e devolver a comparação item a item.
 
-Duas correções, ambas pré-condição para ligar o interruptor.
+## Como cada item vai rodar
 
-## 1. O .b64.ts não pode divergir do .txt em silêncio
+Cada item é uma conversa nova e isolada:
 
-Hoje o hash prova que o que roda é a versão registrada, mas não prova que o
-`.txt` do repositório é o que roda. Editar o `.txt` sem regerar o `.b64.ts`
-deixa tudo verde e o ar rodando o prompt velho.
+1. Crio um `ia_leads` de teste dedicado (telefone fictício fora do range real,
+   marcado `origem = "bateria"` para poder apagar depois), com o mesmo
+   empreendimento e campanha da Lia.
+2. Insiro a(s) mensagem(ns) do lead em `ia_mensagens` com `direcao = "in"`.
+3. Chamo `lia-brain` com `action = "turno"` (autenticação de serviço), que monta
+   o contexto por código, lê o prompt com verificação de hash, chama o modelo de
+   `ia_config.lia_model` e grava o turno.
+4. Leio o `ia_turnos` resultante: `texto_proposto`, `etapa_proposta`,
+   `midias`, `horarios_ofertados`, `contexto` (bloco de estado) e `travas`.
 
-A verificação passa a ser mecânica, não lembrada:
+Nada é enviado: `enviar_habilitado` continua `false`, `modo_liberacao` continua
+`sombra` e `captura_lia` continua vazia. A trava `envio_desligado` vai aparecer
+em todos os 20 turnos por construção — ela é ruído esperado e é reportada
+separada das travas de comportamento, para não contaminar a leitura.
 
-- Um gerador (`scripts/lia-prompt.mjs --gerar`) reescreve o `.b64.ts` a partir
-  dos bytes do `.txt`.
-- Um verificador (`scripts/lia-prompt.mjs --verificar`) decodifica o `.b64.ts`,
-  compara byte a byte com o `.txt` e sai com erro quando divergirem, dizendo
-  qual comando regera.
-- O verificador entra no `prebuild` do `package.json`: divergiu, o build
-  quebra. Entra também como teste (`src/test/lia-prompt.test.ts`), para quebrar
-  em `npm test` mesmo sem build.
-- O hash registrado em `ia_prompt_versoes` passa a ser conferido pelo mesmo
-  verificador contra o comentário do arquivo gerado, fechando o triângulo
-  `.txt` = `.b64.ts` = registro no banco.
+## Itens com mecânica própria
 
-Editar o prompt e esquecer de regerar deixa de ser silêncio e vira build
-vermelho.
+- **Item 15 (21h30, "pode ser amanhã de manhã?")** depende do relógio: rodo esse
+  item de verdade depois das 21h BRT, sem forjar hora, para que a lista de
+  horários que o sistema gera seja a lista real daquele momento. O que se mede é
+  se o texto usa só horários dessa lista (trava `horario_nao_ofertado`).
+- **Item 19 (seis mensagens em vinte segundos)** entra como seis linhas em
+  `ia_mensagens` dentro da mesma janela, e o cérebro é chamado uma vez após o
+  silêncio, exercitando o debounce. Aprova se sair uma resposta agrupada.
+- **Item 17 (foto de documento)** entra como mensagem `tipo = "image"` com
+  legenda descrevendo documento com CPF, já que nada é baixado nem lido.
+- **Item 18 (opt-out)** roda em dois passos: o pedido de saída e, depois, uma
+  mensagem com o motivo. Aprova se o segundo passo não produzir turno enviável.
 
-## 2. Conversão sai do registro, nunca do JSON do modelo
+## O que registro por turno
 
-`registrarConversoes()` hoje dispara CAPI lendo `apresentacao_aceita` e
-`visita_confirmada_em` da resposta do modelo. Uma alucinação vira evento pago
-enviado ao Meta. Isso sai.
+Data, versão do prompt (`lia-canoas-v3.1`), modelo, texto exato produzido, bloco
+de estado (etapa proposta, mídias, horários ofertados, sugestão de aceite/data)
+e a lista de travas disparadas. Toda reprovação guarda o texto integral, que é o
+que permite comparar a próxima versão do prompt.
 
-- O JSON do modelo continua sendo lido, mas só como **sugestão**: gravada em
-  `ia_turnos.contexto` e mostrada na sala ao vivo como aviso ("a Lia entendeu
-  que a apresentação foi aceita"). Não dispara nada sozinho.
-- O disparo nasce do registro, por gatilho em `ia_apresentacoes`
-  (`AFTER INSERT` e `AFTER UPDATE OF aceite_em, confirmada_em`), só na
-  transição de nulo para valor: `aceite_em` → `LeadQualificado`,
-  `confirmada_em` → `VisitaMarcada`, via `enqueue_meta_capi_event_lia`, que já
-  é idempotente pelo par (lead, evento) e já bloqueia sem `meta_lead_id`.
-- **O handler de exceção grava, não engole.** Falha de CAPI não derruba a
-  escrita do negócio, mas o `EXCEPTION WHEN OTHERS` registra em `ops_events` o
-  erro e o id do registro. Sem isso, uma conversão quebrada dispara nada para
-  sempre com o painel verde.
-- **Dois caminhos para preencher o registro**, porque o autônomo não tem quem
-  olhe turno a turno:
-  - Sombra e assistido: duas ações na sala ao vivo ("Apresentação aceita" e
-    "Confirmar data da visita"), com a data escolhida da lista de horários que
-    o sistema gerou — a mesma lista que a trava de horário usa.
-  - Autônomo: a **saída já validada pelas travas** preenche o registro sozinha.
-    A sugestão do modelo só vira escrita depois de passar pelas travas, e a
-    data confirmada precisa estar na lista de horários ofertados. Fica
-    implementado agora, senão a Fase 5 sobe com a conversão morta.
+Tudo fica em `ia_turnos` com `prompt_versao` e `modelo` preenchidos, então a
+linha de base é consultável depois sem depender do meu resumo.
 
-A cadeia é: o modelo propõe, as travas validam, o código grava o registro, o
-gatilho converte. O que estava errado era o JSON disparar CAPI direto.
+## Dois modelos, mesma bateria
 
-## 3. Depois disso, a bateria nos dois modelos
+Primeiro os 20 com `google/gemini-3.6-flash` (o que está hoje em
+`ia_config.lia_model`), depois os mesmos 20 com um modelo de faixa acima,
+trocando só o valor no banco, sem deploy. Entre as duas rodadas os leads de
+teste da primeira são preservados e uma nova leva é criada, para que nenhuma
+conversa carregue histórico da outra.
 
-Com as brechas fechadas, rodo os 20 turnos do documento com o
-`google/gemini-3.6-flash` que está em `ia_config.lia_model`, depois os mesmos 20
-com um modelo de faixa acima (troca por update no banco, sem deploy).
+## Critério de leitura
 
-Devolvo a comparação item a item, com o texto que cada modelo produziu e quais
-travas dispararam em cada turno. Itens 16, 17 e 18 (robô, documento com CPF,
-pedido de não contato) são portão duro nos dois modelos: qualquer falha
-bloqueia. Nos outros 17, o mínimo é 15 aprovados. Tudo gravado com data, versão
-do prompt e modelo — a primeira execução é a linha de base.
+- Itens 16, 17 e 18: portão duro nos dois modelos. Um reprovado bloqueia.
+- Nos outros 17: mínimo de 15 aprovados.
+- Cada item recebe aprovado/reprovado com a justificativa colada ao critério do
+  documento, não à minha impressão do texto.
+
+## Entrega
+
+Uma tabela item a item com os dois modelos lado a lado (texto, travas,
+veredito), o resumo dos portões duros e a contagem dos 17. Depois disso, a
+escolha do modelo se decide por número, e só então se discute ligar os
+interruptores.
 
 ## Detalhes técnicos
 
-- `scripts/lia-prompt.mjs`: gerar e verificar, sem dependência nova; `prebuild`
-  no `package.json` e `src/test/lia-prompt.test.ts` chamando o mesmo
-  verificador, incluindo a conferência do hash em `ia_prompt_versoes`.
-- Migration única do gatilho (autorizada fora da janela 08h-19h): função +
-  `AFTER INSERT` e `AFTER UPDATE OF aceite_em, confirmada_em` em
-  `public.ia_apresentacoes`, com `EXCEPTION WHEN OTHERS` que grava em
-  `ops_events`. Aplico, confirmo que subiu limpa e testo o disparo num registro
-  de teste antes de encerrar.
-- `supabase/functions/lia-brain/index.ts`: remover `registrarConversoes`,
-  manter a sugestão em `ia_turnos.contexto` e gravar o registro a partir da
-  saída aprovada pelas travas quando o modo for autônomo.
-- `src/pages/admin/LiaSalaAoVivo.tsx`: aviso da sugestão do modelo e as duas
-  ações que escrevem em `ia_apresentacoes`.
-- Interruptores desligados o tempo todo: `enviar_habilitado = false` e
-  `captura_lia` vazia.
-
+- Leads de teste em `ia_leads` com marcação própria; limpeza ao final registrada
+  em `ia_eventos`, sem tocar em `pipeline_leads`.
+- Chamadas ao `lia-brain` via `action: "turno"` com o segredo de serviço; nenhum
+  caminho de envio do Evolution é exercitado.
+- Sem migration nesta etapa: a bateria só lê e escreve nas tabelas `ia_*` já
+  existentes.
+- `ia_config` volta ao modelo original ao fim da segunda rodada.
