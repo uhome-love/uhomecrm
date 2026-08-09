@@ -9,12 +9,14 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { resolverPeriodo, type PeriodoState, type PeriodoTipo } from "@/lib/perfPeriodo";
 import { useFunilPerformance, consolidarFunil, somarFunil, type FunilLinha } from "@/hooks/useFunilPerformance";
 import { baixarRelatorioHtml, baixarRelatorioPdf } from "@/lib/performanceReport";
-import { buildFunnel, aproveitamentoGeral, buildSinais } from "./perfData";
+import { buildFunnel, aproveitamentoGeral, buildSinais, type AproveitamentoLinha } from "./perfData";
+import { useEmpreendimento } from "./useEmpreendimento";
 import { PerfKpis } from "./PerfKpis";
 import { PerfFunnel } from "./PerfFunnel";
 import { PerfSinais } from "./PerfSinais";
 import { PerfAproveitamento, type AprovTab } from "./PerfAproveitamento";
 import { PerfRankings } from "./PerfRankings";
+import FunilTable from "@/components/performance/v3/FunilTable";
 
 type Nivel = "base" | "equipe" | "corretor";
 interface Drill {
@@ -40,8 +42,8 @@ export default function PerformancePro() {
   const soCorretor = isCorretor && !isGestor && !isAdmin && !isDiretor;
   const podeEmpresa = isAdmin || isDiretor;
 
-  // Abre em "semana passada" (reunião de domingo)
-  const [periodo, setPeriodo] = useState<PeriodoState>({ tipo: "semana", offset: -1 });
+  // Abre na semana atual
+  const [periodo, setPeriodo] = useState<PeriodoState>({ tipo: "semana", offset: 0 });
   const [drill, setDrill] = useState<Drill>({ nivel: "base" });
 
   const p = useMemo(() => resolverPeriodo(periodo), [periodo]);
@@ -52,6 +54,7 @@ export default function PerformancePro() {
 
   const atualQ = useFunilPerformance({ start: p.start, end: p.end, gerenteId: baseGerenteId, userId: baseUserId }, !!user);
   const antQ = useFunilPerformance({ start: p.prevStart, end: p.prevEnd, gerenteId: baseGerenteId, userId: baseUserId }, !!user);
+  const empQ = useEmpreendimento({ start: p.start, end: p.end, gerenteId: baseGerenteId, userId: baseUserId }, !!user && !soCorretor);
 
   // Reset drill ao trocar período (mantém coerência)
   useEffect(() => { setDrill({ nivel: "base" }); }, [periodo.tipo]);
@@ -76,7 +79,21 @@ export default function PerformancePro() {
   const funnel = useMemo(() => buildFunnel(tAtual), [tAtual]);
   const sinais = useMemo(() => buildSinais(linhas, escopo), [linhas, escopo]);
 
-  const aprovTabs: AprovTab[] = escopo === "empresa" ? ["equipe", "corretor"] : escopo === "equipe" ? ["corretor"] : [];
+  const naBase = drill.nivel === "base";
+  const aprovTabs: AprovTab[] =
+    escopo === "corretor" ? []
+      : escopo === "empresa" ? ["equipe", "corretor", "empreendimento"]
+        : naBase ? ["corretor", "empreendimento"]
+          : ["corretor"];
+  const empRows = useMemo<AproveitamentoLinha[]>(
+    () => (empQ.data ?? []).map((e) => ({
+      id: e.empreendimento, nome: e.empreendimento,
+      leads: e.leads, visitas: e.visitas, vendas: e.vendas, vgv: e.vgv,
+      leadVisita: e.leads > 0 ? (e.visitas / e.leads) * 100 : 0,
+      visitaVenda: e.visitas > 0 ? (e.vendas / e.visitas) * 100 : 0,
+    })),
+    [empQ.data]
+  );
   const mostraAprov = escopo !== "corretor";
   const mostraRank = escopo !== "corretor";
 
@@ -132,7 +149,7 @@ export default function PerformancePro() {
             {PERIODOS.map((op) => (
               <button
                 key={op.tipo}
-                onClick={() => setPeriodo({ tipo: op.tipo, offset: op.tipo === "semana" ? -1 : 0 })}
+                onClick={() => setPeriodo({ tipo: op.tipo, offset: 0 })}
                 className={cn("cursor-pointer rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
                   periodo.tipo === op.tipo ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
@@ -182,6 +199,7 @@ export default function PerformancePro() {
           linhas={linhas}
           tabs={aprovTabs}
           loading={loading}
+          empreendimentoRows={empRows}
           onDrill={(tab, l) => {
             if (tab === "equipe") setDrill({ nivel: "equipe", equipe: l.nome });
             else setDrill({ nivel: "corretor", corretorId: l.id, nome: l.nome });
@@ -197,6 +215,17 @@ export default function PerformancePro() {
           meuId={user?.id}
           onDrill={(id, nome) => setDrill({ nivel: "corretor", corretorId: id, nome })}
         />
+      )}
+
+      {/* ── 5. Planilha completa (CEO: todas as equipes · gerente: a dele) ── */}
+      {escopo !== "corretor" && (
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground">Planilha completa</h2>
+            <span className="text-[11.5px] text-muted-foreground">todos os números por corretor, com totais por equipe</span>
+          </div>
+          <FunilTable linhas={linhas} loading={loading} simples={false} />
+        </div>
       )}
 
       <p className="mt-2 text-[11px] text-muted-foreground/70">Fonte única: rpc_perf_funil · comparativo vs. {p.prevLabel}.</p>

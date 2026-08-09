@@ -7,16 +7,19 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import type { FunilLinha } from "@/hooks/useFunilPerformance";
 import { aproveitamentoPorCorretor, aproveitamentoPorEquipe, type AproveitamentoLinha } from "./perfData";
 
-export type AprovTab = "equipe" | "corretor";
+export type AprovTab = "equipe" | "corretor" | "empreendimento";
 
 interface Props {
   linhas: FunilLinha[];
   tabs: AprovTab[];
   loading: boolean;
+  /** linhas de aproveitamento por empreendimento (get_perf_empreendimento) */
+  empreendimentoRows?: AproveitamentoLinha[];
   onDrill?: (tab: AprovTab, linha: AproveitamentoLinha) => void;
 }
 
-const LABEL: Record<AprovTab, string> = { equipe: "Por equipe", corretor: "Por corretor" };
+const LABEL: Record<AprovTab, string> = { equipe: "Por equipe", corretor: "Por corretor", empreendimento: "Por empreendimento" };
+const COL0: Record<AprovTab, string> = { equipe: "Equipe", corretor: "Corretor", empreendimento: "Empreendimento" };
 
 function rateTone(v: number) {
   return v >= 15 ? "bg-success-500/12 text-success-700 dark:text-success-500"
@@ -27,13 +30,19 @@ function Rate({ v }: { v: number }) {
   return <span className={cn("inline-flex min-w-[52px] justify-center rounded-md px-2 py-1 text-[11.5px] font-bold tabular-nums", rateTone(v))}>{v.toFixed(1)}%</span>;
 }
 
-export function PerfAproveitamento({ linhas, tabs, loading, onDrill }: Props) {
+export function PerfAproveitamento({ linhas, tabs, loading, empreendimentoRows, onDrill }: Props) {
   const [tab, setTab] = useState<AprovTab>(tabs[0]);
   const active = tabs.includes(tab) ? tab : tabs[0];
+  const drillable = active === "equipe" || active === "corretor";
 
   const rows = useMemo(
-    () => (active === "equipe" ? aproveitamentoPorEquipe(linhas) : aproveitamentoPorCorretor(linhas)),
-    [active, linhas]
+    () =>
+      active === "empreendimento"
+        ? empreendimentoRows ?? []
+        : active === "equipe"
+          ? aproveitamentoPorEquipe(linhas)
+          : aproveitamentoPorCorretor(linhas),
+    [active, linhas, empreendimentoRows]
   );
 
   return (
@@ -71,7 +80,7 @@ export function PerfAproveitamento({ linhas, tabs, loading, onDrill }: Props) {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-border">
-                {[LABEL[active].replace("Por ", ""), "Leads", "Visitas", "Vendas", "Lead→Visita", "Visita→Venda", ""].map((h, i) => (
+                {[COL0[active], "Leads", "Visitas", "Vendas", "Lead→Visita", "Visita→Venda", ""].map((h, i) => (
                   <th key={i} className={cn("px-3 py-2.5 text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground", i === 0 ? "text-left" : "text-right", i === 6 && "w-8")}>
                     {h}
                   </th>
@@ -82,8 +91,8 @@ export function PerfAproveitamento({ linhas, tabs, loading, onDrill }: Props) {
               {rows.map((r) => (
                 <tr
                   key={r.id}
-                  onClick={() => onDrill?.(active, r)}
-                  className={cn("border-b border-border/60 last:border-0", onDrill && "cursor-pointer hover:bg-muted/40")}
+                  onClick={() => drillable && onDrill?.(active, r)}
+                  className={cn("border-b border-border/60 last:border-0", onDrill && drillable && "cursor-pointer hover:bg-muted/40")}
                 >
                   <td className="px-3 py-2.5">
                     <div className="font-semibold capitalize text-foreground">{r.nome}</div>
@@ -97,7 +106,7 @@ export function PerfAproveitamento({ linhas, tabs, loading, onDrill }: Props) {
                   </td>
                   <td className="px-3 py-2.5 text-right"><Rate v={r.leadVisita} /></td>
                   <td className="px-3 py-2.5 text-right"><Rate v={r.visitaVenda} /></td>
-                  <td className="px-2 text-right">{onDrill && <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />}</td>
+                  <td className="px-2 text-right">{onDrill && drillable && <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />}</td>
                 </tr>
               ))}
             </tbody>
