@@ -46,8 +46,7 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
   ];
 
   const etapas = [
-    { nome: "Leads recebidos", valor: t.leads_recebidos, taxa: `${pct(t.visitas_agendadas, t.leads_recebidos).toFixed(1)}% avançam para visita` },
-    { nome: "Visitas agendadas", valor: t.visitas_agendadas, taxa: `${pct(t.visitas_realizadas, t.visitas_agendadas).toFixed(1)}% realizadas` },
+    { nome: "Leads recebidos", valor: t.leads_recebidos, taxa: `${pct(t.visitas_realizadas, t.leads_recebidos).toFixed(1)}% chegam a visitar` },
     { nome: "Visitas realizadas", valor: t.visitas_realizadas, taxa: `${pct(t.negocios_abertos, t.visitas_realizadas).toFixed(1)}% viram negócio` },
     { nome: "Negócios abertos", valor: t.negocios_abertos, taxa: `${pct(t.vendas, t.negocios_abertos).toFixed(1)}% assinam` },
     { nome: "Vendas assinadas", valor: t.vendas, taxa: "" },
@@ -103,17 +102,19 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
           </CardHeader>
           <CardContent className="flex flex-col gap-2.5">
             {etapas.map((e, i) => (
-              <div key={e.nome}>
+              <div key={e.nome} className="grid grid-cols-[140px_1fr] items-center gap-3">
+                <div className="text-[11px] font-semibold text-muted-foreground leading-tight">
+                  {e.nome}
+                  {e.taxa && <p className="text-[10px] font-medium text-muted-foreground/70">{e.taxa}</p>}
+                </div>
                 <div
-                  className={`h-9 rounded-lg flex items-center justify-between px-3 text-xs font-bold text-primary-foreground ${
+                  className={`h-9 rounded-lg flex items-center justify-end px-3 text-xs font-bold text-primary-foreground ${
                     i === etapas.length - 1 ? "bg-success-500" : "bg-primary"
                   }`}
-                  style={{ width: `${Math.max(22, (e.valor / max) * 100)}%` }}
+                  style={{ width: `${Math.max(12, (e.valor / max) * 100)}%` }}
                 >
-                  <span className="truncate">{e.nome}</span>
-                  <span>{e.valor.toLocaleString("pt-BR")}</span>
+                  {e.valor.toLocaleString("pt-BR")}
                 </div>
-                {e.taxa && <p className="text-[10.5px] text-muted-foreground font-semibold text-right mt-1">{e.taxa}</p>}
               </div>
             ))}
           </CardContent>

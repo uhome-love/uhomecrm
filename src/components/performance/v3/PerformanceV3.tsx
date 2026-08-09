@@ -140,9 +140,6 @@ export default function PerformanceV3() {
       {aba === "conversao" && <ConversaoTable linhas={linhas} loading={atual.isLoading} simples={soCorretor} />}
       {aba === "rankings" && <RankingsTabs linhas={atual.linhas} loading={atual.isLoading} meuId={user?.id} />}
 
-      <p className="text-[11px] text-muted-foreground/70">
-        Fonte: SSOT · rpc_perf_funil · período {p.start} a {p.end} (BRT).
-      </p>
     </div>
   );
 }
