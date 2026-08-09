@@ -29,13 +29,23 @@ afterEach(() => {
 });
 
 describe("getPresetsForStage — chip visibility", () => {
-  it("retorna vazio para etapas sem presets (sem_contato, visita, contrato, etc.)", () => {
+  it("retorna vazio para etapas sem presets (sem_contato, contrato, novo_lead)", () => {
     expect(getPresetsForStage(null)).toEqual([]);
     expect(getPresetsForStage(undefined)).toEqual([]);
     expect(getPresetsForStage("sem_contato")).toEqual([]);
-    expect(getPresetsForStage("visita")).toEqual([]);
     expect(getPresetsForStage("contrato")).toEqual([]);
     expect(getPresetsForStage("novo_lead")).toEqual([]);
+  });
+
+  it("visita: 4 presets manuais + Outro no fim", () => {
+    const list = getPresetsForStage("visita");
+    expect(list.map((p) => p.id)).toEqual([
+      "visita_ligar",
+      "visita_whatsapp",
+      "visita_enviar_material",
+      "visita_follow_up",
+      PRESET_OUTRO_ID,
+    ]);
   });
 
   it("qualificação: 5 presets canônicos + Outro no fim", () => {

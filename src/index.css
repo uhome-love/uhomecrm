@@ -89,7 +89,7 @@
     --secondary-foreground: var(--neutral-600);
 
     --muted:               var(--neutral-100);
-    --muted-foreground:    var(--neutral-400);
+    --muted-foreground:    var(--neutral-500);  /* era neutral-400 (#94A3B8, ~2.8:1, reprovava WCAG). #64748B ~4.6:1 */
 
     --accent:              var(--primary-50);
     --accent-foreground:   var(--primary-600);

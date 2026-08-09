@@ -28,7 +28,10 @@ serve(async (req) => {
     const infoEmpreendimento = formatForAssistant(knowledge, empreendimento || "");
 
     const isGerente = role === "gerente";
-    const systemPrompt = isGerente
+    // `let` (não `const`): é reatribuído mais abaixo (prefixo de formato e
+    // injeção de materiais). Com `const` isso lançava TypeError em runtime —
+    // quebrava a função (500) e engolia a injeção de materiais no catch.
+    let systemPrompt = isGerente
       ? `Você é o HOMI, o assistente de gestão comercial da Uhome.
 Você está ajudando um GERENTE DE EQUIPE a criar materiais para seu time de corretores.
 Seu papel é gerar scripts, mensagens, quebras de objeção e materiais de treinamento práticos.
