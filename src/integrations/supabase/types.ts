@@ -15043,6 +15043,16 @@ export type Database = {
         Args: { p_end: string; p_gestor_id: string; p_start: string }
         Returns: Json
       }
+      get_relatorio_funil: {
+        Args: {
+          p_end: string
+          p_gestor_id: string
+          p_prev_end?: string
+          p_prev_start?: string
+          p_start: string
+        }
+        Returns: Json
+      }
       get_relatorio_metas: {
         Args: {
           p_end: string
