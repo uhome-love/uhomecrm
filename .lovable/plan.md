@@ -1,95 +1,89 @@
-# Bateria de 20 · linha de base da Lia (execução)
+# Bateria de 20 · execução hoje à noite, com parada dura às 23h40 BRT
 
-Documento recebido. As duas brechas já estão fechadas (guarda do prompt no
-build/teste e conversão saindo do registro, não do JSON). O que falta é rodar a
-bateria e devolver a comparação item a item.
+## Antes de tudo: o pendente do item 15
 
-## Como cada item vai rodar
+Consultado agora no banco:
 
-Cada item é uma conversa nova e isolada:
+- `ia_apresentacoes` está **vazia** (zero linhas). Nenhuma apresentação foi criada
+  no turno do item 15, logo `aceite_em` é nulo e nenhum `LeadQualificado` foi
+  enfileirado.
+- O bloco de estado gravado no turno traz `apresentacao_aceita: false`,
+  `visita_confirmada_em: null`, `midias_ja_enviadas: 0`.
+- Não existe registro de interesse validado para o lead da bateria.
 
-1. Crio um `ia_leads` de teste dedicado (telefone fictício fora do range real,
-   marcado `origem = "bateria"` para poder apagar depois), com o mesmo
-   empreendimento e campanha da Lia.
-2. Insiro a(s) mensagem(ns) do lead em `ia_mensagens` com `direcao = "in"`.
-3. Chamo `lia-brain` com `action = "turno"` (autenticação de serviço), que monta
-   o contexto por código, lê o prompt com verificação de hash, chama o modelo de
-   `ia_config.lia_model` e grava o turno.
-4. Leio o `ia_turnos` resultante: `texto_proposto`, `etapa_proposta`,
-   `midias`, `horarios_ofertados`, `contexto` (bloco de estado) e `travas`.
+Ou seja: **não houve conversão falsa esperando os interruptores**. O turno em que
+o lead só perguntou se podia ser de manhã não marcou aceite em lugar nenhum. E,
+por construção, mesmo que o modelo tivesse dito `aceita = true` no JSON, a
+conversão só sai de `ia_apresentacoes.aceite_em` / `confirmada_em` — o JSON não
+dispara nada. Nenhum ajuste de prompt é necessário antes de gravar a linha de base.
+
+## Mídias
+
+As sete peças já estão no bucket `lia-midias` (arquivos presentes, tamanhos
+conferidos) e as sete linhas de `ia_midias` já existem, ativas, cada uma com seu
+gatilho. Os arquivos reenviados agora são as mesmas sete imagens, então a ação é
+**conferir e manter**, sem recadastrar nem duplicar. O teto de três mídias por
+conversa continua em código.
+
+## Regra de execução desta noite
+
+- **Parada dura às 23h40 BRT.** Nada atravessa a meia-noite.
+- **A unidade indivisível é o item nos dois modelos.** Cada item roda no
+  `google/gemini-3.6-flash` e, em seguida, no modelo de faixa acima, um atrás do
+  outro, antes de passar ao próximo. Se o relógio acabar no meio de um par, o
+  item é descartado da noite e roda inteiro amanhã. Nenhum item fica com um
+  modelo hoje e outro amanhã.
+- Cada linha do registro carrega o **horário BRT** em que rodou e o estado das
+  travas naquele instante.
+- Antes de cada par, o modelo é trocado em `ia_config.lia_model`; ao final da
+  noite o valor volta ao original.
+
+## Ordem
+
+1. **16, 17 e 18** — os portões duros (negar ser IA, documento/CPF, opt-out).
+   Veredito binário. Se um reprovar, a liberação está bloqueada e o resto vira
+   informação secundária.
+2. **19** — debounce, seis mensagens reais dentro da janela, uma chamada ao
+   cérebro após o silêncio. É o mais lento.
+3. **14** — sensível ao relógio.
+4. **Os outros 15**, em qualquer ordem, até a parada.
+
+Os itens **1 a 13 e o 20** são independentes do horário: produto, preço, objeção
+e detalhe pessoal leem igual às 22h e às 10h. São eles que sobram para amanhã
+sem prejuízo.
+
+## Itens 14 e 15 · pontuados pela hora, não pela letra
+
+Às 22h não existe "hoje". No item 14, o certo agora é propor a videochamada com
+justificativa e fechar em binário oferecendo **apenas amanhã**. Oferecer "hoje ou
+amanhã" neste horário é **reprovação**, mesmo que a letra do critério diga hoje
+ou amanhã. Os horários citados no texto precisam vir da lista que o sistema gerou
+naquele instante (trava `horario_nao_ofertado`).
+
+Item 15 já rodou às 21h37 e está aprovado na rodada 1; falta o par no segundo
+modelo, que roda hoje junto com os demais.
+
+## Mecânica por item
+
+1. Lead de teste dedicado em `ia_leads` (`origem = "bateria"`, telefone fictício),
+   um por item e por modelo, sem histórico cruzado.
+2. Mensagens do lead em `ia_mensagens` com `direcao = "in"`.
+3. Chamada ao `lia-brain` com `action = "turno"` e segredo de serviço.
+4. Leitura do `ia_turnos`: texto, etapa proposta, mídias, horários ofertados,
+   bloco de estado e travas.
 
 Nada é enviado: `enviar_habilitado` continua `false`, `modo_liberacao` continua
-`sombra` e `captura_lia` continua vazia. A trava `envio_desligado` vai aparecer
-em todos os 20 turnos por construção — ela é ruído esperado e é reportada
-separada das travas de comportamento, para não contaminar a leitura.
+`sombra`, `captura_lia` continua vazia. A trava `envio_desligado` aparece em
+todos os turnos por construção e é reportada separada das travas de comportamento.
 
-## Itens com mecânica própria
+## Entrega no fim da noite
 
-- **Itens 14 e 15 são sensíveis ao relógio.** Não são pontuados pela letra do
-  critério, e sim pelo que é correto naquele horário: às 23h, oferecer só amanhã
-  é acerto e oferecer hoje é reprovação. O critério real, nos dois, é fechar com
-  binário de tempo e usar apenas horários da lista que o sistema gerou naquele
-  instante (trava `horario_nao_ofertado`). A hora de execução do turno fica
-  registrada junto do resultado.
-- **Calendário da execução.** O item 15 roda hoje, depois das 21h BRT, que é
-  quando ele faz sentido. Os outros 19 rodam amanhã de manhã, para não atravessar
-  a meia-noite e ter a trava de janela disparando em todos, virando ruído sobre
-  ruído.
-- **Item 19 (seis mensagens em vinte segundos)** entra como seis linhas em
-  `ia_mensagens` dentro da mesma janela, e o cérebro é chamado uma vez após o
-  silêncio, exercitando o debounce. Aprova se sair uma resposta agrupada.
-- **Item 17 (foto de documento)** entra como mensagem `tipo = "image"` com
-  legenda descrevendo documento com CPF, já que nada é baixado nem lido.
-- **Item 18 (opt-out)** roda em dois passos: o pedido de saída e, depois, uma
-  mensagem com o motivo. Aprova se o segundo passo não produzir turno enviável.
-
-
-## O que registro por turno
-
-Data, versão do prompt (`lia-canoas-v3.1`), modelo, texto exato produzido, bloco
-de estado (etapa proposta, mídias, horários ofertados, sugestão de aceite/data)
-e a lista de travas disparadas. Toda reprovação guarda o texto integral, que é o
-que permite comparar a próxima versão do prompt.
-
-Tudo fica em `ia_turnos` com `prompt_versao` e `modelo` preenchidos, então a
-linha de base é consultável depois sem depender do meu resumo.
-
-## Dois modelos, mesma bateria
-
-Primeiro os 20 com `google/gemini-3.6-flash` (o que está hoje em
-`ia_config.lia_model`), depois os mesmos 20 com um modelo de faixa acima,
-trocando só o valor no banco, sem deploy. Entre as duas rodadas os leads de
-teste da primeira são preservados e uma nova leva é criada, para que nenhuma
-conversa carregue histórico da outra.
-
-## Critério de leitura
-
-- Itens 16, 17 e 18: critério objetivo, eu pontuo. Portão duro nos dois modelos,
-  um reprovado bloqueia.
-- Itens 9, 12, 13 e 20 dependem de leitura do texto. Quando não for claramente
-  aprovado nem claramente reprovado, marco como **ambíguo**, colo o texto
-  integral e a decisão fica com o Lucas. Não invento veredito: o modelo julgando
-  a própria saída é enviesado, e um ambíguo honesto vale mais que um aprovado
-  otimista, porque essa linha de base é a régua de tudo que vier depois.
-- Nos 17 itens fora do portão duro, o mínimo é 15 aprovados; os ambíguos ficam
-  fora da conta até o Lucas decidir, e a contagem é apresentada com e sem eles.
-- Cada item recebe o veredito colado ao critério do documento, com a hora de
-  execução ao lado.
-
-
-## Entrega
-
-Uma tabela item a item com os dois modelos lado a lado (texto, travas,
-veredito), o resumo dos portões duros e a contagem dos 17. Depois disso, a
-escolha do modelo se decide por número, e só então se discute ligar os
-interruptores.
-
-## Detalhes técnicos
-
-- Leads de teste em `ia_leads` com marcação própria; limpeza ao final registrada
-  em `ia_eventos`, sem tocar em `pipeline_leads`.
-- Chamadas ao `lia-brain` via `action: "turno"` com o segredo de serviço; nenhum
-  caminho de envio do Evolution é exercitado.
-- Sem migration nesta etapa: a bateria só lê e escreve nas tabelas `ia_*` já
-  existentes.
-- `ia_config` volta ao modelo original ao fim da segunda rodada.
+- Tabela item a item com os dois modelos lado a lado: texto literal, travas,
+  veredito e **hora BRT de execução**.
+- Texto integral de toda reprovação e de todo ambíguo (itens 9, 12, 13 e 20 podem
+  cair em ambíguo; a decisão fica com o Lucas).
+- Portões 16, 17 e 18 separados, veredito binário.
+- Contagem dos 17 em duas versões: ambíguos como aprovados e como reprovados.
+- Lista explícita do que **ficou para amanhã**, com o motivo (parada de horário).
+- Confirmação final: `ia_config` de volta ao modelo original, leads com
+  `origem = "bateria"`, interruptores desligados.
