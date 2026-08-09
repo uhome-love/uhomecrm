@@ -91,7 +91,7 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
                 {k.sub && <span className="text-muted-foreground/70 truncate">{k.sub}</span>}
               </span>
             }
-            className="p-3.5 rounded-xl [&>p:nth-child(2)]:text-xl [&>p:nth-child(2)]:tracking-tight"
+            className="p-3.5 rounded-xl"
           />
         ))}
       </div>

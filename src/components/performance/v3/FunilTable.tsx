@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtMoney } from "@/lib/fmtMoney";
@@ -92,8 +93,8 @@ export default function FunilTable({ linhas, loading, simples }: Props) {
           {simples
             ? linhas.map((l) => <Linha key={l.corretor_auth_id} l={l} />)
             : grupos.map((g) => (
-                <>
-                  <tr key={`h-${g.equipe}`} className="bg-muted/40">
+                <Fragment key={g.equipe}>
+                  <tr className="bg-muted/40">
                     <td colSpan={10} className="py-2 px-2 text-[11px] font-bold">
                       {g.equipe} · {g.totais.corretores} corretores
                     </td>
@@ -101,8 +102,8 @@ export default function FunilTable({ linhas, loading, simples }: Props) {
                   {g.membros.map((l) => (
                     <Linha key={l.corretor_auth_id} l={l} />
                   ))}
-                  <LinhaTotal key={`t-${g.equipe}`} nome={`Total ${g.equipe}`} t={g.totais} />
-                </>
+                  <LinhaTotal nome={`Total ${g.equipe}`} t={g.totais} />
+                </Fragment>
               ))}
           <LinhaTotal nome="Total geral" t={total} />
         </tbody>

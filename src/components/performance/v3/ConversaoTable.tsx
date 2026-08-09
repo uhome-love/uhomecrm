@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtMoney } from "@/lib/fmtMoney";
@@ -58,12 +59,12 @@ export default function ConversaoTable({ linhas, loading, simples }: Props) {
           {simples
             ? linhas.map((l) => <LinhaConv key={l.corretor_auth_id} nome={l.corretor_nome ?? "—"} t={somarFunil([l])} />)
             : grupos.map((g) => (
-                <>
-                  <LinhaConv key={`g-${g.equipe}`} nome={`Equipe ${g.equipe}`} t={g.totais} forte />
+                <Fragment key={g.equipe}>
+                  <LinhaConv nome={`Equipe ${g.equipe}`} t={g.totais} forte />
                   {g.membros.map((l) => (
                     <LinhaConv key={l.corretor_auth_id} nome={l.corretor_nome ?? "—"} t={somarFunil([l])} />
                   ))}
-                </>
+                </Fragment>
               ))}
           <LinhaConv nome="Empresa" t={somarFunil(linhas)} forte />
         </tbody>
