@@ -1,18 +1,4 @@
-import {
-  Sparkles,
-  Users,
-  Megaphone,
-  MapPin,
-  Briefcase,
-  TrendingUp,
-  Trophy,
-  Target,
-  Gauge,
-  LineChart,
-  FileText,
-  Rocket,
-  type LucideIcon,
-} from "lucide-react";
+import { Sparkles, Trophy, Gauge, FileText, Rocket, type LucideIcon } from "lucide-react";
 import type { CentralSectionId } from "./sections";
 
 /**
@@ -31,14 +17,6 @@ export type CentralEngine = "ssot" | "central" | "builder" | "forecast" | "perf3
 export type UnifiedSectionId =
   | "funil"
   | "visao"
-  | "sla"
-  | "visitas"
-  | "oferta-ativa"
-  | "negocios"
-  | "vendas"
-  | "metas"
-  | "cohort"
-  | "forecast"
   | "ranking"
   | "relatorio-equipe"
   | "progresso"
@@ -60,16 +38,6 @@ export interface UnifiedSection {
 export const UNIFIED_SECTIONS: UnifiedSection[] = [
   { id: "funil", label: "Funil & Resultado", icon: Gauge, engine: "perf3", corretor: true, fonte: "SSOT · rpc_perf_funil" },
   { id: "visao", label: "Visão Geral (legado)", icon: Sparkles, engine: "ssot", corretor: true, fonte: "SSOT · rpc_metricas" },
-
-  { id: "sla", label: "Tempo de Resposta", icon: Gauge, engine: "central", centralId: "sla", fonte: "get_relatorio_sla" },
-  { id: "visitas", label: "Visitas", icon: MapPin, engine: "central", centralId: "visitas", fonte: "get_relatorio_visitas" },
-  { id: "oferta-ativa", label: "Oferta Ativa", icon: Megaphone, engine: "central", centralId: "oferta-ativa", fonte: "get_relatorio_oferta_ativa" },
-
-  { id: "negocios", label: "Negócios", icon: Briefcase, engine: "central", centralId: "negocios", fonte: "get_relatorio_negocios" },
-  { id: "vendas", label: "Vendas", icon: TrendingUp, engine: "central", centralId: "vendas", fonte: "get_relatorio_vendas" },
-  { id: "metas", label: "Metas vs. Realizado", icon: Target, engine: "central", centralId: "metas", fonte: "get_relatorio_metas" },
-  { id: "cohort", label: "Coorte & Retenção", icon: LineChart, engine: "central", centralId: "cohort", fonte: "get_relatorio_cohort" },
-  { id: "forecast", label: "Forecast IA", icon: Sparkles, engine: "forecast", fonte: "Forecast IA · pipeline de negócios" },
 
   { id: "ranking", label: "Ranking", icon: Trophy, engine: "ssot", fonte: "SSOT · rpc_metricas" },
   { id: "relatorio-equipe", label: "Relatório por equipe", icon: FileText, engine: "builder", fonte: "get_relatorio_* por corretor" },
