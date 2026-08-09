@@ -78,7 +78,7 @@ export const UNIFIED_SECTIONS: UnifiedSection[] = [
   { id: "relatorio-1a1", label: "Relatório 1:1", icon: FileText, engine: "ssot", corretor: true, fonte: "SSOT · rpc_metricas" },
 ];
 
-export type UnifiedViewId = "visao-geral" | "comercial" | "resultado" | "equipe" | "meus";
+export type UnifiedViewId = "visao-geral" | "equipe" | "meus";
 
 export interface UnifiedView {
   id: UnifiedViewId;
@@ -90,8 +90,6 @@ export interface UnifiedView {
 
 export const UNIFIED_VIEWS: UnifiedView[] = [
   { id: "visao-geral", label: "Visão Geral", icon: Sparkles, ids: ["funil", "visao"] },
-  { id: "comercial", label: "Comercial", icon: Users, ids: ["sla", "visitas", "oferta-ativa"] },
-  { id: "resultado", label: "Resultado", icon: TrendingUp, ids: ["negocios", "vendas", "metas", "cohort", "forecast"] },
   { id: "equipe", label: "Equipe", icon: Trophy, ids: ["ranking", "relatorio-equipe"] },
   { id: "meus", label: "Meus resultados", icon: Rocket, ids: ["progresso", "relatorio-1a1"] },
 ];
@@ -121,4 +119,12 @@ export const SECTION_ALIASES: Record<string, UnifiedSectionId> = {
   relatorios: "relatorio-equipe",
   relatorio: "relatorio-1a1",
   "um-a-um": "relatorio-1a1",
+  sla: "funil",
+  visitas: "funil",
+  "oferta-ativa": "funil",
+  negocios: "funil",
+  vendas: "funil",
+  metas: "funil",
+  cohort: "funil",
+  forecast: "funil",
 };
