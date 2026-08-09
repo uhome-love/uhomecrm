@@ -22,12 +22,11 @@ interface Rule {
 }
 
 const RULES: Rule[] = [
-  {
-    file: "src/hooks/useCalendarIntegration.ts",
-    table: "corretor_calendar_integrations",
-    column: "corretor_id",
-    description: "calendar integration usa profiles.id",
-  },
+  // NOTA: useCalendarIntegration.ts migrou para a RPC segura
+  // `get_my_calendar_integration` — o mapeamento de ID acontece no servidor e
+  // não há mais query direta `.from("corretor_calendar_integrations")` no
+  // cliente. Como a regressão de user.id ficou estruturalmente impossível ali,
+  // a regra deixou de se aplicar a esse arquivo (removida em 08/08/2026).
   {
     file: "src/hooks/useSmartAlerts.ts",
     table: "negocios",

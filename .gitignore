@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Ferramentas locais do Claude (não fazem parte do app)
+.agents/
+.claude/
+skills-lock.json

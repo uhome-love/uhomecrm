@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCorretorIds } from "@/hooks/useCorretorIds";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import { FASES_TODAS, FASES_WIP } from "@/lib/negocioFase";
 
 export interface ForecastGerente {
   gerente_id: string;
@@ -124,14 +125,18 @@ export function useForecast(): ForecastData {
 
       for (const p of gPdn) {
         const fase = p.fase || "";
-        if (fase === "em_negociacao" || fase === "em_negociacao" || fase === "em_negociacao" || fase === "ganho") {
+        // Propostas = negócios que chegaram a proposta ou além (WIP + ganho).
+        // Corrige bug antigo: o literal "em_negociacao" estava repetido 3×, o que
+        // ignorava a fase "contrato" e subestimava o funil/forecast do gestor.
+        if ((FASES_TODAS as string[]).includes(fase)) {
           propostas_reais += 1;
         }
         if (fase === "ganho") {
           vendas_reais += 1;
           vgv_real += Number(p.vgv_final ?? p.vgv_estimado ?? 0);
         }
-        if (fase === "em_negociacao" || fase === "em_negociacao" || fase === "em_negociacao") {
+        // VGV em andamento = pipeline WIP (em_negociacao + contrato), sem o ganho.
+        if ((FASES_WIP as string[]).includes(fase)) {
           vgv_gerado += Number(p.vgv_estimado ?? 0);
         }
       }
