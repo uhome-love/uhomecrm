@@ -78,7 +78,9 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
   const semVisita = linhas.filter((l) => l.corretor_ativo && l.visitas_realizadas === 0).length;
   const vgvZero = linhas.filter((l) => l.corretor_ativo && l.vgv_assinado === 0).length;
   const descarteAlto = linhas.filter((l) => l.leads_recebidos >= 5 && l.descartes / Math.max(l.leads_recebidos, 1) > 0.6).length;
-  const presencaBaixa = linhas.filter((l) => l.corretor_ativo && l.dias_uteis > 0 && l.presenca_dias / l.dias_uteis < 0.6).length;
+  const presencaBaixa = linhas.filter(
+    (l) => l.corretor_ativo && (l.dias_uteis_decorridos || l.dias_uteis) > 0 && l.presenca_dias / (l.dias_uteis_decorridos || l.dias_uteis) < 0.6
+  ).length;
 
   const alertas = [
     { txt: `${semVisita} sem visita realizada`, on: semVisita > 0 },
@@ -103,7 +105,11 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
         {kpis.map((k) => (
           <StatCard
             key={k.label}
-            label={k.label}
+            label={
+              <span className="inline-flex items-center gap-1">
+                {k.label} <Ajuda texto={k.ajuda} />
+              </span>
+            }
             value={k.value}
             tone={k.label === "VGV assinado" ? "primary" : "neutral"}
             sub={
@@ -116,6 +122,7 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
           />
         ))}
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card>
