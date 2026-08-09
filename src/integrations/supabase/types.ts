@@ -6408,6 +6408,7 @@ export type Database = {
         Row: {
           ad_account_id: string | null
           ativo: boolean
+          auto_sync: boolean
           created_at: string
           definicao: Json
           id: string
@@ -6422,6 +6423,7 @@ export type Database = {
         Insert: {
           ad_account_id?: string | null
           ativo?: boolean
+          auto_sync?: boolean
           created_at?: string
           definicao?: Json
           id?: string
@@ -6436,6 +6438,7 @@ export type Database = {
         Update: {
           ad_account_id?: string | null
           ativo?: boolean
+          auto_sync?: boolean
           created_at?: string
           definicao?: Json
           id?: string

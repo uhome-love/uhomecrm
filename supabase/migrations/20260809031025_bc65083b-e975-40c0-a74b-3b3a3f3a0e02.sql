@@ -1,0 +1,1 @@
+ALTER TABLE public.meta_audiences ADD COLUMN IF NOT EXISTS auto_sync boolean NOT NULL DEFAULT false;
