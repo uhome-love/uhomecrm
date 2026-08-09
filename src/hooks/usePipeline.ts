@@ -644,7 +644,7 @@ export function usePipeline(
     };
   }, [staleSince, degraded, performReload]);
 
-  const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
+  const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string, dealDetails?: { vgvFinal?: number | null; dataAssinatura?: string | null; unidade?: string | null }) => {
     if (!user) return;
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
@@ -785,7 +785,15 @@ export function usePipeline(
           const faseUpdate: Record<string, any> = { fase: dealFase, updated_at: now };
           if (dealFase === "ganho") {
             faseUpdate.status = "ativo";
-            faseUpdate.data_assinatura = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+            // Data de assinatura REAL informada no popup de venda. Fallback para hoje (BRT)
+            // só quando não veio nada (caminhos sem popup) — antes era SEMPRE "hoje", o que
+            // jogava vendas assinadas em outro mês no mês errado (meta/comissão/PDN).
+            faseUpdate.data_assinatura =
+              dealDetails?.dataAssinatura ||
+              new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+            // VGV assinado e unidade reais — fonte de verdade p/ relatórios e comissão.
+            if (dealDetails?.vgvFinal != null) faseUpdate.vgv_final = dealDetails.vgvFinal;
+            if (dealDetails?.unidade) faseUpdate.unidade = dealDetails.unidade;
           }
           await supabase.from("negocios").update(faseUpdate as any).eq("id", negocioId);
 
