@@ -9,7 +9,6 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { resolverPeriodo, type PeriodoState } from "@/lib/perfPeriodo";
 import { useFunilPerformance, consolidarFunil } from "@/hooks/useFunilPerformance";
-import { useFunilEtapas } from "@/hooks/useFunilEtapas";
 import { baixarRelatorioHtml, baixarRelatorioPdf } from "@/lib/performanceReport";
 
 import RankingFilters from "@/components/ranking/v2/RankingFilters";
@@ -64,13 +63,6 @@ export default function PerformanceV3() {
   );
 
   const linhas = useMemo(() => consolidarFunil(atual.linhas), [atual.linhas]);
-
-  // Funil de 6 etapas (coorte × período + visitas), no mesmo escopo por papel.
-  const funilGestorId = soCorretor ? user?.id ?? null : gerenteId ?? null;
-  const funilQuery = useFunilEtapas(
-    { start: p.start, end: p.end, prevStart: p.prevStart, prevEnd: p.prevEnd, gestorId: funilGestorId },
-    !!user
-  );
 
   const meta = {
     periodoLabel: p.label,
@@ -142,7 +134,6 @@ export default function PerformanceV3() {
           linhasAnterior={anterior.linhas}
           loading={atual.isLoading}
           prevLabel={p.prevLabel}
-          funilQuery={funilQuery}
         />
       )}
       {aba === "funil" && <FunilTable linhas={linhas} loading={atual.isLoading} simples={soCorretor} />}
