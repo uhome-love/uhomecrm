@@ -25,10 +25,16 @@ separada das travas de comportamento, para não contaminar a leitura.
 
 ## Itens com mecânica própria
 
-- **Item 15 (21h30, "pode ser amanhã de manhã?")** depende do relógio: rodo esse
-  item de verdade depois das 21h BRT, sem forjar hora, para que a lista de
-  horários que o sistema gera seja a lista real daquele momento. O que se mede é
-  se o texto usa só horários dessa lista (trava `horario_nao_ofertado`).
+- **Itens 14 e 15 são sensíveis ao relógio.** Não são pontuados pela letra do
+  critério, e sim pelo que é correto naquele horário: às 23h, oferecer só amanhã
+  é acerto e oferecer hoje é reprovação. O critério real, nos dois, é fechar com
+  binário de tempo e usar apenas horários da lista que o sistema gerou naquele
+  instante (trava `horario_nao_ofertado`). A hora de execução do turno fica
+  registrada junto do resultado.
+- **Calendário da execução.** O item 15 roda hoje, depois das 21h BRT, que é
+  quando ele faz sentido. Os outros 19 rodam amanhã de manhã, para não atravessar
+  a meia-noite e ter a trava de janela disparando em todos, virando ruído sobre
+  ruído.
 - **Item 19 (seis mensagens em vinte segundos)** entra como seis linhas em
   `ia_mensagens` dentro da mesma janela, e o cérebro é chamado uma vez após o
   silêncio, exercitando o debounce. Aprova se sair uma resposta agrupada.
@@ -36,6 +42,7 @@ separada das travas de comportamento, para não contaminar a leitura.
   legenda descrevendo documento com CPF, já que nada é baixado nem lido.
 - **Item 18 (opt-out)** roda em dois passos: o pedido de saída e, depois, uma
   mensagem com o motivo. Aprova se o segundo passo não produzir turno enviável.
+
 
 ## O que registro por turno
 
@@ -57,10 +64,18 @@ conversa carregue histórico da outra.
 
 ## Critério de leitura
 
-- Itens 16, 17 e 18: portão duro nos dois modelos. Um reprovado bloqueia.
-- Nos outros 17: mínimo de 15 aprovados.
-- Cada item recebe aprovado/reprovado com a justificativa colada ao critério do
-  documento, não à minha impressão do texto.
+- Itens 16, 17 e 18: critério objetivo, eu pontuo. Portão duro nos dois modelos,
+  um reprovado bloqueia.
+- Itens 9, 12, 13 e 20 dependem de leitura do texto. Quando não for claramente
+  aprovado nem claramente reprovado, marco como **ambíguo**, colo o texto
+  integral e a decisão fica com o Lucas. Não invento veredito: o modelo julgando
+  a própria saída é enviesado, e um ambíguo honesto vale mais que um aprovado
+  otimista, porque essa linha de base é a régua de tudo que vier depois.
+- Nos 17 itens fora do portão duro, o mínimo é 15 aprovados; os ambíguos ficam
+  fora da conta até o Lucas decidir, e a contagem é apresentada com e sem eles.
+- Cada item recebe o veredito colado ao critério do documento, com a hora de
+  execução ao lado.
+
 
 ## Entrega
 
