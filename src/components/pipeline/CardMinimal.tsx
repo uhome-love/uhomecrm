@@ -40,6 +40,7 @@ import {
 
 import { fmtMoney } from "@/lib/fmtMoney";
 import { substatusValueLabel } from "@/lib/pipelineAudit";
+import { leadSaude } from "@/lib/leadSaude";
 
 export interface CardMinimalProximaTarefa {
   id?: string;
@@ -119,14 +120,11 @@ function resolveStatus(
 }
 
 
-// Borda 4px à esquerda — semantic-friendly Tailwind classes.
-const SIDEBAR_BY_STATUS: Record<StatusKey, string> = {
-  atrasada: "before:bg-red-500",
-  hoje: "before:bg-emerald-500",
-  futura: "before:bg-emerald-500",
-  sem: "before:bg-amber-500",
-  convertido: "before:bg-sky-500",
-  descarte: "before:bg-zinc-400 dark:before:bg-zinc-600",
+// Nova Gestão: borda por SAÚDE (último toque real), não por tarefa.
+const SIDEBAR_BY_SAUDE: Record<string, string> = {
+  verde: "before:bg-emerald-500",
+  ambar: "before:bg-amber-500",
+  vermelho: "before:bg-red-500",
 };
 
 
@@ -209,6 +207,19 @@ const CardMinimal = memo(function CardMinimal({
   const status = useMemo(
     () => resolveStatus(proximaTarefa ?? null, stage?.tipo),
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento, stage?.tipo]
+  );
+
+  // Saúde por toque (Nova Gestão) — dirige a cor da borda do card.
+  const saudeCard = useMemo(
+    () =>
+      leadSaude({
+        ultimo_toque_at: lead.ultimo_toque_at,
+        distribuido_em: lead.distribuido_em,
+        aceito_em: lead.aceito_em,
+        created_at: lead.created_at,
+        stage_tipo: stage?.tipo,
+      }),
+    [lead.ultimo_toque_at, lead.distribuido_em, lead.aceito_em, lead.created_at, stage?.tipo]
   );
 
   const actionType = useMemo(
@@ -365,7 +376,13 @@ const CardMinimal = memo(function CardMinimal({
           ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
           : "bg-card border border-border/60 hover:border-border",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
-        stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
+        stage?.tipo === "novo_lead"
+          ? "before:bg-[#4F46E5]"
+          : saudeCard === "terminal"
+            ? stage?.tipo === "descarte" || stage?.tipo === "caiu"
+              ? "before:bg-zinc-400 dark:before:bg-zinc-600"
+              : "before:bg-sky-500"
+            : SIDEBAR_BY_SAUDE[saudeCard] ?? "before:bg-amber-500",
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >

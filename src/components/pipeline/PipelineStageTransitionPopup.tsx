@@ -1292,14 +1292,19 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
 export function needsTransitionPopup(stageName: string, stageType: string, lead?: PipelineLead): boolean {
   const name = stageName.toLowerCase();
 
-  // Use stageType as primary source of truth
-  if (stageType === "sem_contato" || name.includes("sem contato")) return true;
-  if (stageType === "contato_inicial" || name.includes("contato inic") || name.includes("contato iniciado")) return true;
-  if (stageType === "busca" || stageType === "qualificacao" || name.includes("qualifica") || name.includes("busca")) return true;
-  if (stageType === "aquecimento" || stageType === "possibilidade_visita" || (name.includes("poss") && name.includes("visita")) || name.includes("aquecimento")) return true;
+  // ── Nova Gestão · fricção-zero ──
+  // Só as etapas com DADO CRÍTICO abrem formulário obrigatório ao mover.
+  // Todo o resto (sem contato, qualificação, aquecimento, possível visita,
+  // pós-visita, proposta, documentação, contrato, negócio criado) move
+  // INSTANTÂNEO — registrar é opcional depois (⚡ atividade).
 
+  // Venda / Caiu / Descarte → sempre pedem (VGV/data/unidade · motivo).
+  if (stageType === "venda" || name.includes("ganho") || name === "venda") return true;
+  if (stageType === "caiu" || name.includes("caiu")) return true;
+  if (stageType === "descarte" || name.includes("descarte")) return true;
+
+  // Visita → pede agendamento, exceto se o lead já tem visita marcada.
   if (stageType === "visita" || name === "visita" || stageType === "visita_marcada" || name.includes("visita marcada")) {
-    // Skip popup se o lead já tem visita marcada/agendada (flag definida pelo agendamento na Agenda)
     const flagStatus = (lead as any)?.flag_status as Record<string, any> | undefined;
     const statusVisita = flagStatus?.status_visita;
     if (statusVisita && ["marcada", "confirmada", "reagendada", "agendada"].includes(String(statusVisita))) {
@@ -1308,13 +1313,6 @@ export function needsTransitionPopup(stageName: string, stageType: string, lead?
     return true;
   }
 
-  if (stageType === "pos_visita" || stageType === "visita_realizada" || name.includes("pós-visita") || name.includes("visita realizada")) return true;
-  if (stageType === "proposta" || name.includes("proposta")) return true;
-  if (stageType === "documentacao" || name.includes("aprova") || name.includes("documenta")) return true;
-  if (stageType === "contrato_gerado" || name.includes("contrato")) return true;
-  if (stageType === "venda" || name.includes("ganho") || name === "venda") return true;
-  if (stageType === "convertido" || name.includes("negócio criado") || name.includes("negocio criado")) return true;
-  if (stageType === "caiu" || name.includes("caiu")) return true;
-  if (stageType === "descarte" || name.includes("descarte")) return true;
+  // Etapas de processo → movimento instantâneo.
   return false;
 }

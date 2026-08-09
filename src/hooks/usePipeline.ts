@@ -40,6 +40,8 @@ export interface PipelineLead {
   last_escalation_at?: string | null;
   distribuido_em?: string | null;
   aceito_em?: string | null;
+  /** último toque HUMANO real (base da saúde por toque — Nova Gestão). */
+  ultimo_toque_at?: string | null;
   aceite_expira_em?: string | null;
   aceite_status: string | null;
   origem: string | null;
@@ -279,7 +281,7 @@ export function usePipeline(
     loadingLeadsRef.current = true;
     try {
 
-    const selectFields = "id, nome, telefone, telefone2, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, imovel_codigo, imovel_url, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, flag_status, is_redistribuicao";
+    const selectFields = "id, nome, telefone, telefone2, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, imovel_codigo, imovel_url, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, ultimo_toque_at, distribuido_em, aceito_em, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, flag_status, is_redistribuicao";
     // Página de 1000 para todos: a query principal (arquivado=false, order by
     // updated_at, índice idx_pipeline_leads_updated) roda em <1ms no servidor;
     // o gargalo era o número de idas ao servidor. 1000/página corta ~1811 leads
