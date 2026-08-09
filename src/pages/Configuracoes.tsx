@@ -14,6 +14,7 @@ import AvatarUpload from "@/components/AvatarUpload";
 import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Upload, CreditCard, BadgeCheck, Wrench, Bell, Plug, type LucideIcon } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
+import MetaAudiencesCard from "@/components/marketing/MetaAudiencesCard";
 import RoletaCampanhasPanel from "@/components/settings/RoletaCampanhasPanel";
 import IntegracoesSection from "@/components/settings/IntegracoesSection";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -37,7 +38,7 @@ function isConfigSection(v: string | null): v is ConfigSectionId {
 
 export default function Configuracoes() {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isDiretor } = useUserRole();
   const [params, setParams] = useSearchParams();
   const rawSecao = params.get("secao");
   const secao: ConfigSectionId = isConfigSection(rawSecao) ? rawSecao : "perfil";
@@ -498,6 +499,7 @@ export default function Configuracoes() {
         <>
           <IntegracoesSection />
           {isAdmin && <MetaAdsSettings />}
+          {(isAdmin || isDiretor) && <MetaAudiencesCard />}
         </>
       )}
 
