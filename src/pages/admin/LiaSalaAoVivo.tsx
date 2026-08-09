@@ -303,6 +303,68 @@ export default function LiaSalaAoVivo() {
                 </div>
               )}
 
+              {/* Conversão sai daqui, do registro — nunca do que o modelo escreveu.
+                  O JSON do turno é só sugestão para o humano conferir. */}
+              <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Registro (é o que dispara a conversão no Meta)
+                </p>
+                {(turno.contexto?.apresentacao_aceita || turno.contexto?.visita_confirmada_em) && (
+                  <p className="text-xs text-muted-foreground">
+                    A Lia sugeriu:{" "}
+                    {turno.contexto?.apresentacao_aceita ? "apresentação aceita" : ""}
+                    {turno.contexto?.apresentacao_aceita && turno.contexto?.visita_confirmada_em
+                      ? " e "
+                      : ""}
+                    {turno.contexto?.visita_confirmada_em
+                      ? `visita em ${formatBRT(turno.contexto.visita_confirmada_em, "dd/MM HH:mm")}`
+                      : ""}
+                    . Sugestão não converte nada — confirme abaixo.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={ocupado === turno.id}
+                    onClick={() => void registrar(turno, "aceite_em")}
+                  >
+                    Apresentação aceita
+                  </Button>
+                  {(turno.horarios_ofertados?.length ?? 0) > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={horarioEscolhido[turno.id] ?? ""}
+                        onValueChange={(v) => setHorarioEscolhido((h) => ({ ...h, [turno.id]: v }))}
+                      >
+                        <SelectTrigger className="h-9 w-[150px]">
+                          <SelectValue placeholder="Horário ofertado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {turno.horarios_ofertados!.map((h) => (
+                            <SelectItem key={h} value={h}>
+                              {h}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={ocupado === turno.id || !horarioEscolhido[turno.id]}
+                        onClick={() =>
+                          void registrar(turno, "confirmada_em", horarioEscolhido[turno.id])
+                        }
+                      >
+                        Confirmar visita
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+
               {turno.status !== "enviado" && (
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
