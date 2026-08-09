@@ -1,13 +1,12 @@
+import type { UseQueryResult } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { delta } from "@/lib/perfPeriodo";
 import { presencaPct, somarFunil, type FunilLinha } from "@/hooks/useFunilPerformance";
+import { FunilVisitas } from "@/components/central-v2/shared/FunilVisitas";
 import { AlertTriangle } from "lucide-react";
-
-
-const pct = (n: number, base: number) => (base > 0 ? (n / base) * 100 : 0);
 
 function Delta({ v }: { v: number | null }) {
   if (v === null || !Number.isFinite(v)) return null;
@@ -31,10 +30,12 @@ interface Props {
   linhasAnterior: FunilLinha[];
   loading: boolean;
   prevLabel: string;
+  /** Funil de 6 etapas (get_relatorio_funil) — coorte × período + visitas. */
+  funilQuery: UseQueryResult<Record<string, unknown>>;
 }
 
-/** Tela inicial de KPIs — funil do período + sinais de atenção. */
-export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }: Props) {
+/** Tela inicial de KPIs — funil de etapas + visitas + sinais de atenção. */
+export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel, funilQuery }: Props) {
   const t = somarFunil(linhas);
   const p = somarFunil(linhasAnterior);
   const diasBase = t.dias_uteis_decorridos || t.dias_uteis;
@@ -54,15 +55,6 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
     { label: "VGV gerado", value: fmtMoney(t.vgv_gerado, "short"), d: delta(t.vgv_gerado, p.vgv_gerado), ajuda: "Valor dos negócios ativos agora — em negociação e em contrato — excluindo os que caíram." },
     { label: "VGV assinado", value: fmtMoney(t.vgv_assinado, "short"), d: delta(t.vgv_assinado, p.vgv_assinado), ajuda: "Vendas com contrato assinado no período, com rateio 50/50 em parcerias." },
   ];
-
-  const etapas = [
-    { nome: "Leads recebidos", valor: t.leads_recebidos, taxa: `${pct(t.visitas_realizadas, t.leads_recebidos).toFixed(1)}% chegam a visitar` },
-    { nome: "Visitas realizadas", valor: t.visitas_realizadas, taxa: `${pct(t.negocios_abertos, t.visitas_realizadas).toFixed(1)}% viram negócio` },
-    { nome: "Negócios abertos", valor: t.negocios_abertos, taxa: `${pct(t.vendas, t.negocios_abertos).toFixed(1)}% assinam` },
-    { nome: "Vendas assinadas", valor: t.vendas, taxa: "" },
-  ];
-
-  const max = Math.max(...etapas.map((e) => e.valor), 1);
 
   const semVisita = linhas.filter((l) => l.corretor_ativo && l.visitas_realizadas === 0).length;
   const vgvZero = linhas.filter((l) => l.corretor_ativo && l.vgv_assinado === 0).length;
@@ -111,52 +103,34 @@ export default function PerfHome({ linhas, linhasAnterior, loading, prevLabel }:
       </div>
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Funil do período</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2.5">
-            {etapas.map((e, i) => (
-              <div key={e.nome} className="grid grid-cols-[140px_1fr] items-center gap-3">
-                <div className="text-[11px] font-semibold text-muted-foreground leading-tight">
-                  {e.nome}
-                  {e.taxa && <p className="text-[10px] font-medium text-muted-foreground/70">{e.taxa}</p>}
-                </div>
-                <div
-                  className={`h-9 rounded-lg flex items-center justify-end px-3 text-xs font-bold text-primary-foreground ${
-                    i === etapas.length - 1 ? "bg-success-500" : "bg-primary"
-                  }`}
-                  style={{ width: `${Math.max(12, (e.valor / max) * 100)}%` }}
-                >
-                  {e.valor.toLocaleString("pt-BR")}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {/* Funil de 6 etapas + Visitas (coorte × período) */}
+      <FunilVisitas query={funilQuery} />
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning-500" /> Sinais de atenção
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {alertas.length === 0 && <p className="text-xs text-muted-foreground">Nenhum sinal de alerta no período.</p>}
-            {alertas.map((a) => (
-              <div key={a.txt} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold">
-                {a.txt}
-              </div>
-            ))}
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <StatCard label="Pipeline ativo (agora)" value={t.pipeline_ativo.toLocaleString("pt-BR")} className="p-3 rounded-xl" />
-              <StatCard label="Descartes no período" value={t.descartes.toLocaleString("pt-BR")} tone="warning" className="p-3 rounded-xl" />
+      {/* Sinais de atenção */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning-500" /> Sinais de atenção
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {alertas.length === 0 && <p className="text-xs text-muted-foreground">Nenhum sinal de alerta no período.</p>}
+          {alertas.length > 0 && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {alertas.map((a) => (
+                <div key={a.txt} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold">
+                  {a.txt}
+                </div>
+              ))}
             </div>
-            <p className="text-[10.5px] text-muted-foreground mt-1">Comparativo vs. {prevLabel}.</p>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:max-w-md">
+            <StatCard label="Pipeline ativo (agora)" value={t.pipeline_ativo.toLocaleString("pt-BR")} className="p-3 rounded-xl" />
+            <StatCard label="Descartes no período" value={t.descartes.toLocaleString("pt-BR")} tone="warning" className="p-3 rounded-xl" />
+          </div>
+          <p className="text-[10.5px] text-muted-foreground mt-1">Comparativo vs. {prevLabel}.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
