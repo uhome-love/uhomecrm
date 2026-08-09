@@ -5,9 +5,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireApiKey, callAIRaw } from "../_shared/ai-helpers.ts";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleCors();
+
+  const _auth = await requireRealUser(req, {});
+  if (_auth.error) return _auth.error;
 
   try {
     const apiKey = requireApiKey();

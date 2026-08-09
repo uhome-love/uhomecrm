@@ -5,6 +5,7 @@
  * Phase 2: Enterprise knowledge loaded from DB via enterprise-knowledge helper.
  */
 import { withCorsAndErrorHandling, requireApiKey, callAI } from "../_shared/ai-helpers.ts";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 import { jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { loadEnterpriseKnowledge, formatForMarketing, getKnowledgeSourceReport } from "../_shared/enterprise-knowledge.ts";
 
@@ -35,6 +36,9 @@ Quando criar calendários, use formato de tabela: Dia | Formato | Empreendimento
 }
 
 Deno.serve(withCorsAndErrorHandling("homi-ana", async (req) => {
+  const _auth = await requireRealUser(req, {});
+  if (_auth.error) return _auth.error;
+
   const { messages } = await req.json();
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
