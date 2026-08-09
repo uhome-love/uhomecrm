@@ -218,14 +218,145 @@ Deno.serve(async (req) => {
     });
   }
 
-  // ---------- escrita real: bloqueada até liberação da Fase 2 ----------
-  return json(
-    {
-      ok: false,
-      error:
-        "Envio real ao Meta ainda não habilitado (Fase 2). Rode com dry_run=true.",
-      total_elegivel: membros.length,
-    },
-    501,
-  );
+  // ---------- escrita real ----------
+  if (!accessToken || !accountId) return json({ error: "Meta Ads não configurado" }, 400);
+  if (!audienceId) return json({ error: "envio real exige segmento_chave cadastrado" }, 400);
+
+  const { data: audRow, error: audErr } = await admin
+    .from("meta_audiences")
+    .select("id, nome, meta_custom_audience_id")
+    .eq("id", audienceId)
+    .maybeSingle();
+  if (audErr || !audRow) return json({ error: audErr?.message ?? "segmento não encontrado" }, 500);
+
+  let caId: string | null = audRow.meta_custom_audience_id ?? null;
+
+  // 1) cria o público, se ainda não existir
+  if (!caId) {
+    const params = new URLSearchParams({
+      name: `Uhome | ${audRow.nome}`,
+      subtype: "CUSTOM",
+      customer_file_source: "BOTH_USER_AND_PARTNER_PROVIDED",
+      description: `Segmento ${segmentoChave} sincronizado pelo CRM U.Home`,
+      access_token: accessToken,
+    });
+    const r = await fetch(`${META_BASE}/${accountId}/customaudiences`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+    const j = await r.json();
+    if (!r.ok || !j?.id) {
+      await admin.from("meta_audience_runs").insert({
+        audience_id: audienceId,
+        segmento_chave: segmentoChave,
+        dry_run: false,
+        total_elegivel: membros.length,
+        enviados: 0,
+        duracao_ms: Date.now() - started,
+        erro: j?.error?.message ?? `HTTP ${r.status}`,
+        detalhes: { etapa: "create_audience", error: j?.error ?? null },
+      });
+      return json({ ok: false, etapa: "create_audience", error: j?.error ?? `HTTP ${r.status}` }, 502);
+    }
+    caId = j.id as string;
+    await admin
+      .from("meta_audiences")
+      .update({ meta_custom_audience_id: caId, ad_account_id: accountId })
+      .eq("id", audienceId);
+  }
+
+  // 2) upload em lotes de até 10.000
+  const BATCH = 10000;
+  const sessionId = Date.now() % 2147483647;
+  const totalBatches = Math.max(1, Math.ceil(membros.length / BATCH));
+  let numReceived = 0;
+  let numInvalid = 0;
+  let enviados = 0;
+  const lotes: unknown[] = [];
+
+  for (let i = 0; i < totalBatches; i++) {
+    const slice = membros.slice(i * BATCH, (i + 1) * BATCH);
+    const payload = {
+      schema: ["EMAIL", "PHONE"],
+      data: slice,
+    };
+    const params = new URLSearchParams({
+      payload: JSON.stringify(payload),
+      session: JSON.stringify({
+        session_id: sessionId,
+        batch_seq: i + 1,
+        last_batch_flag: i + 1 === totalBatches,
+        estimated_num_total: membros.length,
+      }),
+      access_token: accessToken,
+    });
+    const r = await fetch(`${META_BASE}/${caId}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+    const j = await r.json();
+    if (!r.ok) {
+      await admin.from("meta_audience_runs").insert({
+        audience_id: audienceId,
+        segmento_chave: segmentoChave,
+        dry_run: false,
+        total_elegivel: membros.length,
+        enviados,
+        duracao_ms: Date.now() - started,
+        erro: j?.error?.message ?? `HTTP ${r.status}`,
+        detalhes: { etapa: "upload_users", batch_seq: i + 1, error: j?.error ?? null, lotes },
+      });
+      return json(
+        {
+          ok: false,
+          etapa: "upload_users",
+          meta_custom_audience_id: caId,
+          batch_seq: i + 1,
+          error: j?.error ?? `HTTP ${r.status}`,
+        },
+        502,
+      );
+    }
+    numReceived += Number(j?.num_received ?? 0);
+    numInvalid += Number(j?.num_invalid_entries ?? 0);
+    enviados += slice.length;
+    lotes.push({ batch_seq: i + 1, enviados: slice.length, num_received: j?.num_received, num_invalid_entries: j?.num_invalid_entries });
+  }
+
+  const duracaoMs = Date.now() - started;
+  await admin.from("meta_audience_runs").insert({
+    audience_id: audienceId,
+    segmento_chave: segmentoChave,
+    dry_run: false,
+    total_elegivel: membros.length,
+    enviados,
+    recebidos: numReceived,
+    invalidos: numInvalid,
+    duracao_ms: duracaoMs,
+    detalhes: { com_email: comEmail, com_telefone: comFone, lotes, session_id: sessionId },
+  });
+  await admin
+    .from("meta_audiences")
+    .update({
+      ultimo_total_elegivel: membros.length,
+      ultima_sync_at: new Date().toISOString(),
+    })
+    .eq("id", audienceId);
+
+  return json({
+    ok: true,
+    mode: "sync",
+    segmento_chave: segmentoChave,
+    meta_custom_audience_id: caId,
+    total_elegivel: membros.length,
+    enviados,
+    num_received: numReceived,
+    num_invalid_entries: numInvalid,
+    com_email: comEmail,
+    com_telefone: comFone,
+    duracao_ms: duracaoMs,
+  });
 });
+
