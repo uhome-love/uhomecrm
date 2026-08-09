@@ -20,6 +20,10 @@ interface Payload {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const _auth = await requireRealUser(req, {});
+  if (_auth.error) return _auth.error;
+
   if (req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405);
   }

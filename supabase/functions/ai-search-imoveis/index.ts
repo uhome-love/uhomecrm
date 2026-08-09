@@ -65,6 +65,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const _auth = await requireRealUser(req, {});
+  if (_auth.error) return _auth.error;
+
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
