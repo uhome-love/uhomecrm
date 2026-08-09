@@ -26,9 +26,10 @@ import type { CentralSectionId } from "./sections";
  *
  * A navegação é de 2 níveis: 5 visões (chips) × sub-visões (select).
  */
-export type CentralEngine = "ssot" | "central" | "builder" | "forecast";
+export type CentralEngine = "ssot" | "central" | "builder" | "forecast" | "perf3";
 
 export type UnifiedSectionId =
+  | "funil"
   | "visao"
   | "sla"
   | "visitas"
@@ -57,7 +58,8 @@ export interface UnifiedSection {
 }
 
 export const UNIFIED_SECTIONS: UnifiedSection[] = [
-  { id: "visao", label: "Visão Geral", icon: Sparkles, engine: "ssot", corretor: true, fonte: "SSOT · rpc_metricas" },
+  { id: "funil", label: "Funil & Resultado", icon: Gauge, engine: "perf3", corretor: true, fonte: "SSOT · rpc_perf_funil" },
+  { id: "visao", label: "Visão Geral (legado)", icon: Sparkles, engine: "ssot", corretor: true, fonte: "SSOT · rpc_metricas" },
 
   { id: "sla", label: "Tempo de Resposta", icon: Gauge, engine: "central", centralId: "sla", fonte: "get_relatorio_sla" },
   { id: "visitas", label: "Visitas", icon: MapPin, engine: "central", centralId: "visitas", fonte: "get_relatorio_visitas" },
@@ -87,14 +89,14 @@ export interface UnifiedView {
 }
 
 export const UNIFIED_VIEWS: UnifiedView[] = [
-  { id: "visao-geral", label: "Visão Geral", icon: Sparkles, ids: ["visao"] },
+  { id: "visao-geral", label: "Visão Geral", icon: Sparkles, ids: ["funil", "visao"] },
   { id: "comercial", label: "Comercial", icon: Users, ids: ["sla", "visitas", "oferta-ativa"] },
   { id: "resultado", label: "Resultado", icon: TrendingUp, ids: ["negocios", "vendas", "metas", "cohort", "forecast"] },
   { id: "equipe", label: "Equipe", icon: Trophy, ids: ["ranking", "relatorio-equipe"] },
   { id: "meus", label: "Meus resultados", icon: Rocket, ids: ["progresso", "relatorio-1a1"] },
 ];
 
-export const DEFAULT_UNIFIED_SECTION: UnifiedSectionId = "visao";
+export const DEFAULT_UNIFIED_SECTION: UnifiedSectionId = "funil";
 
 export function isUnifiedSection(v: string | null | undefined): v is UnifiedSectionId {
   return !!v && UNIFIED_SECTIONS.some((s) => s.id === v);
@@ -114,6 +116,7 @@ export const SECTION_ALIASES: Record<string, UnifiedSectionId> = {
   geral: "visao",
   "pipeline-leads": "visao",
   origem: "visao",
+  performance: "funil",
   "origem-segmento": "visao",
   relatorios: "relatorio-equipe",
   relatorio: "relatorio-1a1",

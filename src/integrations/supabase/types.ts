@@ -15691,6 +15691,35 @@ export type Database = {
         Args: { p_fim?: string; p_inicio?: string }
         Returns: Json
       }
+      rpc_perf_funil: {
+        Args: {
+          p_end: string
+          p_gerente_id?: string
+          p_start: string
+          p_user_id?: string
+        }
+        Returns: {
+          avatar_url: string
+          corretor_ativo: boolean
+          corretor_auth_id: string
+          corretor_nome: string
+          descartes: number
+          dias_uteis: number
+          equipe: string
+          equipe_atual: string
+          gerente_auth_id: string
+          leads_recebidos: number
+          negocios_abertos: number
+          pipeline_ativo: number
+          presenca_dias: number
+          vendas: number
+          vgv_assinado: number
+          vgv_gerado: number
+          visitas_agendadas: number
+          visitas_no_show: number
+          visitas_realizadas: number
+        }[]
+      }
       rpc_placar_do_dia: { Args: never; Returns: Json }
       rpc_placar_mutirao: { Args: { p_sessao_id?: string }; Returns: Json }
       selecionar_reengajamento_base: {

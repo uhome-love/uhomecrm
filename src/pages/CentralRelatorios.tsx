@@ -26,6 +26,7 @@ import { SectionRouterView } from "@/components/central-v2/SectionRouterView";
 import { VisaoPipelineExtra } from "@/components/central-v2/VisaoPipelineExtra";
 import { ReportBuilder } from "@/components/central-v2/report/ReportBuilder";
 import PerformanceHub, { type PerfTab } from "@/components/performance/PerformanceHub";
+import PerformanceV3 from "@/components/performance/v3/PerformanceV3";
 
 const ForecastContent = lazy(() => import("@/components/central/ForecastContent"));
 
@@ -157,6 +158,8 @@ export default function CentralRelatorios() {
       </header>
 
       <main className="flex-1 px-4 py-5 sm:px-6">
+        {atual.engine === "perf3" && <PerformanceV3 />}
+
         {atual.engine === "ssot" && (
           <div className="flex flex-col gap-6">
             <PerformanceHub
