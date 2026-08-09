@@ -1,76 +1,89 @@
-# Performance — refatoração completa (CEO / Gestor / Corretor)
+# Performance — refatoração completa (dados + visual + visões)
 
-Hoje `/performance` e `/ranking` redirecionam para a Central de Relatórios (`/central-relatorios?secao=...`), e o conteúdo é o `PerformanceHub` (visão, ranking, origem). Os números vêm de `rpc_metricas` (SSOT: leads, visitas agendadas/realizadas/no-show, vendas, VGV assinado). Faltam no SSOT quatro colunas que você pediu: **presença, pipeline ativo, descartes e VGV gerado** (essas existem hoje só na RPC paralela `get_relatorio_equipes`, com regras próprias — é a origem de números divergentes entre telas).
+Objetivo: uma única página de Performance, bonita e densa no padrão do Dashboard CEO, com números que fecham com as outras telas do CRM e três leituras claras (CEO, Gestor, Corretor).
 
-A proposta: uma **página Performance própria e bonita** (visual espelhado no Dashboard do Gerente), com **uma única fonte de dados** para todos os papéis, planilhas de funil e conversão, três rankings e exportação PDF/HTML de qualidade de apresentação.
+---
 
-## O que será entregue
+## 1. O que está errado hoje (verificado na base)
 
-### 1. Fonte única de dados (fim da divergência)
-Uma RPC única de funil por corretor no período, devolvendo por linha:
+**Presença 26%**
+O cálculo é `dias presentes ÷ (dias úteis do mês inteiro × todos os corretores da lista)`. Em agosto isso divide os 265 dias de presença já registrados por 21 dias úteis × ~48 corretores — mesmo estando só no dia 9 e mesmo contando corretores inativos e quem nunca teve registro. Resultado: percentual sempre baixo e sem significado.
 
-`presença · leads recebidos · pipeline ativo · descartes · visitas totais · visitas realizadas · negócios · VGV gerado · vendas · VGV assinado`
+**Visitas totais menor que realizadas**
+Hoje "totais" conta visitas *criadas* no período e "realizadas" conta visitas *ocorridas* no período. Uma visita criada em julho e realizada em agosto entra só em realizadas — por isso o total fica menor.
 
-Definições propostas (ficam escritas na tela, em "como calculamos"):
-- **Presença** — mesma fonte da página Presença (`get_presenca_agregada`): presenças no período e dias ativos, exibido como `12/20 (60%)`.
-- **Leads recebidos** — leads distribuídos ao corretor no período.
-- **Pipeline ativo** — fotografia de agora: leads no funil fora de Descarte/Caiu/Ganho e não arquivados.
-- **Descartes** — leads movidos para Descarte/Caiu no período.
-- **Visitas totais** — visitas criadas no período (agendadas).
-- **Visitas realizadas** — visitas com data de realização no período.
-- **Negócios** — negócios **abertos no período** (data de criação dentro do período).
-- **Gerado** — soma do valor estimado desses negócios abertos no período.
-- **VGV assinado** — regra canônica já vigente (data de assinatura BRT, rateio 50/50 de parceria).
+**VGV gerado**
+Hoje soma o valor de todos os negócios *criados* no período, incluindo os que já caíram. Não é "negócio em contrato ativo".
 
-Pipeline ativo é a única métrica de fotografia — fica marcada com ícone "snapshot" para ninguém ler como se fosse do período.
+---
 
+## 2. Novas definições (o que cada número passa a significar)
 
-### 2. Tela inicial de KPIs (nova home da Performance)
-Primeira aba da página: painel visual de destaque, no padrão do Dashboard do Gerente.
-- Faixa de KPIs grandes: Presença · Leads · Visitas totais · Visitas realizadas · Negócios abertos · VGV gerado · VGV assinado, cada um com comparativo vs. período anterior (seta e %).
-- Funil visual (Leads → Visitas → Visitas realizadas → Negócios → Vendas) com taxas entre etapas.
-- Evolução mensal de VGV assinado e visitas (gráfico de linha/área).
-- Mini-pódios: top 3 em Leads, Visitas e VGV, com link para a aba Rankings.
-- Cartões de atenção (semáforo): corretores sem visita, VGV zerado, descartes acima da faixa.
+| Número | Definição nova |
+|---|---|
+| Presença | Dias em que o corretor esteve na empresa ÷ dias úteis **já decorridos** do período. Denominador só com corretores **ativos**. Mesma fonte da página Presença (registros de presença diária), com faltas e saídas visíveis. |
+| Leads recebidos | Leads que entraram para o corretor no período (sem mudança). |
+| Visitas totais | Toda visita que **existiu no período** — agendada nele ou realizada nele, sem duplicar. Nunca menor que as realizadas. |
+| Visitas realizadas | Visitas ocorridas no período (sem mudança). |
+| Negócios abertos | Negócios criados no período (sem mudança). |
+| VGV gerado | Valor dos negócios **ativos** — em negociação e em contrato — excluindo os que caíram. |
+| VGV assinado | Regra atual de fonte única (data de assinatura + rateio 50/50). Inalterada. |
+| Pipeline ativo | Foto de agora: leads do corretor fora de venda/descarte/caiu. |
+| Descartes | Leads descartados dentro do período. |
 
-### 3. Filtro de período
-Seletor único no topo, válido para toda a página e para as exportações: **Dia · Semana · Mês · Personalizado** (intervalo de datas), com navegação anterior/próximo e sempre em BRT. O período escolhido vai na URL, para compartilhar o link exato.
+Cada card de KPI ganha um ícone de ajuda com essa explicação em uma linha, para ninguém mais precisar perguntar de onde vem o número.
 
-### 4. Planilhas (tabelas densas, estilo CRM)
+---
 
-- **Funil por corretor** — uma linha por corretor, colunas acima, agrupável/colapsável por equipe com linha de total da equipe e total geral.
-- **Funil por equipe** — versão consolidada.
-- **Conversão por equipe e por corretor** — `Leads → Visita` (%), `Visita → Venda` (%), `Leads → Venda` (%), mais ticket médio.
-- Ordenação por qualquer coluna, seletor de colunas, e destaque de outliers (verde/âmbar/vermelho por faixa) sem poluir.
+## 3. Organização da página (três visões)
 
-### 5. Rankings
-Três abas: **Leads**, **Visitas** (totais + realizadas lado a lado) e **VGV assinado**. Pódio nos 3 primeiros + tabela completa com posição, avatar, variação vs. período anterior. Escopo automático: CEO = empresa; gestor = time; corretor = time e empresa.
+Uma página, um só motor de dados; muda o escopo e o nível de detalhe.
 
-### 6. Exportação PDF e HTML
-Exportação **construída a partir dos dados** (não print de tela): mesmo template para PDF e HTML, com capa (logo, período, escopo, gerado em BRT), sumário executivo, tabelas de funil/conversão e rankings, rodapé paginado. HTML sai como arquivo único auto-contido (abre em qualquer navegador, imprime bem).
+**CEO / Diretor** — tudo. Barra de período (dia · semana · mês · personalizado) + filtro de equipe e corretor.
+1. **KPIs** — 7 cartões com variação vs. período anterior, funil visual e sinais de atenção.
+2. **Planilha do funil** — todos os corretores agrupados por equipe.
+3. **Conversão** — taxas lead→visita, visita→negócio, negócio→venda.
+4. **Rankings** — leads, visitas e VGV, com pódio.
 
-### 7. Visões por papel
-- **CEO/Diretor** — tudo, filtro por equipe e por corretor, comparativo entre equipes.
-- **Gestor** — apenas o próprio time; filtro por corretor individual; mesmas planilhas, conversão, rankings do time e exportação.
-- **Corretor** — o próprio funil e conversão, evolução mensal, e os rankings (time e empresa) com sua posição destacada.
+**Gestor** — mesma estrutura, escopo travado na própria equipe, sem seletor de equipe. Ranking mostra a posição da equipe no geral.
 
-## Sugestões de melhoria (incluídas)
-- **Comparativo com o período anterior** em cada KPI (delta com seta), já suportado pelo hub atual.
-- **Semáforo de saúde do corretor**: sinaliza SLA alto, muitos descartes, zero visitas, VGV zerado — leitura instantânea em reunião.
-- **Drill-down**: clicar num número abre a lista dos leads/visitas/negócios que o compõem (padrão que já existe em `PerfDrilldownSheet`).
-- **Modo apresentação**: fonte maior e alto contraste para projetar em reunião.
+**Corretor** — só os próprios números: KPIs, sua linha do funil, sua conversão e sua posição nos rankings (sem ver a planilha do time).
 
-## Detalhes técnicos
-- Nova RPC `rpc_perf_funil(p_start, p_end, p_gerente_id, p_user_id)` (SECURITY DEFINER, gate por papel: admin/diretor = tudo, gestor = seu time via `team_members`, corretor = só ele). Reaproveita as views canônicas `v_fato_lead`, `v_fato_visita`, `v_fato_venda`, `pipeline_leads`/`pipeline_historico`, `negocios` (criação no período) e `v_corretor_equipe` (equipe histórica); presença vem de `get_presenca_agregada`, a mesma da página Presença. Uma migration, só DDL.
-- Front: `src/pages/Performance.tsx` + `src/components/performance/v3/*` (`PerfHome` KPIs, `FunilTable`, `ConversaoTable`, `RankingsTabs`, `PerfHeader` com o seletor dia/semana/mês/personalizado), hook `useFunilPerformance`. Componentes < 300 linhas; tokens semânticos do design system, sem cor fixa.
-- Export: `src/lib/performanceReport.ts` gera o HTML do relatório; PDF via jsPDF + autotable (já no projeto) a partir do mesmo modelo de dados.
-- `/performance` e `/ranking` passam a apontar para a nova página; a Central de Relatórios mantém suas seções e deixa de duplicar ranking.
+**Limpeza:** as abas **Comercial** e **Resultado** saem do seletor. Os relatórios que viviam nelas ficam acessíveis pelos atalhos existentes; a Performance passa a ter só Visão Geral, Equipe e Meus resultados.
 
-## Ordem de execução
-1. **Fase A** — mockup visual (HTML) da home de KPIs e das três visões para sua aprovação.
-2. **Fase B** — RPC única + validação dos números contra a base (conferência corretor a corretor no período do mês).
-3. **Fase C** — home de KPIs + filtro de período.
-4. **Fase D** — planilhas de funil e conversão (CEO), depois gestor e corretor.
-5. **Fase E** — rankings.
-6. **Fase F** — exportação PDF/HTML e validação ao vivo no preview, ponta a ponta.
+---
 
+## 4. Planilha do funil — o que muda no visual
+
+- Equipes em blocos **colapsáveis**, com linha de total por equipe e total geral fixo no rodapé.
+- **Ordenação por coluna** (clique no cabeçalho) dentro de cada equipe e no modo lista plana.
+- Alternador **"Agrupar por equipe" / "Lista única"**.
+- Cabeçalho e coluna do corretor fixos na rolagem, avatar + nome, zebra sutil, números alinhados à direita e tabulares.
+- Barras de intensidade discretas nas colunas de volume e semáforo mantido só na presença.
+- Exportação PDF/HTML respeita exatamente o que está na tela (filtro, ordenação, agrupamento).
+
+---
+
+## 5. Detalhes técnicos
+
+- Atualizar `public.rpc_perf_funil`:
+  - `presenca_dias` e novo `dias_uteis_decorridos` (limitado a hoje em BRT, feriados fora); expor também faltas e saídas.
+  - `visitas_agendadas` vira `visitas_total` = distintas com criação **ou** realização no período.
+  - `vgv_gerado` passa a somar negócios com fase em negociação ou contrato (exclui caídos), em vez de todos os criados.
+  - Manter presença/pipeline/descartes atribuídos apenas à linha de equipe atual, como já é hoje.
+- `src/hooks/useFunilPerformance.ts`: novos campos, `presencaPct` com denominador de dias decorridos × corretores ativos.
+- `src/components/performance/v3/PerfHome.tsx`: rótulos, tooltips de definição, remoção do rodapé redundante.
+- `src/components/performance/v3/FunilTable.tsx`: reescrita com ordenação, colapso por equipe e cabeçalho fixo.
+- `src/components/central-v2/unifiedSections.ts`: remover as visões `comercial` e `resultado` e apontar aliases das seções antigas para as que permanecem.
+- `src/lib/performanceReport.ts`: acompanhar as novas colunas.
+
+Migration: uma só (substituição da função), fora do horário de pico conforme a regra de migrations.
+
+---
+
+## 6. Ordem de execução e validação
+
+1. Mockup visual da nova Performance (KPIs + planilha) para aprovação.
+2. Migration da RPC + conferência dos números contra a página Presença, a Agenda de Visitas e Vendas Realizadas.
+3. Frontend: KPIs → planilha → conversão → rankings.
+4. Validação ao vivo no preview nas três visões (CEO, gestor, corretor), período dia/semana/mês/personalizado, e exportação.
