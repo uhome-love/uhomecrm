@@ -12,17 +12,18 @@ Uma RPC única de funil por corretor no período, devolvendo por linha:
 `presença · leads recebidos · pipeline ativo · descartes · visitas totais · visitas realizadas · negócios · VGV gerado · vendas · VGV assinado`
 
 Definições propostas (ficam escritas na tela, em "como calculamos"):
-- **Presença** — dias com checkpoint válido no período ÷ dias úteis (BRT), exibido como `12/20 (60%)`.
+- **Presença** — mesma fonte da página Presença (`get_presenca_agregada`): presenças no período e dias ativos, exibido como `12/20 (60%)`.
 - **Leads recebidos** — leads distribuídos ao corretor no período.
 - **Pipeline ativo** — fotografia de agora: leads no funil fora de Descarte/Caiu/Ganho e não arquivados.
 - **Descartes** — leads movidos para Descarte/Caiu no período.
 - **Visitas totais** — visitas criadas no período (agendadas).
 - **Visitas realizadas** — visitas com data de realização no período.
-- **Negócios** — leads em Em Negociação/Contrato agora.
-- **Gerado** — soma do valor estimado dos negócios abertos no período.
+- **Negócios** — negócios **abertos no período** (data de criação dentro do período).
+- **Gerado** — soma do valor estimado desses negócios abertos no período.
 - **VGV assinado** — regra canônica já vigente (data de assinatura BRT, rateio 50/50 de parceria).
 
-Métricas de fotografia (pipeline ativo, negócios) ficam marcadas com um ícone "snapshot", para ninguém ler como se fosse do período.
+Pipeline ativo é a única métrica de fotografia — fica marcada com ícone "snapshot" para ninguém ler como se fosse do período.
+
 
 ### 2. Planilhas (tabelas densas, estilo CRM)
 - **Funil por corretor** — uma linha por corretor, colunas acima, agrupável/colapsável por equipe com linha de total da equipe e total geral.
