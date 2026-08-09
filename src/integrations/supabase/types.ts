@@ -14928,6 +14928,15 @@ export type Database = {
           visits: number
         }[]
       }
+      get_perf_empreendimento: {
+        Args: {
+          p_end: string
+          p_gerente_id?: string
+          p_start: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       get_pipeline_equipes_overview: { Args: never; Returns: Json }
       get_pipeline_estagnacao: {
         Args: never
