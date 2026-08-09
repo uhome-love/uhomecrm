@@ -43,13 +43,13 @@ Seletor único no topo, válido para toda a página e para as exportações: **D
 - **Conversão por equipe e por corretor** — `Leads → Visita` (%), `Visita → Venda` (%), `Leads → Venda` (%), mais ticket médio.
 - Ordenação por qualquer coluna, seletor de colunas, e destaque de outliers (verde/âmbar/vermelho por faixa) sem poluir.
 
-### 3. Rankings
+### 5. Rankings
 Três abas: **Leads**, **Visitas** (totais + realizadas lado a lado) e **VGV assinado**. Pódio nos 3 primeiros + tabela completa com posição, avatar, variação vs. período anterior. Escopo automático: CEO = empresa; gestor = time; corretor = time e empresa.
 
-### 4. Exportação PDF e HTML
+### 6. Exportação PDF e HTML
 Exportação **construída a partir dos dados** (não print de tela): mesmo template para PDF e HTML, com capa (logo, período, escopo, gerado em BRT), sumário executivo, tabelas de funil/conversão e rankings, rodapé paginado. HTML sai como arquivo único auto-contido (abre em qualquer navegador, imprime bem).
 
-### 5. Visões por papel
+### 7. Visões por papel
 - **CEO/Diretor** — tudo, filtro por equipe e por corretor, comparativo entre equipes.
 - **Gestor** — apenas o próprio time; filtro por corretor individual; mesmas planilhas, conversão, rankings do time e exportação.
 - **Corretor** — o próprio funil e conversão, evolução mensal, e os rankings (time e empresa) com sua posição destacada.
@@ -61,18 +61,16 @@ Exportação **construída a partir dos dados** (não print de tela): mesmo temp
 - **Modo apresentação**: fonte maior e alto contraste para projetar em reunião.
 
 ## Detalhes técnicos
-- Nova RPC `rpc_perf_funil(p_start, p_end, p_gerente_id, p_user_id)` (SECURITY DEFINER, gate por papel: admin/diretor = tudo, gestor = seu time via `team_members`, corretor = só ele). Reaproveita as views canônicas `v_fato_lead`, `v_fato_visita`, `v_fato_venda`, `v_kpi_presenca`, `pipeline_leads`/`pipeline_historico` e `v_corretor_equipe` (equipe histórica). Uma migration, só DDL.
-- Front: `src/pages/Performance.tsx` + `src/components/performance/v3/*` (`FunilTable`, `ConversaoTable`, `RankingsTabs`, `PerfHeader`), hook `useFunilPerformance`. Componentes < 300 linhas; tokens semânticos do design system, sem cor fixa.
+- Nova RPC `rpc_perf_funil(p_start, p_end, p_gerente_id, p_user_id)` (SECURITY DEFINER, gate por papel: admin/diretor = tudo, gestor = seu time via `team_members`, corretor = só ele). Reaproveita as views canônicas `v_fato_lead`, `v_fato_visita`, `v_fato_venda`, `pipeline_leads`/`pipeline_historico`, `negocios` (criação no período) e `v_corretor_equipe` (equipe histórica); presença vem de `get_presenca_agregada`, a mesma da página Presença. Uma migration, só DDL.
+- Front: `src/pages/Performance.tsx` + `src/components/performance/v3/*` (`PerfHome` KPIs, `FunilTable`, `ConversaoTable`, `RankingsTabs`, `PerfHeader` com o seletor dia/semana/mês/personalizado), hook `useFunilPerformance`. Componentes < 300 linhas; tokens semânticos do design system, sem cor fixa.
 - Export: `src/lib/performanceReport.ts` gera o HTML do relatório; PDF via jsPDF + autotable (já no projeto) a partir do mesmo modelo de dados.
 - `/performance` e `/ranking` passam a apontar para a nova página; a Central de Relatórios mantém suas seções e deixa de duplicar ranking.
 
 ## Ordem de execução
-1. **Fase A** — mockup visual (HTML) das três visões para sua aprovação.
+1. **Fase A** — mockup visual (HTML) da home de KPIs e das três visões para sua aprovação.
 2. **Fase B** — RPC única + validação dos números contra a base (conferência corretor a corretor no período do mês).
-3. **Fase C** — página e tabelas (CEO), depois gestor e corretor.
-4. **Fase D** — rankings.
-5. **Fase E** — exportação PDF/HTML e validação ao vivo no preview, ponta a ponta.
+3. **Fase C** — home de KPIs + filtro de período.
+4. **Fase D** — planilhas de funil e conversão (CEO), depois gestor e corretor.
+5. **Fase E** — rankings.
+6. **Fase F** — exportação PDF/HTML e validação ao vivo no preview, ponta a ponta.
 
-## Perguntas antes de começar
-1. **Presença** deve vir do checkpoint diário (dias presentes ÷ dias úteis) ou você prefere outra base?
-2. **Negócios** na planilha = quantidade em Em Negociação/Contrato agora, ou negócios abertos no período?
