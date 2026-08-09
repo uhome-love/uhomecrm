@@ -1,0 +1,5 @@
+{
+  "versao": "lia-canoas-v3.1",
+  "hash_sha256": "6e017fd6b90d57ee6e4edcdc9663b82142a32726da33b6933cbe95183d3a13eb",
+  "observacao": "Espelho do que está em public.ia_prompt_versoes. O verificador (scripts/lia-prompt.mjs) compara este hash com os bytes do .txt; o lia-brain compara com o registro no banco em runtime."
+}
