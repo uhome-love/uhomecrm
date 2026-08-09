@@ -6351,6 +6351,104 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_audience_runs: {
+        Row: {
+          audience_id: string | null
+          created_at: string
+          detalhes: Json
+          dry_run: boolean
+          duracao_ms: number | null
+          enviados: number
+          erro: string | null
+          id: string
+          invalidos: number | null
+          recebidos: number | null
+          segmento_chave: string
+          total_elegivel: number
+        }
+        Insert: {
+          audience_id?: string | null
+          created_at?: string
+          detalhes?: Json
+          dry_run?: boolean
+          duracao_ms?: number | null
+          enviados?: number
+          erro?: string | null
+          id?: string
+          invalidos?: number | null
+          recebidos?: number | null
+          segmento_chave: string
+          total_elegivel?: number
+        }
+        Update: {
+          audience_id?: string | null
+          created_at?: string
+          detalhes?: Json
+          dry_run?: boolean
+          duracao_ms?: number | null
+          enviados?: number
+          erro?: string | null
+          id?: string
+          invalidos?: number | null
+          recebidos?: number | null
+          segmento_chave?: string
+          total_elegivel?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_audience_runs_audience_id_fkey"
+            columns: ["audience_id"]
+            isOneToOne: false
+            referencedRelation: "meta_audiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_audiences: {
+        Row: {
+          ad_account_id: string | null
+          ativo: boolean
+          created_at: string
+          definicao: Json
+          id: string
+          meta_custom_audience_id: string | null
+          nome: string
+          segmento_chave: string
+          ultima_sync_at: string | null
+          ultimo_total_elegivel: number
+          ultimo_total_enviado: number
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id?: string | null
+          ativo?: boolean
+          created_at?: string
+          definicao?: Json
+          id?: string
+          meta_custom_audience_id?: string | null
+          nome: string
+          segmento_chave: string
+          ultima_sync_at?: string | null
+          ultimo_total_elegivel?: number
+          ultimo_total_enviado?: number
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string | null
+          ativo?: boolean
+          created_at?: string
+          definicao?: Json
+          id?: string
+          meta_custom_audience_id?: string | null
+          nome?: string
+          segmento_chave?: string
+          ultima_sync_at?: string | null
+          ultimo_total_elegivel?: number
+          ultimo_total_enviado?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meta_capi_queue: {
         Row: {
           attempts: number
@@ -14210,6 +14308,7 @@ export type Database = {
         }
         Returns: Json
       }
+      _meta_aud_phone_e164: { Args: { p_phone: string }; Returns: string }
       _pipeline_referencia_estagnacao: {
         Args: { _lead_id: string }
         Returns: string
@@ -15513,6 +15612,13 @@ export type Database = {
               isSetofReturn: true
             }
           }
+      rpc_meta_audience_membros: {
+        Args: { _definicao: Json; _limit?: number; _offset?: number }
+        Returns: {
+          email_sha256: string
+          phone_sha256: string
+        }[]
+      }
       rpc_metricas: {
         Args: {
           p_end: string
