@@ -62,6 +62,41 @@ export const PERIODO_OPCOES: { tipo: PeriodoTipo; label: string }[] = [
 export function resolverPeriodo(estado: PeriodoState, hoje = new Date()): PeriodoResolvido {
   const { tipo, offset } = estado;
 
+  if (tipo === "dia") {
+    const ref = addDays(hoje, offset);
+    const prev = addDays(ref, -1);
+    return {
+      start: d(ref),
+      end: d(ref),
+      label: cap(format(ref, "EEEE, dd 'de' MMMM", { locale: ptBR })),
+      prevStart: d(prev),
+      prevEnd: d(prev),
+      prevLabel: "dia anterior",
+      referencia: ref,
+      navegavel: true,
+      noPresente: offset >= 0,
+    };
+  }
+
+  if (tipo === "semana") {
+    const ref = addDays(hoje, offset * 7);
+    const start = startOfWeek(ref, { weekStartsOn: 1 });
+    const end = endOfWeek(ref, { weekStartsOn: 1 });
+    const prevRef = addDays(ref, -7);
+    return {
+      start: d(start),
+      end: d(end),
+      label: `${format(start, "dd/MM")} – ${format(end, "dd/MM/yy")}`,
+      prevStart: d(startOfWeek(prevRef, { weekStartsOn: 1 })),
+      prevEnd: d(endOfWeek(prevRef, { weekStartsOn: 1 })),
+      prevLabel: "semana anterior",
+      referencia: end,
+      navegavel: true,
+      noPresente: offset >= 0,
+    };
+  }
+
+
   if (tipo === "custom") {
     const start = estado.customStart || d(startOfMonth(hoje));
     const end = estado.customEnd || d(hoje);
