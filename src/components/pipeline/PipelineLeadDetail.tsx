@@ -324,7 +324,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           .eq("id", lead.id);
         if (error) throw error;
 
-        // Histórico (best-effort, não bloqueia)
+        // Histórico (best-effort, não bloqueia o descarte — mas registra a falha
+        // no console em vez de sumir silenciosamente, p/ o rastro de auditoria
+        // não se perder sem ninguém saber).
         try {
           await supabase.from("pipeline_historico").insert({
             pipeline_lead_id: lead.id,
@@ -333,14 +335,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             movido_por: user?.id ?? null,
             observacao: motivoTexto,
           } as any);
-        } catch {}
+        } catch (histErr) {
+          console.error("[descarte] falha ao gravar pipeline_historico:", histErr);
+        }
         toast.success("Lead movido para descarte (reengajável)");
       }
 
       setInativarOpen(false);
       onOpenChange(false);
       // Refresh para o board recarregar e o card sumir/reposicionar
-      try { await onUpdate(lead.id, {} as any); } catch {}
+      try { await onUpdate(lead.id, {} as any); } catch (refreshErr) { console.error("[descarte] falha ao atualizar o board:", refreshErr); }
     } catch (err: any) {
       toast.error("Erro ao inativar: " + (err.message || ""));
     } finally { setInativando(false); }
