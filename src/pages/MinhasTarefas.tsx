@@ -596,20 +596,23 @@ export default function MinhasTarefas() {
       }
 
 
-      // Activity capture (sempre)
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: leadId,
-        tipo: tipo_contato,
-        tipo_contato,
-        resultado,
-        titulo: `${completingTarefa.titulo} — ${resultado}`,
-        descricao: descricao ?? null,
-        data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-        hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
-        prioridade: "media",
-        status: "concluida",
-        created_by: user.id,
-      } as never);
+      // Activity capture — exceto LEMBRETE (post-it não é contato: não gera
+      // atividade nem carimba toque, que é feito pelo trigger no insert).
+      if (completingTarefa.tipo !== "lembrete") {
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: leadId,
+          tipo: tipo_contato,
+          tipo_contato,
+          resultado,
+          titulo: `${completingTarefa.titulo} — ${resultado}`,
+          descricao: descricao ?? null,
+          data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+          hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
+          prioridade: "media",
+          status: "concluida",
+          created_by: user.id,
+        } as never);
+      }
 
       let toastMsg = "Tarefa concluída ✅";
 

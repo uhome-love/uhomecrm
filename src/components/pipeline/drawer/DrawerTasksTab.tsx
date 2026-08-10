@@ -165,6 +165,7 @@ export default function DrawerTasksTab({
       {
         tarefaId: completingTarefa.id,
         tarefaTitulo: completingTarefa.titulo,
+        tarefaTipo: completingTarefa.tipo ?? null,
         leadId,
         leadNome,
         leadStageId: leadStageId ?? null,

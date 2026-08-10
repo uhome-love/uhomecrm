@@ -18,6 +18,9 @@ export interface CompleteLeadTaskInput {
   leadNome?: string | null;
   userId: string;
   payload: CompletionPayload;
+  /** tipo da tarefa concluída. 'lembrete' = post-it: NÃO carimba toque nem
+   *  registra atividade de contato (regra de ouro da Nova Gestão). */
+  tarefaTipo?: string | null;
 }
 
 export async function completeLeadTask({
@@ -27,6 +30,7 @@ export async function completeLeadTask({
   leadNome,
   userId,
   payload,
+  tarefaTipo,
 }: CompleteLeadTaskInput): Promise<{ toast: string }> {
   // Fluxo custom (ex.: VisitaCompletionFlow) já executou tudo — só reporta sucesso.
   if (payload.already_handled) {
@@ -64,25 +68,28 @@ export async function completeLeadTask({
       .update({ ultima_acao_at: now, updated_at: now } as never).eq("id", leadId);
   }
 
-  // Toque humano do corretor (aditivo — não substitui ultima_acao_at)
-  await registrarToque(leadId);
+  // Regra de ouro: LEMBRETE é post-it — concluir NÃO carimba toque nem gera
+  // atividade de contato. Só tarefas de contato (o resto) contam como toque.
+  const ehLembrete = tarefaTipo === "lembrete";
 
+  if (!ehLembrete) {
+    // Toque humano do corretor (aditivo — não substitui ultima_acao_at)
+    await registrarToque(leadId);
 
-
-
-  await supabase.from("pipeline_atividades").insert({
-    pipeline_lead_id: leadId,
-    tipo: tipo_contato,
-    tipo_contato,
-    resultado,
-    titulo: `${tarefaTitulo} — ${resultado}`,
-    descricao: descricao ?? null,
-    data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-    hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
-    prioridade: "media",
-    status: "concluida",
-    created_by: userId,
-  } as never);
+    await supabase.from("pipeline_atividades").insert({
+      pipeline_lead_id: leadId,
+      tipo: tipo_contato,
+      tipo_contato,
+      resultado,
+      titulo: `${tarefaTitulo} — ${resultado}`,
+      descricao: descricao ?? null,
+      data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+      hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
+      prioridade: "media",
+      status: "concluida",
+      created_by: userId,
+    } as never);
+  }
 
   let toastMsg = "Tarefa concluída ✅";
 

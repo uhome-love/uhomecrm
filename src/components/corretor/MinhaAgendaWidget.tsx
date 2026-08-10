@@ -176,6 +176,7 @@ export default function MinhaAgendaWidget() {
       {
         tarefaId: completing.id,
         tarefaTitulo: completing.titulo,
+        tarefaTipo: completing.tipo ?? null,
         leadId,
         leadNome: completing.lead_nome || "Lead",
         leadStageId: null,

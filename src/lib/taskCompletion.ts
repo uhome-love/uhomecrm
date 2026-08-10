@@ -49,6 +49,8 @@ export interface TaskCompletionContext {
   leadId: string;
   leadNome: string;
   leadStageId?: string | null;
+  /** 'lembrete' = post-it: concluir NÃO carimba toque nem gera atividade. */
+  tarefaTipo?: string | null;
   /** @deprecated não é mais usado — a criação passou para createNextTask(). */
   addTarefa?: (input: {
 
@@ -108,28 +110,33 @@ export async function runTaskCompletion(
     .update({ ultima_acao_at: now, updated_at: now } as never)
     .eq("id", ctx.leadId);
 
-  // 2b) Toque humano do corretor (aditivo)
-  await registrarToque(ctx.leadId);
+  // Regra de ouro: LEMBRETE é post-it — concluir NÃO carimba toque nem gera
+  // atividade de contato. Só tarefas de contato contam como toque.
+  const ehLembrete = ctx.tarefaTipo === "lembrete";
 
+  if (!ehLembrete) {
+    // 2b) Toque humano do corretor (aditivo)
+    await registrarToque(ctx.leadId);
 
-  // 3) Atividade (sempre)
-  await supabase.from("pipeline_atividades").insert({
-    pipeline_lead_id: ctx.leadId,
-    tipo: tipo_contato,
-    tipo_contato,
-    resultado,
-    titulo: `${ctx.tarefaTitulo} — ${resultado}`,
-    descricao: descricao ?? null,
-    data: todayBRT(),
-    hora: new Date().toLocaleTimeString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    prioridade: "media",
-    status: "concluida",
-    created_by: userId,
-  } as never);
+    // 3) Atividade (sempre, exceto lembrete)
+    await supabase.from("pipeline_atividades").insert({
+      pipeline_lead_id: ctx.leadId,
+      tipo: tipo_contato,
+      tipo_contato,
+      resultado,
+      titulo: `${ctx.tarefaTitulo} — ${resultado}`,
+      descricao: descricao ?? null,
+      data: todayBRT(),
+      hora: new Date().toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      prioridade: "media",
+      status: "concluida",
+      created_by: userId,
+    } as never);
+  }
 
   let toastMessage = "Tarefa concluída ✅";
   let level: TaskCompletionResult["level"] = "success";

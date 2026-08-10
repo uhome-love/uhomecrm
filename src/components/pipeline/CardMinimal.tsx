@@ -606,6 +606,7 @@ const CardMinimal = memo(function CardMinimal({
                 leadNome: lead.nome,
                 userId: user.id,
                 payload,
+                tarefaTipo: proximaTarefa.tipo ?? null,
               });
               toast.success(msg);
               setCompletingOpen(false);

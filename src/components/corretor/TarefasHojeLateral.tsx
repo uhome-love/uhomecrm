@@ -51,6 +51,7 @@ export default function TarefasHojeLateral({ variant }: Props) {
         {
           tarefaId: completing.id,
           tarefaTitulo: completing.titulo || "Tarefa",
+          tarefaTipo: completing.tipo ?? null,
           leadId: completing.lead_id,
           leadNome: completing.lead_nome,
           leadStageId: completing.stage_id,
