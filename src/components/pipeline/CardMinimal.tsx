@@ -206,6 +206,8 @@ const CardMinimal = memo(function CardMinimal({
   const [completingOpen, setCompletingOpen] = useState(false);
   const [completingBusy, setCompletingBusy] = useState(false);
   const [registrarOpen, setRegistrarOpen] = useState(false);
+  // Quando setado, o RegistrarAtividadeModal abre em modo CONCLUSÃO de lembrete.
+  const [concluindoLembreteId, setConcluindoLembreteId] = useState<string | null>(null);
 
   const status = useMemo(
     () => resolveStatus(proximaTarefa ?? null, stage?.tipo),
@@ -547,7 +549,14 @@ const CardMinimal = memo(function CardMinimal({
                 disabled={completingBusy}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCompletingOpen(true);
+                  // Lembrete conclui pelo modal ⚡ (registra contato se houve, sem
+                  // fricção); tarefa de contato segue o dialog de conclusão normal.
+                  if (proximaTarefa?.tipo === "lembrete" && proximaTarefa.id) {
+                    setConcluindoLembreteId(proximaTarefa.id);
+                    setRegistrarOpen(true);
+                  } else {
+                    setCompletingOpen(true);
+                  }
                 }}
                 className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-colors disabled:opacity-60"
               >
@@ -625,7 +634,8 @@ const CardMinimal = memo(function CardMinimal({
         <div data-no-card-click onClick={(e) => e.stopPropagation()}>
           <RegistrarAtividadeModal
             lead={{ id: lead.id, nome: lead.nome }}
-            onClose={() => setRegistrarOpen(false)}
+            concluirTarefaId={concluindoLembreteId}
+            onClose={() => { setRegistrarOpen(false); setConcluindoLembreteId(null); }}
             onSaved={() => invalidateTaskQueries(queryClient, lead.id)}
           />
         </div>

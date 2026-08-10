@@ -52,12 +52,16 @@ interface Props {
   lead: { id: string; nome: string } | null;
   /** linha de apoio sob o nome. Default: "registre o contato e agende o próximo passo (opcional)". */
   subtitulo?: string;
+  /** Modo CONCLUSÃO de lembrete: o Concluir também marca este lembrete como
+   *  concluído, e o botão "Pular" vira "Só concluir" (fecha o lembrete sem
+   *  carimbar toque). Sem isso, é só o registro avulso. */
+  concluirTarefaId?: string | null;
   onClose: () => void;
   /** chamado após salvar com sucesso (para refetch da lista, etc). */
   onSaved?: () => void;
 }
 
-export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSaved }: Props) {
+export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTarefaId, onClose, onSaved }: Props) {
   const { user } = useAuth();
   const [ativSel, setAtivSel] = useState<AtDef | null>(null);
   const [obs, setObs] = useState("");
@@ -90,8 +94,32 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
   // Observação é OBRIGATÓRIA quando se registra uma atividade — é o que alimenta
   // o histórico do lead. Só agendar lembrete (sem atividade) não exige.
   const obsFaltando = !!ativSel && !obs.trim();
+  const modoConclusao = !!concluirTarefaId;
 
-  // Salva o que estiver selecionado (atividade + obs + lembrete) e fecha.
+  // Marca o lembrete em conclusão como concluído (sem tocar no toque).
+  const marcarConcluido = async () => {
+    if (!concluirTarefaId) return;
+    const { error } = await supabase.from("pipeline_tarefas")
+      .update({ status: "concluida", concluida_em: new Date().toISOString() } as never)
+      .eq("id", concluirTarefaId);
+    if (error) throw error;
+  };
+
+  // "Só concluir": fecha o lembrete sem registrar nada (não carimba toque).
+  const soConcluir = async () => {
+    if (busy) return;
+    setBusy(true);
+    try { await marcarConcluido(); }
+    catch { setBusy(false); toast.error("Não foi possível concluir."); return; }
+    setBusy(false);
+    toast.success("Lembrete concluído ✅");
+    window.dispatchEvent(new CustomEvent("pipeline-reload"));
+    onSaved?.();
+    fechar();
+  };
+
+  // Salva o que estiver selecionado (atividade + obs + lembrete). Em modo
+  // conclusão, também marca o lembrete como concluído.
   const concluir = async () => {
     if (busy) return;
     const textoObs = obs.trim();
@@ -102,7 +130,12 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
       toast.error("Escreva uma observação para registrar a atividade.");
       return;
     }
-    if (!ativ && !lembreteSel) { fechar(); return; }
+    if (!ativ && !lembreteSel) {
+      // Nada a registrar: em conclusão, só fecha o lembrete; senão, fecha.
+      if (modoConclusao) { await soConcluir(); return; }
+      fechar();
+      return;
+    }
 
     setBusy(true);
     try {
@@ -128,6 +161,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
         });
         if (error) throw error;
       }
+      await marcarConcluido();
     } catch {
       setBusy(false);
       toast.error("Não foi possível salvar. Tenta de novo.");
@@ -153,7 +187,9 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
             <Zap className="h-4 w-4 text-primary" strokeWidth={2.2} /> {lead.nome}
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground">
-            {subtitulo ?? "registre o contato e agende o próximo passo (opcional)"}
+            {subtitulo ?? (modoConclusao
+              ? "concluir lembrete · registre o contato se você falou com o lead"
+              : "registre o contato e agende o próximo passo (opcional)")}
           </div>
         </div>
 
@@ -295,11 +331,17 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
         </div>
 
         <div className="flex items-center justify-between border-t border-border px-5 py-3">
-          <button type="button" onClick={fechar} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
-            <X className="h-4 w-4" /> Pular
-          </button>
+          {modoConclusao ? (
+            <button type="button" onClick={soConcluir} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
+              <Check className="h-4 w-4" /> Só concluir
+            </button>
+          ) : (
+            <button type="button" onClick={fechar} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
+              <X className="h-4 w-4" /> Pular
+            </button>
+          )}
           <button type="button" onClick={concluir} disabled={busy || obsFaltando} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {busy ? "Salvando…" : "Concluir"}
+            {busy ? "Salvando…" : (modoConclusao ? "Registrar e concluir" : "Concluir")}
           </button>
         </div>
       </DialogContent>
