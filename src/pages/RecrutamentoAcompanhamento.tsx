@@ -128,7 +128,7 @@ export default function RecrutamentoAcompanhamento() {
     <div className="flex flex-col gap-5 p-4 sm:p-6">
       <PageHeader
         title="Recrutamento · Acompanhamento"
-        description="Visão executiva do funil de recrutamento (somente leitura)."
+        subtitle="Visão executiva do funil de recrutamento (somente leitura)."
       />
 
       <KpiGrid items={kpis} loading={isLoading} />
