@@ -157,3 +157,9 @@ verify_jwt = false
 
 [functions.capi-health-alert]
 verify_jwt = false
+
+[functions.rh-vaga-disponibilidade]
+verify_jwt = false
+
+[functions.rh-vaga-candidato]
+verify_jwt = false
