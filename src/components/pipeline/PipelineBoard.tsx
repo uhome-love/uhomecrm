@@ -16,6 +16,7 @@ import { formatBRLCompact } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import PipelineStageTransitionPopup, { needsTransitionPopup, type TransitionResult } from "./PipelineStageTransitionPopup";
+import AtividadePosMovePopup from "./AtividadePosMovePopup";
 import { sortLeads, type PipelineSortOrder } from "@/lib/pipelineSortOrder";
 import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
@@ -242,6 +243,8 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
 export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, showGanhos = false }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  // Nova Gestão: popup leve pós-move (⚡ registrar atividade + agendar próximo passo).
+  const [posMoveLead, setPosMoveLead] = useState<{ id: string; nome: string; etapa: string } | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
   const [arrivedLeadId, setArrivedLeadId] = useState<string | null>(null);
   const dragLeadId = useRef<string | null>(null);
@@ -600,6 +603,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     }
 
     completeTransition(lid, stageId);
+    setPosMoveLead({ id: lead.id, nome: lead.nome, etapa: targetStage.nome });
   };
 
   const handleTransitionConfirm = useCallback(async (result: TransitionResult) => {
@@ -1116,6 +1120,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                         return;
                       }
                       completeTransition(leadId, stageId);
+                      if (lead && targetStage) setPosMoveLead({ id: lead.id, nome: lead.nome, etapa: targetStage.nome });
                     }}
                     onTransferred={onTransferred}
                     stageIndexMap={stageIndexMap}
@@ -1143,6 +1148,13 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           onCancel={handleTransitionCancel}
         />
       )}
+
+      {/* Nova Gestão: popup leve pós-move (⚡ registrar + agendar) */}
+      <AtividadePosMovePopup
+        lead={posMoveLead}
+        etapaNome={posMoveLead?.etapa}
+        onClose={() => setPosMoveLead(null)}
+      />
 
       {/* Confirmação de limpeza dos descartados */}
       <AlertDialog open={sweepConfirmOpen} onOpenChange={setSweepConfirmOpen}>
