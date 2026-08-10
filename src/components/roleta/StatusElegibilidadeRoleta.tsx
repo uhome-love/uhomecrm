@@ -150,14 +150,14 @@ export function StatusElegibilidadeRoleta() {
             <div className="mt-2 space-y-2">
               <p className="text-xs text-destructive">
                 Você precisa atualizar pelo menos{" "}
-                <strong>{elegibilidade.leads_desatualizados - 10} lead(s)</strong> para se desbloquear.
+                <strong>{elegibilidade.leads_desatualizados - elegibilidade.limite_bloqueio} lead(s) vermelho(s)</strong> para se desbloquear.
               </p>
               <button
-                onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
+                onClick={() => navigate("/pipeline-leads?saude=vermelho")}
                 className="w-full text-xs font-medium py-2 px-3 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors flex items-center justify-center gap-1.5"
               >
                 <ListTodo className="w-3.5 h-3.5" />
-                Ver leads sem tarefa
+                Ver leads vermelhos
                 <ChevronRight className="w-3 h-3" />
               </button>
             </div>
