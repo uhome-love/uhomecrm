@@ -27,33 +27,35 @@ Regras hoje em vigor (`get_elegibilidade_roleta`, `corretor_pode_entrar_roleta`,
 
 ## O que muda nesta fase
 
-**Trocar a base de contagem**: o gate passa a contar **leads com pílula VERMELHA** (`lead_saude_status = 'vermelho'`), a mesma função que colore o pipeline. Limite: **máximo 10 vermelhos** (bloqueia a partir de 11). Vale igual para manhã, tarde e noite.
+**Trocar a base de contagem**: o gate passa a contar **leads com pílula VERMELHA** (`lead_saude_status = 'vermelho'`), a mesma função que colore o pipeline. Limite: **máximo 10 vermelhos** (bloqueia a partir de 11).
+
+**Onde vale (exceção temporária pela virada recente do CRM):** o limite de 10 vermelhos vale **somente para a roleta noturna**. Manhã e tarde ficam **sem esse gate** por enquanto (só descartes, alocação e as demais regras).
 
 - Escopo: leads ativos do corretor (não arquivados, fora de descarte/venda/caiu/convertido) — mesmo escopo das pílulas.
 - Limite continua configurável em `roleta_config.limite_leads_desatualizados` (padrão 10).
-- A mensagem de bloqueio passa a dizer "Você tem X leads vermelhos (limite 10)" e a tela lista os vermelhos para atualizar.
-- Noturna: **mantida** a exigência de visita agendada no dia.
+- A mensagem de bloqueio da noturna passa a dizer "Você tem X leads vermelhos (limite 10)" e a tela lista os vermelhos para atualizar.
+- Noturna: **mantida** a exigência de visita agendada no dia + presença manhã e tarde.
 
 ## Detalhes técnicos
 
 - Nova função `public.contar_leads_vermelhos(uuid)` usando `lead_saude_status(ultimo_toque_at, coalesce(distribuido_em, aceito_em, created_at), ps.tipo)` sobre `pipeline_leads` do escopo do corretor, contando **apenas** `vermelho` (estagnado fora).
-- `corretor_pode_entrar_roleta` e `get_elegibilidade_roleta` passam a usar essa contagem; `get_elegibilidade_roleta` volta a preencher `leads_para_atualizar` (hoje devolve `[]`) com os vermelhos mais antigos.
-- `roleta_config`: `limite_descartes_mes` = 100.
-- `credenciar_na_roleta` e `credenciar_por_alocacao`: só troca o texto do erro; o caminho de inclusão manual do CEO continua aprovando direto.
+- `get_elegibilidade_roleta`: `pode_roleta_manha`/`pode_roleta_tarde` deixam de olhar vermelhos (só descartes); `pode_roleta_noturna` = descartes ok **e** vermelhos ≤ 10 **e** visita hoje **e** presença manhã+tarde. `corretor_pode_entrar_roleta` ganha o parâmetro de janela; `leads_para_atualizar` volta a ser preenchido com os vermelhos mais antigos.
+- `roleta_config`: `limite_descartes_mes` = 100 e nova chave `limite_vermelhos_apenas_noturna = true` (para religar nas três janelas depois, sem código).
+- `credenciar_na_roleta` e `credenciar_por_alocacao`: aplicam o gate conforme a janela e trocam o texto do erro; o caminho de inclusão manual do CEO continua aprovando direto.
 - Frontend: `StatusElegibilidadeRoleta.tsx`, `RoletaStatusBar.tsx`, `OportunidadesDoDia.tsx` e `RoletaConfigTab.tsx` passam a falar "vermelhos" em vez de "sem tarefa".
 - `contar_leads_desatualizados` fica no banco (usada em outros lugares) mas sai do caminho da roleta.
 
 ## Regras confirmadas (fechadas contigo)
 
-1. **Estagnado NÃO conta** no limite — esse lead já saiu do corretor. Só pílula vermelha entra na conta.
-2. **Descartes**: limite passa de 50 para **100 por mês** (`roleta_config.limite_descartes_mes = 100`), mantendo o desbloqueio manual do gestor.
-3. **Noturna**: mantém — visita agendada no dia **e** presença marcada na manhã **e** na tarde.
-4. **Domingo**: mantém — 2 visitas realizadas + 4 presenças na semana.
-5. **Inclusão manual do CEO**: se o CEO coloca a pessoa na roleta, ela fica credenciada (a inclusão manual passa por cima dos gates de vermelhos/descartes, com registro de quem incluiu).
-6. **Sem empreendimento alocado**: continua não credenciando.
-7. **Fechamento automático de turno**: mantém igual.
+1. **Limite de 10 vermelhos**: só na **roleta noturna** por enquanto (exceção temporária pela troca recente do CRM). Manhã e tarde liberadas desse gate.
+2. **Estagnado NÃO conta** no limite — esse lead já saiu do corretor. Só pílula vermelha entra na conta.
+3. **Descartes**: limite passa de 50 para **100 por mês**, mantendo o desbloqueio manual do gestor.
+4. **Noturna**: mantém — visita agendada no dia **e** presença marcada na manhã **e** na tarde.
+5. **Domingo**: mantém — 2 visitas realizadas + 4 presenças na semana.
+6. **Inclusão manual do CEO**: se o CEO coloca a pessoa na roleta, ela fica credenciada (passa por cima dos gates, com registro de quem incluiu).
+7. **Sem empreendimento alocado**: continua não credenciando.
+8. **Fechamento automático de turno**: mantém igual.
 
-Transição: a régua nova entra valendo direto (hoje 9 corretores passariam de 10 vermelhos). Se preferires um prazo de limpeza antes de bloquear, é só avisar.
 
 
 ## Validação
