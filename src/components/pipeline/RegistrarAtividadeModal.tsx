@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Phone, MessageCircle, MapPin, StickyNote, Check, CalendarClock, X, Zap, type LucideIcon } from "lucide-react";
+import { Phone, MessageCircle, MapPin, StickyNote, Check, CalendarClock, X, Zap, ArrowRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const TERMINAIS = new Set(["descarte", "convertido", "venda", "caiu"]);
 
 /**
  * RegistrarAtividadeModal — Nova Gestão. Ação PRIMÁRIA de atualizar um lead.
@@ -72,6 +74,37 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
   const [customData, setCustomData] = useState("");
   const [customHora, setCustomHora] = useState("09:00");
   const [busy, setBusy] = useState(false);
+  // Avançar etapa opcional — registrar + mover num toque só (ex.: Sem Contato → Qualificação).
+  const [proxEtapa, setProxEtapa] = useState<{ id: string; nome: string } | null>(null);
+  const [avancar, setAvancar] = useState(false);
+
+  // Busca a PRÓXIMA etapa do lead (self-contained: quem abre o modal não precisa passar nada).
+  useEffect(() => {
+    setProxEtapa(null);
+    setAvancar(false);
+    if (!lead?.id) return;
+    let cancelado = false;
+    (async () => {
+      const { data: l } = await supabase
+        .from("pipeline_leads")
+        .select("stage_id, pipeline_stages!inner(ordem, tipo)")
+        .eq("id", lead.id)
+        .maybeSingle();
+      if (cancelado || !l) return;
+      const st = (l as { pipeline_stages?: { ordem: number; tipo: string } }).pipeline_stages;
+      if (!st || TERMINAIS.has(st.tipo)) return;
+      const { data: next } = await supabase
+        .from("pipeline_stages")
+        .select("id, nome")
+        .eq("pipeline_tipo", "leads")
+        .gt("ordem", st.ordem)
+        .order("ordem", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelado && next) setProxEtapa(next as { id: string; nome: string });
+    })();
+    return () => { cancelado = true; };
+  }, [lead?.id]);
 
   // Hora padrão dos atalhos (Amanhã/2 dias/Semana): 09:00 → o push toca de manhã,
   // não à meia-noite. Só "Escolher data" deixa ajustar a hora (compromisso marcado).
@@ -86,6 +119,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
     setCustomOpen(false);
     setCustomData("");
     setCustomHora(HORA_PADRAO);
+    setAvancar(false);
   };
 
   const fechar = () => {
@@ -132,7 +166,8 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
       toast.error("Escreva uma observação para registrar a atividade.");
       return;
     }
-    if (!ativ && !lembreteSel) {
+    const querAvancar = avancar && !!proxEtapa;
+    if (!ativ && !lembreteSel && !querAvancar) {
       // Nada a registrar: em conclusão, só fecha o lembrete; senão, fecha.
       if (modoConclusao) { await soConcluir(); return; }
       fechar();
@@ -163,6 +198,13 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
         });
         if (error) throw error;
       }
+      if (querAvancar && proxEtapa) {
+        const nowIso = new Date().toISOString();
+        const { error } = await supabase.from("pipeline_leads")
+          .update({ stage_id: proxEtapa.id, stage_changed_at: nowIso, updated_at: nowIso } as never)
+          .eq("id", lead.id);
+        if (error) throw error;
+      }
       await marcarConcluido();
     } catch {
       setBusy(false);
@@ -171,9 +213,11 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
     }
     setBusy(false);
 
-    if (ativ && lembreteSel) toast.success(`⚡ ${ativ.label} · 📅 ${lembreteSel.label}`);
-    else if (ativ) toast.success(ativ.toque ? `⚡ ${ativ.label} registrado` : `${ativ.label} salva`);
-    else if (lembreteSel) toast.success(`📅 Lembrete: ${lembreteSel.label}`);
+    const avancouMsg = querAvancar && proxEtapa ? ` → ${proxEtapa.nome}` : "";
+    if (ativ && lembreteSel) toast.success(`⚡ ${ativ.label} · 📅 ${lembreteSel.label}${avancouMsg}`);
+    else if (ativ) toast.success(`${ativ.toque ? `⚡ ${ativ.label} registrado` : `${ativ.label} salva`}${avancouMsg}`);
+    else if (lembreteSel) toast.success(`📅 Lembrete: ${lembreteSel.label}${avancouMsg}`);
+    else if (querAvancar && proxEtapa) toast.success(`Movido para ${proxEtapa.nome} ✅`);
     // Recarrega o board para a cor do card refletir o toque na hora (o trigger
     // do banco já carimbou ultimo_toque_at). Mesmo mecanismo usado pós-move.
     window.dispatchEvent(new CustomEvent("pipeline-reload"));
@@ -331,6 +375,34 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
             </div>
           )}
         </div>
+
+        {/* Avançar etapa — registrar + mover num toque só */}
+        {proxEtapa && (
+          <div className="px-5 pb-4">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setAvancar((v) => !v)}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-colors",
+                avancar
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:border-primary/50 hover:bg-primary/[0.04]"
+              )}
+            >
+              <span className={cn(
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
+                avancar ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+              )}>
+                {avancar && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+              </span>
+              <span className="flex-1 text-[12.5px] font-semibold text-foreground">Avançar etapa</span>
+              <span className="inline-flex items-center gap-1 text-[12px] font-medium text-primary">
+                <ArrowRight className="h-3.5 w-3.5" /> {proxEtapa.nome}
+              </span>
+            </button>
+          </div>
+        )}
 
         <div className="flex items-center justify-between border-t border-border px-5 py-3">
           {modoConclusao ? (
