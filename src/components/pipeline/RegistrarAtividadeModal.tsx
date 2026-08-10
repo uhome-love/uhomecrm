@@ -81,6 +81,10 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
     onClose();
   };
 
+  // Observação é OBRIGATÓRIA quando se registra uma atividade — é o que alimenta
+  // o histórico do lead. Só agendar lembrete (sem atividade) não exige.
+  const obsFaltando = !!ativSel && !obs.trim();
+
   // Salva o que estiver selecionado (atividade + obs + lembrete) e fecha.
   const concluir = async () => {
     if (busy) return;
@@ -88,6 +92,10 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
     // obs escrita sem tipo escolhido → vira uma nota
     const ativ = ativSel ?? (textoObs ? ATIVIDADES.find((a) => a.tipo === "nota")! : null);
 
+    if (ativ && !textoObs) {
+      toast.error("Escreva uma observação para registrar a atividade.");
+      return;
+    }
     if (!ativ && !lembreteSel) { fechar(); return; }
 
     setBusy(true);
@@ -166,15 +174,30 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
             })}
           </div>
 
-          {/* Observação (opcional) */}
-          <textarea
-            value={obs}
-            onChange={(e) => setObs(e.target.value)}
-            disabled={busy}
-            rows={2}
-            placeholder="Observação (opcional). Ex: falei com ele, marcou de retornar amanhã"
-            className="mt-2.5 w-full resize-none rounded-xl border border-border bg-card px-3 py-2 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/70 focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
+          {/* Observação — obrigatória ao registrar atividade (alimenta o histórico) */}
+          <div className="mt-2.5">
+            <div className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Observação{ativSel && <span className="text-destructive">*</span>}
+            </div>
+            <textarea
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+              disabled={busy}
+              rows={2}
+              placeholder="O que aconteceu? Ex: falei com ele, marcou de retornar amanhã"
+              className={cn(
+                "w-full resize-none rounded-xl border bg-card px-3 py-2 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1",
+                obsFaltando
+                  ? "border-destructive/60 focus:border-destructive focus:ring-destructive/30"
+                  : "border-border focus:border-primary/60 focus:ring-primary/30"
+              )}
+            />
+            {obsFaltando && (
+              <div className="mt-1 text-[11.5px] font-medium text-destructive">
+                Escreva o que aconteceu para registrar.
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Agendar próximo passo */}
@@ -247,7 +270,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
           <button type="button" onClick={fechar} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
             <X className="h-4 w-4" /> Pular
           </button>
-          <button type="button" onClick={concluir} disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+          <button type="button" onClick={concluir} disabled={busy || obsFaltando} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
             {busy ? "Salvando…" : "Concluir"}
           </button>
         </div>
