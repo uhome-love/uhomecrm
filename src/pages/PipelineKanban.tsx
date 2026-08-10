@@ -371,8 +371,9 @@ export default function PipelineKanban() {
     if (campaignTagFilter && campaignTagFilter !== "all") {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
-    // Nova Gestão: lead ESTAGNADO escala pra gestão — some da visão do corretor.
-    if (roleKey === "corretor") {
+    // Nova Gestão: lead ESTAGNADO sai do board pra TODOS (corretor, gestor, CEO) —
+    // vive só na página "Leads estagnados", pra não poluir a visão de ninguém.
+    {
       const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
       result = result.filter(
         l =>
@@ -654,7 +655,7 @@ export default function PipelineKanban() {
         filteredLeadsCount={filteredLeads.length}
         displayedClientStatusCounts={displayedClientStatusCounts}
         pillCounts={pillCounts}
-        showEstagnado={roleKey !== "corretor"}
+        showEstagnado={false}
         campaignTagCounts={campaignTagCounts}
         campaignTags={CAMPAIGN_TAGS}
         pipelineStages={pipeline.stages}

@@ -18,6 +18,50 @@ import { useSearchParams } from "react-router-dom";
 import { useCorretorKpisCarteira } from "@/hooks/useCorretorKpisCarteira";
 import { useNegociosCount } from "@/hooks/useNegociosCount";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { HelpCircle } from "lucide-react";
+
+/** Legenda da regra de ociosidade (saúde por atividade) — pro corretor entender. */
+function InfoOciosidade() {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Como funciona a cor do lead"
+          title="Como funciona a cor do lead"
+          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 text-[12.5px] leading-relaxed">
+        <div className="mb-1 text-[13px] font-semibold text-foreground">A cor do lead = sua atividade real</div>
+        <p className="mb-2.5 text-muted-foreground">
+          Mostra há quanto tempo você não registra uma atividade com o lead — não é sobre ter tarefa aberta.
+        </p>
+        <ul className="space-y-1.5">
+          <li className="flex items-start gap-2">
+            <span className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+            <span><b className="font-semibold text-foreground">Em dia</b> — dentro do prazo da etapa.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+            <span><b className="font-semibold text-foreground">Atenção</b> — começou a passar do prazo, retome logo.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500" />
+            <span><b className="font-semibold text-foreground">Desatualizado</b> — muito tempo sem falar, prioridade.</span>
+          </li>
+        </ul>
+        <p className="mt-2.5 text-muted-foreground">
+          Registre uma atividade <b className="font-semibold text-primary">⚡</b> e o lead volta a ficar verde.
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export type PipelineFiltroKey = "em_dia" | "sem_tarefa" | "atrasado" | "estagnado" | "negocios";
 
@@ -100,6 +144,7 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
   // ── Modo compacto: cluster segmentado unido (dot + número), rótulo só no ativo ──
   if (compact) {
     return (
+      <div className="inline-flex items-center gap-1">
       <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] p-0.5">
         {visibleBadges.map((b) => {
           const isActive = active === b.key;
@@ -144,6 +189,8 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
             </button>
           );
         })}
+      </div>
+      <InfoOciosidade />
       </div>
     );
   }
@@ -218,6 +265,7 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
           </button>
         );
       })}
+      <InfoOciosidade />
     </div>
   );
 }

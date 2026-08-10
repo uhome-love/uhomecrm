@@ -21,6 +21,7 @@ export type SortableTarefa = {
 export type SortableLead = {
   id: string;
   created_at: string;
+  updated_at?: string | null;
   nome?: string | null;
   valor_estimado?: number | null;
   temperatura?: string | null;
@@ -84,12 +85,19 @@ export function sortLeadsByActivity<T extends SortableLead>(
   return decorated.map((d) => d.lead);
 }
 
-const TEMPERATURA_WEIGHT: Record<string, number> = {
-  muito_quente: 5, urgente: 5, quente: 4, morno: 3, frio: 2, gelado: 1,
-};
+// Tier de prioridade por temperatura: Quente > Morno > (não definida) > Frio.
+// Não definida fica no MEIO (desconhecido merece mais atenção que frio conhecido).
+function tempTier(t?: string | null): number {
+  const s = (t ?? "").toLowerCase();
+  if (s === "quente" || s === "muito_quente" || s === "urgente") return 4;
+  if (s === "morno") return 3;
+  if (s === "frio" || s === "gelado") return 1;
+  return 2; // nao_definida / vazio
+}
 
-function tempWeight(t?: string | null): number {
-  return TEMPERATURA_WEIGHT[(t ?? "morno").toLowerCase()] ?? 3;
+function temMarcacao(t?: string | null): boolean {
+  const s = (t ?? "").toLowerCase();
+  return ["quente", "muito_quente", "urgente", "morno", "frio", "gelado"].includes(s);
 }
 
 function diasSemAtividade(l: SortableLead): number {
@@ -101,6 +109,10 @@ function diasSemAtividade(l: SortableLead): number {
       created_at: l.created_at,
     }) ?? 0
   );
+}
+
+function recencia(l: SortableLead): number {
+  return new Date(l.updated_at ?? l.created_at).getTime();
 }
 
 /**
@@ -127,10 +139,16 @@ export function sortLeads<T extends SortableLead>(
       if (stageTipo === "sem_contato") {
         return sortLeadsByActivity(leads, tarefasMap);
       }
+      // Qualificação → Contrato: por temperatura (Quente>Morno>não def>Frio).
+      // Desempate: marcados = esfriando (mais dias sem atividade); NÃO DEFINIDA
+      // (padrão, enquanto o time não marca) = mais recente atualizado primeiro.
       return [...leads].sort((a, b) => {
-        const w = tempWeight(b.temperatura) - tempWeight(a.temperatura);
+        const w = tempTier(b.temperatura) - tempTier(a.temperatura);
         if (w !== 0) return w;
-        return diasSemAtividade(b) - diasSemAtividade(a);
+        if (temMarcacao(a.temperatura)) {
+          return diasSemAtividade(b) - diasSemAtividade(a);
+        }
+        return recencia(b) - recencia(a);
       });
     case "mais_recente":
       return [...leads].sort(
@@ -147,11 +165,7 @@ export function sortLeads<T extends SortableLead>(
     case "valor":
       return [...leads].sort((a, b) => (b.valor_estimado ?? 0) - (a.valor_estimado ?? 0));
     case "temperatura":
-      return [...leads].sort(
-        (a, b) =>
-          (TEMPERATURA_WEIGHT[b.temperatura ?? ""] ?? 0) -
-          (TEMPERATURA_WEIGHT[a.temperatura ?? ""] ?? 0)
-      );
+      return [...leads].sort((a, b) => tempTier(b.temperatura) - tempTier(a.temperatura));
     case "atividade":
     default:
       return sortLeadsByActivity(leads, tarefasMap);
