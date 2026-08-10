@@ -61,10 +61,15 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
   const { user } = useAuth();
   const [ativSel, setAtivSel] = useState<AtDef | null>(null);
   const [obs, setObs] = useState("");
-  const [lembreteSel, setLembreteSel] = useState<{ label: string; data: string } | null>(null);
+  const [lembreteSel, setLembreteSel] = useState<{ label: string; data: string; hora: string } | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [customData, setCustomData] = useState("");
+  const [customHora, setCustomHora] = useState("09:00");
   const [busy, setBusy] = useState(false);
+
+  // Hora padrão dos atalhos (Amanhã/2 dias/Semana): 09:00 → o push toca de manhã,
+  // não à meia-noite. Só "Escolher data" deixa ajustar a hora (compromisso marcado).
+  const HORA_PADRAO = "09:00";
 
   if (!lead) return null;
 
@@ -74,6 +79,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
     setLembreteSel(null);
     setCustomOpen(false);
     setCustomData("");
+    setCustomHora(HORA_PADRAO);
   };
 
   const fechar = () => {
@@ -116,6 +122,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
           tipo: "lembrete",
           titulo: "Próximo contato",
           vence_em: lembreteSel.data,
+          hora_vencimento: lembreteSel.hora,
           responsavel_id: user.id,
           created_by: user.id,
         });
@@ -218,7 +225,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
                   disabled={busy}
                   onClick={() => {
                     setCustomOpen(false);
-                    setLembreteSel(on ? null : { label: l.label, data: dataBRT(l.dias) });
+                    setLembreteSel(on ? null : { label: l.label, data: dataBRT(l.dias), hora: HORA_PADRAO });
                   }}
                   className={cn(
                     "rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
@@ -246,7 +253,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
             </button>
           </div>
           {customOpen && (
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <input
                 type="date"
                 value={customData}
@@ -255,8 +262,26 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
                   setCustomData(e.target.value);
                   if (e.target.value) {
                     setLembreteSel({
-                      label: new Date(e.target.value + "T00:00:00").toLocaleDateString("pt-BR"),
+                      label: new Date(e.target.value + "T00:00:00").toLocaleDateString("pt-BR") + ` ${customHora}`,
                       data: e.target.value,
+                      hora: customHora,
+                    });
+                  }
+                }}
+                className="rounded-lg border border-border bg-card px-2 py-1.5 text-[13px]"
+              />
+              <input
+                type="time"
+                value={customHora}
+                title="Hora do lembrete (opcional)"
+                onChange={(e) => {
+                  const h = e.target.value || HORA_PADRAO;
+                  setCustomHora(h);
+                  if (customData) {
+                    setLembreteSel({
+                      label: new Date(customData + "T00:00:00").toLocaleDateString("pt-BR") + ` ${h}`,
+                      data: customData,
+                      hora: h,
                     });
                   }
                 }}
