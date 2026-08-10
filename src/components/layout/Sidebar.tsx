@@ -234,7 +234,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Leads & Visitas",
       items: [
         { label: "Notificações",       path: "/notificacoes",      icon: <BellRing     size={15} strokeWidth={1.5} /> },
-        { label: "Central de tarefas", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+        { label: "Agenda do corretor", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/corretor/call",     icon: <Phone        size={15} strokeWidth={1.5} /> },
@@ -334,7 +334,7 @@ const MODO_CORRETOR_GROUP: NavGroup = {
   title: "Modo Corretor",
   items: [
     { label: "Minha rotina",       path: "/corretor",          icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-    { label: "Central de tarefas", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+    { label: "Agenda do corretor", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
     { label: "Aceite de leads",    path: "/aceite",            icon: <UserCheck    size={15} strokeWidth={1.5} /> },
     { label: "Oferta ativa (corretor)", path: "/corretor/call", icon: <Phone      size={15} strokeWidth={1.5} /> },
   ],

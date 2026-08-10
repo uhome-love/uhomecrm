@@ -67,7 +67,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   
   templates: lazyRetry(() => import("@/pages/TemplatesComunicacao")),
   aceite: lazyRetry(() => import("@/pages/AceiteLeads")),
-  "minhas-tarefas": lazyRetry(() => import("@/pages/MinhasTarefas")),
+  "minhas-tarefas": lazyRetry(() => import("@/pages/AgendaCorretor")),
   "minhas-vitrines": lazyRetry(() => import("@/pages/MinhasVitrines")),
   "corretor-call": lazyRetry(() => import("@/pages/CorretorCall")),
   "agenda-visitas": lazyRetry(() => import("@/pages/AgendaVisitas")),
@@ -155,7 +155,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   
   "/templates-comunicacao": { key: "templates",            label: "Templates",           icon: "ClipboardList", roles: ["gestor", "admin", "diretor"] },
   "/aceite":                { key: "aceite",               label: "Aceite de Leads",     icon: "UserCheck" },
-  "/minhas-tarefas":        { key: "minhas-tarefas",       label: "Tarefas",             icon: "ListTodo" },
+  "/minhas-tarefas":        { key: "minhas-tarefas",       label: "Agenda do corretor",  icon: "ListTodo" },
   "/minhas-vitrines":       { key: "minhas-vitrines",      label: "Vitrines",            icon: "Building2" },
   "/corretor/call":         { key: "corretor-call",        label: "Oferta Ativa",        icon: "Phone" },
   "/visitas":               { key: "agenda-visitas",       label: "Agenda Visitas",      icon: "CalendarDays" },
