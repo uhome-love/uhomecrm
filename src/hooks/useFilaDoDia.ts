@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { leadSaude, diasSemToque, type LeadSaude } from "@/lib/leadSaude";
 import type { PipelineStage } from "@/hooks/usePipeline";
 import { todayBRT } from "@/lib/brtTime";
+import { leadsDispensados } from "@/lib/filaDispensados";
 
 /**
  * useFilaDoDia — a "Agenda do corretor" (Nova Gestão). Duas visões:
@@ -229,11 +230,13 @@ export function useFilaDoDia() {
 
       // 4) FILA DE AÇÃO — percorre leads e classifica o motivo (só com gatilho).
       const now = Date.now();
+      const dispensados = leadsDispensados(now); // "Dispensar" tira da fila por 24h
       const ranked: LeadFila[] = [];
       const cadencia: LeadFila[] = [];
       for (const l of rows) {
         const tipo = l.pipeline_stages?.tipo ?? "";
         if (TERMINAIS.has(tipo)) continue;
+        if (dispensados.has(l.id)) continue;
         const saude = leadSaude({
           ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em,
           aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo,

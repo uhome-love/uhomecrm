@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
+import { dispensarLead } from "@/lib/filaDispensados";
 import {
   Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
   Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
@@ -95,11 +96,12 @@ function AcoesContato({ telefone, compact = false }: { telefone: string | null; 
 }
 
 function CardPrioridade({
-  lead, stages, onRegistrar, onOpen, onMove,
+  lead, stages, onRegistrar, onOpen, onMove, onDispensar,
 }: {
   lead: LeadFila; stages: PipelineStage[];
   onRegistrar: () => void; onOpen: () => void;
   onMove: (leadId: string, stageId: string) => void;
+  onDispensar: () => void;
 }) {
   const m = MOTIVO_META[lead.motivo];
   const Icon = m.icon;
@@ -169,11 +171,17 @@ function CardPrioridade({
           />
         </div>
       </div>
-      {lead.telefone && (
-        <div className="mt-2 flex justify-end border-t border-border/50 pt-2">
-          <AcoesContato telefone={lead.telefone} />
-        </div>
-      )}
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/50 pt-2">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDispensar(); }}
+          title="Dispensar — tira este card da sugestão por 24h"
+          className="text-[11.5px] font-medium text-muted-foreground hover:text-foreground"
+        >
+          Dispensar
+        </button>
+        {lead.telefone && <AcoesContato telefone={lead.telefone} />}
+      </div>
     </div>
   );
 }
@@ -381,6 +389,13 @@ export default function AgendaCorretor() {
     setRegistrar({ id: c.lead_id, nome: c.lead_nome, concluirTarefaId: c.id });
   };
 
+  // Dispensar card da fila = tira da sugestão por 24h (não é adiar, não mexe no lead).
+  const dispensarDaFila = (l: LeadFila) => {
+    dispensarLead(l.id);
+    toast.success(`${l.nome} dispensado por hoje`);
+    invalidar();
+  };
+
   const totalFila = prioridades.length + cadencia.total;
 
   const TabBtn = ({ id, label, badge }: { id: typeof tab; label: string; badge?: number }) => (
@@ -457,6 +472,7 @@ export default function AgendaCorretor() {
                   onRegistrar={() => setRegistrar({ id: l.id, nome: l.nome })}
                   onOpen={() => abrirLead(l.id)}
                   onMove={moverEtapa}
+                  onDispensar={() => dispensarDaFila(l)}
                 />
               ))}
               {foco === "todos" && (
