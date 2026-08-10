@@ -36,9 +36,10 @@ Regras hoje em vigor (`get_elegibilidade_roleta`, `corretor_pode_entrar_roleta`,
 
 ## Detalhes técnicos
 
-- Nova função `public.contar_leads_vermelhos(uuid)` usando `lead_saude_status(ultimo_toque_at, coalesce(distribuido_em, aceito_em, created_at), ps.tipo)` sobre `pipeline_leads` do escopo do corretor.
+- Nova função `public.contar_leads_vermelhos(uuid)` usando `lead_saude_status(ultimo_toque_at, coalesce(distribuido_em, aceito_em, created_at), ps.tipo)` sobre `pipeline_leads` do escopo do corretor, contando **apenas** `vermelho` (estagnado fora).
 - `corretor_pode_entrar_roleta` e `get_elegibilidade_roleta` passam a usar essa contagem; `get_elegibilidade_roleta` volta a preencher `leads_para_atualizar` (hoje devolve `[]`) com os vermelhos mais antigos.
-- `credenciar_na_roleta` e `credenciar_por_alocacao`: só troca o texto do erro.
+- `roleta_config`: `limite_descartes_mes` = 100.
+- `credenciar_na_roleta` e `credenciar_por_alocacao`: só troca o texto do erro; o caminho de inclusão manual do CEO continua aprovando direto.
 - Frontend: `StatusElegibilidadeRoleta.tsx`, `RoletaStatusBar.tsx`, `OportunidadesDoDia.tsx` e `RoletaConfigTab.tsx` passam a falar "vermelhos" em vez de "sem tarefa".
 - `contar_leads_desatualizados` fica no banco (usada em outros lugares) mas sai do caminho da roleta.
 
