@@ -315,7 +315,7 @@ export function StatusElegibilidadeRoleta() {
       {expandido && elegibilidade.leads_para_atualizar.length === 0 && (
         <div className="border-t border-border px-4 py-3">
           <p className="text-sm text-green-600 dark:text-green-400 text-center">
-            🎉 Todos os seus leads estão com tarefas em dia!
+            🎉 Nenhum lead vermelho — sua carteira está em dia!
           </p>
         </div>
       )}
