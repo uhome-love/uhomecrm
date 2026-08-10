@@ -36,7 +36,7 @@ function InfoOciosidade() {
           <HelpCircle className="h-4 w-4" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 text-[12.5px] leading-relaxed">
+      <PopoverContent align="start" className="w-80 text-[12.5px] leading-relaxed">
         <div className="mb-1 text-[13px] font-semibold text-foreground">A cor do lead = sua atividade real</div>
         <p className="mb-2.5 text-muted-foreground">
           Mostra há quanto tempo você não registra uma atividade com o lead — não é sobre ter tarefa aberta.
@@ -48,14 +48,29 @@ function InfoOciosidade() {
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
-            <span><b className="font-semibold text-foreground">Atenção</b> — começou a passar do prazo, retome logo.</span>
+            <span><b className="font-semibold text-foreground">Atenção</b> — passou do prazo (até o dobro dele).</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500" />
-            <span><b className="font-semibold text-foreground">Desatualizado</b> — muito tempo sem falar, prioridade.</span>
+            <span><b className="font-semibold text-foreground">Desatualizado</b> — passou do dobro do prazo, prioridade.</span>
           </li>
         </ul>
+        <div className="mt-2.5 rounded-md bg-muted/50 p-2">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Prazo por etapa (dias sem atividade)</div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[12px]">
+            <span>Novo Lead <b className="font-semibold text-foreground">1</b></span>
+            <span>Sem Contato <b className="font-semibold text-foreground">2</b></span>
+            <span>Qualificação <b className="font-semibold text-foreground">7</b></span>
+            <span>Aquecimento <b className="font-semibold text-foreground">15</b></span>
+            <span>Visita <b className="font-semibold text-foreground">2</b></span>
+            <span>Negociação/Contrato <b className="font-semibold text-foreground">7</b></span>
+          </div>
+        </div>
         <p className="mt-2.5 text-muted-foreground">
+          Parado tempo demais, o lead <b className="font-semibold text-violet-600 dark:text-violet-400">estagna</b> e sai pra gestão
+          (Qualificação e Aquecimento em 21 dias; Sem Contato em 15).
+        </p>
+        <p className="mt-2 text-muted-foreground">
           Registre uma atividade <b className="font-semibold text-primary">⚡</b> e o lead volta a ficar verde.
         </p>
       </PopoverContent>

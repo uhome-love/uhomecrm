@@ -565,23 +565,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     setArrivedLeadId(lid);
     setTimeout(() => setArrivedLeadId(null), 500);
 
-    if (targetStage && lead) {
-      const emoji = PIPELINE_STAGE_EMOJIS[targetStage.nome] || "📍";
-      toast(`${emoji} ${lead.nome} avançou para ${targetStage.nome}!`, {
-        description: "+10 XP",
-        duration: 3000,
-      });
-    }
+    // Nova Gestão: sem notificação de XP/"avançou" na troca de etapa (mover é
+    // instantâneo e silencioso; o que importa é registrar a atividade).
 
-    // Visita Realizada special effect
+    // Venda: mantém só o confete de comemoração (sem XP).
     if (targetStage?.tipo === "venda" || targetStage?.nome.toLowerCase().includes("realizada")) {
       spawnConfetti();
-      setTimeout(() => {
-        toast("👑 BOSS ENCONTRADO!", {
-          description: `${lead?.nome} está pronto para fechar negócio! +50 XP`,
-          duration: 4000,
-        });
-      }, 300);
     }
   }, [leads, stages, onMoveLead]);
 
