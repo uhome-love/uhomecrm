@@ -26,10 +26,11 @@ const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: s
   no_show:          { label: "No-show",        icon: AlertTriangle, chip: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
   retorno_hoje:     { label: "Retorno",        icon: ClockAlert,   chip: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400" },
   quente_esfriando: { label: "Esfriando",      icon: Flame,        chip: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400" },
+  sem_proximo_passo:{ label: "Sem próximo passo", icon: History,    chip: "bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400" },
 };
 
 // Ordem dos chips de foco (só aparecem os que têm leads).
-const MOTIVO_ORDEM: MotivoFila[] = ["negocio", "pos_visita", "novo_lead", "no_show", "retorno_hoje", "quente_esfriando"];
+const MOTIVO_ORDEM: MotivoFila[] = ["negocio", "pos_visita", "novo_lead", "no_show", "retorno_hoje", "quente_esfriando", "sem_proximo_passo"];
 
 // Por que cada motivo entra na fila (explicação da caixinha "Como funciona").
 const MOTIVO_PORQUE: Record<MotivoFila, string> = {
@@ -39,6 +40,7 @@ const MOTIVO_PORQUE: Record<MotivoFila, string> = {
   no_show:          "marcou visita e o cliente não veio — resgatar",
   retorno_hoje:     "você marcou um lembrete que venceu — é promessa",
   quente_esfriando: "marcado quente e sem você falar há dias",
+  sem_proximo_passo: "piorando, sem lembrete marcado — retome antes de perder",
 };
 
 /** Caixinha "Como funciona" — explica a ordem da fila. */

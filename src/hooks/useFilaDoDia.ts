@@ -21,11 +21,12 @@ const TERMINAIS = new Set(["descarte", "convertido", "venda", "caiu"]);
 // Horas "fantasma" — vencimento default/cadência, não é compromisso marcado.
 const HORA_FANTASMA = new Set(["21:00", "21:00:00", "00:00", "00:00:00"]);
 
-export type MotivoFila = "negocio" | "pos_visita" | "novo_lead" | "no_show" | "retorno_hoje" | "quente_esfriando";
+export type MotivoFila = "negocio" | "pos_visita" | "novo_lead" | "no_show" | "retorno_hoje" | "quente_esfriando" | "sem_proximo_passo";
 
-// Ordem de valor/urgência (menor = mais em cima).
+// Ordem de valor/urgência (menor = mais em cima). "sem_proximo_passo" é a rede de
+// segurança — sempre por último (o "larguei e esqueci").
 const MOTIVO_PESO: Record<MotivoFila, number> = {
-  negocio: 0, pos_visita: 1, novo_lead: 2, no_show: 3, retorno_hoje: 4, quente_esfriando: 5,
+  negocio: 0, pos_visita: 1, novo_lead: 2, no_show: 3, retorno_hoje: 4, quente_esfriando: 5, sem_proximo_passo: 6,
 };
 
 export interface LeadFila {
@@ -172,6 +173,7 @@ export function useFilaDoDia() {
       const lembretes: LembretesAgrupados = { atrasados: [], hoje: [], amanha: [], semana: [], proximos: [] };
       const retornoHojeLeadIds = new Set<string>();   // gatilho: retorno real vencido/hoje (fora Sem Contato)
       const cadenciaDueLeadIds = new Set<string>();   // Sem Contato com tentativa vencida/hoje
+      const leadsComLembrete = new Set<string>();     // tem QUALQUER lembrete pendente (=tem próximo passo)
       const { data: tarefas } = await supabase
         .from("pipeline_tarefas")
         .select("id, titulo, descricao, tipo, vence_em, hora_vencimento, origem, pipeline_lead_id, pipeline_leads(nome, telefone)")
@@ -192,6 +194,8 @@ export function useFilaDoDia() {
           if (devido && t.pipeline_lead_id) cadenciaDueLeadIds.add(t.pipeline_lead_id);
           continue; // fora da timeline
         }
+
+        if (t.pipeline_lead_id) leadsComLembrete.add(t.pipeline_lead_id); // tem próximo passo
 
         const c: Compromisso = {
           id: t.id, tipo: "lembrete", data: t.vence_em,
@@ -290,6 +294,10 @@ export function useFilaDoDia() {
           motivo = "retorno_hoje";
         } else if (tempTier(l.temperatura) >= 4 && saude !== "verde") {
           motivo = "quente_esfriando";
+        } else if (saude === "vermelho" && !leadsComLembrete.has(l.id)) {
+          // Rede de segurança: lead piorando (vermelho), sem nenhum lembrete marcado
+          // e sem outro gatilho → "larguei e esqueci". Entra por último.
+          motivo = "sem_proximo_passo";
         }
         if (!motivo) continue;
 
