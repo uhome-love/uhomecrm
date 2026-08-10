@@ -14518,8 +14518,12 @@ export type Database = {
         Args: { p_corretor_id: string }
         Returns: number
       }
-      corretor_pode_entrar_roleta: {
+      contar_leads_vermelhos: {
         Args: { p_corretor_id: string }
+        Returns: number
+      }
+      corretor_pode_entrar_roleta: {
+        Args: { p_corretor_id: string; p_janela?: string }
         Returns: boolean
       }
       corretor_pode_entrar_roleta_noturna: {
