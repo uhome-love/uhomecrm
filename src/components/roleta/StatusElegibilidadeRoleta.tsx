@@ -131,7 +131,7 @@ export function StatusElegibilidadeRoleta() {
         {/* Barra de progresso */}
         <div className="mt-3">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-muted-foreground">Leads desatualizados</span>
+            <span className="text-xs text-muted-foreground">Leads vermelhos (roleta noturna)</span>
             <span
               className={`text-xs font-semibold ${
                 elegibilidade.leads_desatualizados > 10 ? "text-destructive" : "text-foreground"
