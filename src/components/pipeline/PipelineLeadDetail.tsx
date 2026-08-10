@@ -766,7 +766,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   return (
 
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="inset-y-0 right-0 h-full w-full max-w-none md:w-[70vw] md:max-w-[2000px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+      <SheetContent className="inset-y-0 right-0 h-full w-full max-w-none md:w-[70vw] md:max-w-[2000px] p-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
             <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
@@ -785,7 +785,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <DrawerTimeline>
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 px-3 md:px-5 pt-4 pb-1 flex items-center gap-2 border-b border-border/50">
+          <div className="shrink-0 px-3 md:px-5 pr-12 md:pr-5 pt-4 pb-1 flex items-center gap-2 border-b border-border/50">
             <TabsList className="bg-muted/50 h-9 md:h-8 flex-1 justify-start md:justify-center overflow-x-auto scrollbar-none">
               {isMobile && (
                 <TabsTrigger value="info" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
