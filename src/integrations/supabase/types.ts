@@ -11183,7 +11183,9 @@ export type Database = {
           nome: string
           observacoes: string | null
           origem: string | null
+          respostas: Json | null
           telefone: string | null
+          temperatura: string | null
           updated_at: string
         }
         Insert: {
@@ -11195,7 +11197,9 @@ export type Database = {
           nome: string
           observacoes?: string | null
           origem?: string | null
+          respostas?: Json | null
           telefone?: string | null
+          temperatura?: string | null
           updated_at?: string
         }
         Update: {
@@ -11207,7 +11211,9 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           origem?: string | null
+          respostas?: Json | null
           telefone?: string | null
+          temperatura?: string | null
           updated_at?: string
         }
         Relationships: []
