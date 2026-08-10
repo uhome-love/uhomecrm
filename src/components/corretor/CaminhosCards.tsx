@@ -49,13 +49,13 @@ export default function CaminhosCards() {
         />
         <ActionCard
           icon={<CalendarDays className="h-5 w-5 text-emerald-600" />}
-          title="Agenda"
+          title="Visitas"
           subtitle={`${visitas7d} visita${visitas7d === 1 ? "" : "s"}`}
           onClick={() => click("agenda", () => navigate("/agenda-visitas"))}
         />
         <ActionCard
           icon={<ListChecks className="h-5 w-5 text-blue-600" />}
-          title="Tarefas"
+          title="Agenda"
           subtitle={`${tarefasCount} hoje`}
           onClick={() => click("tarefas", () => navigate("/minhas-tarefas"))}
         />
