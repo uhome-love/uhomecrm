@@ -26,12 +26,12 @@ export type SortOrder =
   | "valor"
   | "temperatura";
 
-const SORT_OPTIONS: { value: SortOrder; label: string; icon: string }[] = [
-  { value: "prioridade",   label: "Prioridade",   icon: "🔥" },
-  { value: "atividade",    label: "Compromisso",  icon: "📅" },
-  { value: "mais_recente", label: "Mais recente", icon: "🆕" },
-  { value: "mais_antigo",  label: "Mais antigo",  icon: "📆" },
-  { value: "nome",         label: "Nome (A-Z)",   icon: "🅰" },
+const SORT_OPTIONS: { value: SortOrder; label: string; icon: string; desc: string }[] = [
+  { value: "prioridade",   label: "Prioridade",   icon: "🔥", desc: "Quem atender agora (por etapa)" },
+  { value: "atividade",    label: "Compromisso",  icon: "📅", desc: "Lembrete vencido → hoje → futuro" },
+  { value: "mais_recente", label: "Mais recente", icon: "🆕", desc: "Lead que chegou por último" },
+  { value: "mais_antigo",  label: "Mais antigo",  icon: "📆", desc: "Lead que chegou primeiro" },
+  { value: "nome",         label: "Nome (A-Z)",   icon: "🅰", desc: "Ordem alfabética" },
 ];
 
 const STORAGE_KEY = "pipeline-sort-order";
@@ -71,7 +71,7 @@ export function PipelineSortDropdown({ value, onChange }: Props) {
         </button>
 
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-72">
         <div className="px-2 pt-2 pb-1 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
           Ordenar por
         </div>
@@ -81,16 +81,25 @@ export function PipelineSortDropdown({ value, onChange }: Props) {
             <DropdownMenuItem
               key={opt.value}
               onClick={() => handleChange(opt.value)}
-              className={`flex items-center gap-2 text-xs ${
-                isActive ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-medium" : ""
+              className={`flex items-start gap-2 text-xs ${
+                isActive ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300" : ""
               }`}
             >
-              <span className="w-4 text-center">{opt.icon}</span>
-              <span className="flex-1">{opt.label}</span>
-              {isActive && <Check className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />}
+              <span className="w-4 shrink-0 pt-0.5 text-center">{opt.icon}</span>
+              <span className="flex-1 min-w-0">
+                <span className="font-medium">{opt.label}</span>
+                <span className="block text-[11px] font-normal text-muted-foreground">{opt.desc}</span>
+              </span>
+              {isActive && <Check className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />}
             </DropdownMenuItem>
           );
         })}
+        <div className="mt-1 border-t border-border px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
+          <span className="font-semibold text-foreground">Prioridade</span> por etapa:
+          <span className="mt-1 block">🟦 Novo Lead → mais recente</span>
+          <span className="block">⚫ Sem Contato → cadência (tentativa devida)</span>
+          <span className="block">🔍 Qualificação+ → 🔥 quente esfriando</span>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
