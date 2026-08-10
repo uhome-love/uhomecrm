@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, MessageCircle, Copy, RefreshCw, Loader2 } from "lucide-react";
+import { Sparkles, MessageCircle, Copy, RefreshCw, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { waLink } from "@/lib/phone";
@@ -70,13 +70,15 @@ export default function HomiSugestaoMensagem({ nome, empreendimento, telefone, m
   const waComTexto = wa && msg ? `${wa}?text=${encodeURIComponent(msg)}` : null;
 
   if (estado === "idle") {
+    // Se já foi gerada, reabrir mostra a mensagem em cache (não gasta IA de novo).
+    const reabrir = (e: React.MouseEvent) => { e.stopPropagation(); setEstado(msg ? "pronta" : "loading"); if (!msg) gerar(); };
     return (
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); gerar(); }}
+        onClick={reabrir}
         className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[12px] font-semibold text-violet-700 hover:bg-violet-100 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300"
       >
-        <Sparkles className="h-3.5 w-3.5" /> Ver mensagem que o HOMI preparou
+        <Sparkles className="h-3.5 w-3.5" /> {msg ? "Ver mensagem do HOMI" : "Ver mensagem que o HOMI preparou"}
       </button>
     );
   }
@@ -97,6 +99,14 @@ export default function HomiSugestaoMensagem({ nome, empreendimento, telefone, m
       <div className="flex items-center gap-1.5 border-b border-violet-200/70 bg-violet-100/60 px-3 py-1.5 text-[11px] font-bold text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
         <Sparkles className="h-3.5 w-3.5" /> HOMI sugere
         <span className="font-medium text-violet-500/80 dark:text-violet-300/60">· revise antes de enviar</span>
+        <button
+          type="button"
+          aria-label="Fechar sugestão"
+          onClick={(e) => { e.stopPropagation(); setEstado("idle"); }}
+          className="ml-auto -mr-1 rounded-md p-1 text-violet-500/70 hover:bg-violet-200/60 hover:text-violet-700 dark:hover:bg-violet-500/20"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </div>
       <p className="px-3 pt-2 text-[13px] leading-snug text-foreground/90">{msg}</p>
       <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2.5 pt-2">
