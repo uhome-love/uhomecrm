@@ -290,7 +290,7 @@ export function StatusElegibilidadeRoleta() {
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {lead.dias_sem_tarefa}d sem tarefa
+                    {lead.dias_sem_tarefa}d sem toque
                   </span>
                 </div>
               </div>
@@ -299,12 +299,12 @@ export function StatusElegibilidadeRoleta() {
 
           {elegibilidade.leads_desatualizados > 10 && (
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Mostrando 10 de {elegibilidade.leads_desatualizados} leads desatualizados
+              Mostrando 10 de {elegibilidade.leads_desatualizados} leads vermelhos
             </p>
           )}
 
           <button
-            onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
+            onClick={() => navigate("/pipeline-leads?saude=vermelho")}
             className="mt-3 w-full rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-2 transition-colors"
           >
             Ir para o pipeline e atualizar leads →
