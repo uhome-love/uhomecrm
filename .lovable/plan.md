@@ -42,14 +42,18 @@ Regras hoje em vigor (`get_elegibilidade_roleta`, `corretor_pode_entrar_roleta`,
 - Frontend: `StatusElegibilidadeRoleta.tsx`, `RoletaStatusBar.tsx`, `OportunidadesDoDia.tsx` e `RoletaConfigTab.tsx` passam a falar "vermelhos" em vez de "sem tarefa".
 - `contar_leads_desatualizados` fica no banco (usada em outros lugares) mas sai do caminho da roleta.
 
-## Decisões que preciso fechar contigo
+## Regras confirmadas (fechadas contigo)
 
-1. **Estagnado conta?** Leads parados há muito tempo em Sem Contato/Qualificação/Aquecimento hoje viram "estagnado" (roxo) na régua nova. Contam junto com os vermelhos no limite de 10, ou ficam de fora?
-2. **Limite de descartes (50/mês)** — mantém como está?
-3. **Noturna exige presença manhã + tarde?** Hoje exige. Mantém, ou passa a bastar a visita agendada no dia?
-4. **Domingo (2 visitas + 4 presenças na semana)** — mantém?
-5. **Aprovação do CEO** no credenciamento por alocação — mantém pendente ou vira automático quando o corretor está dentro das regras?
-6. **Transição**: com a régua nova, hoje 9 corretores passariam de 10 vermelhos (Rafaela Sandin 61, Flávio 52, Gustavo 28, Bruno 26, Jéssica 26, Thalia 25, Douglas 25, Matheus 22, Paula 20). Entra valendo direto ou com prazo de limpeza (ex.: avisa hoje, bloqueia a partir de segunda)?
+1. **Estagnado NÃO conta** no limite — esse lead já saiu do corretor. Só pílula vermelha entra na conta.
+2. **Descartes**: limite passa de 50 para **100 por mês** (`roleta_config.limite_descartes_mes = 100`), mantendo o desbloqueio manual do gestor.
+3. **Noturna**: mantém — visita agendada no dia **e** presença marcada na manhã **e** na tarde.
+4. **Domingo**: mantém — 2 visitas realizadas + 4 presenças na semana.
+5. **Inclusão manual do CEO**: se o CEO coloca a pessoa na roleta, ela fica credenciada (a inclusão manual passa por cima dos gates de vermelhos/descartes, com registro de quem incluiu).
+6. **Sem empreendimento alocado**: continua não credenciando.
+7. **Fechamento automático de turno**: mantém igual.
+
+Transição: a régua nova entra valendo direto (hoje 9 corretores passariam de 10 vermelhos). Se preferires um prazo de limpeza antes de bloquear, é só avisar.
+
 
 ## Validação
 
