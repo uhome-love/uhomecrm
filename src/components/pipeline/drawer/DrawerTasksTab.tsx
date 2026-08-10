@@ -3,7 +3,7 @@
 // Agrupa por prazo: atrasadas / hoje / amanhã / esta semana / próximas
 // ─────────────────────────────────────────────────────────────────
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw, ChevronDown } from "lucide-react";
+import { CheckCircle2, Pencil, Trash2, Plus, ChevronDown, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,9 +15,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { groupTasksByDeadline, formatTaskDeadline } from "@/lib/taskGrouping";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
-import TaskCompletionDialog from "../TaskCompletionDialog";
-import type { CompletionPayload, TipoProximaTarefa } from "../task-completion/types";
-import { runTaskCompletion } from "@/lib/taskCompletion";
+import type { TipoProximaTarefa } from "../task-completion/types";
+import RegistrarAtividadeModal from "../RegistrarAtividadeModal";
 
 interface Props {
   tarefas: PipelineTarefa[];
@@ -67,7 +66,7 @@ const TIPO_LABEL: Record<TipoCanon, string> = {
   msg: "WhatsApp",
   followup: "Follow-up",
   visit: "Visita",
-  outro: "Tarefa",
+  outro: "Lembrete",
 };
 
 const TIPO_EMOJI: Record<TipoCanon, string> = {
@@ -147,7 +146,7 @@ export default function DrawerTasksTab({
   );
 
   const [editTarefa, setEditTarefa] = useState<PipelineTarefa | null>(null);
-  
+  // Lembrete em conclusão via ⚡ Registrar (mesmo modal da Agenda do corretor).
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
   const [showConcluidas, setShowConcluidas] = useState(false);
 
@@ -159,23 +158,14 @@ export default function DrawerTasksTab({
     onAutoCompleteConsumed?.();
   }, [autoCompleteTaskId, tarefas, onAutoCompleteConsumed]);
 
-  async function handleCompletionConfirm(payload: CompletionPayload) {
-    if (!completingTarefa) return;
-    const result = await runTaskCompletion(
-      {
-        tarefaId: completingTarefa.id,
-        tarefaTitulo: completingTarefa.titulo,
-        tarefaTipo: completingTarefa.tipo ?? null,
-        leadId,
-        leadNome,
-        leadStageId: leadStageId ?? null,
-        addTarefa: onAddTarefa,
-      },
-      payload,
-    );
-    if (result.level === "error") toast.error(result.toastMessage);
-    else toast.success(result.toastMessage);
-    setCompletingTarefa(null);
+  // Dispensar = concluir SEM registrar (não conta como progresso, não carimba toque).
+  async function dispensarTarefa(t: PipelineTarefa) {
+    const { error } = await supabase
+      .from("pipeline_tarefas")
+      .update({ status: "concluida", concluida_em: new Date().toISOString() } as never)
+      .eq("id", t.id);
+    if (error) { toast.error("Não foi possível dispensar."); return; }
+    toast.success("Lembrete dispensado");
     onReload();
     invalidateTaskQueries(queryClient, leadId);
   }
@@ -225,12 +215,12 @@ export default function DrawerTasksTab({
             ✓
           </div>
           <div className="text-base font-semibold text-zinc-900 mb-1.5">
-            Nenhuma tarefa pendente
+            Nenhum lembrete pendente
           </div>
           <div className="text-xs text-zinc-500 max-w-xs mx-auto mb-5 leading-relaxed">
             {isVisitaStage
-              ? "Etapa Visita: as tarefas de confirmação, remarcação e feedback são criadas automaticamente pela Agenda. Se precisar, agende um contato/follow-up manual."
-              : "Este lead está em dia. Crie uma tarefa de follow-up pra manter o ritmo de contato."}
+              ? "Etapa Visita: os lembretes de confirmação, remarcação e feedback são criados automaticamente pela Agenda. Se precisar, agende um contato/follow-up manual."
+              : "Este lead está em dia. Crie um lembrete de follow-up pra manter o ritmo de contato."}
           </div>
           <button
             onClick={onNovaTarefa}
@@ -260,9 +250,9 @@ export default function DrawerTasksTab({
                     key={t.id}
                     tarefa={t}
                     bucket={g.key}
-                    onToggle={() => setCompletingTarefa(t)}
+                    onRegistrar={() => setCompletingTarefa(t)}
+                    onDispensar={() => dispensarTarefa(t)}
                     onDelete={() => onDeleteTarefa(t.id)}
-                    
                     onEdit={() => setEditTarefa(t)}
                   />
                 ))}
@@ -341,21 +331,14 @@ export default function DrawerTasksTab({
         />
       )}
 
-      <TaskCompletionDialog
-        open={!!completingTarefa}
-        onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
-        tarefaTitulo={completingTarefa?.titulo || ""}
-        tarefaOrigem={completingTarefa?.origem ?? null}
-        tarefaId={completingTarefa?.id ?? null}
-        tarefaSubtipo={(completingTarefa as { subtipo?: string | null } | null)?.subtipo ?? null}
-
-        tarefaTipo={(completingTarefa as { tipo?: string | null } | null)?.tipo ?? null}
-
-        leadNome={leadNome}
-        leadId={leadId}
-        currentStageId={leadStageId ?? undefined}
-        onConfirm={handleCompletionConfirm}
-      />
+      {completingTarefa && (
+        <RegistrarAtividadeModal
+          lead={{ id: leadId, nome: leadNome }}
+          concluirTarefaId={completingTarefa.id}
+          onClose={() => setCompletingTarefa(null)}
+          onSaved={() => { onReload(); invalidateTaskQueries(queryClient, leadId); }}
+        />
+      )}
     </div>
   );
 }
@@ -364,13 +347,15 @@ export default function DrawerTasksTab({
 function TaskCard({
   tarefa,
   bucket,
-  onToggle,
+  onRegistrar,
+  onDispensar,
   onDelete,
   onEdit,
 }: {
   tarefa: PipelineTarefa;
   bucket: keyof ReturnType<typeof groupTasksByDeadline>;
-  onToggle: () => void;
+  onRegistrar: () => void;
+  onDispensar: () => void;
   onDelete: () => void;
   onEdit: () => void;
 }) {
@@ -419,10 +404,17 @@ function TaskCard({
 
       <div className="flex gap-1.5 pl-10 flex-wrap">
         <button
-          onClick={onToggle}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-md px-2.5 py-1 text-[11px] font-medium flex items-center gap-1"
+          onClick={onRegistrar}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-md px-2.5 py-1 text-[11px] font-semibold flex items-center gap-1"
         >
-          <CheckCircle2 className="h-3 w-3" /> Feito
+          <Zap className="h-3 w-3" strokeWidth={2.4} /> Registrar
+        </button>
+        <button
+          onClick={onDispensar}
+          className="bg-white border border-zinc-200 hover:bg-zinc-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 flex items-center gap-1"
+          title="Dispensar — conclui sem registrar (não conta)"
+        >
+          <CheckCircle2 className="h-3 w-3" /> Dispensar
         </button>
         <button
           onClick={onEdit}
@@ -432,10 +424,10 @@ function TaskCard({
         </button>
         <button
           onClick={() => {
-            if (confirm("Excluir esta tarefa?")) onDelete();
+            if (confirm("Excluir este lembrete?")) onDelete();
           }}
           className="bg-white border border-red-200/50 hover:bg-red-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-red-600 flex items-center gap-1"
-          aria-label="Excluir tarefa"
+          aria-label="Excluir lembrete"
         >
           <Trash2 className="h-3 w-3" />
         </button>
@@ -469,7 +461,7 @@ function EditTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; 
       .eq("id", tarefa.id);
     setSaving(false);
     if (error) { toast.error("Erro ao salvar: " + error.message); return; }
-    toast.success("Tarefa atualizada.");
+    toast.success("Lembrete atualizado.");
     onSaved();
   }
 
@@ -478,7 +470,7 @@ function EditTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; 
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
-            <Pencil className="h-4 w-4" /> Editar tarefa
+            <Pencil className="h-4 w-4" /> Editar lembrete
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
