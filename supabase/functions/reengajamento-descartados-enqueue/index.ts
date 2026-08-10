@@ -306,6 +306,16 @@ async function sendMetaTemplate(params: {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Auth obrigatória: cron/service-role (disparo automático) OU usuário logado
+  // com papel de gestão (disparo manual pela Central de Reengajamento).
+  const auth = await requireRealUser(req, {
+    allowServiceRole: true,
+    roles: ["admin", "gestor", "diretor"],
+  });
+  if (auth.error) return auth.error;
+
+
+
   // NOTA: o gate global (campaign_dispatch_enabled) é verificado ABAIXO, após o parse do body.
   // Disparos MANUAIS (iniciado_por começa com "manual" / "auto_resume_ui") — acionados
   // explicitamente pelo usuário na Central — passam mesmo com o kill-switch global desligado.
