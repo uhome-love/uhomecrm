@@ -96,7 +96,7 @@ export default function RecrutamentoAcompanhamento() {
   }, [candidatos]);
 
   const porGerente = useMemo(() => {
-    const nomes = new Map((data?.profiles || []).map((p) => [p.id, p.nome || "Sem nome"]));
+    const nomes = new Map((data?.profiles || []).map((p) => [p.user_id, p.nome || "Sem nome"]));
     const map = new Map<string, number>();
     for (const c of candidatos) {
       const k = c.gerente_id ? nomes.get(c.gerente_id) || "Gerente desconhecido" : "Sem gerente";
