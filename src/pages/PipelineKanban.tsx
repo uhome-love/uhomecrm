@@ -396,11 +396,14 @@ export default function PipelineKanban() {
     }
     if (clientStatusFilter !== "todos") {
       result = result.filter((l) => {
-        const tipo = stageMap.get(l.stage_id);
-        if (clientStatusFilter === "estagnado") {
-          return leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo }) === "estagnado";
+        const saude = leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: stageMap.get(l.stage_id) });
+        switch (clientStatusFilter) {
+          case "estagnado": return saude === "estagnado";
+          case "tarefa_atrasada": return saude === "vermelho"; // chip "desatualizado" (exclui estagnado)
+          case "desatualizado": return saude === "ambar"; // chip "atenção"
+          case "em_dia": return saude === "verde" || saude === "terminal";
+          default: return true;
         }
-        return leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, tipo) === clientStatusFilter;
       });
     }
     if (riscoFilter && riscoLeadIds) {
