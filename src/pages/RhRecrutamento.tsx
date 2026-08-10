@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Phone, Mail, Users, Plus } from "lucide-react";
+import { UserPlus, Phone, Mail, Users, Plus, CalendarDays, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -25,6 +25,32 @@ const ETAPAS = [
   { key: "sem_interesse", label: "Não Tem Interesse", color: "#EF4444" },
 ];
 
+type Temperatura = "quente" | "morno" | "frio";
+
+const TEMP_META: Record<Temperatura, { label: string; color: string; soft: string }> = {
+  quente: { label: "QUENTE", color: "#E0533A", soft: "rgba(224, 83, 58, 0.12)" },
+  morno: { label: "MORNO", color: "#E0982A", soft: "rgba(224, 152, 42, 0.12)" },
+  frio: { label: "FRIO", color: "#7C8AA3", soft: "rgba(124, 138, 163, 0.14)" },
+};
+
+const TEMP_ORDER: Record<string, number> = { quente: 0, morno: 1, frio: 2 };
+
+function normTemp(v?: string | null): Temperatura | null {
+  const s = (v || "").toLowerCase();
+  return s === "quente" || s === "morno" || s === "frio" ? (s as Temperatura) : null;
+}
+
+interface QuizRespostas {
+  nome?: string;
+  telefone?: string;
+  vendas?: string;
+  imobiliario?: string;
+  disponibilidade?: string;
+  regiao?: string;
+  motivacao?: string;
+  [k: string]: unknown;
+}
+
 interface Candidato {
   id: string;
   nome: string;
@@ -34,11 +60,57 @@ interface Candidato {
   observacoes: string | null;
   etapa: string;
   created_at: string;
+  temperatura?: string | null;
+  respostas?: QuizRespostas | null;
+}
+
+/** Texto curto pra caber numa mini-tag. */
+function shorten(v: unknown, max = 22): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
+
+function miniTags(r?: QuizRespostas | null): string[] {
+  if (!r) return [];
+  return [shorten(r.vendas), shorten(r.imobiliario), shorten(r.disponibilidade)]
+    .filter((x): x is string => !!x)
+    .slice(0, 3);
+}
+
+function formatEntrevista(iso?: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const f = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const get = (t: string) => f.find((p) => p.type === t)?.value ?? "";
+  return `${get("day")}/${get("month")} às ${get("hour")}:${get("minute")}`;
+}
+
+function TemperaturaBadge({ t }: { t: Temperatura }) {
+  const m = TEMP_META[t];
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wider"
+      style={{ background: m.soft, color: m.color }}
+    >
+      {m.label}
+    </span>
+  );
 }
 
 export default function RhRecrutamento() {
   const { user } = useAuth();
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  const [entrevistas, setEntrevistas] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailCandidate, setDetailCandidate] = useState<Candidato | null>(null);
@@ -55,7 +127,21 @@ export default function RhRecrutamento() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchCandidatos(); }, []);
+  const fetchEntrevistas = async () => {
+    const { data, error } = await supabase
+      .from("rh_entrevistas" as any)
+      .select("candidato_id, data_entrevista, status")
+      .eq("status", "agendada")
+      .order("data_entrevista", { ascending: true });
+    if (error) return;
+    const map: Record<string, string> = {};
+    for (const e of (data || []) as any[]) {
+      if (e.candidato_id && !map[e.candidato_id]) map[e.candidato_id] = e.data_entrevista;
+    }
+    setEntrevistas(map);
+  };
+
+  useEffect(() => { fetchCandidatos(); fetchEntrevistas(); }, []);
 
   const handleAdd = async () => {
     if (!nome.trim()) { toast.error("Nome é obrigatório"); return; }
@@ -81,7 +167,18 @@ export default function RhRecrutamento() {
     fetchCandidatos();
   };
 
-  const getCandidatosByEtapa = (etapa: string) => candidatos.filter(c => c.etapa === etapa);
+  const getCandidatosByEtapa = (etapa: string) =>
+    candidatos
+      .filter(c => c.etapa === etapa)
+      .sort((a, b) => {
+        const ta = TEMP_ORDER[normTemp(a.temperatura) ?? ""] ?? 99;
+        const tb = TEMP_ORDER[normTemp(b.temperatura) ?? ""] ?? 99;
+        return ta - tb;
+      });
+
+  const detailTemp = normTemp(detailCandidate?.temperatura);
+  const detailEntrevista = detailCandidate ? formatEntrevista(entrevistas[detailCandidate.id]) : null;
+  const detailRespostas = detailCandidate?.respostas || null;
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4 overflow-hidden">
@@ -108,24 +205,61 @@ export default function RhRecrutamento() {
                 <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{items.length}</Badge>
               </div>
               <div className="space-y-2">
-                {items.map(c => (
-                  <Card key={c.id} className="cursor-pointer hover:shadow-md transition-shadow bg-card" onClick={() => setDetailCandidate(c)}>
-                    <CardContent className="p-3 space-y-1.5">
-                      <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
-                      {c.telefone && (
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Phone className="h-3 w-3" /> {c.telefone}
-                        </p>
-                      )}
-                      {c.email && (
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                          <Mail className="h-3 w-3" /> {c.email}
-                        </p>
-                      )}
-                      {c.origem && <Badge variant="outline" className="text-[10px]">{c.origem}</Badge>}
-                    </CardContent>
-                  </Card>
-                ))}
+                {items.map(c => {
+                  const temp = normTemp(c.temperatura);
+                  const tags = miniTags(c.respostas);
+                  const entrevista = etapa.key === "entrevista_marcada" ? formatEntrevista(entrevistas[c.id]) : null;
+                  return (
+                    <Card
+                      key={c.id}
+                      className="cursor-pointer hover:shadow-md transition-shadow bg-card overflow-hidden"
+                      style={temp ? { borderLeft: `3px solid ${TEMP_META[temp].color}` } : undefined}
+                      onClick={() => setDetailCandidate(c)}
+                    >
+                      <CardContent className="p-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-1.5">
+                          <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
+                          {temp && <TemperaturaBadge t={temp} />}
+                        </div>
+                        {c.telefone && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Phone className="h-3 w-3" /> {c.telefone}
+                          </p>
+                        )}
+                        {c.email && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                            <Mail className="h-3 w-3" /> {c.email}
+                          </p>
+                        )}
+                        {entrevista && (
+                          <p className="text-xs font-medium text-foreground flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3" /> {entrevista}
+                          </p>
+                        )}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            {tags.map((t, i) => (
+                              <span
+                                key={i}
+                                className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {c.origem && <Badge variant="outline" className="text-[10px]">{c.origem}</Badge>}
+                          {c.origem === "anuncio" && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <Megaphone className="h-3 w-3" /> veio do anúncio
+                            </span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
                 {items.length === 0 && (
                   <EmptyState
                     icon={<Users size={22} strokeWidth={1.5} />}
@@ -176,12 +310,44 @@ export default function RhRecrutamento() {
       {/* Detail Dialog */}
       <Dialog open={!!detailCandidate} onOpenChange={() => setDetailCandidate(null)}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{detailCandidate?.nome}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {detailCandidate?.nome}
+              {detailTemp && <TemperaturaBadge t={detailTemp} />}
+            </DialogTitle>
+          </DialogHeader>
           {detailCandidate && (
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[70vh] overflow-y-auto">
               {detailCandidate.telefone && <p className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" /> {detailCandidate.telefone}</p>}
               {detailCandidate.email && <p className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" /> {detailCandidate.email}</p>}
+              {detailEntrevista && (
+                <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" /> Entrevista: {detailEntrevista}
+                </p>
+              )}
               {detailCandidate.origem && <p className="text-sm text-muted-foreground">Origem: <Badge variant="outline">{detailCandidate.origem}</Badge></p>}
+              {detailRespostas && (
+                <div className="space-y-1.5 rounded-md border border-border p-2.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Respostas do quiz</p>
+                  {[
+                    ["Vendas", detailRespostas.vendas],
+                    ["Imobiliário", detailRespostas.imobiliario],
+                    ["Disponibilidade", detailRespostas.disponibilidade],
+                    ["Região", detailRespostas.regiao],
+                  ].map(([label, value]) =>
+                    value ? (
+                      <p key={label as string} className="text-sm text-foreground">
+                        <span className="text-muted-foreground">{label}: </span>{String(value)}
+                      </p>
+                    ) : null
+                  )}
+                  {detailRespostas.motivacao && (
+                    <p className="text-sm text-foreground">
+                      <span className="text-muted-foreground">Motivação: </span>“{String(detailRespostas.motivacao)}”
+                    </p>
+                  )}
+                </div>
+              )}
               {detailCandidate.observacoes && <p className="text-sm text-muted-foreground bg-muted p-2 rounded">{detailCandidate.observacoes}</p>}
               <div>
                 <Label className="text-xs font-bold">Mover para etapa:</Label>
