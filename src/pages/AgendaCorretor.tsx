@@ -15,10 +15,11 @@ import { cn } from "@/lib/utils";
 import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
 import { dispensarLead } from "@/lib/filaDispensados";
 import { limparRegistro } from "@/lib/registroLimpo";
+import { baixarICS } from "@/lib/ics";
 import {
   Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
   Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
-  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, type LucideIcon,
+  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, CalendarPlus, type LucideIcon,
 } from "lucide-react";
 
 const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: string }> = {
@@ -364,24 +365,44 @@ function CardLembrete({
       )}
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2.5">
         <AcoesContato telefone={c.telefone} />
-        {isLembrete && (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onDispensar(c); }}
-              className="rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              Dispensar
-            </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onRegistrar(c); }}
-              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            aria-label="Adicionar ao calendário"
+            title="Adicionar ao calendário do celular"
+            onClick={(e) => {
+              e.stopPropagation();
+              baixarICS({
+                titulo: `${acaoDoTitulo(c.titulo)}: ${c.lead_nome}`,
+                descricao: [c.descricao, c.telefone ? `Contato: ${c.telefone}` : null].filter(Boolean).join("\n") || null,
+                data: c.data,
+                hora: c.hora,
+              });
+              toast.success("📅 Abra o arquivo pra adicionar ao seu calendário");
+            }}
+            className="inline-flex items-center justify-center rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <CalendarPlus className="h-3.5 w-3.5" />
+          </button>
+          {isLembrete && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDispensar(c); }}
+                className="rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                Dispensar
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onRegistrar(c); }}
+                className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
