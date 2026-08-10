@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT, formatBRT } from "@/lib/brtTime";
-import { Handshake, Phone, Check } from "lucide-react";
+import { Handshake, Phone, Zap } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
@@ -277,6 +277,12 @@ const CardMinimal = memo(function CardMinimal({
   const [isDragging, setIsDragging] = useState(false);
 
   const isAtrasada = status === "atrasada";
+  // Nova Gestão: a cor de urgência é a BORDA (saúde por toque). A linha do
+  // lembrete não grita vermelho — atrasado fica âmbar discreto.
+  const ehLembrete = proximaTarefa?.tipo === "lembrete";
+  const lineStrong = isAtrasada ? "text-amber-600 dark:text-amber-500" : "text-foreground";
+  const lineMuted = isAtrasada ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground";
+  const tituloLembrete = (proximaTarefa?.titulo || "").split(" — ")[0].trim();
   const showActionLine = stage?.tipo !== "convertido" && stage?.tipo !== "descarte";
   // Atalho de check só aparece para tarefa vencendo hoje ou atrasada, e desde que tenhamos o id.
   const canQuickComplete =
@@ -502,35 +508,25 @@ const CardMinimal = memo(function CardMinimal({
                 </span>
               </button>
             ) : hasSpecificTitle ? (
-              <span
-                className={`flex-1 min-w-0 truncate text-[11.5px] ${
-                  isAtrasada ? "text-red-600" : "text-foreground"
-                }`}
-              >
-                <strong
-                  className={`font-semibold ${
-                    isAtrasada ? "text-red-600" : "text-foreground"
-                  }`}
-                >
+              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${lineStrong}`}>
+                <strong className={`font-semibold ${lineStrong}`}>
                   {specificTitleText}
                 </strong>
                 {visitaAutoTxt && actionWhen ? (
-                  <span className={`ml-1 ${isAtrasada ? "text-red-600" : "text-muted-foreground"}`}>
-                    · {actionWhen}
-                  </span>
+                  <span className={`ml-1 ${lineMuted}`}>· {actionWhen}</span>
                 ) : null}
               </span>
+            ) : ehLembrete ? (
+              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${lineMuted}`}>
+                <span className="mr-1 rounded-full bg-primary/10 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-primary">
+                  Lembrete
+                </span>
+                <strong className={`font-semibold ${lineStrong}`}>{tituloLembrete || "Compromisso"}</strong>{" "}
+                {actionWhen}
+              </span>
             ) : (
-              <span
-                className={`flex-1 min-w-0 truncate text-[11.5px] ${
-                  isAtrasada ? "text-red-600" : "text-muted-foreground"
-                }`}
-              >
-                <strong
-                  className={`font-semibold ${
-                    isAtrasada ? "text-red-600" : "text-foreground"
-                  }`}
-                >
+              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${lineMuted}`}>
+                <strong className={`font-semibold ${lineStrong}`}>
                   {ACTION_LABEL[actionType]}
                 </strong>{" "}
                 {actionWhen}
@@ -544,13 +540,14 @@ const CardMinimal = memo(function CardMinimal({
             {canQuickComplete && (
               <button
                 type="button"
-                aria-label="Concluir tarefa"
-                title="Concluir tarefa"
+                aria-label="Registrar atividade"
+                title="Registrar atividade"
                 disabled={completingBusy}
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Lembrete conclui pelo modal ⚡ (registra contato se houve, sem
-                  // fricção); tarefa de contato segue o dialog de conclusão normal.
+                  // Raio ⚡ = registrar atividade. Lembrete abre o modal de
+                  // conclusão (registra contato se houve, sem fricção); tarefa de
+                  // contato segue o dialog de conclusão normal.
                   if (proximaTarefa?.tipo === "lembrete" && proximaTarefa.id) {
                     setConcluindoLembreteId(proximaTarefa.id);
                     setRegistrarOpen(true);
@@ -558,9 +555,9 @@ const CardMinimal = memo(function CardMinimal({
                     setCompletingOpen(true);
                   }
                 }}
-                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-colors disabled:opacity-60"
+                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors disabled:opacity-60"
               >
-                <Check className="h-3 w-3" strokeWidth={3} />
+                <Zap className="h-3 w-3" strokeWidth={2.6} />
               </button>
             )}
           </div>
