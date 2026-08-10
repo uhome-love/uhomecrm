@@ -70,13 +70,13 @@ serve(async (req) => {
   if (!gate.enabled) return pausedResponse("whatsapp-campaign-dispatch", gate, corsHeaders);
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autenticado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Auth real: service-role / cron OU usuário logado com papel de gestão.
+    // Antes bastava um header começando com "Bearer " — qualquer string passava.
+    const auth = await requireRealUser(req, {
+      allowServiceRole: true,
+      roles: ["admin", "gestor", "diretor"],
+    });
+    if (auth.error) return auth.error;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
