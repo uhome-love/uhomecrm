@@ -9,17 +9,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
 import {
-  Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Home as HomeIcon,
-  Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical, type LucideIcon,
+  Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
+  Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
+  HandCoins, PhoneCall, ChevronDown, Check, type LucideIcon,
 } from "lucide-react";
 
 const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: string }> = {
-  novo_lead:        { label: "Novo lead",         icon: Sparkles,     chip: "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" },
-  retorno_hoje:     { label: "Retorno de hoje",   icon: ClockAlert,   chip: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400" },
-  no_show:          { label: "No-show",           icon: AlertTriangle, chip: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
-  pos_visita:       { label: "Pós-visita parada", icon: HomeIcon,     chip: "bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400" },
-  quente_esfriando: { label: "Quente esfriando",  icon: Flame,        chip: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
+  negocio:          { label: "Negócio",        icon: HandCoins,    chip: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400" },
+  pos_visita:       { label: "Pós-visita",     icon: Home,         chip: "bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400" },
+  novo_lead:        { label: "Novo lead",      icon: Sparkles,     chip: "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" },
+  no_show:          { label: "No-show",        icon: AlertTriangle, chip: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
+  retorno_hoje:     { label: "Retorno",        icon: ClockAlert,   chip: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400" },
+  quente_esfriando: { label: "Esfriando",      icon: Flame,        chip: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400" },
+};
+
+const TEMP_LABEL: Record<string, { t: string; c: string }> = {
+  quente: { t: "Quente", c: "text-red-600 dark:text-red-400" },
+  morno:  { t: "Morno",  c: "text-amber-600 dark:text-amber-400" },
+  frio:   { t: "Frio",   c: "text-blue-600 dark:text-blue-400" },
 };
 
 const SAUDE_BORDER: Record<string, string> = {
@@ -38,6 +47,40 @@ function diasLabel(d: number | null, temAtividade: boolean): string {
   return `há ${d}d`;
 }
 
+/** Contato: WhatsApp (principal) + Ligar + copiar. O corretor trabalha do zap. */
+function AcoesContato({ telefone, compact = false }: { telefone: string | null; compact?: boolean }) {
+  const wa = waLink(telefone);
+  const tel = telLink(telefone);
+  if (!telefone) return null;
+  const copiar = async () => {
+    try { await navigator.clipboard.writeText(formatPhoneBR(telefone) || telefone); toast.success("Número copiado"); }
+    catch { toast.error("Não deu pra copiar"); }
+  };
+  return (
+    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+      {!compact && (
+        <span className="text-[11.5px] tabular-nums text-muted-foreground">{formatPhoneBR(telefone)}</span>
+      )}
+      {wa && (
+        <a
+          href={wa} target="_blank" rel="noreferrer"
+          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[12px] font-semibold text-white hover:bg-emerald-700"
+        >
+          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+        </a>
+      )}
+      {tel && (
+        <a href={tel} aria-label="Ligar" className="inline-flex items-center justify-center rounded-lg border border-border p-1.5 text-foreground hover:bg-muted">
+          <PhoneCall className="h-3.5 w-3.5" />
+        </a>
+      )}
+      <button type="button" onClick={copiar} aria-label="Copiar número" className="inline-flex items-center justify-center rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
+        <Copy className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
 function CardPrioridade({
   lead, stages, onRegistrar, onOpen, onMove,
 }: {
@@ -47,6 +90,7 @@ function CardPrioridade({
 }) {
   const m = MOTIVO_META[lead.motivo];
   const Icon = m.icon;
+  const temp = TEMP_LABEL[(lead.temperatura ?? "").toLowerCase()];
   const leadObj = {
     id: lead.id, nome: lead.nome, stage_id: lead.stage_id, corretor_id: lead.corretor_id,
     telefone: lead.telefone, empreendimento: lead.empreendimento,
@@ -62,9 +106,15 @@ function CardPrioridade({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", m.chip)}>
-            <Icon className="h-3 w-3" strokeWidth={2} /> {m.label}
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", m.chip)}>
+              <Icon className="h-3 w-3" strokeWidth={2} /> {m.label}
+            </span>
+            {lead.resultado && (
+              <span className="text-[11.5px] font-medium text-foreground/80">{lead.resultado}</span>
+            )}
+            {temp && <span className={cn("text-[11.5px] font-semibold", temp.c)}>· {temp.t}</span>}
+          </div>
           <div className="mt-1.5 flex items-center gap-2 min-w-0">
             <span className="text-[15px] font-semibold text-foreground truncate">{lead.nome}</span>
             <span className="shrink-0 text-[11.5px] text-muted-foreground">{lead.stage_nome}</span>
@@ -79,24 +129,14 @@ function CardPrioridade({
             </div>
           )}
         </div>
-        <div className="flex shrink-0 items-start gap-1" onClick={(e) => e.stopPropagation()}>
-          <div className="flex flex-col items-end gap-1.5">
-            <button
-              type="button"
-              onClick={onRegistrar}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
-            </button>
-            {lead.telefone && (
-              <a
-                href={`tel:${lead.telefone}`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] text-foreground hover:bg-muted"
-              >
-                <Phone className="h-3.5 w-3.5" /> Ligar
-              </a>
-            )}
-          </div>
+        <div className="flex shrink-0 items-start gap-1">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onRegistrar(); }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
+          </button>
           <CardOverflowMenu
             lead={leadObj}
             stages={stages}
@@ -107,6 +147,7 @@ function CardPrioridade({
               <button
                 type="button"
                 aria-label="Ações do lead"
+                onClick={(e) => e.stopPropagation()}
                 className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <MoreVertical className="h-4 w-4" />
@@ -115,6 +156,64 @@ function CardPrioridade({
           />
         </div>
       </div>
+      {lead.telefone && (
+        <div className="mt-2 flex justify-end border-t border-border/50 pt-2">
+          <AcoesContato telefone={lead.telefone} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Bloco único da cadência Sem Contato (volume de "tentar de novo"). */
+function CadenciaBloco({
+  total, leads, onRegistrar, onOpen,
+}: {
+  total: number; leads: LeadFila[];
+  onRegistrar: (l: LeadFila) => void; onOpen: (id: string) => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  if (total === 0) return null;
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left hover:bg-muted/30"
+      >
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400">
+          <PhoneCall className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13.5px] font-semibold text-foreground">
+            {total} {total === 1 ? "lead" : "leads"} da cadência Sem Contato
+          </span>
+          <span className="block text-[11.5px] text-muted-foreground">tentativas de hoje · toque em cada e ⚡ registre</span>
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", aberto && "rotate-180")} />
+      </button>
+      {aberto && (
+        <div className="divide-y divide-border/60 border-t border-border">
+          {leads.map((l) => (
+            <div key={l.id} className="flex items-center gap-2 px-3.5 py-2.5">
+              <button type="button" onClick={() => onOpen(l.id)} className="min-w-0 flex-1 text-left">
+                <span className="block truncate text-[13px] font-medium text-foreground">{l.nome}</span>
+                <span className="block truncate text-[11px] text-muted-foreground">
+                  última atividade · {diasLabel(l.dias_sem_atividade, l.tem_atividade)}
+                </span>
+              </button>
+              <AcoesContato telefone={l.telefone} compact />
+              <button
+                type="button"
+                onClick={() => onRegistrar(l)}
+                className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -127,7 +226,58 @@ const GRUPOS: { key: keyof LembretesAgrupados; label: string; tone: string }[] =
   { key: "proximos",  label: "Próximos",  tone: "text-muted-foreground" },
 ];
 
-function ListaLembretes({ lembretes }: { lembretes: LembretesAgrupados }) {
+function ItemLembrete({
+  c, onRegistrar, onDispensar,
+}: {
+  c: Compromisso;
+  onRegistrar: (c: Compromisso) => void;
+  onDispensar: (c: Compromisso) => void;
+}) {
+  const Icon = COMP_ICON[c.icon];
+  const isLembrete = c.tipo === "lembrete" && !!c.lead_id;
+  return (
+    <div className="flex items-center gap-2.5 py-2.5">
+      <span className="w-11 shrink-0 text-center text-[12px] font-semibold text-foreground/70">
+        {c.hora ?? <span className="text-muted-foreground/60">—</span>}
+      </span>
+      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground/70">
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[13px]">
+        {c.titulo} · <b className="font-medium">{c.lead_nome}</b>
+      </span>
+      <AcoesContato telefone={c.telefone} compact />
+      {isLembrete && (
+        <>
+          <button
+            type="button"
+            onClick={() => onRegistrar(c)}
+            className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
+          </button>
+          <button
+            type="button"
+            onClick={() => onDispensar(c)}
+            aria-label="Dispensar (concluir sem registrar)"
+            title="Dispensar — conclui sem registrar (não conta)"
+            className="inline-flex items-center justify-center rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ListaLembretes({
+  lembretes, onRegistrar, onDispensar,
+}: {
+  lembretes: LembretesAgrupados;
+  onRegistrar: (c: Compromisso) => void;
+  onDispensar: (c: Compromisso) => void;
+}) {
   const algum = GRUPOS.some((g) => lembretes[g.key].length > 0);
   if (!algum) {
     return (
@@ -147,20 +297,9 @@ function ListaLembretes({ lembretes }: { lembretes: LembretesAgrupados }) {
               {g.label} <span className="text-muted-foreground">· {itens.length}</span>
             </div>
             <div className="rounded-xl border border-border bg-card px-3 divide-y divide-border/60">
-              {itens.map((c) => {
-                const Icon = COMP_ICON[c.icon];
-                return (
-                  <div key={`${c.tipo}-${c.id}`} className="flex items-center gap-3 py-2.5">
-                    <span className="w-11 shrink-0 text-[12.5px] font-semibold text-foreground/70">{c.hora ?? "—"}</span>
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground/70">
-                      <Icon className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[13px]">
-                      {c.titulo} · <b className="font-medium">{c.lead_nome}</b>
-                    </span>
-                  </div>
-                );
-              })}
+              {itens.map((c) => (
+                <ItemLembrete key={`${c.tipo}-${c.id}`} c={c} onRegistrar={onRegistrar} onDispensar={onDispensar} />
+              ))}
             </div>
           </div>
         );
@@ -169,21 +308,25 @@ function ListaLembretes({ lembretes }: { lembretes: LembretesAgrupados }) {
   );
 }
 
+type RegistrarState = { id: string; nome: string; concluirTarefaId?: string } | null;
+
 export default function AgendaCorretor() {
   const { data, isLoading } = useFilaDoDia();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"prioridades" | "lembretes">("prioridades");
-  const [registrar, setRegistrar] = useState<{ id: string; nome: string } | null>(null);
+  const [registrar, setRegistrar] = useState<RegistrarState>(null);
 
   const hojeLabel = new Date().toLocaleDateString("pt-BR", {
     weekday: "long", day: "numeric", month: "short", timeZone: "America/Sao_Paulo",
   });
 
   const prioridades = data?.prioridades ?? [];
+  const cadencia = data?.cadencia ?? { total: 0, leads: [] };
   const stages = data?.stages ?? [];
   const lembretes = data?.lembretes ?? { atrasados: [], hoje: [], amanha: [], semana: [], proximos: [] };
 
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: ["fila-do-dia"] });
   const abrirLead = (id: string) => navigate(`/pipeline-leads?lead=${id}`);
 
   const moverEtapa = async (leadId: string, stageId: string) => {
@@ -194,8 +337,26 @@ export default function AgendaCorretor() {
       .eq("id", leadId);
     if (error) { toast.error("Não foi possível mover o lead."); return; }
     toast.success("Lead movido ✅");
-    queryClient.invalidateQueries({ queryKey: ["fila-do-dia"] });
+    invalidar();
   };
+
+  // Dispensar um lembrete = concluir SEM registrar (não conta, não mexe no lead).
+  const dispensar = async (c: Compromisso) => {
+    const { error } = await supabase
+      .from("pipeline_tarefas")
+      .update({ status: "concluida", concluida_em: new Date().toISOString() } as never)
+      .eq("id", c.id);
+    if (error) { toast.error("Não foi possível dispensar."); return; }
+    toast.success("Lembrete dispensado");
+    invalidar();
+  };
+
+  const registrarLembrete = (c: Compromisso) => {
+    if (!c.lead_id) return;
+    setRegistrar({ id: c.lead_id, nome: c.lead_nome, concluirTarefaId: c.id });
+  };
+
+  const totalFila = prioridades.length + cadencia.total;
 
   const TabBtn = ({ id, label, badge }: { id: typeof tab; label: string; badge?: number }) => (
     <button
@@ -222,7 +383,7 @@ export default function AgendaCorretor() {
       </div>
 
       <div className="mb-4 inline-flex rounded-xl border border-border bg-card p-1">
-        <TabBtn id="prioridades" label="Prioridades" badge={prioridades.length} />
+        <TabBtn id="prioridades" label="Prioridades" badge={totalFila} />
         <TabBtn id="lembretes" label="Lembretes" badge={data?.totalLembretes} />
       </div>
 
@@ -231,11 +392,11 @@ export default function AgendaCorretor() {
           <div className="mb-2 flex items-center gap-2">
             <Target className="h-4 w-4 text-primary" />
             <span className="text-[13.5px] font-semibold text-foreground">Sua fila de hoje</span>
-            <span className="text-[11.5px] text-muted-foreground">· só o que dá pra agir agora</span>
+            <span className="text-[11.5px] text-muted-foreground">· do mais quente pro mais frio</span>
           </div>
           {isLoading ? (
             <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : prioridades.length === 0 ? (
+          ) : totalFila === 0 ? (
             <div className="flex items-start gap-2 rounded-xl border border-dashed border-primary/30 bg-primary/[0.04] p-4">
               <Layers className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <div className="text-[13px] text-foreground">
@@ -253,6 +414,11 @@ export default function AgendaCorretor() {
                   onMove={moverEtapa}
                 />
               ))}
+              <CadenciaBloco
+                total={cadencia.total} leads={cadencia.leads}
+                onRegistrar={(l) => setRegistrar({ id: l.id, nome: l.nome })}
+                onOpen={abrirLead}
+              />
             </div>
           )}
         </>
@@ -261,17 +427,20 @@ export default function AgendaCorretor() {
           <div className="mb-2 flex items-center gap-2">
             <Bell className="h-4 w-4 text-primary" />
             <span className="text-[13.5px] font-semibold text-foreground">Seus lembretes</span>
-            <span className="text-[11.5px] text-muted-foreground">· para se organizar</span>
+            <span className="text-[11.5px] text-muted-foreground">· registre o que fez ou dispense</span>
           </div>
-          {isLoading ? <Skeleton className="h-40 w-full rounded-xl" /> : <ListaLembretes lembretes={lembretes} />}
+          {isLoading ? <Skeleton className="h-40 w-full rounded-xl" /> : (
+            <ListaLembretes lembretes={lembretes} onRegistrar={registrarLembrete} onDispensar={dispensar} />
+          )}
         </>
       )}
 
       {registrar && (
         <RegistrarAtividadeModal
-          lead={registrar}
+          lead={{ id: registrar.id, nome: registrar.nome }}
+          concluirTarefaId={registrar.concluirTarefaId ?? null}
           onClose={() => setRegistrar(null)}
-          onSaved={() => queryClient.invalidateQueries({ queryKey: ["fila-do-dia"] })}
+          onSaved={invalidar}
         />
       )}
     </div>
