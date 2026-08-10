@@ -11179,6 +11179,7 @@ export type Database = {
           created_by: string | null
           email: string | null
           etapa: string
+          gerente_id: string | null
           id: string
           nome: string
           observacoes: string | null
@@ -11193,6 +11194,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           etapa?: string
+          gerente_id?: string | null
           id?: string
           nome: string
           observacoes?: string | null
@@ -11207,6 +11209,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           etapa?: string
+          gerente_id?: string | null
           id?: string
           nome?: string
           observacoes?: string | null
