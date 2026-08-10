@@ -535,8 +535,8 @@ export default function RoletaStatusBar() {
                               ok={nightReqs.sistemaAtualizado}
                               label={
                                 nightReqs.sistemaAtualizado
-                                  ? "Sistema atualizado ✓"
-                                  : `Atualizar leads pendentes (${nightReqs.leadsDesatualizados}/${nightReqs.limiteLeads} desatualizados)`
+                                  ? "Carteira em dia ✓"
+                                  : `Atualizar leads vermelhos (${nightReqs.leadsDesatualizados}/${nightReqs.limiteLeads} vermelhos)`
                               }
                             />
                             {nightReqs.error && (
