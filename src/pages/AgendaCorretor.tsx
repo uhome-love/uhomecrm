@@ -8,6 +8,7 @@ import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
 import { dispensarLead } from "@/lib/filaDispensados";
@@ -28,6 +29,72 @@ const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: s
 
 // Ordem dos chips de foco (só aparecem os que têm leads).
 const MOTIVO_ORDEM: MotivoFila[] = ["negocio", "pos_visita", "novo_lead", "no_show", "retorno_hoje", "quente_esfriando"];
+
+// Por que cada motivo entra na fila (explicação da caixinha "Como funciona").
+const MOTIVO_PORQUE: Record<MotivoFila, string> = {
+  negocio:          "proposta ou negociação em aberto — é o que fecha o mês",
+  pos_visita:       "visitou e falta o retorno — esfria em horas",
+  novo_lead:        "chegou hoje e nunca foi contatado — regra dos 5 minutos",
+  no_show:          "marcou visita e o cliente não veio — resgatar",
+  retorno_hoje:     "você marcou um lembrete que venceu — é promessa",
+  quente_esfriando: "marcado quente e sem você falar há dias",
+};
+
+/** Caixinha "Como funciona" — explica a ordem da fila. */
+function ComoFuncionaFila() {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <HelpCircle className="h-3.5 w-3.5" /> Como funciona
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[320px] p-0">
+        <div className="border-b border-border p-3">
+          <p className="text-[13px] font-semibold text-foreground">Como a fila é ordenada</p>
+          <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+            A Agenda mostra só quem precisa de <b>ação agora</b>, na ordem de valor:
+          </p>
+        </div>
+        <ol className="divide-y divide-border">
+          {MOTIVO_ORDEM.map((k, i) => {
+            const m = MOTIVO_META[k];
+            const Icon = m.icon;
+            return (
+              <li key={k} className="flex items-start gap-2.5 p-2.5">
+                <span className="mt-0.5 text-[11px] font-bold tabular-nums text-muted-foreground">{i + 1}</span>
+                <span className={cn("mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md", m.chip)}>
+                  <Icon className="h-3 w-3" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[12.5px] font-semibold text-foreground">{m.label}</p>
+                  <p className="text-[11.5px] leading-snug text-muted-foreground">{MOTIVO_PORQUE[k]}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+        <div className="space-y-2 border-t border-border bg-muted/40 p-3 text-[11.5px] leading-snug text-muted-foreground">
+          <p><b className="text-foreground">Empate:</b> quente antes de morno; e quem está há mais tempo sem falar sobe.</p>
+          <p><b className="text-foreground">Sem Contato</b> vira um bloco só ("X leads da cadência pra hoje"), pra não entupir a fila.</p>
+          <p><b className="text-foreground">Fica de fora</b> (segue no Pipeline): descartados, vendidos, estagnados e quem não tem nenhum gatilho de ação hoje.</p>
+        </div>
+        <div className="border-t border-border p-2.5">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("open-onboarding"))}
+            className="w-full rounded-lg bg-muted px-3 py-2 text-[12.5px] font-semibold text-foreground hover:bg-muted-foreground/15"
+          >
+            Ver tour completo da Agenda
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const TEMP_LABEL: Record<string, { t: string; c: string }> = {
   quente: { t: "Quente", c: "text-red-600 dark:text-red-400" },
@@ -407,13 +474,7 @@ export default function AgendaCorretor() {
           <h1 className="text-xl font-bold tracking-tight text-foreground">Agenda</h1>
           <p className="text-[13px] capitalize text-muted-foreground">{hojeLabel}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new Event("open-onboarding"))}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <HelpCircle className="h-3.5 w-3.5" /> Como funciona
-        </button>
+        <ComoFuncionaFila />
       </div>
 
       <div className="mb-4 inline-flex rounded-xl border border-border bg-card p-1">
