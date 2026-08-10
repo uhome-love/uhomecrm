@@ -17,11 +17,14 @@ const MOTIVO_DOT: Record<MotivoFila, string> = {
   no_show: "bg-red-500",
   retorno_hoje: "bg-amber-500",
   quente_esfriando: "bg-rose-500",
+  sem_proximo_passo: "bg-violet-500",
 };
 const MOTIVO_LABEL: Record<MotivoFila, string> = {
   negocio: "Negócio", pos_visita: "Pós-visita", novo_lead: "Novo lead",
   no_show: "No-show", retorno_hoje: "Retorno", quente_esfriando: "Esfriando",
+  sem_proximo_passo: "Sem próximo passo",
 };
+
 
 export default function AgendaResumoWidget() {
   const { data, isLoading } = useFilaDoDia();
