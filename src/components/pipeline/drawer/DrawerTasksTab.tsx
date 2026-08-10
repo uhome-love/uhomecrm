@@ -17,6 +17,7 @@ import { groupTasksByDeadline, formatTaskDeadline } from "@/lib/taskGrouping";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import type { TipoProximaTarefa } from "../task-completion/types";
 import RegistrarAtividadeModal from "../RegistrarAtividadeModal";
+import CriarLembreteModal from "../CriarLembreteModal";
 
 interface Props {
   tarefas: PipelineTarefa[];
@@ -148,6 +149,7 @@ export default function DrawerTasksTab({
   const [editTarefa, setEditTarefa] = useState<PipelineTarefa | null>(null);
   // Lembrete em conclusão via ⚡ Registrar (mesmo modal da Agenda do corretor).
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
+  const [criarOpen, setCriarOpen] = useState(false);
   const [showConcluidas, setShowConcluidas] = useState(false);
 
   // Abre auto-completion vinda do card "Próxima ação" no topo do drawer
@@ -183,7 +185,7 @@ export default function DrawerTasksTab({
           </div>
         </div>
         <button
-          onClick={onNovaTarefa}
+          onClick={() => setCriarOpen(true)}
           className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
         >
           <Plus className="h-3.5 w-3.5" /> Novo lembrete
@@ -223,7 +225,7 @@ export default function DrawerTasksTab({
               : "Este lead está em dia. Crie um lembrete de follow-up pra manter o ritmo de contato."}
           </div>
           <button
-            onClick={onNovaTarefa}
+            onClick={() => setCriarOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
           >
             <Plus className="h-3.5 w-3.5" /> Criar lembrete
@@ -339,6 +341,13 @@ export default function DrawerTasksTab({
           onSaved={() => { onReload(); invalidateTaskQueries(queryClient, leadId); }}
         />
       )}
+
+      <CriarLembreteModal
+        open={criarOpen}
+        lead={{ id: leadId, nome: leadNome }}
+        onClose={() => setCriarOpen(false)}
+        onSaved={() => { onReload(); invalidateTaskQueries(queryClient, leadId); }}
+      />
     </div>
   );
 }

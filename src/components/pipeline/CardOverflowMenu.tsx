@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import DiscardLeadDialog from "./DiscardLeadDialog";
+import CriarLembreteModal from "./CriarLembreteModal";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 interface CardOverflowMenuProps {
@@ -76,6 +77,7 @@ export default function CardOverflowMenu({
   const [transferOpen, setTransferOpen] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [discardTipo, setDiscardTipo] = useState<"reengajavel" | "definitivo">("reengajavel");
+  const [lembreteOpen, setLembreteOpen] = useState(false);
 
   const moveStages = stages.filter(
     (s) => s.id !== lead.stage_id && s.tipo !== "descarte" && s.tipo !== "convertido"
@@ -167,7 +169,7 @@ export default function CardOverflowMenu({
             onClick={() => {
               trackMenuAction(lead, "create_task");
               if (onCreateTask) onCreateTask();
-              else onOpenDetail();
+              else setLembreteOpen(true);
             }}
             className="text-sm"
           >
@@ -223,6 +225,11 @@ export default function CardOverflowMenu({
 
       {/* Dialogs — isolados de propagation do card */}
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
+        <CriarLembreteModal
+          open={lembreteOpen}
+          lead={{ id: lead.id, nome: lead.nome }}
+          onClose={() => setLembreteOpen(false)}
+        />
         {scheduleOpen && (
           <VisitaForm
             open={scheduleOpen}

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilaDoDia, type LeadFila, type MotivoFila, type Compromisso, type LembretesAgrupados } from "@/hooks/useFilaDoDia";
 import RegistrarAtividadeModal from "@/components/pipeline/RegistrarAtividadeModal";
+import CriarLembreteModal from "@/components/pipeline/CriarLembreteModal";
 import CardOverflowMenu from "@/components/pipeline/CardOverflowMenu";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,7 @@ import { dispensarLead } from "@/lib/filaDispensados";
 import {
   Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
   Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
-  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, type LucideIcon,
+  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, type LucideIcon,
 } from "lucide-react";
 
 const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: string }> = {
@@ -382,6 +383,7 @@ export default function AgendaCorretor() {
   const [registrar, setRegistrar] = useState<RegistrarState>(null);
   const [foco, setFoco] = useState<"todos" | MotivoFila>("todos");
   const [grupoLembrete, setGrupoLembrete] = useState<GrupoLembrete>("hoje");
+  const [criarLembrete, setCriarLembrete] = useState(false);
 
   const hojeLabel = new Date().toLocaleDateString("pt-BR", {
     weekday: "long", day: "numeric", month: "short", timeZone: "America/Sao_Paulo",
@@ -537,6 +539,13 @@ export default function AgendaCorretor() {
             <Bell className="h-4 w-4 text-primary" />
             <span className="text-[13.5px] font-semibold text-foreground">Seus lembretes</span>
             <span className="text-[11.5px] text-muted-foreground">· sua organização</span>
+            <button
+              type="button"
+              onClick={() => setCriarLembrete(true)}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-3.5 w-3.5" /> Lembrete
+            </button>
           </div>
 
           {/* Filtro Atrasados / Hoje / Futuro */}
@@ -591,6 +600,13 @@ export default function AgendaCorretor() {
           onSaved={invalidar}
         />
       )}
+
+      <CriarLembreteModal
+        open={criarLembrete}
+        lead={null}
+        onClose={() => setCriarLembrete(false)}
+        onSaved={invalidar}
+      />
     </div>
   );
 }
