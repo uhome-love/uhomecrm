@@ -19,13 +19,11 @@ import OnboardingWidget from "@/components/corretor/OnboardingWidget";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
 import CarteiraKpis from "@/components/corretor/CarteiraKpis";
-import PreEstagnacaoCard from "@/components/corretor/PreEstagnacaoCard";
 import ConquistasKpis from "@/components/corretor/ConquistasKpis";
 import CaminhosCards from "@/components/corretor/CaminhosCards";
-import TarefasHojeLateral from "@/components/corretor/TarefasHojeLateral";
+import AgendaResumoWidget from "@/components/corretor/AgendaResumoWidget";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
 import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
-import { OfertaAtivaBanner } from "@/components/oferta-ativa/OfertaAtivaBanner";
 
 
 export default function CorretorDashboard() {
@@ -71,10 +69,6 @@ export default function CorretorDashboard() {
 
       {/* CTA Mutirão Inteligente (aparece quando ao vivo ou janela típica) */}
       <MutiraoPulseBanner />
-
-      {/* Lista de Oferta Ativa liberada para este corretor */}
-      <OfertaAtivaBanner />
-
 
 
 
@@ -125,14 +119,12 @@ export default function CorretorDashboard() {
 
         {/* Coluna lateral — desktop ≥1024px */}
         <div className="hidden lg:block w-[280px] shrink-0 space-y-3.5">
-          <TarefasHojeLateral variant="desktop" />
-          <PreEstagnacaoCard />
+          <AgendaResumoWidget />
         </div>
 
         {/* Lateral — tablet/mobile vira accordion abaixo dos cards */}
         <div className="lg:hidden space-y-3.5">
-          <TarefasHojeLateral variant="mobile" />
-          <PreEstagnacaoCard />
+          <AgendaResumoWidget />
         </div>
       </div>
 

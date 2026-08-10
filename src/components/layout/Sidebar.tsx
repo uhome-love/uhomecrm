@@ -58,7 +58,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Roleta",             path: "/roleta",            icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
+        { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
@@ -117,7 +117,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Leads",
       items: [
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
+        { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
@@ -178,7 +178,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Leads",
       items: [
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
+        { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
@@ -234,9 +234,9 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Leads & Visitas",
       items: [
         { label: "Notificações",       path: "/notificacoes",      icon: <BellRing     size={15} strokeWidth={1.5} /> },
-        { label: "Agenda do corretor", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+        { label: "Agenda", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
+        { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/corretor/call",     icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
       ],
@@ -252,7 +252,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Crescimento",
       items: [
-        { label: "Progresso",          path: "/progresso",         icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Meus resultados",    path: "/central-relatorios", icon: <BarChart2    size={15} strokeWidth={1.5} /> },
 
         { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
@@ -262,7 +261,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Ferramentas",
       items: [
-        { label: "HOMI Assistente",    path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Minhas vitrines",    path: "/minhas-vitrines",   icon: <Building2    size={15} strokeWidth={1.5} /> },
         
@@ -334,7 +332,7 @@ const MODO_CORRETOR_GROUP: NavGroup = {
   title: "Modo Corretor",
   items: [
     { label: "Minha rotina",       path: "/corretor",          icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-    { label: "Agenda do corretor", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+    { label: "Agenda", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
     { label: "Aceite de leads",    path: "/aceite",            icon: <UserCheck    size={15} strokeWidth={1.5} /> },
     { label: "Oferta ativa (corretor)", path: "/corretor/call", icon: <Phone      size={15} strokeWidth={1.5} /> },
   ],
@@ -406,7 +404,9 @@ export default function Sidebar({
     icon: <Radio size={15} strokeWidth={1.5} />,
     ...(mutiraoAtivo ? { badge: "AO VIVO" } : {}),
   };
-  const withMutirao: NavGroup[] = rawGroups.map((g) =>
+  // Corretor não tem "Mutirão ao vivo" no menu — ele só aparece como banner na
+  // Minha Rotina no dia em que há mutirão. Demais papéis mantêm o item fixo.
+  const withMutirao: NavGroup[] = role === "corretor" ? rawGroups : rawGroups.map((g) =>
     (g.title === "Leads" || g.title === "Leads & Visitas" || g.title === "Modo Corretor") &&
     !g.items.some((i) => i.path === mutiraoItem.path)
       ? { ...g, items: [...g.items, mutiraoItem] }

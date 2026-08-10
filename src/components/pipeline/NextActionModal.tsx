@@ -109,9 +109,9 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
     try {
       if (selected === "tarefa") {
 
-        if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
+        if (!tarefaData) { toast.error("Informe a data do lembrete"); setSaving(false); return; }
         if (isTaskDateTooFar(tarefaData, currentStageTipo)) { toast.error(taskDateTooFarMessage(currentStageTipo)); setSaving(false); return; }
-        if (presets.length > 0 && !selectedPresetId) { toast.error("Escolha um tipo de tarefa"); setSaving(false); return; }
+        if (presets.length > 0 && !selectedPresetId) { toast.error("Escolha um tipo de lembrete"); setSaving(false); return; }
         const tituloLabel = activePreset?.label
           || TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label
           || tipoTarefa;
@@ -140,7 +140,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
         }
 
 
-        toast.success("Tarefa agendada ✅");
+        toast.success("Lembrete agendado ✅");
       } else if (selected === "avancar") {
         if (!nextStageId) { toast.error("Selecione a etapa"); setSaving(false); return; }
         await onMove(leadId, nextStageId, "Avanço via próxima ação");
@@ -177,7 +177,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   };
 
   const options: { key: OptionType; label: string; icon: any; color: string }[] = [
-    { key: "tarefa", label: "Agendar nova tarefa", icon: CalendarPlus, color: "border-primary bg-primary/5 text-primary" },
+    { key: "tarefa", label: "Agendar lembrete", icon: CalendarPlus, color: "border-primary bg-primary/5 text-primary" },
     { key: "avancar", label: "Avançar etapa", icon: ArrowRightCircle, color: "border-emerald-500 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400" },
     { key: "descartar", label: "Descartar lead", icon: Trash2, color: "border-destructive bg-destructive/5 text-destructive" },
   ];
@@ -187,7 +187,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base flex items-center gap-2">
-            ⚡ Ação registrada! Qual o próximo passo com este lead?
+            Qual o próximo passo com este lead?
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{leadNome}</strong></p>
         </DialogHeader>
@@ -262,7 +262,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
 
               {freeMode && (
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de tarefa</label>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de lembrete</label>
                   <div className="grid grid-cols-3 gap-1.5">
                     {TIPO_TAREFA_OPTIONS.map(t => (
                       <button

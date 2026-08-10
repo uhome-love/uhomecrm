@@ -720,7 +720,7 @@ export default function AgendaVisitas() {
 
       {/* ═══════ HEADER ═══════ */}
       <PageHeader
-        title="Agenda de visitas"
+        title="Visitas"
         subtitle={`${kpiBase.length} visita${kpiBase.length !== 1 ? "s" : ""} no período selecionado`}
         icon={<CalendarDays size={16} strokeWidth={1.75} />}
         size="sm"

@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilaDoDia, type LeadFila, type MotivoFila, type Compromisso, type LembretesAgrupados } from "@/hooks/useFilaDoDia";
 import RegistrarAtividadeModal from "@/components/pipeline/RegistrarAtividadeModal";
+import AgendaOnboarding, { jaViuOnboarding } from "@/components/pipeline/AgendaOnboarding";
 import CardOverflowMenu from "@/components/pipeline/CardOverflowMenu";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,7 @@ import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
 import {
   Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
   Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
-  HandCoins, PhoneCall, ChevronDown, X, type LucideIcon,
+  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, type LucideIcon,
 } from "lucide-react";
 
 const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: string }> = {
@@ -307,6 +308,20 @@ export default function AgendaCorretor() {
   const [registrar, setRegistrar] = useState<RegistrarState>(null);
   const [foco, setFoco] = useState<"todos" | MotivoFila>("todos");
   const [grupoLembrete, setGrupoLembrete] = useState<GrupoLembrete>("hoje");
+  const [onboarding, setOnboarding] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Guia: mostra 1x por corretor (auto) OU quando vier ?guia=1 (botão global).
+  useEffect(() => {
+    if (searchParams.get("guia") === "1") {
+      setOnboarding(true);
+      searchParams.delete("guia");
+      setSearchParams(searchParams, { replace: true });
+      return;
+    }
+    if (!jaViuOnboarding()) setOnboarding(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hojeLabel = new Date().toLocaleDateString("pt-BR", {
     weekday: "long", day: "numeric", month: "short", timeZone: "America/Sao_Paulo",
@@ -387,9 +402,18 @@ export default function AgendaCorretor() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-5 pb-24">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Agenda do corretor</h1>
-        <p className="text-[13px] capitalize text-muted-foreground">{hojeLabel}</p>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Agenda</h1>
+          <p className="text-[13px] capitalize text-muted-foreground">{hojeLabel}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOnboarding(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <HelpCircle className="h-3.5 w-3.5" /> Como funciona
+        </button>
       </div>
 
       <div className="mb-4 inline-flex rounded-xl border border-border bg-card p-1">
@@ -505,6 +529,8 @@ export default function AgendaCorretor() {
           onSaved={invalidar}
         />
       )}
+
+      <AgendaOnboarding open={onboarding} onClose={() => setOnboarding(false)} />
     </div>
   );
 }

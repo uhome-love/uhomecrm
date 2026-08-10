@@ -74,14 +74,15 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
   const [customData, setCustomData] = useState("");
   const [customHora, setCustomHora] = useState("09:00");
   const [busy, setBusy] = useState(false);
-  // Avançar etapa opcional — registrar + mover num toque só (ex.: Sem Contato → Qualificação).
-  const [proxEtapa, setProxEtapa] = useState<{ id: string; nome: string } | null>(null);
-  const [avancar, setAvancar] = useState(false);
+  // Avançar etapa opcional — registrar + mover num toque só. O corretor ESCOLHE a
+  // etapa à frente (ex.: de Novo Lead pode ir pra Qualificação, Visita, etc.).
+  const [etapasFrente, setEtapasFrente] = useState<{ id: string; nome: string }[]>([]);
+  const [etapaAlvo, setEtapaAlvo] = useState<{ id: string; nome: string } | null>(null);
 
-  // Busca a PRÓXIMA etapa do lead (self-contained: quem abre o modal não precisa passar nada).
+  // Busca as etapas À FRENTE do lead (self-contained: quem abre o modal não passa nada).
   useEffect(() => {
-    setProxEtapa(null);
-    setAvancar(false);
+    setEtapasFrente([]);
+    setEtapaAlvo(null);
     if (!lead?.id) return;
     let cancelado = false;
     (async () => {
@@ -93,15 +94,17 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
       if (cancelado || !l) return;
       const st = (l as { pipeline_stages?: { ordem: number; tipo: string } }).pipeline_stages;
       if (!st || TERMINAIS.has(st.tipo)) return;
-      const { data: next } = await supabase
+      const { data: frente } = await supabase
         .from("pipeline_stages")
-        .select("id, nome")
+        .select("id, nome, tipo, ordem")
         .eq("pipeline_tipo", "leads")
         .gt("ordem", st.ordem)
-        .order("ordem", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (!cancelado && next) setProxEtapa(next as { id: string; nome: string });
+        .order("ordem", { ascending: true });
+      if (cancelado || !frente) return;
+      const lista = (frente as { id: string; nome: string; tipo: string }[])
+        .filter((s) => !TERMINAIS.has(s.tipo))
+        .map((s) => ({ id: s.id, nome: s.nome }));
+      setEtapasFrente(lista);
     })();
     return () => { cancelado = true; };
   }, [lead?.id]);
@@ -119,7 +122,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
     setCustomOpen(false);
     setCustomData("");
     setCustomHora(HORA_PADRAO);
-    setAvancar(false);
+    setEtapaAlvo(null);
   };
 
   const fechar = () => {
@@ -166,7 +169,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
       toast.error("Escreva uma observação para registrar a atividade.");
       return;
     }
-    const querAvancar = avancar && !!proxEtapa;
+    const querAvancar = !!etapaAlvo;
     if (!ativ && !lembreteSel && !querAvancar) {
       // Nada a registrar: em conclusão, só fecha o lembrete; senão, fecha.
       if (modoConclusao) { await soConcluir(); return; }
@@ -198,10 +201,10 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
         });
         if (error) throw error;
       }
-      if (querAvancar && proxEtapa) {
+      if (etapaAlvo) {
         const nowIso = new Date().toISOString();
         const { error } = await supabase.from("pipeline_leads")
-          .update({ stage_id: proxEtapa.id, stage_changed_at: nowIso, updated_at: nowIso } as never)
+          .update({ stage_id: etapaAlvo.id, stage_changed_at: nowIso, updated_at: nowIso } as never)
           .eq("id", lead.id);
         if (error) throw error;
       }
@@ -213,11 +216,11 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
     }
     setBusy(false);
 
-    const avancouMsg = querAvancar && proxEtapa ? ` → ${proxEtapa.nome}` : "";
+    const avancouMsg = etapaAlvo ? ` → ${etapaAlvo.nome}` : "";
     if (ativ && lembreteSel) toast.success(`⚡ ${ativ.label} · 📅 ${lembreteSel.label}${avancouMsg}`);
     else if (ativ) toast.success(`${ativ.toque ? `⚡ ${ativ.label} registrado` : `${ativ.label} salva`}${avancouMsg}`);
     else if (lembreteSel) toast.success(`📅 Lembrete: ${lembreteSel.label}${avancouMsg}`);
-    else if (querAvancar && proxEtapa) toast.success(`Movido para ${proxEtapa.nome} ✅`);
+    else if (etapaAlvo) toast.success(`Movido para ${etapaAlvo.nome} ✅`);
     // Recarrega o board para a cor do card refletir o toque na hora (o trigger
     // do banco já carimbou ultimo_toque_at). Mesmo mecanismo usado pós-move.
     window.dispatchEvent(new CustomEvent("pipeline-reload"));
@@ -376,31 +379,33 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
           )}
         </div>
 
-        {/* Avançar etapa — registrar + mover num toque só */}
-        {proxEtapa && (
+        {/* Avançar etapa — registrar + mover num toque só. Escolhe a etapa à frente. */}
+        {etapasFrente.length > 0 && (
           <div className="px-5 pb-4">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setAvancar((v) => !v)}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-colors",
-                avancar
-                  ? "border-primary bg-primary/10"
-                  : "border-border hover:border-primary/50 hover:bg-primary/[0.04]"
-              )}
-            >
-              <span className={cn(
-                "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
-                avancar ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
-              )}>
-                {avancar && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
-              </span>
-              <span className="flex-1 text-[12.5px] font-semibold text-foreground">Avançar etapa</span>
-              <span className="inline-flex items-center gap-1 text-[12px] font-medium text-primary">
-                <ArrowRight className="h-3.5 w-3.5" /> {proxEtapa.nome}
-              </span>
-            </button>
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              <ArrowRight className="h-3.5 w-3.5" /> Avançar etapa <span className="font-medium normal-case tracking-normal text-muted-foreground/70">(opcional)</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {etapasFrente.map((s) => {
+                const on = etapaAlvo?.id === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setEtapaAlvo(on ? null : s)}
+                    className={cn(
+                      "rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
+                      on
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-foreground hover:border-primary/50 hover:bg-primary/[0.04]"
+                    )}
+                  >
+                    {s.nome}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
