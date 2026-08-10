@@ -55,6 +55,7 @@ const VisitaConfirmacao = lazyRetry(() => import("./pages/VisitaConfirmacao"));
 const ReferralPage = lazyRetry(() => import("./pages/ReferralPage"));
 const VitrinePage = lazyRetry(() => import("./pages/VitrinePage"));
 const ImovelPage = lazyRetry(() => import("./pages/ImovelPage"));
+const VagaPage = lazyRetry(() => import("./pages/VagaPage"));
 
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
@@ -107,6 +108,7 @@ const App = () => (
               <Route path="/vitrine/:id" element={<Suspense fallback={<PageLoader />}><VitrinePage /></Suspense>} />
               <Route path="/imovel/:codigo" element={<Suspense fallback={<PageLoader />}><ImovelPage /></Suspense>} />
               <Route path="/privacidade" element={<Suspense fallback={<PageLoader />}><PrivacidadePage /></Suspense>} />
+              <Route path="/vaga" element={<Suspense fallback={<PageLoader />}><VagaPage /></Suspense>} />
               <Route path="/casatua" element={<Suspense fallback={<PageLoader />}><CasaTuaLanding /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
               <Route path="/placar-tv" element={<Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense>} />
