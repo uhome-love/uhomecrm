@@ -27,7 +27,7 @@ import PipelineScopeBadge from "@/components/pipeline/header/PipelineScopeBadge"
 import HomiPageButton from "@/components/homi/HomiPageButton";
 
 export type PipelineTabMode = "kanban" | "time" | "equipes";
-export type ClientStatusFilter = "todos" | LeadClientStatus;
+export type ClientStatusFilter = "todos" | LeadClientStatus | "estagnado";
 
 export interface CampaignTag {
   tag: string;
@@ -106,7 +106,10 @@ export interface PipelineHeaderProps {
 
   // Bug-fix Pílulas: contagens calculadas client-side em PipelineKanban
   // a partir dos leads em escopo (corretor/gestor/CEO com ou sem filtro).
-  pillCounts?: { em_dia: number; sem_tarefa: number; atrasado: number; negocios: number };
+  pillCounts?: { em_dia: number; sem_tarefa: number; atrasado: number; estagnado?: number; negocios: number };
+
+  /** Chip "Estagnado" só para gerente/CEO. */
+  showEstagnado?: boolean;
 
   // Toggle Equipe / Minha carteira — integrado na linha de pílulas no mobile.
   canToggleCarteira?: boolean;
@@ -134,6 +137,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     sortOrder, setSortOrder,
     gestorFilter = "todos", setGestorFilter,
     pillCounts,
+    showEstagnado = false,
     canToggleCarteira = false, minhaCarteira = false, setMinhaCarteira,
   } = props;
 
@@ -295,13 +299,13 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   </button>
                 </div>
               )}
-              <PipelineFiltroBadges
+              <PipelineFiltroBadges showEstagnado={showEstagnado}
                 counts={pillCounts}
                 active={
                   negociosFilter ? "negocios"
                   : clientStatusFilter === "em_dia" ? "em_dia"
                   : clientStatusFilter === "desatualizado" ? "sem_tarefa"
-                  : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
+                  : clientStatusFilter === "tarefa_atrasada" ? "atrasado" : clientStatusFilter === "estagnado" ? "estagnado"
                   : null
                 }
                 onChange={(key) => {
@@ -316,7 +320,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
                     em_dia: "em_dia",
                     sem_tarefa: "desatualizado",
-                    atrasado: "tarefa_atrasada",
+                    atrasado: "tarefa_atrasada", estagnado: "estagnado",
                   };
                   setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
                 }}
@@ -428,13 +432,13 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
         {/* Tablet line 2: pílulas unificadas + fila ceo */}
         <div className="flex items-center gap-2 overflow-x-auto h-9 px-4">
-          <PipelineFiltroBadges
+          <PipelineFiltroBadges showEstagnado={showEstagnado}
             counts={pillCounts}
             active={
               negociosFilter ? "negocios"
               : clientStatusFilter === "em_dia" ? "em_dia"
               : clientStatusFilter === "desatualizado" ? "sem_tarefa"
-              : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
+              : clientStatusFilter === "tarefa_atrasada" ? "atrasado" : clientStatusFilter === "estagnado" ? "estagnado"
               : null
             }
             onChange={(key) => {
@@ -447,7 +451,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
                 em_dia: "em_dia",
                 sem_tarefa: "desatualizado",
-                atrasado: "tarefa_atrasada",
+                atrasado: "tarefa_atrasada", estagnado: "estagnado",
               };
               setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
             }}
@@ -571,7 +575,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           {/* Pílulas de status — Em dia / Sem tarefa / Atrasado / Negócios */}
           <div className="shrink-0">
-            <PipelineFiltroBadges
+            <PipelineFiltroBadges showEstagnado={showEstagnado}
               compact
 
               counts={pillCounts}
@@ -579,7 +583,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 negociosFilter ? "negocios"
                 : clientStatusFilter === "em_dia" ? "em_dia"
                 : clientStatusFilter === "desatualizado" ? "sem_tarefa"
-                : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
+                : clientStatusFilter === "tarefa_atrasada" ? "atrasado" : clientStatusFilter === "estagnado" ? "estagnado"
                 : null
               }
               onChange={(key) => {
@@ -593,7 +597,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
                   em_dia: "em_dia",
                   sem_tarefa: "desatualizado",
-                  atrasado: "tarefa_atrasada",
+                  atrasado: "tarefa_atrasada", estagnado: "estagnado",
                 };
                 setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
               }}

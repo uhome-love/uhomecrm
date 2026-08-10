@@ -19,7 +19,7 @@ import { useCorretorKpisCarteira } from "@/hooks/useCorretorKpisCarteira";
 import { useNegociosCount } from "@/hooks/useNegociosCount";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
-export type PipelineFiltroKey = "em_dia" | "sem_tarefa" | "atrasado" | "negocios";
+export type PipelineFiltroKey = "em_dia" | "sem_tarefa" | "atrasado" | "estagnado" | "negocios";
 
 interface PipelineFiltroBadgesProps {
   /** Filtro atualmente ativo (vindo de PipelineKanban state). `null` = "Todos". */
@@ -33,10 +33,11 @@ interface PipelineFiltroBadgesProps {
    * filtram por `corretor_id = user.id` e davam 0 para gestor/CEO.
    * Quando ausente, mantém o comportamento antigo (compat corretor).
    */
-  counts?: { em_dia: number; sem_tarefa: number; atrasado: number; negocios: number };
+  counts?: { em_dia: number; sem_tarefa: number; atrasado: number; estagnado?: number; negocios: number };
   /** Modo compacto: cluster segmentado (dot + número), rótulo só no ativo + tooltip. */
   compact?: boolean;
-
+  /** Chip "Estagnado" só aparece para gerente/CEO (o corretor não enxerga leads estagnados). */
+  showEstagnado?: boolean;
 }
 
 interface BadgeDef {
@@ -54,22 +55,26 @@ const BADGES: BadgeDef[] = [
   { key: "em_dia",     label: "em dia",       color: "#047857", dotColor: "#22c55e", bgActive: "rgba(34,197,94,0.12)",  bgIdle: "transparent" },
   { key: "sem_tarefa", label: "atenção",      color: "#B45309", dotColor: "hsl(var(--warning-500))", bgActive: "rgba(245,158,11,0.12)", bgIdle: "transparent" },
   { key: "atrasado",   label: "desatualizado", color: "#DC2626", dotColor: "#DC2626", bgActive: "rgba(220,38,38,0.12)",  bgIdle: "transparent" },
+  { key: "estagnado",  label: "estagnado",    color: "#6D28D9", dotColor: "#8B5CF6", bgActive: "rgba(139,92,246,0.12)", bgIdle: "transparent" },
 ];
 
-export default function PipelineFiltroBadges({ active, onChange, counts: countsProp, compact }: PipelineFiltroBadgesProps) {
+export default function PipelineFiltroBadges({ active, onChange, counts: countsProp, compact, showEstagnado = false }: PipelineFiltroBadgesProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   // Hooks corretor-only: só são consultados quando `countsProp` não é passado
   // (fallback para a visão do corretor durante o rollout do fix Bug 1).
   const { data: carteira } = useCorretorKpisCarteira();
   const { data: negocios = 0 } = useNegociosCount();
 
-  const counts: Record<PipelineFiltroKey, number> = countsProp ?? {
-    // "Em dia" agrega em_dia + para_hoje — leads saudáveis (não atrasados, não sem tarefa).
-    em_dia: (carteira?.em_dia ?? 0) + (carteira?.para_hoje ?? 0),
-    sem_tarefa: carteira?.sem_tarefa ?? 0,
-    atrasado: carteira?.atrasado ?? 0,
-    negocios,
+  const counts: Record<PipelineFiltroKey, number> = {
+    em_dia: countsProp ? countsProp.em_dia : (carteira?.em_dia ?? 0) + (carteira?.para_hoje ?? 0),
+    sem_tarefa: countsProp ? countsProp.sem_tarefa : carteira?.sem_tarefa ?? 0,
+    atrasado: countsProp ? countsProp.atrasado : carteira?.atrasado ?? 0,
+    estagnado: countsProp?.estagnado ?? 0,
+    negocios: countsProp ? countsProp.negocios : negocios,
   };
+
+  // Estagnado só para gerente/CEO.
+  const visibleBadges = BADGES.filter((b) => b.key !== "estagnado" || showEstagnado);
 
   const handleClick = (key: PipelineFiltroKey) => {
     const next = active === key ? null : key;
@@ -96,7 +101,7 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
   if (compact) {
     return (
       <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] p-0.5">
-        {BADGES.map((b) => {
+        {visibleBadges.map((b) => {
           const isActive = active === b.key;
           const count = counts[b.key];
           const alert = b.key === "atrasado" && count > 0;
@@ -146,7 +151,7 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
   return (
 
     <div className="flex items-center gap-2 flex-wrap">
-      {BADGES.map((b) => {
+      {visibleBadges.map((b) => {
         const isActive = active === b.key;
         const count = counts[b.key];
         const alertBorder = b.key === "atrasado" && count > 0;

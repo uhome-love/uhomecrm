@@ -63,7 +63,7 @@ const CAMPAIGN_TAGS = [
   { tag: "TERRACE", label: "🌅 Terrace", color: "teal" },
 ];
 
-type ClientStatusFilter = "todos" | LeadClientStatus;
+type ClientStatusFilter = "todos" | LeadClientStatus | "estagnado";
 
 export default function PipelineKanban() {
   const queryClient = useQueryClient();
@@ -395,7 +395,13 @@ export default function PipelineKanban() {
       result = result.filter(l => DEAL_TIPOS.has(stageMap.get(l.stage_id) || ""));
     }
     if (clientStatusFilter !== "todos") {
-      result = result.filter(l => leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
+      result = result.filter((l) => {
+        const tipo = stageMap.get(l.stage_id);
+        if (clientStatusFilter === "estagnado") {
+          return leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo }) === "estagnado";
+        }
+        return leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, tipo) === clientStatusFilter;
+      });
     }
     if (riscoFilter && riscoLeadIds) {
       result = result.filter(l => riscoLeadIds.has(l.id));
@@ -484,12 +490,15 @@ export default function PipelineKanban() {
   const stageTypeById = useMemo(() => Object.fromEntries(pipeline.stages.map((s) => [s.id, s.tipo])), [pipeline.stages]);
 
   const clientStatusCounts = useMemo(() => {
-    const counts = { em_dia: 0, desatualizado: 0, tarefa_atrasada: 0 };
+    const counts = { em_dia: 0, desatualizado: 0, tarefa_atrasada: 0, estagnado: 0 };
     // Defesa: sem stages carregados, stageTypeById está vazio e a
     // classificação ficaria errada (tudo viraria "desatualizado"). Aguarda.
     if (pipeline.stages.length === 0) return counts;
     for (const l of preFilteredLeads) {
-      const s = leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, stageTypeById[l.stage_id]);
+      const tipo = stageTypeById[l.stage_id];
+      const saude = leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo });
+      if (saude === "estagnado") { counts.estagnado++; continue; }
+      const s = leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, tipo);
       counts[s]++;
     }
     return counts;
@@ -510,6 +519,7 @@ export default function PipelineKanban() {
       em_dia: clientStatusCounts.em_dia,
       sem_tarefa: clientStatusCounts.desatualizado,
       atrasado: clientStatusCounts.tarefa_atrasada,
+      estagnado: clientStatusCounts.estagnado,
       negocios,
     };
   }, [preFilteredLeads, stageTypeById, pipeline.stages.length, clientStatusCounts]);
@@ -639,6 +649,7 @@ export default function PipelineKanban() {
         filteredLeadsCount={filteredLeads.length}
         displayedClientStatusCounts={displayedClientStatusCounts}
         pillCounts={pillCounts}
+        showEstagnado={roleKey !== "corretor"}
         campaignTagCounts={campaignTagCounts}
         campaignTags={CAMPAIGN_TAGS}
         pipelineStages={pipeline.stages}
@@ -772,7 +783,7 @@ export default function PipelineKanban() {
           )}
           {clientStatusFilter !== "todos" && (
             <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setClientStatusFilter("todos")}>
-              {clientStatusFilter === "em_dia" ? "✅ Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Desatualizado" : "🔴 Atrasado"} ×
+              {clientStatusFilter === "em_dia" ? "🟢 Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Atenção" : clientStatusFilter === "estagnado" ? "🟣 Estagnado" : "🔴 Desatualizado"} ×
             </Badge>
           )}
           {riscoFilter && (
