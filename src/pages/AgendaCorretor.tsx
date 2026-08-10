@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useFilaDoDia, type LeadFila, type MotivoFila, type Compromisso, type LembretesAgrupados } from "@/hooks/useFilaDoDia";
+import { useFilaDoDia, lembreteAutomatico, type LeadFila, type MotivoFila, type Compromisso, type LembretesAgrupados } from "@/hooks/useFilaDoDia";
 import RegistrarAtividadeModal from "@/components/pipeline/RegistrarAtividadeModal";
 import CriarLembreteModal from "@/components/pipeline/CriarLembreteModal";
 import CardOverflowMenu from "@/components/pipeline/CardOverflowMenu";
@@ -129,7 +129,7 @@ function acaoDoTitulo(titulo: string): string {
 }
 
 /** Contato: WhatsApp (principal) + Ligar + copiar. O corretor trabalha do zap. */
-function AcoesContato({ telefone, compact = false }: { telefone: string | null; compact?: boolean }) {
+function AcoesContato({ telefone }: { telefone: string | null }) {
   const wa = waLink(telefone);
   const tel = telLink(telefone);
   if (!telefone) return null;
@@ -137,22 +137,23 @@ function AcoesContato({ telefone, compact = false }: { telefone: string | null; 
     try { await navigator.clipboard.writeText(formatPhoneBR(telefone) || telefone); toast.success("Número copiado"); }
     catch { toast.error("Não deu pra copiar"); }
   };
+  // O número É o botão de ligar (toca no celular). WhatsApp é o outro canal.
+  // Sem botão "Ligar" separado — evita 2 botões pra mesma intenção de contato.
   return (
-    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-      {!compact && (
-        <span className="text-[11.5px] tabular-nums text-muted-foreground">{formatPhoneBR(telefone)}</span>
+    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+      {tel ? (
+        <a href={tel} aria-label={`Ligar para ${formatPhoneBR(telefone)}`} className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tabular-nums text-foreground hover:text-primary">
+          <PhoneCall className="h-3.5 w-3.5 text-muted-foreground" /> {formatPhoneBR(telefone)}
+        </a>
+      ) : (
+        <span className="text-[12.5px] tabular-nums text-muted-foreground">{formatPhoneBR(telefone)}</span>
       )}
       {wa && (
         <a
-          href={wa} target="_blank" rel="noreferrer"
-          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[12px] font-semibold text-white hover:bg-emerald-700"
+          href={wa} target="_blank" rel="noreferrer" aria-label="Abrir no WhatsApp"
+          className="inline-flex items-center justify-center rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700"
         >
-          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-        </a>
-      )}
-      {tel && (
-        <a href={tel} aria-label="Ligar" className="inline-flex items-center justify-center rounded-lg border border-border p-1.5 text-foreground hover:bg-muted">
-          <PhoneCall className="h-3.5 w-3.5" />
+          <MessageCircle className="h-3.5 w-3.5" />
         </a>
       )}
       <button type="button" onClick={copiar} aria-label="Copiar número" className="inline-flex items-center justify-center rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
@@ -290,7 +291,7 @@ function CadenciaBloco({
                   última atividade · {diasLabel(l.dias_sem_atividade, l.tem_atividade)}
                 </span>
               </button>
-              <AcoesContato telefone={l.telefone} compact />
+              <AcoesContato telefone={l.telefone} />
               <button
                 type="button"
                 onClick={() => onRegistrar(l)}
@@ -342,7 +343,7 @@ function CardLembrete({
         </div>
       </div>
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2.5">
-        <AcoesContato telefone={c.telefone} compact />
+        <AcoesContato telefone={c.telefone} />
         {isLembrete && (
           <div className="flex items-center gap-1.5">
             <button
@@ -579,16 +580,36 @@ export default function AgendaCorretor() {
                 : grupoLembrete === "hoje" ? "Nenhum lembrete para hoje."
                 : "Nenhum lembrete futuro agendado."}
             </div>
-          ) : (
-            <div className="space-y-2">
-              {gruposLembrete[grupoLembrete].map((c) => (
-                <CardLembrete
-                  key={`${c.tipo}-${c.id}`} c={c} accent={GRUPO_META[grupoLembrete].accent}
-                  onRegistrar={registrarLembrete} onDispensar={dispensar} onOpen={abrirLead}
-                />
-              ))}
-            </div>
-          )}
+          ) : (() => {
+            const lista = gruposLembrete[grupoLembrete];
+            const seus = lista.filter((c) => !lembreteAutomatico(c.origem));
+            const auto = lista.filter((c) => lembreteAutomatico(c.origem));
+            const secoes = [
+              { titulo: "✍️ Criados por você", dica: "você marcou — retome", itens: seus },
+              { titulo: "⚙️ Do sistema", dica: "gerados automaticamente", itens: auto },
+            ];
+            return (
+              <div className="space-y-5">
+                {secoes.map((sec) => sec.itens.length === 0 ? null : (
+                  <div key={sec.titulo}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{sec.titulo}</span>
+                      <span className="rounded-full bg-muted-foreground/15 px-1.5 text-[11px] font-bold text-muted-foreground">{sec.itens.length}</span>
+                      <span className="text-[11px] text-muted-foreground/70">· {sec.dica}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {sec.itens.map((c) => (
+                        <CardLembrete
+                          key={`${c.tipo}-${c.id}`} c={c} accent={GRUPO_META[grupoLembrete].accent}
+                          onRegistrar={registrarLembrete} onDispensar={dispensar} onOpen={abrirLead}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </>
       )}
 

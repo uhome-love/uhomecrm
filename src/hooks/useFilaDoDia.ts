@@ -58,7 +58,15 @@ export interface Compromisso {
   lead_stage: string | null;
   telefone: string | null;
   tarefa_tipo: string | null;
+  /** origem do lembrete: null/'manual' = criado pelo corretor; resto = automático do sistema */
+  origem: string | null;
   icon: "phone" | "whatsapp" | "home" | "bell";
+}
+
+/** Origens geradas pelo sistema (não pelo corretor). */
+const ORIGEM_AUTOMATICA = new Set(["cadencia_sem_contato", "visita_auto", "pos_visita_inconsistencia"]);
+export function lembreteAutomatico(origem: string | null): boolean {
+  return !!origem && ORIGEM_AUTOMATICA.has(origem);
 }
 
 export interface LembretesAgrupados {
@@ -164,14 +172,14 @@ export function useFilaDoDia() {
       const cadenciaDueLeadIds = new Set<string>();   // Sem Contato com tentativa vencida/hoje
       const { data: tarefas } = await supabase
         .from("pipeline_tarefas")
-        .select("id, titulo, tipo, vence_em, hora_vencimento, pipeline_lead_id, pipeline_leads(nome, telefone)")
+        .select("id, titulo, tipo, vence_em, hora_vencimento, origem, pipeline_lead_id, pipeline_leads(nome, telefone)")
         .eq("responsavel_id", uid)
         .eq("status", "pendente")
         .order("vence_em", { ascending: true })
         .order("hora_vencimento", { ascending: true })
         .limit(400);
       for (const t of (tarefas ?? []) as unknown as {
-        id: string; titulo: string; tipo: string; vence_em: string; hora_vencimento: string | null;
+        id: string; titulo: string; tipo: string; vence_em: string; hora_vencimento: string | null; origem: string | null;
         pipeline_lead_id: string | null; pipeline_leads: { nome: string; telefone: string | null } | null;
       }[]) {
         const leadStage = t.pipeline_lead_id ? stageTipoDe.get(t.pipeline_lead_id) : undefined;
@@ -190,7 +198,7 @@ export function useFilaDoDia() {
           lead_id: t.pipeline_lead_id,
           lead_stage: t.pipeline_lead_id ? (stageNomeDe.get(t.pipeline_lead_id) ?? null) : null,
           telefone: t.pipeline_leads?.telefone ?? null,
-          tarefa_tipo: t.tipo, icon: iconDeTipo(t.titulo),
+          tarefa_tipo: t.tipo, origem: t.origem ?? null, icon: iconDeTipo(t.titulo),
         };
         if (t.vence_em < hoje) { lembretes.atrasados.push(c); if (t.pipeline_lead_id) retornoHojeLeadIds.add(t.pipeline_lead_id); }
         else if (t.vence_em === hoje) { lembretes.hoje.push(c); if (t.pipeline_lead_id) retornoHojeLeadIds.add(t.pipeline_lead_id); }
@@ -220,7 +228,7 @@ export function useFilaDoDia() {
           titulo: v.empreendimento ? `Visita — ${v.empreendimento}` : "Visita",
           lead_nome: v.nome_cliente, lead_id: v.pipeline_lead_id,
           lead_stage: v.pipeline_lead_id ? (stageNomeDe.get(v.pipeline_lead_id) ?? null) : null,
-          telefone: v.telefone ?? null, tarefa_tipo: "visita", icon: "home",
+          telefone: v.telefone ?? null, tarefa_tipo: "visita", origem: "visita", icon: "home",
         });
       }
       // ordena cada grupo: com hora primeiro (por hora), sem hora depois
