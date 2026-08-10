@@ -377,13 +377,11 @@ const CardMinimal = memo(function CardMinimal({
           ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
           : "bg-card border border-border/60 hover:border-border",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
-        stage?.tipo === "novo_lead"
-          ? "before:bg-[#4F46E5]"
-          : saudeCard === "terminal"
-            ? stage?.tipo === "descarte" || stage?.tipo === "caiu"
-              ? "before:bg-zinc-400 dark:before:bg-zinc-600"
-              : "before:bg-sky-500"
-            : SIDEBAR_BY_SAUDE[saudeCard] ?? "before:bg-amber-500",
+        saudeCard === "terminal"
+          ? stage?.tipo === "descarte" || stage?.tipo === "caiu"
+            ? "before:bg-zinc-400 dark:before:bg-zinc-600"
+            : "before:bg-sky-500"
+          : SIDEBAR_BY_SAUDE[saudeCard] ?? "before:bg-amber-500",
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >

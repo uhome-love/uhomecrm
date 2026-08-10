@@ -34,7 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchInBatchesWithRetry } from "@/lib/taskQueryUtils";
-import { leadSaudeClientStatus } from "@/lib/leadSaude";
+import { leadSaudeClientStatus, leadSaude } from "@/lib/leadSaude";
 import { toast } from "sonner";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/lib/taskQueryUtils";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
@@ -370,8 +370,22 @@ export default function PipelineKanban() {
     if (campaignTagFilter && campaignTagFilter !== "all") {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
+    // Nova Gestão: lead ESTAGNADO escala pra gestão — some da visão do corretor.
+    if (roleKey === "corretor") {
+      const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
+      result = result.filter(
+        l =>
+          leadSaude({
+            ultimo_toque_at: l.ultimo_toque_at,
+            distribuido_em: l.distribuido_em,
+            aceito_em: l.aceito_em,
+            created_at: l.created_at,
+            stage_tipo: stageMap.get(l.stage_id),
+          }) !== "estagnado"
+      );
+    }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isCeoView, gestorFilter, gestorTeamUserIds, minhaCarteira, authUser?.id]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isCeoView, gestorFilter, gestorTeamUserIds, minhaCarteira, authUser?.id, roleKey]);
 
   const filteredLeads = useMemo(() => {
     const DEAL_TIPOS = new Set(["convertido", "proposta", "contrato_gerado", "venda", "caiu"]);
