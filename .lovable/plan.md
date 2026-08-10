@@ -47,15 +47,15 @@ Regras hoje em vigor (`get_elegibilidade_roleta`, `corretor_pode_entrar_roleta`,
 
 ## Regras confirmadas (fechadas contigo)
 
-1. **Estagnado NÃO conta** no limite — esse lead já saiu do corretor. Só pílula vermelha entra na conta.
-2. **Descartes**: limite passa de 50 para **100 por mês** (`roleta_config.limite_descartes_mes = 100`), mantendo o desbloqueio manual do gestor.
-3. **Noturna**: mantém — visita agendada no dia **e** presença marcada na manhã **e** na tarde.
-4. **Domingo**: mantém — 2 visitas realizadas + 4 presenças na semana.
-5. **Inclusão manual do CEO**: se o CEO coloca a pessoa na roleta, ela fica credenciada (a inclusão manual passa por cima dos gates de vermelhos/descartes, com registro de quem incluiu).
-6. **Sem empreendimento alocado**: continua não credenciando.
-7. **Fechamento automático de turno**: mantém igual.
+1. **Limite de 10 vermelhos**: só na **roleta noturna** por enquanto (exceção temporária pela troca recente do CRM). Manhã e tarde liberadas desse gate.
+2. **Estagnado NÃO conta** no limite — esse lead já saiu do corretor. Só pílula vermelha entra na conta.
+3. **Descartes**: limite passa de 50 para **100 por mês**, mantendo o desbloqueio manual do gestor.
+4. **Noturna**: mantém — visita agendada no dia **e** presença marcada na manhã **e** na tarde.
+5. **Domingo**: mantém — 2 visitas realizadas + 4 presenças na semana.
+6. **Inclusão manual do CEO**: se o CEO coloca a pessoa na roleta, ela fica credenciada (passa por cima dos gates, com registro de quem incluiu).
+7. **Sem empreendimento alocado**: continua não credenciando.
+8. **Fechamento automático de turno**: mantém igual.
 
-Transição: a régua nova entra valendo direto (hoje 9 corretores passariam de 10 vermelhos). Se preferires um prazo de limpeza antes de bloquear, é só avisar.
 
 
 ## Validação
