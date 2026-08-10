@@ -22,10 +22,11 @@ import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT, formatBRT } from "@/lib/brtTime";
-import { Handshake, Phone, Zap } from "lucide-react";
+import { Handshake, Phone, Zap, History } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
+import TemperaturaChip from "./TemperaturaChip";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 import { useAuth } from "@/hooks/useAuth";
 import { completeLeadTask } from "@/lib/completeLeadTask";
@@ -41,7 +42,7 @@ import {
 
 import { fmtMoney } from "@/lib/fmtMoney";
 import { substatusValueLabel } from "@/lib/pipelineAudit";
-import { leadSaude } from "@/lib/leadSaude";
+import { leadSaude, diasSemToque } from "@/lib/leadSaude";
 
 export interface CardMinimalProximaTarefa {
   id?: string;
@@ -227,6 +228,23 @@ const CardMinimal = memo(function CardMinimal({
     [lead.ultimo_toque_at, lead.distribuido_em, lead.aceito_em, lead.created_at, stage?.tipo]
   );
 
+  // "última atividade · há Xd" — vocabulário universal (atividade, não toque).
+  const atividadeInfo = useMemo(() => {
+    const temAtividade = !!lead.ultimo_toque_at;
+    const dias = diasSemToque({
+      ultimo_toque_at: lead.ultimo_toque_at,
+      distribuido_em: lead.distribuido_em,
+      aceito_em: lead.aceito_em,
+      created_at: lead.created_at,
+    });
+    let label: string;
+    if (!temAtividade) label = "sem atividade ainda";
+    else if (dias === null || dias <= 0) label = "hoje";
+    else if (dias === 1) label = "ontem";
+    else label = `há ${dias}d`;
+    return { temAtividade, label };
+  }, [lead.ultimo_toque_at, lead.distribuido_em, lead.aceito_em, lead.created_at]);
+
   const actionType = useMemo(
     () => parseTaskActionType(proximaTarefa?.tipo),
     [proximaTarefa?.tipo]
@@ -400,6 +418,11 @@ const CardMinimal = memo(function CardMinimal({
         <div className="flex-1 min-w-0">
           {/* Linha de badges: encolhe/quebra livremente, sem competir com o nome */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            {/* Temperatura (o corretor marca) — só de Qualificação pra frente:
+                antes disso não houve contato, então marcar seria chute. */}
+            {!["novo_lead", "sem_contato", "descarte", "caiu", "convertido", "venda"].includes(
+              stage?.tipo ?? ""
+            ) && <TemperaturaChip leadId={lead.id} value={lead.temperatura} />}
             {stage?.tipo === "novo_lead" && (
               <span className="shrink-0 inline-block bg-[#4F46E5] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Novo
@@ -414,7 +437,7 @@ const CardMinimal = memo(function CardMinimal({
                 📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
               </span>
             )}
-            {substatus && !hasSpecificTitle && (
+            {substatus && (
               <span className={`shrink-0 ${substatus.className}`}>
                 {substatus.label}
               </span>
@@ -482,84 +505,36 @@ const CardMinimal = memo(function CardMinimal({
           {/* Divisor sutil */}
           <div className="mt-2 border-t border-border/40" />
 
-          {/* Linha de ação: ícone colorido + tipo (bold) + quando + dias-na-etapa */}
-          <div
-            className="mt-2 flex items-center gap-1.5 min-w-0"
-            title={fullActionLabel}
-          >
+          {/* Base: última ATIVIDADE (estado/contexto) + ⚡ registrar no hover.
+              A cor de urgência é a borda (saúde); aqui é só contexto discreto. */}
+          <div className="mt-2 flex items-center gap-1.5 min-w-0">
+            <History className="h-3 w-3 shrink-0 text-muted-foreground/70" />
             <span
-              aria-hidden
-              className={`shrink-0 text-[12px] leading-none ${ACTION_ICON_COLOR[actionType]}`}
+              className={`flex-1 min-w-0 truncate text-[11.5px] ${
+                atividadeInfo.temAtividade && saudeCard !== "verde" && saudeCard !== "terminal"
+                  ? "text-amber-600 dark:text-amber-500 font-medium"
+                  : "text-muted-foreground"
+              }`}
             >
-              {ACTION_ICON[actionType]}
+              última atividade · {atividadeInfo.label}
             </span>
-            {status === "sem" ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setRegistrarOpen(true);
-                }}
-                className="flex-1 min-w-0 inline-flex items-center gap-1 text-left"
-                title="Registrar atividade"
-              >
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-primary transition-colors hover:bg-primary/15">
-                  ⚡ Registrar
-                </span>
-              </button>
-            ) : hasSpecificTitle ? (
-              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${lineStrong}`}>
-                <strong className={`font-semibold ${lineStrong}`}>
-                  {specificTitleText}
-                </strong>
-                {visitaAutoTxt && actionWhen ? (
-                  <span className={`ml-1 ${lineMuted}`}>· {actionWhen}</span>
-                ) : null}
-              </span>
-            ) : ehLembrete ? (
-              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${lineMuted}`}>
-                <span className="mr-1 rounded-full bg-primary/10 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-primary">
-                  Lembrete
-                </span>
-                <strong className={`font-semibold ${lineStrong}`}>{tituloLembrete || "Compromisso"}</strong>{" "}
-                {actionWhen}
-              </span>
-            ) : (
-              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${lineMuted}`}>
-                <strong className={`font-semibold ${lineStrong}`}>
-                  {ACTION_LABEL[actionType]}
-                </strong>{" "}
-                {actionWhen}
-              </span>
-            )}
-            {diasLabel && (
-              <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
-                {diasLabel}
-              </span>
-            )}
-            {canQuickComplete && (
-              <button
-                type="button"
-                aria-label="Registrar atividade"
-                title="Registrar atividade"
-                disabled={completingBusy}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Raio ⚡ = registrar atividade. Lembrete abre o modal de
-                  // conclusão (registra contato se houve, sem fricção); tarefa de
-                  // contato segue o dialog de conclusão normal.
-                  if (proximaTarefa?.tipo === "lembrete" && proximaTarefa.id) {
-                    setConcluindoLembreteId(proximaTarefa.id);
-                    setRegistrarOpen(true);
-                  } else {
-                    setCompletingOpen(true);
-                  }
-                }}
-                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors disabled:opacity-60"
-              >
-                <Zap className="h-3 w-3" strokeWidth={2.6} />
-              </button>
-            )}
+            <button
+              type="button"
+              aria-label="Registrar atividade"
+              title="Registrar atividade"
+              onClick={(e) => {
+                e.stopPropagation();
+                // ⚡ = registrar atividade. Se há lembrete pendente, abre em modo
+                // conclusão (registra + conclui sem fricção).
+                if (proximaTarefa?.tipo === "lembrete" && proximaTarefa.id) {
+                  setConcluindoLembreteId(proximaTarefa.id);
+                }
+                setRegistrarOpen(true);
+              }}
+              className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground shadow-sm transition-opacity hover:bg-primary/90 opacity-0 group-hover:opacity-100 focus:opacity-100 max-md:opacity-100"
+            >
+              <Zap className="h-3 w-3" strokeWidth={2.6} />
+            </button>
           </div>
         </>
       )}

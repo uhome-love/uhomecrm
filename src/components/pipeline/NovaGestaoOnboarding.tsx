@@ -26,7 +26,7 @@ const PONTOS: { icon: typeof Zap; titulo: string; texto: string }[] = [
   {
     icon: Zap,
     titulo: "⚡ Registre o que fez (e agende o próximo passo)",
-    texto: "Depois de mover, um popup leve deixa você registrar o contato e agendar o próximo toque. Registrar é o que deixa o lead verde.",
+    texto: "Depois de mover, um popup leve deixa você registrar o contato e agendar o próximo passo. Registrar a atividade é o que deixa o lead verde.",
   },
   {
     icon: ArrowUpRight,

@@ -445,7 +445,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     // Fallback gracioso: se tarefasMap ainda não carregou e order=atividade,
     // todos caem em "sem tarefa" e ficam created_at DESC — mesma UX do legado.
     for (const [stageId, arr] of map) {
-      map.set(stageId, sortLeads(arr, sortOrder, tarefasMap));
+      const stageTipo = visibleStages.find((s) => s.id === stageId)?.tipo ?? null;
+      map.set(stageId, sortLeads(arr, sortOrder, tarefasMap, stageTipo));
     }
     return map;
   }, [visibleStages, leads, tarefasMap, sortOrder]);

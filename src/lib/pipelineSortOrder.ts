@@ -11,6 +11,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { todayBRT } from "@/lib/brtTime";
+import { diasSemToque } from "@/lib/leadSaude";
 
 export type SortableTarefa = {
   vence_em: string | null;
@@ -23,9 +24,13 @@ export type SortableLead = {
   nome?: string | null;
   valor_estimado?: number | null;
   temperatura?: string | null;
+  ultimo_toque_at?: string | null;
+  distribuido_em?: string | null;
+  aceito_em?: string | null;
 };
 
 export type PipelineSortOrder =
+  | "prioridade"
   | "atividade"
   | "mais_recente"
   | "mais_antigo"
@@ -80,8 +85,23 @@ export function sortLeadsByActivity<T extends SortableLead>(
 }
 
 const TEMPERATURA_WEIGHT: Record<string, number> = {
-  quente: 4, morno: 3, frio: 2, gelado: 1,
+  muito_quente: 5, urgente: 5, quente: 4, morno: 3, frio: 2, gelado: 1,
 };
+
+function tempWeight(t?: string | null): number {
+  return TEMPERATURA_WEIGHT[(t ?? "morno").toLowerCase()] ?? 3;
+}
+
+function diasSemAtividade(l: SortableLead): number {
+  return (
+    diasSemToque({
+      ultimo_toque_at: l.ultimo_toque_at,
+      distribuido_em: l.distribuido_em,
+      aceito_em: l.aceito_em,
+      created_at: l.created_at,
+    }) ?? 0
+  );
+}
 
 /**
  * Despachador genérico — aplica a ordenação escolhida pelo usuário.
@@ -90,9 +110,28 @@ const TEMPERATURA_WEIGHT: Record<string, number> = {
 export function sortLeads<T extends SortableLead>(
   leads: T[],
   order: PipelineSortOrder,
-  tarefasMap: Record<string, SortableTarefa>
+  tarefasMap: Record<string, SortableTarefa>,
+  stageTipo?: string | null
 ): T[] {
   switch (order) {
+    case "prioridade":
+      // A bússola da Nova Gestão é POR ETAPA:
+      //  - Novo Lead   → mais recente (velocidade de 1º atendimento)
+      //  - Sem Contato → pela cadência (próxima tentativa mais devida) = por tarefa
+      //  - Qualif+     → quente esfriando (temperatura × dias sem atividade)
+      if (stageTipo === "novo_lead") {
+        return [...leads].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+      if (stageTipo === "sem_contato") {
+        return sortLeadsByActivity(leads, tarefasMap);
+      }
+      return [...leads].sort((a, b) => {
+        const w = tempWeight(b.temperatura) - tempWeight(a.temperatura);
+        if (w !== 0) return w;
+        return diasSemAtividade(b) - diasSemAtividade(a);
+      });
     case "mais_recente":
       return [...leads].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

@@ -18,6 +18,7 @@ import { ArrowUpDown, Check } from "lucide-react";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 export type SortOrder =
+  | "prioridade"
   | "atividade"
   | "mais_recente"
   | "mais_antigo"
@@ -26,7 +27,8 @@ export type SortOrder =
   | "temperatura";
 
 const SORT_OPTIONS: { value: SortOrder; label: string; icon: string }[] = [
-  { value: "atividade",    label: "Atividade",      icon: "🔥" },
+  { value: "prioridade",   label: "Prioridade",     icon: "🔥" },
+  { value: "atividade",    label: "Atividade",      icon: "⚡" },
   { value: "mais_recente", label: "Mais recente",   icon: "📅" },
   { value: "mais_antigo",  label: "Mais antigo",    icon: "📆" },
   { value: "nome",         label: "Nome (A-Z)",     icon: "🅰" },

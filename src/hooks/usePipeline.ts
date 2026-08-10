@@ -897,7 +897,7 @@ export function usePipeline(
         valor_estimado: lead.valor_estimado || null,
         created_by: user.id,
         modulo_atual: "pipeline",
-        temperatura: "morno",
+        temperatura: "nao_definida",
       })
       .select()
       .single();
