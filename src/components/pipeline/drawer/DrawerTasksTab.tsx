@@ -185,7 +185,7 @@ export default function DrawerTasksTab({
       {/* Header */}
       <div className="px-7 pt-6 pb-4 flex justify-between items-end border-b border-zinc-100">
         <div>
-          <div className="text-lg font-bold text-zinc-900 tracking-tight">Tarefas</div>
+          <div className="text-lg font-bold text-zinc-900 tracking-tight">Lembretes</div>
           <div className="text-xs text-zinc-500 mt-0.5">
             {countAtrasadas > 0 && <>{countAtrasadas} atrasada{countAtrasadas !== 1 ? "s" : ""} · </>}
             {countHoje > 0 && <>{countHoje} hoje · </>}
@@ -196,7 +196,7 @@ export default function DrawerTasksTab({
           onClick={onNovaTarefa}
           className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
         >
-          <Plus className="h-3.5 w-3.5" /> Nova tarefa
+          <Plus className="h-3.5 w-3.5" /> Novo lembrete
         </button>
       </div>
 
@@ -236,7 +236,7 @@ export default function DrawerTasksTab({
             onClick={onNovaTarefa}
             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
           >
-            <Plus className="h-3.5 w-3.5" /> Criar tarefa
+            <Plus className="h-3.5 w-3.5" /> Criar lembrete
           </button>
         </div>
 
