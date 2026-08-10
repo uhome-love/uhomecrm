@@ -229,7 +229,7 @@ async function alternarRoleta(
 ) {
   if (!naRoleta && !podeFazerRoleta) {
     toast.error(
-      `Você tem ${leadsDesatualizados} lead(s) sem tarefa pendente (máx: 10). Crie tarefas no pipeline para se desbloquear.`,
+      `Você tem ${leadsDesatualizados} lead(s) vermelho(s) (máx: 10 para a roleta noturna). Registre um toque no pipeline para se desbloquear.`,
       { duration: 5000 }
     );
     return;
@@ -396,7 +396,7 @@ export function OportunidadesDoDia() {
                   {naRoleta
                     ? "Aguardando leads"
                     : !podeFazerRoleta
-                    ? `${leadsDesatualizados} lead(s) sem tarefa`
+                    ? `${leadsDesatualizados} lead(s) vermelho(s)`
                     : "Fora da fila"}
                 </p>
               </div>
@@ -420,7 +420,7 @@ export function OportunidadesDoDia() {
             {!podeFazerRoleta && !naRoleta && (
               <div className="mt-3 pt-3 border-t border-destructive/20 space-y-2">
                 <p className="text-xs text-destructive leading-relaxed">
-                  Você tem <strong>{leadsDesatualizados} lead(s)</strong> sem tarefa pendente (máx: 10). Crie tarefas para se desbloquear.
+                  Você tem <strong>{leadsDesatualizados} lead(s) vermelho(s)</strong> (máx: 10 para a roleta noturna). Registre um toque para se desbloquear.
                 </p>
                 <button
                   onClick={() => navigate("/pipeline-leads?saude=vermelho")}
