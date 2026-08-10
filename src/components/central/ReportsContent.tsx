@@ -159,7 +159,12 @@ export default function ReportsContent() {
     if (!report) return;
     const win = window.open("", "_blank");
     if (win) {
-      win.document.write(`<html><head><title>Relatório</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6}h1,h2,h3{color:#1a1a2e}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body>${report.replace(/\n/g, "<br>")}</body></html>`);
+      // Sanitiza o conteúdo gerado pela IA antes de escrever no documento (evita XSS).
+      const safeBody = DOMPurify.sanitize(report.replace(/\n/g, "<br>"), {
+        FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "form"],
+        FORBID_ATTR: ["onerror", "onload", "onclick", "srcdoc", "formaction"],
+      });
+      win.document.write(`<html><head><title>Relatório</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6}h1,h2,h3{color:#1a1a2e}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body>${safeBody}</body></html>`);
       win.document.close();
       win.print();
     }
