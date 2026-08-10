@@ -33,6 +33,7 @@ export type SortableLead = {
 export type PipelineSortOrder =
   | "prioridade"
   | "atividade"
+  | "ultima_atividade"
   | "mais_recente"
   | "mais_antigo"
   | "nome"
@@ -150,6 +151,9 @@ export function sortLeads<T extends SortableLead>(
         }
         return recencia(b) - recencia(a);
       });
+    case "ultima_atividade":
+      // Mais tempo sem atividade no topo (o lead mais "abandonado" primeiro).
+      return [...leads].sort((a, b) => diasSemAtividade(b) - diasSemAtividade(a));
     case "mais_recente":
       return [...leads].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

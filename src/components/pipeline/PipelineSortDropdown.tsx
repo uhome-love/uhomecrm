@@ -20,6 +20,7 @@ import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 export type SortOrder =
   | "prioridade"
   | "atividade"
+  | "ultima_atividade"
   | "mais_recente"
   | "mais_antigo"
   | "nome"
@@ -27,11 +28,12 @@ export type SortOrder =
   | "temperatura";
 
 const SORT_OPTIONS: { value: SortOrder; label: string; icon: string; desc: string }[] = [
-  { value: "prioridade",   label: "Prioridade",   icon: "🔥", desc: "Quem atender agora (por etapa)" },
-  { value: "atividade",    label: "Compromisso",  icon: "📅", desc: "Lembrete vencido → hoje → futuro" },
-  { value: "mais_recente", label: "Mais recente", icon: "🆕", desc: "Lead que chegou por último" },
-  { value: "mais_antigo",  label: "Mais antigo",  icon: "📆", desc: "Lead que chegou primeiro" },
-  { value: "nome",         label: "Nome (A-Z)",   icon: "🅰", desc: "Ordem alfabética" },
+  { value: "prioridade",       label: "Prioridade",       icon: "🔥", desc: "Quem atender agora (por etapa)" },
+  { value: "atividade",        label: "Compromisso",      icon: "📅", desc: "Lembrete vencido → hoje → futuro" },
+  { value: "ultima_atividade", label: "Última atividade", icon: "⏳", desc: "Mais tempo sem falar no topo" },
+  { value: "mais_recente",     label: "Mais recente",     icon: "🆕", desc: "Lead que chegou por último" },
+  { value: "mais_antigo",      label: "Mais antigo",      icon: "📆", desc: "Lead que chegou primeiro" },
+  { value: "nome",             label: "Nome (A-Z)",       icon: "🅰", desc: "Ordem alfabética" },
 ];
 
 const STORAGE_KEY = "pipeline-sort-order";
