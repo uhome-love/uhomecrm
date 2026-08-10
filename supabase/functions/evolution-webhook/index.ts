@@ -249,9 +249,10 @@ Deno.serve(async (req) => {
     });
   }
 
-  // ── Auth log-only (Fase 2 — enforcement virá em fase separada) ──
+  // ── Auth ENFORCED (10/08/2026) ──
   // Evolution API envia header `apikey` com AUTHENTICATION_API_KEY global.
   // Também aceitamos ?apikey= na query e x-api-key por compat.
+  // Sem chave válida → 401 (antes era log-only).
   {
     const expectedKey = Deno.env.get("EVOLUTION_API_KEY");
     const headerKey = req.headers.get("apikey") || req.headers.get("x-api-key");
@@ -261,7 +262,7 @@ Deno.serve(async (req) => {
 
     if (!authOk) {
       console.warn(
-        "[evolution-webhook][auth-log-only] missing/invalid apikey. " +
+        "[evolution-webhook][auth] blocked: missing/invalid apikey. " +
         `has_header=${!!headerKey} has_query=${!!queryKey} expected_configured=${!!expectedKey}`
       );
       try {
@@ -271,9 +272,9 @@ Deno.serve(async (req) => {
         );
         await supa.from("ops_events").insert({
           fn: "evolution-webhook",
-          level: "warn",
+          level: "error",
           category: "security",
-          message: "evolution_webhook_auth_missing",
+          message: "evolution_webhook_auth_blocked",
           ctx: {
             has_apikey_header: !!headerKey,
             has_apikey_query: !!queryKey,
@@ -284,9 +285,14 @@ Deno.serve(async (req) => {
       } catch (_e) {
         // best-effort — nunca derruba o webhook por causa de log
       }
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
   }
-  // ── fim do bloco log-only ──
+  // ── fim do bloco de auth ──
+
 
   try {
     const payload = await req.json();

@@ -115,7 +115,7 @@ export default function RoletaConfigTab() {
   }
 
   const configLabels: Record<string, string> = {
-    limite_leads_desatualizados: "Max leads desatualizados",
+    limite_leads_desatualizados: "Max leads vermelhos (roleta noturna)",
     limite_descartes_mes: "Max descartes/mês",
     tempo_aceite_minutos: "Tempo de aceite (min)",
     visitas_minimas_domingo: "Visitas mín. p/ domingo",

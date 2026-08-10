@@ -229,7 +229,7 @@ async function alternarRoleta(
 ) {
   if (!naRoleta && !podeFazerRoleta) {
     toast.error(
-      `Você tem ${leadsDesatualizados} lead(s) sem tarefa pendente (máx: 10). Crie tarefas no pipeline para se desbloquear.`,
+      `Você tem ${leadsDesatualizados} lead(s) vermelho(s) (máx: 10 para a roleta noturna). Registre um toque no pipeline para se desbloquear.`,
       { duration: 5000 }
     );
     return;
@@ -396,7 +396,7 @@ export function OportunidadesDoDia() {
                   {naRoleta
                     ? "Aguardando leads"
                     : !podeFazerRoleta
-                    ? `${leadsDesatualizados} lead(s) sem tarefa`
+                    ? `${leadsDesatualizados} lead(s) vermelho(s)`
                     : "Fora da fila"}
                 </p>
               </div>
@@ -420,14 +420,14 @@ export function OportunidadesDoDia() {
             {!podeFazerRoleta && !naRoleta && (
               <div className="mt-3 pt-3 border-t border-destructive/20 space-y-2">
                 <p className="text-xs text-destructive leading-relaxed">
-                  Você tem <strong>{leadsDesatualizados} lead(s)</strong> sem tarefa pendente (máx: 10). Crie tarefas para se desbloquear.
+                  Você tem <strong>{leadsDesatualizados} lead(s) vermelho(s)</strong> (máx: 10 para a roleta noturna). Registre um toque para se desbloquear.
                 </p>
                 <button
-                  onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
+                  onClick={() => navigate("/pipeline-leads?saude=vermelho")}
                   className="w-full text-xs font-medium py-2 px-3 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors flex items-center justify-center gap-1.5"
                 >
                   <ListTodo className="w-3.5 h-3.5" />
-                  Ver leads sem tarefa
+                  Ver leads vermelhos
                   <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
@@ -436,7 +436,7 @@ export function OportunidadesDoDia() {
         </Card>
       </div>
 
-      {/* ── Alerta de leads desatualizados (mesmo quando pode entrar) ── */}
+      {/* ── Alerta de leads vermelhos (mesmo quando pode entrar) ── */}
       {podeFazerRoleta && leadsDesatualizados > 5 && (
         <Card className="border-yellow-500/50 bg-yellow-500/10 dark:bg-yellow-500/10">
           <CardContent className="py-3">
@@ -444,12 +444,12 @@ export function OportunidadesDoDia() {
               <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-foreground">
-                  Atenção: {leadsDesatualizados} leads sem tarefa
+                  Atenção: {leadsDesatualizados} leads vermelhos
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Faltam {10 - leadsDesatualizados > 0 ? 10 - leadsDesatualizados : 0} para bloqueio. 
                   <button
-                    onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
+                    onClick={() => navigate("/pipeline-leads?saude=vermelho")}
                     className="text-primary underline ml-1"
                   >
                     Atualizar pipeline

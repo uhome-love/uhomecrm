@@ -131,7 +131,7 @@ export function StatusElegibilidadeRoleta() {
         {/* Barra de progresso */}
         <div className="mt-3">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-muted-foreground">Leads desatualizados</span>
+            <span className="text-xs text-muted-foreground">Leads vermelhos (roleta noturna)</span>
             <span
               className={`text-xs font-semibold ${
                 elegibilidade.leads_desatualizados > 10 ? "text-destructive" : "text-foreground"
@@ -150,14 +150,14 @@ export function StatusElegibilidadeRoleta() {
             <div className="mt-2 space-y-2">
               <p className="text-xs text-destructive">
                 Você precisa atualizar pelo menos{" "}
-                <strong>{elegibilidade.leads_desatualizados - 10} lead(s)</strong> para se desbloquear.
+                <strong>{elegibilidade.leads_desatualizados - elegibilidade.limite_bloqueio} lead(s) vermelho(s)</strong> para se desbloquear.
               </p>
               <button
-                onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
+                onClick={() => navigate("/pipeline-leads?saude=vermelho")}
                 className="w-full text-xs font-medium py-2 px-3 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors flex items-center justify-center gap-1.5"
               >
                 <ListTodo className="w-3.5 h-3.5" />
-                Ver leads sem tarefa
+                Ver leads vermelhos
                 <ChevronRight className="w-3 h-3" />
               </button>
             </div>
@@ -290,7 +290,7 @@ export function StatusElegibilidadeRoleta() {
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {lead.dias_sem_tarefa}d sem tarefa
+                    {lead.dias_sem_tarefa}d sem toque
                   </span>
                 </div>
               </div>
@@ -299,12 +299,12 @@ export function StatusElegibilidadeRoleta() {
 
           {elegibilidade.leads_desatualizados > 10 && (
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Mostrando 10 de {elegibilidade.leads_desatualizados} leads desatualizados
+              Mostrando 10 de {elegibilidade.leads_desatualizados} leads vermelhos
             </p>
           )}
 
           <button
-            onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
+            onClick={() => navigate("/pipeline-leads?saude=vermelho")}
             className="mt-3 w-full rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-2 transition-colors"
           >
             Ir para o pipeline e atualizar leads →
@@ -315,7 +315,7 @@ export function StatusElegibilidadeRoleta() {
       {expandido && elegibilidade.leads_para_atualizar.length === 0 && (
         <div className="border-t border-border px-4 py-3">
           <p className="text-sm text-green-600 dark:text-green-400 text-center">
-            🎉 Todos os seus leads estão com tarefas em dia!
+            🎉 Nenhum lead vermelho — sua carteira está em dia!
           </p>
         </div>
       )}
