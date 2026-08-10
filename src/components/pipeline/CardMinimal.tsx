@@ -25,6 +25,7 @@ import { todayBRT, formatBRT } from "@/lib/brtTime";
 import { Handshake, Phone, Check } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
 import TaskCompletionDialog from "./TaskCompletionDialog";
+import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 import { useAuth } from "@/hooks/useAuth";
 import { completeLeadTask } from "@/lib/completeLeadTask";
@@ -204,6 +205,7 @@ const CardMinimal = memo(function CardMinimal({
   const queryClient = useQueryClient();
   const [completingOpen, setCompletingOpen] = useState(false);
   const [completingBusy, setCompletingBusy] = useState(false);
+  const [registrarOpen, setRegistrarOpen] = useState(false);
 
   const status = useMemo(
     () => resolveStatus(proximaTarefa ?? null, stage?.tipo),
@@ -341,7 +343,7 @@ const CardMinimal = memo(function CardMinimal({
     // Guard: never open lead drawer while task-completion popup is open.
     // Protects against React event bubbling from the Radix dialog portal into the card's onClick,
     // which was causing accidental stage moves when interacting with the completion popup.
-    if (completingOpen) return;
+    if (completingOpen || registrarOpen) return;
     trackPipelineEvent("pipeline_card_clicked", {
       lead_id: lead.id,
       stage_id: lead.stage_id,
@@ -452,6 +454,7 @@ const CardMinimal = memo(function CardMinimal({
               onMoveLead={onMoveLead!}
               onOpenDetail={onClick}
               onTransferred={onTransferred}
+              onRegistrarAtividade={() => setRegistrarOpen(true)}
             />
           </div>
         )}
@@ -483,11 +486,19 @@ const CardMinimal = memo(function CardMinimal({
               {ACTION_ICON[actionType]}
             </span>
             {status === "sem" ? (
-              <span className="flex-1 min-w-0 truncate text-[11.5px] text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
-                <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide">
-                  ⚠ Definir tarefa
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRegistrarOpen(true);
+                }}
+                className="flex-1 min-w-0 inline-flex items-center gap-1 text-left"
+                title="Registrar atividade"
+              >
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-primary transition-colors hover:bg-primary/15">
+                  ⚡ Registrar
                 </span>
-              </span>
+              </button>
             ) : hasSpecificTitle ? (
               <span
                 className={`flex-1 min-w-0 truncate text-[11.5px] ${
@@ -607,6 +618,16 @@ const CardMinimal = memo(function CardMinimal({
             }
           }}
         />
+      )}
+
+      {registrarOpen && (
+        <div data-no-card-click onClick={(e) => e.stopPropagation()}>
+          <RegistrarAtividadeModal
+            lead={{ id: lead.id, nome: lead.nome }}
+            onClose={() => setRegistrarOpen(false)}
+            onSaved={() => invalidateTaskQueries(queryClient, lead.id)}
+          />
+        </div>
       )}
 
     </div>

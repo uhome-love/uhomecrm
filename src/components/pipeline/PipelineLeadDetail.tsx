@@ -44,6 +44,8 @@ import DrawerEmpreendimento from "./drawer/DrawerEmpreendimento";
 import LeadMateriaisPanel from "./drawer/LeadMateriaisPanel";
 import DrawerAnotarDialog from "./drawer/DrawerAnotarDialog";
 import DrawerProximaAcao, { parseNextActionType } from "./drawer/DrawerProximaAcao";
+import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
+import { Zap } from "lucide-react";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
 import HomiLeadAssistant from "./HomiLeadAssistant";
@@ -190,6 +192,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const { createVisita } = useVisitas();
   const [isCallOpen, setIsCallOpen] = useState(false);
   const [anotarOpen, setAnotarOpen] = useState(false);
+  const [registrarOpen, setRegistrarOpen] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
@@ -593,6 +596,15 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
 
 
+      {/* ⚡ Registrar atividade — ação PRIMÁRIA (Nova Gestão): é o que carimba o toque */}
+      <button
+        type="button"
+        onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar_atividade" }); setRegistrarOpen(true); }}
+        className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-primary text-primary-foreground text-[13.5px] font-bold shadow-sm transition-colors hover:bg-primary/90"
+      >
+        <Zap className="h-4 w-4" strokeWidth={2.4} /> Registrar atividade
+      </button>
+
       {/* Label + Grid 2x2 de ações */}
       <div className="space-y-1.5">
         <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
@@ -617,6 +629,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           stages={stages}
           onMoveLead={(leadId, newStageId, observacao) => { onMove(leadId, newStageId, observacao); }}
           onOpenDetail={() => { /* já está aberto */ }}
+          onRegistrarAtividade={() => setRegistrarOpen(true)}
           onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
           trigger={
             <button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors">
@@ -1041,6 +1054,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         onMove={onMove}
         onReload={leadData.reload}
       />
+
+      {registrarOpen && (
+        <RegistrarAtividadeModal
+          lead={{ id: lead.id, nome: lead.nome }}
+          onClose={() => setRegistrarOpen(false)}
+          onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }}
+        />
+      )}
 
       <CallFocusOverlay
         isOpen={isCallOpen}

@@ -43,8 +43,10 @@ interface CardOverflowMenuProps {
   onMoveLead: (leadId: string, newStageId: string, observacao?: string) => void;
   onOpenDetail: () => void;
   onTransferred?: (leadId: string, corretorId: string, nome: string) => void;
-  /** Override do clique em "Criar tarefa". Default: onOpenDetail(). */
+  /** Override do clique em "Criar lembrete". Default: onOpenDetail(). */
   onCreateTask?: () => void;
+  /** Abre o ⚡ Registrar atividade (ação primária da Nova Gestão). Default: onOpenDetail(). */
+  onRegistrarAtividade?: () => void;
   /** Trigger customizado. Default: botão ··· (MoreVertical). */
   trigger?: React.ReactNode;
 }
@@ -65,6 +67,7 @@ export default function CardOverflowMenu({
   onOpenDetail,
   onTransferred,
   onCreateTask,
+  onRegistrarAtividade,
   trigger,
 }: CardOverflowMenuProps) {
   const { createVisita } = useVisitas();
@@ -109,6 +112,19 @@ export default function CardOverflowMenu({
           className="w-56"
           onClick={(e) => e.stopPropagation()}
         >
+          <DropdownMenuItem
+            onClick={() => {
+              trackMenuAction(lead, "registrar_atividade");
+              if (onRegistrarAtividade) onRegistrarAtividade();
+              else onOpenDetail();
+            }}
+            className="text-sm font-semibold text-primary focus:text-primary"
+          >
+            <span className="mr-2">⚡</span>Registrar atividade
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-sm">
               <span className="mr-2">↔</span>Mudar de etapa
@@ -155,7 +171,7 @@ export default function CardOverflowMenu({
             }}
             className="text-sm"
           >
-            <span className="mr-2">✓</span>Criar tarefa
+            <span className="mr-2">📌</span>Criar lembrete
           </DropdownMenuItem>
 
 

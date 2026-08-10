@@ -84,7 +84,7 @@ export default function DrawerProximaAcao({
             onClick={onCreateTask}
           >
             <Plus className="h-3.5 w-3.5" />
-            Criar tarefa
+            Criar lembrete
           </Button>
         )}
       </div>
