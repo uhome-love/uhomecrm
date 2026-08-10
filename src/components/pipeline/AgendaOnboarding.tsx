@@ -14,7 +14,7 @@ import {
  * Mostra 1x automático (localStorage); reabre pelo botão "Como funciona".
  */
 
-const CHAVE = "agenda_onboarding_v3";
+const CHAVE = "agenda_onboarding_v4";
 
 export function jaViuOnboarding(): boolean {
   try { return localStorage.getItem(CHAVE) === "1"; } catch { return true; }
@@ -131,6 +131,38 @@ function MiniLoop() {
   );
 }
 
+function MiniDiaADia() {
+  const itens: [LucideIcon, string, string, string][] = [
+    [Target, "Agenda", "seu foco do dia — em quem falar agora", "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10"],
+    [HandCoins, "Pipeline", "todos os seus leads, por etapa e saúde", "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10"],
+    [Home, "Visitas", "sua agenda de visitas marcadas", "text-amber-600 bg-amber-50 dark:bg-amber-500/10"],
+  ];
+  return (
+    <div className="space-y-2">
+      {itens.map(([Ic, t, d, c]) => (
+        <div key={t} className="flex items-center gap-2.5">
+          <span className={cn("inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", c)}><Ic className="h-3.5 w-3.5" /></span>
+          <span className="text-left"><span className="block text-[12.5px] font-semibold text-foreground">{t}</span><span className="block text-[10.5px] text-muted-foreground">{d}</span></span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MiniBeneficios() {
+  const b = ["Menos burocracia, mais conversa com o cliente", "O CRM te diz em quem focar agora", "Nada mais cai no esquecimento", "Mais tempo pra fazer o que importa: vender"];
+  return (
+    <div className="space-y-1.5">
+      {b.map((t) => (
+        <div key={t} className="flex items-start gap-2">
+          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" strokeWidth={2.5} />
+          <span className="text-[12.5px] text-foreground">{t}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface Slide {
   icon: LucideIcon;
   cor: string;
@@ -149,47 +181,49 @@ const SLIDES: Slide[] = [
   },
   {
     icon: ClockAlert, cor: "text-zinc-600 bg-zinc-100 dark:bg-zinc-500/10",
-    titulo: "O problema de antes",
-    texto: "Pra manter um lead vivo, você tinha que ficar criando e concluindo tarefa atrás de tarefa. No fim do dia, o trabalho virava \"limpar tarefas\" — uma burocracia que te prendia e tirava seu foco de quem realmente importava: o cliente.",
+    titulo: "O problema das tarefas",
+    texto: "Antes, pra manter um lead vivo você tinha que ficar criando e concluindo tarefa atrás de tarefa. No fim do dia o trabalho virava \"limpar tarefas\" — uma burocracia que te prendia e roubava seu foco de quem importa: o cliente.",
     destaque: "Tarefa demais, venda de menos",
   },
   {
     icon: Zap, cor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10",
-    titulo: "A virada: a Atividade",
-    texto: "Agora é o contrário. Você só registra o que fez com o lead — liguei, mandei whatsapp, visitei — e o CRM atualiza o lead sozinho: a saúde, a etapa e o próximo retorno. Menos burocracia, mais conversa com o cliente.",
-    destaque: "Registrar o que fez atualiza tudo",
+    titulo: "Criamos a Atividade",
+    texto: "Agora é o contrário. Você só registra o que fez com o lead — liguei, mandei whatsapp, visitei — e o CRM cuida do resto. Uma ação simples que carrega todo o trabalho pesado por você.",
+    destaque: "Registrar o que fez > marcar tarefa",
   },
   {
-    icon: ArrowRight, cor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10",
-    titulo: "O novo fluxo, na prática",
-    texto: "É um ciclo simples que se repete o dia todo. Você registra, o lead se atualiza e já nasce o próximo passo — que volta pra você na hora certa. Sem planilha, sem decoreba.",
-    visual: <MiniLoop />,
+    icon: HandCoins, cor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10",
+    titulo: "Seu pipeline ficou vivo",
+    texto: "Cada atividade que você registra atualiza o lead sozinho: a saúde (a cor), a etapa e o próximo retorno. A cor mostra há quanto tempo você não fala com ele — verde é bom, vermelho pede ação. Registrou, ficou verde de novo.",
+    visual: <MiniSaude />,
+    destaque: "A atividade atualiza tudo",
+  },
+  {
+    icon: Thermometer, cor: "text-rose-600 bg-rose-50 dark:bg-rose-500/10",
+    titulo: "Temperatura + nova ordenação",
+    texto: "A partir da Qualificação, você marca o lead como quente, morno ou frio. Essa marca sua, junto com a saúde, define uma nova ordem: o CRM ordena seus leads por VALOR — quem tá quente e pedindo ação vem primeiro, não mais por ordem de chegada.",
+    visual: <MiniTemperatura />,
+    destaque: "Ordenado por valor, não por data",
   },
   {
     icon: Target, cor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10",
-    titulo: "Sua nova tela: Agenda",
-    texto: "É aqui que seu dia acontece. Duas abas que se completam: Prioridades é o CRM te dizendo em quem focar agora; Lembretes é a sua organização pessoal — o que você mesmo agendou.",
+    titulo: "Adeus central de tarefas",
+    texto: "A antiga central de tarefas saiu de cena. No lugar nasceu a Agenda: uma página inteligente que te guia no que fazer. Duas abas — Prioridades (o CRM sugere em quem focar) e Lembretes (a sua organização pessoal).",
     visual: <MiniAbas />,
   },
   {
     icon: Target, cor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10",
     titulo: "Prioridades — em quem focar",
-    texto: "O CRM monta a fila do mais quente pro mais frio: negócio e quer-proposta primeiro, depois pós-visita, novo lead, no-show e retornos. Cada card mostra o motivo, a temperatura e sua última anotação. Comece sempre pelo topo.",
+    texto: "A fila do mais quente pro mais frio: negócio e quer-proposta primeiro, depois pós-visita, novo lead, no-show e retornos. Cada card mostra o motivo, a temperatura e sua última anotação. Comece sempre pelo topo.",
     visual: <MiniCardPrioridade />,
     destaque: "Ataque de cima pra baixo",
   },
   {
     icon: Zap, cor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10",
     titulo: "⚡ Registrar — o coração",
-    texto: "Falou com o lead? Toque em Registrar. Diga o que fez, escreva uma observação e agende o próximo contato. Se quiser, já avança a etapa no mesmo toque. Isso atualiza o lead e tira o card da fila.",
+    texto: "Falou com o lead? Toque em Registrar. Diga o que fez, escreva uma observação e agende o próximo contato. Se quiser, já avança a etapa no mesmo toque. Isso atualiza o lead e tira o card da fila. Se não é pra agora, Dispensar guarda pra depois.",
     visual: <MiniRegistrar />,
     destaque: "Só o registro conta como progresso",
-  },
-  {
-    icon: PhoneCall, cor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10",
-    titulo: "Trabalhe do seu WhatsApp",
-    texto: "Cada card tem o número à mão: toque em WhatsApp pra abrir a conversa ou Ligar pra discar. Converse como você já faz — e depois volte e ⚡ registre o que rolou. Se um card não é pra agora, Dispensar tira ele da sugestão de hoje.",
-    destaque: "WhatsApp · Ligar · Dispensar",
   },
   {
     icon: Bell, cor: "text-amber-600 bg-amber-50 dark:bg-amber-500/10",
@@ -198,22 +232,22 @@ const SLIDES: Slide[] = [
     destaque: "Atrasados · Hoje · Futuro",
   },
   {
-    icon: Thermometer, cor: "text-rose-600 bg-rose-50 dark:bg-rose-500/10",
-    titulo: "No pipeline: temperatura",
-    texto: "No seu pipeline de leads, a partir da Qualificação você marca se o lead está quente, morno ou frio. Essa marca sua entra na conta da fila: quente esfriando sobe pro topo. Marque com sinceridade — é o que faz o CRM te priorizar certo.",
-    visual: <MiniTemperatura />,
-  },
-  {
-    icon: ClockAlert, cor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10",
-    titulo: "A cor do lead = saúde",
-    texto: "A barrinha colorida de cada lead mostra a saúde: há quanto tempo você não fala com ele, comparado ao ritmo ideal da etapa. Verde é bom, vermelho pede ação. Registrar uma atividade deixa o lead verde de novo.",
-    visual: <MiniSaude />,
+    icon: ArrowRight, cor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10",
+    titulo: "Seu dia a dia em 3 telas",
+    texto: "É simples: comece pela Agenda pra saber em quem focar, use o Pipeline pra ver todos os seus leads por etapa, e a Visitas pra sua agenda de visitas marcadas. Tudo conversa entre si.",
+    visual: <MiniDiaADia />,
   },
   {
     icon: Check, cor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10",
-    titulo: "Pronto pra começar! 🚀",
-    texto: "É isso! Abra as Prioridades, comece pelo topo e registre cada contato. Quer rever este tour a qualquer momento? Toque no 🎓 lá em cima, ao lado do HOMI. Bora vender!",
-    destaque: "Bom trabalho 💪",
+    titulo: "O que você ganha",
+    texto: "No fim das contas, é isso que muda pra você no dia a dia:",
+    visual: <MiniBeneficios />,
+  },
+  {
+    icon: Flame, cor: "text-rose-600 bg-rose-50 dark:bg-rose-500/10",
+    titulo: "Bora vender! 🚀",
+    texto: "Você tem tudo pra fazer um dia brabo. Abra as Prioridades, comece pelo topo e registre cada contato — o resto o CRM faz por você. Quer rever este tour? Toque no 🎓 lá em cima, ao lado do HOMI. Sucesso! 💪",
+    destaque: "Agora é com você",
   },
 ];
 
