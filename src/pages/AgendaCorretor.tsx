@@ -5,6 +5,7 @@ import { useFilaDoDia, lembreteAutomatico, type LeadFila, type MotivoFila, type 
 import RegistrarAtividadeModal from "@/components/pipeline/RegistrarAtividadeModal";
 import CriarLembreteModal from "@/components/pipeline/CriarLembreteModal";
 import CardOverflowMenu from "@/components/pipeline/CardOverflowMenu";
+import HomiSugestaoMensagem from "@/components/pipeline/HomiSugestaoMensagem";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -217,6 +218,14 @@ function CardPrioridade({
               </div>
             ) : null;
           })()}
+          <HomiSugestaoMensagem
+            nome={lead.nome}
+            empreendimento={lead.empreendimento}
+            telefone={lead.telefone}
+            motivo={lead.motivo}
+            stageNome={lead.stage_nome}
+            ultimoRegistro={limparRegistro(lead.ultimo_registro) || null}
+          />
         </div>
         <div className="flex shrink-0 items-start gap-1">
           <button
