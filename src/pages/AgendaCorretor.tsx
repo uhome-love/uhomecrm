@@ -329,19 +329,24 @@ function CardLembrete({
         "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1", accent
       )}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2 min-w-0">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-            <Icon className="h-3.5 w-3.5" /> {meta.label}
-            {c.hora ? <span className="text-foreground/70">· {c.hora}</span> : <span className="text-muted-foreground/60">· sem hora</span>}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="truncate text-[15px] font-bold text-foreground leading-tight">{c.lead_nome}</span>
+            {c.lead_stage && <span className="shrink-0 text-[12px] text-muted-foreground">· {c.lead_stage}</span>}
           </div>
-          <div className="mt-1 text-[14px] font-semibold text-foreground leading-snug">{acaoDoTitulo(c.titulo)}</div>
-          <div className="mt-0.5 flex items-center gap-2 min-w-0 text-[12px]">
-            <span className="truncate font-medium text-foreground/90">{c.lead_nome}</span>
-            {c.lead_stage && <span className="shrink-0 text-muted-foreground">· {c.lead_stage}</span>}
+          <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+            <Icon className="h-3.5 w-3.5" />
+            <span className="font-medium text-foreground/80">{acaoDoTitulo(c.titulo)}</span>
+            {c.hora ? <span>· {c.hora}</span> : <span className="text-muted-foreground/60">· sem hora</span>}
           </div>
         </div>
       </div>
+      {c.descricao && (
+        <div className="mt-2 rounded-lg bg-muted/50 px-2.5 py-1.5 text-[12.5px] italic leading-snug text-foreground/70">
+          "{c.descricao}"
+        </div>
+      )}
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2.5">
         <AcoesContato telefone={c.telefone} />
         {isLembrete && (
