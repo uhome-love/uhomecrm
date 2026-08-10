@@ -131,6 +131,9 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, onClose, onSa
     if (ativ && lembreteSel) toast.success(`⚡ ${ativ.label} · 📅 ${lembreteSel.label}`);
     else if (ativ) toast.success(ativ.toque ? `⚡ ${ativ.label} registrado` : `${ativ.label} salva`);
     else if (lembreteSel) toast.success(`📅 Lembrete: ${lembreteSel.label}`);
+    // Recarrega o board para a cor do card refletir o toque na hora (o trigger
+    // do banco já carimbou ultimo_toque_at). Mesmo mecanismo usado pós-move.
+    window.dispatchEvent(new CustomEvent("pipeline-reload"));
     onSaved?.();
     fechar();
   };
