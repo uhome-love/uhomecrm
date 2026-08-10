@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Pencil, ClipboardList, ListChecks, Check } from "lucide-react";
+import { Loader2, Pencil, ClipboardList, ListChecks, Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { PipelineLead } from "@/hooks/usePipeline";
@@ -60,6 +60,8 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
 
   const steps = Object.entries(QUALIFICACAO_STATUS_ATEND) as [string, string][];
   const currentIdx = steps.findIndex(([k]) => k === currentStatus);
+  const currentLabel = currentStatus ? QUALIFICACAO_STATUS_ATEND[currentStatus] : "";
+  const [expanded, setExpanded] = useState(false);
 
   const handleClick = async (statusKey: string) => {
     if (saving || statusKey === currentStatus) return;
@@ -84,10 +86,23 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
 
   return (
     <div className="rounded-lg border bg-card p-3 space-y-2">
-      <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-1.5 text-left"
+      >
         <ListChecks className="h-3.5 w-3.5 text-primary" />
         <span className="text-xs font-semibold">Etapa da qualificação</span>
-      </div>
+        {!expanded && currentLabel && (
+          <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-px text-[10px] font-semibold text-primary">
+            {currentLabel}
+          </span>
+        )}
+        <ChevronDown
+          className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+      {expanded && (
       <div className="flex flex-wrap gap-1.5">
         {steps.map(([key, label], idx) => {
           const isCurrent = key === currentStatus;
@@ -114,7 +129,8 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
           );
         })}
       </div>
-      {!currentStatus && (
+      )}
+      {expanded && !currentStatus && (
         <p className="text-[11px] text-muted-foreground italic">
           Clique em uma etapa para registrar o status do atendimento.
         </p>

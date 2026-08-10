@@ -30,9 +30,9 @@ function tierOf(v?: string | null): Tier {
 
 const META: Record<Tier, { label: string; icon: LucideIcon; chip: string; item: string }> = {
   nao_definida: {
-    label: "Temperatura",
+    label: "–",
     icon: Thermometer,
-    chip: "bg-muted/50 text-muted-foreground border-dashed border-border hover:bg-muted",
+    chip: "bg-muted/40 text-muted-foreground/70 border-dashed border-border hover:bg-muted hover:text-muted-foreground",
     item: "text-muted-foreground",
   },
   frio: {

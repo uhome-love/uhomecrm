@@ -238,7 +238,7 @@ const CardMinimal = memo(function CardMinimal({
       created_at: lead.created_at,
     });
     let label: string;
-    if (!temAtividade) label = "sem atividade ainda";
+    if (!temAtividade) label = "–";
     else if (dias === null || dias <= 0) label = "hoje";
     else if (dias === 1) label = "ontem";
     else label = `há ${dias}d`;
@@ -518,23 +518,40 @@ const CardMinimal = memo(function CardMinimal({
             >
               última atividade · {atividadeInfo.label}
             </span>
-            <button
-              type="button"
-              aria-label="Registrar atividade"
-              title="Registrar atividade"
-              onClick={(e) => {
-                e.stopPropagation();
-                // ⚡ = registrar atividade. Se há lembrete pendente, abre em modo
-                // conclusão (registra + conclui sem fricção).
-                if (proximaTarefa?.tipo === "lembrete" && proximaTarefa.id) {
-                  setConcluindoLembreteId(proximaTarefa.id);
-                }
-                setRegistrarOpen(true);
-              }}
-              className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground shadow-sm transition-opacity hover:bg-primary/90 opacity-0 group-hover:opacity-100 focus:opacity-100 max-md:opacity-100"
-            >
-              <Zap className="h-3 w-3" strokeWidth={2.6} />
-            </button>
+            {atividadeInfo.temAtividade ? (
+              <button
+                type="button"
+                aria-label="Registrar atividade"
+                title="Registrar atividade"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // ⚡ = registrar atividade. Se há lembrete pendente, abre em modo
+                  // conclusão (registra + conclui sem fricção).
+                  if (proximaTarefa?.tipo === "lembrete" && proximaTarefa.id) {
+                    setConcluindoLembreteId(proximaTarefa.id);
+                  }
+                  setRegistrarOpen(true);
+                }}
+                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground shadow-sm transition-opacity hover:bg-primary/90 opacity-0 group-hover:opacity-100 focus:opacity-100 max-md:opacity-100"
+              >
+                <Zap className="h-3 w-3" strokeWidth={2.6} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (proximaTarefa?.tipo === "lembrete" && proximaTarefa.id) {
+                    setConcluindoLembreteId(proximaTarefa.id);
+                  }
+                  setRegistrarOpen(true);
+                }}
+                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                title="Registrar atividade"
+              >
+                <Zap className="h-3 w-3" strokeWidth={2.6} /> registrar
+              </button>
+            )}
           </div>
         </>
       )}

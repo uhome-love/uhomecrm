@@ -27,22 +27,20 @@ export type SortOrder =
   | "temperatura";
 
 const SORT_OPTIONS: { value: SortOrder; label: string; icon: string }[] = [
-  { value: "prioridade",   label: "Prioridade",     icon: "🔥" },
-  { value: "atividade",    label: "Atividade",      icon: "⚡" },
-  { value: "mais_recente", label: "Mais recente",   icon: "📅" },
-  { value: "mais_antigo",  label: "Mais antigo",    icon: "📆" },
-  { value: "nome",         label: "Nome (A-Z)",     icon: "🅰" },
-  { value: "valor",        label: "Valor estimado", icon: "💰" },
-  { value: "temperatura",  label: "Temperatura",    icon: "⭐" },
+  { value: "prioridade",   label: "Prioridade",   icon: "🔥" },
+  { value: "atividade",    label: "Compromisso",  icon: "📅" },
+  { value: "mais_recente", label: "Mais recente", icon: "🆕" },
+  { value: "mais_antigo",  label: "Mais antigo",  icon: "📆" },
+  { value: "nome",         label: "Nome (A-Z)",   icon: "🅰" },
 ];
 
 const STORAGE_KEY = "pipeline-sort-order";
 const VALID: SortOrder[] = SORT_OPTIONS.map((o) => o.value);
 
 export function loadSortOrder(): SortOrder {
-  if (typeof window === "undefined") return "atividade";
+  if (typeof window === "undefined") return "prioridade";
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  return VALID.includes(stored as SortOrder) ? (stored as SortOrder) : "atividade";
+  return VALID.includes(stored as SortOrder) ? (stored as SortOrder) : "prioridade";
 }
 
 interface Props {
