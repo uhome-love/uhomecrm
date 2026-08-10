@@ -5,7 +5,8 @@
 // "dias sem toque" é tempo absoluto (independe de fuso).
 // ─────────────────────────────────────────────────────────────────
 
-export type LeadSaude = "verde" | "ambar" | "vermelho" | "terminal";
+// Saúde = ATENÇÃO DO CORRETOR com o lead (não temperatura do cliente).
+export type LeadSaude = "verde" | "ambar" | "vermelho" | "estagnado" | "terminal";
 
 /** Prazo "em dia" (dias sem toque) por tipo de etapa. Deve espelhar o SQL. */
 const PRAZO_POR_ETAPA: Record<string, number> = {
@@ -18,6 +19,16 @@ const PRAZO_POR_ETAPA: Record<string, number> = {
   contrato_gerado: 7,
 };
 const PRAZO_PADRAO = 7;
+
+/**
+ * Estagnação (dias sem toque) — vira "ponto de decisão", só nas etapas que
+ * estagnam. Sem Contato é por cadência (Fase 2); aqui uso uma aproximação.
+ */
+const ESTAGNA_POR_ETAPA: Record<string, number> = {
+  sem_contato: 15,
+  qualificacao: 21,
+  aquecimento: 21,
+};
 
 const TERMINAIS = new Set(["venda", "caiu", "descarte", "convertido"]);
 
@@ -43,10 +54,13 @@ export function leadSaude(input: LeadSaudeInput): LeadSaude {
   if (TERMINAIS.has(tipo)) return "terminal";
 
   const base = input.ultimo_toque_at || input.distribuido_em || input.aceito_em || input.created_at;
-  if (!base) return "vermelho"; // sem qualquer referência = tratar como frio
+  if (!base) return "vermelho"; // sem qualquer referência = desatualizado
+
+  const dias = diasSem(base);
+  const limiteEstagna = ESTAGNA_POR_ETAPA[tipo];
+  if (limiteEstagna != null && dias > limiteEstagna) return "estagnado";
 
   const prazo = PRAZO_POR_ETAPA[tipo] ?? PRAZO_PADRAO;
-  const dias = diasSem(base);
   if (dias <= prazo) return "verde";
   if (dias <= prazo * 2) return "ambar";
   return "vermelho";
@@ -68,8 +82,9 @@ export interface SaudeVisual {
 
 const VISUAL: Record<LeadSaude, SaudeVisual> = {
   verde: { cor: "verde", label: "Em dia", dot: "bg-success-500" },
-  ambar: { cor: "ambar", label: "Esfriando", dot: "bg-warning-500" },
-  vermelho: { cor: "vermelho", label: "Frio", dot: "bg-danger-500" },
+  ambar: { cor: "ambar", label: "Atenção", dot: "bg-warning-500" },
+  vermelho: { cor: "vermelho", label: "Desatualizado", dot: "bg-danger-500" },
+  estagnado: { cor: "estagnado", label: "Estagnado", dot: "bg-violet-500" },
   terminal: { cor: "terminal", label: "", dot: "bg-transparent" },
 };
 
@@ -91,5 +106,5 @@ export function leadSaudeClientStatus(
   const s = leadSaude({ ...lead, stage_tipo: stageTipo ?? lead.stage_tipo });
   if (s === "verde" || s === "terminal") return "em_dia";
   if (s === "ambar") return "desatualizado";
-  return "tarefa_atrasada";
+  return "tarefa_atrasada"; // vermelho + estagnado
 }

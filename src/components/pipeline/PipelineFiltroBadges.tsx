@@ -51,9 +51,9 @@ interface BadgeDef {
 // Nova Gestão: saúde por toque (não por tarefa).
 // Chaves mantidas (compat de URL): em_dia=verde · sem_tarefa=esfriando(âmbar) · atrasado=frio(vermelho).
 const BADGES: BadgeDef[] = [
-  { key: "em_dia",     label: "em dia",     color: "#047857", dotColor: "#22c55e", bgActive: "rgba(34,197,94,0.12)",  bgIdle: "transparent" },
-  { key: "sem_tarefa", label: "esfriando",  color: "#B45309", dotColor: "hsl(var(--warning-500))", bgActive: "rgba(245,158,11,0.12)", bgIdle: "transparent" },
-  { key: "atrasado",   label: "frio",       color: "#DC2626", dotColor: "#DC2626", bgActive: "rgba(220,38,38,0.12)",  bgIdle: "transparent" },
+  { key: "em_dia",     label: "em dia",       color: "#047857", dotColor: "#22c55e", bgActive: "rgba(34,197,94,0.12)",  bgIdle: "transparent" },
+  { key: "sem_tarefa", label: "atenção",      color: "#B45309", dotColor: "hsl(var(--warning-500))", bgActive: "rgba(245,158,11,0.12)", bgIdle: "transparent" },
+  { key: "atrasado",   label: "desatualizado", color: "#DC2626", dotColor: "#DC2626", bgActive: "rgba(220,38,38,0.12)",  bgIdle: "transparent" },
 ];
 
 export default function PipelineFiltroBadges({ active, onChange, counts: countsProp, compact }: PipelineFiltroBadgesProps) {

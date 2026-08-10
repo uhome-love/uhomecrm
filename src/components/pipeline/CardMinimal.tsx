@@ -125,6 +125,7 @@ const SIDEBAR_BY_SAUDE: Record<string, string> = {
   verde: "before:bg-emerald-500",
   ambar: "before:bg-amber-500",
   vermelho: "before:bg-red-500",
+  estagnado: "before:bg-violet-500",
 };
 
 
