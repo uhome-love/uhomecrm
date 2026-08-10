@@ -13,6 +13,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
 import { dispensarLead } from "@/lib/filaDispensados";
+import { limparRegistro } from "@/lib/registroLimpo";
 import {
   Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
   Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
@@ -208,11 +209,14 @@ function CardPrioridade({
             <History className="h-3 w-3 shrink-0" />
             última atividade · {diasLabel(lead.dias_sem_atividade, lead.tem_atividade)}
           </div>
-          {lead.ultimo_registro && (
-            <div className="mt-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[12px] italic leading-snug text-foreground/80">
-              “{lead.ultimo_registro}”
-            </div>
-          )}
+          {(() => {
+            const reg = limparRegistro(lead.ultimo_registro);
+            return reg ? (
+              <div className="mt-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[12px] italic leading-snug text-foreground/80">
+                “{reg}”
+              </div>
+            ) : null;
+          })()}
         </div>
         <div className="flex shrink-0 items-start gap-1">
           <button
