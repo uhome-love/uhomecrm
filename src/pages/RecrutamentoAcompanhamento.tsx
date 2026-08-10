@@ -43,20 +43,18 @@ export default function RecrutamentoAcompanhamento() {
   const { data, isLoading } = useQuery({
     queryKey: ["recrutamento-acompanhamento"],
     queryFn: async () => {
-      const [cand, entrev, profs] = await Promise.all([
+      const [cand, profs] = await Promise.all([
         supabase
           .from("rh_candidatos" as any)
           .select("id, etapa, origem, temperatura, gerente_id, created_at")
           .order("created_at", { ascending: false })
           .limit(5000),
-        supabase.from("rh_entrevistas" as any).select("id, candidato_id, data_hora").limit(5000),
-        supabase.from("profiles" as any).select("id, nome").limit(2000),
+        supabase.from("profiles" as any).select("user_id, nome").limit(2000),
       ]);
       if (cand.error) throw cand.error;
       return {
         candidatos: ((cand.data as any[]) || []) as CandidatoRow[],
-        entrevistas: ((entrev.data as any[]) || []) as { id: string; candidato_id: string }[],
-        profiles: ((profs.data as any[]) || []) as { id: string; nome: string | null }[],
+        profiles: ((profs.data as any[]) || []) as { user_id: string; nome: string | null }[],
       };
     },
     staleTime: 60_000,
@@ -98,7 +96,7 @@ export default function RecrutamentoAcompanhamento() {
   }, [candidatos]);
 
   const porGerente = useMemo(() => {
-    const nomes = new Map((data?.profiles || []).map((p) => [p.id, p.nome || "Sem nome"]));
+    const nomes = new Map((data?.profiles || []).map((p) => [p.user_id, p.nome || "Sem nome"]));
     const map = new Map<string, number>();
     for (const c of candidatos) {
       const k = c.gerente_id ? nomes.get(c.gerente_id) || "Gerente desconhecido" : "Sem gerente";

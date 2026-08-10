@@ -240,6 +240,24 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     toast.success(gerenteId ? "Gerente atribuído!" : "Atribuição removida");
     setDetailCandidate((c) => (c && c.id === id ? { ...c, gerente_id: gerenteId } : c));
     fetchCandidatos();
+
+    // Notificação in-app para o gerente (silenciosa: nunca quebra a atribuição)
+    if (gerenteId) {
+      const nomeCand = candidatos.find((c) => c.id === id)?.nome || "Candidato";
+      try {
+        await supabase.rpc("criar_notificacao" as any, {
+          p_user_id: gerenteId,
+          p_tipo: "info",
+          p_categoria: "recrutamento_atribuicao",
+          p_titulo: "Novo candidato atribuído a você",
+          p_mensagem: `${nomeCand} foi atribuído a você no funil de recrutamento.`,
+          p_dados: { candidato_id: id, url: "/gerente/candidatos" },
+          p_agrupamento_key: `recrutamento_atribuicao:${id}:${gerenteId}`,
+        });
+      } catch (e) {
+        console.error("[recrutamento] falha ao notificar gerente", e);
+      }
+    }
   };
 
   const getCandidatosByEtapa = (etapa: string) =>
