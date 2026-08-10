@@ -54,6 +54,7 @@ export interface Compromisso {
   titulo: string;
   lead_nome: string;
   lead_id: string | null;
+  lead_stage: string | null;
   telefone: string | null;
   tarefa_tipo: string | null;
   icon: "phone" | "whatsapp" | "home" | "bell";
@@ -149,7 +150,11 @@ export function useFilaDoDia() {
       };
       const rows = (leadsRaw ?? []) as unknown as Row[];
       const stageTipoDe = new Map<string, string>();
-      for (const l of rows) stageTipoDe.set(l.id, l.pipeline_stages?.tipo ?? "");
+      const stageNomeDe = new Map<string, string>();
+      for (const l of rows) {
+        stageTipoDe.set(l.id, l.pipeline_stages?.tipo ?? "");
+        stageNomeDe.set(l.id, l.pipeline_stages?.nome ?? "");
+      }
 
       // 2) Lembretes pendentes → timeline (aba Lembretes) + gatilho de retorno.
       //    Cadência Sem Contato NÃO entra na timeline (vira bloco na fila).
@@ -181,7 +186,9 @@ export function useFilaDoDia() {
           id: t.id, tipo: "lembrete", data: t.vence_em,
           hora: horaReal(t.hora_vencimento),
           titulo: t.titulo, lead_nome: t.pipeline_leads?.nome ?? "Lead",
-          lead_id: t.pipeline_lead_id, telefone: t.pipeline_leads?.telefone ?? null,
+          lead_id: t.pipeline_lead_id,
+          lead_stage: t.pipeline_lead_id ? (stageNomeDe.get(t.pipeline_lead_id) ?? null) : null,
+          telefone: t.pipeline_leads?.telefone ?? null,
           tarefa_tipo: t.tipo, icon: iconDeTipo(t.titulo),
         };
         if (t.vence_em < hoje) { lembretes.atrasados.push(c); if (t.pipeline_lead_id) retornoHojeLeadIds.add(t.pipeline_lead_id); }
@@ -211,6 +218,7 @@ export function useFilaDoDia() {
           hora: v.hora_visita ? v.hora_visita.slice(0, 5) : null,
           titulo: v.empreendimento ? `Visita — ${v.empreendimento}` : "Visita",
           lead_nome: v.nome_cliente, lead_id: v.pipeline_lead_id,
+          lead_stage: v.pipeline_lead_id ? (stageNomeDe.get(v.pipeline_lead_id) ?? null) : null,
           telefone: v.telefone ?? null, tarefa_tipo: "visita", icon: "home",
         });
       }

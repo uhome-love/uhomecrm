@@ -25,10 +25,12 @@ interface AtDef {
   toque: boolean;
 }
 
+// Tipos de CONTATO (como você falou com o lead). Agendar uma visita de verdade
+// (data/hora) é pelo fluxo Agenda de Visitas — aqui "Presencial" = atendi pessoalmente.
 const ATIVIDADES: AtDef[] = [
   { tipo: "ligacao", label: "Liguei", icon: Phone, toque: true },
   { tipo: "whatsapp", label: "WhatsApp", icon: MessageCircle, toque: true },
-  { tipo: "visita", label: "Visita", icon: MapPin, toque: true },
+  { tipo: "presencial", label: "Presencial", icon: MapPin, toque: true },
   { tipo: "nota", label: "Nota", icon: StickyNote, toque: false },
 ];
 
