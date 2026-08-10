@@ -27,12 +27,14 @@ Regras hoje em vigor (`get_elegibilidade_roleta`, `corretor_pode_entrar_roleta`,
 
 ## O que muda nesta fase
 
-**Trocar a base de contagem**: o gate passa a contar **leads com pílula VERMELHA** (`lead_saude_status = 'vermelho'`), a mesma função que colore o pipeline. Limite: **máximo 10 vermelhos** (bloqueia a partir de 11). Vale igual para manhã, tarde e noite.
+**Trocar a base de contagem**: o gate passa a contar **leads com pílula VERMELHA** (`lead_saude_status = 'vermelho'`), a mesma função que colore o pipeline. Limite: **máximo 10 vermelhos** (bloqueia a partir de 11).
+
+**Onde vale (exceção temporária pela virada recente do CRM):** o limite de 10 vermelhos vale **somente para a roleta noturna**. Manhã e tarde ficam **sem esse gate** por enquanto (só descartes, alocação e as demais regras).
 
 - Escopo: leads ativos do corretor (não arquivados, fora de descarte/venda/caiu/convertido) — mesmo escopo das pílulas.
 - Limite continua configurável em `roleta_config.limite_leads_desatualizados` (padrão 10).
-- A mensagem de bloqueio passa a dizer "Você tem X leads vermelhos (limite 10)" e a tela lista os vermelhos para atualizar.
-- Noturna: **mantida** a exigência de visita agendada no dia.
+- A mensagem de bloqueio da noturna passa a dizer "Você tem X leads vermelhos (limite 10)" e a tela lista os vermelhos para atualizar.
+- Noturna: **mantida** a exigência de visita agendada no dia + presença manhã e tarde.
 
 ## Detalhes técnicos
 
