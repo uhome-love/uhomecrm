@@ -785,7 +785,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <DrawerTimeline>
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 px-3 md:px-5 pt-4 pb-1 flex items-center gap-2 border-b border-border/50">
+          <div className="shrink-0 px-3 md:px-5 pr-12 md:pr-5 pt-4 pb-1 flex items-center gap-2 border-b border-border/50">
             <TabsList className="bg-muted/50 h-9 md:h-8 flex-1 justify-start md:justify-center overflow-x-auto scrollbar-none">
               {isMobile && (
                 <TabsTrigger value="info" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
