@@ -258,14 +258,53 @@ export default function VagaPage() {
 
   const responder = (valor: string, ganhos = 0) => {
     dizerEu(valor);
-    setRespostas((r) => ({ ...r, [pergunta.id]: valor }));
-    setPontos((p) => p + ganhos);
+    const respostasAtualizadas = { ...respostas, [pergunta.id]: valor };
+    const pontosAtualizados = pontos + ganhos;
+    setRespostas(respostasAtualizadas);
+    setPontos(pontosAtualizados);
     setRespondidas((n) => n + 1);
     setInput("");
     setDock("nenhum");
+
+    // Captura antecipada: assim que temos nome + WhatsApp, grava como novo_lead
+    if (pergunta.id === "telefone" && respostasAtualizadas.nome && !candidatoId) {
+      supabase.functions
+        .invoke("rh-vaga-lead", {
+          body: {
+            acao: "criar",
+            nome: respostasAtualizadas.nome,
+            telefone: valor,
+            respostas: respostasAtualizadas,
+          },
+        })
+        .then(({ data, error }) => {
+          const id = (data as any)?.candidato_id;
+          if (error || !id) {
+            console.warn("[vaga] captura antecipada falhou (fallback no agendamento)", error);
+            return;
+          }
+          setCandidatoId(id);
+        })
+        .catch((e) => console.warn("[vaga] captura antecipada falhou", e));
+    }
+
     if (idx + 1 < PERGUNTAS.length) {
       perguntar(idx + 1);
     } else {
+      // Última pergunta: completa o perfil do lead mesmo que não agende
+      const temperaturaFinal = pontosAtualizados >= 6 ? "quente" : pontosAtualizados >= 3 ? "morno" : "frio";
+      if (candidatoId) {
+        supabase.functions
+          .invoke("rh-vaga-lead", {
+            body: {
+              acao: "atualizar",
+              candidato_id: candidatoId,
+              respostas: respostasAtualizadas,
+              temperatura: temperaturaFinal,
+            },
+          })
+          .catch((e) => console.warn("[vaga] atualização do perfil falhou", e));
+      }
       const primeiro = (pergunta.id === "nome" ? valor : respostas.nome || "").trim().split(/\s+/)[0];
       enfileirar([
         { tipo: "host", texto: `Show, ${primeiro}! Bora marcar sua entrevista com o nosso RH.` },
@@ -275,6 +314,7 @@ export default function VagaPage() {
       carregarAgenda();
     }
   };
+
 
   const temperatura = useMemo(() => (pontos >= 6 ? "quente" : pontos >= 3 ? "morno" : "frio"), [pontos]);
 
