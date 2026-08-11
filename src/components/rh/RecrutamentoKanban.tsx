@@ -187,17 +187,16 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   };
 
   const fetchGerentes = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("user_id, nome, avatar_url, cargo, ativo")
-      .in("cargo", ["gerente", "gestor"]);
+    // Fonte = papel real (user_roles): gestor e NÃO diretor
+    const { data, error } = await supabase.rpc("get_gerentes_recrutamento" as any);
     if (error) return;
-    const list = (data || [])
-      .filter((p) => p.ativo !== false && p.user_id)
+    const list = ((data || []) as any[])
+      .filter((p) => p.user_id)
       .map((p) => ({ user_id: p.user_id as string, nome: (p.nome as string) || "Gerente", avatar_url: p.avatar_url ?? null }))
       .sort((a, b) => a.nome.localeCompare(b.nome));
     setGerentes(list);
   };
+
 
   useEffect(() => {
     fetchCandidatos();
