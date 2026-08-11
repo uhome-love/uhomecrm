@@ -14808,6 +14808,14 @@ export type Database = {
         Args: { p_corretor_id: string }
         Returns: Json
       }
+      get_gerentes_recrutamento: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          nome: string
+          user_id: string
+        }[]
+      }
       get_individual_oa_ranking: {
         Args: { p_end?: string; p_period?: string; p_start?: string }
         Returns: Json
