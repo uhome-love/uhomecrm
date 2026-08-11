@@ -538,6 +538,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
               )}
 
               {/* Mover para etapa */}
+              {!readOnly && (
               <div className="pt-4 border-t border-border/60 space-y-2">
                 <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mover para etapa</Label>
                 <div className="flex flex-wrap gap-2">
@@ -552,6 +553,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                   ))}
                 </div>
               </div>
+              )}
             </div>
           )}
         </DialogContent>
