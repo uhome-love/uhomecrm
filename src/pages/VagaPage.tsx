@@ -51,14 +51,6 @@ const PERGUNTAS: Pergunta[] = [
     ],
   },
   {
-    id: "disponibilidade", tipo: "opcoes", texto: "Qual sua disponibilidade?",
-    opcoes: [
-      { label: "Período integral", pontos: 2 },
-      { label: "Meio período", pontos: 1 },
-      { label: "Só fins de semana", pontos: 1 },
-    ],
-  },
-  {
     id: "regiao", tipo: "opcoes", texto: "Você mora em Porto Alegre ou região?",
     opcoes: [
       { label: "Sim, em Porto Alegre", pontos: 2 },
