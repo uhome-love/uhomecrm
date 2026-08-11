@@ -11,20 +11,33 @@ import { useAuth } from "@/hooks/useAuth";
 
 export type NegFase = "em_negociacao" | "contrato" | "ganho";
 export type NegSub = "proposta" | "documentacao" | "aprovacao_credito" | "reserva";
-/** O "passo" comercial — a coluna do kanban de Negócios (fluxo real da Uhome). */
-export type NegPasso = "proposta" | "documentacao" | "aprovacao" | "contrato" | "leitura" | "assinatura";
+/** O "passo" comercial = a coluna do kanban (fluxo real Uhome: docs antes da proposta). */
+export type NegPasso = "documentacao" | "proposta" | "contrato" | "ganho";
 
 /** Deriva o passo a partir da etapa + sub-status REAL do flag_status do lead. */
 export function passoDe(fase: NegFase, statusNeg: string, statusContrato: string): NegPasso {
-  if (fase === "ganho") return "assinatura";
-  if (fase === "contrato") {
-    if (/leitura|em_leitura/.test(statusContrato) || /leitura/.test(statusNeg)) return "leitura";
-    return "contrato";
-  }
-  // em_negociacao
-  if (/aprova/.test(statusNeg)) return "aprovacao";
+  if (fase === "ganho") return "ganho";
+  if (fase === "contrato") return "contrato";
+  // em_negociacao: documentação vem antes; aprovação é DENTRO da proposta.
   if (/documentacao/.test(statusNeg)) return "documentacao";
   return "proposta";
+}
+
+/** Micro-status legível pro card (mostra onde está dentro do passo — inclui aprovação). */
+const DETALHE: Record<string, string> = {
+  proposta_solicitada: "proposta solicitada",
+  proposta_enviada: "proposta enviada",
+  proposta_aprovada: "✓ aprovada",
+  documentacao_enviada: "docs enviados",
+  aprovacao_bancaria: "aguardando banco",
+  aprovacao_proprietario: "aguardando construtora",
+  em_confeccao: "gerando contrato",
+  gerado: "contrato gerado",
+  leitura_contrato: "em leitura",
+  em_leitura: "em leitura",
+};
+export function detalheDe(statusNeg: string, statusContrato: string): string {
+  return DETALHE[statusNeg] || DETALHE[statusContrato] || "";
 }
 
 export interface NegocioCard {
@@ -37,6 +50,8 @@ export interface NegocioCard {
   fase: NegFase;
   sub: NegSub | null;
   passo: NegPasso;
+  /** micro-status legível (proposta enviada / aguardando banco / em leitura…) */
+  detalhe: string;
   vgv: number | null;
   vgvFinal: number | null;
   dias: number;
@@ -144,6 +159,7 @@ export function useNegociosBoard() {
           fase,
           sub: fase === "em_negociacao" ? subDe(n as never) : null,
           passo: passoDe(fase, flag.neg, flag.contrato),
+          detalhe: detalheDe(flag.neg, flag.contrato),
           vgv: fase === "ganho" ? (vgvFinal ?? vgv) : vgv,
           vgvFinal,
           dias,

@@ -14,14 +14,12 @@ import { Briefcase, Users, User, ArrowRight } from "lucide-react";
  */
 
 type ColKey = "pos_visita" | NegPasso;
-const COLS: { key: ColKey; nm: string; dot: string; stripe: string }[] = [
-  { key: "pos_visita",   nm: "Pós-Visita",       dot: "bg-cyan-500",    stripe: "before:bg-cyan-500" },
-  { key: "proposta",     nm: "Proposta",         dot: "bg-violet-500",  stripe: "before:bg-violet-500" },
-  { key: "documentacao", nm: "Documentação",     dot: "bg-sky-500",     stripe: "before:bg-sky-500" },
-  { key: "aprovacao",    nm: "Aprovação",        dot: "bg-pink-500",    stripe: "before:bg-pink-500" },
-  { key: "contrato",     nm: "Contrato",         dot: "bg-indigo-500",  stripe: "before:bg-indigo-500" },
-  { key: "leitura",      nm: "Leitura & dúvidas", dot: "bg-amber-500",  stripe: "before:bg-amber-500" },
-  { key: "assinatura",   nm: "Assinatura",       dot: "bg-emerald-500", stripe: "before:bg-emerald-500" },
+const COLS: { key: ColKey; nm: string; dot: string }[] = [
+  { key: "pos_visita",   nm: "Pós-Visita",   dot: "bg-cyan-500" },
+  { key: "documentacao", nm: "Documentação", dot: "bg-sky-500" },
+  { key: "proposta",     nm: "Proposta",     dot: "bg-violet-500" },
+  { key: "contrato",     nm: "Contrato",     dot: "bg-indigo-500" },
+  { key: "ganho",        nm: "Ganho",        dot: "bg-emerald-500" },
 ];
 
 function money(reais: number | null): string | null {
@@ -57,10 +55,10 @@ export default function NegociosWorkspace() {
   const sum = (arr: { vgv?: number | null }[]) => arr.reduce((s, n) => s + (n.vgv || 0), 0);
 
   // KPIs
-  const assinado = byPasso("assinatura");
+  const assinado = byPasso("ganho");
   const emJogo = negocios.filter((n) => n.fase !== "ganho");
   const forecast = Math.round(negocios.reduce((s, n) => {
-    const w = n.passo === "assinatura" ? 1 : n.passo === "leitura" || n.passo === "contrato" ? 0.8 : n.passo === "aprovacao" ? 0.6 : n.passo === "documentacao" ? 0.45 : 0.3;
+    const w = n.passo === "ganho" ? 1 : n.passo === "contrato" ? 0.8 : n.passo === "proposta" ? 0.5 : 0.3;
     return s + (n.vgv || 0) * w;
   }, 0));
   const parados = negocios.filter((n) => n.tone === "bad").length;
@@ -118,7 +116,7 @@ export default function NegociosWorkspace() {
                   <span className={cn("h-2.5 w-2.5 rounded-full", c.dot)} />
                   <span className="text-[12.5px] font-bold">{c.nm}</span>
                   <span className="rounded-full bg-background px-1.5 text-[10px] font-bold text-muted-foreground">{info.count}</span>
-                  {!isPos && <span className={cn("ml-auto text-[11px] font-bold", c.key === "assinatura" && "text-emerald-600")}>{money(info.vgv) || "—"}</span>}
+                  {!isPos && <span className={cn("ml-auto text-[11px] font-bold", c.key === "ganho" && "text-emerald-600")}>{money(info.vgv) || "—"}</span>}
                 </div>
                 <div className="flex flex-col gap-2 px-2 pb-2">
                   {isPos ? (
@@ -170,6 +168,9 @@ function NegCard({ n, lens, onClick }: { n: NegocioCard; lens: Lens; onClick: ()
         {n.vgv == null ? <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-700 dark:bg-amber-500/10">falta VGV</span> : <span className="shrink-0 text-[12.5px] font-extrabold">{money(n.vgv)}</span>}
       </div>
       <div className="truncate text-[11px] text-muted-foreground">{n.empreendimento}</div>
+      {n.detalhe && !ganho && (
+        <div className="mt-1 truncate text-[10.5px] font-semibold text-foreground/70">· {n.detalhe}</div>
+      )}
       <div className="mt-1.5 flex items-center gap-1.5">
         {ganho && n.dataAssinatura && <span className="text-[9.5px] font-bold text-emerald-600">✓ assinado</span>}
         {n.ceo && <span className="rounded-md bg-amber-50 px-1.5 text-[9px] font-bold text-amber-700 dark:bg-amber-500/10">CEO</span>}
