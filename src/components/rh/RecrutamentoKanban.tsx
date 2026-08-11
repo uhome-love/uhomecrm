@@ -562,7 +562,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
               {/* Gerente */}
               {(detailGerente || isRh) && (
-                <div className="rounded-xl border border-border/60 px-4 py-3 space-y-3">
+                <section className="rounded-xl border border-border/60 px-4 py-4 space-y-3">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                     <UserCheck className="h-3.5 w-3.5 text-primary" /> Gerente
                   </p>
@@ -574,7 +574,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                         value={detailCandidate.gerente_id ?? "none"}
                         onValueChange={(v) => atribuirGerente(detailCandidate.id, v === "none" ? null : v)}
                       >
-                        <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar gerente" /></SelectTrigger>
+                        <SelectTrigger className="h-9 rounded-lg"><SelectValue placeholder="Selecionar gerente" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Sem gerente</SelectItem>
                           {gerentes.map((g) => (
@@ -584,12 +584,12 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                       </Select>
                     </div>
                   )}
-                </div>
+                </section>
               )}
 
               {/* Respostas do quiz */}
               {detailRespostas && (
-                <div className="space-y-3">
+                <section className="space-y-3">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Respostas do quiz</p>
                   <div className="space-y-3">
                     {[
@@ -602,37 +602,42 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                       value ? (
                         <div key={label as string} className="border-l-2 border-primary/40 pl-3">
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label as string}</p>
-                          <p className="text-sm text-foreground">{String(value)}</p>
+                          <p className="text-sm text-foreground leading-relaxed">{String(value)}</p>
                         </div>
                       ) : null
                     )}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* Observações */}
               {detailCandidate.observacoes && (
-                <p className="text-sm text-muted-foreground bg-muted/40 rounded-xl px-4 py-3 whitespace-pre-wrap">
-                  {detailCandidate.observacoes}
-                </p>
+                <section className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Observações</p>
+                  <p className="text-sm text-muted-foreground bg-muted/35 border border-border/60 rounded-xl px-4 py-3 whitespace-pre-wrap leading-relaxed">
+                    {detailCandidate.observacoes}
+                  </p>
+                </section>
               )}
 
               {/* Mover para etapa */}
               {!readOnly && (
-              <div className="pt-4 border-t border-border/60 space-y-2">
-                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mover para etapa</Label>
-                <div className="flex flex-wrap gap-2">
-                  {ETAPAS.filter((e) => e.key !== detailCandidate.etapa).map((e) => (
-                    <Button
-                      key={e.key} size="sm" variant="outline" className="text-xs h-8 rounded-full"
-                      style={{ borderColor: e.color, color: e.color }}
-                      onClick={() => { moveToEtapa(detailCandidate.id, e.key); setDetailCandidate(null); }}
-                    >
-                      {e.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+                <section className="pt-5 border-t border-border/60 space-y-2.5">
+                  <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mover para etapa</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {ETAPAS.filter((e) => e.key !== detailCandidate.etapa).map((e) => (
+                      <Button
+                        key={e.key} size="sm" variant="outline"
+                        className="text-xs h-8 rounded-full px-3.5 font-medium bg-background hover:bg-transparent transition-colors"
+                        style={{ borderColor: `${e.color}66`, color: e.color }}
+                        onClick={() => { moveToEtapa(detailCandidate.id, e.key); setDetailCandidate(null); }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full mr-1.5" style={{ background: e.color }} />
+                        {e.label}
+                      </Button>
+                    ))}
+                  </div>
+                </section>
               )}
             </div>
           )}
