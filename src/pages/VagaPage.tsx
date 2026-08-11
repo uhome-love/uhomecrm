@@ -332,6 +332,7 @@ export default function VagaPage() {
     setErro(null);
     const { data, error } = await supabase.functions.invoke("rh-vaga-candidato", {
       body: {
+        candidato_id: candidatoId,
         nome: respostas.nome,
         telefone: respostas.telefone,
         respostas,
