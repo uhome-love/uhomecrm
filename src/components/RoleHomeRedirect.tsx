@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
 /**
@@ -7,9 +8,14 @@ import { Loader2 } from "lucide-react";
  * enquanto o papel é resolvido — nunca a dashboard errada.
  */
 export default function RoleHomeRedirect() {
-  const { isAdmin, isDiretor, isGestor, isBackoffice, isRh, loading } = useUserRole();
+  const { user } = useAuth();
+  const { roles, isAdmin, isDiretor, isGestor, isBackoffice, isRh, loading, error } = useUserRole();
 
-  if (loading) {
+  // Enquanto não temos papéis resolvidos (e sem erro), seguimos em loading — nunca
+  // caímos no fallback de corretor por um instante.
+  const aguardando = !user || loading || (roles.length === 0 && !error);
+
+  if (aguardando) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <img src="/images/uhome-logo-128.png" alt="Uhome" className="h-16 w-16 animate-pulse" />
