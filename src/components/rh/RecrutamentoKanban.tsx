@@ -270,6 +270,27 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     }
   };
 
+  // Observações da RH (campo editável no modal)
+  useEffect(() => {
+    setObsDraft(detailCandidate?.observacoes ?? "");
+  }, [detailCandidate?.id, detailCandidate?.observacoes]);
+
+  const salvarObservacoes = async (id: string) => {
+    setSavingObs(true);
+    const valor = obsDraft.trim() || null;
+    const { error } = await supabase
+      .from("rh_candidatos" as any)
+      .update({ observacoes: valor, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    setSavingObs(false);
+    if (error) { toast.error("Erro ao salvar observações"); return; }
+    toast.success("Observações salvas!");
+    setDetailCandidate((c) => (c && c.id === id ? { ...c, observacoes: valor } : c));
+    setCandidatos((list) => list.map((c) => (c.id === id ? { ...c, observacoes: valor } : c)));
+  };
+
+
+
   const getCandidatosByEtapa = (etapa: string) =>
     candidatos
       .filter((c) => c.etapa === etapa)
