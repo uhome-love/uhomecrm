@@ -80,30 +80,41 @@ export default function UsuarioDrawer({ user, open, onOpenChange, onSaved, onReq
   if (!user) return null;
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      const body: Record<string, any> = {
+      const cleanNome = nome.trim();
+      const cleanEmail = email.trim();
+      if (!cleanNome || cleanNome.length > 120) throw new Error("Informe um nome válido de até 120 caracteres.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) throw new Error("Informe um e-mail válido.");
+      if (novaSenha && (novaSenha.length < 8 || novaSenha.length > 128)) {
+        throw new Error("A nova senha deve ter entre 8 e 128 caracteres.");
+      }
+
+      setSaving(true);
+      const body: Record<string, unknown> = {
         action: "update_user",
         target_user_id: user.user_id,
-        nome: nome.trim(),
-        email: email.trim(),
+        nome: cleanNome,
+        email: cleanEmail,
         telefone: telefone.trim() || null,
         cpf: cpf.trim() || null,
         creci: creci.trim() || null,
         jetimob_user_id: jetimob.trim() || null,
       };
       if (novaSenha) {
-        if (novaSenha.length < 6) throw new Error("Senha mínima de 6 caracteres.");
         body.senha = novaSenha;
       }
       const { data, error } = await supabase.functions.invoke("create-broker-user", { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success("Alterações salvas.");
-      setNovaSenha("");
+      const warnings = Array.isArray(data?.warnings)
+        ? data.warnings.filter((warning: unknown): warning is string => typeof warning === "string")
+        : [];
+      if (warnings.length > 0) toast.warning(warnings.join(" "), { duration: 8000 });
+      else toast.success("Alterações salvas.");
+      if (!warnings.some((warning) => warning.includes("senha não foi alterada"))) setNovaSenha("");
       onSaved();
-    } catch (err: any) {
-      toast.error(err?.message || "Erro ao salvar.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
       setSaving(false);
     }
@@ -201,10 +212,10 @@ export default function UsuarioDrawer({ user, open, onOpenChange, onSaved, onReq
                   <KeyRound className="h-3.5 w-3.5" /> Redefinir senha
                 </Label>
                 <div className="flex gap-2">
-                  <Input type="password" value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} placeholder="Deixe em branco para manter" />
+                  <Input type="password" value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} placeholder="Deixe em branco para manter" minLength={8} maxLength={128} />
                   <Button onClick={handleSave} disabled={saving || !novaSenha} variant="outline">Aplicar</Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Nova senha temporária. O usuário deve alterá-la no próximo login.</p>
+                <p className="text-xs text-muted-foreground">Use pelo menos 8 caracteres, combinando letras, números e símbolos. Senhas muito comuns são recusadas.</p>
               </div>
 
               <div className="rounded-lg border p-4 flex items-center justify-between">

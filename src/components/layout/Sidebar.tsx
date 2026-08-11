@@ -7,7 +7,7 @@ import {
   CalendarDays, Home, Phone, Search, Megaphone,
   BarChart3, TrendingUp, Heart, Star, Mail,
   MessageSquare, Sparkles, Bot, BookOpen,
-  Users, UsersRound, Briefcase, Video, ChevronRight,
+  Users, UsersRound, Video, ChevronRight,
   Sun, Moon, ShieldCheck, ClipboardList, Wrench,
   Trophy, GraduationCap, Lightbulb, Layers,
   Building2, Wallet, ListTodo, Database,
@@ -86,6 +86,13 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       ],
     },
     {
+      title: "RH",
+      items: [
+        { label: "Recrutamento",       path: "/recrutamento/acompanhamento", icon: <UsersRound size={15} strokeWidth={1.5} /> },
+        { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
+      ],
+    },
+    {
       title: "Marketing",
       items: [
         { label: "Central de Marketing", path: "/dados-anuncios",  icon: <BarChart2    size={15} strokeWidth={1.5} /> },
@@ -147,6 +154,13 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       ],
     },
     {
+      title: "RH",
+      items: [
+        { label: "Recrutamento",       path: "/recrutamento/acompanhamento", icon: <UsersRound size={15} strokeWidth={1.5} /> },
+        { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
+      ],
+    },
+    {
       title: "Marketing",
       items: [
         { label: "Central de Marketing", path: "/dados-anuncios",  icon: <BarChart2    size={15} strokeWidth={1.5} /> },
@@ -198,6 +212,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Time",
       items: [
         { label: "Meu Time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
+        { label: "Meus Candidatos",    path: "/gerente/candidatos", icon: <Users       size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Performance",        path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
@@ -306,7 +321,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Recrutamento",
       items: [
         { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
-        { label: "Entrevistas",        path: "/rh/entrevistas",    icon: <Briefcase    size={15} strokeWidth={1.5} /> },
+        
       ],
     },
     {

@@ -111,16 +111,6 @@ Deno.serve(async (req) => {
       return json({ error: "slot_ocupado", message: "Esse horário acabou de ser preenchido. Escolha outro." }, 409);
     }
 
-    // Resumo curto do perfil para observações
-    const resumo = [
-      temperatura ? `Perfil: ${temperatura}` : null,
-      respostas.vendas ? `Vendas: ${respostas.vendas}` : null,
-      respostas.imobiliario ? `Imobiliário: ${respostas.imobiliario}` : null,
-      respostas.disponibilidade ? `Disponibilidade: ${respostas.disponibilidade}` : null,
-      respostas.regiao ? `Região: ${respostas.regiao}` : null,
-      respostas.motivacao ? `Motivação: "${String(respostas.motivacao).slice(0, 200)}"` : null,
-    ].filter(Boolean).join(" · ");
-
     const { data: candidato, error: candErr } = await supabase
       .from("rh_candidatos")
       .insert({
@@ -131,7 +121,7 @@ Deno.serve(async (req) => {
         etapa: "entrevista_marcada",
         temperatura,
         respostas,
-        observacoes: resumo || null,
+        observacoes: null, // campo livre da RH — as respostas ficam no bloco "Respostas do quiz"
       })
       .select("id")
       .single();
@@ -154,10 +144,33 @@ Deno.serve(async (req) => {
       console.error("[rh-vaga-candidato] insert entrevista", entErr);
       if (conflito) {
         // candidato fica registrado, mas volta para etapa anterior
-        await supabase.from("rh_candidatos").update({ etapa: "interessado" }).eq("id", candidato.id);
+        await supabase.from("rh_candidatos").update({ etapa: "novo_lead" }).eq("id", candidato.id);
         return json({ error: "slot_ocupado", message: "Esse horário acabou de ser preenchido. Escolha outro." }, 409);
       }
       return json({ error: "Não foi possível agendar a entrevista." }, 500);
+    }
+
+    // ── Notificação in-app para o time de RH (silenciosa: nunca quebra o funil) ──
+    try {
+      const { data: rhRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "rh");
+      const destinatarios = [...new Set(((rhRoles as { user_id: string }[]) || []).map((r) => r.user_id))];
+      for (const userId of destinatarios) {
+        const { error: notErr } = await supabase.rpc("criar_notificacao", {
+          p_user_id: userId,
+          p_tipo: "info",
+          p_categoria: "recrutamento_novo_candidato",
+          p_titulo: "Nova entrevista marcada",
+          p_mensagem: `${nome}${temperatura ? ` · ${temperatura}` : ""} · entrevista ${label}`,
+          p_dados: { candidato_id: candidato.id, temperatura, horario: slot.toISOString(), url: "/rh/recrutamento" },
+          p_agrupamento_key: `recrutamento_novo_candidato:${candidato.id}`,
+        });
+        if (notErr) console.error("[rh-vaga-candidato] notificar rh", notErr);
+      }
+    } catch (e) {
+      console.error("[rh-vaga-candidato] notificação falhou (ignorado)", e);
     }
 
     return json({

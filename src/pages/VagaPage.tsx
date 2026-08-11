@@ -2,6 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { supabase } from "@/integrations/supabase/client";
 import lucasAsset from "@/assets/lucas-fundador.jpg.asset.json";
 
+const META_PIXEL_ID = "1426170849536314";
+
+
 /**
  * /vaga — Página PÚBLICA (sem login) do anúncio de recrutamento.
  * Quiz conversacional hospedado pelo "Lucas Sarmento — Fundador · Uhome".
@@ -63,7 +66,7 @@ const PERGUNTAS: Pergunta[] = [
       { label: "Fora, mas posso me deslocar", pontos: 0 },
     ],
   },
-  { id: "motivacao", tipo: "texto", texto: "Em uma frase, por que você quer ser corretor(a) na Uhome?", placeholder: "Escreva com suas palavras" },
+  
 ];
 
 const TOTAL_PERGUNTAS = PERGUNTAS.length;
@@ -149,6 +152,34 @@ export default function VagaPage() {
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", "Trabalhe como corretor(a) na Uhome: 60 a 80 leads por mês, comissões de R$ 8 a 10 mil por venda e método próprio. Candidate-se em 2 minutos.");
   }, []);
+
+  // ── Meta Pixel (base code) — só injeta se ainda não existir ──
+  useEffect(() => {
+    const w = window as any;
+    if (typeof w.fbq === "function") {
+      try { w.fbq("track", "PageView"); } catch {}
+      return;
+    }
+    try {
+      /* eslint-disable */
+      (function (f: any, b: Document, e: string, v: string) {
+        let n: any, t: any, s: any;
+        n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n; n.loaded = true; n.version = "2.0"; n.queue = [];
+        t = b.createElement(e) as HTMLScriptElement;
+        t.async = true; t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+      /* eslint-enable */
+      w.fbq("init", META_PIXEL_ID);
+      w.fbq("track", "PageView");
+    } catch {}
+  }, []);
+
 
   // ── Motor da conversa: uma mensagem por vez, com "digitando…" ──
   useEffect(() => {
@@ -286,7 +317,13 @@ export default function VagaPage() {
       setErro(res?.message || res?.error || "Não foi possível concluir. Tente novamente.");
       return;
     }
+    // Meta Pixel — conversão "Lead" (uma vez, no sucesso do agendamento)
+    try {
+      const fbq = (window as any).fbq;
+      if (typeof fbq === "function") fbq("trackCustom", "CandidaturaVaga", { content_name: "Vaga Corretor" });
+    } catch {}
     const quando = `${DIAS_SEMANA[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} às ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
     setDock("fim");
     setMsgs((m) => [...m, { tipo: "sucesso", quando, telefone: respostas.telefone || "" }]);
     enfileirar([
@@ -389,6 +426,9 @@ export default function VagaPage() {
                   </p>
                   <p className="mt-3 text-[12.5px]" style={{ color: TXT_SOFT }}>
                     Nosso RH vai te confirmar pelo WhatsApp {m.telefone}. Até lá!
+                  </p>
+                  <p className="mt-2 text-[12px]" style={{ color: TXT_SOFT }}>
+                    Sua entrevista será por Google Meet — nosso RH te envia o link na confirmação pelo WhatsApp.
                   </p>
                 </div>
               );

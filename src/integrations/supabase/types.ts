@@ -11179,6 +11179,7 @@ export type Database = {
           created_by: string | null
           email: string | null
           etapa: string
+          gerente_id: string | null
           id: string
           nome: string
           observacoes: string | null
@@ -11193,6 +11194,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           etapa?: string
+          gerente_id?: string | null
           id?: string
           nome: string
           observacoes?: string | null
@@ -11207,6 +11209,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           etapa?: string
+          gerente_id?: string | null
           id?: string
           nome?: string
           observacoes?: string | null
@@ -14804,6 +14807,14 @@ export type Database = {
       get_elegibilidade_roleta: {
         Args: { p_corretor_id: string }
         Returns: Json
+      }
+      get_gerentes_recrutamento: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          nome: string
+          user_id: string
+        }[]
       }
       get_individual_oa_ranking: {
         Args: { p_end?: string; p_period?: string; p_start?: string }

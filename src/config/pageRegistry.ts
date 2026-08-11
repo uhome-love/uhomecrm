@@ -110,7 +110,9 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   cadastros: lazyRetry(() => import("@/pages/CadastrosPage")),
   rh: lazyRetry(() => import("@/pages/RhDashboard")),
   "rh-recrutamento": lazyRetry(() => import("@/pages/RhRecrutamento")),
-  "rh-entrevistas": lazyRetry(() => import("@/pages/RhEntrevistas")),
+  "recrutamento-acompanhamento": lazyRetry(() => import("@/pages/RecrutamentoAcompanhamento")),
+  "gerente-candidatos": lazyRetry(() => import("@/pages/GerenteCandidatos")),
+  
   "rh-conversas": lazyRetry(() => import("@/pages/RhConversas")),
   "rh-sala-reuniao": lazyRetry(() => import("@/pages/RhSalaReuniao")),
   "import-brevo": lazyRetry(() => import("@/pages/ImportBrevoContacts")),
@@ -193,8 +195,10 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/backoffice/homi-ana":             { key: "homi-ana",               label: "HOMI Ana",            icon: "Bot",           roles: ["backoffice", "admin"] },
   "/backoffice/tarefas":              { key: "backoffice-central",     label: "Tarefas BO",          icon: "ListTodo",      roles: ["backoffice", "admin"] },
   "/backoffice/cadastros":            { key: "cadastros",              label: "Cadastros",           icon: "Database",      roles: ["backoffice", "admin"] },
-  "/rh/recrutamento":       { key: "rh-recrutamento",      label: "Candidatos",          icon: "Users",         roles: ["rh", "admin"] },
-  "/rh/entrevistas":        { key: "rh-entrevistas",       label: "Entrevistas",         icon: "Briefcase",     roles: ["rh", "admin"] },
+  "/rh/recrutamento":       { key: "rh-recrutamento",      label: "Candidatos",          icon: "Users",         roles: ["rh", "admin", "diretor"] },
+  "/gerente/candidatos":    { key: "gerente-candidatos",   label: "Meus Candidatos",     icon: "Users",         roles: ["gestor", "admin"] },
+  "/recrutamento/acompanhamento": { key: "recrutamento-acompanhamento", label: "Recrutamento", icon: "BarChart3", roles: ["admin", "diretor"] },
+  
   "/rh/conversas":          { key: "rh-conversas",         label: "Conversas 1:1",       icon: "MessageSquare", roles: ["rh", "admin"] },
   "/rh/sala-reuniao":       { key: "rh-sala-reuniao",      label: "Sala de Reunião",     icon: "Video",         roles: ["rh", "admin"] },
   "/import-brevo-contacts": { key: "import-brevo",         label: "Import Brevo",        icon: "Database",      roles: ["admin"] },
