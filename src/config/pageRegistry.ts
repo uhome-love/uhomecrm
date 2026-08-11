@@ -112,7 +112,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "rh-recrutamento": lazyRetry(() => import("@/pages/RhRecrutamento")),
   "recrutamento-acompanhamento": lazyRetry(() => import("@/pages/RecrutamentoAcompanhamento")),
   "gerente-candidatos": lazyRetry(() => import("@/pages/GerenteCandidatos")),
-  "rh-entrevistas": lazyRetry(() => import("@/pages/RhEntrevistas")),
+  
   "rh-conversas": lazyRetry(() => import("@/pages/RhConversas")),
   "rh-sala-reuniao": lazyRetry(() => import("@/pages/RhSalaReuniao")),
   "import-brevo": lazyRetry(() => import("@/pages/ImportBrevoContacts")),
@@ -197,7 +197,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/rh/recrutamento":       { key: "rh-recrutamento",      label: "Candidatos",          icon: "Users",         roles: ["rh", "admin", "diretor"] },
   "/gerente/candidatos":    { key: "gerente-candidatos",   label: "Meus Candidatos",     icon: "Users",         roles: ["gestor", "admin"] },
   "/recrutamento/acompanhamento": { key: "recrutamento-acompanhamento", label: "Recrutamento", icon: "BarChart3", roles: ["admin", "diretor"] },
-  "/rh/entrevistas":        { key: "rh-entrevistas",       label: "Entrevistas",         icon: "Briefcase",     roles: ["rh", "admin"] },
+  
   "/rh/conversas":          { key: "rh-conversas",         label: "Conversas 1:1",       icon: "MessageSquare", roles: ["rh", "admin"] },
   "/rh/sala-reuniao":       { key: "rh-sala-reuniao",      label: "Sala de Reunião",     icon: "Video",         roles: ["rh", "admin"] },
   "/import-brevo-contacts": { key: "import-brevo",         label: "Import Brevo",        icon: "Database",      roles: ["admin"] },
