@@ -321,7 +321,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Recrutamento",
       items: [
         { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
-        { label: "Entrevistas",        path: "/rh/entrevistas",    icon: <Briefcase    size={15} strokeWidth={1.5} /> },
+        
       ],
     },
     {
