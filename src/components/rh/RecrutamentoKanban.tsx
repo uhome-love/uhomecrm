@@ -350,7 +350,15 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
       <Tabs
         value={tab}
-        onValueChange={(v) => setTab(v as "kanban" | "agenda")}
+        onValueChange={(v) => {
+          const next = v as "kanban" | "agenda";
+          setTab(next);
+          const params = new URLSearchParams(searchParams);
+          if (next === "agenda") params.set("tab", "agenda");
+          else params.delete("tab");
+          setSearchParams(params, { replace: true });
+        }}
+
         className="flex-1 min-h-0 flex flex-col"
       >
         <TabsList className="h-9 rounded-full bg-background/80 border border-border/60 p-1 shadow-sm self-start">
