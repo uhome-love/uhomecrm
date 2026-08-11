@@ -302,7 +302,12 @@ export async function syncNegocioVgvFromPdn(
 ): Promise<boolean> {
   if (!row.negocioId) return false;
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (vgv != null) patch.vgv_final = vgv; // sempre vgv_final (100%)
+  // VGV é DISCIPLINA: só Ganho recebe vgv_final (valor assinado); o resto é estimativa.
+  // (Corrige o furo que preenchia vgv_final em negócios não-fechados.)
+  if (vgv != null) {
+    if (row.grupo === "ganho") patch.vgv_final = vgv;
+    else patch.vgv_estimado = vgv;
+  }
   if (empreendimento !== null) patch.empreendimento = empreendimento || null;
   if (Object.keys(patch).length === 1) return false;
   const { error } = await supabase.from("negocios").update(patch as any).eq("id", row.negocioId);
