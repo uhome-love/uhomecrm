@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
       console.error("[rh-vaga-candidato] insert entrevista", entErr);
       if (conflito) {
         // candidato fica registrado, mas volta para etapa anterior
-        await supabase.from("rh_candidatos").update({ etapa: "novo_lead" }).eq("id", candidato.id);
+        await supabase.from("rh_candidatos").update({ etapa: etapaAnterior || "novo_lead" }).eq("id", candidato.id);
         return json({ error: "slot_ocupado", message: "Esse horário acabou de ser preenchido. Escolha outro." }, 409);
       }
       return json({ error: "Não foi possível agendar a entrevista." }, 500);
