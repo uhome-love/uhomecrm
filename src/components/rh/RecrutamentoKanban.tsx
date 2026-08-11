@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -154,7 +156,32 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   // Diretoria: acompanha em modo leitura (sem criar, atribuir ou mover)
   const readOnly = scope === "rh" && hasDiretorRole && !hasRhRole && !isAdmin;
   const isRh = scope === "rh" && !readOnly;
-  const [tab, setTab] = useState<"kanban" | "agenda">("kanban");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState<"kanban" | "agenda">(
+    searchParams.get("tab") === "agenda" ? "agenda" : "kanban"
+  );
+
+  // Mantém a aba em sincronia com o ?tab da URL (links diretos / redirects)
+  useEffect(() => {
+    const urlTab = searchParams.get("tab") === "agenda" ? "agenda" : "kanban";
+    setTab((prev) => (prev === urlTab ? prev : urlTab));
+  }, [searchParams]);
+
+  // Indicador de rolagem horizontal do board
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const [maisColunas, setMaisColunas] = useState(false);
+  const atualizarScroll = useCallback(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    setMaisColunas(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+  }, []);
+  useEffect(() => {
+    atualizarScroll();
+    window.addEventListener("resize", atualizarScroll);
+    return () => window.removeEventListener("resize", atualizarScroll);
+  }, [atualizarScroll, tab]);
+
+
 
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [entrevistas, setEntrevistas] = useState<Record<string, string>>({});
@@ -323,7 +350,15 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
       <Tabs
         value={tab}
-        onValueChange={(v) => setTab(v as "kanban" | "agenda")}
+        onValueChange={(v) => {
+          const next = v as "kanban" | "agenda";
+          setTab(next);
+          const params = new URLSearchParams(searchParams);
+          if (next === "agenda") params.set("tab", "agenda");
+          else params.delete("tab");
+          setSearchParams(params, { replace: true });
+        }}
+
         className="flex-1 min-h-0 flex flex-col"
       >
         <TabsList className="h-9 rounded-full bg-background/80 border border-border/60 p-1 shadow-sm self-start">
@@ -351,7 +386,13 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
         <TabsContent value="kanban" className="mt-4 flex-1 min-h-0 data-[state=active]:flex flex-col">
           {/* Kanban — ocupa toda a altura; a rolagem horizontal fica no rodapé */}
-          <div className="flex-1 min-h-0 flex gap-3 overflow-x-auto overflow-y-hidden scrollbar-thin pb-1">
+          <div className="relative flex-1 min-h-0 flex flex-col">
+          <div
+            ref={boardRef}
+            onScroll={atualizarScroll}
+            className="flex-1 min-h-0 flex gap-3 overflow-x-auto overflow-y-hidden scrollbar-thin pb-1"
+          >
+
             {ETAPAS.map((etapa) => {
               const items = getCandidatosByEtapa(etapa.key);
               return (
@@ -469,8 +510,17 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                 </div>
               );
             })}
+            </div>
+            {/* Indicador sutil de rolagem horizontal */}
+            {maisColunas && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute top-0 right-0 h-full w-14 bg-gradient-to-l from-background to-transparent rounded-r-2xl"
+              />
+            )}
           </div>
         </TabsContent>
+
       </Tabs>
 
 
