@@ -317,7 +317,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
         </TabsList>
 
         <TabsContent value="agenda" className="mt-4 flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-          <AgendaEntrevistas
+          <AgendaRecrutamento
             candidatos={candidatos.map((c) => ({ id: c.id, nome: c.nome, etapa: c.etapa }))}
             onKanbanUpdate={() => { fetchCandidatos(); fetchEntrevistas(); }}
             readOnly={readOnly}
