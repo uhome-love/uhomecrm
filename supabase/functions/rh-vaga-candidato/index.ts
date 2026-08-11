@@ -111,24 +111,48 @@ Deno.serve(async (req) => {
       return json({ error: "slot_ocupado", message: "Esse horário acabou de ser preenchido. Escolha outro." }, 409);
     }
 
-    const { data: candidato, error: candErr } = await supabase
-      .from("rh_candidatos")
-      .insert({
-        nome,
-        telefone,
-        email,
-        origem: "anuncio",
-        etapa: "entrevista_marcada",
-        temperatura,
-        respostas,
-        observacoes: null, // campo livre da RH — as respostas ficam no bloco "Respostas do quiz"
-      })
-      .select("id")
-      .single();
+    // ── Candidato: sobe o lead já capturado (novo_lead) ou cria do zero (fallback) ──
+    const candidatoIdRecebido = String(body.candidato_id || "").trim();
+    let candidato: { id: string } | null = null;
+    let etapaAnterior: string | null = null;
 
-    if (candErr || !candidato) {
-      console.error("[rh-vaga-candidato] insert candidato", candErr);
-      return json({ error: "Não foi possível registrar sua inscrição." }, 500);
+    if (candidatoIdRecebido) {
+      const { data: atualizado, error: upErr } = await supabase
+        .from("rh_candidatos")
+        .update({ nome, telefone, email, etapa: "entrevista_marcada", temperatura, respostas })
+        .eq("id", candidatoIdRecebido)
+        .eq("origem", "anuncio")
+        .in("etapa", ["novo_lead", "entrevista_marcada"])
+        .select("id")
+        .maybeSingle();
+      if (upErr) console.error("[rh-vaga-candidato] update candidato", upErr);
+      if (atualizado) {
+        candidato = atualizado;
+        etapaAnterior = "novo_lead";
+      }
+    }
+
+    if (!candidato) {
+      const { data: criado, error: candErr } = await supabase
+        .from("rh_candidatos")
+        .insert({
+          nome,
+          telefone,
+          email,
+          origem: "anuncio",
+          etapa: "entrevista_marcada",
+          temperatura,
+          respostas,
+          observacoes: null, // campo livre da RH — as respostas ficam no bloco "Respostas do quiz"
+        })
+        .select("id")
+        .single();
+
+      if (candErr || !criado) {
+        console.error("[rh-vaga-candidato] insert candidato", candErr);
+        return json({ error: "Não foi possível registrar sua inscrição." }, 500);
+      }
+      candidato = criado;
     }
 
     const { error: entErr } = await supabase.from("rh_entrevistas").insert({
