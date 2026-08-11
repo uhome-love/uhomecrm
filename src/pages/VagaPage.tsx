@@ -51,14 +51,6 @@ const PERGUNTAS: Pergunta[] = [
     ],
   },
   {
-    id: "disponibilidade", tipo: "opcoes", texto: "Qual sua disponibilidade?",
-    opcoes: [
-      { label: "Período integral", pontos: 2 },
-      { label: "Meio período", pontos: 1 },
-      { label: "Só fins de semana", pontos: 1 },
-    ],
-  },
-  {
     id: "regiao", tipo: "opcoes", texto: "Você mora em Porto Alegre ou região?",
     opcoes: [
       { label: "Sim, em Porto Alegre", pontos: 2 },
@@ -284,7 +276,7 @@ export default function VagaPage() {
     }
   };
 
-  const temperatura = useMemo(() => (pontos >= 8 ? "quente" : pontos >= 4 ? "morno" : "frio"), [pontos]);
+  const temperatura = useMemo(() => (pontos >= 6 ? "quente" : pontos >= 3 ? "morno" : "frio"), [pontos]);
 
   const dias = useMemo(() => proximosDiasUteis(10), []);
   const horariosLivres = useMemo(() => {
