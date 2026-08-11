@@ -609,15 +609,35 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                 </section>
               )}
 
-              {/* Observações */}
-              {detailCandidate.observacoes && (
-                <section className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Observações</p>
+              {/* Observações da RH */}
+              <section className="space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Observações da RH</p>
+                {readOnly ? (
                   <p className="text-sm text-muted-foreground bg-muted/35 border border-border/60 rounded-xl px-4 py-3 whitespace-pre-wrap leading-relaxed">
-                    {detailCandidate.observacoes}
+                    {detailCandidate.observacoes || "Sem observações — adicione anotações sobre o perfil"}
                   </p>
-                </section>
-              )}
+                ) : (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={obsDraft}
+                      onChange={(e) => setObsDraft(e.target.value)}
+                      placeholder="Sem observações — adicione anotações sobre o perfil"
+                      className="min-h-[88px] rounded-xl text-sm"
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        className="h-8 rounded-full px-4 text-xs"
+                        disabled={savingObs || obsDraft === (detailCandidate.observacoes ?? "")}
+                        onClick={() => salvarObservacoes(detailCandidate.id)}
+                      >
+                        {savingObs ? "Salvando..." : "Salvar"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </section>
+
 
               {/* Mover para etapa */}
               {!readOnly && (
