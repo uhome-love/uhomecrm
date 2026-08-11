@@ -363,7 +363,13 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
         <TabsContent value="kanban" className="mt-4 flex-1 min-h-0 data-[state=active]:flex flex-col">
           {/* Kanban — ocupa toda a altura; a rolagem horizontal fica no rodapé */}
-          <div className="flex-1 min-h-0 flex gap-3 overflow-x-auto overflow-y-hidden scrollbar-thin pb-1">
+          <div className="relative flex-1 min-h-0 flex flex-col">
+          <div
+            ref={boardRef}
+            onScroll={atualizarScroll}
+            className="flex-1 min-h-0 flex gap-3 overflow-x-auto overflow-y-hidden scrollbar-thin pb-1"
+          >
+
             {ETAPAS.map((etapa) => {
               const items = getCandidatosByEtapa(etapa.key);
               return (
