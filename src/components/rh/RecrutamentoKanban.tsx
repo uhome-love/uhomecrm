@@ -297,8 +297,24 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
         }
       />
 
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "kanban" | "agenda")}>
+        <TabsList>
+          <TabsTrigger value="kanban">Kanban</TabsTrigger>
+          <TabsTrigger value="agenda">Agenda</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agenda" className="mt-4">
+          <AgendaEntrevistas
+            candidatos={candidatos.map((c) => ({ id: c.id, nome: c.nome, etapa: c.etapa }))}
+            onKanbanUpdate={() => { fetchCandidatos(); fetchEntrevistas(); }}
+            readOnly={readOnly}
+          />
+        </TabsContent>
+
+        <TabsContent value="kanban" className="mt-4">
       {/* Kanban */}
       <div className="flex gap-3 overflow-x-auto pb-4" style={{ minHeight: "40vh" }}>
+
         {ETAPAS.map((etapa) => {
           const items = getCandidatosByEtapa(etapa.key);
           return (
