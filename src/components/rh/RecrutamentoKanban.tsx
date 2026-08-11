@@ -154,7 +154,17 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   // Diretoria: acompanha em modo leitura (sem criar, atribuir ou mover)
   const readOnly = scope === "rh" && hasDiretorRole && !hasRhRole && !isAdmin;
   const isRh = scope === "rh" && !readOnly;
-  const [tab, setTab] = useState<"kanban" | "agenda">("kanban");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState<"kanban" | "agenda">(
+    searchParams.get("tab") === "agenda" ? "agenda" : "kanban"
+  );
+
+  // Mantém a aba em sincronia com o ?tab da URL (links diretos / redirects)
+  useEffect(() => {
+    const urlTab = searchParams.get("tab") === "agenda" ? "agenda" : "kanban";
+    setTab((prev) => (prev === urlTab ? prev : urlTab));
+  }, [searchParams]);
+
 
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [entrevistas, setEntrevistas] = useState<Record<string, string>>({});
