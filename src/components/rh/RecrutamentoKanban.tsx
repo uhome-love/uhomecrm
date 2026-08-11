@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Phone, Mail, Users, Plus, CalendarDays, Megaphone, UserCheck } from "lucide-react";
+import { Phone, Mail, Users, Plus, CalendarDays, Megaphone, UserCheck, Video } from "lucide-react";
+import { MEET_LINK } from "@/config/recrutamento";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -568,10 +569,18 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                       <span className="h-9 w-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
                         <CalendarDays className="h-4 w-4 text-primary" />
                       </span>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Entrevista</p>
                         <p className="text-sm font-semibold text-foreground">{detailEntrevista}</p>
                       </div>
+                      <a
+                        href={MEET_LINK}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-semibold hover:bg-primary/15 transition-colors"
+                      >
+                        <Video className="h-3.5 w-3.5" /> Entrar no Meet
+                      </a>
                     </div>
                   )}
                   {detailCandidate.origem && (

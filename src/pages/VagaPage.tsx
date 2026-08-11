@@ -390,6 +390,9 @@ export default function VagaPage() {
                   <p className="mt-3 text-[12.5px]" style={{ color: TXT_SOFT }}>
                     Nosso RH vai te confirmar pelo WhatsApp {m.telefone}. Até lá!
                   </p>
+                  <p className="mt-2 text-[12px]" style={{ color: TXT_SOFT }}>
+                    Sua entrevista será por Google Meet — nosso RH te envia o link na confirmação pelo WhatsApp.
+                  </p>
                 </div>
               );
             }
