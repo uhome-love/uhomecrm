@@ -63,7 +63,7 @@ const PERGUNTAS: Pergunta[] = [
       { label: "Fora, mas posso me deslocar", pontos: 0 },
     ],
   },
-  { id: "motivacao", tipo: "texto", texto: "Em uma frase, por que você quer ser corretor(a) na Uhome?", placeholder: "Escreva com suas palavras" },
+  
 ];
 
 const TOTAL_PERGUNTAS = PERGUNTAS.length;

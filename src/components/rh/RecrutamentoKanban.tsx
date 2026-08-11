@@ -23,7 +23,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 export const ETAPAS = [
   { key: "novo_lead", label: "Novo Lead", color: "#4969FF" },
-  { key: "contato_iniciado", label: "Contato Iniciado", color: "#8B5CF6" },
+  
   { key: "interessado", label: "Interessado", color: "#F59E0B" },
   { key: "entrevista_marcada", label: "Entrevista Marcada", color: "#F97316" },
   { key: "entrevista_realizada", label: "Entrevista Realizada", color: "#10B981" },
