@@ -163,3 +163,6 @@ verify_jwt = false
 
 [functions.rh-vaga-candidato]
 verify_jwt = false
+
+[functions.rh-vaga-lead]
+verify_jwt = false
