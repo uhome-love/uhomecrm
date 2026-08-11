@@ -488,11 +488,30 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
       {/* Detail Dialog */}
       <Dialog open={!!detailCandidate} onOpenChange={() => setDetailCandidate(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-2xl">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/60">
-            <DialogTitle className="flex flex-wrap items-center gap-2 text-xl">
-              {detailCandidate?.nome}
-              {detailTemp && <TemperaturaBadge t={detailTemp} />}
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto scrollbar-thin p-0 gap-0 rounded-2xl">
+          <DialogHeader className="px-6 pt-6 pb-5 border-b border-border/60 bg-muted/20 rounded-t-2xl">
+            <DialogTitle asChild>
+              <div className="flex items-center gap-3.5 text-left">
+                <span
+                  className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center text-sm font-bold"
+                  style={
+                    detailTemp
+                      ? { background: TEMP_META[detailTemp].soft, color: TEMP_META[detailTemp].color }
+                      : { background: "hsl(var(--primary) / 0.12)", color: "hsl(var(--primary))" }
+                  }
+                >
+                  {iniciais(detailCandidate?.nome)}
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <p className="text-lg font-semibold leading-tight text-foreground truncate">{detailCandidate?.nome}</p>
+                  <div className="flex items-center gap-2">
+                    {detailTemp && <TemperaturaBadge t={detailTemp} />}
+                    {detailCandidate?.origem && (
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{detailCandidate.origem}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </DialogTitle>
           </DialogHeader>
           {detailCandidate && (
