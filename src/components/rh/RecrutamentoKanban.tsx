@@ -167,6 +167,21 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     setTab((prev) => (prev === urlTab ? prev : urlTab));
   }, [searchParams]);
 
+  // Indicador de rolagem horizontal do board
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const [maisColunas, setMaisColunas] = useState(false);
+  const atualizarScroll = useCallback(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    setMaisColunas(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+  }, []);
+  useEffect(() => {
+    atualizarScroll();
+    window.addEventListener("resize", atualizarScroll);
+    return () => window.removeEventListener("resize", atualizarScroll);
+  }, [atualizarScroll, tab]);
+
+
 
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [entrevistas, setEntrevistas] = useState<Record<string, string>>({});
