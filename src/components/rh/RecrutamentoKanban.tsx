@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Phone, Mail, Users, Plus, CalendarDays, Megaphone, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
+
 
 /**
  * RecrutamentoKanban — kanban compartilhado entre a tela da RH (todos os
