@@ -245,6 +245,38 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, user?.id]);
 
+  // Auto-atualização: refetch ao focar aba/janela + Realtime (aditivo)
+  const fetchRef = useRef<() => void>(() => {});
+  fetchRef.current = () => { fetchCandidatos(); fetchEntrevistas(); };
+
+  useEffect(() => {
+    const onFocus = () => fetchRef.current();
+    const onVisibility = () => { if (document.visibilityState === "visible") fetchRef.current(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fetchRef.current(), 400);
+    };
+
+    const channel = supabase
+      .channel("rh_recrutamento_kanban")
+      .on("postgres_changes", { event: "*", schema: "public", table: "rh_candidatos" }, debouncedRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rh_entrevistas" }, debouncedRefetch)
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, user?.id]);
+
+
   const handleAdd = async () => {
     if (!nome.trim()) { toast.error("Nome é obrigatório"); return; }
     const { error } = await supabase.from("rh_candidatos" as any).insert({
