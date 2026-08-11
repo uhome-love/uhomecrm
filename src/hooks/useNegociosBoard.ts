@@ -14,6 +14,7 @@ export type NegSub = "proposta" | "documentacao" | "aprovacao_credito" | "reserv
 
 export interface NegocioCard {
   id: string;
+  pipelineLeadId: string | null;
   cliente: string;
   empreendimento: string;
   corretor: string;
@@ -85,7 +86,7 @@ export function useNegociosBoard() {
       // negócios ativos nas fases de negócio
       const { data: negRaw } = await supabase
         .from("negocios")
-        .select("id, nome_cliente, empreendimento, corretor_id, fase, status, vgv_estimado, vgv_final, negociacao_situacao, documentacao_situacao, proposta_situacao, data_assinatura, requer_aprovacao_ceo, updated_at")
+        .select("id, pipeline_lead_id, nome_cliente, empreendimento, corretor_id, fase, status, vgv_estimado, vgv_final, negociacao_situacao, documentacao_situacao, proposta_situacao, data_assinatura, requer_aprovacao_ceo, updated_at")
         .in("fase", ["em_negociacao", "contrato", "ganho"])
         .neq("status", "arquivado")
         .limit(500);
@@ -107,6 +108,7 @@ export function useNegociosBoard() {
         const vgvFinal = (n.vgv_final as number) ?? null;
         return {
           id: String(n.id),
+          pipelineLeadId: (n.pipeline_lead_id as string) ?? null,
           cliente: String(n.nome_cliente ?? "Sem nome"),
           empreendimento: String(n.empreendimento ?? "—"),
           corretor: (n.corretor_id && nomeDe.get(String(n.corretor_id))) || "—",
