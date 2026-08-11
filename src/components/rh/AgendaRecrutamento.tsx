@@ -223,6 +223,16 @@ export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnl
                       {e.local && <p className="text-[11px] text-muted-foreground truncate">{e.local}</p>}
                     </div>
                     {statusBadge(e.status)}
+                    {e.status === "agendada" && (
+                      <a
+                        href={MEET_LINK}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-semibold hover:bg-primary/15 transition-colors"
+                      >
+                        <Video className="h-3 w-3" /> Entrar no Meet
+                      </a>
+                    )}
                     {!readOnly && e.status === "agendada" && (
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
