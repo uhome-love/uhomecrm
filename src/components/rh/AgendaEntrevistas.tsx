@@ -35,9 +35,11 @@ interface Entrevista {
 interface Props {
   candidatos: Candidato[];
   onKanbanUpdate: () => void;
+  /** Modo leitura (diretoria): só lista, sem agendar/marcar. */
+  readOnly?: boolean;
 }
 
-export default function AgendaEntrevistas({ candidatos, onKanbanUpdate }: Props) {
+export default function AgendaEntrevistas({ candidatos, onKanbanUpdate, readOnly = false }: Props) {
   const { user } = useAuth();
   const [entrevistas, setEntrevistas] = useState<Entrevista[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -173,9 +175,11 @@ export default function AgendaEntrevistas({ candidatos, onKanbanUpdate }: Props)
             <CalendarDays className="h-4 w-4 text-primary" />
             Agenda de Entrevistas
           </CardTitle>
-          <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-3 w-3" /> Agendar
-          </Button>
+          {!readOnly && (
+            <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => setDialogOpen(true)}>
+              <Plus className="h-3 w-3" /> Agendar
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -202,6 +206,7 @@ export default function AgendaEntrevistas({ candidatos, onKanbanUpdate }: Props)
                     </p>
                     {e.observacoes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{e.observacoes}</p>}
                   </div>
+                  {!readOnly && (
                   <div className="flex items-center gap-1 ml-2">
                     <Button
                       size="sm"
@@ -220,6 +225,7 @@ export default function AgendaEntrevistas({ candidatos, onKanbanUpdate }: Props)
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
+                  )}
                 </div>
               );
             })}
