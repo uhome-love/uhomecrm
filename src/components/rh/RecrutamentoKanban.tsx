@@ -146,7 +146,12 @@ interface Props {
 
 export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const { user } = useAuth();
-  const isRh = scope === "rh";
+  const { isAdmin, isRh: hasRhRole, isDiretor: hasDiretorRole } = useUserRole();
+  // Diretoria: acompanha em modo leitura (sem criar, atribuir ou mover)
+  const readOnly = scope === "rh" && hasDiretorRole && !hasRhRole && !isAdmin;
+  const isRh = scope === "rh" && !readOnly;
+  const [tab, setTab] = useState<"kanban" | "agenda">("kanban");
+
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [entrevistas, setEntrevistas] = useState<Record<string, string>>({});
   const [gerentes, setGerentes] = useState<Gerente[]>([]);
