@@ -182,7 +182,7 @@ export default function VagaPage() {
       setFila((f) => f.slice(1));
       return;
     }
-    const t = setTimeout(() => setDigitando(true), msgs.length ? 250 : 350);
+    const t = setTimeout(() => setDigitando(true), msgs.length ? 120 : 150);
     return () => clearTimeout(t);
   }, [fila, digitando, msgs.length]);
 
@@ -192,7 +192,7 @@ export default function VagaPage() {
       setMsgs((m) => (fila[0] ? [...m, fila[0]] : m));
       setFila((f) => f.slice(1));
       setDigitando(false);
-    }, 600);
+    }, 280);
     return () => clearTimeout(t);
   }, [digitando, fila]);
 
