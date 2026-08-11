@@ -122,6 +122,7 @@ export default function VagaPage() {
   const [respondidas, setRespondidas] = useState(0);
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [pontos, setPontos] = useState(0);
+  const [candidatoId, setCandidatoId] = useState<string | null>(null);
   const [input, setInput] = useState("");
 
   const [ocupados, setOcupados] = useState<Set<string>>(new Set());
