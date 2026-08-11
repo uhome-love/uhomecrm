@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import AgendaEntrevistas from "@/components/rh/AgendaEntrevistas";
+import AgendaRecrutamento from "@/components/rh/AgendaRecrutamento";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,13 +27,12 @@ import { PageHeader } from "@/components/ui/PageHeader";
 
 export const ETAPAS = [
   { key: "novo_lead", label: "Novo Lead", color: "#4969FF" },
-  
-  { key: "interessado", label: "Interessado", color: "#F59E0B" },
   { key: "entrevista_marcada", label: "Entrevista Marcada", color: "#F97316" },
   { key: "entrevista_realizada", label: "Entrevista Realizada", color: "#10B981" },
   { key: "contratado", label: "Contratado", color: "#22C55E" },
   { key: "sem_interesse", label: "Não Tem Interesse", color: "#EF4444" },
 ];
+
 
 type Temperatura = "quente" | "morno" | "frio";
 
