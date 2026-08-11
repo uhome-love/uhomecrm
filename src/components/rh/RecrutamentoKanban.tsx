@@ -405,77 +405,117 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
       {/* Detail Dialog */}
       <Dialog open={!!detailCandidate} onOpenChange={() => setDetailCandidate(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-2xl">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/60">
+            <DialogTitle className="flex flex-wrap items-center gap-2 text-xl">
               {detailCandidate?.nome}
               {detailTemp && <TemperaturaBadge t={detailTemp} />}
             </DialogTitle>
           </DialogHeader>
           {detailCandidate && (
-            <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-              {detailCandidate.telefone && <p className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" /> {detailCandidate.telefone}</p>}
-              {detailCandidate.email && <p className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" /> {detailCandidate.email}</p>}
-              {detailEntrevista && (
-                <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" /> Entrevista: {detailEntrevista}
-                </p>
-              )}
-              {detailCandidate.origem && <p className="text-sm text-muted-foreground">Origem: <Badge variant="outline">{detailCandidate.origem}</Badge></p>}
-
-              {detailGerente && (
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <UserCheck className="h-4 w-4" /> Gerente: <GerenteChip g={detailGerente} size="md" />
-                </p>
-              )}
-
-              {isRh && (
-                <div>
-                  <Label className="text-xs font-bold">Atribuir a gerente</Label>
-                  <Select
-                    value={detailCandidate.gerente_id ?? "none"}
-                    onValueChange={(v) => atribuirGerente(detailCandidate.id, v === "none" ? null : v)}
-                  >
-                    <SelectTrigger className="h-9 mt-1"><SelectValue placeholder="Selecionar gerente" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sem gerente</SelectItem>
-                      {gerentes.map((g) => (
-                        <SelectItem key={g.user_id} value={g.user_id}>{g.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <div className="px-6 py-5 space-y-5">
+              {/* Contato */}
+              {(detailCandidate.telefone || detailCandidate.email) && (
+                <div className="rounded-xl border border-border/60 bg-muted/30 divide-y divide-border/50">
+                  {detailCandidate.telefone && (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Phone className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm text-foreground">{detailCandidate.telefone}</span>
+                    </div>
+                  )}
+                  {detailCandidate.email && (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Mail className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm text-foreground break-all">{detailCandidate.email}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Entrevista + origem */}
+              {(detailEntrevista || detailCandidate.origem) && (
+                <div className="rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 space-y-2">
+                  {detailEntrevista && (
+                    <div className="flex items-center gap-3">
+                      <CalendarDays className="h-4 w-4 text-primary shrink-0" />
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Entrevista</p>
+                        <p className="text-sm font-semibold text-foreground">{detailEntrevista}</p>
+                      </div>
+                    </div>
+                  )}
+                  {detailCandidate.origem && (
+                    <Badge variant="outline" className="gap-1 border-primary/40 text-primary bg-background/60">
+                      <Megaphone className="h-3 w-3" /> {detailCandidate.origem}
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Gerente */}
+              {(detailGerente || isRh) && (
+                <div className="rounded-xl border border-border/60 px-4 py-3 space-y-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <UserCheck className="h-3.5 w-3.5 text-primary" /> Gerente
+                  </p>
+                  {detailGerente && <GerenteChip g={detailGerente} size="md" />}
+                  {isRh && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Atribuir a gerente</Label>
+                      <Select
+                        value={detailCandidate.gerente_id ?? "none"}
+                        onValueChange={(v) => atribuirGerente(detailCandidate.id, v === "none" ? null : v)}
+                      >
+                        <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar gerente" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem gerente</SelectItem>
+                          {gerentes.map((g) => (
+                            <SelectItem key={g.user_id} value={g.user_id}>{g.nome}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Respostas do quiz */}
               {detailRespostas && (
-                <div className="space-y-1.5 rounded-md border border-border p-2.5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Respostas do quiz</p>
-                  {[
-                    ["Vendas", detailRespostas.vendas],
-                    ["Imobiliário", detailRespostas.imobiliario],
-                    ["Disponibilidade", detailRespostas.disponibilidade],
-                    ["Região", detailRespostas.regiao],
-                  ].map(([label, value]) =>
-                    value ? (
-                      <p key={label as string} className="text-sm text-foreground">
-                        <span className="text-muted-foreground">{label}: </span>{String(value)}
-                      </p>
-                    ) : null
-                  )}
-                  {detailRespostas.motivacao && (
-                    <p className="text-sm text-foreground">
-                      <span className="text-muted-foreground">Motivação: </span>“{String(detailRespostas.motivacao)}”
-                    </p>
-                  )}
+                <div className="space-y-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Respostas do quiz</p>
+                  <div className="space-y-3">
+                    {[
+                      ["Vendas", detailRespostas.vendas],
+                      ["Imobiliário", detailRespostas.imobiliario],
+                      ["Disponibilidade", detailRespostas.disponibilidade],
+                      ["Região", detailRespostas.regiao],
+                      ["Motivação", detailRespostas.motivacao],
+                    ].map(([label, value]) =>
+                      value ? (
+                        <div key={label as string} className="border-l-2 border-primary/40 pl-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label as string}</p>
+                          <p className="text-sm text-foreground">{String(value)}</p>
+                        </div>
+                      ) : null
+                    )}
+                  </div>
                 </div>
               )}
-              {detailCandidate.observacoes && <p className="text-sm text-muted-foreground bg-muted p-2 rounded">{detailCandidate.observacoes}</p>}
-              <div>
-                <Label className="text-xs font-bold">Mover para etapa:</Label>
-                <div className="flex flex-wrap gap-1.5 mt-1">
+
+              {/* Observações */}
+              {detailCandidate.observacoes && (
+                <p className="text-sm text-muted-foreground bg-muted/40 rounded-xl px-4 py-3 whitespace-pre-wrap">
+                  {detailCandidate.observacoes}
+                </p>
+              )}
+
+              {/* Mover para etapa */}
+              <div className="pt-4 border-t border-border/60 space-y-2">
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mover para etapa</Label>
+                <div className="flex flex-wrap gap-2">
                   {ETAPAS.filter((e) => e.key !== detailCandidate.etapa).map((e) => (
                     <Button
-                      key={e.key} size="sm" variant="outline" className="text-xs h-7"
+                      key={e.key} size="sm" variant="outline" className="text-xs h-8 rounded-full"
                       style={{ borderColor: e.color, color: e.color }}
                       onClick={() => { moveToEtapa(detailCandidate.id, e.key); setDetailCandidate(null); }}
                     >
@@ -488,6 +528,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
