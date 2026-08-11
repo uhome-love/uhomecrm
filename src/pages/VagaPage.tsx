@@ -150,6 +150,34 @@ export default function VagaPage() {
     if (meta) meta.setAttribute("content", "Trabalhe como corretor(a) na Uhome: 60 a 80 leads por mês, comissões de R$ 8 a 10 mil por venda e método próprio. Candidate-se em 2 minutos.");
   }, []);
 
+  // ── Meta Pixel (base code) — só injeta se ainda não existir ──
+  useEffect(() => {
+    const w = window as any;
+    if (typeof w.fbq === "function") {
+      try { w.fbq("track", "PageView"); } catch {}
+      return;
+    }
+    try {
+      /* eslint-disable */
+      (function (f: any, b: Document, e: string, v: string) {
+        let n: any, t: any, s: any;
+        n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n; n.loaded = true; n.version = "2.0"; n.queue = [];
+        t = b.createElement(e) as HTMLScriptElement;
+        t.async = true; t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+      /* eslint-enable */
+      w.fbq("init", META_PIXEL_ID);
+      w.fbq("track", "PageView");
+    } catch {}
+  }, []);
+
+
   // ── Motor da conversa: uma mensagem por vez, com "digitando…" ──
   useEffect(() => {
     if (!fila.length || digitando) return;
