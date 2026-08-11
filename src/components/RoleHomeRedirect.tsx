@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,7 +14,14 @@ export default function RoleHomeRedirect() {
 
   // Enquanto não temos papéis resolvidos (e sem erro), seguimos em loading — nunca
   // caímos no fallback de corretor por um instante.
-  const aguardando = !user || loading || (roles.length === 0 && !error);
+  // Failsafe: se em 6s nada resolver, segue para o fallback em vez de travar no loader.
+  const [expirou, setExpirou] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setExpirou(true), 6000);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  const aguardando = !expirou && (!user || loading || (roles.length === 0 && !error));
 
   if (aguardando) {
     return (
