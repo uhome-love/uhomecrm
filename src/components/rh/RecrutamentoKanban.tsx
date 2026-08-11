@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import AgendaEntrevistas from "@/components/rh/AgendaEntrevistas";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,7 +150,12 @@ interface Props {
 
 export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const { user } = useAuth();
-  const isRh = scope === "rh";
+  const { isAdmin, isRh: hasRhRole, isDiretor: hasDiretorRole } = useUserRole();
+  // Diretoria: acompanha em modo leitura (sem criar, atribuir ou mover)
+  const readOnly = scope === "rh" && hasDiretorRole && !hasRhRole && !isAdmin;
+  const isRh = scope === "rh" && !readOnly;
+  const [tab, setTab] = useState<"kanban" | "agenda">("kanban");
+
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [entrevistas, setEntrevistas] = useState<Record<string, string>>({});
   const [gerentes, setGerentes] = useState<Gerente[]>([]);
@@ -167,7 +176,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
   const fetchCandidatos = async () => {
     let q = supabase.from("rh_candidatos" as any).select("*").order("created_at", { ascending: false });
-    if (!isRh && user?.id) q = q.eq("gerente_id", user.id);
+    if (scope !== "rh" && user?.id) q = q.eq("gerente_id", user.id);
     const { data, error } = await q;
     if (!error) setCandidatos((data || []) as unknown as Candidato[]);
   };
@@ -187,17 +196,16 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   };
 
   const fetchGerentes = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("user_id, nome, avatar_url, cargo, ativo")
-      .in("cargo", ["gerente", "gestor"]);
+    // Fonte = papel real (user_roles): gestor e NÃO diretor
+    const { data, error } = await supabase.rpc("get_gerentes_recrutamento" as any);
     if (error) return;
-    const list = (data || [])
-      .filter((p) => p.ativo !== false && p.user_id)
+    const list = ((data || []) as any[])
+      .filter((p) => p.user_id)
       .map((p) => ({ user_id: p.user_id as string, nome: (p.nome as string) || "Gerente", avatar_url: p.avatar_url ?? null }))
       .sort((a, b) => a.nome.localeCompare(b.nome));
     setGerentes(list);
   };
+
 
   useEffect(() => {
     fetchCandidatos();
@@ -289,8 +297,24 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
         }
       />
 
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "kanban" | "agenda")}>
+        <TabsList>
+          <TabsTrigger value="kanban">Kanban</TabsTrigger>
+          <TabsTrigger value="agenda">Agenda</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agenda" className="mt-4">
+          <AgendaEntrevistas
+            candidatos={candidatos.map((c) => ({ id: c.id, nome: c.nome, etapa: c.etapa }))}
+            onKanbanUpdate={() => { fetchCandidatos(); fetchEntrevistas(); }}
+            readOnly={readOnly}
+          />
+        </TabsContent>
+
+        <TabsContent value="kanban" className="mt-4">
       {/* Kanban */}
       <div className="flex gap-3 overflow-x-auto pb-4" style={{ minHeight: "40vh" }}>
+
         {ETAPAS.map((etapa) => {
           const items = getCandidatosByEtapa(etapa.key);
           return (
@@ -368,6 +392,10 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
           );
         })}
       </div>
+        </TabsContent>
+      </Tabs>
+
+
 
       {/* Add Dialog (só RH) */}
       {isRh && (
@@ -510,6 +538,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
               )}
 
               {/* Mover para etapa */}
+              {!readOnly && (
               <div className="pt-4 border-t border-border/60 space-y-2">
                 <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Mover para etapa</Label>
                 <div className="flex flex-wrap gap-2">
@@ -524,6 +553,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                   ))}
                 </div>
               </div>
+              )}
             </div>
           )}
         </DialogContent>

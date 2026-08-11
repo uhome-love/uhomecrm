@@ -194,7 +194,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/backoffice/homi-ana":             { key: "homi-ana",               label: "HOMI Ana",            icon: "Bot",           roles: ["backoffice", "admin"] },
   "/backoffice/tarefas":              { key: "backoffice-central",     label: "Tarefas BO",          icon: "ListTodo",      roles: ["backoffice", "admin"] },
   "/backoffice/cadastros":            { key: "cadastros",              label: "Cadastros",           icon: "Database",      roles: ["backoffice", "admin"] },
-  "/rh/recrutamento":       { key: "rh-recrutamento",      label: "Candidatos",          icon: "Users",         roles: ["rh", "admin"] },
+  "/rh/recrutamento":       { key: "rh-recrutamento",      label: "Candidatos",          icon: "Users",         roles: ["rh", "admin", "diretor"] },
   "/gerente/candidatos":    { key: "gerente-candidatos",   label: "Meus Candidatos",     icon: "Users",         roles: ["gestor", "admin"] },
   "/recrutamento/acompanhamento": { key: "recrutamento-acompanhamento", label: "Recrutamento", icon: "BarChart3", roles: ["admin", "diretor"] },
   "/rh/entrevistas":        { key: "rh-entrevistas",       label: "Entrevistas",         icon: "Briefcase",     roles: ["rh", "admin"] },
