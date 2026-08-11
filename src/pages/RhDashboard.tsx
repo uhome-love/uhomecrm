@@ -123,12 +123,19 @@ export default function RhDashboard() {
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Candidatos", value: stats.candidatos, color: "#4969FF" },
-          { label: "Entrevistas marcadas", value: stats.entrevistas, color: "#F59E0B" },
-          { label: "Conversas 1:1", value: stats.conversas, color: "#8B5CF6" },
-          { label: "Reservas hoje", value: stats.reservasHoje, color: "#10B981" },
+          { label: "Candidatos", value: stats.candidatos, color: "#4969FF", route: "/rh/recrutamento" },
+          { label: "Entrevistas marcadas", value: stats.entrevistas, color: "#F59E0B", route: "/rh/recrutamento?tab=agenda" },
+          { label: "Conversas 1:1", value: stats.conversas, color: "#8B5CF6", route: "/rh/conversas" },
+          { label: "Reservas hoje", value: stats.reservasHoje, color: "#10B981", route: "/rh/sala-reuniao" },
         ].map((s) => (
-          <Card key={s.label} className="bg-card">
+          <Card
+            key={s.label}
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate(s.route)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(s.route); } }}
+            className="bg-card cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:border-[#4969FF]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4969FF]/50"
+          >
             <CardContent className="p-4 text-center">
               <p style={{ fontSize: 32, fontWeight: 800, color: s.color }}>{s.value}</p>
               <p style={{ fontSize: 12, color: "#6B7280" }}>{s.label}</p>
@@ -136,6 +143,7 @@ export default function RhDashboard() {
           </Card>
         ))}
       </div>
+
     </div>
   );
 }
