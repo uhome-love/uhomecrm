@@ -176,7 +176,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
   const fetchCandidatos = async () => {
     let q = supabase.from("rh_candidatos" as any).select("*").order("created_at", { ascending: false });
-    if (!isRh && user?.id) q = q.eq("gerente_id", user.id);
+    if (scope !== "rh" && user?.id) q = q.eq("gerente_id", user.id);
     const { data, error } = await q;
     if (!error) setCandidatos((data || []) as unknown as Candidato[]);
   };
