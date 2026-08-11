@@ -392,6 +392,10 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
           );
         })}
       </div>
+        </TabsContent>
+      </Tabs>
+
+
 
       {/* Add Dialog (só RH) */}
       {isRh && (
