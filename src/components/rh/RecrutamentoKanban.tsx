@@ -515,31 +515,36 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
             </DialogTitle>
           </DialogHeader>
           {detailCandidate && (
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-6 py-6 space-y-6">
               {/* Contato */}
               {(detailCandidate.telefone || detailCandidate.email) && (
-                <div className="rounded-xl border border-border/60 bg-muted/30 divide-y divide-border/50">
-                  {detailCandidate.telefone && (
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <Phone className="h-4 w-4 text-primary shrink-0" />
-                      <span className="text-sm text-foreground">{detailCandidate.telefone}</span>
-                    </div>
-                  )}
-                  {detailCandidate.email && (
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <Mail className="h-4 w-4 text-primary shrink-0" />
-                      <span className="text-sm text-foreground break-all">{detailCandidate.email}</span>
-                    </div>
-                  )}
-                </div>
+                <section className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Contato</p>
+                  <div className="rounded-xl border border-border/60 bg-muted/25 divide-y divide-border/50">
+                    {detailCandidate.telefone && (
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <Phone className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-sm text-foreground">{detailCandidate.telefone}</span>
+                      </div>
+                    )}
+                    {detailCandidate.email && (
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <Mail className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-sm text-foreground break-all">{detailCandidate.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </section>
               )}
 
               {/* Entrevista + origem */}
               {(detailEntrevista || detailCandidate.origem) && (
-                <div className="rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 space-y-2">
+                <section className="rounded-xl border border-primary/25 bg-primary/[0.06] px-4 py-4 space-y-3">
                   {detailEntrevista && (
                     <div className="flex items-center gap-3">
-                      <CalendarDays className="h-4 w-4 text-primary shrink-0" />
+                      <span className="h-9 w-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+                        <CalendarDays className="h-4 w-4 text-primary" />
+                      </span>
                       <div>
                         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Entrevista</p>
                         <p className="text-sm font-semibold text-foreground">{detailEntrevista}</p>
@@ -547,12 +552,13 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                     </div>
                   )}
                   {detailCandidate.origem && (
-                    <Badge variant="outline" className="gap-1 border-primary/40 text-primary bg-background/60">
+                    <Badge variant="outline" className="gap-1 rounded-full border-primary/40 text-primary bg-background/70">
                       <Megaphone className="h-3 w-3" /> {detailCandidate.origem}
                     </Badge>
                   )}
-                </div>
+                </section>
               )}
+
 
               {/* Gerente */}
               {(detailGerente || isRh) && (
