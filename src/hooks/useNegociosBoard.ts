@@ -11,6 +11,21 @@ import { useAuth } from "@/hooks/useAuth";
 
 export type NegFase = "em_negociacao" | "contrato" | "ganho";
 export type NegSub = "proposta" | "documentacao" | "aprovacao_credito" | "reserva";
+/** O "passo" comercial — a coluna do kanban de Negócios (fluxo real da Uhome). */
+export type NegPasso = "proposta" | "documentacao" | "aprovacao" | "contrato" | "leitura" | "assinatura";
+
+/** Deriva o passo a partir da etapa + sub-status REAL do flag_status do lead. */
+export function passoDe(fase: NegFase, statusNeg: string, statusContrato: string): NegPasso {
+  if (fase === "ganho") return "assinatura";
+  if (fase === "contrato") {
+    if (/leitura|em_leitura/.test(statusContrato) || /leitura/.test(statusNeg)) return "leitura";
+    return "contrato";
+  }
+  // em_negociacao
+  if (/aprova/.test(statusNeg)) return "aprovacao";
+  if (/documentacao/.test(statusNeg)) return "documentacao";
+  return "proposta";
+}
 
 export interface NegocioCard {
   id: string;
@@ -21,6 +36,7 @@ export interface NegocioCard {
   corretorId: string | null;
   fase: NegFase;
   sub: NegSub | null;
+  passo: NegPasso;
   vgv: number | null;
   vgvFinal: number | null;
   dias: number;
@@ -100,12 +116,24 @@ export function useNegociosBoard() {
         for (const p of (profs ?? []) as { id: string; nome: string }[]) nomeDe.set(p.id, p.nome);
       }
 
+      // flag_status REAL dos leads (fonte única do sub-status/passo)
+      const leadIds = [...new Set(negs.map((n) => n.pipeline_lead_id).filter(Boolean) as string[])];
+      const flagDe = new Map<string, { neg: string; contrato: string }>();
+      if (leadIds.length) {
+        const { data: leads } = await supabase.from("pipeline_leads").select("id, flag_status").in("id", leadIds);
+        for (const l of (leads ?? []) as { id: string; flag_status: Record<string, unknown> | null }[]) {
+          const f = l.flag_status || {};
+          flagDe.set(l.id, { neg: String(f.status_negociacao ?? ""), contrato: String(f.status_contrato ?? "") });
+        }
+      }
+
       const negocios: NegocioCard[] = negs.map((n) => {
         const fase = String(n.fase) as NegFase;
         const status = String(n.status ?? "");
         const dias = diasDe(n.updated_at as string);
         const vgv = (n.vgv_estimado as number) ?? null;
         const vgvFinal = (n.vgv_final as number) ?? null;
+        const flag = (n.pipeline_lead_id && flagDe.get(String(n.pipeline_lead_id))) || { neg: "", contrato: "" };
         return {
           id: String(n.id),
           pipelineLeadId: (n.pipeline_lead_id as string) ?? null,
@@ -115,6 +143,7 @@ export function useNegociosBoard() {
           corretorId: (n.corretor_id as string) ?? null,
           fase,
           sub: fase === "em_negociacao" ? subDe(n as never) : null,
+          passo: passoDe(fase, flag.neg, flag.contrato),
           vgv: fase === "ganho" ? (vgvFinal ?? vgv) : vgv,
           vgvFinal,
           dias,
