@@ -320,7 +320,7 @@ export default function VagaPage() {
     // Meta Pixel — conversão "Lead" (uma vez, no sucesso do agendamento)
     try {
       const fbq = (window as any).fbq;
-      if (typeof fbq === "function") fbq("track", "Lead", { content_name: "Vaga Corretor" });
+      if (typeof fbq === "function") fbq("trackCustom", "CandidaturaVaga", { content_name: "Vaga Corretor" });
     } catch {}
     const quando = `${DIAS_SEMANA[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} às ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
