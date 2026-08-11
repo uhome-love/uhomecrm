@@ -283,27 +283,41 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const detailGerente = detailCandidate?.gerente_id ? gerenteById[detailCandidate.gerente_id] : null;
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4 overflow-hidden">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 h-full min-h-full flex flex-col gap-4 overflow-hidden">
       <PageHeader
         title={title ?? "Candidatos"}
         subtitle={subtitle ?? "Pipeline de recrutamento"}
         icon={<Users size={18} strokeWidth={1.5} />}
         actions={
           isRh ? (
-            <Button onClick={() => setDialogOpen(true)} size="sm" className="bg-primary hover:bg-primary text-white gap-1">
+            <Button onClick={() => setDialogOpen(true)} size="sm" className="bg-primary hover:bg-primary text-white gap-1 rounded-full shadow-sm">
               <Plus size={14} /> Novo Candidato
             </Button>
           ) : undefined
         }
       />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "kanban" | "agenda")}>
-        <TabsList>
-          <TabsTrigger value="kanban">Kanban</TabsTrigger>
-          <TabsTrigger value="agenda">Agenda</TabsTrigger>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as "kanban" | "agenda")}
+        className="flex-1 min-h-0 flex flex-col"
+      >
+        <TabsList className="h-9 rounded-full bg-background/80 border border-border/60 p-1 shadow-sm self-start">
+          <TabsTrigger
+            value="kanban"
+            className="rounded-full px-4 text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+          >
+            Kanban
+          </TabsTrigger>
+          <TabsTrigger
+            value="agenda"
+            className="rounded-full px-4 text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+          >
+            Agenda
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="agenda" className="mt-4">
+        <TabsContent value="agenda" className="mt-4 flex-1 min-h-0 overflow-y-auto scrollbar-thin">
           <AgendaEntrevistas
             candidatos={candidatos.map((c) => ({ id: c.id, nome: c.nome, etapa: c.etapa }))}
             onKanbanUpdate={() => { fetchCandidatos(); fetchEntrevistas(); }}
@@ -311,89 +325,130 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
           />
         </TabsContent>
 
-        <TabsContent value="kanban" className="mt-4">
-      {/* Kanban */}
-      <div className="flex gap-3 overflow-x-auto pb-4" style={{ minHeight: "40vh" }}>
-
-        {ETAPAS.map((etapa) => {
-          const items = getCandidatosByEtapa(etapa.key);
-          return (
-            <div key={etapa.key} className="min-w-[220px] max-w-[220px] flex-shrink-0">
-              <div className="flex items-center gap-2 mb-2 px-1">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: etapa.color }} />
-                <span className="text-xs font-bold text-foreground uppercase tracking-wider">{etapa.label}</span>
-                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{items.length}</Badge>
-              </div>
-              <div className="space-y-2">
-                {items.map((c) => {
-                  const temp = normTemp(c.temperatura);
-                  const tags = miniTags(c.respostas);
-                  const entrevista = etapa.key === "entrevista_marcada" ? formatEntrevista(entrevistas[c.id]) : null;
-                  const ger = c.gerente_id ? gerenteById[c.gerente_id] : null;
-                  return (
-                    <Card
-                      key={c.id}
-                      className="cursor-pointer hover:shadow-md transition-shadow bg-card overflow-hidden"
-                      style={temp ? { borderLeft: `3px solid ${TEMP_META[temp].color}` } : undefined}
-                      onClick={() => setDetailCandidate(c)}
+        <TabsContent value="kanban" className="mt-4 flex-1 min-h-0 data-[state=active]:flex flex-col">
+          {/* Kanban — ocupa toda a altura; a rolagem horizontal fica no rodapé */}
+          <div className="flex-1 min-h-0 flex gap-3 overflow-x-auto overflow-y-hidden scrollbar-thin pb-1">
+            {ETAPAS.map((etapa) => {
+              const items = getCandidatosByEtapa(etapa.key);
+              return (
+                <div
+                  key={etapa.key}
+                  className="min-w-[248px] max-w-[248px] flex-shrink-0 flex flex-col rounded-2xl border border-border/60 bg-background/70 dark:bg-white/[0.03] shadow-sm"
+                >
+                  <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: etapa.color }} />
+                    <span className="text-[11px] font-bold text-foreground uppercase tracking-wider truncate">{etapa.label}</span>
+                    <span
+                      className="ml-auto inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[10px] font-bold"
+                      style={{ background: `${etapa.color}1A`, color: etapa.color }}
                     >
-                      <CardContent className="p-3 space-y-1.5">
-                        <div className="flex items-start justify-between gap-1.5">
-                          <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
-                          {temp && <TemperaturaBadge t={temp} />}
-                        </div>
-                        {c.telefone && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="h-3 w-3" /> {c.telefone}
-                          </p>
-                        )}
-                        {c.email && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                            <Mail className="h-3 w-3" /> {c.email}
-                          </p>
-                        )}
-                        {entrevista && (
-                          <p className="text-xs font-medium text-foreground flex items-center gap-1">
-                            <CalendarDays className="h-3 w-3" /> {entrevista}
-                          </p>
-                        )}
-                        {tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 pt-0.5">
-                            {tags.map((t, i) => (
-                              <span key={i} className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {ger && <GerenteChip g={ger} />}
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {c.origem && <Badge variant="outline" className="text-[10px]">{c.origem}</Badge>}
-                          {c.origem === "anuncio" && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <Megaphone className="h-3 w-3" /> veio do anúncio
-                            </span>
+                      {items.length}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-2.5 space-y-2.5">
+                    {items.map((c) => {
+                      const temp = normTemp(c.temperatura);
+                      const tags = miniTags(c.respostas);
+                      const entrevista = etapa.key === "entrevista_marcada" ? formatEntrevista(entrevistas[c.id]) : null;
+                      const ger = c.gerente_id ? gerenteById[c.gerente_id] : null;
+                      return (
+                        <Card
+                          key={c.id}
+                          className="group cursor-pointer rounded-xl border-border/60 shadow-[0_1px_2px_rgba(16,24,40,0.05)] hover:shadow-[0_6px_18px_-6px_rgba(16,24,40,0.22)] hover:border-primary/35 transition-all bg-card overflow-hidden relative"
+                          onClick={() => setDetailCandidate(c)}
+                        >
+                          {temp && (
+                            <span
+                              className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full"
+                              style={{ background: TEMP_META[temp].color }}
+                            />
                           )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-                {items.length === 0 && (
-                  <EmptyState
-                    icon={<Users size={22} strokeWidth={1.5} />}
-                    title="Nenhum candidato"
-                    description={isRh ? "Adicione candidatos para iniciar o processo seletivo" : "Nenhum candidato atribuído a você nesta etapa"}
-                    action={isRh ? { label: "Novo candidato", onClick: () => setDialogOpen(true) } : undefined}
-                  />
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                          <CardContent className="p-3 pl-3.5 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[13px] font-semibold leading-snug text-foreground truncate">{c.nome}</p>
+                              {temp && <TemperaturaBadge t={temp} />}
+                            </div>
+
+                            {(c.telefone || c.email) && (
+                              <div className="space-y-1">
+                                {c.telefone && (
+                                  <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 truncate">
+                                    <Phone className="h-3 w-3 shrink-0 opacity-70" /> {c.telefone}
+                                  </p>
+                                )}
+                                {c.email && (
+                                  <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 truncate">
+                                    <Mail className="h-3 w-3 shrink-0 opacity-70" />
+                                    <span className="truncate">{c.email}</span>
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {entrevista && (
+                              <p className="inline-flex items-center gap-1.5 rounded-lg bg-primary/8 text-primary px-2 py-1 text-[11px] font-semibold">
+                                <CalendarDays className="h-3 w-3" /> {entrevista}
+                              </p>
+                            )}
+
+                            {tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {tags.map((t, i) => (
+                                  <span
+                                    key={i}
+                                    className="rounded-md border border-border/60 bg-muted/50 px-1.5 py-0.5 text-[10px] leading-4 text-muted-foreground"
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {(ger || c.origem) && (
+                              <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/50">
+                                {ger && <GerenteChip g={ger} />}
+                                {c.origem === "anuncio" ? (
+                                  <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium">
+                                    <Megaphone className="h-3 w-3" /> veio do anúncio
+                                  </span>
+                                ) : (
+                                  c.origem && (
+                                    <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
+                                      {c.origem}
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+
+                    {items.length === 0 && (
+                      <div className="flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-border/70 px-3 py-6 gap-1.5">
+                        <Users size={18} strokeWidth={1.5} className="text-muted-foreground/60" />
+                        <p className="text-[11px] font-medium text-muted-foreground">Nenhum candidato</p>
+                        {isRh && (
+                          <button
+                            type="button"
+                            onClick={() => setDialogOpen(true)}
+                            className="text-[11px] font-semibold text-primary hover:underline"
+                          >
+                            Novo candidato
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </TabsContent>
       </Tabs>
+
 
 
 
