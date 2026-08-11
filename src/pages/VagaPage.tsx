@@ -2,6 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { supabase } from "@/integrations/supabase/client";
 import lucasAsset from "@/assets/lucas-fundador.jpg.asset.json";
 
+const META_PIXEL_ID = "1426170849536314";
+
+
 /**
  * /vaga — Página PÚBLICA (sem login) do anúncio de recrutamento.
  * Quiz conversacional hospedado pelo "Lucas Sarmento — Fundador · Uhome".
