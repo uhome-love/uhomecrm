@@ -481,8 +481,17 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                 </div>
               );
             })}
+            </div>
+            {/* Indicador sutil de rolagem horizontal */}
+            {maisColunas && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute top-0 right-0 h-full w-14 bg-gradient-to-l from-background to-transparent rounded-r-2xl"
+              />
+            )}
           </div>
         </TabsContent>
+
       </Tabs>
 
 
