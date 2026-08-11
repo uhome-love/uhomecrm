@@ -402,10 +402,28 @@ serve(async (req) => {
       if (!target_user_id) throw new Error("ID do usuário não informado");
       await assertCanManage(target_user_id);
 
+      const normalizedNome = typeof nome === "string" ? nome.trim() : nome;
+      const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : email;
+      if (normalizedNome !== undefined && (!normalizedNome || normalizedNome.length > 120)) {
+        return new Response(JSON.stringify({ success: false, error: "Informe um nome válido de até 120 caracteres." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (normalizedEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        return new Response(JSON.stringify({ success: false, error: "Informe um e-mail válido." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (senha !== undefined && (typeof senha !== "string" || senha.length < 8 || senha.length > 128)) {
+        return new Response(JSON.stringify({ success: false, error: "A nova senha deve ter entre 8 e 128 caracteres." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const profileUpdates: Record<string, any> = {};
-      if (nome !== undefined) profileUpdates.nome = nome;
+      if (normalizedNome !== undefined) profileUpdates.nome = normalizedNome;
       if (jetimob_user_id !== undefined) profileUpdates.jetimob_user_id = jetimob_user_id || null;
-      if (email !== undefined) profileUpdates.email = email;
+      if (normalizedEmail !== undefined) profileUpdates.email = normalizedEmail;
       if (telefone !== undefined) profileUpdates.telefone = telefone || null;
       if (cpf !== undefined) profileUpdates.cpf = cpf || null;
       if (creci !== undefined) profileUpdates.creci = creci || null;
@@ -413,26 +431,51 @@ serve(async (req) => {
       if (Object.keys(profileUpdates).length > 0) {
         const { error: profileErr } = await supabase
           .from("profiles").update(profileUpdates).eq("user_id", target_user_id);
-        if (profileErr) console.error("Profile update error:", profileErr);
+        if (profileErr) {
+          console.error("Profile update error:", profileErr);
+          return new Response(JSON.stringify({ success: false, error: `Não foi possível salvar os dados do perfil: ${profileErr.message}` }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
 
-      if (email) {
-        const { error: emailErr } = await supabase.auth.admin.updateUserById(target_user_id, { email });
-        if (emailErr) console.error("Email update error:", emailErr);
+      const warnings: string[] = [];
+      if (normalizedEmail) {
+        const { error: emailErr } = await supabase.auth.admin.updateUserById(target_user_id, { email: normalizedEmail });
+        if (emailErr) {
+          console.error("Email update error:", emailErr);
+          warnings.push(`Os dados do perfil foram salvos, mas o e-mail de acesso não foi alterado: ${emailErr.message}`);
+        }
       }
       if (senha) {
         const { error: passErr } = await supabase.auth.admin.updateUserById(target_user_id, { password: senha });
-        if (passErr) throw new Error(`Erro ao redefinir senha: ${passErr.message}`);
+        if (passErr) {
+          const rawMessage = passErr.message || "Erro desconhecido";
+          const normalizedMessage = rawMessage.toLowerCase();
+          const weakPassword = normalizedMessage.includes("weak") || normalizedMessage.includes("easy to guess") || normalizedMessage.includes("pwned");
+          const passwordMessage = weakPassword
+            ? "Essa senha é muito comum e foi recusada por segurança. Use uma senha maior, com letras, números e símbolos."
+            : `A senha não foi alterada: ${rawMessage}`;
+          warnings.push(`Dados salvos, mas a senha não foi alterada: ${passwordMessage}`);
+        }
       }
-      if (nome) {
-        await supabase.from("team_members").update({ nome }).eq("user_id", target_user_id);
+      if (normalizedNome) {
+        const { error: teamErr } = await supabase.from("team_members").update({ nome: normalizedNome }).eq("user_id", target_user_id);
+        if (teamErr) {
+          console.error("Team member update error:", teamErr);
+          warnings.push(`O perfil foi salvo, mas o nome na equipe não foi sincronizado: ${teamErr.message}`);
+        }
       }
 
       await logAudit("update_user", target_user_id, null, { ...profileUpdates, senha_reset: !!senha });
 
 
 
-      return new Response(JSON.stringify({ success: true, message: "Usuário atualizado com sucesso!" }), {
+      return new Response(JSON.stringify({
+        success: true,
+        message: warnings.length > 0 ? "Usuário atualizado com ressalvas." : "Usuário atualizado com sucesso!",
+        warnings,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
