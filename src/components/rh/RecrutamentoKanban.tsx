@@ -160,6 +160,9 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const [gerentes, setGerentes] = useState<Gerente[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailCandidate, setDetailCandidate] = useState<Candidato | null>(null);
+  const [obsDraft, setObsDraft] = useState("");
+  const [savingObs, setSavingObs] = useState(false);
+
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
