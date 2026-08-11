@@ -150,6 +150,14 @@ const App = () => (
               <Route path="/negocios" element={<Navigate to="/pipeline-leads" replace />} />
 
               {/* All authenticated routes — rendered via Chrome-style tab system */}
+              {/* Home "/" — redireciona direto para a home do papel (sem flash da dashboard errada) */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<PageLoader />}><RoleHomeRedirect /></Suspense>
+                </ProtectedRoute>
+              } />
+
+              {/* All authenticated routes — rendered via Chrome-style tab system */}
               <Route path="/*" element={
                 <ProtectedRoute>
                   <TabProvider>
@@ -157,6 +165,7 @@ const App = () => (
                   </TabProvider>
                 </ProtectedRoute>
               } />
+
             </Routes>
             </PageTrackingProvider>
           </BrowserRouter>
