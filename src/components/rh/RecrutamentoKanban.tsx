@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import AgendaEntrevistas from "@/components/rh/AgendaEntrevistas";
+import AgendaRecrutamento from "@/components/rh/AgendaRecrutamento";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,13 +27,12 @@ import { PageHeader } from "@/components/ui/PageHeader";
 
 export const ETAPAS = [
   { key: "novo_lead", label: "Novo Lead", color: "#4969FF" },
-  
-  { key: "interessado", label: "Interessado", color: "#F59E0B" },
   { key: "entrevista_marcada", label: "Entrevista Marcada", color: "#F97316" },
   { key: "entrevista_realizada", label: "Entrevista Realizada", color: "#10B981" },
   { key: "contratado", label: "Contratado", color: "#22C55E" },
   { key: "sem_interesse", label: "Não Tem Interesse", color: "#EF4444" },
 ];
+
 
 type Temperatura = "quente" | "morno" | "frio";
 
@@ -161,6 +160,9 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const [gerentes, setGerentes] = useState<Gerente[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailCandidate, setDetailCandidate] = useState<Candidato | null>(null);
+  const [obsDraft, setObsDraft] = useState("");
+  const [savingObs, setSavingObs] = useState(false);
+
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -268,6 +270,27 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     }
   };
 
+  // Observações da RH (campo editável no modal)
+  useEffect(() => {
+    setObsDraft(detailCandidate?.observacoes ?? "");
+  }, [detailCandidate?.id, detailCandidate?.observacoes]);
+
+  const salvarObservacoes = async (id: string) => {
+    setSavingObs(true);
+    const valor = obsDraft.trim() || null;
+    const { error } = await supabase
+      .from("rh_candidatos" as any)
+      .update({ observacoes: valor, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    setSavingObs(false);
+    if (error) { toast.error("Erro ao salvar observações"); return; }
+    toast.success("Observações salvas!");
+    setDetailCandidate((c) => (c && c.id === id ? { ...c, observacoes: valor } : c));
+    setCandidatos((list) => list.map((c) => (c.id === id ? { ...c, observacoes: valor } : c)));
+  };
+
+
+
   const getCandidatosByEtapa = (etapa: string) =>
     candidatos
       .filter((c) => c.etapa === etapa)
@@ -318,7 +341,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
         </TabsList>
 
         <TabsContent value="agenda" className="mt-4 flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-          <AgendaEntrevistas
+          <AgendaRecrutamento
             candidatos={candidatos.map((c) => ({ id: c.id, nome: c.nome, etapa: c.etapa }))}
             onKanbanUpdate={() => { fetchCandidatos(); fetchEntrevistas(); }}
             readOnly={readOnly}
@@ -610,15 +633,35 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                 </section>
               )}
 
-              {/* Observações */}
-              {detailCandidate.observacoes && (
-                <section className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Observações</p>
+              {/* Observações da RH */}
+              <section className="space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Observações da RH</p>
+                {readOnly ? (
                   <p className="text-sm text-muted-foreground bg-muted/35 border border-border/60 rounded-xl px-4 py-3 whitespace-pre-wrap leading-relaxed">
-                    {detailCandidate.observacoes}
+                    {detailCandidate.observacoes || "Sem observações — adicione anotações sobre o perfil"}
                   </p>
-                </section>
-              )}
+                ) : (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={obsDraft}
+                      onChange={(e) => setObsDraft(e.target.value)}
+                      placeholder="Sem observações — adicione anotações sobre o perfil"
+                      className="min-h-[88px] rounded-xl text-sm"
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        className="h-8 rounded-full px-4 text-xs"
+                        disabled={savingObs || obsDraft === (detailCandidate.observacoes ?? "")}
+                        onClick={() => salvarObservacoes(detailCandidate.id)}
+                      >
+                        {savingObs ? "Salvando..." : "Salvar"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </section>
+
 
               {/* Mover para etapa */}
               {!readOnly && (
