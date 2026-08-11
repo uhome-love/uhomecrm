@@ -276,7 +276,7 @@ export default function VagaPage() {
     }
   };
 
-  const temperatura = useMemo(() => (pontos >= 8 ? "quente" : pontos >= 4 ? "morno" : "frio"), [pontos]);
+  const temperatura = useMemo(() => (pontos >= 6 ? "quente" : pontos >= 3 ? "morno" : "frio"), [pontos]);
 
   const dias = useMemo(() => proximosDiasUteis(10), []);
   const horariosLivres = useMemo(() => {
