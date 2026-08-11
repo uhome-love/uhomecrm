@@ -140,7 +140,7 @@ const App = () => (
               <Route path="/scripts" element={<Navigate to="/materiais?tab=scripts" replace />} />
               <Route path="/homi/base-conhecimento" element={<Navigate to="/materiais?tab=base" replace />} />
               <Route path="/academia/gerenciar" element={<Navigate to="/academia?tab=gerenciar" replace />} />
-              <Route path="/rh/entrevistas" element={<Navigate to="/rh/recrutamento?tab=agenda" replace />} />
+              <Route path="/rh/entrevistas" element={<Navigate to="/rh/recrutamento" replace />} />
 
 
 
