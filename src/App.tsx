@@ -11,6 +11,8 @@ import { DateFilterProvider } from "@/contexts/DateFilterContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import AppLayout from "@/components/AppLayout";
+import RoleHomeRedirect from "@/components/RoleHomeRedirect";
+
 import { TabProvider } from "@/contexts/TabContext";
 import { lazy, Suspense } from "react";
 import { PageTrackingProvider } from "@/components/PageTrackingProvider";
