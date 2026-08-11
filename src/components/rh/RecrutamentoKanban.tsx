@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Phone, Mail, Users, Plus, CalendarDays, Megaphone, UserCheck } from "lucide-react";
+import { Phone, Mail, Users, Plus, CalendarDays, Megaphone, UserCheck, Video } from "lucide-react";
+import { MEET_LINK } from "@/config/recrutamento";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 
