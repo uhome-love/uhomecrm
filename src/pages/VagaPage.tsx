@@ -141,9 +141,17 @@ export default function VagaPage() {
 
   // ── SEO ──
   useEffect(() => {
-    document.title = "Seja corretor(a) na Uhome — vagas em Porto Alegre";
+    const prevTitle = document.title;
     const meta = document.querySelector('meta[name="description"]');
+    const prevDesc = meta?.getAttribute("content") ?? null;
+
+    document.title = "Seja corretor(a) na Uhome — vagas em Porto Alegre";
     if (meta) meta.setAttribute("content", "Trabalhe como corretor(a) na Uhome: 60 a 80 leads por mês, comissões de R$ 8 a 10 mil por venda e método próprio. Candidate-se em 2 minutos.");
+
+    return () => {
+      document.title = prevTitle;
+      if (meta && prevDesc !== null) meta.setAttribute("content", prevDesc);
+    };
   }, []);
 
   // ── Meta Pixel (base code) — só injeta se ainda não existir ──
