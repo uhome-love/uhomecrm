@@ -283,7 +283,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const detailGerente = detailCandidate?.gerente_id ? gerenteById[detailCandidate.gerente_id] : null;
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 h-full min-h-full flex flex-col gap-4 overflow-hidden">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-4 sm:p-6 lg:p-8 -m-4 sm:-m-6 lg:-m-8 h-[calc(100%+2rem)] sm:h-[calc(100%+3rem)] lg:h-[calc(100%+4rem)] min-h-[520px] flex flex-col gap-4 overflow-hidden">
       <PageHeader
         title={title ?? "Candidatos"}
         subtitle={subtitle ?? "Pipeline de recrutamento"}
