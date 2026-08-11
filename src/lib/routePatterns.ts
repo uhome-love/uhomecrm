@@ -43,6 +43,7 @@ const REDIRECT_ALIASES: string[] = [
   "/central-dados",
   "/scripts",
   "/homi/base-conhecimento",
+  "/rh/entrevistas",
 ];
 
 

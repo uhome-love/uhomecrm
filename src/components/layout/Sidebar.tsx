@@ -7,7 +7,7 @@ import {
   CalendarDays, Home, Phone, Search, Megaphone,
   BarChart3, TrendingUp, Heart, Star, Mail,
   MessageSquare, Sparkles, Bot, BookOpen,
-  Users, UsersRound, Briefcase, Video, ChevronRight,
+  Users, UsersRound, Video, ChevronRight,
   Sun, Moon, ShieldCheck, ClipboardList, Wrench,
   Trophy, GraduationCap, Lightbulb, Layers,
   Building2, Wallet, ListTodo, Database,
@@ -321,7 +321,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Recrutamento",
       items: [
         { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
-        { label: "Entrevistas",        path: "/rh/entrevistas",    icon: <Briefcase    size={15} strokeWidth={1.5} /> },
+        
       ],
     },
     {
