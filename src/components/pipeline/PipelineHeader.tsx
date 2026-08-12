@@ -231,7 +231,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     if (!gestorFilter || gestorFilter === "todos") return null;
     return GERENTES_REAIS.find((x) => x.id === gestorFilter)?.apelido ?? "Gestor";
   })();
-  const SAUDE_LABEL: Record<string, string> = { em_dia: "Em dia", desatualizado: "Desatualizado", tarefa_atrasada: "Tarefa atrasada", estagnado: "Estagnado" };
+  // Rótulo do chip = vocabulária das PÍLULAS (nomes internos são legados):
+  // clientStatus "desatualizado" = pílula "Atenção"; "tarefa_atrasada" = pílula "Desatualizado".
+  const SAUDE_LABEL: Record<string, string> = { em_dia: "Em dia", desatualizado: "Atenção", tarefa_atrasada: "Desatualizado", estagnado: "Estagnado" };
   const activeChips: { id: string; label: string; onRemove: () => void }[] = [];
   if (filters.search) activeChips.push({ id: "busca", label: `Busca: ${filters.search}`, onRemove: () => setFilters(f => ({ ...f, search: "" })) });
   if (corretorNome) activeChips.push({ id: "corretor", label: `Corretor: ${corretorNome}`, onRemove: () => setCorretorFilter("all") });

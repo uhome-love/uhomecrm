@@ -9,16 +9,20 @@
 import { useState } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useEquipesView } from "@/hooks/useEquipesView";
-import EscritorioKpiHeader from "./EscritorioKpiHeader";
+import EscritorioKpiHeader, { type EquipesSaudeKey } from "./EscritorioKpiHeader";
 import GestorCard from "./GestorCard";
 import CorretorMiniCard from "./CorretorMiniCard";
 
 interface Props {
   /** Abre o Kanban filtrado pelo corretor (auth_id). */
   onOpenKanban: (corretorAuthId: string) => void;
+  /** Clique numa pílula de saúde → abre Leads filtrado por aquela saúde. */
+  onFilterSaude?: (k: EquipesSaudeKey) => void;
+  /** Clique no card Negócios → abre a aba Negócios. */
+  onOpenNegocios?: () => void;
 }
 
-export default function EquipesView({ onOpenKanban }: Props) {
+export default function EquipesView({ onOpenKanban, onFilterSaude, onOpenNegocios }: Props) {
   const { data, isLoading, isError, refetch } = useEquipesView();
   const [expanded, setExpanded] = useState<Set<string>>(new Set()); // colapsado por padrão
 
@@ -68,7 +72,7 @@ export default function EquipesView({ onOpenKanban }: Props) {
 
   return (
     <div className="flex-1 min-h-0 overflow-auto p-4 space-y-4">
-      <EscritorioKpiHeader escritorio={data.escritorio} />
+      <EscritorioKpiHeader escritorio={data.escritorio} onFilterSaude={onFilterSaude} onOpenNegocios={onOpenNegocios} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {data.gestores.map((g) => (

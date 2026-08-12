@@ -9,6 +9,7 @@ import { ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { getGestorTheme } from "./gestorTheme";
+import { HealthBar, SaudeStat, type EquipesSaudeKey } from "./EscritorioKpiHeader";
 import type { EquipesGestor } from "@/hooks/useEquipesView";
 
 interface Props {
@@ -57,8 +58,13 @@ export default function GestorCard({ gestor, expanded, onToggle, children }: Pro
             )}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400">
-            {gestor.qtd_corretores} corretores
+            {gestor.qtd_corretores} corretores · {gestor.total_leads.toLocaleString("pt-BR")} leads
           </div>
+        </div>
+        {/* Negócios = métrica-herói do gerente */}
+        <div className="text-right shrink-0">
+          <div className="text-xl font-extrabold text-slate-800 dark:text-slate-100">{gestor.negocios}</div>
+          <div className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">negócios</div>
         </div>
         <ChevronDown
           className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
@@ -90,8 +96,8 @@ export default function GestorCard({ gestor, expanded, onToggle, children }: Pro
         )}
       </div>
 
-      {/* Pipeline ativo + KPIs */}
-      <div className="px-4 pb-4 space-y-1.5">
+      {/* Pipeline ativo (sinal forte: VGV que o time gera) + saúde do time */}
+      <div className="px-4 pb-4 space-y-2">
         <div className="text-[12px] text-slate-600 dark:text-slate-300">
           Pipeline ativo:{" "}
           <span className="font-semibold text-slate-800 dark:text-slate-100">
@@ -101,20 +107,28 @@ export default function GestorCard({ gestor, expanded, onToggle, children }: Pro
             <span className={`ml-1 font-medium ${theme.accentText}`}>({pipelinePct}%)</span>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-2 pt-1">
-          <div>
-            <div className="text-lg font-bold text-slate-800 dark:text-slate-100">{gestor.total_leads}</div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-400">Leads</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{gestor.atrasados}</div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-400">Atrasados</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{gestor.negocios}</div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-400">Negócios</div>
-          </div>
-        </div>
+        {(() => {
+          const counts: Record<EquipesSaudeKey, number> = {
+            em_dia: gestor.em_dia, atencao: gestor.atencao, desatualizado: gestor.desatualizado, estagnado: gestor.estagnado,
+          };
+          const tot = counts.em_dia + counts.atencao + counts.desatualizado + counts.estagnado;
+          const pct = tot > 0 ? Math.round((counts.em_dia / tot) * 100) : 0;
+          const acao = counts.atencao + counts.desatualizado + counts.estagnado;
+          return (
+            <div className="border-t border-slate-100 dark:border-gray-700 pt-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{pct}% em dia</span>
+                <span className="font-semibold text-slate-500 dark:text-slate-400">{acao.toLocaleString("pt-BR")} precisam ação</span>
+              </div>
+              <div className="mt-1.5"><HealthBar counts={counts} /></div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-0.5">
+                <SaudeStat k="atencao" n={counts.atencao} />
+                <SaudeStat k="desatualizado" n={counts.desatualizado} />
+                <SaudeStat k="estagnado" n={counts.estagnado} />
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Drilldown nível 3 */}

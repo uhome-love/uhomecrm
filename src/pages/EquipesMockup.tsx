@@ -117,7 +117,7 @@ export default function EquipesMockup() {
         <div className="mt-3 grid gap-3 lg:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
             <div className="flex items-baseline justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Saúde do escritório</span>
+              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Saúde do pipeline</span>
               <span className="text-[12px] text-slate-400">{escTotal.toLocaleString("pt-BR")} leads no funil</span>
             </div>
             <div className="mt-1 flex items-baseline gap-2">

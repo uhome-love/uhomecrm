@@ -12,7 +12,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 
-export interface EquipesCorretor {
+// Saúde por toque (SSOT: public.lead_saude_status) — em_dia/atencao/desatualizado/estagnado.
+export interface SaudeCounts {
+  em_dia: number;
+  atencao: number;
+  desatualizado: number;
+  estagnado: number;
+}
+
+export interface EquipesCorretor extends SaudeCounts {
   auth_id: string;
   profile_id: string | null;
   nome: string | null;
@@ -22,7 +30,7 @@ export interface EquipesCorretor {
   ultima_atividade: string | null;
 }
 
-export interface EquipesGestor {
+export interface EquipesGestor extends SaudeCounts {
   auth_id: string;
   profile_id: string | null;
   nome: string | null;
@@ -39,7 +47,7 @@ export interface EquipesGestor {
   corretores: EquipesCorretor[];
 }
 
-export interface EquipesEscritorio {
+export interface EquipesEscritorio extends SaudeCounts {
   total_leads_ativos: number;
   atrasados: number;
   negocios: number;
@@ -62,6 +70,7 @@ export function useEquipesView() {
       if (error) throw error;
       return (data as unknown as EquipesOverview) ?? { escritorio: {
         total_leads_ativos: 0, atrasados: 0, negocios: 0, vgv_assinado_mes: 0, vgv_pipeline_ativo: 0,
+        em_dia: 0, atencao: 0, desatualizado: 0, estagnado: 0,
       }, gestores: [] };
     },
     enabled: isAdmin || isDiretor,

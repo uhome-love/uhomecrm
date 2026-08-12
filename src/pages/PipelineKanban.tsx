@@ -832,6 +832,14 @@ export default function PipelineKanban() {
                     setCorretorFilter(corretorId);
                     setActiveTab("kanban");
                   }}
+                  onFilterSaude={(k) => {
+                    // saúde do lead → filtro de status do Kanban (pílula correspondente)
+                    const map = { em_dia: "em_dia", atencao: "desatualizado", desatualizado: "tarefa_atrasada", estagnado: "estagnado" } as const;
+                    setNegociosFilter(false);
+                    setClientStatusFilter(map[k]);
+                    setActiveTab("kanban");
+                  }}
+                  onOpenNegocios={() => setActiveTab("negocios")}
                 />
 
               ) : activeTab === "negocios" ? (
