@@ -68,7 +68,7 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true }:
   // Agrupa uma vez por passo (ordenado por VGV) + soma de VGV — memoizado.
   const porPasso = useMemo(() => {
     const m: Record<NegPasso, NegocioCard[]> = { documentacao: [], proposta: [], contrato: [], ganho: [] };
-    for (const n of negocios) m[n.passo].push(n);
+    for (const n of negocios) { (m[n.passo] ||= []).push(n); } // defensivo: passo inesperado não crasha
     (Object.keys(m) as NegPasso[]).forEach((k) => m[k].sort((a, b) => (b.vgv || 0) - (a.vgv || 0)));
     return m;
   }, [negocios]);
@@ -162,7 +162,7 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true }:
                 </div>
                 <div className="flex flex-col gap-2 overflow-y-auto px-2 pb-2">
                   {isPos ? (
-                    prontos.length === 0 ? <Empty /> : prontos.slice(0, 15).map((p) => <PosCard key={p.id} p={p} onClick={() => onOpenLead(p.id)} />)
+                    prontos.length === 0 ? <Empty /> : prontos.map((p) => <PosCard key={p.id} p={p} onClick={() => onOpenLead(p.id)} />)
                   ) : items.length === 0 ? <Empty /> : items.map((n) => <NegCard key={n.id} n={n} lens={lens} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} />)}
                 </div>
               </div>
@@ -241,8 +241,10 @@ function CardRoot({ onClick, className, children }: { onClick: () => void; class
 }
 
 function PosCard({ p, onClick }: { p: ProntoVirar; onClick: () => void }) {
+  // Faixa = SAÚDE (mesmo padrão dos demais cards): parado/atenção/em dia por dias.
+  const tone = p.dias >= 14 ? "bad" : p.dias >= 7 ? "warn" : "";
   return (
-    <CardRoot onClick={onClick} className="before:bg-cyan-500">
+    <CardRoot onClick={onClick} className={stripe(tone, false)}>
       <div className="absolute right-1.5 top-1.5 z-10">
         <NegOverflowMenu leadId={p.id} nome={p.nome} onOpen={onClick} />
       </div>
@@ -251,8 +253,14 @@ function PosCard({ p, onClick }: { p: ProntoVirar; onClick: () => void }) {
       </div>
       <div className="truncate text-[13px] font-bold">{p.nome}</div>
       <div className="truncate text-[11px] text-muted-foreground">{p.empreendimento}</div>
-      <div className="mt-1.5 flex items-center">
-        <span className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">virar negócio <ArrowRight className="h-2.5 w-2.5" /></span>
+      <div className="mt-1.5 flex items-center gap-1.5">
+        {p.corretor && p.corretor !== "—" && (
+          <>
+            <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">{getInitials(p.corretor)}</div>
+            <span className="truncate text-[11px] text-muted-foreground">{p.corretor.split(" ")[0]}</span>
+          </>
+        )}
+        <span className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shrink-0">virar negócio <ArrowRight className="h-2.5 w-2.5" /></span>
       </div>
     </CardRoot>
   );
@@ -305,8 +313,8 @@ function NegCard({ n, lens, onClick }: { n: NegocioCard; lens: Lens; onClick: ()
         </span>
       </div>
 
-      {/* Rodapé: corretor (na lente Equipe) */}
-      {lens === "equipe" && n.corretor && n.corretor !== "—" && (
+      {/* Rodapé: de quem é o negócio (corretor) — sempre visível, como no card de leads */}
+      {n.corretor && n.corretor !== "—" && (
         <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
           <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">{getInitials(n.corretor)}</div>
           <span className="truncate text-[11px] text-muted-foreground">{n.corretor}</span>

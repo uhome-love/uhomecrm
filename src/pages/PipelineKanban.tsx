@@ -218,16 +218,23 @@ export default function PipelineKanban() {
   // Auto-open lead from query param (e.g. ?lead=uuid)
   useEffect(() => {
     const leadId = searchParams.get("lead");
-    if (leadId && pipeline.leads.length > 0) {
-      const found = pipeline.leads.find(l => l.id === leadId);
-      if (found) {
-        setSelectedLead(found);
-        setEtapaSugerida(searchParams.get("etapaSugerida"));
-        searchParams.delete("lead");
-        searchParams.delete("etapaSugerida");
-        setSearchParams(searchParams, { replace: true });
-      }
-    }
+    if (!leadId || pipeline.leads.length === 0) return;
+    const abrir = (lead: PipelineLead) => {
+      setSelectedLead(lead);
+      setEtapaSugerida(searchParams.get("etapaSugerida"));
+      searchParams.delete("lead");
+      searchParams.delete("etapaSugerida");
+      setSearchParams(searchParams, { replace: true });
+    };
+    const found = pipeline.leads.find(l => l.id === leadId);
+    if (found) { abrir(found); return; }
+    // Fallback: lead fora da lista carregada (ex.: em etapa de negócio) → busca por id.
+    let cancel = false;
+    (async () => {
+      const { data } = await supabase.from("pipeline_leads").select("*").eq("id", leadId).maybeSingle();
+      if (!cancel && data) abrir(data as unknown as PipelineLead);
+    })();
+    return () => { cancel = true; };
   }, [searchParams, pipeline.leads]);
 
   // URL sync para ?filtro= (Pipeline v2 — Fase 2)

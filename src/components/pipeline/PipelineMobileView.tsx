@@ -28,8 +28,10 @@ const LOAD_BATCH = 20;
 
 const HIDDEN_STAGE_TIPOS = new Set([
   "descarte", "caiu", "venda",
+  // Etapas comerciais vivem SÓ na aba Negócios (não no kanban de leads):
+  "documentacao", "proposta", "contrato_gerado",
   "contato_inicial", "busca", "possibilidade_visita", "visita_marcada",
-  "visita_realizada", "convertido", "documentacao", "negociacao",
+  "visita_realizada", "convertido", "negociacao",
   "boas_vindas", "envio_oportunidades", "atualizacao_bem_estar", "indicacoes",
 ]);
 

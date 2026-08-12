@@ -101,98 +101,139 @@ function toneDe(fase: NegFase, dias: number): "" | "warn" | "bad" {
   return "";
 }
 
+// Etapa (tipo) do LEAD → coluna do board. A ETAPA DO LEAD é a fonte única da verdade.
+// Ganho vem da tabela negocios (fase=ganho) — número de vendas reais.
+const STAGE_TIPO_PASSO: Record<string, NegPasso> = {
+  documentacao: "documentacao",  // etapa "Documentação"
+  proposta: "proposta",          // etapa "Em Negociação"
+  contrato_gerado: "contrato",   // etapa "Contrato"
+};
+const relTipo = (st: any): string => (Array.isArray(st) ? st[0]?.tipo : st?.tipo) ?? "";
+
 export function useNegociosBoard() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ["negocios-board", user?.id],
     staleTime: 30_000,
     queryFn: async (): Promise<NegociosBoard> => {
-      // ── Lote 1 (independentes, em paralelo): meu perfil + negócios + pós-visita ──
-      const [profMeuRes, negRes, posRes] = await Promise.all([
+      // ── Lote 1: perfil + LEADS comerciais (fonte da verdade) + negócios GANHOS ──
+      const [profMeuRes, leadsRes, ganhoRes] = await Promise.all([
         user?.id
           ? supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle()
           : Promise.resolve({ data: null as { id?: string } | null }),
         supabase
-          .from("negocios")
-          .select("id, pipeline_lead_id, nome_cliente, empreendimento, corretor_id, fase, status, vgv_estimado, vgv_final, negociacao_situacao, documentacao_situacao, proposta_situacao, data_assinatura, requer_aprovacao_ceo, updated_at")
-          .in("fase", ["em_negociacao", "contrato", "ganho"])
-          .neq("status", "arquivado")
-          .limit(500),
-        supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, temperatura, corretor_id, ultimo_toque_at, updated_at, pipeline_stages!inner(tipo)")
-          .eq("pipeline_stages.tipo", "pos_visita")
+          .select("id, nome, empreendimento, temperatura, corretor_id, ultimo_toque_at, updated_at, stage_changed_at, negocio_id, flag_status, pipeline_stages!inner(tipo)")
+          .in("pipeline_stages.tipo", ["pos_visita", "documentacao", "proposta", "contrato_gerado"])
           .eq("arquivado", false)
-          .order("updated_at", { ascending: false })
-          .limit(12),
+          .limit(800),
+        supabase
+          .from("negocios")
+          .select("id, pipeline_lead_id, nome_cliente, empreendimento, corretor_id, vgv_estimado, vgv_final, data_assinatura, requer_aprovacao_ceo, updated_at")
+          .eq("fase", "ganho")
+          .eq("status", "ativo")
+          .limit(500),
       ]);
       const meuCorretorId = (profMeuRes.data?.id as string | undefined) ?? null;
-      const negs = (negRes.data ?? []) as unknown as Record<string, unknown>[];
-      const posRaw = (posRes.data ?? []) as unknown as Record<string, unknown>[];
+      const leads = (leadsRes.data ?? []) as any[];
+      const ganhos = (ganhoRes.data ?? []) as any[];
 
-      // ids p/ nomes (negócios + pós-visita) e flags (só negócios)
-      const corretorIds = [...new Set([...negs.map((n) => n.corretor_id), ...posRaw.map((l) => l.corretor_id)].filter(Boolean) as string[])];
-      const leadIds = [...new Set(negs.map((n) => n.pipeline_lead_id).filter(Boolean) as string[])];
+      const emAndamento = leads.filter((l) => STAGE_TIPO_PASSO[relTipo(l.pipeline_stages)]);
+      const negocioIds = [...new Set(emAndamento.map((l) => l.negocio_id).filter(Boolean) as string[])];
 
-      // ── Lote 2 (dependem do lote 1, em paralelo): nomes de corretores + flags ──
-      const [profsRes, flagsRes] = await Promise.all([
-        corretorIds.length
-          ? supabase.from("profiles").select("id, nome").in("id", corretorIds)
-          : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
-        leadIds.length
-          ? supabase.from("pipeline_leads").select("id, flag_status").in("id", leadIds)
-          : Promise.resolve({ data: [] as { id: string; flag_status: Record<string, unknown> | null }[] }),
+      // ── Lote 2: negócios (VGV dos em andamento) + perfis (nomes; tabela pequena) ──
+      const [negRes, profsRes] = await Promise.all([
+        negocioIds.length
+          ? supabase.from("negocios").select("id, vgv_estimado, vgv_final, data_assinatura, requer_aprovacao_ceo, negociacao_situacao, documentacao_situacao, proposta_situacao").in("id", negocioIds)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase.from("profiles").select("id, user_id, nome"),
       ]);
-      const nomeDe = new Map<string, string>();
-      for (const p of (profsRes.data ?? []) as { id: string; nome: string }[]) nomeDe.set(p.id, p.nome);
-      const flagDe = new Map<string, { neg: string; contrato: string }>();
-      for (const l of (flagsRes.data ?? []) as { id: string; flag_status: Record<string, unknown> | null }[]) {
-        const f = l.flag_status || {};
-        flagDe.set(l.id, { neg: String(f.status_negociacao ?? ""), contrato: String(f.status_contrato ?? "") });
+      const negById = new Map<string, any>();
+      for (const n of (negRes.data ?? []) as any[]) negById.set(String(n.id), n);
+      // ATENÇÃO fonte dupla: LEAD.corretor_id = profiles.user_id; NEGOCIO.corretor_id = profiles.id.
+      const nomeByUser = new Map<string, string>();
+      const nomeById = new Map<string, string>();
+      for (const p of (profsRes.data ?? []) as { id: string; user_id: string | null; nome: string }[]) {
+        if (p.user_id) nomeByUser.set(p.user_id, p.nome);
+        nomeById.set(p.id, p.nome);
       }
+      const meuUserId = user?.id ?? null;
 
-      const negocios: NegocioCard[] = negs.map((n) => {
-        const fase = String(n.fase) as NegFase;
-        const status = String(n.status ?? "");
-        const dias = diasDe(n.updated_at as string);
-        const vgv = (n.vgv_estimado as number) ?? null;
-        const vgvFinal = (n.vgv_final as number) ?? null;
-        const flag = (n.pipeline_lead_id && flagDe.get(String(n.pipeline_lead_id))) || { neg: "", contrato: "" };
+      const flagDetalhe = (fs: any): string => {
+        const f = fs || {};
+        return detalheDe(String(f.status_negociacao ?? ""), String(f.status_contrato ?? ""));
+      };
+
+      // Cards EM ANDAMENTO (Proposta, Contrato) — coluna = ETAPA DO LEAD.
+      const negocios: NegocioCard[] = emAndamento.map((l) => {
+        const passo = STAGE_TIPO_PASSO[relTipo(l.pipeline_stages)];
+        const neg = l.negocio_id ? negById.get(String(l.negocio_id)) : null;
+        const vgv = neg ? ((neg.vgv_estimado as number) ?? null) : null;
+        const dias = diasDe((l.stage_changed_at as string) ?? (l.updated_at as string));
+        const fase: NegFase = passo === "contrato" ? "contrato" : "em_negociacao";
         return {
+          id: (l.negocio_id as string) ?? String(l.id),
+          pipelineLeadId: String(l.id),
+          cliente: String(l.nome ?? "Sem nome"),
+          empreendimento: String(l.empreendimento ?? "—"),
+          corretor: (l.corretor_id && nomeByUser.get(String(l.corretor_id))) || "—",
+          corretorId: (l.corretor_id as string) ?? null,
+          fase,
+          sub: null,
+          passo,
+          detalhe: flagDetalhe(l.flag_status),
+          vgv,
+          vgvFinal: neg ? ((neg.vgv_final as number) ?? null) : null,
+          dias,
+          tone: toneDe(fase, dias),
+          ceo: !!neg?.requer_aprovacao_ceo,
+          dataAssinatura: neg?.data_assinatura ?? null,
+          meu: !!meuUserId && l.corretor_id === meuUserId,
+        };
+      });
+
+      // Cards de GANHO — fonte: negocios fase=ganho (vendas reais, os 96).
+      for (const n of ganhos) {
+        const vgvFinal = (n.vgv_final as number) ?? null;
+        const vgv = (n.vgv_estimado as number) ?? null;
+        negocios.push({
           id: String(n.id),
           pipelineLeadId: (n.pipeline_lead_id as string) ?? null,
           cliente: String(n.nome_cliente ?? "Sem nome"),
           empreendimento: String(n.empreendimento ?? "—"),
-          corretor: (n.corretor_id && nomeDe.get(String(n.corretor_id))) || "—",
+          corretor: (n.corretor_id && nomeById.get(String(n.corretor_id))) || "—",
           corretorId: (n.corretor_id as string) ?? null,
-          fase,
-          sub: fase === "em_negociacao" ? subDe(n as never) : null,
-          passo: passoDe(fase, flag.neg, flag.contrato),
-          detalhe: detalheDe(flag.neg, flag.contrato),
-          vgv: fase === "ganho" ? (vgvFinal ?? vgv) : vgv,
+          fase: "ganho",
+          sub: null,
+          passo: "ganho",
+          detalhe: "",
+          vgv: vgvFinal ?? vgv,
           vgvFinal,
-          dias,
-          tone: status === "perdido" ? "bad" : toneDe(fase, dias),
+          dias: diasDe(n.updated_at as string),
+          tone: "",
           ceo: !!n.requer_aprovacao_ceo,
           dataAssinatura: (n.data_assinatura as string) ?? null,
           meu: !!meuCorretorId && n.corretor_id === meuCorretorId,
-        };
-      });
+        });
+      }
 
-      // prontos pra virar negócio: leads em Pós-Visita (posRaw veio no lote 1)
-      const prontos: ProntoVirar[] = posRaw.map((l) => {
-        const temp = String(l.temperatura ?? "").toLowerCase();
-        return {
-          id: String(l.id),
-          nome: String(l.nome ?? "Lead"),
-          empreendimento: String(l.empreendimento ?? "—"),
-          corretor: (l.corretor_id && nomeDe.get(String(l.corretor_id))) || "—",
-          corretorId: (l.corretor_id as string) ?? null,
-          sinal: temp.includes("quente") ? "quente" : "interesse",
-          dias: diasDe((l.ultimo_toque_at as string) ?? (l.updated_at as string)),
-          meu: !!meuCorretorId && l.corretor_id === meuCorretorId,
-        };
-      });
+      // Pós-Visita: leads na etapa pos_visita (prontos pra virar negócio).
+      const prontos: ProntoVirar[] = leads
+        .filter((l) => relTipo(l.pipeline_stages) === "pos_visita")
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .map((l) => {
+          const temp = String(l.temperatura ?? "").toLowerCase();
+          return {
+            id: String(l.id),
+            nome: String(l.nome ?? "Lead"),
+            empreendimento: String(l.empreendimento ?? "—"),
+            corretor: (l.corretor_id && nomeByUser.get(String(l.corretor_id))) || "—",
+            corretorId: (l.corretor_id as string) ?? null,
+            sinal: temp.includes("quente") ? "quente" : "interesse",
+            dias: diasDe((l.ultimo_toque_at as string) ?? (l.updated_at as string)),
+            meu: !!meuUserId && l.corretor_id === meuUserId,
+          };
+        });
 
       return { negocios, prontos };
     },
