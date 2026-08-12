@@ -482,7 +482,8 @@ export default function AgendaCorretor() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"prioridades" | "lembretes">("prioridades");
   const [registrar, setRegistrar] = useState<RegistrarState>(null);
-  const [foco, setFoco] = useState<"todos" | MotivoFila | "feitos">("todos");
+  const [foco, setFoco] = useState<"pendentes" | MotivoFila | "feitos">("pendentes");
+  const [feitoId, setFeitoId] = useState<string | null>(null);
   const [grupoLembrete, setGrupoLembrete] = useState<GrupoLembrete>("hoje");
   const [criarLembrete, setCriarLembrete] = useState(false);
   const [destaqueId, setDestaqueId] = useState<string | null>(null);
