@@ -628,17 +628,20 @@ export default function AgendaCorretor() {
           {/* Filtro de foco por motivo */}
           {!isLoading && (focoDisponivel.length > 1 || feitosHoje.length > 0) && (
             <div className="mb-3 flex flex-wrap gap-1.5">
-              <FocoChip ativo={foco === "pendentes"} onClick={() => setFoco("pendentes")} label="Todos" count={prioridades.length} />
+              <FocoChip ativo={foco === "pendentes"} onClick={() => setFoco("pendentes")} label="Pendentes" count={prioridades.length} />
               {focoDisponivel.map((k) => (
                 <FocoChip key={k} ativo={foco === k} onClick={() => setFoco(foco === k ? "pendentes" : k)} label={MOTIVO_META[k].label} count={contagemMotivo[k]} />
               ))}
               {feitosHoje.length > 0 && (
-                <FocoChip
-                  ativo={foco === "feitos"}
-                  onClick={() => setFoco(foco === "feitos" ? "pendentes" : "feitos")}
-                  label="Feitos hoje"
-                  count={feitosHoje.length}
-                />
+                <>
+                  <span className="mx-0.5 h-6 w-px self-center bg-border" aria-hidden />
+                  <FocoChip
+                    ativo={foco === "feitos"}
+                    onClick={() => setFoco(foco === "feitos" ? "pendentes" : "feitos")}
+                    label="Feitos hoje"
+                    count={feitosHoje.length}
+                  />
+                </>
               )}
             </div>
           )}
