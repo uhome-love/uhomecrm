@@ -253,6 +253,14 @@ export default function VagaPage() {
     setOcupados(new Set(lista.map((s) => new Date(s).toISOString())));
   }, []);
 
+  // Meta Pixel — helper de eventos de etapa do funil
+  const fireEvent = (name: string, params?: Record<string, unknown>) => {
+    try {
+      const fbq = (window as any).fbq;
+      if (typeof fbq === "function") fbq("trackCustom", name, params || {});
+    } catch {}
+  };
+
   const perguntar = (i: number) => {
     setIdx(i);
     enfileirar([{ tipo: "host", texto: PERGUNTAS[i].texto }]);
@@ -262,8 +270,10 @@ export default function VagaPage() {
   const comecarQuiz = () => {
     dizerEu("Bora ver se combina 🚀");
     setDock("nenhum");
+    fireEvent("VagaIniciou");
     perguntar(0);
   };
+
 
   const responder = (valor: string, ganhos = 0) => {
     dizerEu(valor);
@@ -295,6 +305,7 @@ export default function VagaPage() {
           setCandidatoId(id);
         })
         .catch((e) => console.warn("[vaga] captura antecipada falhou", e));
+      fireEvent("VagaContato");
     }
 
     if (idx + 1 < PERGUNTAS.length) {
@@ -302,6 +313,8 @@ export default function VagaPage() {
     } else {
       // Última pergunta: completa o perfil do lead mesmo que não agende
       const temperaturaFinal = pontosAtualizados >= 6 ? "quente" : pontosAtualizados >= 3 ? "morno" : "frio";
+      fireEvent("VagaQuizCompleto", { temperatura: temperaturaFinal });
+
       if (candidatoId) {
         supabase.functions
           .invoke("rh-vaga-lead", {
@@ -360,10 +373,8 @@ export default function VagaPage() {
       return;
     }
     // Meta Pixel — conversão "Lead" (uma vez, no sucesso do agendamento)
-    try {
-      const fbq = (window as any).fbq;
-      if (typeof fbq === "function") fbq("trackCustom", "CandidaturaVaga", { content_name: "Vaga Corretor" });
-    } catch {}
+    fireEvent("CandidaturaVaga", { content_name: "Vaga Corretor" });
+
     const quando = `${DIAS_SEMANA[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} às ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
     setDock("fim");
