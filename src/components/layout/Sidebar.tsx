@@ -340,7 +340,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
 // e aceitam leads). Enquanto a equipe é pequena, eles veem o grupo "Modo
 // Corretor". Ao crescer, basta remover o auth_id daqui.
 const CORRETOR_MODE_GESTORES: string[] = [
-  "7a270cc1-a457-4a02-8a62-462ba5a98937", // Junior Padilha
+  // 12/08/2026: Junior Padilha removido — perfil 100% gerente (igual Bruno/Gabriel).
 ];
 
 const MODO_CORRETOR_GROUP: NavGroup = {
