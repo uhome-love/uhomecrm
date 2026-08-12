@@ -274,6 +274,51 @@ function CardPrioridade({
   );
 }
 
+/** Card "feito hoje" — comprovante do que já foi registrado (sem ação de fila). */
+function CardFeito({
+  lead, onOpen, onVoltar,
+}: { lead: LeadFila; onOpen: () => void; onVoltar: () => void }) {
+  const hora = lead.ultimo_toque_at
+    ? new Date(lead.ultimo_toque_at).toLocaleTimeString("pt-BR", {
+        hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
+      })
+    : null;
+  const reg = limparRegistro(lead.ultimo_registro);
+  return (
+    <div
+      onClick={onOpen}
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-card p-3 pl-4 transition-colors hover:bg-muted/20 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-emerald-500"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="truncate text-[14.5px] font-semibold text-foreground">{lead.nome}</span>
+            <span className="shrink-0 text-[11.5px] text-muted-foreground">{lead.stage_nome}</span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-3 w-3 shrink-0" />
+            registrado{hora ? ` às ${hora}` : " hoje"}
+          </div>
+          {reg && (
+            <div className="mt-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[12px] italic leading-snug text-foreground/80">
+              “{reg}”
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onVoltar(); }}
+          title="Voltar este lead pra fila de hoje"
+          className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          Voltar pra fila
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 /** Bloco único da cadência Sem Contato (volume de "tentar de novo"). */
 function CadenciaBloco({
   total, leads, onRegistrar, onOpen,
