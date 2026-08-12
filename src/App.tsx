@@ -64,6 +64,7 @@ const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const CasaTuaCanoasQuiz = lazyRetry(() => import("./pages/CasaTuaCanoasQuiz"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
 const HeaderMockup = lazyRetry(() => import("./pages/HeaderMockup"));
+const EquipesMockup = lazyRetry(() => import("./pages/EquipesMockup"));
 const PlacarTvPage = lazyRetry(() => import("./pages/PlacarTvPage"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
 const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"));
@@ -117,6 +118,7 @@ const App = () => (
               <Route path="/casatuacanoas-quiz" element={<Suspense fallback={<PageLoader />}><CasaTuaCanoasQuiz /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
               <Route path="/header-mockup" element={<Suspense fallback={<PageLoader />}><HeaderMockup /></Suspense>} />
+              <Route path="/equipes-mockup" element={<Suspense fallback={<PageLoader />}><EquipesMockup /></Suspense>} />
               <Route path="/placar-tv" element={<Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense>} />
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
               <Route path="/diagnostico-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
