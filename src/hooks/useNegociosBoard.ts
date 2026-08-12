@@ -27,8 +27,12 @@ export function passoDe(fase: NegFase, statusNeg: string, statusContrato: string
 const DETALHE: Record<string, string> = {
   proposta_solicitada: "proposta solicitada",
   proposta_enviada: "proposta enviada",
+  proposta_negociacao: "em negociação",
   proposta_aprovada: "✓ aprovada",
+  documentacao_pendente: "docs pendentes",
+  documentacao_analise: "em análise",
   documentacao_enviada: "docs enviados",
+  assinado: "✓ assinado",
   aprovacao_bancaria: "aguardando banco",
   aprovacao_proprietario: "aguardando construtora",
   em_confeccao: "gerando contrato",

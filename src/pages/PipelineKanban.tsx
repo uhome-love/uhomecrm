@@ -901,6 +901,9 @@ export default function PipelineKanban() {
               ) : activeTab === "negocios" ? (
                 <NegociosBoardInline
                   canSeeEquipe={isGestor || isCeoView}
+                  stages={pipeline.stages || []}
+                  onMoveLead={pipeline.moveLead}
+                  searchTerm={filters.search}
                   onOpenLead={(leadId) => {
                     const lead = (pipeline.leads || []).find((l) => l.id === leadId);
                     if (lead) { setSelectedLead(lead); return; }

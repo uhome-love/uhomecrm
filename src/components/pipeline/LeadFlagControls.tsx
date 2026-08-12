@@ -188,5 +188,56 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
     );
   }
 
+  // ── Etapas comerciais (aba Negócios): sub-status editável, salvo no flag_status ──
+  if (stageTipo === "documentacao") {
+    return wrapper(
+      <>
+        <Label className="text-xs text-muted-foreground">Documentação:</Label>
+        <Select value={flags.status_negociacao || ""} onValueChange={(v) => setFlag("status_negociacao", v)}>
+          <SelectTrigger className="h-7 w-44 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="documentacao_pendente" className="text-xs">📄 Pendente</SelectItem>
+            <SelectItem value="documentacao_enviada" className="text-xs">📤 Enviada</SelectItem>
+            <SelectItem value="documentacao_analise" className="text-xs">🔍 Em análise</SelectItem>
+          </SelectContent>
+        </Select>
+      </>
+    );
+  }
+
+  if (stageTipo === "proposta") {
+    return wrapper(
+      <>
+        <Label className="text-xs text-muted-foreground">Proposta:</Label>
+        <Select value={flags.status_negociacao || ""} onValueChange={(v) => setFlag("status_negociacao", v)}>
+          <SelectTrigger className="h-7 w-48 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="proposta_solicitada" className="text-xs">Solicitada</SelectItem>
+            <SelectItem value="proposta_enviada" className="text-xs">Enviada</SelectItem>
+            <SelectItem value="proposta_negociacao" className="text-xs">Em negociação</SelectItem>
+            <SelectItem value="proposta_aprovada" className="text-xs">✓ Aprovada</SelectItem>
+          </SelectContent>
+        </Select>
+      </>
+    );
+  }
+
+  if (stageTipo === "contrato_gerado") {
+    return wrapper(
+      <>
+        <Label className="text-xs text-muted-foreground">Contrato:</Label>
+        <Select value={flags.status_contrato || ""} onValueChange={(v) => setFlag("status_contrato", v)}>
+          <SelectTrigger className="h-7 w-48 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="em_confeccao" className="text-xs">Em confecção</SelectItem>
+            <SelectItem value="gerado" className="text-xs">Gerado</SelectItem>
+            <SelectItem value="em_leitura" className="text-xs">Em leitura</SelectItem>
+            <SelectItem value="assinado" className="text-xs">✓ Assinado</SelectItem>
+          </SelectContent>
+        </Select>
+      </>
+    );
+  }
+
   return null;
 }

@@ -3,7 +3,9 @@ import { useNegociosBoard, type NegocioCard, type NegPasso, type ProntoVirar } f
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Users, User, ArrowRight, History, MoreVertical } from "lucide-react";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
+import DiscardLeadDialog from "./DiscardLeadDialog";
+import type { PipelineStage } from "@/hooks/usePipeline";
 
 function getInitials(nome: string): string {
   const parts = nome.trim().split(/\s+/).filter(Boolean);
@@ -50,20 +52,33 @@ function stripe(tone: string, ganho: boolean): string {
 
 type Lens = "meus" | "equipe";
 
-export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true }: { onOpenLead: (leadId: string) => void; canSeeEquipe?: boolean }) {
+interface NegociosBoardProps {
+  onOpenLead: (leadId: string) => void;
+  canSeeEquipe?: boolean;
+  stages?: PipelineStage[];
+  onMoveLead?: (leadId: string, newStageId: string, observacao?: string) => void | Promise<unknown>;
+  searchTerm?: string;
+}
+
+export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, stages = [], onMoveLead, searchTerm = "" }: NegociosBoardProps) {
   const { data, isLoading } = useNegociosBoard();
   const [lens, setLens] = useState<Lens>(canSeeEquipe ? "equipe" : "meus");
   const isMobile = useIsMobile();
   const [mobileCol, setMobileCol] = useState<ColKey>("proposta");
 
+  const q = searchTerm.trim().toLowerCase();
   const negocios = useMemo(() => {
-    const all = data?.negocios ?? [];
-    return lens === "meus" ? all.filter((n) => n.meu) : all;
-  }, [data, lens]);
+    let all = data?.negocios ?? [];
+    if (lens === "meus") all = all.filter((n) => n.meu);
+    if (q) all = all.filter((n) => n.cliente.toLowerCase().includes(q) || (n.empreendimento || "").toLowerCase().includes(q));
+    return all;
+  }, [data, lens, q]);
   const prontos = useMemo(() => {
-    const all = data?.prontos ?? [];
-    return lens === "meus" ? all.filter((p) => p.meu) : all;
-  }, [data, lens]);
+    let all = data?.prontos ?? [];
+    if (lens === "meus") all = all.filter((p) => p.meu);
+    if (q) all = all.filter((p) => p.nome.toLowerCase().includes(q) || (p.empreendimento || "").toLowerCase().includes(q));
+    return all;
+  }, [data, lens, q]);
 
   // Agrupa uma vez por passo (ordenado por VGV) + soma de VGV — memoizado.
   const porPasso = useMemo(() => {
@@ -132,8 +147,8 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true }:
         ) : (
           <div className="mt-2 flex flex-1 flex-col gap-2 overflow-y-auto pb-24">
             {activeIsPos ? (
-              prontos.length === 0 ? <Empty /> : prontos.map((p) => <PosCard key={p.id} p={p} onClick={() => onOpenLead(p.id)} />)
-            ) : activeItems.length === 0 ? <Empty /> : activeItems.map((n) => <NegCard key={n.id} n={n} lens={lens} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} />)}
+              prontos.length === 0 ? <Empty /> : prontos.map((p) => <PosCard key={p.id} p={p} stages={stages} onMoveLead={onMoveLead} onOpenLead={onOpenLead} />)
+            ) : activeItems.length === 0 ? <Empty /> : activeItems.map((n) => <NegCard key={n.id} n={n} lens={lens} stages={stages} onMoveLead={onMoveLead} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} />)}
           </div>
         )}
       </div>
@@ -162,8 +177,8 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true }:
                 </div>
                 <div className="flex flex-col gap-2 overflow-y-auto px-2 pb-2">
                   {isPos ? (
-                    prontos.length === 0 ? <Empty /> : prontos.map((p) => <PosCard key={p.id} p={p} onClick={() => onOpenLead(p.id)} />)
-                  ) : items.length === 0 ? <Empty /> : items.map((n) => <NegCard key={n.id} n={n} lens={lens} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} />)}
+                    prontos.length === 0 ? <Empty /> : prontos.map((p) => <PosCard key={p.id} p={p} stages={stages} onMoveLead={onMoveLead} onOpenLead={onOpenLead} />)
+                  ) : items.length === 0 ? <Empty /> : items.map((n) => <NegCard key={n.id} n={n} lens={lens} stages={stages} onMoveLead={onMoveLead} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} />)}
                 </div>
               </div>
             );
@@ -177,11 +192,26 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true }:
 function Empty() { return <div className="rounded-xl border border-dashed border-border/60 py-5 text-center text-[11px] text-muted-foreground">—</div>; }
 
 // Menu "⋯" curado do card de negócio — mesmo padrão do CardOverflowMenu do lead.
-function NegOverflowMenu({ leadId, nome, onOpen }: { leadId: string | null; nome: string; onOpen: () => void }) {
+const FLOW_TIPOS = ["pos_visita", "documentacao", "proposta", "contrato_gerado", "venda"];
+const PASSO_TIPO: Record<string, string> = { pos_visita: "pos_visita", documentacao: "documentacao", proposta: "proposta", contrato: "contrato_gerado", ganho: "venda" };
+
+function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { leadId: string | null; nome: string; passo?: ColKey; stages?: PipelineStage[]; onMoveLead?: (leadId: string, newStageId: string, obs?: string) => void | Promise<unknown>; onOpen: () => void }) {
   const [registrar, setRegistrar] = useState(false);
   const [lembrete, setLembrete] = useState(false);
+  const [discard, setDiscard] = useState(false);
+  const [discardTipo, setDiscardTipo] = useState<"reengajavel" | "definitivo">("reengajavel");
   const queryClient = useQueryClient();
   if (!leadId) return null;
+
+  const flowStages = (stages || []).filter((s) => FLOW_TIPOS.includes(s.tipo)).sort((a, b) => a.ordem - b.ordem);
+  const currentTipo = passo ? PASSO_TIPO[passo] : undefined;
+  const mover = async (stageId: string) => {
+    if (!onMoveLead) return;
+    await onMoveLead(leadId, stageId);
+    queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
+  };
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
+
   return (
     <>
       <DropdownMenu>
@@ -195,27 +225,52 @@ function NegOverflowMenu({ leadId, nome, onOpen }: { leadId: string | null; nome
             <MoreVertical className="h-3.5 w-3.5" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
           <DropdownMenuItem onClick={() => setRegistrar(true)} className="text-sm font-semibold text-primary focus:text-primary">
             <span className="mr-2">⚡</span>Registrar atividade
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setLembrete(true)} className="text-sm">
             <span className="mr-2">📌</span>Criar lembrete
           </DropdownMenuItem>
+
+          {onMoveLead && flowStages.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="text-sm"><span className="mr-2">↔</span>Mudar de etapa</DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="w-52">
+                    {flowStages.map((s) => (
+                      <DropdownMenuItem key={s.id} disabled={s.tipo === currentTipo} onClick={() => mover(s.id)} className="text-sm gap-2">
+                        <span className="h-2 w-2 rounded-full inline-block shrink-0" style={{ background: s.cor || "#999" }} />
+                        {s.nome}{s.tipo === "venda" ? " 🏆" : ""}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+            </>
+          )}
+
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onOpen} className="text-sm">
-            <span className="mr-2">↗</span>Abrir negócio
+          <DropdownMenuItem onClick={onOpen} className="text-sm"><span className="mr-2">↗</span>Abrir negócio</DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => { setDiscardTipo("reengajavel"); setDiscard(true); }} className="text-sm text-amber-700 dark:text-amber-500 focus:text-amber-700 dark:focus:text-amber-500">
+            <span className="mr-2">🗑️</span>Descartar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { setDiscardTipo("definitivo"); setDiscard(true); }} className="text-sm text-destructive focus:text-destructive">
+            <span className="mr-2">📦</span>Inativar
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
         <CriarLembreteModal open={lembrete} lead={{ id: leadId, nome }} onClose={() => setLembrete(false)} />
         {registrar && (
-          <RegistrarAtividadeModal
-            lead={{ id: leadId, nome }}
-            onClose={() => setRegistrar(false)}
-            onSaved={() => invalidateTaskQueries(queryClient, leadId)}
-          />
+          <RegistrarAtividadeModal lead={{ id: leadId, nome }} onClose={() => setRegistrar(false)} onSaved={() => invalidateTaskQueries(queryClient, leadId)} />
+        )}
+        {discard && (
+          <DiscardLeadDialog open={discard} onOpenChange={setDiscard} leadId={leadId} leadNome={nome} stages={stages || []} defaultTipo={discardTipo} onDone={refetch} />
         )}
       </div>
     </>
@@ -240,13 +295,24 @@ function CardRoot({ onClick, className, children }: { onClick: () => void; class
   );
 }
 
-function PosCard({ p, onClick }: { p: ProntoVirar; onClick: () => void }) {
+function PosCard({ p, stages, onMoveLead, onOpenLead }: { p: ProntoVirar; stages?: PipelineStage[]; onMoveLead?: (leadId: string, stageId: string, obs?: string) => void | Promise<unknown>; onOpenLead: (leadId: string) => void }) {
   // Faixa = SAÚDE (mesmo padrão dos demais cards): parado/atenção/em dia por dias.
   const tone = p.dias >= 14 ? "bad" : p.dias >= 7 ? "warn" : "";
+  const queryClient = useQueryClient();
+  const docStage = (stages || []).find((s) => s.tipo === "documentacao");
+  const virar = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onMoveLead && docStage) {
+      await onMoveLead(p.id, docStage.id);
+      queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
+    } else {
+      onOpenLead(p.id); // fallback: sem etapa/handler, abre o modal
+    }
+  };
   return (
-    <CardRoot onClick={onClick} className={stripe(tone, false)}>
+    <CardRoot onClick={() => onOpenLead(p.id)} className={stripe(tone, false)}>
       <div className="absolute right-1.5 top-1.5 z-10">
-        <NegOverflowMenu leadId={p.id} nome={p.nome} onOpen={onClick} />
+        <NegOverflowMenu leadId={p.id} nome={p.nome} passo="pos_visita" stages={stages} onMoveLead={onMoveLead} onOpen={() => onOpenLead(p.id)} />
       </div>
       <div className="mb-1 flex items-center gap-1.5 pr-6">
         <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight", p.sinal === "quente" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700")}>{p.sinal === "quente" ? "🔥 Quente" : "😐 Interesse"}</span>
@@ -260,7 +326,7 @@ function PosCard({ p, onClick }: { p: ProntoVirar; onClick: () => void }) {
             <span className="truncate text-[11px] text-muted-foreground">{p.corretor.split(" ")[0]}</span>
           </>
         )}
-        <span className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shrink-0">virar negócio <ArrowRight className="h-2.5 w-2.5" /></span>
+        <button type="button" onClick={virar} title="Mover para Documentação (iniciar negócio)" className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shrink-0 hover:bg-primary/90 transition-colors">virar negócio <ArrowRight className="h-2.5 w-2.5" /></button>
       </div>
     </CardRoot>
   );
@@ -279,14 +345,14 @@ function subBadge(n: NegocioCard): { emoji: string; cls: string; label: string }
   return { emoji: meta.emoji, cls: meta.cls, label: n.detalhe ? n.detalhe.charAt(0).toUpperCase() + n.detalhe.slice(1) : meta.nome };
 }
 
-function NegCard({ n, lens, onClick }: { n: NegocioCard; lens: Lens; onClick: () => void }) {
+function NegCard({ n, lens, stages, onMoveLead, onClick }: { n: NegocioCard; lens: Lens; stages?: PipelineStage[]; onMoveLead?: (leadId: string, stageId: string, obs?: string) => void | Promise<unknown>; onClick: () => void }) {
   const ganho = n.fase === "ganho";
   const sb = subBadge(n);
   return (
     <CardRoot onClick={onClick} className={stripe(n.tone, ganho)}>
       {/* Menu ⋯ fixo no canto superior direito — igual ao card de leads */}
       <div className="absolute right-1.5 top-1.5 z-10">
-        <NegOverflowMenu leadId={n.pipelineLeadId} nome={n.cliente} onOpen={onClick} />
+        <NegOverflowMenu leadId={n.pipelineLeadId} nome={n.cliente} passo={n.passo} stages={stages} onMoveLead={onMoveLead} onOpen={onClick} />
       </div>
       {/* Linha de sub-status (pill) */}
       <div className="mb-1 flex flex-wrap items-center gap-1.5 pr-6">
