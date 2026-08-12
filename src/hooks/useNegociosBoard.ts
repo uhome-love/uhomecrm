@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { leadSaude, type LeadSaude } from "@/lib/leadSaude";
 
 /**
  * useNegociosBoard — PREVIEW (read-only) do novo Workspace de Negócios.
@@ -62,6 +63,8 @@ export interface NegocioCard {
   vgvFinal: number | null;
   dias: number;
   tone: "" | "warn" | "bad";
+  /** saúde por toque (mesma do card de leads): verde/ambar/vermelho/estagnado/terminal */
+  saude: LeadSaude;
   ceo: boolean;
   dataAssinatura: string | null;
   meu: boolean;
@@ -75,6 +78,7 @@ export interface ProntoVirar {
   corretorId: string | null;
   corretorUserId: string | null;
   corretorAvatar: string | null;
+  saude: LeadSaude;
   sinal: "quente" | "interesse";
   dias: number;
   meu: boolean;
@@ -131,7 +135,7 @@ export function useNegociosBoard() {
           : Promise.resolve({ data: null as { id?: string } | null }),
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, temperatura, corretor_id, ultimo_toque_at, updated_at, stage_changed_at, negocio_id, flag_status, pipeline_stages!inner(tipo)")
+          .select("id, nome, empreendimento, temperatura, corretor_id, ultimo_toque_at, distribuido_em, aceito_em, created_at, updated_at, stage_changed_at, negocio_id, flag_status, pipeline_stages!inner(tipo)")
           .in("pipeline_stages.tipo", ["pos_visita", "documentacao", "proposta", "contrato_gerado"])
           .eq("arquivado", false)
           .limit(800),
@@ -205,6 +209,7 @@ export function useNegociosBoard() {
           vgvFinal: neg ? ((neg.vgv_final as number) ?? null) : null,
           dias,
           tone: toneDe(fase, dias),
+          saude: leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: relTipo(l.pipeline_stages) }),
           ceo: !!neg?.requer_aprovacao_ceo,
           dataAssinatura: neg?.data_assinatura ?? null,
           meu: !!meuUserId && l.corretor_id === meuUserId,
@@ -232,6 +237,7 @@ export function useNegociosBoard() {
           vgvFinal,
           dias: diasDe(n.updated_at as string),
           tone: "",
+          saude: "terminal", // ganho = venda concluída
           ceo: !!n.requer_aprovacao_ceo,
           dataAssinatura: (n.data_assinatura as string) ?? null,
           meu: !!meuCorretorId && n.corretor_id === meuCorretorId,
@@ -252,6 +258,7 @@ export function useNegociosBoard() {
             corretorId: (l.corretor_id as string) ?? null,
             corretorUserId: (l.corretor_id as string) ?? null,
             corretorAvatar: (l.corretor_id && avatarByUser.get(String(l.corretor_id))) || null,
+            saude: leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: "pos_visita" }),
             sinal: temp.includes("quente") ? "quente" : "interesse",
             dias: diasDe((l.ultimo_toque_at as string) ?? (l.updated_at as string)),
             meu: !!meuUserId && l.corretor_id === meuUserId,

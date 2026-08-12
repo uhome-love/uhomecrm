@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
 import { useNegociosBoard, type NegocioCard, type NegPasso, type ProntoVirar } from "@/hooks/useNegociosBoard";
+import type { LeadSaude } from "@/lib/leadSaude";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Users, User, ArrowRight, History, MoreVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import DiscardLeadDialog from "./DiscardLeadDialog";
 import type { PipelineStage } from "@/hooks/usePipeline";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 function getInitials(nome: string): string {
   const parts = nome.trim().split(/\s+/).filter(Boolean);
@@ -49,11 +53,16 @@ function money(reais: number | null): string | null {
   if (reais >= 1000) return "R$ " + Math.round(reais / 1000) + " mil";
   return "R$ " + reais;
 }
-function stripe(tone: string, ganho: boolean): string {
-  if (ganho) return "before:bg-emerald-500";
-  if (tone === "bad") return "before:bg-red-500";
-  if (tone === "warn") return "before:bg-amber-500";
-  return "before:bg-zinc-300"; // neutro/saudável = repouso; só Ganho fica verde
+// Faixa de SAÚDE — MESMO padrão do card de leads (CardMinimal / SIDEBAR_BY_SAUDE).
+const SAUDE_STRIPE: Record<LeadSaude, string> = {
+  verde: "before:bg-emerald-500",
+  ambar: "before:bg-amber-500",
+  vermelho: "before:bg-red-500",
+  estagnado: "before:bg-violet-500",
+  terminal: "before:bg-emerald-500", // ganho = venda (verde sucesso)
+};
+function stripe(saude: LeadSaude): string {
+  return SAUDE_STRIPE[saude] ?? "before:bg-amber-500";
 }
 
 type Lens = "meus" | "equipe";
@@ -217,15 +226,35 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
   const [lembrete, setLembrete] = useState(false);
   const [discard, setDiscard] = useState(false);
   const [discardTipo, setDiscardTipo] = useState<"reengajavel" | "definitivo">("reengajavel");
+  const [regredirOpen, setRegredirOpen] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const queryClient = useQueryClient();
   if (!leadId) return null;
 
   const flowStages = (stages || []).filter((s) => FLOW_TIPOS.includes(s.tipo)).sort((a, b) => a.ordem - b.ordem);
   const currentTipo = passo ? PASSO_TIPO[passo] : undefined;
+  // "Mudar de etapa": só entre etapas comerciais + Ganho (voltar/avançar dentro de Negócios).
+  // Pós-Visita não entra aqui — sair do fluxo comercial é o "Regredir".
+  const changeStages = flowStages.filter((s) => s.tipo !== "pos_visita");
+  // "Regredir" = arquivar o negócio e mandar o cliente de volta pro pipeline (vira lead de novo,
+  // em Pós-Visita). Só faz sentido onde existe negócio: documentacao/proposta/contrato_gerado.
+  const temNegocio = !!currentTipo && ["documentacao", "proposta", "contrato_gerado"].includes(currentTipo);
+  const posVisitaStage = flowStages.find((s) => s.tipo === "pos_visita") || null;
+  const canRegredir = temNegocio && !!posVisitaStage;
   const mover = async (stageId: string) => {
     if (!onMoveLead) return;
     await onMoveLead(leadId, stageId);
     queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
+  };
+  const confirmarRegredir = async () => {
+    if (!onMoveLead || !posVisitaStage) return;
+    setSalvando(true);
+    try {
+      await onMoveLead(leadId, posVisitaStage.id, motivo.trim() || undefined);
+      queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
+      setRegredirOpen(false); setMotivo("");
+    } finally { setSalvando(false); }
   };
   const refetch = () => queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
 
@@ -257,7 +286,7 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
                 <DropdownMenuSubTrigger className="text-sm"><span className="mr-2">↔</span>Mudar de etapa</DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="w-52">
-                    {flowStages.map((s) => (
+                    {changeStages.map((s) => (
                       <DropdownMenuItem key={s.id} disabled={s.tipo === currentTipo} onClick={() => mover(s.id)} className="text-sm gap-2">
                         <span className="h-2 w-2 rounded-full inline-block shrink-0" style={{ background: s.cor || "#999" }} />
                         {s.nome}{s.tipo === "venda" ? " 🏆" : ""}
@@ -266,6 +295,11 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
+              {canRegredir && (
+                <DropdownMenuItem onClick={() => { setMotivo(""); setRegredirOpen(true); }} className="text-sm text-amber-700 dark:text-amber-500 focus:text-amber-700 dark:focus:text-amber-500">
+                  <span className="mr-2">↩</span>Regredir (arquiva, vira lead)
+                </DropdownMenuItem>
+              )}
             </>
           )}
 
@@ -289,6 +323,21 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
         {discard && (
           <DiscardLeadDialog open={discard} onOpenChange={setDiscard} leadId={leadId} leadNome={nome} stages={stages || []} defaultTipo={discardTipo} onDone={refetch} />
         )}
+        <Dialog open={regredirOpen} onOpenChange={(o) => { if (!o) { setRegredirOpen(false); setMotivo(""); } }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-sm">↩ Regredir — arquivar negócio</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground -mt-1">
+              O negócio será <b>fechado (arquivado)</b> e o cliente <b>volta a ser lead</b> (Pós-Visita) no pipeline. Pra reabrir depois, é só "virar negócio" de novo. Diz o motivo (fica no histórico):
+            </p>
+            <Textarea autoFocus rows={3} placeholder="Ex.: cliente pediu pra repensar; sumiu; problema de crédito…" value={motivo} onChange={(e) => setMotivo(e.target.value)} className="text-sm" />
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => { setRegredirOpen(false); setMotivo(""); }} disabled={salvando}>Cancelar</Button>
+              <Button size="sm" onClick={confirmarRegredir} disabled={salvando || !motivo.trim()}>{salvando ? "Regredindo…" : "Regredir"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );
@@ -313,8 +362,6 @@ function CardRoot({ onClick, className, children }: { onClick: () => void; class
 }
 
 function PosCard({ p, stages, onMoveLead, onOpenLead }: { p: ProntoVirar; stages?: PipelineStage[]; onMoveLead?: (leadId: string, stageId: string, obs?: string) => void | Promise<unknown>; onOpenLead: (leadId: string) => void }) {
-  // Faixa = SAÚDE (mesmo padrão dos demais cards): parado/atenção/em dia por dias.
-  const tone = p.dias >= 14 ? "bad" : p.dias >= 7 ? "warn" : "";
   const queryClient = useQueryClient();
   const docStage = (stages || []).find((s) => s.tipo === "documentacao");
   const virar = async (e: React.MouseEvent) => {
@@ -327,7 +374,7 @@ function PosCard({ p, stages, onMoveLead, onOpenLead }: { p: ProntoVirar; stages
     }
   };
   return (
-    <CardRoot onClick={() => onOpenLead(p.id)} className={stripe(tone, false)}>
+    <CardRoot onClick={() => onOpenLead(p.id)} className={stripe(p.saude)}>
       <div className="absolute right-1.5 top-1.5 z-10">
         <NegOverflowMenu leadId={p.id} nome={p.nome} passo="pos_visita" stages={stages} onMoveLead={onMoveLead} onOpen={() => onOpenLead(p.id)} />
       </div>
@@ -366,7 +413,7 @@ function NegCard({ n, lens, stages, onMoveLead, onClick }: { n: NegocioCard; len
   const ganho = n.fase === "ganho";
   const sb = subBadge(n);
   return (
-    <CardRoot onClick={onClick} className={stripe(n.tone, ganho)}>
+    <CardRoot onClick={onClick} className={stripe(n.saude)}>
       {/* Menu ⋯ fixo no canto superior direito — igual ao card de leads */}
       <div className="absolute right-1.5 top-1.5 z-10">
         <NegOverflowMenu leadId={n.pipelineLeadId} nome={n.cliente} passo={n.passo} stages={stages} onMoveLead={onMoveLead} onOpen={onClick} />
