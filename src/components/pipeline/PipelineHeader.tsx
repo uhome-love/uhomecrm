@@ -521,7 +521,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <span className="text-[15px] font-bold text-foreground tracking-[-0.3px] whitespace-nowrap">
               Pipeline
             </span>
-            <span className="text-[12px] text-muted-foreground font-medium shrink-0">{filteredLeadsCount} leads</span>
             <PipelineScopeBadge
               isAdmin={isAdmin}
               isDiretor={isDiretor}
@@ -535,44 +534,20 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="w-px h-5 bg-border shrink-0" />
 
           {/* Navegação (abas) — segmented control */}
-          <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
-            <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-1">
-              {roleTabs.map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-3 rounded-md text-xs border-none cursor-pointer ${
-                    activeTab === tab.key
-                      ? "bg-card text-foreground font-semibold shadow-sm"
-                      : "bg-transparent text-muted-foreground font-medium hover:text-foreground"
-                  }`}
-                >
-                  {tab.icon} {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Toggle Equipe / Minha carteira (gestor/admin, só Kanban) */}
-            {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
-              <div className="inline-flex shrink-0 rounded-[7px] border border-border bg-card p-0.5 ml-1">
-                <button
-                  type="button"
-                  onClick={() => setMinhaCarteira(false)}
-                  className={`px-2.5 h-7 text-[11px] font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Equipe
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMinhaCarteira(true)}
-                  className={`px-2.5 h-7 text-[11px] font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Minha carteira
-                </button>
-              </div>
-            )}
-
-
+          <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-1 shrink-0">
+            {roleTabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-3 rounded-md text-xs border-none cursor-pointer ${
+                  activeTab === tab.key
+                    ? "bg-card text-foreground font-semibold shadow-sm"
+                    : "bg-transparent text-muted-foreground font-medium hover:text-foreground"
+                }`}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
           </div>
 
           <div className="flex-1" />
@@ -609,7 +584,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <button
               type="button"
               onClick={() => setGanhosFilter(v => !v)}
-              className={`ml-1.5 px-2.5 h-7 text-[11px] font-semibold rounded-full border transition-colors whitespace-nowrap ${ganhosFilter ? "bg-emerald-600 text-white border-emerald-600" : "text-emerald-700 border-emerald-300 bg-emerald-50 hover:bg-emerald-100"}`}
+              className={`ml-1.5 px-3 h-9 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap ${ganhosFilter ? "bg-emerald-600 text-white border-emerald-600" : "text-emerald-700 border-emerald-300 bg-emerald-50 hover:bg-emerald-100"}`}
               title="Ver leads ganhos / vendidos"
             >
               🏆 Ganhos
@@ -644,8 +619,31 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         </div>
 
-        {/* Linha 2 — Busca · Filtros · Ordenação · Ações globais */}
+        {/* Linha 2 — Lente · Busca · Filtros · Ordenação · Ações globais */}
         <div className="flex items-center flex-wrap gap-y-1.5 gap-x-2 min-h-11 py-1.5 px-6">
+          {/* Lente Equipe / Minha carteira (gestor/admin, só Kanban) — segmented control unificado */}
+          {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
+            <>
+              <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMinhaCarteira(false)}
+                  className={`h-7 px-3 text-xs font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Equipe
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMinhaCarteira(true)}
+                  className={`h-7 px-3 text-xs font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Minha carteira
+                </button>
+              </div>
+              <div className="w-px h-5 bg-border shrink-0 mx-0.5" />
+            </>
+          )}
+
           {/* Busca */}
           <div className="relative w-[180px] xl:w-[220px]">
             <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
