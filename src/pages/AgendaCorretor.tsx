@@ -169,12 +169,13 @@ function AcoesContato({ telefone }: { telefone: string | null }) {
 }
 
 function CardPrioridade({
-  lead, stages, onRegistrar, onOpen, onMove, onDispensar,
+  lead, stages, onRegistrar, onOpen, onMove, onDispensar, destacado,
 }: {
   lead: LeadFila; stages: PipelineStage[];
   onRegistrar: () => void; onOpen: () => void;
   onMove: (leadId: string, stageId: string) => void;
   onDispensar: () => void;
+  destacado?: boolean;
 }) {
   const m = MOTIVO_META[lead.motivo];
   const Icon = m.icon;
@@ -185,13 +186,16 @@ function CardPrioridade({
   } as unknown as PipelineLead;
   return (
     <div
+      data-lead-id={lead.id}
       onClick={onOpen}
       className={cn(
-        "group relative cursor-pointer rounded-xl border border-border bg-card p-3 pl-4 overflow-hidden transition-colors hover:border-border/80 hover:bg-muted/20",
+        "group relative cursor-pointer rounded-xl border border-border bg-card p-3 pl-4 overflow-hidden transition-all hover:border-border/80 hover:bg-muted/20",
         "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1",
-        SAUDE_BORDER[lead.saude] ?? "before:bg-amber-500"
+        SAUDE_BORDER[lead.saude] ?? "before:bg-amber-500",
+        destacado && "ring-2 ring-primary ring-offset-2 ring-offset-background"
       )}
     >
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
