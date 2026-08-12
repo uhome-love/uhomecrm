@@ -173,10 +173,14 @@ export default function CasaTuaCanoasQuiz() {
     };
 
     // ── Envio do lead ao CRM (pipeline_leads + roleta via receive-landing-lead)
-    const enviarLead = async (mode: "visita" | "corretor", temp: string) => {
+    const enviarLead = async (stage: "parcial" | "visita" | "corretor", temp: string) => {
       try {
         const metaCtx = getMetaContext();
-        const interesse = mode === "visita" ? `Visita — ${A.dia || ""} · ${A.turno || ""}` : "Falar com um corretor agora";
+        const interesse = stage === "visita"
+          ? `Visita — ${A.dia || ""} · ${A.turno || ""}`
+          : stage === "corretor"
+          ? "Falar com um corretor agora"
+          : "Baixou o Guia — ainda escolhendo";
         const resumo = `Quiz Casa Tua Canoas · Tipologia: ${A.tipo || "-"} · Prioriza: ${A.peso || "-"} · Compra: ${A.compra || "-"} · ${interesse} · Temperatura: ${temp} (${score} pts)`;
         await fetch(EDGE_URL, {
           method: "POST",
@@ -290,6 +294,9 @@ export default function CasaTuaCanoasQuiz() {
     const qZap = () => {
       textInput("(51) 9 9999-9999", "tel", (v) => { A.zap = v; me(v);
         unlocked = 4; pips.forEach((p) => p.classList.add("on")); pc.textContent = "4/4";
+        // Captura o lead JÁ com o WhatsApp (garante o contato mesmo se largar antes da escolha final).
+        const tempParcial = score >= 4 ? "quente" : score >= 2 ? "morno" : "frio";
+        enviarLead("parcial", tempParcial);
         typing(reward, 900);
       });
     };
