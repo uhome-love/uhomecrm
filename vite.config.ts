@@ -53,6 +53,10 @@ export default defineConfig(({ mode }) => ({
             ? m.split("/").slice(0, 2).join("/")
             : m.split("/")[0];
 
+          // Utilitários minúsculos compartilhados: fixados no chunk base para
+          // não serem absorvidos por um vendor pesado (ex.: clsx no charts).
+          if (["clsx", "tailwind-merge", "class-variance-authority"].includes(pkg))
+            return "vendor-react";
           if (["react", "react-dom", "react-router-dom", "react-router", "scheduler"].includes(pkg))
             return "vendor-react";
           if (pkg === "@supabase" || pkg.startsWith("@supabase/")) return "vendor-supabase";
