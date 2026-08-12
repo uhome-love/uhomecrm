@@ -251,8 +251,15 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
                 <div className="rounded-lg border bg-muted/30 p-3 space-y-1 text-xs">
                   <div className="flex justify-between"><span>Leads que vão para Descarte</span><b>{previewDescarte.frios}</b></div>
                   <div className="flex justify-between">
-                    <span>Leads avançados para {gerenteAlvo?.nome || "destino"}</span><b>{previewDescarte.quentes}</b>
+                    <span>Leads com trabalho feito para {gerenteAlvo?.nome || "destino"}</span><b>{previewDescarte.quentes}</b>
                   </div>
+                  {previewDescarte.porEtapa && Object.keys(previewDescarte.porEtapa).length > 0 && (
+                    <div className="pl-3 text-[11px] text-muted-foreground">
+                      {Object.entries(previewDescarte.porEtapa).map(([nome, n]) => (
+                        <div key={nome} className="flex justify-between"><span>{nome}</span><span>{n}</span></div>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex justify-between"><span>Negócios em aberto repassados</span><b>{impact.negocios}</b></div>
                   <div className="flex justify-between"><span>Tarefas pendentes canceladas</span><b>{previewDescarte.tarefas}</b></div>
                   {precisaDestinoAvancados && (
