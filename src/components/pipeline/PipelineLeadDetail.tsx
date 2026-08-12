@@ -689,6 +689,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       {/* Contador de estagnação (demais etapas com config) */}
       <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
 
+      {/* ── DETALHES DO LEAD — recolhível pra desafogar a coluna (declutter) ── */}
+      <Collapsible className="rounded-xl border border-border/70">
+        <CollapsibleTrigger className="group/det flex w-full items-center justify-between px-3 py-2.5 text-[12.5px] font-semibold hover:bg-muted/30 transition-colors">
+          <span className="flex items-center gap-1.5"><ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/det:rotate-90" /> Detalhes do lead</span>
+          <span className="text-[10.5px] font-normal text-muted-foreground">qualificação · empreendimento · materiais</span>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-2.5 pb-2.5 space-y-2">
+
       {/* Checklist de Qualificação — só visível quando o lead está na etapa Qualificação */}
       {currentStage?.tipo === "qualificacao" && (
         <>
@@ -790,6 +798,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           <span className="line-clamp-2 min-w-0 break-words">{lead.origem_detalhe}</span>
         </p>
       )}
+
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* ════════════ FLAG CONTROLS ════════════ */}
       <LeadFlagControls
