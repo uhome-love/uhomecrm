@@ -82,6 +82,8 @@ export interface ProntoVirar {
   sinal: "quente" | "interesse";
   dias: number;
   meu: boolean;
+  /** Lead está na Pós-Visita mas NÃO tem visita realizada registrada na agenda (resíduo legado). */
+  semVisita: boolean;
 }
 
 export interface NegociosBoard {
@@ -246,8 +248,22 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
       }
 
       // Pós-Visita: leads na etapa pos_visita (prontos pra virar negócio).
-      const prontos: ProntoVirar[] = leads
-        .filter((l) => relTipo(l.pipeline_stages) === "pos_visita")
+      const posVisitaLeads = leads.filter((l) => relTipo(l.pipeline_stages) === "pos_visita");
+
+      // Quem realmente tem visita REALIZADA registrada na agenda (resto = resíduo legado).
+      const comVisita = new Set<string>();
+      if (posVisitaLeads.length) {
+        const { data: vis } = await supabase
+          .from("visitas")
+          .select("pipeline_lead_id")
+          .eq("status", "realizada")
+          .in("pipeline_lead_id", posVisitaLeads.map((l) => String(l.id)));
+        for (const v of (vis ?? []) as { pipeline_lead_id: string | null }[]) {
+          if (v.pipeline_lead_id) comVisita.add(String(v.pipeline_lead_id));
+        }
+      }
+
+      const prontos: ProntoVirar[] = posVisitaLeads
         .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
         .map((l) => {
           const temp = String(l.temperatura ?? "").toLowerCase();
@@ -263,6 +279,7 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
             sinal: temp.includes("quente") ? "quente" : "interesse",
             dias: diasDe((l.ultimo_toque_at as string) ?? (l.updated_at as string)),
             meu: !!meuUserId && l.corretor_id === meuUserId,
+            semVisita: !comVisita.has(String(l.id)),
           };
         });
 

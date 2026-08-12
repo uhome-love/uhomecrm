@@ -151,8 +151,18 @@ function PosVisitaCard({ p, onClick }: { p: ProntoVirar; onClick: () => void }) 
     <button onClick={onClick} className="relative overflow-hidden rounded-xl border border-border bg-card p-2.5 pl-3.5 text-left transition-all hover:shadow-md before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-cyan-500">
       <div className="truncate text-[13px] font-bold">{p.nome}</div>
       <div className="truncate text-[11px] text-muted-foreground">{p.empreendimento}</div>
-      <div className="mt-1.5 flex items-center gap-1.5">
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <span className={cn("rounded-full px-1.5 py-0.5 text-[9.5px] font-bold", p.sinal === "quente" ? "bg-rose-50 text-rose-600 dark:bg-rose-500/10" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10")}>{p.sinal === "quente" ? "🔥 quente" : "interesse"}</span>
+        {p.semVisita && (
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9.5px] font-bold text-muted-foreground" title="Este lead está na Pós-Visita sem visita realizada registrada na agenda">
+            sem visita registrada
+          </span>
+        )}
+        {p.dias >= 14 && (
+          <span className={cn("rounded-full px-1.5 py-0.5 text-[9.5px] font-bold", p.dias >= 30 ? "bg-rose-50 text-rose-600 dark:bg-rose-500/10" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10")}>
+            parado há {p.dias}d
+          </span>
+        )}
         <span className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-0.5 text-[9.5px] font-bold text-primary">virar negócio <ArrowRight className="h-2.5 w-2.5" /></span>
       </div>
     </button>
