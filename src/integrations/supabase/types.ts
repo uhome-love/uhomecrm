@@ -224,6 +224,48 @@ export type Database = {
         }
         Relationships: []
       }
+      _rollback_pos_visita_2026_08_12: {
+        Row: {
+          backed_up_at: string
+          corretor_id: string | null
+          flag_status: Json | null
+          id: string
+          motivo_descarte: string | null
+          motivo_descarte_code: string | null
+          nome: string | null
+          stage_changed_at: string | null
+          stage_id: string | null
+          tipo_descarte: string | null
+          ultimo_toque_at: string | null
+        }
+        Insert: {
+          backed_up_at?: string
+          corretor_id?: string | null
+          flag_status?: Json | null
+          id: string
+          motivo_descarte?: string | null
+          motivo_descarte_code?: string | null
+          nome?: string | null
+          stage_changed_at?: string | null
+          stage_id?: string | null
+          tipo_descarte?: string | null
+          ultimo_toque_at?: string | null
+        }
+        Update: {
+          backed_up_at?: string
+          corretor_id?: string | null
+          flag_status?: Json | null
+          id?: string
+          motivo_descarte?: string | null
+          motivo_descarte_code?: string | null
+          nome?: string | null
+          stage_changed_at?: string | null
+          stage_id?: string | null
+          tipo_descarte?: string | null
+          ultimo_toque_at?: string | null
+        }
+        Relationships: []
+      }
       academia_aulas: {
         Row: {
           conteudo: Json | null
