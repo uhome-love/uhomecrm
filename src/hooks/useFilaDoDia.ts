@@ -91,6 +91,8 @@ export interface CadenciaBloco {
 export interface FilaDoDia {
   prioridades: LeadFila[];
   cadencia: CadenciaBloco;
+  /** leads tocados hoje (BRT) — comprovante do dia */
+  feitosHoje: LeadFila[];
   lembretes: LembretesAgrupados;
   totalLembretes: number;
   stages: PipelineStage[];
