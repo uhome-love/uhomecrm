@@ -759,7 +759,11 @@ export default function AgendaCorretor() {
           lead={{ id: registrar.id, nome: registrar.nome }}
           concluirTarefaId={registrar.concluirTarefaId ?? null}
           onClose={() => setRegistrar(null)}
-          onSaved={invalidar}
+          onSaved={() => {
+            if (registrar.origem === "fila") concluirDaFila(registrar.id);
+            else invalidar();
+          }}
+
         />
       )}
 
