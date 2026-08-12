@@ -428,6 +428,19 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     return stages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo));
   }, [stages, showGanhos]);
 
+  // Leads que existem mas não aparecem em nenhuma coluna (Ganho / etapas comerciais)
+  const foraDoBoard = useMemo(() => {
+    if (showGanhos) return { ganhos: 0, negocios: 0 };
+    const tipoById = new Map(stages.map(s => [s.id, s.tipo]));
+    let ganhos = 0, negocios = 0;
+    for (const l of leads) {
+      const tipo = tipoById.get(l.stage_id);
+      if (tipo === "venda") ganhos++;
+      else if (tipo && ["proposta", "documentacao", "contrato_gerado", "negociacao"].includes(tipo)) negocios++;
+    }
+    return { ganhos, negocios };
+  }, [leads, stages, showGanhos]);
+
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
     const seen = new Set<string>();
