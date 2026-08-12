@@ -428,6 +428,19 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     return stages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo));
   }, [stages, showGanhos]);
 
+  // Leads que existem mas não aparecem em nenhuma coluna (Ganho / etapas comerciais)
+  const foraDoBoard = useMemo(() => {
+    if (showGanhos) return { ganhos: 0, negocios: 0 };
+    const tipoById = new Map(stages.map(s => [s.id, s.tipo]));
+    let ganhos = 0, negocios = 0;
+    for (const l of leads) {
+      const tipo = tipoById.get(l.stage_id);
+      if (tipo === "venda") ganhos++;
+      else if (tipo && ["proposta", "documentacao", "contrato_gerado", "negociacao"].includes(tipo)) negocios++;
+    }
+    return { ganhos, negocios };
+  }, [leads, stages, showGanhos]);
+
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
     const seen = new Set<string>();
@@ -867,6 +880,19 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
+
+      {/* Aviso: leads existentes que não aparecem em nenhuma coluna */}
+      {(foraDoBoard.ganhos > 0 || foraDoBoard.negocios > 0) && (
+        <div className="shrink-0 mt-2 mb-1 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          {foraDoBoard.ganhos > 0 && (
+            <span>{foraDoBoard.ganhos} lead(s) em <b className="text-foreground">Ganho</b> — veja no filtro “🏆 Ganhos”. </span>
+          )}
+          {foraDoBoard.negocios > 0 && (
+            <span>{foraDoBoard.negocios} lead(s) em etapa comercial — veja na aba <b className="text-foreground">Negócios</b>.</span>
+          )}
+        </div>
+      )}
+
 
       {/* Mini-map nav pills — índice de navegação discreto entre etapas */}
       <div className="shrink-0 flex items-center gap-1 mb-2 px-0.5 overflow-x-auto scrollbar-none pb-0.5" style={{ paddingTop: 10 }}>
