@@ -663,7 +663,20 @@ export default function AgendaCorretor() {
               <Layers className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <div className="text-[13px] text-foreground">
                 <b className="font-semibold">Fila zerada — mandou bem!</b>
-                <p className="mt-0.5 text-muted-foreground">Sem leads pedindo ação agora. Aproveite pra aquecer os mornos na Oferta Ativa.</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  {feitosHoje.length > 0
+                    ? `Você registrou ${feitosHoje.length} ${feitosHoje.length === 1 ? "lead" : "leads"} hoje. Nada pendente agora.`
+                    : "Sem leads pedindo ação agora. Aproveite pra aquecer os mornos na Oferta Ativa."}
+                </p>
+                {feitosHoje.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFoco("feitos")}
+                    className="mt-1.5 text-[12px] font-semibold text-primary hover:underline"
+                  >
+                    Ver o que você fez hoje →
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -672,6 +685,7 @@ export default function AgendaCorretor() {
                 <CardPrioridade
                   key={l.id} lead={l} stages={stages}
                   destacado={destaqueId === l.id}
+                  feito={feitoId === l.id}
                   onRegistrar={() => setRegistrar({ id: l.id, nome: l.nome, origem: "fila" })}
                   onOpen={() => abrirLead(l.id)}
                   onMove={moverEtapa}
