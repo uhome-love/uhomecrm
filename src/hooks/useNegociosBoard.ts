@@ -279,6 +279,7 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
             sinal: temp.includes("quente") ? "quente" : "interesse",
             dias: diasDe((l.ultimo_toque_at as string) ?? (l.updated_at as string)),
             meu: !!meuUserId && l.corretor_id === meuUserId,
+            semVisita: !comVisita.has(String(l.id)),
           };
         });
 
