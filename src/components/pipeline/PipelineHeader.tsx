@@ -48,15 +48,6 @@ function moneyShort(reais: number): string {
 }
 
 // Pílula de passo (sinal da aba Negócios) — só leitura, mesmo visual das pílulas de saúde.
-function NegPill({ dot, nome, n, vgv }: { dot: string; nome: string; n: number; vgv?: number }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11.5px] font-semibold text-muted-foreground whitespace-nowrap">
-      <span className={`h-2 w-2 rounded-full ${dot}`} /> {nome} <b className="font-bold text-foreground">{n}</b>{vgv ? ` · ${moneyShort(vgv)}` : ""}
-    </span>
-  );
-}
-
-
 export interface PipelineHeaderProps {
   // Counts & data
   filteredLeadsCount: number;
@@ -348,15 +339,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 }}
               />
             )}
-            {activeTab === "negocios" && negResumo && (
-              <div className="flex flex-wrap items-center gap-2">
-                <NegPill dot="bg-cyan-500" nome="Pós-Visita" n={negResumo.posVisita} />
-                <NegPill dot="bg-sky-500" nome="Documentação" n={negResumo.documentacao.n} vgv={negResumo.documentacao.vgv} />
-                <NegPill dot="bg-violet-500" nome="Proposta" n={negResumo.proposta.n} vgv={negResumo.proposta.vgv} />
-                <NegPill dot="bg-indigo-500" nome="Contrato" n={negResumo.contrato.n} vgv={negResumo.contrato.vgv} />
-                <NegPill dot="bg-emerald-500" nome="Ganho" n={negResumo.ganho.n} vgv={negResumo.ganho.vgv} />
-              </div>
-            )}
+            {/* Negócios: pílulas de passo REMOVIDAS — count+VGV já vivem no cabeçalho de cada
+                coluna do board (fonte única). O espaço fica pra futuras pílulas de SAÚDE que
+                de fato filtram (atenção/desatualizado/estagnado). */}
 
             <div className="h-5 w-px bg-border" />
             {toolsOpen ? (

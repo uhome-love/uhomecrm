@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+// Refs de array estáveis pro estado "sem dados" — evita re-render/rebuild dos memos.
+const EMPTY: never[] = [];
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
 
@@ -63,41 +66,39 @@ export interface PipelineHistorico {
 export function usePipelineLeadData(leadId: string | null) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [atividades, setAtividades] = useState<PipelineAtividade[]>([]);
-  const [anotacoes, setAnotacoes] = useState<PipelineAnotacao[]>([]);
-  const [tarefas, setTarefas] = useState<PipelineTarefa[]>([]);
-  const [historico, setHistorico] = useState<PipelineHistorico[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const loadAll = useCallback(async () => {
-    if (!leadId || !user) return;
-    setLoading(true);
-    try {
+  // Dados do modal cacheados via React Query. Antes rebuscava 4 tabelas do ZERO a cada
+  // abertura (a "História demorava a aparecer"); agora reabrir o mesmo lead é instantâneo
+  // (staleTime) e as mutações invalidam pra revalidar.
+  const query = useQuery({
+    queryKey: ["lead-detail-data", leadId, user?.id],
+    enabled: !!leadId && !!user,
+    staleTime: 20_000,
+    queryFn: async () => {
       const [atRes, anRes, taRes, hiRes] = await Promise.all([
-        supabase.from("pipeline_atividades").select("*").eq("pipeline_lead_id", leadId).order("data", { ascending: false }),
-        supabase.from("pipeline_anotacoes").select("*").eq("pipeline_lead_id", leadId).order("fixada", { ascending: false }).order("created_at", { ascending: false }),
-        supabase.from("pipeline_tarefas").select("*").eq("pipeline_lead_id", leadId).order("created_at", { ascending: false }),
-        supabase.from("pipeline_historico").select("*").eq("pipeline_lead_id", leadId).order("created_at", { ascending: false }),
+        supabase.from("pipeline_atividades").select("*").eq("pipeline_lead_id", leadId!).order("data", { ascending: false }),
+        supabase.from("pipeline_anotacoes").select("*").eq("pipeline_lead_id", leadId!).order("fixada", { ascending: false }).order("created_at", { ascending: false }),
+        supabase.from("pipeline_tarefas").select("*").eq("pipeline_lead_id", leadId!).order("created_at", { ascending: false }),
+        supabase.from("pipeline_historico").select("*").eq("pipeline_lead_id", leadId!).order("created_at", { ascending: false }),
       ]);
-      setAtividades((atRes.data || []) as PipelineAtividade[]);
-      setAnotacoes((anRes.data || []) as PipelineAnotacao[]);
-      setTarefas((taRes.data || []) as PipelineTarefa[]);
-      setHistorico((hiRes.data || []) as PipelineHistorico[]);
-    } catch (err) {
-      console.error("Error loading lead data:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [leadId, user]);
+      return {
+        atividades: (atRes.data || []) as PipelineAtividade[],
+        anotacoes: (anRes.data || []) as PipelineAnotacao[],
+        tarefas: (taRes.data || []) as PipelineTarefa[],
+        historico: (hiRes.data || []) as PipelineHistorico[],
+      };
+    },
+  });
 
-  // Mostra estado de carregamento IMEDIATAMENTE ao trocar/abrir um lead,
-  // antes mesmo do loadAll rodar — evita o flash de "Nenhuma tarefa pendente".
-  useEffect(() => {
-    if (leadId) setLoading(true);
-    else setLoading(false);
-  }, [leadId]);
+  const atividades = query.data?.atividades ?? (EMPTY as PipelineAtividade[]);
+  const anotacoes = query.data?.anotacoes ?? (EMPTY as PipelineAnotacao[]);
+  const tarefas = query.data?.tarefas ?? (EMPTY as PipelineTarefa[]);
+  const historico = query.data?.historico ?? (EMPTY as PipelineHistorico[]);
+  const loading = query.isLoading;
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  // "reload" mantém o nome antigo (usado pelas mutações e exposto na API): agora invalida o cache.
+  const loadAll = useCallback(() => {
+    if (leadId) queryClient.invalidateQueries({ queryKey: ["lead-detail-data", leadId] });
+  }, [leadId, queryClient]);
 
   const addAtividade = useCallback(async (data: Partial<PipelineAtividade>) => {
     if (!user || !leadId) return;
