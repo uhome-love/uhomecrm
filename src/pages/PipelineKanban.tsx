@@ -169,7 +169,7 @@ export default function PipelineKanban() {
   const [negociosFilter, setNegociosFilter] = useState(false);
   const [ganhosFilter, setGanhosFilter] = useState(false);
   // Filtro de saúde do NEGÓCIO (aba Negócios) — pílulas atenção/desatualizado/estagnado.
-  const [negocioSaudeFilter, setNegocioSaudeFilter] = useState<"ambar" | "vermelho" | "estagnado" | null>(null);
+  const [negocioSaudeFilter, setNegocioSaudeFilter] = useState<"verde" | "ambar" | "vermelho" | null>(null);
   // Filtro "em risco de estagnação" — ativado via ?risco=estagnacao (vindo do dashboard).
   const [riscoFilter, setRiscoFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);

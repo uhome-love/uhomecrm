@@ -85,8 +85,8 @@ export interface PipelineHeaderProps {
   ganhosFilter: boolean;
   setGanhosFilter: React.Dispatch<React.SetStateAction<boolean>>;
   // Filtro de SAÚDE do negócio (aba Negócios): "ambar" | "vermelho" | "estagnado" | null.
-  negocioSaudeFilter?: "ambar" | "vermelho" | "estagnado" | null;
-  setNegocioSaudeFilter?: (v: "ambar" | "vermelho" | "estagnado" | null) => void;
+  negocioSaudeFilter?: "verde" | "ambar" | "vermelho" | null;
+  setNegocioSaudeFilter?: (v: "verde" | "ambar" | "vermelho" | null) => void;
   hasAnyFilter: boolean;
   clearAllFilters: () => void;
 
@@ -198,11 +198,12 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     const total = posVisita + p.documentacao.n + p.proposta.n + p.contrato.n + p.ganho.n;
     const vgvTotal = p.documentacao.vgv + p.proposta.vgv + p.contrato.vgv + p.ganho.vgv;
     // Saúde do NEGÓCIO em andamento (Ganho é terminal, não conta): mesma vocabulária do lead.
-    let ambar = 0, vermelho = 0, estagnado = 0;
-    const bump = (s: string) => { if (s === "ambar") ambar++; else if (s === "vermelho") vermelho++; else if (s === "estagnado") estagnado++; };
+    // Estagnado NÃO se aplica a negócio (só nas etapas de lead); por isso: em dia / atenção / desatualizado.
+    let verde = 0, ambar = 0, vermelho = 0;
+    const bump = (s: string) => { if (s === "verde") verde++; else if (s === "ambar") ambar++; else if (s === "vermelho") vermelho++; };
     d.prontos.forEach((x) => bump(x.saude));
     d.negocios.forEach((c) => { if (c.passo !== "ganho") bump(c.saude); });
-    return { posVisita, ...p, total, vgvTotal, saude: { ambar, vermelho, estagnado } };
+    return { posVisita, ...p, total, vgvTotal, saude: { verde, ambar, vermelho } };
   }, [negBoard.data]);
 
   // ── Contexto tab-aware (só números — sem "Escritório") ──
@@ -352,12 +353,14 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             )}
             {/* Negócios: pílulas de SAÚDE que FILTRAM o board (mesma vocabulária do lead).
                 Passo+VGV já vivem no cabeçalho de cada coluna. */}
+            {/* Saúde do negócio — MESMA estética das pílulas de Leads. Sem estagnado
+                (só existe na fase de leads, tem página dedicada). */}
             {activeTab === "negocios" && negResumo && setNegocioSaudeFilter && (
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {([
-                  { key: "ambar", label: "atenção", n: negResumo.saude.ambar, cls: "bg-amber-50 text-amber-700 ring-amber-600/20", dot: "bg-amber-500" },
-                  { key: "vermelho", label: "desatualizado", n: negResumo.saude.vermelho, cls: "bg-red-50 text-red-700 ring-red-600/20", dot: "bg-red-500" },
-                  { key: "estagnado", label: "estagnado", n: negResumo.saude.estagnado, cls: "bg-violet-50 text-violet-700 ring-violet-600/20", dot: "bg-violet-500" },
+                  { key: "verde", label: "em dia", n: negResumo.saude.verde, color: "#047857", dot: "#22c55e", bgActive: "rgba(34,197,94,0.12)" },
+                  { key: "ambar", label: "atenção", n: negResumo.saude.ambar, color: "#B45309", dot: "hsl(var(--warning-500))", bgActive: "rgba(245,158,11,0.12)" },
+                  { key: "vermelho", label: "desatualizado", n: negResumo.saude.vermelho, color: "#DC2626", dot: "#DC2626", bgActive: "rgba(220,38,38,0.12)" },
                 ] as const).map((s) => {
                   const active = negocioSaudeFilter === s.key;
                   return (
@@ -366,9 +369,18 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                       type="button"
                       onClick={() => setNegocioSaudeFilter(active ? null : s.key)}
                       aria-pressed={active}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 h-8 text-xs font-semibold ring-1 ring-inset transition-all ${s.cls} ${active ? "ring-2 ring-offset-1" : "hover:brightness-95"}`}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 999,
+                        border: active ? `1px solid ${s.dot}` : "1px solid hsl(var(--border))",
+                        background: active ? s.bgActive : "transparent",
+                        color: s.color, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = s.bgActive; }}
+                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                     >
-                      <span className={`h-2 w-2 rounded-full ${s.dot}`} /> {s.n} {s.label}
+                      <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: s.dot, display: "inline-block" }} />
+                      <span style={{ fontVariantNumeric: "tabular-nums" }}>{s.n.toLocaleString("pt-BR")}</span>
+                      <span>{s.label}</span>
                     </button>
                   );
                 })}
