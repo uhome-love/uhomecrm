@@ -508,8 +508,35 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     />
   );
 
+  // ── Síntese (briefing): 1 frase — última atividade + próximo passo ──
+  const sinteseNode = (() => {
+    const TIPO_EMOJI: Record<string, string> = {
+      ligacao: "📞", call: "📞", whatsapp: "💬", mensagem: "💬", contato: "💬",
+      email: "✉️", followup: "🔁", follow_up: "🔁", visita: "📍", reuniao: "📍",
+      nota: "📝", anotacao: "📝", proposta: "💼",
+    };
+    // Síntese = última observação HUMANA (contato real), não dump de formulário/sistema.
+    // O "próximo passo" fica por conta da caixa PRÓXIMA AÇÃO logo abaixo (sem redundância).
+    const HUMANO = new Set(["ligacao", "call", "whatsapp", "mensagem", "contato", "email", "followup", "follow_up", "visita", "reuniao", "nota", "anotacao", "proposta"]);
+    const ult = (leadData.atividades || []).find((a) => HUMANO.has(a.tipo) && (a.descricao?.trim() || a.titulo?.trim()));
+    if (!ult) return null; // sem observação humana ainda → não mostra a tira
+    const ultTxt = (ult.descricao?.trim() || ult.titulo?.trim())!;
+    const emoji = TIPO_EMOJI[ult.tipo] || "•";
+    return (
+      <div className="mb-3 flex gap-2.5 rounded-xl border border-amber-200/70 bg-amber-50/60 px-3 py-2.5">
+        <span className="text-base leading-none shrink-0">{emoji}</span>
+        <p className="text-[12.5px] leading-relaxed text-foreground min-w-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700/80 block mb-0.5">Última conversa</span>
+          <span className="font-semibold line-clamp-3">{ultTxt}</span>
+        </p>
+      </div>
+    );
+  })();
+
   const bodyNode = (
     <>
+      {sinteseNode}
+
       {/* Sugestão de etapa do gestor (via aviso do PDN) */}
       {stageSugerido && (
         <div className="mb-3 rounded-lg border border-[#4969FF]/40 bg-[#4969FF]/8 p-3">
@@ -547,22 +574,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         onSeeAll={() => setActiveTab("tarefas")}
         onCreateTask={() => setNextActionOpen(true)}
       />
-
-      {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
-      <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
-
-      {/* Contador de estagnação (demais etapas com config) */}
-      <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
-
-
-      {/* Checklist de Qualificação — só visível quando o lead está na etapa Qualificação */}
-      {currentStage?.tipo === "qualificacao" && (
-        <>
-          <QualificacaoEtapaCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
-          <PerfilLeadCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
-        </>
-      )}
-
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (
@@ -656,6 +667,21 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </DropdownMenu>
         )}
       </div>
+
+      {/* ── SAÚDE + contexto de etapa (após a zona de ação) ── */}
+      {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
+      <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
+
+      {/* Contador de estagnação (demais etapas com config) */}
+      <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
+
+      {/* Checklist de Qualificação — só visível quando o lead está na etapa Qualificação */}
+      {currentStage?.tipo === "qualificacao" && (
+        <>
+          <QualificacaoEtapaCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
+          <PerfilLeadCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
+        </>
+      )}
 
       {/* Caixa Empreendimento polida (header + 3 métricas) */}
       <DrawerEmpreendimento
