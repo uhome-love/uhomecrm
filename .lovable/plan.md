@@ -1,63 +1,56 @@
-# Quiz Casa Tua Santos Ferreira (`/casatuacanoas-quiz`) — visita agendada + pixel isolado
+# Auditoria da aba Pós-Visita (visão Negócios) — limpeza do resíduo legado
 
-## (a) O que existe hoje
+## Diagnóstico (dados reais, só leitura)
 
-**Onde vive**
-- Página única: `src/pages/CasaTuaCanoasQuiz.tsx` (391 linhas, DOM imperativo dentro de um `useEffect`, CSS embutido).
-- Rota pública em `src/App.tsx`: `/casatuacanoas-quiz`, via `lazyRetry` (fora do AppLayout, sem auth). Não há pageRegistry envolvido.
-- Fluxo: espia rápida → P1 tipologia → P2 prioridade → P3 forma de compra → nome → WhatsApp → Book (download PDF) → escolha: "garantir visita" (dia + turno) ou "falar com corretor" → tela final.
+A coluna **Pós-Visita** tem hoje **81 leads ativos**. Cruzei cada um com visita realizada registrada, último toque, atividades, negócio vinculado e dono.
 
-**Pixel (hoje)**
-- `META_PIXEL_ID = "1426170849536314"` — sim, é o pixel de imóveis, inicializado nessa página (linha 16/124).
-- Dispara `PageView` + eventos **custom** apenas: `QuizInicio_CasaTuaSF`, `QuizComecou_CasaTuaSF`, `QuizP1Tipologia_CasaTuaSF`, `QuizP2Prioridade_CasaTuaSF`, `QuizP3Compra_CasaTuaSF`, `QuizNome_CasaTuaSF`, `QuizWhatsApp_CasaTuaSF`, `GuiaBaixado_CasaTuaSF`, `VisitaAgendada_CasaTuaSF` / `FalarComCorretor_CasaTuaSF`.
-- **Não** dispara o evento padrão `Lead`. Nenhum outro arquivo do app inicializa `fbq` além de `VagaPage.tsx` (pixel dedicado de recrutamento `2291720528296050`).
+| Grupo | Qtd | Situação |
+|---|---|---|
+| Visita real + toque nos últimos 14 dias | 60 | Saudável — não mexer |
+| Visita real, parados 14–30 dias | 5 | Real, só cobrança |
+| Sem visita registrada, mas ativos (Luiza Clós) | 2 | Reais — não mexer |
+| Bruno Schuler com visita real (Nathalia Paz, Cristina Biehl) | 2 | Reais — não mexer |
+| **Bruno Schuler — resíduo de migração** | **14** | Alvo da limpeza |
 
-**Captura do lead**
-- Já grava **cedo**: logo após o WhatsApp (`qZap`) chama `enviarLead("parcial", …)`; grava de novo no fim (`finish`).
-- Endpoint: `POST {EDGE_BASE_URL}/functions/v1/receive-quiz-lead` com apikey anon.
-- A função grava em `pipeline_leads`: stage `novo_lead`, `origem = 'Quiz'`, `corretor_id = null`, `aceite_status = 'pendente_distribuicao'` → **cai na Fila CEO**, não na roleta (o comentário no topo do arquivo dizendo "roleta via receive-landing-lead" está desatualizado). `campanha = "Casa Tua Santos Ferreira — Quiz"`, `plataforma = "Quiz Casa Tua Canoas"`, `empreendimento = "Casa Tua Santos Ferreira"`, `origem_detalhe = "casatua_canoas_quiz"`, respostas em `form_respostas`, `fbc/fbp/user_agent/event_source_url` preenchidos.
-- Anti-duplicação: a 2ª chamada (fim) **enriquece** o lead parcial em vez de duplicar (match por telefone + origem Quiz + sem dono).
-- Hoje não há nenhum lead gravado com `origem='Quiz'` no banco (funil ainda sem tráfego real).
+Padrão idêntico nos 14: entraram na etapa no mesmo dia (**27/07/2026**), criados entre mar/2025 e dez/2025, **sem visita na agenda**, **último toque = data de criação**, **sem negócio vinculado**, e `flag_status` com apenas `{"status_visita":"realizada"}` **sem `visita_id`** — vieram de flag legado, não de visita real.
 
-**Final**
-- Download do Book (PDF estático `/casatua/guia-casa-tua-santos-ferreira.pdf`) + tela de "visita pré-agendada" que é **só texto**: nada é escrito na tabela `visitas`, nenhum corretor é notificado, o lead fica em Novo Lead na Fila CEO. Dia+turno viram só texto no `message`/`form_respostas`.
+**Exceção:** `Vinícius (v. futura)` tem 12 atividades (última em mai/2026). Fica **fora** da limpeza, em lista de revisão manual.
 
-**Plantão / visitação**
-- Não existe no CRM nenhuma tabela de agenda/escala de plantão por empreendimento (só `visitas`, `visita_amanha_config`, `corretor_disponibilidade` — esta última é turno de roleta, sem empreendimento nem horário de stand).
-- Existem **15 corretores alocados** ao empreendimento canônico "Casa Tua Canoas" (`corretor_alocacao`), e visitas históricas usam `local_visita` livre (ex.: "PLANTÃO CASA TUA", "STAND CASA TUA").
-- Conclusão: **não dá pra cravar horário exato** hoje. O caminho correto é preferência **dia + turno**, com hora a confirmar.
+Na tabela de **negócios ativos o Bruno não tem nenhum** — o que aparece com o nome dele são esses leads da coluna.
 
-## (b) Plano (aditivo, escopo estrito)
+## Lista final para aprovação (13 leads)
 
-### Bloco B — Pixel isolado (rápido, sem backend)
-Arquivo único: `src/pages/CasaTuaCanoasQuiz.tsx`
-- Trocar `META_PIXEL_ID` de `1426170849536314` para o **novo dataset dedicado** (ID que o Lucas criar).
-- Inicializar com `fbq('init', PIXEL, {}, {agent:'uhome-casatua'})` e disparar sempre com `trackSingleCustom` / `trackSingle` no ID dedicado, para nunca vazar evento para outro pixel caso o `fbq` já exista na página.
-- Renomear os customs para o padrão pedido: `VisitaIniciou` (abriu), `VisitaContato` (nome+WhatsApp), `VisitaQuizCompleto` (3 perguntas + Book liberado), `VisitaAgendada` (dia+turno confirmados) — mantendo `FalarComCorretor` como custom separado.
-- Confirmar (já é o caso) que o evento padrão `Lead` nunca é disparado.
+Todos do Bruno Schuler, todos sem visita, sem negócio, sem atividade, sem toque desde 2025:
 
-### Bloco A — Terminar em visita agendada de verdade
-1. **Migration aditiva** (só colunas nullable, nenhum drop):
-   - `pipeline_leads`: `preferencia_visita_dia date NULL`, `preferencia_visita_turno text NULL`.
-   - `visitas`: nenhuma coluna nova (já tem `pipeline_lead_id`, `empreendimento_canonico_id`, `origem_detalhe`, `hora_visita` nullable). Grava `origem = 'quiz'`, `status = 'agendada'`, `local_visita = 'Plantão Casa Tua · Av. Santos Ferreira, 3511 — Canoas'`, `hora_visita = null` (turno em `observacoes`).
-2. **Edge function nova** `quiz-visita-agendar` (pública, verify_jwt=false, sem segredo — mesmo padrão de `receive-quiz-lead`):
-   - Entrada: `pipeline_lead_id` (ou telefone), `dia`, `turno`.
-   - Escolhe o corretor de plantão: round-robin entre os corretores de `corretor_alocacao` que têm o canônico Casa Tua Canoas, preferindo quem está `na_roleta` no turno atual; atribui o lead (`corretor_id`, `aceite_status='aceito'`) — se nenhum elegível, mantém o lead na Fila CEO e cria a visita com o CEO como responsável.
-   - Move o lead para o stage `visita` (`a857139f-…`), grava `flag_status.status_visita = 'marcada'` e as preferências.
-   - Insere em `visitas` com `pipeline_lead_id`, `empreendimento_canonico_id = 5f28344e-…`.
-   - Notifica o corretor via `criar_notificacao` (+ notificação para admin/diretor, como o `receive-quiz-lead` já faz).
-   - Registra atividade em `pipeline_atividades` (histórico do lead).
-3. **Captura cedo**: manter o `enviarLead("parcial")` no passo do WhatsApp (já existe) e apenas garantir que ele **aguarde** a resposta e guarde o `lead_id` retornado, para o passo de visita reusar o mesmo lead em vez de depender do match por telefone.
-4. **Frontend** (`CasaTuaCanoasQuiz.tsx`): após dia+turno, chamar `quiz-visita-agendar`; a tela final passa a mostrar "Visita agendada" com o nome do corretor quando houver. Book continua como bônus, download inalterado.
+1. William Lyra — criado 26/03/2025
+2. Susi — 28/03/2025
+3. Vanessa Martins Marques (v. futura) — 05/04/2025
+4. Sérgio Endler — 09/04/2025
+5. Diego Peng Goulart — 22/04/2025
+6. Daiane Kaczanoski — 29/04/2025
+7. Alex Prado Ilha — 18/05/2025
+8. Jorge Cunha — 01/09/2025
+9. Marcelo da Roleta — 03/09/2025
+10. MANOELA BARBOSA — 24/09/2025
+11. Pedro Donato — 15/10/2025
+12. Ronaldo Fernando — 12/11/2025
+13. Ana Mariza Pozzobon — 11/12/2025
 
-**Arquivos tocados:** `src/pages/CasaTuaCanoasQuiz.tsx`, `supabase/functions/quiz-visita-agendar/index.ts` (novo), 1 migration aditiva, `supabase/config.toml` (registro da função). Nada mais.
+## O que será feito
 
-### Ordem sugerida
-Fase 1 = Bloco B (pixel, 1 arquivo, validar no Events Manager). Fase 2 = Bloco A (migration + edge + frontend), validando com um lead de teste ponta a ponta.
+1. **Backup antes de tudo:** snapshot de id, etapa atual, dono, `flag_status` e datas numa tabela de rollback aditiva, para desfazer em um comando.
+2. **Mover os 13 para Descarte reengajável**, usando o fluxo de descarte já existente (motivo canônico "base legada sem visita"), para que entrem no funil de nutrição/reengajamento. **Nada é arquivado, excluído ou escondido** — o lead continua existindo e reversível.
+3. **Limpar o flag falso** `status_visita: "realizada"` desses 13 (sem `visita_id`), para não voltarem à Pós-Visita.
+4. **Vinícius (v. futura)** fica na Pós-Visita, marcado para revisão manual.
+5. **Os 5 parados 14–30 dias** ganham apenas um chip "parado há X dias" na coluna — sem mover nada.
+6. **Causa raiz:** a coluna aceita lead só pelo `flag_status.status_visita`. Passa a exigir visita registrada (ou `visita_id` no flag); casos legados restantes ganham selo "sem visita registrada".
 
-## (c) Riscos e dependências do Lucas
-- **Depende do Lucas:** criar o dataset/pixel dedicado no Gerenciador de Eventos e me passar o ID (sem ele o Bloco B não sai). Se quiser CAPI nesse dataset depois, precisa também do access token — fora do escopo agora.
-- **Depende do Lucas (decisão):** confirmar o rodízio de plantão. Sem escala cadastrada, a regra proposta é round-robin entre os 15 alocados do Casa Tua Canoas; se existe uma escala real (planilha/WhatsApp), o ideal é cadastrar depois numa tabela de plantão — fase futura.
-- **Risco:** visita criada sem hora exata polui relatórios de visitas se ninguém confirmar. Mitigação: entra como `status='agendada'` (não realizada) e o corretor confirma pelo fluxo de visita já existente.
-- **Risco:** troca de pixel zera o aprendizado das campanhas atuais desse funil; migrar junto com a criação do conjunto de anúncios novo.
-- **Risco baixo:** mudar os nomes dos eventos custom quebra públicos/conversões já criados no pixel antigo — como o funil ainda não tem lead gravado, o impacto é mínimo.
+## Detalhes técnicos
+
+- Seleção por anti-join: `pipeline_leads` (stage `pos_visita`, `arquivado = false`) sem linha em `visitas` com status `realizada`, sem `pipeline_atividades`, `negocio_id is null`, `ultimo_toque_at < now() - 180 dias`. Aplicada sobre a lista fixa de 13 ids acima (dupla trava).
+- Alteração de dados via ferramenta de dados (não migration destrutiva); tabela de rollback criada por migration aditiva.
+- Frontend: chip de "parado há X dias" e selo "sem visita registrada" em `NegociosWorkspace.tsx` / `useNegociosBoard.ts` (apenas leitura/apresentação).
+
+## Validação após executar
+
+Conferir no preview que a Pós-Visita passa de 81 para 68 leads, que os 13 aparecem em Descarte com histórico intacto, e que Nathalia Paz, Cristina Biehl, Thiago Lorenzzoni, Lucas Drago e Vinícius continuam na coluna.
