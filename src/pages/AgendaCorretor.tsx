@@ -521,6 +521,23 @@ export default function AgendaCorretor() {
   const invalidar = () => queryClient.invalidateQueries({ queryKey: ["fila-do-dia"] });
   const abrirLead = (id: string) => navigate(`/pipeline-leads?lead=${id}`);
 
+  /** Registrou atividade num card da fila → sai da fila de hoje e avança pro próximo. */
+  const concluirDaFila = (leadId: string) => {
+    const lista = prioridadesFiltradas;
+    const i = lista.findIndex((l) => l.id === leadId);
+    const proximo = i >= 0 ? (lista[i + 1] ?? lista[i - 1]) : null;
+    dispensarLead(leadId);
+    invalidar();
+    if (proximo) setDestaqueId(proximo.id);
+  };
+
+  const voltarPraFila = (leadId: string) => {
+    restaurarLead(leadId);
+    invalidar();
+    toast.success("Lead de volta na fila de hoje");
+  };
+
+
   const moverEtapa = async (leadId: string, stageId: string) => {
     const now = new Date().toISOString();
     const { error } = await supabase
