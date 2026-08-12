@@ -132,6 +132,23 @@ Deno.serve(async (req) => {
       console.error("[receive-quiz-lead] notificação falhou (não crítico):", e);
     }
 
+    // Escreve no histórico do lead (aba "Histórico" do modal): campanha de origem + respostas do quiz.
+    try {
+      const campanhaNome = String((body as any).campaign_name || empreendimento);
+      const respostas = parseFormRespostas(body as any) || [];
+      const detalhes = respostas.map((r) => `• ${r.pergunta}: ${r.resposta}`).join("\n");
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: inserted.id,
+        tipo: "entrada",
+        titulo: `📣 Lead gerado pela campanha "${campanhaNome}"`,
+        descricao: `Origem: Quiz conversacional (${empreendimento}).${detalhes ? `\n\nRespostas do quiz:\n${detalhes}` : ""}`,
+        status: "concluida",
+        created_by: "00000000-0000-0000-0000-000000000000",
+      });
+    } catch (e) {
+      console.error("[receive-quiz-lead] atividade de entrada falhou (não crítico):", e);
+    }
+
     return json({ success: true, lead_id: inserted.id });
   } catch (e) {
     console.error("[receive-quiz-lead] erro:", e);
