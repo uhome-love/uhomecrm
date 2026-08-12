@@ -37,10 +37,10 @@ export default function DrawerActionGrid({
             size="sm"
             disabled={a.disabled}
             onClick={a.onClick}
-            className={`h-10 min-w-0 text-xs gap-1.5 rounded-lg justify-center px-2 ${isPrimary ? `${a.primaryColor} shadow-sm` : ""}`}
+            className={`flex-col h-auto min-w-0 py-2 gap-1 text-[11px] font-medium rounded-lg px-1 ${isPrimary ? `${a.primaryColor} shadow-sm` : ""}`}
           >
-            <a.icon className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{a.label}</span>
+            <a.icon className="h-4 w-4 shrink-0" />
+            <span className="truncate max-w-full">{a.label}</span>
           </Button>
         );
       })}
