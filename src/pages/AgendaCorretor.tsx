@@ -799,7 +799,7 @@ export default function AgendaCorretor() {
           onClose={() => setRegistrar(null)}
           onSaved={() => {
             if (registrar.origem === "fila") concluirDaFila(registrar.id);
-            else invalidar();
+            else concluirSeEstaNaFila(registrar.id);
           }}
 
         />
