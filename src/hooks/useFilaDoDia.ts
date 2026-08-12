@@ -46,7 +46,10 @@ export interface LeadFila {
   /** resultado da visita / negociação (ex.: "Quer proposta", "Interesse alto") */
   resultado: string | null;
   ultimo_registro: string | null;
+  /** carimbo do último toque real (usado no "Feitos hoje") */
+  ultimo_toque_at: string | null;
 }
+
 
 export interface Compromisso {
   id: string;
