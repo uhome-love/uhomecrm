@@ -135,7 +135,6 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, s
   const [ganhoDrop, setGanhoDrop] = useState<{ leadId: string; nome: string; vgv: number | null } | null>(null);
   const [regredirDrop, setRegredirDrop] = useState<{ leadId: string; nome: string } | null>(null);
   const invalidateBoard = () => queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
-  const posVisitaStage = useMemo(() => (stages || []).find((s) => s.tipo === "pos_visita") || null, [stages]);
   const vendaStage = useMemo(() => (stages || []).find((s) => s.tipo === "venda") || null, [stages]);
 
   const beginDrag = (leadId: string, fromTipo: string) => { dragRef.current = { leadId, fromTipo }; };
@@ -288,9 +287,10 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, s
       <RegredirDialog
         open={!!regredirDrop}
         onOpenChange={(o) => { if (!o) setRegredirDrop(null); }}
-        onConfirm={async (motivo) => {
-          if (!onMoveLead || !posVisitaStage || !regredirDrop) return;
-          await onMoveLead(regredirDrop.leadId, posVisitaStage.id, motivo || undefined);
+        stages={stages}
+        onConfirm={async (motivo, destinoStageId) => {
+          if (!onMoveLead || !destinoStageId || !regredirDrop) return;
+          await onMoveLead(regredirDrop.leadId, destinoStageId, motivo || undefined);
           invalidateBoard();
           setRegredirDrop(null);
         }}
@@ -307,18 +307,38 @@ const PASSO_TIPO: Record<string, string> = { pos_visita: "pos_visita", documenta
 // Etapas comerciais (têm negócio). Sair delas pra Pós-Visita = Regredir (arquiva).
 const COMMERCIAL_TIPOS = ["documentacao", "proposta", "contrato_gerado"];
 
+// Destinos do Regredir — o cliente volta a ser lead, mas a etapa varia com o motivo.
+const REGREDIR_DESTINOS = [
+  { tipo: "qualificacao", label: "Qualificação", hint: "quer mais opções" },
+  { tipo: "aquecimento", label: "Aquecimento", hint: "quer mais tempo pra ver outras coisas" },
+  { tipo: "pos_visita", label: "Pós-Visita", hint: "ainda está definindo" },
+];
+
 /**
  * RegredirDialog — FONTE ÚNICA do "Regredir" (usado pelo menu ⋯ E pelo arrastar).
- * Regra do Lucas: arquiva o negócio e o cliente volta a ser lead (Pós-Visita).
- * O motivo vai pro histórico via moveLead; o sync trigger arquiva o negócio.
+ * Regra do Lucas: arquiva o negócio e o cliente volta a ser lead. A ETAPA de volta
+ * varia com o motivo (Qualificação / Aquecimento / Pós-Visita). O motivo vai pro
+ * histórico via moveLead; o sync trigger arquiva o negócio.
  */
-function RegredirDialog({ open, onOpenChange, onConfirm }: { open: boolean; onOpenChange: (o: boolean) => void; onConfirm: (motivo: string) => Promise<void> | void }) {
+function RegredirDialog({ open, onOpenChange, onConfirm, stages }: { open: boolean; onOpenChange: (o: boolean) => void; onConfirm: (motivo: string, destinoStageId: string) => Promise<void> | void; stages?: PipelineStage[] }) {
+  const destinos = REGREDIR_DESTINOS
+    .map((d) => ({ ...d, stage: (stages || []).find((s) => s.tipo === d.tipo) }))
+    .filter((d): d is typeof d & { stage: PipelineStage } => !!d.stage);
   const [motivo, setMotivo] = useState("");
+  const [destino, setDestino] = useState<string>("");
   const [salvando, setSalvando] = useState(false);
-  useEffect(() => { if (open) setMotivo(""); }, [open]);
+  useEffect(() => {
+    if (open) {
+      setMotivo("");
+      const pos = destinos.find((d) => d.tipo === "pos_visita");
+      setDestino((pos ?? destinos[0])?.stage.id ?? "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   const confirmar = async () => {
+    if (!destino) return;
     setSalvando(true);
-    try { await onConfirm(motivo.trim()); onOpenChange(false); }
+    try { await onConfirm(motivo.trim(), destino); onOpenChange(false); }
     finally { setSalvando(false); }
   };
   return (
@@ -328,12 +348,31 @@ function RegredirDialog({ open, onOpenChange, onConfirm }: { open: boolean; onOp
           <DialogTitle className="text-sm">↩ Regredir — arquivar negócio</DialogTitle>
         </DialogHeader>
         <p className="text-xs text-muted-foreground -mt-1">
-          O negócio será <b>fechado (arquivado)</b> e o cliente <b>volta a ser lead</b> (Pós-Visita) no pipeline. Pra reabrir depois, é só "virar negócio" de novo. Diz o motivo (fica no histórico):
+          O negócio será <b>fechado (arquivado)</b> e o cliente <b>volta a ser lead</b>. Escolhe pra onde ele volta (conforme o motivo) — pra reabrir depois é só "virar negócio" de novo:
         </p>
-        <Textarea autoFocus rows={3} placeholder="Ex.: cliente pediu pra repensar; sumiu; problema de crédito…" value={motivo} onChange={(e) => setMotivo(e.target.value)} className="text-sm" />
+        <div className="grid gap-1.5">
+          {destinos.map((d) => (
+            <button
+              key={d.tipo}
+              type="button"
+              onClick={() => setDestino(d.stage.id)}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
+                destino === d.stage.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+              )}
+            >
+              <span className={cn("h-3.5 w-3.5 shrink-0 rounded-full border-2 transition-colors", destino === d.stage.id ? "border-primary bg-primary" : "border-muted-foreground/40")} />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold leading-tight">{d.label}</span>
+                <span className="block text-[11px] text-muted-foreground leading-tight">{d.hint}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+        <Textarea rows={2} placeholder="Motivo (fica no histórico) — ex.: cliente pediu pra repensar…" value={motivo} onChange={(e) => setMotivo(e.target.value)} className="text-sm" />
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={salvando}>Cancelar</Button>
-          <Button size="sm" onClick={confirmar} disabled={salvando || !motivo.trim()}>{salvando ? "Regredindo…" : "Regredir"}</Button>
+          <Button size="sm" onClick={confirmar} disabled={salvando || !motivo.trim() || !destino}>{salvando ? "Regredindo…" : "Regredir"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -434,9 +473,10 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
         <RegredirDialog
           open={regredirOpen}
           onOpenChange={setRegredirOpen}
-          onConfirm={async (motivo) => {
-            if (!onMoveLead || !posVisitaStage) return;
-            await onMoveLead(leadId, posVisitaStage.id, motivo || undefined);
+          stages={stages}
+          onConfirm={async (motivo, destinoStageId) => {
+            if (!onMoveLead || !destinoStageId) return;
+            await onMoveLead(leadId, destinoStageId, motivo || undefined);
             queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
           }}
         />
