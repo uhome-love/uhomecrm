@@ -12,7 +12,7 @@
 // legada do PipelineKanban foi removida).
 // ─────────────────────────────────────────────────────────────────
 import React, { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2, MoreHorizontal, ChevronDown, Inbox, Briefcase, SlidersHorizontal, Trophy } from "lucide-react";
+import { LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2, MoreHorizontal, ChevronDown, Inbox, Briefcase, SlidersHorizontal, Trophy, HelpCircle } from "lucide-react";
 import { useNegociosBoard } from "@/hooks/useNegociosBoard";
 import { GERENTES_REAIS } from "@/components/pipeline/header/gerentesReais";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -134,6 +134,62 @@ export interface PipelineHeaderProps {
   // Filtro "em risco de estagnação" (estado local do PipelineKanban) — pro chip de filtro ativo.
   riscoFilter?: boolean;
   clearRisco?: () => void;
+}
+
+/** Regras de ociosidade do NEGÓCIO (saúde por toque nas etapas comerciais) — igual ao
+ *  "?" do pipeline de leads, mas com as regras do negócio. */
+function InfoOciosidadeNegocio() {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Como funciona a cor do negócio"
+          title="Como funciona a cor do negócio"
+          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 text-[12.5px] leading-relaxed">
+        <div className="mb-1 text-[13px] font-semibold text-foreground">A cor do negócio = sua atividade real</div>
+        <p className="mb-2.5 text-muted-foreground">
+          Mostra há quanto tempo você não registra uma atividade nesse negócio — não é sobre ter tarefa aberta.
+        </p>
+        <ul className="space-y-1.5">
+          <li className="flex items-start gap-2">
+            <span className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+            <span><b className="font-semibold text-foreground">Em dia</b> — dentro do prazo da etapa.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+            <span><b className="font-semibold text-foreground">Atenção</b> — passou do prazo (até o dobro dele).</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500" />
+            <span><b className="font-semibold text-foreground">Desatualizado</b> — passou do dobro do prazo, prioridade.</span>
+          </li>
+        </ul>
+        <div className="mt-2.5 rounded-md bg-muted/50 p-2">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Prazo por etapa (dias sem atividade)</div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[12px]">
+            <span>Pós-Visita <b className="font-semibold text-foreground">7</b></span>
+            <span>Documentação <b className="font-semibold text-foreground">7</b></span>
+            <span>Proposta <b className="font-semibold text-foreground">7</b></span>
+            <span>Contrato <b className="font-semibold text-foreground">7</b></span>
+          </div>
+        </div>
+        <p className="mt-2.5 text-muted-foreground">
+          No negócio não existe "estagnado": negócio parado vira <b className="font-semibold text-red-600 dark:text-red-400">desatualizado</b> e
+          é prioridade (diferente do lead, que estagna e sai pra gestão).
+        </p>
+        <p className="mt-2 text-muted-foreground">
+          Registre uma atividade <b className="font-semibold text-primary">⚡</b> e o negócio volta a ficar verde.
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function PipelineHeader(props: PipelineHeaderProps) {
@@ -353,10 +409,11 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             )}
             {/* Negócios: pílulas de SAÚDE que FILTRAM o board (mesma vocabulária do lead).
                 Passo+VGV já vivem no cabeçalho de cada coluna. */}
-            {/* Saúde do negócio — MESMA estética das pílulas de Leads. Sem estagnado
-                (só existe na fase de leads, tem página dedicada). */}
+            {/* Saúde do negócio — MESMO visual compacto do pipeline de Leads (cluster
+                segmentado, só a bolinha + número; rótulo aparece na ativa). Sem estagnado. */}
             {activeTab === "negocios" && negResumo && setNegocioSaudeFilter && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-1">
+              <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] p-0.5">
                 {([
                   { key: "verde", label: "em dia", n: negResumo.saude.verde, color: "#047857", dot: "#22c55e", bgActive: "rgba(34,197,94,0.12)" },
                   { key: "ambar", label: "atenção", n: negResumo.saude.ambar, color: "#B45309", dot: "hsl(var(--warning-500))", bgActive: "rgba(245,158,11,0.12)" },
@@ -369,21 +426,20 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                       type="button"
                       onClick={() => setNegocioSaudeFilter(active ? null : s.key)}
                       aria-pressed={active}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 999,
-                        border: active ? `1px solid ${s.dot}` : "1px solid hsl(var(--border))",
-                        background: active ? s.bgActive : "transparent",
-                        color: s.color, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
-                      }}
+                      title={`${s.label}: ${s.n.toLocaleString("pt-BR")} negócios`}
+                      className="group inline-flex items-center gap-1.5 h-7 px-2 rounded-md transition-colors cursor-pointer border-none"
+                      style={{ background: active ? s.bgActive : "transparent", color: s.color, fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                       onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = s.bgActive; }}
                       onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                     >
                       <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: s.dot, display: "inline-block" }} />
-                      <span style={{ fontVariantNumeric: "tabular-nums" }}>{s.n.toLocaleString("pt-BR")}</span>
-                      <span>{s.label}</span>
+                      <span style={{ fontVariantNumeric: "tabular-nums", fontSize: 12, fontWeight: 700 }}>{s.n.toLocaleString("pt-BR")}</span>
+                      {active && <span style={{ fontSize: 11, fontWeight: 600 }}>{s.label}</span>}
                     </button>
                   );
                 })}
+              </div>
+              <InfoOciosidadeNegocio />
               </div>
             )}
 
