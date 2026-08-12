@@ -237,13 +237,19 @@ function CardPrioridade({
           />
         </div>
         <div className="flex shrink-0 items-start gap-1">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onRegistrar(); }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
-          </button>
+          {feito ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[12.5px] font-semibold text-white">
+              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.4} /> Feito
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onRegistrar(); }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
+            </button>
+          )}
           <CardOverflowMenu
             lead={leadObj}
             stages={stages}
