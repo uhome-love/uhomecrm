@@ -82,6 +82,8 @@ export interface ProntoVirar {
   sinal: "quente" | "interesse";
   dias: number;
   meu: boolean;
+  /** Lead está na Pós-Visita mas NÃO tem visita realizada registrada na agenda (resíduo legado). */
+  semVisita: boolean;
 }
 
 export interface NegociosBoard {
