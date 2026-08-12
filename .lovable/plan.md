@@ -4,10 +4,11 @@
 
 1. Só recebe quem está **ativo na roleta do turno** e **habilitado no empreendimento** do lead.
 2. Dentro desse grupo, distribuição **igual, um a um**, dentro do turno.
-3. **O contador zera a cada turno.** Manhã, tarde e noite são corridas independentes — quem entra só à tarde não ganha vantagem nem desvantagem.
-4. **Lead perdido (timeout/recusa) não conta** para o corretor. Só conta o que ele **aceitou**.
+3. **O contador zera a cada turno.** Manhã, tarde e noite são corridas independentes.
+4. **Para a fila de distribuição, recebeu conta** — mesmo que o corretor deixe expirar ou recuse. Quem recebeu vai para o fim da fila do turno. O filtro "só aceito" vale **apenas para os gráficos de leads aceitos do Dashboard CEO**.
 5. **Fila do CEO** distribui **por empreendimento**, nunca por segmento — e só entre os ativos da roleta no momento.
 6. **Reengajamento** segue exatamente a mesma regra.
+7. **Fila do CEO tem um número único** em todas as telas.
 
 ## Como está hoje x o que muda
 
@@ -16,11 +17,15 @@
 | Só alocados no empreendimento (entrada normal) | Já é assim | manter |
 | Rodízio um a um no turno | Já é assim | manter |
 | Zerar por turno | Já é assim | manter |
-| Perdeu o aceite não conta | **Não** — conta tudo que foi enviado, mesmo expirado/recusado | corrigir |
+| Recebido conta na fila (mesmo perdido) | Já é assim | **manter** (mudou em relação à versão anterior deste plano) |
+| Gráfico de aceitos no Dashboard CEO | Mistura envio com aceite | corrigir: contar só `aceito` |
 | Fila do CEO por empreendimento | **Não** — dispara com `force` e cai no pote por segmento quando não há alocado ativo | corrigir |
-| Reengajamento | Reativação normal já passa pelo mesmo motor (por empreendimento); o caminho que joga na Fila do CEO herda o problema acima | corrigir junto com a Fila do CEO |
+| Reengajamento | Reativação normal já passa pelo mesmo motor; o caminho da Fila do CEO herda o problema acima | corrigir junto |
+| Número da Fila do CEO | **Diverge**: hoje a Central de Roleta mostra **10** e o Dashboard CEO mostra **6** | unificar em **6** |
 
-Números que comprovam o item 4: nos últimos 2 dias houve 140 aceitos, 16 expirados e 1 recusado registrados em `roleta_distribuicoes`. Esses 17 perdidos estão hoje contando como "já recebeu" e empurram o corretor para o fim da fila sem ele ter ficado com o lead.
+### Por que 10 x 6
+
+A Central de Roleta conta todo lead `pendente_distribuicao` sem corretor, **incluindo arquivados** (4 leads velhos). O Dashboard CEO e o modal de disparo já ignoram arquivados. A verdade única é a do modal de disparo: **sem corretor + pendente de distribuição + não arquivado**.
 
 ## Exemplo prático
 
@@ -33,37 +38,35 @@ lead 7 Douglas | lead 8 Thalia | lead 9 Junior
 => 3 / 3 / 3
 ```
 
-Thalia deixa o lead 5 expirar:
+Thalia deixa o lead 5 expirar: o lead volta para a fila e vai para o próximo da vez, mas **Thalia continua contando 2 recebidos** no turno — ela não fura fila por ter perdido. No Dashboard CEO, o gráfico de aceitos mostra 2 para Douglas, 2 para Junior e 1 para Thalia.
+
+Tarde (contador zera às 12h), ativos: Douglas, Thalia, Junior, Paula. Entram 6 leads.
 
 ```text
-HOJE:   Thalia continua contando 2 do turno, mesmo sem ficar com o lead.
-DEPOIS: o lead 5 volta para o próximo da fila (Junior/Douglas) e o placar de
-        Thalia volta para 1 aceito — ela recebe o próximo lead novo do turno.
-```
-
-Tarde, entram 6 leads, ativos: Douglas, Thalia, Junior, Paula (Paula entrou só agora).
-
-```text
-Contador zera às 12h. Ninguém carrega saldo da manhã.
 lead 1 Douglas | lead 2 Thalia | lead 3 Junior | lead 4 Paula
 lead 5 Douglas | lead 6 Thalia
-=> turno da tarde: 2 / 2 / 1 / 1  (Paula não pula na frente de ninguém)
+=> tarde: 2 / 2 / 1 / 1  (Paula não pula na frente de ninguém)
 ```
 
-Noite: mesma coisa, contador zera de novo às 18h30.
-
-Fila do CEO disparada às 15h com 4 leads de Casa Tua Canoas: entra na **mesma corrida da tarde**, só entre os ativos habilitados em Casa Tua Canoas — não vai mais para o pote por segmento. Se ninguém habilitado estiver ativo, o lead fica aguardando em vez de ir para alguém de fora do empreendimento.
+Fila do CEO disparada às 15h com 4 leads de Casa Tua Canoas: entra na **mesma corrida da tarde**, só entre os ativos habilitados em Casa Tua Canoas. Se ninguém habilitado estiver ativo, o lead **fica aguardando** com o motivo visível, em vez de ir para alguém de fora do empreendimento.
 
 ## Detalhes técnicos
 
-- `public.distribuir_lead_atomico`: a subconsulta `recebidos_no_produto` passa a filtrar `rd.status = 'aceito'` (hoje conta qualquer status). O rodízio continua por produto + turno + dia BRT.
-- Fila do CEO (`FilaCeoDispatchModal` → `distribute-lead`): parar de enviar `force = true`, para que o motor exija corretor alocado ao empreendimento. Quando não houver alocado ativo, o retorno continua sendo `sem_alocado_produto` e o lead permanece na fila com o motivo visível.
-- Reengajamento: `reactivateDiscardedToRoleta` já usa o motor sem `force` — herda a correção automaticamente. O caminho `reativar_lead_para_fila_ceo` também, já que passa pela Fila do CEO ajustada.
-- Remover o fallback por segmento apenas do caminho da Fila do CEO; o pote por segmento continua existindo para leads **sem empreendimento identificado**.
+- `public.distribuir_lead_atomico`: **sem alteração** na subconsulta `recebidos_no_produto` — continua contando qualquer status (recebeu = conta). Rodízio segue por produto + turno + dia BRT.
+- Fila do CEO (`src/components/pipeline/FilaCeoDispatchModal.tsx` → edge function `distribute-lead`): parar de enviar `force = true`. Sem alocado ativo, o retorno segue `sem_alocado_produto` e o lead permanece na fila com o motivo na linha.
+- Fallback por segmento removido **apenas** do caminho da Fila do CEO; o pote por segmento continua para leads **sem empreendimento identificado**.
+- Verdade única da Fila do CEO — mesmo filtro nos 4 pontos (`corretor_id is null` + `aceite_status = 'pendente_distribuicao'` + `arquivado = false`):
+  - `src/hooks/useRoleta.ts` (leadsAcumulados) — falta `arquivado`
+  - `src/hooks/useRoletaStatus.ts` (status bar da Central de Roleta) — falta `arquivado`
+  - `src/components/roleta/RoletaMetricasTab.tsx` — falta `arquivado`
+  - `src/pages/CeoDashboard.tsx` — já correto, serve de referência
+- Gráficos de aceitos do Dashboard CEO: contar apenas registros com status/ação `aceito`, sem somar `distribuido`/`expirado`/`recusado`.
+- Reengajamento: `reactivateDiscardedToRoleta` já usa o motor sem `force`; `reativar_lead_para_fila_ceo` herda a correção da Fila do CEO.
 - Sem mudança em credenciamento, elegibilidade (leads vermelhos), janelas de turno ou tempo de aceite.
 
 ## Validação depois do build
 
-1. Conferir em `distribuicao_historico` que todo registro com empreendimento vem com `pool = 'alocado'` (zero `pool = 'segmento'` vindo da Fila do CEO).
-2. Simular um timeout com lead de teste e confirmar que o corretor volta para o topo da fila do turno.
-3. Acompanhar um turno inteiro e conferir que a diferença entre o maior e o menor do grupo é no máximo 1.
+1. Conferir que Central de Roleta e Dashboard CEO mostram o **mesmo número** de Fila do CEO (hoje: 6).
+2. Conferir em `distribuicao_historico` que todo registro com empreendimento vem com `pool = 'alocado'` (zero `pool = 'segmento'` vindo da Fila do CEO).
+3. Disparar a Fila do CEO com um empreendimento sem alocado ativo e confirmar que o lead fica na fila com o motivo visível, sem ir para fora do empreendimento.
+4. Acompanhar um turno inteiro e conferir que a diferença de leads recebidos entre o maior e o menor do grupo é no máximo 1.
