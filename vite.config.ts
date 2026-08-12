@@ -47,6 +47,9 @@ export default defineConfig(({ mode }) => ({
         // parar no vendor-charts), o que forçava o bundle inicial a importar
         // 412 KB de recharts em páginas públicas como /vaga.
         manualChunks(id: string) {
+          // Helper virtual do plugin CommonJS: fixa no chunk base, senão o
+          // Rollup o coloca dentro de um vendor pesado e obriga o preload dele.
+          if (id.includes("commonjsHelpers")) return "vendor-react";
           if (!id.includes("node_modules")) return;
           const m = id.split("node_modules/").pop() || "";
           const pkg = m.startsWith("@")
