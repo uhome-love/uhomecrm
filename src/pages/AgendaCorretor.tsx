@@ -464,7 +464,7 @@ const GRUPO_META: Record<GrupoLembrete, { label: string; accent: string; tone: s
   futuro:    { label: "Futuro",    accent: "before:bg-sky-400",   tone: "text-sky-600" },
 };
 
-type RegistrarState = { id: string; nome: string; concluirTarefaId?: string } | null;
+type RegistrarState = { id: string; nome: string; concluirTarefaId?: string; origem?: "fila" } | null;
 
 export default function AgendaCorretor() {
   const { data, isLoading } = useFilaDoDia();
@@ -472,9 +472,10 @@ export default function AgendaCorretor() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"prioridades" | "lembretes">("prioridades");
   const [registrar, setRegistrar] = useState<RegistrarState>(null);
-  const [foco, setFoco] = useState<"todos" | MotivoFila>("todos");
+  const [foco, setFoco] = useState<"todos" | MotivoFila | "feitos">("todos");
   const [grupoLembrete, setGrupoLembrete] = useState<GrupoLembrete>("hoje");
   const [criarLembrete, setCriarLembrete] = useState(false);
+  const [destaqueId, setDestaqueId] = useState<string | null>(null);
 
   const hojeLabel = new Date().toLocaleDateString("pt-BR", {
     weekday: "long", day: "numeric", month: "short", timeZone: "America/Sao_Paulo",
@@ -482,6 +483,7 @@ export default function AgendaCorretor() {
 
   const prioridades = data?.prioridades ?? [];
   const cadencia = data?.cadencia ?? { total: 0, leads: [] };
+  const feitosHoje = data?.feitosHoje ?? [];
   const stages = data?.stages ?? [];
   const lembretes = useMemo<LembretesAgrupados>(
     () => data?.lembretes ?? { atrasados: [], hoje: [], amanha: [], semana: [], proximos: [] },
@@ -495,7 +497,19 @@ export default function AgendaCorretor() {
     return m;
   }, [prioridades]);
   const focoDisponivel = MOTIVO_ORDEM.filter((k) => (contagemMotivo[k] ?? 0) > 0);
-  const prioridadesFiltradas = foco === "todos" ? prioridades : prioridades.filter((l) => l.motivo === foco);
+  const prioridadesFiltradas = foco === "todos" || foco === "feitos"
+    ? prioridades
+    : prioridades.filter((l) => l.motivo === foco);
+
+  // Após registrar um card da fila: rola até o próximo e destaca por ~1,5s.
+  useEffect(() => {
+    if (!destaqueId) return;
+    const el = document.querySelector<HTMLElement>(`[data-lead-id="${destaqueId}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = setTimeout(() => setDestaqueId(null), 1500);
+    return () => clearTimeout(t);
+  }, [destaqueId, prioridades]);
+
 
   // Lembretes agrupados em Atrasados / Hoje / Futuro.
   const gruposLembrete = useMemo<Record<GrupoLembrete, Compromisso[]>>(() => ({
