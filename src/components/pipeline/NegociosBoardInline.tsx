@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useNegociosBoard, type NegocioCard, type NegPasso, type ProntoVirar } from "@/hooks/useNegociosBoard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Users, User, ArrowRight, Zap, History } from "lucide-react";
+import { Users, User, ArrowRight, History, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 function getInitials(nome: string): string {
   const parts = nome.trim().split(/\s+/).filter(Boolean);
@@ -14,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
+import CriarLembreteModal from "./CriarLembreteModal";
 
 /**
  * NegociosBoardInline — o board de Negócios DENTRO do pipeline (aba "Negócios").
@@ -165,30 +167,48 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true }:
 
 function Empty() { return <div className="rounded-xl border border-dashed border-border/60 py-5 text-center text-[11px] text-muted-foreground">—</div>; }
 
-// ⚡ Registrar atividade — mesmo modal do card de leads. Botão discreto no rodapé.
-function RegistrarSlot({ leadId, nome }: { leadId: string; nome: string }) {
-  const [open, setOpen] = useState(false);
+// Menu "⋯" curado do card de negócio — mesmo padrão do CardOverflowMenu do lead.
+function NegOverflowMenu({ leadId, nome, onOpen }: { leadId: string | null; nome: string; onOpen: () => void }) {
+  const [registrar, setRegistrar] = useState(false);
+  const [lembrete, setLembrete] = useState(false);
   const queryClient = useQueryClient();
+  if (!leadId) return null;
   return (
     <>
-      <button
-        type="button"
-        aria-label="Registrar atividade"
-        title="Registrar atividade"
-        onClick={(e) => { e.stopPropagation(); setOpen(true); }}
-        className="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-opacity hover:bg-primary/90 opacity-0 group-hover:opacity-100 focus:opacity-100 max-md:opacity-100"
-      >
-        <Zap className="h-3 w-3" strokeWidth={2.6} />
-      </button>
-      {open && (
-        <div data-no-card-click onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Ações do negócio"
+            className="shrink-0 -mr-1 -mt-0.5 p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-muted/60 data-[state=open]:text-foreground data-[state=open]:bg-muted/60 transition-colors"
+          >
+            <MoreVertical className="h-3.5 w-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onClick={() => setRegistrar(true)} className="text-sm font-semibold text-primary focus:text-primary">
+            <span className="mr-2">⚡</span>Registrar atividade
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setLembrete(true)} className="text-sm">
+            <span className="mr-2">📌</span>Criar lembrete
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onOpen} className="text-sm">
+            <span className="mr-2">↗</span>Abrir negócio
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <div data-no-card-click onClick={(e) => e.stopPropagation()}>
+        <CriarLembreteModal open={lembrete} lead={{ id: leadId, nome }} onClose={() => setLembrete(false)} />
+        {registrar && (
           <RegistrarAtividadeModal
             lead={{ id: leadId, nome }}
-            onClose={() => setOpen(false)}
+            onClose={() => setRegistrar(false)}
             onSaved={() => invalidateTaskQueries(queryClient, leadId)}
           />
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }
@@ -214,13 +234,13 @@ function CardRoot({ onClick, className, children }: { onClick: () => void; class
 function PosCard({ p, onClick }: { p: ProntoVirar; onClick: () => void }) {
   return (
     <CardRoot onClick={onClick} className="before:bg-cyan-500">
-      <div className="mb-1 flex items-center gap-1.5">
+      <div className="mb-1 flex items-start justify-between gap-1.5">
         <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight", p.sinal === "quente" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700")}>{p.sinal === "quente" ? "🔥 Quente" : "😐 Interesse"}</span>
+        <NegOverflowMenu leadId={p.id} nome={p.nome} onOpen={onClick} />
       </div>
       <div className="truncate text-[13px] font-bold">{p.nome}</div>
       <div className="truncate text-[11px] text-muted-foreground">{p.empreendimento}</div>
-      <div className="mt-1.5 flex items-center gap-1.5">
-        <RegistrarSlot leadId={p.id} nome={p.nome} />
+      <div className="mt-1.5 flex items-center">
         <span className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">virar negócio <ArrowRight className="h-2.5 w-2.5" /></span>
       </div>
     </CardRoot>
@@ -245,12 +265,15 @@ function NegCard({ n, lens, onClick }: { n: NegocioCard; lens: Lens; onClick: ()
   const sb = subBadge(n);
   return (
     <CardRoot onClick={onClick} className={stripe(n.tone, ganho)}>
-      {/* Linha de sub-status (pill) — igual ao card de leads */}
-      <div className="mb-1 flex flex-wrap items-center gap-1.5">
-        {ganho && n.dataAssinatura
-          ? <span className={cn(PILL_BASE, "bg-emerald-100 text-emerald-700")}>✅ Assinado {n.dataAssinatura.slice(0, 5)}</span>
-          : <span className={cn(PILL_BASE, sb.cls)}>{sb.emoji} {sb.label}</span>}
-        {n.ceo && <span className={cn(PILL_BASE, "bg-amber-100 text-amber-700")}>CEO</span>}
+      {/* Linha de sub-status (pill) + menu ⋯ — igual ao card de leads */}
+      <div className="mb-1 flex items-start justify-between gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+          {ganho && n.dataAssinatura
+            ? <span className={cn(PILL_BASE, "bg-emerald-100 text-emerald-700")}>✅ Assinado {n.dataAssinatura.slice(0, 5)}</span>
+            : <span className={cn(PILL_BASE, sb.cls)}>{sb.emoji} {sb.label}</span>}
+          {n.ceo && <span className={cn(PILL_BASE, "bg-amber-100 text-amber-700")}>CEO</span>}
+        </div>
+        <NegOverflowMenu leadId={n.pipelineLeadId} nome={n.cliente} onOpen={onClick} />
       </div>
       {/* Nome + VGV */}
       <div className="flex items-center justify-between gap-2">
@@ -268,7 +291,6 @@ function NegCard({ n, lens, onClick }: { n: NegocioCard; lens: Lens; onClick: ()
         <span className={cn("flex-1 min-w-0 truncate text-[11px]", n.tone === "bad" ? "text-rose-600 font-medium" : n.tone === "warn" ? "text-amber-600 font-medium" : "text-muted-foreground")}>
           {ganho && n.dataAssinatura ? `assinado · ${n.dataAssinatura.slice(0, 5)}` : `última atividade · há ${n.dias}d`}
         </span>
-        {n.pipelineLeadId && <RegistrarSlot leadId={n.pipelineLeadId} nome={n.cliente} />}
       </div>
 
       {/* Rodapé: corretor (na lente Equipe) */}
