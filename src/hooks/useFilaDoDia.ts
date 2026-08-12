@@ -323,10 +323,32 @@ export function useFilaDoDia() {
       });
       const prioridades = ranked.slice(0, 40);
 
-      // 5) Último registro (norte) — para a fila e os leads do bloco de cadência.
-      const alvo = [...prioridades, ...cadencia];
+      // 4b) FEITOS HOJE — leads que o corretor tocou hoje (BRT). Comprovante do dia.
+      const feitosHoje: LeadFila[] = [];
+      for (const l of rows) {
+        const tipo = l.pipeline_stages?.tipo ?? "";
+        if (!l.ultimo_toque_at) continue;
+        const diaToque = new Date(l.ultimo_toque_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        if (diaToque !== hoje) continue;
+        feitosHoje.push({
+          id: l.id, nome: l.nome, telefone: l.telefone, empreendimento: l.empreendimento,
+          stage_id: l.stage_id, corretor_id: uid,
+          stage_nome: l.pipeline_stages?.nome ?? "", stage_tipo: tipo,
+          temperatura: l.temperatura ?? "nao_definida",
+          saude: leadSaude({
+            ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em,
+            aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo,
+          }),
+          dias_sem_atividade: 0, tem_atividade: true, motivo: "retorno_hoje",
+          resultado: null, ultimo_registro: null, ultimo_toque_at: l.ultimo_toque_at,
+        });
+      }
+      feitosHoje.sort((a, b) => (b.ultimo_toque_at ?? "").localeCompare(a.ultimo_toque_at ?? ""));
+
+      // 5) Último registro (norte) — para a fila, a cadência e os feitos de hoje.
+      const alvo = [...prioridades, ...cadencia, ...feitosHoje];
       if (alvo.length > 0) {
-        const ids = alvo.map((p) => p.id);
+        const ids = [...new Set(alvo.map((p) => p.id))];
         const { data: ativs } = await supabase
           .from("pipeline_atividades")
           .select("pipeline_lead_id, descricao, created_at")
@@ -340,6 +362,7 @@ export function useFilaDoDia() {
         }
         for (const p of alvo) p.ultimo_registro = ult.get(p.id) ?? null;
       }
+
 
       // 6) Etapas (pro menu ⋮ do card)
       const { data: stagesRaw } = await supabase
