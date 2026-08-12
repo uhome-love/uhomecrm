@@ -78,10 +78,11 @@ interface NegociosBoardProps {
   onMoveLead?: MoveLeadFn;
   searchTerm?: string;
   corretorFilter?: string; // user_id do corretor, "all" ou "sem_corretor"
+  saudeFilter?: LeadSaude | null; // filtro de saúde (atenção=ambar / desatualizado=vermelho / estagnado)
   gestorTeamUserIds?: string[] | null; // user_ids do time do gestor (null = sem filtro de gestor)
 }
 
-export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, stages = [], onMoveLead, searchTerm = "", corretorFilter = "all", gestorTeamUserIds = null }: NegociosBoardProps) {
+export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, stages = [], onMoveLead, searchTerm = "", corretorFilter = "all", saudeFilter = null, gestorTeamUserIds = null }: NegociosBoardProps) {
   const { data, isLoading } = useNegociosBoard();
   const [lens, setLens] = useState<Lens>(canSeeEquipe ? "equipe" : "meus");
   const isMobile = useIsMobile();
@@ -98,17 +99,19 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, s
     if (lens === "meus") all = all.filter((n) => n.meu);
     if (gestorSet) all = all.filter((n) => matchGestor(n.corretorUserId));
     if (corr) all = all.filter((n) => matchCorretor(n.corretorUserId));
+    if (saudeFilter) all = all.filter((n) => n.saude === saudeFilter);
     if (q) all = all.filter((n) => n.cliente.toLowerCase().includes(q) || (n.empreendimento || "").toLowerCase().includes(q));
     return all;
-  }, [data, lens, q, corr, gestorKey]);
+  }, [data, lens, q, corr, saudeFilter, gestorKey]);
   const prontos = useMemo(() => {
     let all = data?.prontos ?? [];
     if (lens === "meus") all = all.filter((p) => p.meu);
     if (gestorSet) all = all.filter((p) => matchGestor(p.corretorUserId));
     if (corr) all = all.filter((p) => matchCorretor(p.corretorUserId));
+    if (saudeFilter) all = all.filter((p) => p.saude === saudeFilter);
     if (q) all = all.filter((p) => p.nome.toLowerCase().includes(q) || (p.empreendimento || "").toLowerCase().includes(q));
     return all;
-  }, [data, lens, q, corr, gestorKey]);
+  }, [data, lens, q, corr, saudeFilter, gestorKey]);
 
   // Agrupa uma vez por passo (ordenado por VGV) + soma de VGV — memoizado.
   const porPasso = useMemo(() => {

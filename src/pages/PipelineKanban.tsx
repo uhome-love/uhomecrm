@@ -168,6 +168,8 @@ export default function PipelineKanban() {
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
   const [negociosFilter, setNegociosFilter] = useState(false);
   const [ganhosFilter, setGanhosFilter] = useState(false);
+  // Filtro de saúde do NEGÓCIO (aba Negócios) — pílulas atenção/desatualizado/estagnado.
+  const [negocioSaudeFilter, setNegocioSaudeFilter] = useState<"ambar" | "vermelho" | "estagnado" | null>(null);
   // Filtro "em risco de estagnação" — ativado via ?risco=estagnacao (vindo do dashboard).
   const [riscoFilter, setRiscoFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
@@ -696,6 +698,8 @@ export default function PipelineKanban() {
         setNegociosFilter={setNegociosFilter}
         ganhosFilter={ganhosFilter}
         setGanhosFilter={setGanhosFilter}
+        negocioSaudeFilter={negocioSaudeFilter}
+        setNegocioSaudeFilter={setNegocioSaudeFilter}
         hasAnyFilter={hasAnyFilter}
         clearAllFilters={clearAllFilters}
         activeTab={activeTab as string}
@@ -837,6 +841,7 @@ export default function PipelineKanban() {
                   onMoveLead={pipeline.moveLead}
                   searchTerm={filters.search}
                   corretorFilter={corretorFilter}
+                  saudeFilter={negocioSaudeFilter}
                   gestorTeamUserIds={isCeoView && gestorFilter !== "todos" ? (gestorTeamUserIdsArr ?? []) : null}
                   onOpenLead={(leadId) => {
                     const lead = (pipeline.leads || []).find((l) => l.id === leadId);

@@ -84,6 +84,9 @@ export interface PipelineHeaderProps {
   setNegociosFilter: React.Dispatch<React.SetStateAction<boolean>>;
   ganhosFilter: boolean;
   setGanhosFilter: React.Dispatch<React.SetStateAction<boolean>>;
+  // Filtro de SAÚDE do negócio (aba Negócios): "ambar" | "vermelho" | "estagnado" | null.
+  negocioSaudeFilter?: "ambar" | "vermelho" | "estagnado" | null;
+  setNegocioSaudeFilter?: (v: "ambar" | "vermelho" | "estagnado" | null) => void;
   hasAnyFilter: boolean;
   clearAllFilters: () => void;
 
@@ -144,6 +147,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     clientStatusFilter, setClientStatusFilter,
     negociosFilter, setNegociosFilter,
     ganhosFilter, setGanhosFilter,
+    negocioSaudeFilter = null, setNegocioSaudeFilter,
     hasAnyFilter, clearAllFilters,
     activeTab, setActiveTab,
     refreshing, handleRefresh, setAddOpen, setFocusModeOpen,
@@ -193,7 +197,12 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     const posVisita = d.prontos.length;
     const total = posVisita + p.documentacao.n + p.proposta.n + p.contrato.n + p.ganho.n;
     const vgvTotal = p.documentacao.vgv + p.proposta.vgv + p.contrato.vgv + p.ganho.vgv;
-    return { posVisita, ...p, total, vgvTotal };
+    // Saúde do NEGÓCIO em andamento (Ganho é terminal, não conta): mesma vocabulária do lead.
+    let ambar = 0, vermelho = 0, estagnado = 0;
+    const bump = (s: string) => { if (s === "ambar") ambar++; else if (s === "vermelho") vermelho++; else if (s === "estagnado") estagnado++; };
+    d.prontos.forEach((x) => bump(x.saude));
+    d.negocios.forEach((c) => { if (c.passo !== "ganho") bump(c.saude); });
+    return { posVisita, ...p, total, vgvTotal, saude: { ambar, vermelho, estagnado } };
   }, [negBoard.data]);
 
   // ── Contexto tab-aware (só números — sem "Escritório") ──
@@ -339,9 +348,30 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 }}
               />
             )}
-            {/* Negócios: pílulas de passo REMOVIDAS — count+VGV já vivem no cabeçalho de cada
-                coluna do board (fonte única). O espaço fica pra futuras pílulas de SAÚDE que
-                de fato filtram (atenção/desatualizado/estagnado). */}
+            {/* Negócios: pílulas de SAÚDE que FILTRAM o board (mesma vocabulária do lead).
+                Passo+VGV já vivem no cabeçalho de cada coluna. */}
+            {activeTab === "negocios" && negResumo && setNegocioSaudeFilter && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {([
+                  { key: "ambar", label: "atenção", n: negResumo.saude.ambar, cls: "bg-amber-50 text-amber-700 ring-amber-600/20", dot: "bg-amber-500" },
+                  { key: "vermelho", label: "desatualizado", n: negResumo.saude.vermelho, cls: "bg-red-50 text-red-700 ring-red-600/20", dot: "bg-red-500" },
+                  { key: "estagnado", label: "estagnado", n: negResumo.saude.estagnado, cls: "bg-violet-50 text-violet-700 ring-violet-600/20", dot: "bg-violet-500" },
+                ] as const).map((s) => {
+                  const active = negocioSaudeFilter === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => setNegocioSaudeFilter(active ? null : s.key)}
+                      aria-pressed={active}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 h-8 text-xs font-semibold ring-1 ring-inset transition-all ${s.cls} ${active ? "ring-2 ring-offset-1" : "hover:brightness-95"}`}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${s.dot}`} /> {s.n} {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="h-5 w-px bg-border" />
             {toolsOpen ? (
