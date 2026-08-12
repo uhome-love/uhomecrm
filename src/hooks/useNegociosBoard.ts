@@ -107,39 +107,48 @@ export function useNegociosBoard() {
     queryKey: ["negocios-board", user?.id],
     staleTime: 30_000,
     queryFn: async (): Promise<NegociosBoard> => {
-      // perfil do usuário atual → corretor_id "meu"
-      let meuCorretorId: string | null = null;
-      if (user?.id) {
-        const { data: prof } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
-        meuCorretorId = (prof?.id as string | undefined) ?? null;
-      }
+      // ── Lote 1 (independentes, em paralelo): meu perfil + negócios + pós-visita ──
+      const [profMeuRes, negRes, posRes] = await Promise.all([
+        user?.id
+          ? supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle()
+          : Promise.resolve({ data: null as { id?: string } | null }),
+        supabase
+          .from("negocios")
+          .select("id, pipeline_lead_id, nome_cliente, empreendimento, corretor_id, fase, status, vgv_estimado, vgv_final, negociacao_situacao, documentacao_situacao, proposta_situacao, data_assinatura, requer_aprovacao_ceo, updated_at")
+          .in("fase", ["em_negociacao", "contrato", "ganho"])
+          .neq("status", "arquivado")
+          .limit(500),
+        supabase
+          .from("pipeline_leads")
+          .select("id, nome, empreendimento, temperatura, corretor_id, ultimo_toque_at, updated_at, pipeline_stages!inner(tipo)")
+          .eq("pipeline_stages.tipo", "pos_visita")
+          .eq("arquivado", false)
+          .order("updated_at", { ascending: false })
+          .limit(12),
+      ]);
+      const meuCorretorId = (profMeuRes.data?.id as string | undefined) ?? null;
+      const negs = (negRes.data ?? []) as unknown as Record<string, unknown>[];
+      const posRaw = (posRes.data ?? []) as unknown as Record<string, unknown>[];
 
-      // negócios ativos nas fases de negócio
-      const { data: negRaw } = await supabase
-        .from("negocios")
-        .select("id, pipeline_lead_id, nome_cliente, empreendimento, corretor_id, fase, status, vgv_estimado, vgv_final, negociacao_situacao, documentacao_situacao, proposta_situacao, data_assinatura, requer_aprovacao_ceo, updated_at")
-        .in("fase", ["em_negociacao", "contrato", "ganho"])
-        .neq("status", "arquivado")
-        .limit(500);
-      const negs = (negRaw ?? []) as unknown as Record<string, unknown>[];
-
-      // nomes dos corretores
-      const corretorIds = [...new Set(negs.map((n) => n.corretor_id).filter(Boolean) as string[])];
-      const nomeDe = new Map<string, string>();
-      if (corretorIds.length) {
-        const { data: profs } = await supabase.from("profiles").select("id, nome").in("id", corretorIds);
-        for (const p of (profs ?? []) as { id: string; nome: string }[]) nomeDe.set(p.id, p.nome);
-      }
-
-      // flag_status REAL dos leads (fonte única do sub-status/passo)
+      // ids p/ nomes (negócios + pós-visita) e flags (só negócios)
+      const corretorIds = [...new Set([...negs.map((n) => n.corretor_id), ...posRaw.map((l) => l.corretor_id)].filter(Boolean) as string[])];
       const leadIds = [...new Set(negs.map((n) => n.pipeline_lead_id).filter(Boolean) as string[])];
+
+      // ── Lote 2 (dependem do lote 1, em paralelo): nomes de corretores + flags ──
+      const [profsRes, flagsRes] = await Promise.all([
+        corretorIds.length
+          ? supabase.from("profiles").select("id, nome").in("id", corretorIds)
+          : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
+        leadIds.length
+          ? supabase.from("pipeline_leads").select("id, flag_status").in("id", leadIds)
+          : Promise.resolve({ data: [] as { id: string; flag_status: Record<string, unknown> | null }[] }),
+      ]);
+      const nomeDe = new Map<string, string>();
+      for (const p of (profsRes.data ?? []) as { id: string; nome: string }[]) nomeDe.set(p.id, p.nome);
       const flagDe = new Map<string, { neg: string; contrato: string }>();
-      if (leadIds.length) {
-        const { data: leads } = await supabase.from("pipeline_leads").select("id, flag_status").in("id", leadIds);
-        for (const l of (leads ?? []) as { id: string; flag_status: Record<string, unknown> | null }[]) {
-          const f = l.flag_status || {};
-          flagDe.set(l.id, { neg: String(f.status_negociacao ?? ""), contrato: String(f.status_contrato ?? "") });
-        }
+      for (const l of (flagsRes.data ?? []) as { id: string; flag_status: Record<string, unknown> | null }[]) {
+        const f = l.flag_status || {};
+        flagDe.set(l.id, { neg: String(f.status_negociacao ?? ""), contrato: String(f.status_contrato ?? "") });
       }
 
       const negocios: NegocioCard[] = negs.map((n) => {
@@ -170,21 +179,14 @@ export function useNegociosBoard() {
         };
       });
 
-      // prontos pra virar negócio: leads em Pós-Visita
-      const { data: posRaw } = await supabase
-        .from("pipeline_leads")
-        .select("id, nome, empreendimento, temperatura, corretor_id, ultimo_toque_at, updated_at, pipeline_stages!inner(tipo)")
-        .eq("pipeline_stages.tipo", "pos_visita")
-        .eq("arquivado", false)
-        .order("updated_at", { ascending: false })
-        .limit(12);
-      const prontos: ProntoVirar[] = ((posRaw ?? []) as unknown as Record<string, unknown>[]).map((l) => {
+      // prontos pra virar negócio: leads em Pós-Visita (posRaw veio no lote 1)
+      const prontos: ProntoVirar[] = posRaw.map((l) => {
         const temp = String(l.temperatura ?? "").toLowerCase();
         return {
           id: String(l.id),
           nome: String(l.nome ?? "Lead"),
           empreendimento: String(l.empreendimento ?? "—"),
-          corretor: "—",
+          corretor: (l.corretor_id && nomeDe.get(String(l.corretor_id))) || "—",
           corretorId: (l.corretor_id as string) ?? null,
           sinal: temp.includes("quente") ? "quente" : "interesse",
           dias: diasDe((l.ultimo_toque_at as string) ?? (l.updated_at as string)),

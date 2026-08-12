@@ -523,7 +523,13 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     realizada: "Realizada", no_show: "Não compareceu", cancelada: "Cancelada",
   };
 
-  const timelineBase = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes, nomesPorId);
+  // Memoizado: buildTimeline é O(n) com regex por item; sem isso rodava a cada render
+  // e anulava toda a memoização da timeline abaixo.
+  const timelineBase = useMemo(
+    () => buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes, nomesPorId),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [historico, atividades, tarefas, stages, lead.id, lead.nome, (lead as any).aceito_em, (lead as any).distribuido_em, imovelEvents, anotacoes, nomesPorId]
+  );
   const timeline = useMemo<TimelineItem[]>(() => {
     const extras: TimelineItem[] = visitaEventos.map((ev) => {
       const meta = VISITA_EVENT_META[ev.tipo] || { title: `Visita — ${ev.tipo}`, icon: MapPin, color: "text-primary" };
@@ -562,10 +568,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
   const sistemaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "sistema"), [timeline]);
   const shownItems = histView === "narrativa" ? narrativaItems : sistemaItems;
-  const idDe = (it: TimelineItem) => `${it.sourceType ?? "x"}-${it.sourceId ?? it.date}-${it.date}`;
+  // id ÚNICO por posição (o índice evita colisão entre itens sem sourceId no mesmo horário).
+  const idDe = (it: TimelineItem, i: number) => `${it.sourceType ?? "x"}-${it.sourceId ?? "noid"}-${i}`;
   const narrativaById = useMemo(() => {
     const m = new Map<string, TimelineItem>();
-    for (const it of narrativaItems) m.set(idDe(it), it);
+    narrativaItems.forEach((it, i) => m.set(idDe(it, i), it));
     return m;
   }, [narrativaItems]);
 
@@ -722,7 +729,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               return undefined;
             })();
             return {
-              id: idDe(item),
+              id: idDe(item, i),
               title: item.title,
               description: item.autor
                 ? `${item.description ? `${item.description} • ` : ""}por ${item.autor}`
@@ -752,7 +759,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             const time = formatBRT(it.date, "HH:mm");
             const isVisitaFeedback = m.feedback && !!it.description;
             return (
-              <div className="relative flex gap-3 group/marco">
+              <div key={dItem.id} className="relative flex gap-3 group/marco">
                 <div className={`relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-[15px] ${m.ring}`}>{m.emoji}</div>
                 <div className="flex-1 min-w-0 pt-0.5">
                   <div className="flex items-start justify-between gap-2">

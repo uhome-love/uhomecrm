@@ -45,7 +45,7 @@ function stripe(tone: string, ganho: boolean): string {
   if (ganho) return "before:bg-emerald-500";
   if (tone === "bad") return "before:bg-red-500";
   if (tone === "warn") return "before:bg-amber-500";
-  return "before:bg-emerald-500";
+  return "before:bg-zinc-300"; // neutro/saudável = repouso; só Ganho fica verde
 }
 
 type Lens = "meus" | "equipe";
@@ -65,11 +65,20 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true }:
     return lens === "meus" ? all.filter((p) => p.meu) : all;
   }, [data, lens]);
 
-  const byPasso = (p: NegPasso) => negocios.filter((n) => n.passo === p);
-  const sum = (arr: { vgv?: number | null }[]) => arr.reduce((s, n) => s + (n.vgv || 0), 0);
-  const colInfo = (k: ColKey) => k === "pos_visita" ? { count: prontos.length, vgv: 0 } : { count: byPasso(k).length, vgv: sum(byPasso(k)) };
-  const itemsOf = (k: ColKey) =>
-    k === "pos_visita" ? [] : [...byPasso(k as NegPasso)].sort((a, b) => (b.vgv || 0) - (a.vgv || 0));
+  // Agrupa uma vez por passo (ordenado por VGV) + soma de VGV — memoizado.
+  const porPasso = useMemo(() => {
+    const m: Record<NegPasso, NegocioCard[]> = { documentacao: [], proposta: [], contrato: [], ganho: [] };
+    for (const n of negocios) m[n.passo].push(n);
+    (Object.keys(m) as NegPasso[]).forEach((k) => m[k].sort((a, b) => (b.vgv || 0) - (a.vgv || 0)));
+    return m;
+  }, [negocios]);
+  const vgvPorPasso = useMemo(() => {
+    const m = {} as Record<NegPasso, number>;
+    (Object.keys(porPasso) as NegPasso[]).forEach((k) => { m[k] = porPasso[k].reduce((s, n) => s + (n.vgv || 0), 0); });
+    return m;
+  }, [porPasso]);
+  const colInfo = (k: ColKey) => k === "pos_visita" ? { count: prontos.length, vgv: 0 } : { count: porPasso[k].length, vgv: vgvPorPasso[k] };
+  const itemsOf = (k: ColKey): NegocioCard[] => k === "pos_visita" ? [] : porPasso[k];
 
   // ---------- Lente Meus/Equipe (compartilhado) ----------
   const lensToggle = canSeeEquipe && (

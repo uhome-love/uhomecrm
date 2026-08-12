@@ -72,6 +72,21 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
 
       const corretorNome = corretores.find((c) => c.user_id === selected)?.nome || "corretor";
 
+      // Notifica o corretor que recebeu o lead (repasse manual = já é dele, sem aceite).
+      try {
+        await supabase.rpc("criar_notificacao", {
+          p_user_id: selected,
+          p_tipo: "lead",
+          p_categoria: "lead_novo",
+          p_titulo: `🔥 Novo lead qualificado — ${leadNome}`,
+          p_mensagem: `Você recebeu o lead ${leadNome}. Fale agora!`,
+          p_dados: { pipeline_lead_id: leadId, url: "/pipeline-leads" },
+          p_agrupamento_key: `lead_novo:${leadId}`,
+        });
+      } catch (notifErr) {
+        console.error("[FilaCeoRepassarDialog] notificação falhou (não crítico):", notifErr);
+      }
+
       await supabase.from("audit_log").insert({
         user_id: user.id,
         modulo: "roleta",

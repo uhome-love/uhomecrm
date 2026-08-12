@@ -14,7 +14,7 @@ import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { captureFbclid, getMetaContext } from "@/lib/metaTracking";
 
 const META_PIXEL_ID = "1426170849536314";
-const EDGE_URL = `${EDGE_BASE_URL}/functions/v1/receive-landing-lead`;
+const EDGE_URL = `${EDGE_BASE_URL}/functions/v1/receive-quiz-lead`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 const CSS = `
@@ -188,6 +188,7 @@ export default function CasaTuaCanoasQuiz() {
             source: "casatua_canoas_quiz",
             campaign_name: "Casa Tua Santos Ferreira — Quiz",
             platform: "Quiz Casa Tua Canoas",
+            temperatura: temp,
             message: resumo,
             field_data: [
               { name: "Tipologia de interesse", values: [A.tipo || ""] },
