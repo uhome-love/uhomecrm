@@ -519,15 +519,26 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     // O "próximo passo" fica por conta da caixa PRÓXIMA AÇÃO logo abaixo (sem redundância).
     const HUMANO = new Set(["ligacao", "call", "whatsapp", "mensagem", "contato", "email", "followup", "follow_up", "visita", "reuniao", "nota", "anotacao", "proposta"]);
     const ult = (leadData.atividades || []).find((a) => HUMANO.has(a.tipo) && (a.descricao?.trim() || a.titulo?.trim()));
-    if (!ult) return null; // sem observação humana ainda → não mostra a tira
-    const ultTxt = (ult.descricao?.trim() || ult.titulo?.trim())!;
-    const emoji = TIPO_EMOJI[ult.tipo] || "•";
+    if (ult) {
+      const ultTxt = (ult.descricao?.trim() || ult.titulo?.trim())!;
+      const emoji = TIPO_EMOJI[ult.tipo] || "•";
+      return (
+        <div className="mb-3 flex gap-2.5 rounded-xl border border-amber-200/70 bg-amber-50/60 px-3 py-2.5">
+          <span className="text-base leading-none shrink-0">{emoji}</span>
+          <p className="text-[12.5px] leading-relaxed text-foreground min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700/80 block mb-0.5">Última conversa</span>
+            <span className="font-semibold line-clamp-3">{ultTxt}</span>
+          </p>
+        </div>
+      );
+    }
+    // Fallback: sem conversa registrada ainda → nudge pra começar a história.
     return (
-      <div className="mb-3 flex gap-2.5 rounded-xl border border-amber-200/70 bg-amber-50/60 px-3 py-2.5">
-        <span className="text-base leading-none shrink-0">{emoji}</span>
-        <p className="text-[12.5px] leading-relaxed text-foreground min-w-0">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700/80 block mb-0.5">Última conversa</span>
-          <span className="font-semibold line-clamp-3">{ultTxt}</span>
+      <div className="mb-3 flex gap-2.5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-3 py-2.5">
+        <span className="text-base leading-none shrink-0">🗒️</span>
+        <p className="text-[12.5px] leading-relaxed text-muted-foreground min-w-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 block mb-0.5">Sem conversa registrada</span>
+          <span>Registre o próximo contato pra começar a história deste lead.</span>
         </p>
       </div>
     );
@@ -564,6 +575,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         </div>
       )}
 
+
+      {/* ── ZONA AGORA: próximo passo + registrar + ações, tudo junto ── */}
+      <div className="text-[10px] font-bold uppercase tracking-wider text-primary/70 px-0.5">⚡ Agora</div>
 
       {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) — PRIMEIRO card do drawer */}
       <DrawerProximaAcao

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
+import { formatBRT } from "@/lib/brtTime";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHistorico } from "@/hooks/usePipelineLeadData";
@@ -443,6 +444,22 @@ function categoriaDe(item: TimelineItem): "narrativa" | "sistema" {
   return "narrativa";
 }
 
+// Estilo de MARCO da Narrativa (emoji + cores do círculo + acento da citação),
+// no padrão visual do mockup da História.
+function marcoMeta(item: TimelineItem): { emoji: string; ring: string; accent: string; feedback?: boolean } {
+  const t = (item.title || "").toLowerCase();
+  if (item.sourceType === "anotacao" || /^📝|nota|anota/.test(t)) return { emoji: "📝", ring: "bg-amber-50 text-amber-600", accent: "border-l-amber-400" };
+  if (/gerado|entrou|lead entrou|entrada/.test(t)) return { emoji: "🎯", ring: "bg-violet-50 text-violet-600", accent: "border-l-violet-400" };
+  if (/movido|etapa|qualifica/.test(t)) return { emoji: "🔀", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
+  if (/ligaç|liga[rç]|telefon|📞/.test(t)) return { emoji: "📞", ring: "bg-red-50 text-red-600", accent: "border-l-red-400" };
+  if (/whats|mensagem|💬/.test(t)) return { emoji: "💬", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
+  if (/e-mail|email|✉/.test(t)) return { emoji: "✉️", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
+  if (/visita|tour|comparec/.test(t)) return { emoji: "📍", ring: "bg-sky-50 text-sky-600", accent: "border-l-sky-400", feedback: true };
+  if (/proposta|neg[óo]cio|contrato|venda|ganho/.test(t)) return { emoji: "💼", ring: "bg-emerald-50 text-emerald-600", accent: "border-l-emerald-400" };
+  if (/follow/.test(t)) return { emoji: "🔁", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
+  return { emoji: "•", ring: "bg-zinc-100 text-zinc-500", accent: "border-l-zinc-300" };
+}
+
 export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("ligacao");
@@ -545,6 +562,12 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
   const sistemaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "sistema"), [timeline]);
   const shownItems = histView === "narrativa" ? narrativaItems : sistemaItems;
+  const idDe = (it: TimelineItem) => `${it.sourceType ?? "x"}-${it.sourceId ?? it.date}-${it.date}`;
+  const narrativaById = useMemo(() => {
+    const m = new Map<string, TimelineItem>();
+    for (const it of narrativaItems) m.set(idDe(it), it);
+    return m;
+  }, [narrativaItems]);
 
   const totalEventos = timeline.length;
   const totalNotas = anotacoes?.length ?? 0;
@@ -699,7 +722,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               return undefined;
             })();
             return {
-              id: `${item.sourceType ?? "x"}-${item.sourceId ?? i}-${item.date}`,
+              id: idDe(item),
               title: item.title,
               description: item.autor
                 ? `${item.description ? `${item.description} • ` : ""}por ${item.autor}`
@@ -722,6 +745,50 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               ) : null,
             };
           })}
+          renderItem={histView === "narrativa" ? (dItem) => {
+            const it = narrativaById.get(dItem.id);
+            if (!it) return null;
+            const m = marcoMeta(it);
+            const time = formatBRT(it.date, "HH:mm");
+            const isVisitaFeedback = m.feedback && !!it.description;
+            return (
+              <div className="relative flex gap-3 group/marco">
+                <div className={`relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-[15px] ${m.ring}`}>{m.emoji}</div>
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-[13px] font-semibold text-foreground leading-snug">{it.title}</p>
+                        {it.badge && (
+                          <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold ${it.badge.tone === "success" ? "bg-emerald-50 text-emerald-700" : it.badge.tone === "danger" ? "bg-red-50 text-red-700" : it.badge.tone === "warning" ? "bg-amber-50 text-amber-700" : "bg-zinc-100 text-zinc-600"}`}>{it.badge.label}</span>
+                        )}
+                      </div>
+                      {it.description && (
+                        isVisitaFeedback ? (
+                          <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50/70 px-2.5 py-1.5">
+                            <span className="block text-[9.5px] font-bold uppercase tracking-wide text-amber-700/80 mb-0.5">Feedback da visita</span>
+                            <p className="text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed">{it.description}</p>
+                          </div>
+                        ) : (
+                          <div className={`mt-1 rounded-md border border-zinc-200 border-l-2 ${m.accent} bg-zinc-50 px-2.5 py-1.5 text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed`}>{it.description}</div>
+                        )
+                      )}
+                      <p className="text-[11px] text-zinc-400 mt-1 tabular-nums">{it.autor ? `${it.autor} · ` : ""}{time}</p>
+                    </div>
+                    {it.sourceId && (
+                      <button
+                        onClick={() => setDeleteTarget(it)}
+                        title="Remover registro"
+                        className="shrink-0 opacity-0 group-hover/marco:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          } : undefined}
         />
       </div>
 
