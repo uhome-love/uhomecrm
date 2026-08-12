@@ -10,6 +10,7 @@ import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
+import NegociosBoardInline from "@/components/pipeline/NegociosBoardInline";
 import { useQueryClient, useQuery, keepPreviousData } from "@tanstack/react-query";
 import { todayBRT } from "@/lib/utils";
 import { useParceriasMap, usePartnerLeadsByCorretor } from "@/hooks/useParcerias";
@@ -124,10 +125,10 @@ export default function PipelineKanban() {
   const tabStorageKey = `uhome:pipeline-mode:${roleKey}`;
   const defaultTabForRole = isCeoView ? "equipes" : isGestor ? "time" : "kanban";
   const allowedTabsForRole: string[] = isCeoView
-    ? ["equipes", "kanban"]
+    ? ["equipes", "kanban", "negocios"]
     : isGestor
-    ? ["time", "kanban"]
-    : ["kanban"];
+    ? ["time", "kanban", "negocios"]
+    : ["kanban", "negocios"];
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   // Default determinístico por role — sem persistência.
@@ -887,6 +888,18 @@ export default function PipelineKanban() {
                   onOpenKanban={(corretorId) => {
                     setCorretorFilter(corretorId);
                     setActiveTab("kanban");
+                  }}
+                />
+
+              ) : activeTab === "negocios" ? (
+                <NegociosBoardInline
+                  canSeeEquipe={isGestor || isCeoView}
+                  onOpenLead={(leadId) => {
+                    const lead = (pipeline.leads || []).find((l) => l.id === leadId);
+                    if (lead) { setSelectedLead(lead); return; }
+                    // lead fora do conjunto carregado (arquivado/outra etapa) → abre via ?lead=
+                    searchParams.set("lead", leadId);
+                    setSearchParams(searchParams, { replace: true });
                   }}
                 />
 

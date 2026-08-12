@@ -10,7 +10,7 @@
 // Mantém todos os classNames, estados e callbacks idênticos ao original.
 // ─────────────────────────────────────────────────────────────────
 import React from "react";
-import { LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2, MoreHorizontal, ChevronDown, Inbox } from "lucide-react";
+import { LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2, MoreHorizontal, ChevronDown, Inbox, Briefcase } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -145,18 +145,22 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
   //  • Corretor: Kanban
   //  • Gestor:   Modo Time | Kanban
   //  • CEO:      Equipes   | Kanban
+  const NEGOCIOS_TAB = { key: "negocios", icon: <Briefcase size={12} strokeWidth={1.5} />, label: "Negócios" };
   const roleTabs: Array<{ key: string; icon: React.ReactNode; label: string }> = isAdmin
     ? [
         { key: "equipes", icon: <Building2 size={12} strokeWidth={1.5} />, label: "Equipes" },
-        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
+        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Leads" },
+        NEGOCIOS_TAB,
       ]
     : isGestor
     ? [
         { key: "time", icon: <Users size={12} strokeWidth={1.5} />, label: "Modo Time" },
-        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
+        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Leads" },
+        NEGOCIOS_TAB,
       ]
     : [
-        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
+        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Leads" },
+        NEGOCIOS_TAB,
       ];
 
 
