@@ -274,8 +274,8 @@ export function useFilaDoDia() {
             aceito_em: l.aceito_em, created_at: l.created_at,
           }),
           tem_atividade: !!l.ultimo_toque_at, motivo: "retorno_hoje",
-          resultado: null, ultimo_registro: null,
-        };
+          resultado: null, ultimo_registro: null, ultimo_toque_at: l.ultimo_toque_at,
+
 
         // Cadência Sem Contato → bloco (não card individual).
         if (tipo === "sem_contato") {
