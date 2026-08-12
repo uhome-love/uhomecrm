@@ -122,11 +122,12 @@ const STAGE_TIPO_PASSO: Record<string, NegPasso> = {
 };
 const relTipo = (st: any): string => (Array.isArray(st) ? st[0]?.tipo : st?.tipo) ?? "";
 
-export function useNegociosBoard() {
+export function useNegociosBoard(options?: { enabled?: boolean }) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ["negocios-board", user?.id],
     staleTime: 30_000,
+    enabled: options?.enabled ?? true,
     queryFn: async (): Promise<NegociosBoard> => {
       // ── Lote 1: perfil + LEADS comerciais (fonte da verdade) + negócios GANHOS ──
       const [profMeuRes, leadsRes, ganhoRes] = await Promise.all([

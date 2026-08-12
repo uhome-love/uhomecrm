@@ -720,6 +720,8 @@ export default function PipelineKanban() {
         canToggleCarteira={isGestor || isAdmin}
         minhaCarteira={minhaCarteira}
         setMinhaCarteira={setMinhaCarteira}
+        riscoFilter={riscoFilter}
+        clearRisco={clearRisco}
       />
 
 
@@ -741,80 +743,6 @@ export default function PipelineKanban() {
               ⚠ {negociosResumo.emRisco} em risco (+7d)
             </span>
           )}
-        </div>
-      )}
-      {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
-        <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mr-1">
-            Filtros ativos
-          </span>
-
-          {filters.temperaturas.length > 0 && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
-              Temp ×
-            </Badge>
-          )}
-          {filters.scoreMin > 0 && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, scoreMin: 0 }))}>
-              Score≥{filters.scoreMin} ×
-            </Badge>
-          )}
-          {filters.stages.length > 0 && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, stages: [] }))}>
-              {filters.stages.length} etapas ×
-            </Badge>
-          )}
-          {filters.origens.length > 0 && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, origens: [] }))}>
-              {filters.origens.length} origens ×
-            </Badge>
-          )}
-          {filters.segmentos.length > 0 && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, segmentos: [] }))}>
-              {filters.segmentos.length} seg ×
-            </Badge>
-          )}
-          {filters.diasSemAcao && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, diasSemAcao: "" }))}>
-              &gt;{filters.diasSemAcao}d ×
-            </Badge>
-          )}
-          {filters.periodoEntrada && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, periodoEntrada: "" }))}>
-              Período ×
-            </Badge>
-          )}
-          {filters.slaStatus && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, slaStatus: "" }))}>
-              SLA ×
-            </Badge>
-          )}
-          {filters.comVisita && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, comVisita: "" }))}>
-              Visita ×
-            </Badge>
-          )}
-          {campaignTagFilter !== "all" && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setCampaignTagFilter("all")}>
-              🏷️ {CAMPAIGN_TAGS.find(c => c.tag === campaignTagFilter)?.label || campaignTagFilter} ×
-            </Badge>
-          )}
-          {clientStatusFilter !== "todos" && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setClientStatusFilter("todos")}>
-              {clientStatusFilter === "em_dia" ? "🟢 Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Atenção" : clientStatusFilter === "estagnado" ? "🟣 Estagnado" : "🔴 Desatualizado"} ×
-            </Badge>
-          )}
-          {riscoFilter && (
-            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={clearRisco}>
-              ⏳ Em risco de estagnação ×
-            </Badge>
-          )}
-          <button
-            onClick={clearAllFilters}
-            className="ml-1 shrink-0 flex items-center gap-1 text-[10px] font-semibold text-danger-500 bg-transparent border-none cursor-pointer hover:underline"
-          >
-            <X className="h-2.5 w-2.5" /> Limpar todos
-          </button>
         </div>
       )}
 

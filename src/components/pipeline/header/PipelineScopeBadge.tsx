@@ -14,45 +14,30 @@ export interface PipelineScopeBadgeProps {
   isAdmin: boolean;
   isDiretor?: boolean;
   isGestor: boolean;
-  filteredCount: number;
+  /** Rótulo já pronto e tab-aware, ex.: "1.531 leads" ou "112 negócios · R$ 55,8 mi". */
+  countLabel: string;
   gestorFilter?: string; // "todos" ou gerente_id
 }
 
+// Contexto do Pipeline — texto suave (sem "Escritório", só números, como o mockup aprovado).
+// O único prefixo é quando o CEO filtra um gestor específico (aí mostra de quem é o dado).
 export default function PipelineScopeBadge({
   isAdmin,
   isDiretor = false,
   isGestor,
-  filteredCount,
+  countLabel,
   gestorFilter = "todos",
 }: PipelineScopeBadgeProps) {
   const { data: gestores } = useGestoresPipeline(isAdmin || isDiretor);
-  let label: string;
-  let accent: string;
-  // Diretoria e CEO têm visão de escritório; o rótulo diferencia o contexto.
-  if (isAdmin || isDiretor) {
-    const scopeName = isDiretor && !isAdmin ? "Diretoria" : "CEO";
-    if (gestorFilter && gestorFilter !== "todos") {
-      const dyn = gestores?.find((x) => x.id === gestorFilter);
-      const fallback = GERENTES_REAIS.find((x) => x.id === gestorFilter);
-      const apelido = dyn?.apelido ?? fallback?.apelido ?? "Gestor";
-      label = `Time ${apelido} · ${filteredCount} · filtrado por ${scopeName}`;
-    } else {
-      label = `Escritório · ${filteredCount} leads`;
-    }
-    accent = "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800";
-  } else if (isGestor) {
-    label = `Time · ${filteredCount} leads`;
-    accent = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800";
-  } else {
-    label = `Meus leads · ${filteredCount}`;
-    accent = "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700";
+  let prefix = "";
+  if ((isAdmin || isDiretor) && gestorFilter && gestorFilter !== "todos") {
+    const dyn = gestores?.find((x) => x.id === gestorFilter);
+    const fallback = GERENTES_REAIS.find((x) => x.id === gestorFilter);
+    prefix = `Time ${dyn?.apelido ?? fallback?.apelido ?? "Gestor"} · `;
   }
-
   return (
-    <span
-      className={`inline-flex items-center h-6 px-2 rounded-full border text-[10px] font-semibold whitespace-nowrap ${accent}`}
-    >
-      {label}
+    <span className="hidden truncate text-[12.5px] font-medium text-muted-foreground lg:inline">
+      {prefix}{countLabel}
     </span>
   );
 }
