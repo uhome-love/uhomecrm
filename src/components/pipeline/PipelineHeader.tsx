@@ -280,11 +280,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 <Trophy size={14} strokeWidth={2} /> Ganhos
               </button>
             )}
-            {activeTab === "negocios" && negResumo && (
-              <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
-                <Trophy size={14} strokeWidth={2} /> {negResumo.ganho.n} · {moneyShort(negResumo.ganho.vgv)}
-              </div>
-            )}
             {activeTab === "kanban" && (
               <>
                 <div className="hidden sm:block h-5 w-px bg-border" />
@@ -354,10 +349,12 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               />
             )}
             {activeTab === "negocios" && negResumo && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <NegPill dot="bg-cyan-500" nome="Pós-Visita" n={negResumo.posVisita} />
+                <NegPill dot="bg-sky-500" nome="Documentação" n={negResumo.documentacao.n} vgv={negResumo.documentacao.vgv} />
                 <NegPill dot="bg-violet-500" nome="Proposta" n={negResumo.proposta.n} vgv={negResumo.proposta.vgv} />
                 <NegPill dot="bg-indigo-500" nome="Contrato" n={negResumo.contrato.n} vgv={negResumo.contrato.vgv} />
+                <NegPill dot="bg-emerald-500" nome="Ganho" n={negResumo.ganho.n} vgv={negResumo.ganho.vgv} />
               </div>
             )}
 
@@ -399,8 +396,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
         {/* ══ ZONA 3 — Ferramentas (busca + filtros + ordenação + ações) · colapsável ══ */}
         {toolsOpen && (
-        <div className="flex min-h-12 flex-wrap items-center gap-2.5 border-t border-border px-3 sm:px-4 lg:px-6 py-2">
-          <div className="relative w-full sm:w-[200px] xl:w-[240px]">
+        <div className="flex min-h-12 flex-wrap items-center gap-1.5 lg:gap-2 border-t border-border px-3 sm:px-4 lg:px-6 py-2">
+          <div className="relative w-full sm:w-[150px] lg:w-[150px] xl:w-[150px] 2xl:w-[230px]">
             <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               aria-label="Buscar lead, telefone ou empreendimento"
@@ -433,8 +430,10 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             visitaLeadIds={visitaLeadIds}
           />
 
-          <div className="ml-auto flex items-center gap-2.5">
-            <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
+          {/* Spacer só no 2xl: alinha o grupo à direita no monitor grande; no 13"/laptop
+              os itens empacotam à esquerda e a linha NÃO quebra em duas. */}
+          <div className="hidden 2xl:block flex-1" />
+          <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
 
             {isAdmin && filaCeoCount > 0 && (
               <Popover>
@@ -445,7 +444,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                     }`}
                     title="Fila CEO"
                   >
-                    <Inbox size={13} strokeWidth={1.5} /> Fila CEO
+                    <Inbox size={13} strokeWidth={1.5} /> <span className="hidden 2xl:inline">Fila CEO</span>
                     {filaCeoNovosCount > 0 && <span className="bg-emerald-600 text-white rounded-md px-1.5 py-px text-[10px] font-bold">{filaCeoNovosCount}</span>}
                     <ChevronDown size={12} strokeWidth={1.5} className="opacity-60" />
                   </button>
@@ -493,7 +492,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
         </div>
         )}
       </div>
