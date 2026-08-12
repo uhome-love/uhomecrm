@@ -532,14 +532,24 @@ export default function AgendaCorretor() {
   const invalidar = () => queryClient.invalidateQueries({ queryKey: ["fila-do-dia"] });
   const abrirLead = (id: string) => navigate(`/pipeline-leads?lead=${id}`);
 
-  /** Registrou atividade num card da fila → sai da fila de hoje e avança pro próximo. */
+  /** Registrou atividade num card da fila → mostra "Feito ✓", sai da fila e avança pro próximo. */
   const concluirDaFila = (leadId: string) => {
     const lista = prioridadesFiltradas;
     const i = lista.findIndex((l) => l.id === leadId);
     const proximo = i >= 0 ? (lista[i + 1] ?? lista[i - 1]) : null;
     dispensarLead(leadId);
-    invalidar();
-    if (proximo) setDestaqueId(proximo.id);
+    setFeitoId(leadId);
+    setTimeout(() => {
+      setFeitoId((atual) => (atual === leadId ? null : atual));
+      invalidar();
+      if (proximo) setDestaqueId(proximo.id);
+    }, 1200);
+  };
+
+  /** Registro veio de outro caminho (lembrete, drawer): se o lead está na fila de hoje, tira dos pendentes. */
+  const concluirSeEstaNaFila = (leadId: string) => {
+    if (prioridades.some((l) => l.id === leadId)) concluirDaFila(leadId);
+    else invalidar();
   };
 
   const voltarPraFila = (leadId: string) => {
