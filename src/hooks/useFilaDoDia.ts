@@ -256,6 +256,9 @@ export function useFilaDoDia() {
         const tipo = l.pipeline_stages?.tipo ?? "";
         if (TERMINAIS.has(tipo)) continue;
         if (dispensados.has(l.id)) continue;
+        // Já teve atividade registrada hoje (BRT) → sai dos Pendentes e aparece em "Feitos hoje".
+        if (l.ultimo_toque_at &&
+            new Date(l.ultimo_toque_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) === hoje) continue;
         const saude = leadSaude({
           ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em,
           aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo,
