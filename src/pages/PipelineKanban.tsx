@@ -368,7 +368,11 @@ export default function PipelineKanban() {
       } else {
         // Inclui leads onde o corretor é principal OU parceiro,
         // alinhando com o que ele vê na própria tela de pipeline.
-        const partnerLeadIds = partnerLeadsByCorretor[corretorFilter] || new Set<string>();
+        // Robusto: a persistência do React Query serializa Set → objeto (perde .has).
+        const rawPartner = partnerLeadsByCorretor[corretorFilter] as unknown;
+        const partnerLeadIds: Set<string> = rawPartner instanceof Set
+          ? rawPartner
+          : new Set<string>(Array.isArray(rawPartner) ? (rawPartner as string[]) : []);
         result = result.filter(l => l.corretor_id === corretorFilter || partnerLeadIds.has(l.id));
       }
     }
@@ -904,6 +908,7 @@ export default function PipelineKanban() {
                   stages={pipeline.stages || []}
                   onMoveLead={pipeline.moveLead}
                   searchTerm={filters.search}
+                  corretorFilter={corretorFilter}
                   onOpenLead={(leadId) => {
                     const lead = (pipeline.leads || []).find((l) => l.id === leadId);
                     if (lead) { setSelectedLead(lead); return; }

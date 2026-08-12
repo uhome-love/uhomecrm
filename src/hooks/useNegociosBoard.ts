@@ -51,6 +51,8 @@ export interface NegocioCard {
   empreendimento: string;
   corretor: string;
   corretorId: string | null;
+  corretorUserId: string | null;
+  corretorAvatar: string | null;
   fase: NegFase;
   sub: NegSub | null;
   passo: NegPasso;
@@ -71,6 +73,8 @@ export interface ProntoVirar {
   empreendimento: string;
   corretor: string;
   corretorId: string | null;
+  corretorUserId: string | null;
+  corretorAvatar: string | null;
   sinal: "quente" | "interesse";
   dias: number;
   meu: boolean;
@@ -150,16 +154,25 @@ export function useNegociosBoard() {
         negocioIds.length
           ? supabase.from("negocios").select("id, vgv_estimado, vgv_final, data_assinatura, requer_aprovacao_ceo, negociacao_situacao, documentacao_situacao, proposta_situacao").in("id", negocioIds)
           : Promise.resolve({ data: [] as any[] }),
-        supabase.from("profiles").select("id, user_id, nome"),
+        supabase.from("profiles").select("id, user_id, nome, avatar_url, avatar_gamificado_url"),
       ]);
       const negById = new Map<string, any>();
       for (const n of (negRes.data ?? []) as any[]) negById.set(String(n.id), n);
       // ATENÇÃO fonte dupla: LEAD.corretor_id = profiles.user_id; NEGOCIO.corretor_id = profiles.id.
       const nomeByUser = new Map<string, string>();
       const nomeById = new Map<string, string>();
-      for (const p of (profsRes.data ?? []) as { id: string; user_id: string | null; nome: string }[]) {
-        if (p.user_id) nomeByUser.set(p.user_id, p.nome);
+      const avatarByUser = new Map<string, string>();
+      const userByProfileId = new Map<string, string>(); // profile.id → user_id (p/ ganho)
+      const avatarByProfileId = new Map<string, string>();
+      for (const p of (profsRes.data ?? []) as { id: string; user_id: string | null; nome: string; avatar_url: string | null; avatar_gamificado_url: string | null }[]) {
+        const av = p.avatar_gamificado_url || p.avatar_url || "";
         nomeById.set(p.id, p.nome);
+        if (av) avatarByProfileId.set(p.id, av);
+        if (p.user_id) {
+          nomeByUser.set(p.user_id, p.nome);
+          userByProfileId.set(p.id, p.user_id);
+          if (av) avatarByUser.set(p.user_id, av);
+        }
       }
       const meuUserId = user?.id ?? null;
 
@@ -182,6 +195,8 @@ export function useNegociosBoard() {
           empreendimento: String(l.empreendimento ?? "—"),
           corretor: (l.corretor_id && nomeByUser.get(String(l.corretor_id))) || "—",
           corretorId: (l.corretor_id as string) ?? null,
+          corretorUserId: (l.corretor_id as string) ?? null,
+          corretorAvatar: (l.corretor_id && avatarByUser.get(String(l.corretor_id))) || null,
           fase,
           sub: null,
           passo,
@@ -207,6 +222,8 @@ export function useNegociosBoard() {
           empreendimento: String(n.empreendimento ?? "—"),
           corretor: (n.corretor_id && nomeById.get(String(n.corretor_id))) || "—",
           corretorId: (n.corretor_id as string) ?? null,
+          corretorUserId: (n.corretor_id && userByProfileId.get(String(n.corretor_id))) || null,
+          corretorAvatar: (n.corretor_id && avatarByProfileId.get(String(n.corretor_id))) || null,
           fase: "ganho",
           sub: null,
           passo: "ganho",
@@ -233,6 +250,8 @@ export function useNegociosBoard() {
             empreendimento: String(l.empreendimento ?? "—"),
             corretor: (l.corretor_id && nomeByUser.get(String(l.corretor_id))) || "—",
             corretorId: (l.corretor_id as string) ?? null,
+            corretorUserId: (l.corretor_id as string) ?? null,
+            corretorAvatar: (l.corretor_id && avatarByUser.get(String(l.corretor_id))) || null,
             sinal: temp.includes("quente") ? "quente" : "interesse",
             dias: diasDe((l.ultimo_toque_at as string) ?? (l.updated_at as string)),
             meu: !!meuUserId && l.corretor_id === meuUserId,

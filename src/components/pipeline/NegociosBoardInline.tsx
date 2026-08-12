@@ -13,6 +13,12 @@ function getInitials(nome: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+// Avatar do corretor: foto (avatar_url/gamificado) com fallback pras iniciais — igual ao card de leads.
+function CorretorAvatar({ nome, url }: { nome: string; url?: string | null }) {
+  if (url) return <img src={url} alt={nome} loading="lazy" className="w-[18px] h-[18px] rounded-full object-cover shrink-0" />;
+  return <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">{getInitials(nome)}</div>;
+}
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
@@ -58,27 +64,32 @@ interface NegociosBoardProps {
   stages?: PipelineStage[];
   onMoveLead?: (leadId: string, newStageId: string, observacao?: string) => void | Promise<unknown>;
   searchTerm?: string;
+  corretorFilter?: string; // user_id do corretor, "all" ou "sem_corretor"
 }
 
-export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, stages = [], onMoveLead, searchTerm = "" }: NegociosBoardProps) {
+export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, stages = [], onMoveLead, searchTerm = "", corretorFilter = "all" }: NegociosBoardProps) {
   const { data, isLoading } = useNegociosBoard();
   const [lens, setLens] = useState<Lens>(canSeeEquipe ? "equipe" : "meus");
   const isMobile = useIsMobile();
   const [mobileCol, setMobileCol] = useState<ColKey>("proposta");
 
   const q = searchTerm.trim().toLowerCase();
+  const corr = corretorFilter && corretorFilter !== "all" ? corretorFilter : null;
+  const matchCorretor = (userId: string | null) => !corr || (corr === "sem_corretor" ? !userId : userId === corr);
   const negocios = useMemo(() => {
     let all = data?.negocios ?? [];
     if (lens === "meus") all = all.filter((n) => n.meu);
+    if (corr) all = all.filter((n) => matchCorretor(n.corretorUserId));
     if (q) all = all.filter((n) => n.cliente.toLowerCase().includes(q) || (n.empreendimento || "").toLowerCase().includes(q));
     return all;
-  }, [data, lens, q]);
+  }, [data, lens, q, corr]);
   const prontos = useMemo(() => {
     let all = data?.prontos ?? [];
     if (lens === "meus") all = all.filter((p) => p.meu);
+    if (corr) all = all.filter((p) => matchCorretor(p.corretorUserId));
     if (q) all = all.filter((p) => p.nome.toLowerCase().includes(q) || (p.empreendimento || "").toLowerCase().includes(q));
     return all;
-  }, [data, lens, q]);
+  }, [data, lens, q, corr]);
 
   // Agrupa uma vez por passo (ordenado por VGV) + soma de VGV — memoizado.
   const porPasso = useMemo(() => {
@@ -322,7 +333,7 @@ function PosCard({ p, stages, onMoveLead, onOpenLead }: { p: ProntoVirar; stages
       <div className="mt-1.5 flex items-center gap-1.5">
         {p.corretor && p.corretor !== "—" && (
           <>
-            <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">{getInitials(p.corretor)}</div>
+            <CorretorAvatar nome={p.corretor} url={p.corretorAvatar} />
             <span className="truncate text-[11px] text-muted-foreground">{p.corretor.split(" ")[0]}</span>
           </>
         )}
@@ -382,7 +393,7 @@ function NegCard({ n, lens, stages, onMoveLead, onClick }: { n: NegocioCard; len
       {/* Rodapé: de quem é o negócio (corretor) — sempre visível, como no card de leads */}
       {n.corretor && n.corretor !== "—" && (
         <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
-          <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">{getInitials(n.corretor)}</div>
+          <CorretorAvatar nome={n.corretor} url={n.corretorAvatar} />
           <span className="truncate text-[11px] text-muted-foreground">{n.corretor}</span>
         </div>
       )}
