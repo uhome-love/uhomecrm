@@ -234,9 +234,11 @@ function CardRoot({ onClick, className, children }: { onClick: () => void; class
 function PosCard({ p, onClick }: { p: ProntoVirar; onClick: () => void }) {
   return (
     <CardRoot onClick={onClick} className="before:bg-cyan-500">
-      <div className="mb-1 flex items-start justify-between gap-1.5">
-        <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight", p.sinal === "quente" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700")}>{p.sinal === "quente" ? "🔥 Quente" : "😐 Interesse"}</span>
+      <div className="absolute right-1.5 top-1.5 z-10">
         <NegOverflowMenu leadId={p.id} nome={p.nome} onOpen={onClick} />
+      </div>
+      <div className="mb-1 flex items-center gap-1.5 pr-6">
+        <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight", p.sinal === "quente" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700")}>{p.sinal === "quente" ? "🔥 Quente" : "😐 Interesse"}</span>
       </div>
       <div className="truncate text-[13px] font-bold">{p.nome}</div>
       <div className="truncate text-[11px] text-muted-foreground">{p.empreendimento}</div>
@@ -265,15 +267,16 @@ function NegCard({ n, lens, onClick }: { n: NegocioCard; lens: Lens; onClick: ()
   const sb = subBadge(n);
   return (
     <CardRoot onClick={onClick} className={stripe(n.tone, ganho)}>
-      {/* Linha de sub-status (pill) + menu ⋯ — igual ao card de leads */}
-      <div className="mb-1 flex items-start justify-between gap-1.5">
-        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-          {ganho && n.dataAssinatura
-            ? <span className={cn(PILL_BASE, "bg-emerald-100 text-emerald-700")}>✅ Assinado {n.dataAssinatura.slice(0, 5)}</span>
-            : <span className={cn(PILL_BASE, sb.cls)}>{sb.emoji} {sb.label}</span>}
-          {n.ceo && <span className={cn(PILL_BASE, "bg-amber-100 text-amber-700")}>CEO</span>}
-        </div>
+      {/* Menu ⋯ fixo no canto superior direito — igual ao card de leads */}
+      <div className="absolute right-1.5 top-1.5 z-10">
         <NegOverflowMenu leadId={n.pipelineLeadId} nome={n.cliente} onOpen={onClick} />
+      </div>
+      {/* Linha de sub-status (pill) */}
+      <div className="mb-1 flex flex-wrap items-center gap-1.5 pr-6">
+        {ganho && n.dataAssinatura
+          ? <span className={cn(PILL_BASE, "bg-emerald-100 text-emerald-700")}>✅ Assinado {n.dataAssinatura.slice(0, 5)}</span>
+          : <span className={cn(PILL_BASE, sb.cls)}>{sb.emoji} {sb.label}</span>}
+        {n.ceo && <span className={cn(PILL_BASE, "bg-amber-100 text-amber-700")}>CEO</span>}
       </div>
       {/* Nome + VGV */}
       <div className="flex items-center justify-between gap-2">
