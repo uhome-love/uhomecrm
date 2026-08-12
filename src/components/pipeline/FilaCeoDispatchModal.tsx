@@ -5,7 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Rocket, AlertTriangle, Sparkles, HeartHandshake, UserPlus, PauseCircle, Building2 } from "lucide-react";
+import { Loader2, Rocket, AlertTriangle, Sparkles, HeartHandshake, UserPlus, PauseCircle, Building2, Flame } from "lucide-react";
+
+// Extrai a temperatura (quente/morno/frio) das respostas do quiz.
+type QuizTemp = "quente" | "morno" | "frio";
+function tempFromRespostas(fr: any): QuizTemp | null {
+  if (!Array.isArray(fr)) return null;
+  const t = fr.find((r) => /temperatura/i.test(r?.pergunta || ""));
+  const v = String(t?.resposta || "").toLowerCase();
+  if (v.includes("quente")) return "quente";
+  if (v.includes("morno")) return "morno";
+  if (v.includes("frio")) return "frio";
+  return null;
+}
+const TEMP_META: Record<QuizTemp, { label: string; cls: string; ord: number }> = {
+  quente: { label: "🔥 Quente", cls: "border-red-500/40 text-red-600 dark:text-red-400 bg-red-500/5", ord: 0 },
+  morno: { label: "🌤️ Morno", cls: "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5", ord: 1 },
+  frio: { label: "❄️ Frio", cls: "border-sky-500/40 text-sky-600 dark:text-sky-400 bg-sky-500/5", ord: 2 },
+};
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
 import { empreendimentoFromTemplate } from "@/lib/reengajamentoEmpreendimento";
@@ -125,15 +142,23 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
-  const [activeTab, setActiveTab] = useState<"novos" | "reengajamento">(initialTab ?? "novos");
+  const [activeTab, setActiveTab] = useState<"novos" | "reengajamento" | "quiz">(initialTab ?? "novos");
   const [repasseLead, setRepasseLead] = useState<{ id: string; nome: string } | null>(null);
+
+  const isQuizLead = (l: any) => String(l.origem || "").toLowerCase() === "quiz";
 
   // Separa leads por categoria
   const leadsReengajamento = useMemo(() => allLeads.filter((l) => !!l.reativado_por_nutricao), [allLeads]);
+  // Leads de quiz conversacional (funil) — vão pra aba própria, nunca pra roleta.
+  const leadsQuiz = useMemo(() => {
+    return allLeads
+      .filter((l) => isQuizLead(l))
+      .sort((a, b) => (TEMP_META[tempFromRespostas(a.form_respostas) as QuizTemp]?.ord ?? 3) - (TEMP_META[tempFromRespostas(b.form_respostas) as QuizTemp]?.ord ?? 3));
+  }, [allLeads]);
   // Não existe mais categoria "redistribuição": lead retornado à Fila do CEO
-  // é tratado como lead novo. Só "reengajamento" (reativado por nutrição) é separado.
-  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.reativado_por_nutricao), [allLeads]);
-  const leads = activeTab === "novos" ? leadsNovos : leadsReengajamento;
+  // é tratado como lead novo. Só "reengajamento" (reativado por nutrição) e "quiz" são separados.
+  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.reativado_por_nutricao && !isQuizLead(l)), [allLeads]);
+  const leads = activeTab === "reengajamento" ? leadsReengajamento : leadsNovos;
 
   useEffect(() => {
     if (open && initialTab) setActiveTab(initialTab);
@@ -154,7 +179,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       const [leadsRes, segRes, campRes, empRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
+          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, origem_detalhe, form_respostas, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
           .eq("arquivado", false)
@@ -215,9 +240,10 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       setAllLeads(leadsList);
 
       // Auto-seleciona aba com leads
+      const quizCount = leadsList.filter((l) => String(l.origem || "").toLowerCase() === "quiz").length;
       const reengCount = leadsList.filter((l) => !!l.reativado_por_nutricao).length;
-      const novosCount = leadsList.filter((l) => !l.reativado_por_nutricao).length;
-      setActiveTab(novosCount > 0 ? "novos" : reengCount > 0 ? "reengajamento" : "novos");
+      const novosCount = leadsList.filter((l) => !l.reativado_por_nutricao && String(l.origem || "").toLowerCase() !== "quiz").length;
+      setActiveTab(novosCount > 0 ? "novos" : quizCount > 0 ? "quiz" : reengCount > 0 ? "reengajamento" : "novos");
 
       console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${reengCount} reengajamento)`);
       setLoading(false);
@@ -427,11 +453,16 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
         ) : (
           <>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="novos" className="gap-2">
                 <Sparkles className="h-3.5 w-3.5" />
                 Novos
                 <Badge variant="secondary" className="ml-1 h-5">{leadsNovos.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="quiz" className="gap-2">
+                <Flame className="h-3.5 w-3.5" />
+                Lead qualificado quiz
+                <Badge variant="secondary" className="ml-1 h-5">{leadsQuiz.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="reengajamento" className="gap-2">
                 <HeartHandshake className="h-3.5 w-3.5" />
@@ -439,6 +470,68 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                 <Badge variant="secondary" className="ml-1 h-5">{leadsReengajamento.length}</Badge>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="quiz" className="mt-4 space-y-3">
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <p className="text-xs text-primary">
+                  🔥 <strong>Leads qualificados de quiz:</strong> vieram de um funil conversacional (já responderam a qualificação). Não entram na roleta — repasse manualmente pro corretor que você escolher.
+                </p>
+              </div>
+              {leadsQuiz.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  Nenhum lead de quiz aguardando repasse. 🎉
+                </div>
+              ) : (
+                <div className="max-h-80 overflow-y-auto space-y-2">
+                  {leadsQuiz.map((l) => {
+                    const temp = tempFromRespostas(l.form_respostas);
+                    const respostas = Array.isArray(l.form_respostas)
+                      ? (l.form_respostas as any[]).filter((r) => r?.pergunta && r?.resposta && !/temperatura/i.test(r.pergunta))
+                      : [];
+                    return (
+                      <div key={l.id} className="rounded-lg border border-border bg-card border-l-[3px] border-l-primary p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-semibold truncate">{l.nome || "Sem nome"}</span>
+                              {temp && (
+                                <Badge variant="outline" className={`text-[10px] h-4 px-1.5 ${TEMP_META[temp].cls}`}>
+                                  {TEMP_META[temp].label}
+                                </Badge>
+                              )}
+                              {String(l.empreendimento || "").trim() && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.empreendimento}</Badge>
+                              )}
+                            </div>
+                            {l.telefone && (
+                              <p className="text-[11px] text-muted-foreground mt-0.5">{l.telefone}</p>
+                            )}
+                            {respostas.length > 0 && (
+                              <div className="mt-1.5 space-y-0.5">
+                                {respostas.map((r, i) => (
+                                  <p key={i} className="text-[11px] text-muted-foreground">
+                                    <span className="font-medium text-foreground/70">{r.pergunta}:</span> {r.resposta}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1.5 shrink-0"
+                            onClick={() => setRepasseLead({ id: l.id, nome: l.nome || "Sem nome" })}
+                          >
+                            <UserPlus className="h-3 w-3" />
+                            Repassar
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
 
             <TabsContent value="reengajamento" className="mt-4 space-y-3">
               {leadsReengajamento.length === 0 ? (
@@ -551,6 +644,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
           </Tabs>
 
+          {activeTab !== "quiz" && (
           <div className="space-y-5 mt-5 pt-5 border-t border-border">
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -618,6 +712,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               </Button>
             </div>
           </div>
+          )}
           </>
         )}
       </DialogContent>
