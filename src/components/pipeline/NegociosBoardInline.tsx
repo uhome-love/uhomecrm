@@ -2,7 +2,14 @@ import { useMemo, useState } from "react";
 import { useNegociosBoard, type NegocioCard, type NegPasso, type ProntoVirar } from "@/hooks/useNegociosBoard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Users, User, ArrowRight, Zap } from "lucide-react";
+import { Users, User, ArrowRight, Zap, History } from "lucide-react";
+
+function getInitials(nome: string): string {
+  const parts = nome.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
@@ -169,7 +176,7 @@ function RegistrarSlot({ leadId, nome }: { leadId: string; nome: string }) {
         aria-label="Registrar atividade"
         title="Registrar atividade"
         onClick={(e) => { e.stopPropagation(); setOpen(true); }}
-        className="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-opacity hover:bg-primary/90"
+        className="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-opacity hover:bg-primary/90 opacity-0 group-hover:opacity-100 focus:opacity-100 max-md:opacity-100"
       >
         <Zap className="h-3 w-3" strokeWidth={2.6} />
       </button>
@@ -195,7 +202,7 @@ function CardRoot({ onClick, className, children }: { onClick: () => void; class
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       className={cn(
-        "relative shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card p-2.5 pl-3.5 text-left transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 before:absolute before:inset-y-0 before:left-0 before:w-1",
+        "group relative shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card p-2.5 pl-3.5 text-left transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 before:absolute before:inset-y-0 before:left-0 before:w-1",
         className
       )}
     >
@@ -253,14 +260,24 @@ function NegCard({ n, lens, onClick }: { n: NegocioCard; lens: Lens; onClick: ()
           : <span className="shrink-0 text-[12.5px] font-extrabold tabular-nums">{money(n.vgv)}</span>}
       </div>
       <div className="truncate text-[11px] text-muted-foreground">{n.empreendimento}</div>
-      {/* Base: corretor + dias parado + ⚡ registrar */}
-      <div className="mt-1.5 flex items-center gap-1.5">
-        {lens === "equipe" && <span className="truncate text-[10.5px] font-semibold text-foreground/60">{n.corretor.split(" ")[0]}</span>}
-        {!ganho && <span className={cn("text-[10px] tabular-nums", n.tone === "bad" ? "font-bold text-rose-600" : n.tone === "warn" ? "text-amber-600" : "text-muted-foreground")}>há {n.dias}d na etapa</span>}
-        <div className="ml-auto">
-          {n.pipelineLeadId && <RegistrarSlot leadId={n.pipelineLeadId} nome={n.cliente} />}
-        </div>
+
+      {/* Divisor sutil + última atividade (sóbrio, igual ao card de leads) */}
+      <div className="mt-2 border-t border-border/40" />
+      <div className="mt-2 flex items-center gap-1.5 min-w-0">
+        <History className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+        <span className={cn("flex-1 min-w-0 truncate text-[11px]", n.tone === "bad" ? "text-rose-600 font-medium" : n.tone === "warn" ? "text-amber-600 font-medium" : "text-muted-foreground")}>
+          {ganho && n.dataAssinatura ? `assinado · ${n.dataAssinatura.slice(0, 5)}` : `última atividade · há ${n.dias}d`}
+        </span>
+        {n.pipelineLeadId && <RegistrarSlot leadId={n.pipelineLeadId} nome={n.cliente} />}
       </div>
+
+      {/* Rodapé: corretor (na lente Equipe) */}
+      {lens === "equipe" && n.corretor && n.corretor !== "—" && (
+        <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
+          <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">{getInitials(n.corretor)}</div>
+          <span className="truncate text-[11px] text-muted-foreground">{n.corretor}</span>
+        </div>
+      )}
     </CardRoot>
   );
 }
