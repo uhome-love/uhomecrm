@@ -253,6 +253,14 @@ export default function VagaPage() {
     setOcupados(new Set(lista.map((s) => new Date(s).toISOString())));
   }, []);
 
+  // Meta Pixel — helper de eventos de etapa do funil
+  const fireEvent = (name: string, params?: Record<string, unknown>) => {
+    try {
+      const fbq = (window as any).fbq;
+      if (typeof fbq === "function") fbq("trackCustom", name, params || {});
+    } catch {}
+  };
+
   const perguntar = (i: number) => {
     setIdx(i);
     enfileirar([{ tipo: "host", texto: PERGUNTAS[i].texto }]);
@@ -262,8 +270,10 @@ export default function VagaPage() {
   const comecarQuiz = () => {
     dizerEu("Bora ver se combina 🚀");
     setDock("nenhum");
+    fireEvent("VagaIniciou");
     perguntar(0);
   };
+
 
   const responder = (valor: string, ganhos = 0) => {
     dizerEu(valor);
