@@ -45,7 +45,8 @@ export default function RoletaMetricasTab() {
         supabase.from("pipeline_leads")
           .select("id", { count: "exact", head: true })
           .eq("aceite_status", "pendente_distribuicao")
-          .is("corretor_id", null),
+          .is("corretor_id", null)
+          .eq("arquivado", false),
         // Waiting acceptance
         supabase.from("pipeline_leads")
           .select("id", { count: "exact", head: true })

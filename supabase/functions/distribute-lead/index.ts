@@ -120,7 +120,10 @@ Deno.serve(async (req) => {
       const failedByReason: Record<string, number> = {};
       const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string }> = [];
 
-      const forceDispatch = (action === "dispatch_fila_ceo" || action === "redistribuir_pendentes");
+      // Fila do CEO NAO usa force: o lead so pode ir para corretor alocado ao
+      // empreendimento. Sem alocado ativo, o motor devolve `sem_alocado_produto`
+      // e o lead permanece na fila (nunca cai no pote por segmento).
+      const forceDispatch = (action === "redistribuir_pendentes");
 
       for (const lid of allLeadIds) {
         const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, lid, targetJanela, excludeAuthUserId, L, forceDispatch);

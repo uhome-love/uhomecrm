@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { supabase } from "@/integrations/supabase/client";
 import lucasAsset from "@/assets/lucas-fundador.jpg.asset.json";
 
-const META_PIXEL_ID = "1426170849536314";
+const META_PIXEL_ID = "2291720528296050";
 
 
 /**
@@ -48,14 +48,6 @@ const PERGUNTAS: Pergunta[] = [
       { label: "Já sou corretor(a), CRECI ativo", pontos: 3 },
       { label: "Tenho experiência, sem CRECI", pontos: 2 },
       { label: "Nunca atuei, mas tenho interesse", pontos: 1 },
-    ],
-  },
-  {
-    id: "disponibilidade", tipo: "opcoes", texto: "Qual sua disponibilidade?",
-    opcoes: [
-      { label: "Período integral", pontos: 2 },
-      { label: "Meio período", pontos: 1 },
-      { label: "Só fins de semana", pontos: 1 },
     ],
   },
   {
@@ -130,6 +122,7 @@ export default function VagaPage() {
   const [respondidas, setRespondidas] = useState(0);
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [pontos, setPontos] = useState(0);
+  const [candidatoId, setCandidatoId] = useState<string | null>(null);
   const [input, setInput] = useState("");
 
   const [ocupados, setOcupados] = useState<Set<string>>(new Set());
@@ -148,9 +141,17 @@ export default function VagaPage() {
 
   // ── SEO ──
   useEffect(() => {
-    document.title = "Seja corretor(a) na Uhome — vagas em Porto Alegre";
+    const prevTitle = document.title;
     const meta = document.querySelector('meta[name="description"]');
+    const prevDesc = meta?.getAttribute("content") ?? null;
+
+    document.title = "Seja corretor(a) na Uhome — vagas em Porto Alegre";
     if (meta) meta.setAttribute("content", "Trabalhe como corretor(a) na Uhome: 60 a 80 leads por mês, comissões de R$ 8 a 10 mil por venda e método próprio. Candidate-se em 2 minutos.");
+
+    return () => {
+      document.title = prevTitle;
+      if (meta && prevDesc !== null) meta.setAttribute("content", prevDesc);
+    };
   }, []);
 
   // ── Meta Pixel (base code) — só injeta se ainda não existir ──
@@ -190,7 +191,7 @@ export default function VagaPage() {
       setFila((f) => f.slice(1));
       return;
     }
-    const t = setTimeout(() => setDigitando(true), msgs.length ? 250 : 350);
+    const t = setTimeout(() => setDigitando(true), msgs.length ? 120 : 150);
     return () => clearTimeout(t);
   }, [fila, digitando, msgs.length]);
 
@@ -200,7 +201,7 @@ export default function VagaPage() {
       setMsgs((m) => (fila[0] ? [...m, fila[0]] : m));
       setFila((f) => f.slice(1));
       setDigitando(false);
-    }, 600);
+    }, 280);
     return () => clearTimeout(t);
   }, [digitando, fila]);
 
@@ -252,6 +253,14 @@ export default function VagaPage() {
     setOcupados(new Set(lista.map((s) => new Date(s).toISOString())));
   }, []);
 
+  // Meta Pixel — helper de eventos de etapa do funil
+  const fireEvent = (name: string, params?: Record<string, unknown>) => {
+    try {
+      const fbq = (window as any).fbq;
+      if (typeof fbq === "function") fbq("trackCustom", name, params || {});
+    } catch {}
+  };
+
   const perguntar = (i: number) => {
     setIdx(i);
     enfileirar([{ tipo: "host", texto: PERGUNTAS[i].texto }]);
@@ -261,19 +270,63 @@ export default function VagaPage() {
   const comecarQuiz = () => {
     dizerEu("Bora ver se combina 🚀");
     setDock("nenhum");
+    fireEvent("VagaIniciou");
     perguntar(0);
   };
 
+
   const responder = (valor: string, ganhos = 0) => {
     dizerEu(valor);
-    setRespostas((r) => ({ ...r, [pergunta.id]: valor }));
-    setPontos((p) => p + ganhos);
+    const respostasAtualizadas = { ...respostas, [pergunta.id]: valor };
+    const pontosAtualizados = pontos + ganhos;
+    setRespostas(respostasAtualizadas);
+    setPontos(pontosAtualizados);
     setRespondidas((n) => n + 1);
     setInput("");
     setDock("nenhum");
+
+    // Captura antecipada: assim que temos nome + WhatsApp, grava como novo_lead
+    if (pergunta.id === "telefone" && respostasAtualizadas.nome && !candidatoId) {
+      supabase.functions
+        .invoke("rh-vaga-lead", {
+          body: {
+            acao: "criar",
+            nome: respostasAtualizadas.nome,
+            telefone: valor,
+            respostas: respostasAtualizadas,
+          },
+        })
+        .then(({ data, error }) => {
+          const id = (data as any)?.candidato_id;
+          if (error || !id) {
+            console.warn("[vaga] captura antecipada falhou (fallback no agendamento)", error);
+            return;
+          }
+          setCandidatoId(id);
+        })
+        .catch((e) => console.warn("[vaga] captura antecipada falhou", e));
+      fireEvent("VagaContato");
+    }
+
     if (idx + 1 < PERGUNTAS.length) {
       perguntar(idx + 1);
     } else {
+      // Última pergunta: completa o perfil do lead mesmo que não agende
+      const temperaturaFinal = pontosAtualizados >= 6 ? "quente" : pontosAtualizados >= 3 ? "morno" : "frio";
+      fireEvent("VagaQuizCompleto", { temperatura: temperaturaFinal });
+
+      if (candidatoId) {
+        supabase.functions
+          .invoke("rh-vaga-lead", {
+            body: {
+              acao: "atualizar",
+              candidato_id: candidatoId,
+              respostas: respostasAtualizadas,
+              temperatura: temperaturaFinal,
+            },
+          })
+          .catch((e) => console.warn("[vaga] atualização do perfil falhou", e));
+      }
       const primeiro = (pergunta.id === "nome" ? valor : respostas.nome || "").trim().split(/\s+/)[0];
       enfileirar([
         { tipo: "host", texto: `Show, ${primeiro}! Bora marcar sua entrevista com o nosso RH.` },
@@ -284,7 +337,8 @@ export default function VagaPage() {
     }
   };
 
-  const temperatura = useMemo(() => (pontos >= 8 ? "quente" : pontos >= 4 ? "morno" : "frio"), [pontos]);
+
+  const temperatura = useMemo(() => (pontos >= 6 ? "quente" : pontos >= 3 ? "morno" : "frio"), [pontos]);
 
   const dias = useMemo(() => proximosDiasUteis(10), []);
   const horariosLivres = useMemo(() => {
@@ -299,6 +353,7 @@ export default function VagaPage() {
     setErro(null);
     const { data, error } = await supabase.functions.invoke("rh-vaga-candidato", {
       body: {
+        candidato_id: candidatoId,
         nome: respostas.nome,
         telefone: respostas.telefone,
         respostas,
@@ -318,10 +373,8 @@ export default function VagaPage() {
       return;
     }
     // Meta Pixel — conversão "Lead" (uma vez, no sucesso do agendamento)
-    try {
-      const fbq = (window as any).fbq;
-      if (typeof fbq === "function") fbq("trackCustom", "CandidaturaVaga", { content_name: "Vaga Corretor" });
-    } catch {}
+    fireEvent("CandidaturaVaga", { content_name: "Vaga Corretor" });
+
     const quando = `${DIAS_SEMANA[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} às ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
     setDock("fim");
