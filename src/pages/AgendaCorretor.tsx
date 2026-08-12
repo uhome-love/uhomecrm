@@ -615,17 +615,35 @@ export default function AgendaCorretor() {
           </div>
 
           {/* Filtro de foco por motivo */}
-          {!isLoading && focoDisponivel.length > 1 && (
+          {!isLoading && (focoDisponivel.length > 1 || feitosHoje.length > 0) && (
             <div className="mb-3 flex flex-wrap gap-1.5">
               <FocoChip ativo={foco === "todos"} onClick={() => setFoco("todos")} label="Todos" count={prioridades.length} />
               {focoDisponivel.map((k) => (
                 <FocoChip key={k} ativo={foco === k} onClick={() => setFoco(foco === k ? "todos" : k)} label={MOTIVO_META[k].label} count={contagemMotivo[k]} />
               ))}
+              {feitosHoje.length > 0 && (
+                <FocoChip
+                  ativo={foco === "feitos"}
+                  onClick={() => setFoco(foco === "feitos" ? "todos" : "feitos")}
+                  label="Feitos hoje"
+                  count={feitosHoje.length}
+                />
+              )}
             </div>
           )}
 
           {isLoading ? (
             <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : foco === "feitos" ? (
+            <div className="space-y-2">
+              {feitosHoje.map((l) => (
+                <CardFeito
+                  key={l.id} lead={l}
+                  onOpen={() => abrirLead(l.id)}
+                  onVoltar={() => voltarPraFila(l.id)}
+                />
+              ))}
+            </div>
           ) : totalFila === 0 ? (
             <div className="flex items-start gap-2 rounded-xl border border-dashed border-primary/30 bg-primary/[0.04] p-4">
               <Layers className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
@@ -639,7 +657,8 @@ export default function AgendaCorretor() {
               {prioridadesFiltradas.map((l) => (
                 <CardPrioridade
                   key={l.id} lead={l} stages={stages}
-                  onRegistrar={() => setRegistrar({ id: l.id, nome: l.nome })}
+                  destacado={destaqueId === l.id}
+                  onRegistrar={() => setRegistrar({ id: l.id, nome: l.nome, origem: "fila" })}
                   onOpen={() => abrirLead(l.id)}
                   onMove={moverEtapa}
                   onDispensar={() => dispensarDaFila(l)}
@@ -654,6 +673,7 @@ export default function AgendaCorretor() {
               )}
             </div>
           )}
+
         </>
       ) : (
         <>
