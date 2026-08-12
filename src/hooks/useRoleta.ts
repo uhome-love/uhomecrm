@@ -794,6 +794,7 @@ export function useRoleta() {
       .select("id", { count: "exact", head: true })
       .is("corretor_id", null)
       .eq("aceite_status", "pendente_distribuicao")
+      .eq("arquivado", false)
       .then(({ count }) => setLeadsAcumulados(count || 0));
   }, [isAdmin]);
 
