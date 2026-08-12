@@ -224,6 +224,39 @@ export type Database = {
         }
         Relationships: []
       }
+      _rollback_leo_2026_08_12: {
+        Row: {
+          arquivado: boolean | null
+          corretor_id: string | null
+          criado_em: string
+          flag_status: Json | null
+          id: string
+          motivo_descarte: string | null
+          stage_id: string | null
+          tipo_descarte: string | null
+        }
+        Insert: {
+          arquivado?: boolean | null
+          corretor_id?: string | null
+          criado_em?: string
+          flag_status?: Json | null
+          id: string
+          motivo_descarte?: string | null
+          stage_id?: string | null
+          tipo_descarte?: string | null
+        }
+        Update: {
+          arquivado?: boolean | null
+          corretor_id?: string | null
+          criado_em?: string
+          flag_status?: Json | null
+          id?: string
+          motivo_descarte?: string | null
+          stage_id?: string | null
+          tipo_descarte?: string | null
+        }
+        Relationships: []
+      }
       _rollback_onda1: {
         Row: {
           created_at: string
