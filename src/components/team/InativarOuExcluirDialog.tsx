@@ -33,7 +33,7 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
   const [confirmName, setConfirmName] = useState("");
   const [destino, setDestino] = useState<"repassar" | "descarte">("repassar");
   const [gerenteAlvo, setGerenteAlvo] = useState<{ id: string; nome: string } | null>(null);
-  const [previewDescarte, setPreviewDescarte] = useState<{ frios: number; quentes: number; tarefas: number }>({ frios: 0, quentes: 0, tarefas: 0 });
+  const [previewDescarte, setPreviewDescarte] = useState<{ frios: number; quentes: number; tarefas: number; porEtapa?: Record<string, number> }>({ frios: 0, quentes: 0, tarefas: 0 });
 
   const isDelete = mode === "delete";
   const title = isDelete ? "Excluir usuário definitivamente" : "Inativar usuário";
