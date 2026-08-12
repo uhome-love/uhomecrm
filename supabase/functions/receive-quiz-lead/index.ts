@@ -58,8 +58,16 @@ Deno.serve(async (req) => {
       ? "baixa"
       : "media";
 
-    // Dedup leve: se JÁ existe um lead de quiz com esse telefone ainda na Fila CEO
-    // (sem dono), não duplica. Não bloqueia leads de outras origens.
+    // Respostas + textos do histórico (reusados no insert e no enriquecimento).
+    const respostas = parseFormRespostas(body as any) || [];
+    const campanhaNome = String((body as any).campaign_name || empreendimento);
+    const detalhesAtiv = respostas.map((r) => `• ${r.pergunta}: ${r.resposta}`).join("\n");
+    const tituloAtiv = `📣 Lead gerado pela campanha "${campanhaNome}"`;
+    const descricaoAtiv = `Origem: Quiz conversacional (${empreendimento}).${detalhesAtiv ? `\n\nRespostas do quiz:\n${detalhesAtiv}` : ""}`;
+
+    // Se JÁ existe um lead de quiz com esse telefone na Fila CEO (sem dono), ENRIQUECE
+    // (2ª chamada = após escolher visita/corretor) em vez de duplicar. Captura acontece
+    // no 1º envio (no momento do WhatsApp); esta chamada só atualiza.
     if (telefone) {
       const { data: existing } = await supabase
         .from("pipeline_leads")
@@ -71,7 +79,18 @@ Deno.serve(async (req) => {
         .eq("arquivado", false)
         .limit(1);
       if (existing && existing.length) {
-        return json({ success: true, dedup: true, lead_id: existing[0].id });
+        const leadId = existing[0].id;
+        await supabase.from("pipeline_leads").update({
+          form_respostas: respostas.length ? respostas : null,
+          observacoes: (body as any).message || null,
+          prioridade_lead: prioridade,
+          updated_at: new Date().toISOString(),
+        }).eq("id", leadId);
+        await supabase.from("pipeline_atividades")
+          .update({ titulo: tituloAtiv, descricao: descricaoAtiv })
+          .eq("pipeline_lead_id", leadId)
+          .eq("tipo", "entrada");
+        return json({ success: true, updated: true, lead_id: leadId });
       }
     }
 
@@ -93,7 +112,7 @@ Deno.serve(async (req) => {
         campanha: (body as any).campaign_name || null,
         plataforma: (body as any).platform || null,
         observacoes: (body as any).message || null,
-        form_respostas: parseFormRespostas(body as any) || null,
+        form_respostas: respostas.length ? respostas : null,
         corretor_id: null,
         aceite_status: "pendente_distribuicao",
         prioridade_lead: prioridade,
@@ -134,14 +153,11 @@ Deno.serve(async (req) => {
 
     // Escreve no histórico do lead (aba "Histórico" do modal): campanha de origem + respostas do quiz.
     try {
-      const campanhaNome = String((body as any).campaign_name || empreendimento);
-      const respostas = parseFormRespostas(body as any) || [];
-      const detalhes = respostas.map((r) => `• ${r.pergunta}: ${r.resposta}`).join("\n");
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: inserted.id,
         tipo: "entrada",
-        titulo: `📣 Lead gerado pela campanha "${campanhaNome}"`,
-        descricao: `Origem: Quiz conversacional (${empreendimento}).${detalhes ? `\n\nRespostas do quiz:\n${detalhes}` : ""}`,
+        titulo: tituloAtiv,
+        descricao: descricaoAtiv,
         status: "concluida",
         created_by: "00000000-0000-0000-0000-000000000000",
       });
