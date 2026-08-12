@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilaDoDia, lembreteAutomatico, type LeadFila, type MotivoFila, type Compromisso, type LembretesAgrupados } from "@/hooks/useFilaDoDia";
@@ -13,13 +13,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
-import { dispensarLead } from "@/lib/filaDispensados";
+import { dispensarLead, restaurarLead } from "@/lib/filaDispensados";
 import { limparRegistro } from "@/lib/registroLimpo";
 import { baixarICS } from "@/lib/ics";
 import {
   Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
   Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
-  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, CalendarPlus, type LucideIcon,
+  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, CalendarPlus, CheckCircle2, type LucideIcon,
 } from "lucide-react";
 
 const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: string }> = {
@@ -169,12 +169,15 @@ function AcoesContato({ telefone }: { telefone: string | null }) {
 }
 
 function CardPrioridade({
-  lead, stages, onRegistrar, onOpen, onMove, onDispensar,
+  lead, stages, onRegistrar, onOpen, onMove, onDispensar, destacado, feito,
 }: {
   lead: LeadFila; stages: PipelineStage[];
   onRegistrar: () => void; onOpen: () => void;
   onMove: (leadId: string, stageId: string) => void;
   onDispensar: () => void;
+  destacado?: boolean;
+  /** true = acabou de ser registrado: fica ~1,2s em estado "Feito ✓" antes de sair da fila. */
+  feito?: boolean;
 }) {
   const m = MOTIVO_META[lead.motivo];
   const Icon = m.icon;
@@ -185,13 +188,18 @@ function CardPrioridade({
   } as unknown as PipelineLead;
   return (
     <div
+      data-lead-id={lead.id}
       onClick={onOpen}
       className={cn(
-        "group relative cursor-pointer rounded-xl border border-border bg-card p-3 pl-4 overflow-hidden transition-colors hover:border-border/80 hover:bg-muted/20",
+        "group relative cursor-pointer rounded-xl border border-border bg-card p-3 pl-4 overflow-hidden transition-all duration-500 hover:border-border/80 hover:bg-muted/20",
         "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1",
-        SAUDE_BORDER[lead.saude] ?? "before:bg-amber-500"
+        SAUDE_BORDER[lead.saude] ?? "before:bg-amber-500",
+        destacado && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+        feito && "border-emerald-500/60 bg-emerald-50/60 opacity-70 translate-x-2 dark:bg-emerald-500/5 before:bg-emerald-500"
       )}
     >
+
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -229,13 +237,19 @@ function CardPrioridade({
           />
         </div>
         <div className="flex shrink-0 items-start gap-1">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onRegistrar(); }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
-          </button>
+          {feito ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[12.5px] font-semibold text-white">
+              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.4} /> Feito
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onRegistrar(); }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Zap className="h-3.5 w-3.5" strokeWidth={2.4} /> Registrar
+            </button>
+          )}
           <CardOverflowMenu
             lead={leadObj}
             stages={stages}
@@ -269,6 +283,51 @@ function CardPrioridade({
     </div>
   );
 }
+
+/** Card "feito hoje" — comprovante do que já foi registrado (sem ação de fila). */
+function CardFeito({
+  lead, onOpen, onVoltar,
+}: { lead: LeadFila; onOpen: () => void; onVoltar: () => void }) {
+  const hora = lead.ultimo_toque_at
+    ? new Date(lead.ultimo_toque_at).toLocaleTimeString("pt-BR", {
+        hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
+      })
+    : null;
+  const reg = limparRegistro(lead.ultimo_registro);
+  return (
+    <div
+      onClick={onOpen}
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-card p-3 pl-4 transition-colors hover:bg-muted/20 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-emerald-500"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="truncate text-[14.5px] font-semibold text-foreground">{lead.nome}</span>
+            <span className="shrink-0 text-[11.5px] text-muted-foreground">{lead.stage_nome}</span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-3 w-3 shrink-0" />
+            registrado{hora ? ` às ${hora}` : " hoje"}
+          </div>
+          {reg && (
+            <div className="mt-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[12px] italic leading-snug text-foreground/80">
+              “{reg}”
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onVoltar(); }}
+          title="Voltar este lead pra fila de hoje"
+          className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          Voltar pra fila
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 /** Bloco único da cadência Sem Contato (volume de "tentar de novo"). */
 function CadenciaBloco({
@@ -415,7 +474,7 @@ const GRUPO_META: Record<GrupoLembrete, { label: string; accent: string; tone: s
   futuro:    { label: "Futuro",    accent: "before:bg-sky-400",   tone: "text-sky-600" },
 };
 
-type RegistrarState = { id: string; nome: string; concluirTarefaId?: string } | null;
+type RegistrarState = { id: string; nome: string; concluirTarefaId?: string; origem?: "fila" } | null;
 
 export default function AgendaCorretor() {
   const { data, isLoading } = useFilaDoDia();
@@ -423,9 +482,11 @@ export default function AgendaCorretor() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"prioridades" | "lembretes">("prioridades");
   const [registrar, setRegistrar] = useState<RegistrarState>(null);
-  const [foco, setFoco] = useState<"todos" | MotivoFila>("todos");
+  const [foco, setFoco] = useState<"pendentes" | MotivoFila | "feitos">("pendentes");
+  const [feitoId, setFeitoId] = useState<string | null>(null);
   const [grupoLembrete, setGrupoLembrete] = useState<GrupoLembrete>("hoje");
   const [criarLembrete, setCriarLembrete] = useState(false);
+  const [destaqueId, setDestaqueId] = useState<string | null>(null);
 
   const hojeLabel = new Date().toLocaleDateString("pt-BR", {
     weekday: "long", day: "numeric", month: "short", timeZone: "America/Sao_Paulo",
@@ -433,6 +494,7 @@ export default function AgendaCorretor() {
 
   const prioridades = data?.prioridades ?? [];
   const cadencia = data?.cadencia ?? { total: 0, leads: [] };
+  const feitosHoje = data?.feitosHoje ?? [];
   const stages = data?.stages ?? [];
   const lembretes = useMemo<LembretesAgrupados>(
     () => data?.lembretes ?? { atrasados: [], hoje: [], amanha: [], semana: [], proximos: [] },
@@ -446,7 +508,19 @@ export default function AgendaCorretor() {
     return m;
   }, [prioridades]);
   const focoDisponivel = MOTIVO_ORDEM.filter((k) => (contagemMotivo[k] ?? 0) > 0);
-  const prioridadesFiltradas = foco === "todos" ? prioridades : prioridades.filter((l) => l.motivo === foco);
+  const prioridadesFiltradas = foco === "pendentes" || foco === "feitos"
+    ? prioridades
+    : prioridades.filter((l) => l.motivo === foco);
+
+  // Após registrar um card da fila: rola até o próximo e destaca por ~1,5s.
+  useEffect(() => {
+    if (!destaqueId) return;
+    const el = document.querySelector<HTMLElement>(`[data-lead-id="${destaqueId}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = setTimeout(() => setDestaqueId(null), 1500);
+    return () => clearTimeout(t);
+  }, [destaqueId, prioridades]);
+
 
   // Lembretes agrupados em Atrasados / Hoje / Futuro.
   const gruposLembrete = useMemo<Record<GrupoLembrete, Compromisso[]>>(() => ({
@@ -457,6 +531,33 @@ export default function AgendaCorretor() {
 
   const invalidar = () => queryClient.invalidateQueries({ queryKey: ["fila-do-dia"] });
   const abrirLead = (id: string) => navigate(`/pipeline-leads?lead=${id}`);
+
+  /** Registrou atividade num card da fila → mostra "Feito ✓", sai da fila e avança pro próximo. */
+  const concluirDaFila = (leadId: string) => {
+    const lista = prioridadesFiltradas;
+    const i = lista.findIndex((l) => l.id === leadId);
+    const proximo = i >= 0 ? (lista[i + 1] ?? lista[i - 1]) : null;
+    dispensarLead(leadId);
+    setFeitoId(leadId);
+    setTimeout(() => {
+      setFeitoId((atual) => (atual === leadId ? null : atual));
+      invalidar();
+      if (proximo) setDestaqueId(proximo.id);
+    }, 1200);
+  };
+
+  /** Registro veio de outro caminho (lembrete, drawer): se o lead está na fila de hoje, tira dos pendentes. */
+  const concluirSeEstaNaFila = (leadId: string) => {
+    if (prioridades.some((l) => l.id === leadId)) concluirDaFila(leadId);
+    else invalidar();
+  };
+
+  const voltarPraFila = (leadId: string) => {
+    restaurarLead(leadId);
+    invalidar();
+    toast.success("Lead de volta na fila de hoje");
+  };
+
 
   const moverEtapa = async (leadId: string, stageId: string) => {
     const now = new Date().toISOString();
@@ -535,23 +636,57 @@ export default function AgendaCorretor() {
           </div>
 
           {/* Filtro de foco por motivo */}
-          {!isLoading && focoDisponivel.length > 1 && (
+          {!isLoading && (focoDisponivel.length > 1 || feitosHoje.length > 0) && (
             <div className="mb-3 flex flex-wrap gap-1.5">
-              <FocoChip ativo={foco === "todos"} onClick={() => setFoco("todos")} label="Todos" count={prioridades.length} />
+              <FocoChip ativo={foco === "pendentes"} onClick={() => setFoco("pendentes")} label="Pendentes" count={prioridades.length} />
               {focoDisponivel.map((k) => (
-                <FocoChip key={k} ativo={foco === k} onClick={() => setFoco(foco === k ? "todos" : k)} label={MOTIVO_META[k].label} count={contagemMotivo[k]} />
+                <FocoChip key={k} ativo={foco === k} onClick={() => setFoco(foco === k ? "pendentes" : k)} label={MOTIVO_META[k].label} count={contagemMotivo[k]} />
               ))}
+              {feitosHoje.length > 0 && (
+                <>
+                  <span className="mx-0.5 h-6 w-px self-center bg-border" aria-hidden />
+                  <FocoChip
+                    ativo={foco === "feitos"}
+                    onClick={() => setFoco(foco === "feitos" ? "pendentes" : "feitos")}
+                    label="Feitos hoje"
+                    count={feitosHoje.length}
+                  />
+                </>
+              )}
             </div>
           )}
 
           {isLoading ? (
             <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : foco === "feitos" ? (
+            <div className="space-y-2">
+              {feitosHoje.map((l) => (
+                <CardFeito
+                  key={l.id} lead={l}
+                  onOpen={() => abrirLead(l.id)}
+                  onVoltar={() => voltarPraFila(l.id)}
+                />
+              ))}
+            </div>
           ) : totalFila === 0 ? (
             <div className="flex items-start gap-2 rounded-xl border border-dashed border-primary/30 bg-primary/[0.04] p-4">
               <Layers className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <div className="text-[13px] text-foreground">
                 <b className="font-semibold">Fila zerada — mandou bem!</b>
-                <p className="mt-0.5 text-muted-foreground">Sem leads pedindo ação agora. Aproveite pra aquecer os mornos na Oferta Ativa.</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  {feitosHoje.length > 0
+                    ? `Você registrou ${feitosHoje.length} ${feitosHoje.length === 1 ? "lead" : "leads"} hoje. Nada pendente agora.`
+                    : "Sem leads pedindo ação agora. Aproveite pra aquecer os mornos na Oferta Ativa."}
+                </p>
+                {feitosHoje.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFoco("feitos")}
+                    className="mt-1.5 text-[12px] font-semibold text-primary hover:underline"
+                  >
+                    Ver o que você fez hoje →
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -559,13 +694,15 @@ export default function AgendaCorretor() {
               {prioridadesFiltradas.map((l) => (
                 <CardPrioridade
                   key={l.id} lead={l} stages={stages}
-                  onRegistrar={() => setRegistrar({ id: l.id, nome: l.nome })}
+                  destacado={destaqueId === l.id}
+                  feito={feitoId === l.id}
+                  onRegistrar={() => setRegistrar({ id: l.id, nome: l.nome, origem: "fila" })}
                   onOpen={() => abrirLead(l.id)}
                   onMove={moverEtapa}
                   onDispensar={() => dispensarDaFila(l)}
                 />
               ))}
-              {foco === "todos" && (
+              {foco === "pendentes" && (
                 <CadenciaBloco
                   total={cadencia.total} leads={cadencia.leads}
                   onRegistrar={(l) => setRegistrar({ id: l.id, nome: l.nome })}
@@ -574,6 +711,7 @@ export default function AgendaCorretor() {
               )}
             </div>
           )}
+
         </>
       ) : (
         <>
@@ -659,7 +797,11 @@ export default function AgendaCorretor() {
           lead={{ id: registrar.id, nome: registrar.nome }}
           concluirTarefaId={registrar.concluirTarefaId ?? null}
           onClose={() => setRegistrar(null)}
-          onSaved={invalidar}
+          onSaved={() => {
+            if (registrar.origem === "fila") concluirDaFila(registrar.id);
+            else concluirSeEstaNaFila(registrar.id);
+          }}
+
         />
       )}
 
@@ -684,7 +826,7 @@ function FocoChip({ ativo, onClick, label, count }: { ativo: boolean; onClick: (
       )}
     >
       {label} <span className="opacity-70">{count}</span>
-      {ativo && label !== "Todos" && <X className="h-3 w-3" />}
+      {ativo && label !== "Pendentes" && <X className="h-3 w-3" />}
     </button>
   );
 }
