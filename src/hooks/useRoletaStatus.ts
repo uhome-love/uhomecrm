@@ -37,7 +37,8 @@ export function useRoletaStatus(enabled = true) {
           .from("pipeline_leads")
           .select("id", { count: "exact", head: true })
           .eq("aceite_status", "pendente_distribuicao")
-          .is("corretor_id", null),
+          .is("corretor_id", null)
+          .eq("arquivado", false),
         supabase
           .from("pipeline_leads")
           .select("id", { count: "exact", head: true })
