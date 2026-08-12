@@ -305,6 +305,7 @@ export default function VagaPage() {
           setCandidatoId(id);
         })
         .catch((e) => console.warn("[vaga] captura antecipada falhou", e));
+      fireEvent("VagaContato");
     }
 
     if (idx + 1 < PERGUNTAS.length) {
@@ -312,6 +313,8 @@ export default function VagaPage() {
     } else {
       // Última pergunta: completa o perfil do lead mesmo que não agende
       const temperaturaFinal = pontosAtualizados >= 6 ? "quente" : pontosAtualizados >= 3 ? "morno" : "frio";
+      fireEvent("VagaQuizCompleto", { temperatura: temperaturaFinal });
+
       if (candidatoId) {
         supabase.functions
           .invoke("rh-vaga-lead", {
