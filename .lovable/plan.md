@@ -13,15 +13,25 @@ Ao salvar a atividade de um card da fila:
 
 Isso vale só para os cards de **Prioridades**. Cards de **Lembretes** seguem como estão (registrar já conclui o lembrete).
 
+## Filtro "Feitos hoje"
+Na linha de chips de foco das Prioridades entra um chip **"Feitos hoje (N)"**, à direita dos demais. Ao clicar, a lista mostra os leads que o corretor tocou hoje (BRT), em vez da fila:
+
+- Card enxuto, em tom "concluído" (borda verde, sem botão Registrar): nome, etapa, hora do registro e o **texto do último registro** ("o que foi feito").
+- Clicar abre o lead; um botão discreto **"Voltar pra fila"** desfaz o auto-dispensa daquele card, caso tenha registrado por engano.
+- Serve de comprovante do dia: o corretor vê o que já atacou e o gestor vê o mesmo na tela dele.
+
 ## Detalhes técnicos
 
-Arquivo principal: `src/pages/AgendaCorretor.tsx` (frontend apenas — nada de banco, RPC ou edge function).
+Arquivos: `src/pages/AgendaCorretor.tsx` e `src/hooks/useFilaDoDia.ts` (frontend apenas — nada de banco, RPC ou edge function).
 
 - `setRegistrar({...})` dos cards de prioridade passa a marcar a origem (`origem: "fila"`).
 - No `onSaved` do `RegistrarAtividadeModal`: se a origem for `"fila"`, chamar `dispensarLead(id)` (`src/lib/filaDispensados.ts`, já existente, janela de 24h em localStorage) antes de `invalidar()`.
 - Guardar `proximoDestaqueId` = id do card seguinte na lista `prioridadesFiltradas` no momento do save; após o refetch, `scrollIntoView({ behavior: "smooth", block: "center" })` no card e aplicar classe de destaque temporária (limpa por `setTimeout`).
 - Cards ganham `ref`/`data-lead-id` para permitir o scroll.
-- Sem mudança em `useFilaDoDia`, na ordenação, ou nas regras de saúde/toque.
+- `useFilaDoDia` passa a devolver `feitosHoje: LeadFila[]` — leads do corretor cujo `ultimo_toque_at` cai no dia BRT de hoje, ordenados do mais recente pro mais antigo, com `ultimo_registro` e hora. Usa a mesma consulta de leads já existente (sem query nova).
+- `filaDispensados.ts` ganha `restaurarLead(id)` para o "Voltar pra fila".
+- Sem mudança na ordenação da fila, nos gatilhos ou nas regras de saúde/toque.
+
 
 ## Fora de escopo
 - Modo "um lead por vez" em tela cheia.
