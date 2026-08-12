@@ -88,18 +88,26 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
         setGerenteAlvo({ id: tm.gerente_id, nome: gp?.nome || "Gerente" });
       }
 
-      // Prévia do descarte: frios × avançados
+      // Prévia do descarte: frios × leads que seguem para o gerente
       const [{ data: stagesData }, { data: leadRows }] = await Promise.all([
-        supabase.from("pipeline_stages").select("id, tipo").eq("pipeline_tipo", "leads"),
-        supabase.from("pipeline_leads").select("id, stage_id, negocio_id").eq("corretor_id", user.user_id),
+        supabase.from("pipeline_stages").select("id, tipo, nome").eq("pipeline_tipo", "leads"),
+        supabase.from("pipeline_leads").select("id, stage_id, negocio_id, ultimo_toque_at").eq("corretor_id", user.user_id),
       ]);
-      const avancados = new Set((stagesData || []).filter((s: any) => ["proposta", "contrato_gerado", "venda"].includes(s.tipo)).map((s: any) => s.id));
+      const stageById = new Map((stagesData || []).map((s: any) => [s.id, s]));
+      const avancados = new Set((stagesData || []).filter((s: any) => ["proposta", "contrato_gerado", "venda", "documentacao", "visita", "pos_visita", "aquecimento"].includes(s.tipo)).map((s: any) => s.id));
+      const qualificacaoIds = new Set((stagesData || []).filter((s: any) => s.tipo === "qualificacao").map((s: any) => s.id));
       const intocaveis = new Set((stagesData || []).filter((s: any) => ["descarte", "caiu"].includes(s.tipo)).map((s: any) => s.id));
+      const limite30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
       const frios: string[] = []; let quentes = 0;
+      const porEtapa: Record<string, number> = {};
       (leadRows || []).forEach((l: any) => {
         if (intocaveis.has(l.stage_id)) return;
-        if (l.negocio_id || avancados.has(l.stage_id)) quentes += 1;
-        else frios.push(l.id);
+        const toqueRecente = l.ultimo_toque_at && new Date(l.ultimo_toque_at).getTime() >= limite30d;
+        if (l.negocio_id || avancados.has(l.stage_id) || (qualificacaoIds.has(l.stage_id) && toqueRecente)) {
+          quentes += 1;
+          const nome = (stageById.get(l.stage_id) as any)?.nome || "Outros";
+          porEtapa[nome] = (porEtapa[nome] || 0) + 1;
+        } else frios.push(l.id);
       });
       let tarefasFrios = 0;
       for (let i = 0; i < frios.length; i += 200) {
@@ -109,7 +117,7 @@ export default function InativarOuExcluirDialog({ mode, user, open, onOpenChange
           .neq("status", "concluida").neq("status", "cancelada");
         tarefasFrios += count || 0;
       }
-      setPreviewDescarte({ frios: frios.length, quentes, tarefas: tarefasFrios });
+      setPreviewDescarte({ frios: frios.length, quentes, tarefas: tarefasFrios, porEtapa });
 
       setLoading(false);
     })();
