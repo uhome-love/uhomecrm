@@ -1,50 +1,71 @@
-# Roleta: relatório de rotação (09–11/08) e correções propostas
+# Roleta: a regra que você quer x a regra que roda hoje
 
-## O que os dados mostram (últimos 2 dias)
+## A regra que entendi de você
 
-Registros em `distribuicao_historico`: 156 distribuídos, 139 aceitos, 17 timeout, 136 foram para a Fila do CEO.
+1. Em cada turno, o lead de um produto só vai para quem está **ativo na roleta daquele turno e habilitado no produto**.
+2. Dentro desse grupo, distribuição **igual, um a um** (9 leads / 3 pessoas = 3 para cada).
+3. Quem **perde o aceite** (timeout/recusa) devolve o lead, que vai para o **próximo da fila**.
+4. **Fila do CEO** disparada manualmente segue exatamente a mesma regra — só para quem está ativo na roleta naquele momento.
+5. Na **tarde**, o contador **não zera**: leva em conta o que a pessoa já recebeu de manhã. Na **noite**, leva em conta manhã + tarde. Paridade acumulada no dia.
 
-Distribuições por corretor (2 dias):
+## O que já é assim hoje (confirmado no motor `distribuir_lead_atomico`)
+
+- Item 1: sim. Só entram credenciados aprovados no turno, com `na_roleta = true`, e alocados ao produto.
+- Item 2: sim, dentro do turno e do produto. O critério de escolha é "quem tem menos leads **desse produto neste turno de hoje**", desempatando por quem recebeu há mais tempo.
+- Item 3: sim. No timeout o lead volta a ser distribuído excluindo quem perdeu o aceite (`p_exclude_auth_user_id`), e vai para o próximo.
+- Item 4: parcialmente. A Fila do CEO chama o mesmo motor, então respeita "ativo na roleta". Mas ela dispara com `force`, o que permite cair no pote por **segmento** (fora dos alocados ao produto) quando não há alocado ativo. Precisa decidir se isso continua ou se vira "só ativos + habilitados no produto".
+
+## O que **não** é assim hoje (a causa do desequilíbrio)
+
+**Item 5 não existe.** O contador é reiniciado a cada turno **e** é separado por produto. Ninguém olha quanto a pessoa já recebeu no dia.
+
+Consequências reais medidas em 10–11/08:
+- Thalia 26 e Douglas 24 distribuições em 2 dias, contra 1–8 da maioria.
+- Na noite de 10/08, o grupo ativo de Casa Tua Porto Alegre tinha só 2 pessoas (Douglas e Thalia): alternaram certinho 1 a 1 e somaram ~20 leads.
+- Quem está em 2 produtos e credenciado nos 3 turnos entra em vários grupos ao mesmo tempo e soma tudo.
+- 135 leads foram para a Fila do CEO por "nenhum alocado ativo no produto" no mesmo período.
+
+## Exemplo prático (como funciona hoje x como ficaria)
+
+Manhã, Casa Tua Porto Alegre, ativos: Douglas, Thalia, Junior. Entram 9 leads.
 
 ```text
-Thalia de Oliveira   26      Luiza Clós        8      Paula Medeiros     3
-Douglas Costa        24      Wendel Flores     8      Billy John         2
-Rafaela Sandin       16      Cássio Ferreira   7      Eliézer Clós       2
-Ebert Silva          14      Marcos Aurelio    6      Flávio Dias        2
-Matheus Pasin        12      William Brizola   6      Gustavo Niz        1
-Larissa Barbosa      10      Adriana Kaiser    5      William Ferreira   4
+MANHÃ (hoje e depois igual — já funciona)
+lead 1 Douglas | lead 2 Thalia | lead 3 Junior
+lead 4 Douglas | lead 5 Thalia | lead 6 Junior
+lead 7 Douglas | lead 8 Thalia | lead 9 Junior
+=> 3 / 3 / 3
+
+Se Thalia perde o aceite do lead 5:
+o lead 5 volta e vai para o próximo com menos leads (Junior, depois Douglas).
+Thalia continua contando 2 no turno, então tende a receber o próximo lead novo.
 ```
 
-No mês, Douglas está com 77 leads e Thalia com 64 — o "84" da tela inclui também leads não vindos da roleta.
+Tarde, entram 6 leads, agora ativos: Douglas, Thalia, Junior, Paula (Paula não fez a manhã).
 
-## A rotação não está quebrada — ela é justa dentro de um pote muito pequeno
+```text
+HOJE (contador zera no turno)
+lead 1 Douglas | lead 2 Thalia | lead 3 Junior | lead 4 Paula
+lead 5 Douglas | lead 6 Thalia
+=> dia: Douglas 5, Thalia 5, Junior 4, Paula 1
 
-O motor (`distribuir_lead_atomico`) escolhe sempre o corretor com **menos leads daquele produto naquele turno de hoje**, depois quem recebeu há mais tempo. Isso funciona. O desequilíbrio vem de três limites do desenho atual, todos confirmados nos dados:
+COMO VOCÊ QUER (contador acumula no dia)
+Saldo do dia ao abrir a tarde: Douglas 3, Thalia 3, Junior 3, Paula 0
+lead 1 Paula (0)  | lead 2 Paula (1)  | lead 3 Paula (2)
+lead 4 Douglas/Thalia/Junior conforme quem recebeu há mais tempo
+lead 5 e 6 seguem completando o empate
+=> dia: 4 / 4 / 4 / 3  (paridade real)
+```
 
-1. **Produto identificado só vai para corretor ALOCADO ao produto.** 100% das distribuições dos 2 dias saíram do pote `alocado`; nenhuma caiu no rodízio geral por segmento.
-2. **O pote é minúsculo em vários momentos.** Em 10/08, das 19h às 23h, o pote de "Casa Tua Porto Alegre" tinha **2 corretores** (Douglas e Thalia) — eles alternaram 1 a 1 e somaram ~20 leads em uma noite. Em "Connect JW" o pote foi de 2–4 (Rafaela e Matheus). Em "Flow" e "Lake Baikal" houve pote de tamanho 1.
-3. **O contador zera a cada turno e é por produto.** Ninguém olha o total do dia/semana do corretor. Quem está alocado em 2 produtos e se credencia nos 3 turnos recebe em todos os potes ao mesmo tempo. Douglas e Thalia se credenciaram praticamente em todos os turnos; vários outros ficaram com 0–1 credenciamento em 2 dias.
+Noite: mesma lógica, olhando manhã + tarde somadas. Fila do CEO disparada às 15h entra na mesma conta da tarde — não é uma fila paralela.
 
-Efeito colateral do mesmo desenho: **135 leads foram para a Fila do CEO por `sem_alocado_produto`** — nenhum corretor alocado àquele produto estava credenciado na hora. Ou seja, ao mesmo tempo em que 2 pessoas acumulam, 135 leads ficam parados.
+## O que muda no sistema
 
-Não encontrei sinal de bug: sem loop repetindo o mesmo corretor fora de ordem, sem lead distribuído duas vezes, sem ignorar o contador. É regra de negócio, não falha técnica.
+- Trocar o critério de ordenação do motor: passa a ser **(1) menos leads recebidos hoje no total**, depois **(2) menos leads desse produto no turno**, depois quem recebeu há mais tempo. Hoje só existe o (2).
+- Contagem do dia lida de `roleta_distribuicoes` na data BRT, sem filtro de turno nem de produto.
+- Definir com você o comportamento da Fila do CEO quando ninguém alocado ao produto está ativo: (a) mandar para o pote por segmento como hoje, ou (b) segurar e avisar. Isso muda os 135 casos do período.
+- Nada muda em credenciamento, elegibilidade (leads vermelhos), janelas de turno ou tempo de aceite.
 
-## O que proponho corrigir (fases pequenas, uma por vez)
+## Uma pergunta antes de construir
 
-**Fase 1 — teto e visão do dia (sem mudar o pote).**
-Trocar o critério de ordenação para considerar, além do produto/turno, o **total de leads do corretor no dia**. Assim, quem já pegou 12 hoje só volta a receber depois de quem pegou 3, mesmo em produto diferente. Opcional: teto diário configurável por corretor (ex.: 15/dia) — ao estourar, o próximo da fila leva.
-
-**Fase 2 — pote mínimo com fallback.**
-Quando o pote de alocados ativos for menor que N (ex.: 3), ampliar para corretores do mesmo segmento antes de mandar para a Fila do CEO. Isso ataca ao mesmo tempo a concentração e os 135 leads parados.
-
-**Fase 3 — transparência.**
-Painel na Roleta mostrando, por turno: tamanho do pote de cada produto, leads por corretor no dia e quantos foram para a Fila do CEO e por quê. Hoje esse dado só existe no banco.
-
-## Detalhes técnicos
-
-- Função central: `public.distribuir_lead_atomico` (ordenação em `ORDER BY recebidos_no_produto, ultima_distribuicao_at, leads_recebidos, fila_id`).
-- Fase 1 = acrescentar um `recebidos_no_dia` (contagem em `roleta_distribuicoes` por corretor no dia BRT, sem filtro de produto/turno) como **primeiro** critério de ordenação; teto lido de `roleta_config`.
-- Fase 2 = quando `count(elegiveis) < N`, seguir para o bloco de segmento em vez de gravar `fila_ceo/sem_alocado_produto`.
-- Fase 3 = leitura de `distribuicao_historico` (já tem `pool`, `pool_size`, `recebidos_no_produto`).
-
-Nada aqui muda credenciamento, elegibilidade (leads vermelhos) ou aceite/timeout.
+Quando um corretor **perde o aceite**, esse lead deve continuar contando para ele no saldo do dia (para não virar estratégia deixar expirar) ou não conta?
