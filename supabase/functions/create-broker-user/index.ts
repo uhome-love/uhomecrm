@@ -236,6 +236,20 @@ serve(async (req) => {
         }).in("id", part);
       }
 
+      // 1b) Histórico da movimentação (guarda a etapa anterior → permite rollback)
+      for (const part of chunk(frios)) {
+        try {
+          await supabase.from("pipeline_historico").insert(
+            part.map((id) => ({
+              pipeline_lead_id: id,
+              stage_anterior_id: friosStage[id] || null,
+              stage_novo_id: descarteStage.id,
+              observacao: "Descartado automaticamente: corretor desligado",
+            })),
+          );
+        } catch (e) { console.error("Falha ao gravar histórico do descarte:", e); }
+      }
+
       // 2) Tarefas pendentes dos leads descartados → canceladas
       let tarefasCanceladas = 0;
       for (const part of chunk(frios)) {
