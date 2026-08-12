@@ -826,7 +826,7 @@ function FocoChip({ ativo, onClick, label, count }: { ativo: boolean; onClick: (
       )}
     >
       {label} <span className="opacity-70">{count}</span>
-      {ativo && label !== "Todos" && <X className="h-3 w-3" />}
+      {ativo && label !== "Pendentes" && <X className="h-3 w-3" />}
     </button>
   );
 }
