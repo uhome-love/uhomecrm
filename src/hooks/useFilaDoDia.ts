@@ -275,6 +275,9 @@ export function useFilaDoDia() {
           }),
           tem_atividade: !!l.ultimo_toque_at, motivo: "retorno_hoje",
           resultado: null, ultimo_registro: null, ultimo_toque_at: l.ultimo_toque_at,
+        };
+
+
 
 
         // Cadência Sem Contato → bloco (não card individual).
