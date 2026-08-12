@@ -10,7 +10,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { DateFilterProvider } from "@/contexts/DateFilterContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
-import AppLayout from "@/components/AppLayout";
 import RoleHomeRedirect from "@/components/RoleHomeRedirect";
 
 import { TabProvider } from "@/contexts/TabContext";
@@ -50,6 +49,7 @@ function lazyRetry(factory: () => Promise<any>) {
 
 // Only public/unprotected pages need lazy imports here
 // All protected pages are loaded via pageRegistry.ts
+const AppLayout = lazyRetry(() => import("@/components/AppLayout"));
 const Auth = lazyRetry(() => import("./pages/Auth"));
 const NotFound = lazyRetry(() => import("./pages/NotFound"));
 const Welcome = lazyRetry(() => import("./pages/Welcome"));
@@ -163,7 +163,7 @@ const App = () => (
               <Route path="/*" element={
                 <ProtectedRoute>
                   <TabProvider>
-                    <AppLayout />
+                    <Suspense fallback={<PageLoader />}><AppLayout /></Suspense>
                   </TabProvider>
                 </ProtectedRoute>
               } />
