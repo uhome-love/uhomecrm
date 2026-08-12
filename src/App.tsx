@@ -61,6 +61,7 @@ const VagaPage = lazyRetry(() => import("./pages/VagaPage"));
 
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
+const CasaTuaCanoasQuiz = lazyRetry(() => import("./pages/CasaTuaCanoasQuiz"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
 const PlacarTvPage = lazyRetry(() => import("./pages/PlacarTvPage"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
@@ -112,6 +113,7 @@ const App = () => (
               <Route path="/privacidade" element={<Suspense fallback={<PageLoader />}><PrivacidadePage /></Suspense>} />
               <Route path="/vaga" element={<Suspense fallback={<PageLoader />}><VagaPage /></Suspense>} />
               <Route path="/casatua" element={<Suspense fallback={<PageLoader />}><CasaTuaLanding /></Suspense>} />
+              <Route path="/casatuacanoas-quiz" element={<Suspense fallback={<PageLoader />}><CasaTuaCanoasQuiz /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
               <Route path="/placar-tv" element={<Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense>} />
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
