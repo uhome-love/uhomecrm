@@ -432,6 +432,17 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   return items;
 }
 
+// ── Classifica cada evento como NARRATIVA (a história do lead) ou SISTEMA (andaime).
+// Narrativa: entrou, contatos reais, anotações, mudanças de etapa, visita realizada.
+// Sistema: tarefas/lembretes, cadências automáticas, aceito/distribuído, sub-eventos de visita.
+function categoriaDe(item: TimelineItem): "narrativa" | "sistema" {
+  if (item.sourceType === "tarefa") return "sistema";
+  if (item.sourceType === "system") return "sistema";
+  if (item.badge?.label === "🤖 Automação") return "sistema";
+  if (item.sourceType === "historico" && /cad[êe]ncia/i.test(item.title)) return "sistema";
+  return "narrativa";
+}
+
 export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("ligacao");
@@ -529,6 +540,12 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   }, [timelineBase, visitaEventos, nomesPorId]);
 
 
+  // Narrativa (história) × Sistema (andaime). Começa na Narrativa.
+  const [histView, setHistView] = useState<"narrativa" | "sistema">("narrativa");
+  const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
+  const sistemaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "sistema"), [timeline]);
+  const shownItems = histView === "narrativa" ? narrativaItems : sistemaItems;
+
   const totalEventos = timeline.length;
   const totalNotas = anotacoes?.length ?? 0;
 
@@ -625,10 +642,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
       {/* Header padronizado (igual Tarefas/Visitas) */}
       <div className="px-7 pt-6 pb-4 flex justify-between items-end border-b border-zinc-100">
         <div>
-          <div className="text-lg font-bold text-zinc-900 tracking-tight">Histórico</div>
+          <div className="text-lg font-bold text-zinc-900 tracking-tight">História do lead</div>
           <div className="text-xs text-zinc-500 mt-0.5">
-            {totalEventos} evento{totalEventos !== 1 ? "s" : ""}
-            {totalNotas > 0 && <> · {totalNotas} nota{totalNotas !== 1 ? "s" : ""}</>}
+            {histView === "narrativa"
+              ? <>a jornada — {narrativaItems.length} marco{narrativaItems.length !== 1 ? "s" : ""}</>
+              : <>andaime operacional — {sistemaItems.length} evento{sistemaItems.length !== 1 ? "s" : ""}</>}
           </div>
         </div>
         <button
@@ -639,10 +657,30 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
         </button>
       </div>
 
+      {/* Toggle Narrativa | Sistema — o andaime automático mora dentro da própria História */}
+      <div className="px-7 pt-4">
+        <div className="inline-flex rounded-lg bg-zinc-100 p-0.5">
+          <button
+            onClick={() => setHistView("narrativa")}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "narrativa" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+          >
+            📖 Narrativa
+            <span className={`text-[10px] font-bold rounded-full px-1.5 ${histView === "narrativa" ? "bg-indigo-100 text-indigo-700" : "bg-zinc-200 text-zinc-500"}`}>{narrativaItems.length}</span>
+          </button>
+          <button
+            onClick={() => setHistView("sistema")}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "sistema" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+          >
+            ⚙️ Sistema
+            <span className={`text-[10px] font-bold rounded-full px-1.5 ${histView === "sistema" ? "bg-zinc-200 text-zinc-700" : "bg-zinc-200 text-zinc-500"}`}>{sistemaItems.length}</span>
+          </button>
+        </div>
+      </div>
+
       {/* Timeline agrupada por dia (Drawer Wide v4) */}
       <div className="px-7 pt-4">
         <DrawerTimelineGroup
-          items={timeline.slice(0, 30).map((item, i) => {
+          items={shownItems.slice(0, 40).map((item, i) => {
             const tipoGuess = (() => {
               const t = item.title.toLowerCase();
               if (item.sourceType === "anotacao") return "anotacao";

@@ -819,7 +819,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </TabsTrigger>
               )}
               <TabsTrigger value="historico" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
-                📝 Histórico
+                📖 História
                 {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{leadData.atividades.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="tarefas" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
