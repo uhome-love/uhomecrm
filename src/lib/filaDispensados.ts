@@ -36,3 +36,11 @@ export function dispensarLead(id: string, agora: number = Date.now()) {
   m[id] = agora;
   gravar(m);
 }
+
+/** Desfaz o dispensar (volta o lead pra fila de hoje). */
+export function restaurarLead(id: string) {
+  const m = ler();
+  if (m[id] === undefined) return;
+  delete m[id];
+  gravar(m);
+}
