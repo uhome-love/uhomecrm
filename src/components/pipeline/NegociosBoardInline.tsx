@@ -100,30 +100,55 @@ function Empty() { return <div className="rounded-xl border border-dashed border
 function PosCard({ p, onClick }: { p: ProntoVirar; onClick: () => void }) {
   return (
     <button onClick={onClick} className="relative shrink-0 overflow-hidden rounded-xl border border-border bg-card p-2.5 pl-3.5 text-left transition-all hover:shadow-md before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-cyan-500">
+      <div className="mb-1 flex items-center gap-1.5">
+        <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight", p.sinal === "quente" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700")}>{p.sinal === "quente" ? "🔥 Quente" : "😐 Interesse"}</span>
+      </div>
       <div className="truncate text-[13px] font-bold">{p.nome}</div>
       <div className="truncate text-[11px] text-muted-foreground">{p.empreendimento}</div>
-      <div className="mt-1.5 flex items-center gap-1.5">
-        <span className={cn("rounded-full px-1.5 py-0.5 text-[9.5px] font-bold", p.sinal === "quente" ? "bg-rose-50 text-rose-600 dark:bg-rose-500/10" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10")}>{p.sinal === "quente" ? "🔥 quente" : "interesse"}</span>
-        <span className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-0.5 text-[9.5px] font-bold text-primary">virar negócio <ArrowRight className="h-2.5 w-2.5" /></span>
+      <div className="mt-1.5 flex items-center">
+        <span className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">virar negócio <ArrowRight className="h-2.5 w-2.5" /></span>
       </div>
     </button>
   );
 }
 
+// Pill de sub-status no MESMO padrão do CardMinimal (bg-X-100 text-X-700).
+const PILL_BASE = "shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold leading-tight whitespace-nowrap";
+const PASSO_PILL: Record<NegPasso, { emoji: string; cls: string; nome: string }> = {
+  documentacao: { emoji: "📄", cls: "bg-sky-100 text-sky-700", nome: "Documentação" },
+  proposta: { emoji: "📝", cls: "bg-violet-100 text-violet-700", nome: "Proposta" },
+  contrato: { emoji: "📑", cls: "bg-indigo-100 text-indigo-700", nome: "Contrato" },
+  ganho: { emoji: "✅", cls: "bg-emerald-100 text-emerald-700", nome: "Assinado" },
+};
+function subBadge(n: NegocioCard): { emoji: string; cls: string; label: string } {
+  const meta = PASSO_PILL[n.passo];
+  return { emoji: meta.emoji, cls: meta.cls, label: n.detalhe ? n.detalhe.charAt(0).toUpperCase() + n.detalhe.slice(1) : meta.nome };
+}
+
 function NegCard({ n, lens, onClick }: { n: NegocioCard; lens: Lens; onClick: () => void }) {
   const ganho = n.fase === "ganho";
+  const sb = subBadge(n);
   return (
     <button onClick={onClick} className={cn("relative shrink-0 overflow-hidden rounded-xl border border-border bg-card p-2.5 pl-3.5 text-left transition-all hover:shadow-md before:absolute before:inset-y-0 before:left-0 before:w-1", stripe(n.tone, ganho))}>
+      {/* Linha de sub-status (pill) — igual ao card de leads */}
+      <div className="mb-1 flex flex-wrap items-center gap-1.5">
+        {ganho && n.dataAssinatura
+          ? <span className={cn(PILL_BASE, "bg-emerald-100 text-emerald-700")}>✅ Assinado {n.dataAssinatura.slice(0, 5)}</span>
+          : <span className={cn(PILL_BASE, sb.cls)}>{sb.emoji} {sb.label}</span>}
+        {n.ceo && <span className={cn(PILL_BASE, "bg-amber-100 text-amber-700")}>CEO</span>}
+      </div>
+      {/* Nome + VGV */}
       <div className="flex items-center justify-between gap-2">
         <span className="truncate text-[13px] font-bold">{n.cliente}</span>
-        {n.vgv == null ? <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-700 dark:bg-amber-500/10">falta VGV</span> : <span className="shrink-0 text-[12.5px] font-extrabold">{money(n.vgv)}</span>}
+        {n.vgv == null
+          ? <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-700">falta VGV</span>
+          : <span className="shrink-0 text-[12.5px] font-extrabold tabular-nums">{money(n.vgv)}</span>}
       </div>
       <div className="truncate text-[11px] text-muted-foreground">{n.empreendimento}</div>
-      {n.detalhe && !ganho && <div className="mt-1 truncate text-[10.5px] font-semibold text-foreground/70">· {n.detalhe}</div>}
-      <div className="mt-1.5 flex items-center gap-1.5">
-        {ganho && n.dataAssinatura && <span className="text-[9.5px] font-bold text-emerald-600">✓ assinado</span>}
+      {/* Base: corretor + dias parado */}
+      <div className="mt-1 flex items-center gap-1.5">
         {lens === "equipe" && <span className="truncate text-[10.5px] font-semibold text-foreground/60">{n.corretor.split(" ")[0]}</span>}
-        {!ganho && <span className={cn("ml-auto text-[10px]", n.tone === "bad" ? "font-bold text-rose-600" : n.tone === "warn" ? "text-amber-600" : "text-muted-foreground")}>{n.dias}d</span>}
+        {!ganho && <span className={cn("ml-auto text-[10px] tabular-nums", n.tone === "bad" ? "font-bold text-rose-600" : n.tone === "warn" ? "text-amber-600" : "text-muted-foreground")}>há {n.dias}d na etapa</span>}
       </div>
     </button>
   );
