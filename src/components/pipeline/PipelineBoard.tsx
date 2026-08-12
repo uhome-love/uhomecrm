@@ -881,6 +881,19 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         }
       `}</style>
 
+      {/* Aviso: leads existentes que não aparecem em nenhuma coluna */}
+      {(foraDoBoard.ganhos > 0 || foraDoBoard.negocios > 0) && (
+        <div className="shrink-0 mt-2 mb-1 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          {foraDoBoard.ganhos > 0 && (
+            <span>{foraDoBoard.ganhos} lead(s) em <b className="text-foreground">Ganho</b> — veja no filtro “🏆 Ganhos”. </span>
+          )}
+          {foraDoBoard.negocios > 0 && (
+            <span>{foraDoBoard.negocios} lead(s) em etapa comercial — veja na aba <b className="text-foreground">Negócios</b>.</span>
+          )}
+        </div>
+      )}
+
+
       {/* Mini-map nav pills — índice de navegação discreto entre etapas */}
       <div className="shrink-0 flex items-center gap-1 mb-2 px-0.5 overflow-x-auto scrollbar-none pb-0.5" style={{ paddingTop: 10 }}>
         {visibleStages.map((stage, idx) => {
