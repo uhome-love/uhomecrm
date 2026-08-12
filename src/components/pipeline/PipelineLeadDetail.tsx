@@ -394,6 +394,22 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     return null;
   }, [nextTask, leadData.atividades, lead]);
 
+  // Lead "vermelho" (crítico): sem contato há muito OU com tarefa vencida.
+  // Só nesse estado o aviso de saúde (cadência/estagnação) aparece na coluna.
+  const leadCritico = useMemo(() => {
+    if (noContactAlert === "critical") return true;
+    if (nextTask) {
+      const due = parseDateBRTSafe((nextTask as any).vence_em);
+      if (due) {
+        const hora = (nextTask as any).hora_vencimento as string | null | undefined;
+        if (hora && /^\d{2}:\d{2}/.test(hora)) { const [hh, mm] = hora.split(":").map(Number); due.setHours(hh || 0, mm || 0, 0, 0); }
+        else { due.setHours(23, 59, 59, 999); }
+        if (due.getTime() < Date.now()) return true;
+      }
+    }
+    return false;
+  }, [noContactAlert, nextTask]);
+
   // ─────────────────────────────────────────────────────────────────
   // Conteúdo da coluna esquerda — single source (DRY).
   // Reusado em desktop (DrawerLeadInfo aside) e mobile (tab "Info").
@@ -508,46 +524,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     />
   );
 
-  // ── Síntese (briefing): 1 frase — última atividade + próximo passo ──
-  const sinteseNode = (() => {
-    const TIPO_EMOJI: Record<string, string> = {
-      ligacao: "📞", call: "📞", whatsapp: "💬", mensagem: "💬", contato: "💬",
-      email: "✉️", followup: "🔁", follow_up: "🔁", visita: "📍", reuniao: "📍",
-      nota: "📝", anotacao: "📝", proposta: "💼",
-    };
-    // Síntese = última observação HUMANA (contato real), não dump de formulário/sistema.
-    // O "próximo passo" fica por conta da caixa PRÓXIMA AÇÃO logo abaixo (sem redundância).
-    const HUMANO = new Set(["ligacao", "call", "whatsapp", "mensagem", "contato", "email", "followup", "follow_up", "visita", "reuniao", "nota", "anotacao", "proposta"]);
-    const ult = (leadData.atividades || []).find((a) => HUMANO.has(a.tipo) && (a.descricao?.trim() || a.titulo?.trim()));
-    if (ult) {
-      const ultTxt = (ult.descricao?.trim() || ult.titulo?.trim())!;
-      const emoji = TIPO_EMOJI[ult.tipo] || "•";
-      return (
-        <div className="mb-3 flex gap-2.5 rounded-xl border border-amber-200/70 bg-amber-50/60 px-3 py-2.5">
-          <span className="text-base leading-none shrink-0">{emoji}</span>
-          <p className="text-[12.5px] leading-relaxed text-foreground min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700/80 block mb-0.5">Última conversa</span>
-            <span className="font-semibold line-clamp-3">{ultTxt}</span>
-          </p>
-        </div>
-      );
-    }
-    // Fallback: sem conversa registrada ainda → nudge pra começar a história.
-    return (
-      <div className="mb-3 flex gap-2.5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-3 py-2.5">
-        <span className="text-base leading-none shrink-0">🗒️</span>
-        <p className="text-[12.5px] leading-relaxed text-muted-foreground min-w-0">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 block mb-0.5">Sem conversa registrada</span>
-          <span>Registre o próximo contato pra começar a história deste lead.</span>
-        </p>
-      </div>
-    );
-  })();
-
   const bodyNode = (
     <>
-      {sinteseNode}
-
       {/* Sugestão de etapa do gestor (via aviso do PDN) */}
       {stageSugerido && (
         <div className="mb-3 rounded-lg border border-[#4969FF]/40 bg-[#4969FF]/8 p-3">
@@ -576,18 +554,17 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       )}
 
 
-      {/* ── ZONA AGORA: próximo passo + registrar + ações, tudo junto ── */}
-      <div className="text-[10px] font-bold uppercase tracking-wider text-primary/70 px-0.5">⚡ Agora</div>
-
-      {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) — PRIMEIRO card do drawer */}
-      <DrawerProximaAcao
-        nextTask={nextTask}
-        proximaAcaoTexto={lead.proxima_acao}
-        pendingCount={pendingTasksList.length}
-        onComplete={(taskId) => { setActiveTab("tarefas"); setAutoCompleteTaskId(taskId); }}
-        onSeeAll={() => setActiveTab("tarefas")}
-        onCreateTask={() => setNextActionOpen(true)}
-      />
+      {/* Caixa PRÓXIMA AÇÃO — só aparece quando há próximo passo definido */}
+      {(nextTask || lead.proxima_acao) && (
+        <DrawerProximaAcao
+          nextTask={nextTask}
+          proximaAcaoTexto={lead.proxima_acao}
+          pendingCount={pendingTasksList.length}
+          onComplete={(taskId) => { setActiveTab("tarefas"); setAutoCompleteTaskId(taskId); }}
+          onSeeAll={() => setActiveTab("tarefas")}
+          onCreateTask={() => setNextActionOpen(true)}
+        />
+      )}
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (
@@ -630,11 +607,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <Zap className="h-4 w-4" strokeWidth={2.4} /> Registrar atividade
       </button>
 
-      {/* Label + Grid 2x2 de ações */}
+      {/* Grade de ações (3 numa linha: Ligar · WhatsApp · Anotar) */}
       <div className="space-y-1.5">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
-          Ações
-        </div>
         <DrawerActionGrid
           hasPhone={!!lead.telefone}
           primary={(() => {
@@ -644,7 +618,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           })()}
           onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
           onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
-          onScripts={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}
           onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
         />
 
@@ -682,12 +655,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         )}
       </div>
 
-      {/* ── SAÚDE + contexto de etapa (após a zona de ação) ── */}
-      {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
-      <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
-
-      {/* Contador de estagnação (demais etapas com config) */}
-      <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
+      {/* ── AVISO DE SAÚDE — só quando o lead está vermelho/crítico ── */}
+      {leadCritico && (
+        <>
+          <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
+          <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
+        </>
+      )}
 
       {/* ── DETALHES DO LEAD — recolhível pra desafogar a coluna (declutter) ── */}
       <Collapsible className="rounded-xl border border-border/70">
