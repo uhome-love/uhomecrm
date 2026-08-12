@@ -65,9 +65,10 @@ interface NegociosBoardProps {
   onMoveLead?: (leadId: string, newStageId: string, observacao?: string) => void | Promise<unknown>;
   searchTerm?: string;
   corretorFilter?: string; // user_id do corretor, "all" ou "sem_corretor"
+  gestorTeamUserIds?: string[] | null; // user_ids do time do gestor (null = sem filtro de gestor)
 }
 
-export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, stages = [], onMoveLead, searchTerm = "", corretorFilter = "all" }: NegociosBoardProps) {
+export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, stages = [], onMoveLead, searchTerm = "", corretorFilter = "all", gestorTeamUserIds = null }: NegociosBoardProps) {
   const { data, isLoading } = useNegociosBoard();
   const [lens, setLens] = useState<Lens>(canSeeEquipe ? "equipe" : "meus");
   const isMobile = useIsMobile();
@@ -75,21 +76,26 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, s
 
   const q = searchTerm.trim().toLowerCase();
   const corr = corretorFilter && corretorFilter !== "all" ? corretorFilter : null;
+  const gestorSet = gestorTeamUserIds ? new Set(gestorTeamUserIds) : null;
+  const gestorKey = gestorTeamUserIds ? gestorTeamUserIds.join(",") : "";
   const matchCorretor = (userId: string | null) => !corr || (corr === "sem_corretor" ? !userId : userId === corr);
+  const matchGestor = (userId: string | null) => !gestorSet || (!!userId && gestorSet.has(userId));
   const negocios = useMemo(() => {
     let all = data?.negocios ?? [];
     if (lens === "meus") all = all.filter((n) => n.meu);
+    if (gestorSet) all = all.filter((n) => matchGestor(n.corretorUserId));
     if (corr) all = all.filter((n) => matchCorretor(n.corretorUserId));
     if (q) all = all.filter((n) => n.cliente.toLowerCase().includes(q) || (n.empreendimento || "").toLowerCase().includes(q));
     return all;
-  }, [data, lens, q, corr]);
+  }, [data, lens, q, corr, gestorKey]);
   const prontos = useMemo(() => {
     let all = data?.prontos ?? [];
     if (lens === "meus") all = all.filter((p) => p.meu);
+    if (gestorSet) all = all.filter((p) => matchGestor(p.corretorUserId));
     if (corr) all = all.filter((p) => matchCorretor(p.corretorUserId));
     if (q) all = all.filter((p) => p.nome.toLowerCase().includes(q) || (p.empreendimento || "").toLowerCase().includes(q));
     return all;
-  }, [data, lens, q, corr]);
+  }, [data, lens, q, corr, gestorKey]);
 
   // Agrupa uma vez por passo (ordenado por VGV) + soma de VGV — memoizado.
   const porPasso = useMemo(() => {

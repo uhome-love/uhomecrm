@@ -909,6 +909,7 @@ export default function PipelineKanban() {
                   onMoveLead={pipeline.moveLead}
                   searchTerm={filters.search}
                   corretorFilter={corretorFilter}
+                  gestorTeamUserIds={isCeoView && gestorFilter !== "todos" ? (gestorTeamUserIdsArr ?? []) : null}
                   onOpenLead={(leadId) => {
                     const lead = (pipeline.leads || []).find((l) => l.id === leadId);
                     if (lead) { setSelectedLead(lead); return; }
