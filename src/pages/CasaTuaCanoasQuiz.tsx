@@ -13,7 +13,7 @@ import { useEffect, useRef } from "react";
 import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { captureFbclid, getMetaContext } from "@/lib/metaTracking";
 
-const META_PIXEL_ID = "1426170849536314";
+const META_PIXEL_ID = "918505654064602"; // dataset dedicado "Uhome Empreendimentos - Quiz"
 const EDGE_URL = `${EDGE_BASE_URL}/functions/v1/receive-quiz-lead`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
@@ -108,12 +108,10 @@ export default function CasaTuaCanoasQuiz() {
     document.title = "Casa Tua Santos Ferreira — Canoas | Uhome";
     captureFbclid();
 
-    // ── Meta Pixel: base code + PageView (uma vez) ─────────────────────
+    // ── Meta Pixel DEDICADO do quiz — sempre trackSingle/trackSingleCustom ──
     const w = window as any;
-    if (typeof w.fbq === "function") {
-      try { w.fbq("track", "PageView"); } catch { /* noop */ }
-    } else {
-      try {
+    try {
+      if (typeof w.fbq !== "function") {
         /* eslint-disable */
         (function (f: any, b: any, e: string, v: string, n?: any, t?: any, s?: any) {
           if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
@@ -121,12 +119,13 @@ export default function CasaTuaCanoasQuiz() {
           t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
         })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
         /* eslint-enable */
-        w.fbq("init", META_PIXEL_ID);
-        w.fbq("track", "PageView");
-      } catch { /* noop */ }
-    }
+      }
+      w.fbq("init", META_PIXEL_ID);
+      w.fbq("trackSingle", META_PIXEL_ID, "PageView");
+    } catch { /* noop */ }
+
     const fbqCustom = (event: string, params?: Record<string, unknown>) => {
-      try { if (typeof w.fbq === "function") w.fbq("trackCustom", event, params || {}); } catch { /* noop */ }
+      try { if (typeof w.fbq === "function") w.fbq("trackSingleCustom", META_PIXEL_ID, event, params || {}); } catch { /* noop */ }
     };
 
     const IMG: Record<string, string> = {
@@ -213,7 +212,7 @@ export default function CasaTuaCanoasQuiz() {
 
     // ── Fluxo ──────────────────────────────────────────────────────────
     const start = () => {
-      fbqCustom("QuizInicio_CasaTuaSF"); // abriu o quiz (funil passo 1)
+      fbqCustom("VisitaIniciou"); // abriu o quiz (funil passo 1)
       host(`<div class="lead">Você viu o Casa Tua no anúncio, né? 👀</div>Sou o Lucas, da Uhome. Já te adianto o principal 👇`);
       typing(() => {
         // Valor imediato na entrada (sem pedir nada) — sacia a sede de quem veio do anúncio
@@ -224,7 +223,7 @@ export default function CasaTuaCanoasQuiz() {
           host(`Gostou? Eu monto um 📘 <strong>Book Casa Tua</strong> só pra você — com as <strong>plantas</strong>, os <strong>preços</strong> e uma <strong>simulação no seu nome</strong>. Respondo <strong>3 coisinhas rápidas</strong> e no fim é seu, na hora. 📲`);
           clearDock();
           const c = document.createElement("button"); c.className = "cta gold"; c.innerHTML = "Quero meu Book 📘";
-          c.onclick = () => { fbqCustom("QuizComecou_CasaTuaSF"); qTipo(); }; dock.appendChild(c);
+          c.onclick = () => { fbqCustom("VisitaComecou"); qTipo(); }; dock.appendChild(c);
           const h = document.createElement("div"); h.className = "hint"; h.innerHTML = "📘 Book liberado no final · leva 1 minuto"; dock.appendChild(h); scroll();
         }, 800);
       }, 700);
@@ -239,7 +238,7 @@ export default function CasaTuaCanoasQuiz() {
       ]);
     };
     const ansTipo = (t: string, pts: number) => {
-      A.tipo = t; score += pts; me(t); fbqCustom("QuizP1Tipologia_CasaTuaSF");
+      A.tipo = t; score += pts; me(t); fbqCustom("VisitaP1Tipologia");
       typing(() => {
         if (t === "4 dormitórios")
           unlock(`<span class="uchip">🔓 Desbloqueado · Planta & preço</span>${photo("casa")}<div class="utitle">Casa 4 dorms com Terraço</div><div class="ulist"><b>116 a 210m²</b> · 2 vagas · pátio privativo com churrasqueira · espaço pra piscina/spa no terraço<br>💰 Pré-venda a partir de <b>R$ 840 mil</b> <span style="color:#9A6A4B">(avaliada em R$ 976 mil)</span></div>`);
@@ -261,7 +260,7 @@ export default function CasaTuaCanoasQuiz() {
       ]);
     };
     const ansPeso = (t: string, kind: string) => {
-      A.peso = t; me(t); fbqCustom("QuizP2Prioridade_CasaTuaSF");
+      A.peso = t; me(t); fbqCustom("VisitaP2Prioridade");
       typing(() => {
         if (kind === "club") unlock(`<span class="uchip">🔓 Desbloqueado · Lazer</span>${photo("club")}<div class="utitle">Lazer que você usa todo dia</div><div class="ulist">Club House com <b>piscina adulto e infantil</b>, <b>academia</b>, <b>salão de festas</b>, além de portaria e segurança. Tudo dentro do condomínio.</div>`);
         else if (kind === "casa") unlock(`<span class="uchip">🔓 Desbloqueado · Espaço</span>${photo("casa")}<div class="utitle">Espaço de casa, de verdade</div><div class="ulist">Sobrados de até <b>210m²</b>, <b>terraço</b> só seu, pátio com churrasqueira e <b>2 vagas</b>. Nada de dividir parede fininha de apê.</div>`);
@@ -281,7 +280,7 @@ export default function CasaTuaCanoasQuiz() {
       ]);
     };
     const ansCompra = (t: string, pts: number) => {
-      A.compra = t; score += pts; me(t); fbqCustom("QuizP3Compra_CasaTuaSF");
+      A.compra = t; score += pts; me(t); fbqCustom("VisitaP3Compra");
       typing(() => {
         if (pts >= 1) unlock(`<span class="uchip">🔓 Desbloqueado · Sua condição</span><div class="utitle">Condição da pré-venda (casa 3 dorms)</div><div class="cond"><div class="cr"><span>Ato (entrada)</span><b>a partir de R$ 69 mil</b></div><div class="cr"><span>ITBI + Registro</span><b>grátis</b></div><div class="cr"><span>Financiamento CEF</span><b>até 90%</b></div><div class="cr"><span>Ou plano 30/70</span><b>36x de R$ 3.495</b></div></div><div class="ulist" style="margin-top:7px">Dá pra ajustar tudo isso no seu nome na visita. 👌</div>`);
         else unlock(`<span class="uchip">🔓 Desbloqueado · Sem pressa</span><div class="utitle">Tem caminho pra todo mundo</div><div class="ulist">Sem problema! Tem <b>plano 30/70</b> (36x de R$ 3.495) e financiamento pela Caixa. No Book vai uma simulação pra te ajudar a se organizar.</div>`);
@@ -292,12 +291,12 @@ export default function CasaTuaCanoasQuiz() {
     const qNome = () => {
       host("Como é o seu <strong>nome</strong>?");
       textInput("Seu nome", "text", (v) => {
-        A.nomeCompleto = v; A.nome = v.split(" ")[0]; me(v); fbqCustom("QuizNome_CasaTuaSF");
+        A.nomeCompleto = v; A.nome = v.split(" ")[0]; me(v); 
         typing(() => { host(`Prazer, <strong>${A.nome}</strong>! E qual seu <strong>WhatsApp</strong>? É por onde nosso time confirma sua visita e garante sua condição de pré-venda.`); qZap(); });
       });
     };
     const qZap = () => {
-      textInput("(51) 9 9999-9999", "tel", (v) => { A.zap = v; me(v); fbqCustom("QuizWhatsApp_CasaTuaSF");
+      textInput("(51) 9 9999-9999", "tel", (v) => { A.zap = v; me(v); fbqCustom("VisitaContato");
         unlocked = 4; pips.forEach((p) => p.classList.add("on")); pc.textContent = "4/4";
         // Captura o lead JÁ com o WhatsApp (garante o contato mesmo se largar antes da escolha final).
         const tempParcial = score >= 4 ? "quente" : score >= 2 ? "morno" : "frio";
@@ -308,7 +307,8 @@ export default function CasaTuaCanoasQuiz() {
 
     const reward = () => {
       host(`🎉 Prontinho, <strong>${A.nome}</strong>! Seu Book está liberado — é só baixar:`);
-      fbqCustom("GuiaBaixado_CasaTuaSF", { content_name: "Guia Casa Tua Santos Ferreira" });
+      fbqCustom("VisitaQuizCompleto", { content_name: "Casa Tua Santos Ferreira" });
+      fbqCustom("GuiaBaixado", { content_name: "Guia Casa Tua Santos Ferreira" });
       typing(() => {
         unlock(`<div class="book"><div class="cover"><div class="bk">Uhome · Book exclusivo</div><div class="bt">Casa Tua<br>Santos Ferreira</div><div class="bs">Plantas · Preços · Simulação sob medida · Tudo sobre o condomínio</div><div class="btag">PRÉ-LANÇAMENTO</div></div></div><a class="dl" href="${GUIA}" download="Guia-Casa-Tua-Santos-Ferreira.pdf">⬇️ Baixar meu Book (PDF)</a>`);
         typing(() => {
@@ -350,7 +350,7 @@ export default function CasaTuaCanoasQuiz() {
     const finish = (mode: "visita" | "corretor") => {
       const temp = score >= 4 ? "quente" : score >= 2 ? "morno" : "frio";
       enviarLead(mode, temp);
-      fbqCustom(mode === "visita" ? "VisitaAgendada_CasaTuaSF" : "FalarComCorretor_CasaTuaSF", { content_name: "Casa Tua Santos Ferreira", value: score });
+      fbqCustom(mode === "visita" ? "VisitaAgendada" : "FalarComCorretor", { content_name: "Casa Tua Santos Ferreira", value: score });
       const bookHtml = `<div class="book"><div class="cover"><div class="bk">Uhome · Book exclusivo</div><div class="bt">Casa Tua<br>Santos Ferreira</div><div class="bs">Baixado ✓</div><div class="btag">PRÉ-LANÇAMENTO</div></div></div>`;
       let inner: string;
       if (mode === "visita") {
