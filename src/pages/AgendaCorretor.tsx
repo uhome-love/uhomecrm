@@ -13,13 +13,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
-import { dispensarLead } from "@/lib/filaDispensados";
+import { dispensarLead, restaurarLead } from "@/lib/filaDispensados";
 import { limparRegistro } from "@/lib/registroLimpo";
 import { baixarICS } from "@/lib/ics";
 import {
   Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
   Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
-  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, CalendarPlus, type LucideIcon,
+  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, CalendarPlus, CheckCircle2, type LucideIcon,
 } from "lucide-react";
 
 const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: string }> = {
