@@ -508,7 +508,7 @@ export default function AgendaCorretor() {
     return m;
   }, [prioridades]);
   const focoDisponivel = MOTIVO_ORDEM.filter((k) => (contagemMotivo[k] ?? 0) > 0);
-  const prioridadesFiltradas = foco === "todos" || foco === "feitos"
+  const prioridadesFiltradas = foco === "pendentes" || foco === "feitos"
     ? prioridades
     : prioridades.filter((l) => l.motivo === foco);
 
@@ -628,14 +628,14 @@ export default function AgendaCorretor() {
           {/* Filtro de foco por motivo */}
           {!isLoading && (focoDisponivel.length > 1 || feitosHoje.length > 0) && (
             <div className="mb-3 flex flex-wrap gap-1.5">
-              <FocoChip ativo={foco === "todos"} onClick={() => setFoco("todos")} label="Todos" count={prioridades.length} />
+              <FocoChip ativo={foco === "pendentes"} onClick={() => setFoco("pendentes")} label="Todos" count={prioridades.length} />
               {focoDisponivel.map((k) => (
-                <FocoChip key={k} ativo={foco === k} onClick={() => setFoco(foco === k ? "todos" : k)} label={MOTIVO_META[k].label} count={contagemMotivo[k]} />
+                <FocoChip key={k} ativo={foco === k} onClick={() => setFoco(foco === k ? "pendentes" : k)} label={MOTIVO_META[k].label} count={contagemMotivo[k]} />
               ))}
               {feitosHoje.length > 0 && (
                 <FocoChip
                   ativo={foco === "feitos"}
-                  onClick={() => setFoco(foco === "feitos" ? "todos" : "feitos")}
+                  onClick={() => setFoco(foco === "feitos" ? "pendentes" : "feitos")}
                   label="Feitos hoje"
                   count={feitosHoje.length}
                 />
@@ -675,7 +675,7 @@ export default function AgendaCorretor() {
                   onDispensar={() => dispensarDaFila(l)}
                 />
               ))}
-              {foco === "todos" && (
+              {foco === "pendentes" && (
                 <CadenciaBloco
                   total={cadencia.total} leads={cadencia.leads}
                   onRegistrar={(l) => setRegistrar({ id: l.id, nome: l.nome })}
