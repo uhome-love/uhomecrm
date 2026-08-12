@@ -697,7 +697,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           {/* Ordenação */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground hidden xl:inline">Ordenar por</span>
             <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
           </div>
 
