@@ -375,8 +375,10 @@ export function useFilaDoDia() {
       return {
         prioridades,
         cadencia: { total: cadencia.length, leads: cadencia },
+        feitosHoje,
         lembretes, totalLembretes, stages,
       };
+
     },
   });
 }
