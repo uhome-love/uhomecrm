@@ -108,12 +108,10 @@ export default function CasaTuaCanoasQuiz() {
     document.title = "Casa Tua Santos Ferreira — Canoas | Uhome";
     captureFbclid();
 
-    // ── Meta Pixel: base code + PageView (uma vez) ─────────────────────
+    // ── Meta Pixel DEDICADO do quiz — sempre trackSingle/trackSingleCustom ──
     const w = window as any;
-    if (typeof w.fbq === "function") {
-      try { w.fbq("track", "PageView"); } catch { /* noop */ }
-    } else {
-      try {
+    try {
+      if (typeof w.fbq !== "function") {
         /* eslint-disable */
         (function (f: any, b: any, e: string, v: string, n?: any, t?: any, s?: any) {
           if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
@@ -121,12 +119,13 @@ export default function CasaTuaCanoasQuiz() {
           t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
         })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
         /* eslint-enable */
-        w.fbq("init", META_PIXEL_ID);
-        w.fbq("track", "PageView");
-      } catch { /* noop */ }
-    }
+      }
+      w.fbq("init", META_PIXEL_ID);
+      w.fbq("trackSingle", META_PIXEL_ID, "PageView");
+    } catch { /* noop */ }
+
     const fbqCustom = (event: string, params?: Record<string, unknown>) => {
-      try { if (typeof w.fbq === "function") w.fbq("trackCustom", event, params || {}); } catch { /* noop */ }
+      try { if (typeof w.fbq === "function") w.fbq("trackSingleCustom", META_PIXEL_ID, event, params || {}); } catch { /* noop */ }
     };
 
     const IMG: Record<string, string> = {
