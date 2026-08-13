@@ -592,10 +592,10 @@ export default function VagaPage() {
             )
           )}
 
-          {ocioso && dock === "agenda" && (
+          {ocioso && dock === "pref" && (
             <div className="space-y-3 max-h-[46vh] overflow-y-auto vaga-scroll">
               <div>
-                <p className="text-[10.5px] font-extrabold tracking-[0.08em] mb-1.5" style={{ color: TXT_SOFT }}>ESCOLHA O DIA</p>
+                <p className="text-[10.5px] font-extrabold tracking-[0.08em] mb-1.5" style={{ color: TXT_SOFT }}>MELHOR DIA</p>
                 <div className="flex gap-2 overflow-x-auto pb-1 vaga-scroll">
                   {dias.map((d) => {
                     const ativo = !!diaSel && d.toDateString() === diaSel.toDateString();
@@ -621,32 +621,26 @@ export default function VagaPage() {
 
               {diaSel && (
                 <div>
-                  <p className="text-[10.5px] font-extrabold tracking-[0.08em] mb-1.5" style={{ color: TXT_SOFT }}>
-                    HORÁRIO · 30 MIN (ALMOÇO 12H–13H)
-                  </p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {horariosLivres.map(({ h, d }) => (
+                  <p className="text-[10.5px] font-extrabold tracking-[0.08em] mb-1.5" style={{ color: TXT_SOFT }}>MELHOR TURNO</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TURNOS.map((t) => (
                       <button
-                        key={h}
+                        key={t.key}
                         disabled={enviando}
-                        onClick={() => agendar(d)}
-                        className="rounded-xl py-2.5 text-[13px] font-bold transition hover:bg-[#F3F6FF] hover:border-[#4969FF] disabled:opacity-50"
+                        onClick={() => finalizar(diaSel, t.key)}
+                        className="rounded-xl py-3 text-[14px] font-bold transition hover:bg-[#F3F6FF] hover:border-[#4969FF] disabled:opacity-50"
                         style={{ border: "1.5px solid #D9E0F3", color: TXT }}
                       >
-                        {h}
+                        {t.label}
+                        <span className="block text-[10.5px] font-semibold opacity-70">{t.hint}</span>
                       </button>
                     ))}
-                    {horariosLivres.length === 0 && (
-                      <p className="col-span-4 text-[12.5px] py-1" style={{ color: TXT_SOFT }}>
-                        Nenhum horário livre nesse dia. Escolha outro dia.
-                      </p>
-                    )}
                   </div>
                 </div>
               )}
 
               {erro && <p className="text-[12.5px] text-[#D14343] font-semibold">{erro}</p>}
-              {enviando && <p className="text-[12.5px]" style={{ color: TXT_SOFT }}>Confirmando…</p>}
+              {enviando && <p className="text-[12.5px]" style={{ color: TXT_SOFT }}>Enviando…</p>}
             </div>
           )}
 
