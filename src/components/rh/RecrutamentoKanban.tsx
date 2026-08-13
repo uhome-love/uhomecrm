@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Phone, Mail, Users, Plus, CalendarDays, Megaphone, UserCheck, Video } from "lucide-react";
+import { Phone, Mail, Users, Plus, CalendarDays, Megaphone, UserCheck, Video, Search, X, Paperclip, Download, Trash2, FileText, Loader2 } from "lucide-react";
 import { MEET_LINK } from "@/config/recrutamento";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -30,8 +30,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 
 export const ETAPAS = [
   { key: "novo_lead", label: "Novo Lead", color: "#4969FF" },
+  { key: "atendimento", label: "Atendimento", color: "#06B6D4" },
   { key: "entrevista_marcada", label: "Entrevista Marcada", color: "#F97316" },
-  { key: "entrevista_realizada", label: "Entrevista Realizada", color: "#10B981" },
+  { key: "pre_entrevista_realizada", label: "Pré-Entrevista Realizada", color: "#EAB308" },
+  { key: "entrevista_realizada", label: "Entrevista Presencial Realizada", color: "#10B981" },
   { key: "contratado", label: "Contratado", color: "#22C55E" },
   { key: "sem_interesse", label: "Não Tem Interesse", color: "#EF4444" },
 ];
@@ -83,6 +85,34 @@ interface Gerente {
   avatar_url: string | null;
 }
 
+interface EntrevistaInfo {
+  id: string;
+  data_entrevista: string;
+  local: string | null;
+}
+
+interface Anexo {
+  id: string;
+  nome: string;
+  path: string;
+  mime: string | null;
+  tamanho: number | null;
+  created_at: string;
+}
+
+const ANEXO_BUCKET = "rh-candidato-docs";
+
+function fmtTamanho(bytes?: number | null): string {
+  if (!bytes || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function slugArquivo(nome: string): string {
+  return nome.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
+}
+
 function shorten(v: unknown, max = 22): string | null {
   if (v == null) return null;
   const s = String(v).trim();
@@ -116,6 +146,19 @@ function formatEntrevista(iso?: string | null): string | null {
 function iniciais(nome?: string | null): string {
   const parts = (nome || "?").trim().split(/\s+/);
   return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "?";
+}
+
+/** Quebra um ISO (ou agora) em data (yyyy-mm-dd) e hora (HH:mm) no fuso BRT. */
+function brtParts(iso?: string | null): { data: string; hora: string } {
+  const d = iso ? new Date(iso) : new Date();
+  const data = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+  const hora = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+  return { data, hora };
+}
+
+/** Junta data (yyyy-mm-dd) + hora (HH:mm) BRT (-03:00) num ISO UTC. */
+function brtToISO(data: string, hora: string): string {
+  return new Date(`${data}T${hora}:00-03:00`).toISOString();
 }
 
 function TemperaturaBadge({ t }: { t: Temperatura }) {
@@ -184,7 +227,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
 
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
-  const [entrevistas, setEntrevistas] = useState<Record<string, string>>({});
+  const [entrevistas, setEntrevistas] = useState<Record<string, EntrevistaInfo>>({});
   const [gerentes, setGerentes] = useState<Gerente[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailCandidate, setDetailCandidate] = useState<Candidato | null>(null);
@@ -197,6 +240,27 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const [email, setEmail] = useState("");
   const [origem, setOrigem] = useState("whatsapp");
   const [observacoes, setObservacoes] = useState("");
+
+  // Filtros do board (só aplicam ao Kanban; a Agenda tem os próprios)
+  const [busca, setBusca] = useState("");
+  const [filtroGerente, setFiltroGerente] = useState<string>("todos"); // "todos" | "sem" | user_id
+  const [filtroTemp, setFiltroTemp] = useState<string>("todas");
+  const [filtroOrigem, setFiltroOrigem] = useState<string>("todas");
+  const filtrosAtivos = busca.trim() !== "" || filtroGerente !== "todos" || filtroTemp !== "todas" || filtroOrigem !== "todas";
+  const limparFiltros = () => { setBusca(""); setFiltroGerente("todos"); setFiltroTemp("todas"); setFiltroOrigem("todas"); };
+
+  // Diálogos de entrevista (marcar / remarcar / cancelar) — só RH/admin
+  const [entrevistaDlg, setEntrevistaDlg] = useState<{ mode: "criar" | "remarcar"; candidatoId: string; entrevistaId?: string; data: string; hora: string; local: string } | null>(null);
+  const [savingEntrevista, setSavingEntrevista] = useState(false);
+  const [cancelDlg, setCancelDlg] = useState<{ entrevistaId: string; candidatoId: string; motivo: string } | null>(null);
+  const [savingCancel, setSavingCancel] = useState(false);
+
+  // Anexos (documentos do candidato)
+  const [anexosCount, setAnexosCount] = useState<Record<string, number>>({});
+  const [detailAnexos, setDetailAnexos] = useState<Anexo[]>([]);
+  const [loadingAnexos, setLoadingAnexos] = useState(false);
+  const [uploadingAnexo, setUploadingAnexo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const gerenteById = useMemo(() => {
     const m: Record<string, Gerente> = {};
@@ -214,13 +278,13 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const fetchEntrevistas = async () => {
     const { data, error } = await supabase
       .from("rh_entrevistas" as any)
-      .select("candidato_id, data_entrevista, status")
+      .select("id, candidato_id, data_entrevista, local, status")
       .eq("status", "agendada")
       .order("data_entrevista", { ascending: true });
     if (error) return;
-    const map: Record<string, string> = {};
-    for (const e of (data || []) as unknown as { candidato_id: string; data_entrevista: string }[]) {
-      if (e.candidato_id && !map[e.candidato_id]) map[e.candidato_id] = e.data_entrevista;
+    const map: Record<string, EntrevistaInfo> = {};
+    for (const e of (data || []) as unknown as { id: string; candidato_id: string; data_entrevista: string; local: string | null }[]) {
+      if (e.candidato_id && !map[e.candidato_id]) map[e.candidato_id] = { id: e.id, data_entrevista: e.data_entrevista, local: e.local ?? null };
     }
     setEntrevistas(map);
   };
@@ -236,10 +300,30 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     setGerentes(list);
   };
 
+  const fetchAnexosCount = async () => {
+    const { data, error } = await supabase.from("rh_candidato_anexos" as any).select("candidato_id");
+    if (error) return;
+    const m: Record<string, number> = {};
+    for (const r of (data || []) as unknown as { candidato_id: string }[]) m[r.candidato_id] = (m[r.candidato_id] || 0) + 1;
+    setAnexosCount(m);
+  };
+
+  const fetchDetailAnexos = async (candidatoId: string) => {
+    setLoadingAnexos(true);
+    const { data, error } = await supabase
+      .from("rh_candidato_anexos" as any)
+      .select("id, nome, path, mime, tamanho, created_at")
+      .eq("candidato_id", candidatoId)
+      .order("created_at", { ascending: false });
+    setLoadingAnexos(false);
+    if (!error) setDetailAnexos((data || []) as unknown as Anexo[]);
+  };
+
 
   useEffect(() => {
     fetchCandidatos();
     fetchEntrevistas();
+    fetchAnexosCount();
     if (isRh) fetchGerentes();
     else fetchGerentes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -247,7 +331,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
   // Auto-atualização: refetch ao focar aba/janela + Realtime (aditivo)
   const fetchRef = useRef<() => void>(() => {});
-  fetchRef.current = () => { fetchCandidatos(); fetchEntrevistas(); };
+  fetchRef.current = () => { fetchCandidatos(); fetchEntrevistas(); fetchAnexosCount(); };
 
   useEffect(() => {
     const onFocus = () => fetchRef.current();
@@ -335,6 +419,12 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     setObsDraft(detailCandidate?.observacoes ?? "");
   }, [detailCandidate?.id, detailCandidate?.observacoes]);
 
+  useEffect(() => {
+    if (detailCandidate?.id) fetchDetailAnexos(detailCandidate.id);
+    else setDetailAnexos([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailCandidate?.id]);
+
   const salvarObservacoes = async (id: string) => {
     setSavingObs(true);
     const valor = obsDraft.trim() || null;
@@ -349,10 +439,115 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     setCandidatos((list) => list.map((c) => (c.id === id ? { ...c, observacoes: valor } : c)));
   };
 
+  // ── Entrevista: marcar / remarcar / cancelar (RH/admin) ──────────────────────
+  const abrirMarcar = (candidatoId: string) => {
+    const { data, hora } = brtParts(null);
+    setEntrevistaDlg({ mode: "criar", candidatoId, data, hora, local: "" });
+  };
+  const abrirRemarcar = (candidatoId: string, e: EntrevistaInfo) => {
+    const { data, hora } = brtParts(e.data_entrevista);
+    setEntrevistaDlg({ mode: "remarcar", candidatoId, entrevistaId: e.id, data, hora, local: e.local ?? "" });
+  };
 
+  const salvarEntrevista = async () => {
+    if (!entrevistaDlg) return;
+    const { mode, candidatoId, entrevistaId, data, hora, local } = entrevistaDlg;
+    if (!data || !hora) { toast.error("Informe data e hora"); return; }
+    const iso = brtToISO(data, hora);
+    setSavingEntrevista(true);
+    if (mode === "criar") {
+      const { error } = await supabase.from("rh_entrevistas" as any).insert({
+        candidato_id: candidatoId, data_entrevista: iso, local: local.trim() || "Entrevista", status: "agendada", created_by: user?.id,
+      });
+      if (error) { setSavingEntrevista(false); toast.error(error.code === "23505" ? "Já existe entrevista nesse horário" : "Erro ao marcar entrevista"); return; }
+      await supabase.from("rh_candidatos" as any).update({ etapa: "entrevista_marcada", updated_at: new Date().toISOString() }).eq("id", candidatoId);
+      toast.success("Entrevista marcada!");
+    } else {
+      const { error } = await supabase.from("rh_entrevistas" as any).update({ data_entrevista: iso, local: local.trim() || null, updated_at: new Date().toISOString() }).eq("id", entrevistaId!);
+      if (error) { setSavingEntrevista(false); toast.error(error.code === "23505" ? "Já existe entrevista nesse horário" : "Erro ao remarcar"); return; }
+      toast.success("Entrevista remarcada!");
+    }
+    setSavingEntrevista(false);
+    setEntrevistaDlg(null);
+    fetchCandidatos(); fetchEntrevistas();
+  };
+
+  const abrirCancelar = (entrevistaId: string, candidatoId: string) => setCancelDlg({ entrevistaId, candidatoId, motivo: "" });
+
+  const confirmarCancelamento = async () => {
+    if (!cancelDlg) return;
+    if (!cancelDlg.motivo.trim()) { toast.error("Informe o motivo do cancelamento"); return; }
+    setSavingCancel(true);
+    const { error } = await supabase.from("rh_entrevistas" as any).update({
+      status: "cancelada", motivo_cancelamento: cancelDlg.motivo.trim(), cancelada_por: user?.id, cancelada_em: new Date().toISOString(), updated_at: new Date().toISOString(),
+    }).eq("id", cancelDlg.entrevistaId);
+    if (error) { setSavingCancel(false); toast.error("Erro ao cancelar entrevista"); return; }
+    await supabase.from("rh_candidatos" as any).update({ etapa: "atendimento", updated_at: new Date().toISOString() }).eq("id", cancelDlg.candidatoId);
+    setSavingCancel(false);
+    setCancelDlg(null);
+    toast.success("Entrevista cancelada — candidato voltou para Atendimento");
+    fetchCandidatos(); fetchEntrevistas();
+  };
+
+  // ── Anexos: upload / baixar / remover ────────────────────────────────────────
+  const uploadAnexo = async (file: File) => {
+    if (!detailCandidate) return;
+    if (file.size > 20 * 1024 * 1024) { toast.error("Arquivo acima de 20 MB"); return; }
+    setUploadingAnexo(true);
+    const path = `${detailCandidate.id}/${Date.now()}_${slugArquivo(file.name)}`;
+    const up = await supabase.storage.from(ANEXO_BUCKET).upload(path, file, { upsert: false, contentType: file.type || undefined });
+    if (up.error) { setUploadingAnexo(false); toast.error("Erro ao enviar arquivo: " + up.error.message); return; }
+    const { error } = await supabase.from("rh_candidato_anexos" as any).insert({
+      candidato_id: detailCandidate.id, nome: file.name, path, mime: file.type || null, tamanho: file.size, created_by: user?.id,
+    });
+    setUploadingAnexo(false);
+    if (error) {
+      await supabase.storage.from(ANEXO_BUCKET).remove([path]); // evita arquivo órfão
+      toast.error("Erro ao registrar anexo: " + error.message);
+      return;
+    }
+    toast.success("Documento anexado!");
+    fetchDetailAnexos(detailCandidate.id);
+    fetchAnexosCount();
+  };
+
+  const baixarAnexo = async (a: Anexo) => {
+    const { data, error } = await supabase.storage.from(ANEXO_BUCKET).createSignedUrl(a.path, 60);
+    if (error || !data?.signedUrl) { toast.error("Erro ao gerar link do arquivo"); return; }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const removerAnexo = async (a: Anexo) => {
+    const { error } = await supabase.from("rh_candidato_anexos" as any).delete().eq("id", a.id);
+    if (error) { toast.error("Erro ao remover anexo"); return; }
+    await supabase.storage.from(ANEXO_BUCKET).remove([a.path]);
+    toast.success("Documento removido");
+    setDetailAnexos((list) => list.filter((x) => x.id !== a.id));
+    fetchAnexosCount();
+  };
+
+
+
+  const candidatosFiltrados = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return candidatos.filter((c) => {
+      if (q) {
+        const hay = `${c.nome} ${c.telefone ?? ""} ${c.email ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (filtroGerente === "sem") {
+        if (c.gerente_id) return false;
+      } else if (filtroGerente !== "todos") {
+        if (c.gerente_id !== filtroGerente) return false;
+      }
+      if (filtroTemp !== "todas" && normTemp(c.temperatura) !== filtroTemp) return false;
+      if (filtroOrigem !== "todas" && (c.origem ?? "") !== filtroOrigem) return false;
+      return true;
+    });
+  }, [candidatos, busca, filtroGerente, filtroTemp, filtroOrigem]);
 
   const getCandidatosByEtapa = (etapa: string) =>
-    candidatos
+    candidatosFiltrados
       .filter((c) => c.etapa === etapa)
       .sort((a, b) => {
         const ta = TEMP_ORDER[normTemp(a.temperatura) ?? ""] ?? 99;
@@ -361,7 +556,9 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
       });
 
   const detailTemp = normTemp(detailCandidate?.temperatura);
-  const detailEntrevista = detailCandidate ? formatEntrevista(entrevistas[detailCandidate.id]) : null;
+  const detailEntrevistaInfo = detailCandidate ? entrevistas[detailCandidate.id] : undefined;
+  const detailEntrevista = detailEntrevistaInfo ? formatEntrevista(detailEntrevistaInfo.data_entrevista) : null;
+  const podeEntrevista = !readOnly && isRh; // RH/admin no board da RH
   const detailRespostas = detailCandidate?.respostas || null;
   const detailGerente = detailCandidate?.gerente_id ? gerenteById[detailCandidate.gerente_id] : null;
 
@@ -417,6 +614,65 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
         </TabsContent>
 
         <TabsContent value="kanban" className="mt-4 flex-1 min-h-0 data-[state=active]:flex flex-col">
+          {/* Barra de filtros do board */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar nome, telefone, e-mail"
+                className="h-9 w-[230px] pl-8 rounded-full bg-background"
+              />
+            </div>
+
+            {scope === "rh" && (
+              <Select value={filtroGerente} onValueChange={setFiltroGerente}>
+                <SelectTrigger className="h-9 w-[170px] rounded-full bg-background text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os gerentes</SelectItem>
+                  <SelectItem value="sem">Sem gerente</SelectItem>
+                  {gerentes.map((g) => (
+                    <SelectItem key={g.user_id} value={g.user_id}>{g.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select value={filtroTemp} onValueChange={setFiltroTemp}>
+              <SelectTrigger className="h-9 w-[130px] rounded-full bg-background text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Toda temperatura</SelectItem>
+                <SelectItem value="quente">Quente</SelectItem>
+                <SelectItem value="morno">Morno</SelectItem>
+                <SelectItem value="frio">Frio</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filtroOrigem} onValueChange={setFiltroOrigem}>
+              <SelectTrigger className="h-9 w-[130px] rounded-full bg-background text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Toda origem</SelectItem>
+                <SelectItem value="anuncio">Anúncio</SelectItem>
+                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                <SelectItem value="indicacao">Indicação</SelectItem>
+                <SelectItem value="linkedin">LinkedIn</SelectItem>
+                <SelectItem value="site">Site</SelectItem>
+                <SelectItem value="outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {filtrosAtivos && (
+              <Button variant="ghost" size="sm" onClick={limparFiltros} className="h-9 rounded-full px-3 text-xs text-muted-foreground gap-1">
+                <X className="h-3.5 w-3.5" /> Limpar
+              </Button>
+            )}
+
+            <span className="ml-auto text-xs text-muted-foreground">
+              {candidatosFiltrados.length} de {candidatos.length}
+            </span>
+          </div>
+
           {/* Kanban — ocupa toda a altura; a rolagem horizontal fica no rodapé */}
           <div className="relative flex-1 min-h-0 flex flex-col">
           <div
@@ -447,7 +703,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                     {items.map((c) => {
                       const temp = normTemp(c.temperatura);
                       const tags = miniTags(c.respostas);
-                      const entrevista = etapa.key === "entrevista_marcada" ? formatEntrevista(entrevistas[c.id]) : null;
+                      const entrevista = etapa.key === "entrevista_marcada" ? formatEntrevista(entrevistas[c.id]?.data_entrevista) : null;
                       const ger = c.gerente_id ? gerenteById[c.gerente_id] : null;
                       return (
                         <Card
@@ -502,9 +758,14 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                               </div>
                             )}
 
-                            {(ger || c.origem) && (
+                            {(ger || c.origem || (anexosCount[c.id] ?? 0) > 0) && (
                               <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/50">
                                 {ger && <GerenteChip g={ger} />}
+                                {(anexosCount[c.id] ?? 0) > 0 && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground" title="Documentos anexados">
+                                    <Paperclip className="h-2.5 w-2.5" /> {anexosCount[c.id]}
+                                  </span>
+                                )}
                                 {c.origem === "anuncio" ? (
                                   <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium">
                                     <Megaphone className="h-3 w-3" /> veio do anúncio
@@ -644,26 +905,54 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
               )}
 
               {/* Entrevista + origem */}
-              {(detailEntrevista || detailCandidate.origem) && (
+              {(detailEntrevistaInfo || podeEntrevista || detailCandidate.origem) && (
                 <section className="rounded-xl border border-primary/25 bg-primary/[0.06] px-4 py-4 space-y-3">
-                  {detailEntrevista && (
-                    <div className="flex items-center gap-3">
-                      <span className="h-9 w-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
-                        <CalendarDays className="h-4 w-4 text-primary" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Entrevista</p>
-                        <p className="text-sm font-semibold text-foreground">{detailEntrevista}</p>
+                  {detailEntrevistaInfo ? (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <span className="h-9 w-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+                          <CalendarDays className="h-4 w-4 text-primary" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Entrevista</p>
+                          <p className="text-sm font-semibold text-foreground">{detailEntrevista}</p>
+                          {detailEntrevistaInfo.local && <p className="text-[11px] text-muted-foreground truncate">{detailEntrevistaInfo.local}</p>}
+                        </div>
+                        <a
+                          href={MEET_LINK}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-auto shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-semibold hover:bg-primary/15 transition-colors"
+                        >
+                          <Video className="h-3.5 w-3.5" /> Entrar no Meet
+                        </a>
                       </div>
-                      <a
-                        href={MEET_LINK}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-auto shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-semibold hover:bg-primary/15 transition-colors"
-                      >
-                        <Video className="h-3.5 w-3.5" /> Entrar no Meet
-                      </a>
-                    </div>
+                      {podeEntrevista && (
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="h-8 rounded-full px-3 text-xs gap-1.5" onClick={() => abrirRemarcar(detailCandidate.id, detailEntrevistaInfo)}>
+                            <CalendarDays className="h-3.5 w-3.5" /> Remarcar
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-8 rounded-full px-3 text-xs gap-1.5 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => abrirCancelar(detailEntrevistaInfo.id, detailCandidate.id)}>
+                            <X className="h-3.5 w-3.5" /> Cancelar
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    podeEntrevista && (
+                      <div className="flex items-center gap-3">
+                        <span className="h-9 w-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+                          <CalendarDays className="h-4 w-4 text-primary" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Entrevista</p>
+                          <p className="text-sm text-muted-foreground">Nenhuma entrevista marcada</p>
+                        </div>
+                        <Button size="sm" className="ml-auto h-8 rounded-full px-3 text-xs gap-1.5" onClick={() => abrirMarcar(detailCandidate.id)}>
+                          <Plus className="h-3.5 w-3.5" /> Marcar
+                        </Button>
+                      </div>
+                    )
                   )}
                   {detailCandidate.origem && (
                     <Badge variant="outline" className="gap-1 rounded-full border-primary/40 text-primary bg-background/70">
@@ -754,6 +1043,58 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
               </section>
 
 
+              {/* Documentos */}
+              <section className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Paperclip className="h-3.5 w-3.5 text-primary" /> Documentos
+                  </p>
+                  {!readOnly && (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.doc,.docx,.xls,.xlsx"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAnexo(f); e.currentTarget.value = ""; }}
+                      />
+                      <Button size="sm" variant="outline" className="h-8 rounded-full px-3 text-xs gap-1.5" disabled={uploadingAnexo} onClick={() => fileInputRef.current?.click()}>
+                        {uploadingAnexo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                        {uploadingAnexo ? "Enviando..." : "Anexar"}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {loadingAnexos ? (
+                  <p className="text-xs text-muted-foreground px-1 py-2">Carregando…</p>
+                ) : detailAnexos.length > 0 ? (
+                  <div className="rounded-xl border border-border/60 divide-y divide-border/50 overflow-hidden">
+                    {detailAnexos.map((a) => (
+                      <div key={a.id} className="flex items-center gap-3 px-3 py-2.5">
+                        <FileText className="h-4 w-4 text-primary/70 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] text-foreground truncate">{a.nome}</p>
+                          {fmtTamanho(a.tamanho) && <p className="text-[10px] text-muted-foreground">{fmtTamanho(a.tamanho)}</p>}
+                        </div>
+                        <button type="button" onClick={() => baixarAnexo(a)} title="Baixar" className="shrink-0 h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                          <Download className="h-3.5 w-3.5" />
+                        </button>
+                        {!readOnly && (
+                          <button type="button" onClick={() => removerAnexo(a)} title="Remover" className="shrink-0 h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground bg-muted/35 border border-border/60 rounded-xl px-4 py-3">
+                    {readOnly ? "Nenhum documento anexado." : "Nenhum documento. Anexe currículo, RG, contrato…"}
+                  </p>
+                )}
+              </section>
+
               {/* Mover para etapa */}
               {!readOnly && (
                 <section className="pt-5 border-t border-border/60 space-y-2.5">
@@ -775,6 +1116,45 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo marcar / remarcar entrevista (RH/admin) */}
+      <Dialog open={!!entrevistaDlg} onOpenChange={(o) => !o && setEntrevistaDlg(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>{entrevistaDlg?.mode === "remarcar" ? "Remarcar entrevista" : "Marcar entrevista"}</DialogTitle></DialogHeader>
+          {entrevistaDlg && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Data</Label><Input type="date" value={entrevistaDlg.data} onChange={(e) => setEntrevistaDlg({ ...entrevistaDlg, data: e.target.value })} className="h-9" /></div>
+                <div><Label className="text-xs">Hora</Label><Input type="time" value={entrevistaDlg.hora} onChange={(e) => setEntrevistaDlg({ ...entrevistaDlg, hora: e.target.value })} className="h-9" /></div>
+              </div>
+              <div><Label className="text-xs">Local / observação (opcional)</Label><Input value={entrevistaDlg.local} onChange={(e) => setEntrevistaDlg({ ...entrevistaDlg, local: e.target.value })} placeholder="Entrevista" className="h-9" /></div>
+              <p className="text-[11px] text-muted-foreground">Horário livre — o sistema só bloqueia se já houver entrevista nesse mesmo horário.</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setEntrevistaDlg(null)}>Fechar</Button>
+            <Button size="sm" onClick={salvarEntrevista} disabled={savingEntrevista}>{savingEntrevista ? "Salvando..." : (entrevistaDlg?.mode === "remarcar" ? "Remarcar" : "Marcar")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo cancelar entrevista (motivo → volta para Atendimento) */}
+      <Dialog open={!!cancelDlg} onOpenChange={(o) => !o && setCancelDlg(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Cancelar entrevista</DialogTitle></DialogHeader>
+          {cancelDlg && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">O horário é liberado e o candidato volta para <b className="text-foreground">Atendimento</b>.</p>
+              <Label className="text-xs">Motivo do cancelamento *</Label>
+              <Textarea value={cancelDlg.motivo} onChange={(e) => setCancelDlg({ ...cancelDlg, motivo: e.target.value })} placeholder="Ex.: candidato pediu para remarcar, não pôde comparecer..." className="min-h-[80px]" />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setCancelDlg(null)}>Voltar</Button>
+            <Button size="sm" variant="destructive" onClick={confirmarCancelamento} disabled={savingCancel}>{savingCancel ? "Cancelando..." : "Cancelar entrevista"}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
