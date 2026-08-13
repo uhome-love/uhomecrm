@@ -122,6 +122,81 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ── (c) finalizar: grava preferência (dia + turno) e avisa a RH ──
+    if (acao === "finalizar") {
+      const nome = String(body.nome || "").trim();
+      const telefone = String(body.telefone || "").trim();
+      const email = body.email ? String(body.email).trim() : null;
+      const respostas = body.respostas && typeof body.respostas === "object"
+        ? body.respostas as Record<string, unknown>
+        : {};
+      const temperatura = ["quente", "morno", "frio"].includes(String(body.temperatura))
+        ? String(body.temperatura)
+        : null;
+
+      const prefData = typeof respostas.pref_data === "string" ? respostas.pref_data : null;
+      const prefTurno = ["manha", "tarde"].includes(String(respostas.pref_turno))
+        ? String(respostas.pref_turno)
+        : null;
+      if (!prefData || !prefTurno) return json({ error: "Preferência inválida" }, 400);
+
+      let candidatoId = String(body.candidato_id || "").trim() || null;
+
+      if (candidatoId) {
+        const { data: upd, error: upErr } = await supabase
+          .from("rh_candidatos")
+          .update({ respostas, temperatura, etapa: "novo_lead" })
+          .eq("id", candidatoId)
+          .eq("origem", "anuncio")
+          .in("etapa", ETAPAS_EDITAVEIS)
+          .select("id")
+          .maybeSingle();
+        if (upErr) console.error("[rh-vaga-lead] finalizar update", upErr);
+        if (!upd) candidatoId = null; // fallback: cria abaixo
+      }
+
+      if (!candidatoId) {
+        if (nome.length < 2 || nome.length > 120) return json({ error: "Nome inválido" }, 400);
+        const digitos = telefone.replace(/\D/g, "");
+        if (digitos.length < 10 || digitos.length > 13) return json({ error: "WhatsApp inválido" }, 400);
+
+        const { data: criado, error: cErr } = await supabase
+          .from("rh_candidatos")
+          .insert({ nome, telefone, email, origem: "anuncio", etapa: "novo_lead", temperatura, respostas })
+          .select("id")
+          .single();
+        if (cErr || !criado) {
+          console.error("[rh-vaga-lead] finalizar insert", cErr);
+          return json({ error: "Não foi possível registrar sua candidatura." }, 500);
+        }
+        candidatoId = criado.id;
+      }
+
+      // ── Notificação in-app para a RH (silenciosa: nunca quebra o funil) ──
+      try {
+        const turnoLabel = prefTurno === "manha" ? "manhã" : "tarde";
+        const [ano, mes, dia] = prefData.split("-");
+        const { data: rhRoles } = await supabase.from("user_roles").select("user_id").eq("role", "rh");
+        const destinatarios = [...new Set(((rhRoles as { user_id: string }[]) || []).map((r) => r.user_id))];
+        for (const userId of destinatarios) {
+          const { error: notErr } = await supabase.rpc("criar_notificacao", {
+            p_user_id: userId,
+            p_tipo: "info",
+            p_categoria: "recrutamento_novo_candidato",
+            p_titulo: "Novo candidato — agendar entrevista",
+            p_mensagem: `${nome || "Candidato"}${temperatura ? ` · ${temperatura}` : ""} · prefere ${dia}/${mes} de ${turnoLabel}`,
+            p_dados: { candidato_id: candidatoId, temperatura, pref_data: prefData, pref_turno: prefTurno, ano, url: "/rh/recrutamento" },
+            p_agrupamento_key: `recrutamento_novo_candidato:${candidatoId}`,
+          });
+          if (notErr) console.error("[rh-vaga-lead] notificar rh", notErr);
+        }
+      } catch (e) {
+        console.error("[rh-vaga-lead] notificação falhou (ignorado)", e);
+      }
+
+      return json({ ok: true, candidato_id: candidatoId });
+    }
+
     return json({ error: "Ação inválida" }, 400);
   } catch (e) {
     console.error("[rh-vaga-lead]", e);
