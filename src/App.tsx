@@ -65,6 +65,7 @@ const CasaTuaCanoasQuiz = lazyRetry(() => import("./pages/CasaTuaCanoasQuiz"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
 const HeaderMockup = lazyRetry(() => import("./pages/HeaderMockup"));
 const EquipesMockup = lazyRetry(() => import("./pages/EquipesMockup"));
+const GerenteMockup = lazyRetry(() => import("./pages/GerenteMockup"));
 const DiretoraMockup = lazyRetry(() => import("./pages/DiretoraMockup"));
 const PlacarTvPage = lazyRetry(() => import("./pages/PlacarTvPage"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/header-mockup" element={<Suspense fallback={<PageLoader />}><HeaderMockup /></Suspense>} />
               <Route path="/equipes-mockup" element={<Suspense fallback={<PageLoader />}><EquipesMockup /></Suspense>} />
               <Route path="/diretora-mockup" element={<Suspense fallback={<PageLoader />}><DiretoraMockup /></Suspense>} />
+              <Route path="/gerente-mockup" element={<Suspense fallback={<PageLoader />}><GerenteMockup /></Suspense>} />
               <Route path="/placar-tv" element={<Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense>} />
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
               <Route path="/diagnostico-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
