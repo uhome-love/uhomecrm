@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { KpiGrid, type KpiCardData } from "@/components/central-v2/shared/KpiCard";
 import { FunnelChart } from "@/components/central-v2/shared/FunnelChart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETAPAS } from "@/components/rh/RecrutamentoKanban";
 import { Users, Flame, CalendarCheck, UserCheck } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -60,7 +61,38 @@ export default function RecrutamentoAcompanhamento() {
     staleTime: 60_000,
   });
 
-  const candidatos = data?.candidatos ?? [];
+  const todos = data?.candidatos ?? [];
+
+  const [fGerente, setFGerente] = useState("todos");
+  const [fTemp, setFTemp] = useState("todas");
+  const [fOrigem, setFOrigem] = useState("todas");
+
+  const nomesGerente = useMemo(
+    () => new Map((data?.profiles || []).map((p) => [p.user_id, p.nome || "Sem nome"])),
+    [data?.profiles]
+  );
+
+  const gerenteOpts = useMemo(() => {
+    const ids = new Map<string, string>();
+    for (const c of todos) if (c.gerente_id) ids.set(c.gerente_id, nomesGerente.get(c.gerente_id) || "Gerente");
+    return [...ids.entries()].map(([user_id, nome]) => ({ user_id, nome })).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [todos, nomesGerente]);
+
+  const origemOpts = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of todos) if (c.origem) set.add(c.origem.toLowerCase());
+    return [...set].sort();
+  }, [todos]);
+
+  const candidatos = useMemo(() => todos.filter((c) => {
+    if (fGerente === "sem") { if (c.gerente_id) return false; }
+    else if (fGerente !== "todos") { if (c.gerente_id !== fGerente) return false; }
+    if (fTemp !== "todas" && normTemp(c.temperatura) !== fTemp) return false;
+    if (fOrigem !== "todas" && (c.origem ?? "").toLowerCase() !== fOrigem) return false;
+    return true;
+  }), [todos, fGerente, fTemp, fOrigem]);
+
+  const filtrosAtivos = fGerente !== "todos" || fTemp !== "todas" || fOrigem !== "todas";
 
   const kpis: KpiCardData[] = useMemo(() => {
     const total = candidatos.length;
@@ -128,6 +160,42 @@ export default function RecrutamentoAcompanhamento() {
         title="Recrutamento · Acompanhamento"
         subtitle="Visão executiva do funil de recrutamento (somente leitura)."
       />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={fGerente} onValueChange={setFGerente}>
+          <SelectTrigger className="h-9 w-[180px] rounded-full bg-background text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os gerentes</SelectItem>
+            <SelectItem value="sem">Sem gerente</SelectItem>
+            {gerenteOpts.map((g) => <SelectItem key={g.user_id} value={g.user_id}>{g.nome}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={fTemp} onValueChange={setFTemp}>
+          <SelectTrigger className="h-9 w-[140px] rounded-full bg-background text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Toda temperatura</SelectItem>
+            <SelectItem value="quente">Quente</SelectItem>
+            <SelectItem value="morno">Morno</SelectItem>
+            <SelectItem value="frio">Frio</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={fOrigem} onValueChange={setFOrigem}>
+          <SelectTrigger className="h-9 w-[150px] rounded-full bg-background text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Toda origem</SelectItem>
+            {origemOpts.map((o) => <SelectItem key={o} value={o} className="capitalize">{o}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {filtrosAtivos && (
+          <button
+            onClick={() => { setFGerente("todos"); setFTemp("todas"); setFOrigem("todas"); }}
+            className="h-9 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Limpar
+          </button>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground">{candidatos.length} de {todos.length}</span>
+      </div>
 
       <KpiGrid items={kpis} loading={isLoading} />
 

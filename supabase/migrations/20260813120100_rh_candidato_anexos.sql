@@ -70,3 +70,11 @@ CREATE POLICY "rh docs delete" ON storage.objects FOR DELETE TO authenticated
     has_role(auth.uid(),'admin'::app_role) OR has_role(auth.uid(),'rh'::app_role)
     OR (has_role(auth.uid(),'gestor'::app_role) AND EXISTS (
       SELECT 1 FROM public.rh_candidatos c WHERE c.id::text = (storage.foldername(name))[1] AND c.gerente_id = auth.uid()))));
+
+-- 5) Realtime (badge de anexos ao vivo no kanban)
+ALTER TABLE public.rh_candidato_anexos REPLICA IDENTITY FULL;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND schemaname='public' AND tablename='rh_candidato_anexos') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.rh_candidato_anexos;
+  END IF;
+END $$;

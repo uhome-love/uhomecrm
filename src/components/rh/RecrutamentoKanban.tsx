@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Phone, Mail, Users, Plus, CalendarDays, Megaphone, UserCheck, Video, Search, X, Paperclip, Download, Trash2, FileText, Loader2 } from "lucide-react";
 import { MEET_LINK } from "@/config/recrutamento";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -101,6 +102,12 @@ interface Anexo {
 }
 
 const ANEXO_BUCKET = "rh-candidato-docs";
+
+const STATUS_ENTREVISTA_LABEL: Record<string, string> = {
+  cancelada: "Cancelada",
+  realizada: "Realizada",
+  nao_compareceu: "Não compareceu",
+};
 
 function fmtTamanho(bytes?: number | null): string {
   if (!bytes || bytes <= 0) return "";
@@ -258,9 +265,15 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   // Anexos (documentos do candidato)
   const [anexosCount, setAnexosCount] = useState<Record<string, number>>({});
   const [detailAnexos, setDetailAnexos] = useState<Anexo[]>([]);
+  const [detailHistorico, setDetailHistorico] = useState<{ id: string; data_entrevista: string; status: string; local: string | null; motivo_cancelamento: string | null }[]>([]);
   const [loadingAnexos, setLoadingAnexos] = useState(false);
   const [uploadingAnexo, setUploadingAnexo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [dragOverDoc, setDragOverDoc] = useState(false);
+
+  // Drag & drop de card entre colunas (nativo, sem lib)
+  const dragCandidatoId = useRef<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
   const gerenteById = useMemo(() => {
     const m: Record<string, Gerente> = {};
@@ -319,6 +332,16 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     if (!error) setDetailAnexos((data || []) as unknown as Anexo[]);
   };
 
+  const fetchDetailHistorico = async (candidatoId: string) => {
+    const { data } = await supabase
+      .from("rh_entrevistas" as any)
+      .select("id, data_entrevista, status, local, motivo_cancelamento")
+      .eq("candidato_id", candidatoId)
+      .neq("status", "agendada")
+      .order("data_entrevista", { ascending: false });
+    setDetailHistorico((data || []) as unknown as typeof detailHistorico);
+  };
+
 
   useEffect(() => {
     fetchCandidatos();
@@ -349,6 +372,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
       .channel("rh_recrutamento_kanban")
       .on("postgres_changes", { event: "*", schema: "public", table: "rh_candidatos" }, debouncedRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "rh_entrevistas" }, debouncedRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rh_candidato_anexos" }, debouncedRefetch)
       .subscribe();
 
     return () => {
@@ -420,8 +444,8 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   }, [detailCandidate?.id, detailCandidate?.observacoes]);
 
   useEffect(() => {
-    if (detailCandidate?.id) fetchDetailAnexos(detailCandidate.id);
-    else setDetailAnexos([]);
+    if (detailCandidate?.id) { fetchDetailAnexos(detailCandidate.id); fetchDetailHistorico(detailCandidate.id); }
+    else { setDetailAnexos([]); setDetailHistorico([]); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailCandidate?.id]);
 
@@ -487,6 +511,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
     setCancelDlg(null);
     toast.success("Entrevista cancelada — candidato voltou para Atendimento");
     fetchCandidatos(); fetchEntrevistas();
+    if (detailCandidate) fetchDetailHistorico(detailCandidate.id);
   };
 
   // ── Anexos: upload / baixar / remover ────────────────────────────────────────
@@ -686,7 +711,22 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
               return (
                 <div
                   key={etapa.key}
-                  className="min-w-[248px] max-w-[248px] flex-shrink-0 flex flex-col rounded-2xl border border-border/60 bg-background/70 dark:bg-white/[0.03] shadow-sm"
+                  onDragOver={(e) => { if (dragCandidatoId.current && !readOnly) { e.preventDefault(); if (dragOverCol !== etapa.key) setDragOverCol(etapa.key); } }}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node) && dragOverCol === etapa.key) setDragOverCol(null); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const id = dragCandidatoId.current;
+                    dragCandidatoId.current = null;
+                    setDragOverCol(null);
+                    if (id && !readOnly) {
+                      const cand = candidatos.find((x) => x.id === id);
+                      if (cand && cand.etapa !== etapa.key) moveToEtapa(id, etapa.key);
+                    }
+                  }}
+                  className={cn(
+                    "min-w-[248px] max-w-[248px] flex-shrink-0 flex flex-col rounded-2xl border bg-background/70 dark:bg-white/[0.03] shadow-sm transition-colors",
+                    dragOverCol === etapa.key ? "border-primary ring-2 ring-primary/30 bg-primary/[0.04]" : "border-border/60"
+                  )}
                 >
                   <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: etapa.color }} />
@@ -708,7 +748,13 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                       return (
                         <Card
                           key={c.id}
-                          className="group cursor-pointer rounded-xl border-border/60 shadow-[0_1px_2px_rgba(16,24,40,0.05)] hover:shadow-[0_6px_18px_-6px_rgba(16,24,40,0.22)] hover:border-primary/35 transition-all bg-card overflow-hidden relative"
+                          draggable={!readOnly}
+                          onDragStart={(e) => { dragCandidatoId.current = c.id; e.dataTransfer.effectAllowed = "move"; }}
+                          onDragEnd={() => { dragCandidatoId.current = null; setDragOverCol(null); }}
+                          className={cn(
+                            "group cursor-pointer rounded-xl border-border/60 shadow-[0_1px_2px_rgba(16,24,40,0.05)] hover:shadow-[0_6px_18px_-6px_rgba(16,24,40,0.22)] hover:border-primary/35 transition-all bg-card overflow-hidden relative",
+                            !readOnly && "active:cursor-grabbing"
+                          )}
                           onClick={() => setDetailCandidate(c)}
                         >
                           {temp && (
@@ -963,6 +1009,26 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
               )}
 
 
+              {/* Histórico de entrevistas (canceladas / realizadas / faltou) */}
+              {detailHistorico.length > 0 && (
+                <section className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Histórico de entrevistas</p>
+                  <div className="rounded-xl border border-border/60 divide-y divide-border/50 overflow-hidden">
+                    {detailHistorico.map((h) => (
+                      <div key={h.id} className="flex items-start gap-2.5 px-3 py-2.5">
+                        <span className={cn("mt-1 h-2 w-2 rounded-full shrink-0", h.status === "realizada" ? "bg-emerald-500" : h.status === "cancelada" ? "bg-red-500" : "bg-amber-500")} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12.5px] text-foreground">
+                            {formatEntrevista(h.data_entrevista)} <span className="text-muted-foreground">· {STATUS_ENTREVISTA_LABEL[h.status] ?? h.status}</span>
+                          </p>
+                          {h.motivo_cancelamento && <p className="text-[11px] text-muted-foreground">Motivo: {h.motivo_cancelamento}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* Gerente */}
               {(detailGerente || isRh) && (
                 <section className="rounded-xl border border-border/60 px-4 py-4 space-y-3">
@@ -1044,7 +1110,12 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
 
 
               {/* Documentos */}
-              <section className="space-y-2">
+              <section
+                className="space-y-2"
+                onDragOver={!readOnly ? (e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setDragOverDoc(true); } } : undefined}
+                onDragLeave={!readOnly ? (e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverDoc(false); } : undefined}
+                onDrop={!readOnly ? (e) => { e.preventDefault(); setDragOverDoc(false); const f = e.dataTransfer.files?.[0]; if (f) uploadAnexo(f); } : undefined}
+              >
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                     <Paperclip className="h-3.5 w-3.5 text-primary" /> Documentos
@@ -1089,8 +1160,11 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground bg-muted/35 border border-border/60 rounded-xl px-4 py-3">
-                    {readOnly ? "Nenhum documento anexado." : "Nenhum documento. Anexe currículo, RG, contrato…"}
+                  <p className={cn(
+                    "text-xs rounded-xl px-4 py-3 border transition-colors",
+                    dragOverDoc ? "border-primary border-dashed bg-primary/[0.05] text-primary" : "text-muted-foreground bg-muted/35 border-border/60"
+                  )}>
+                    {readOnly ? "Nenhum documento anexado." : dragOverDoc ? "Solte o arquivo para anexar" : "Nenhum documento. Anexe ou arraste currículo, RG, contrato…"}
                   </p>
                 )}
               </section>
