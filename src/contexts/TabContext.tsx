@@ -76,6 +76,16 @@ function normalizeLegacyPath(path: string): string {
   return path;
 }
 
+/** Home do papel (mesma lógica do RoleHomeRedirect). Âncora do usuário. */
+function roleHomePath(roles: AppRole[]): string {
+  if (roles.includes("admin")) return "/ceo";
+  if (roles.includes("diretor")) return "/diretora";
+  if (roles.includes("gestor")) return "/gerente/cockpit";
+  if (roles.includes("backoffice")) return "/backoffice";
+  if (roles.includes("rh")) return "/rh";
+  return "/corretor";
+}
+
 // ─── Provider ────────────────────────────────────────────────────────────────
 export function TabProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -123,6 +133,31 @@ export function TabProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [roleLoading, roles, hasAccess]);
+
+  // Garante que a home do papel atual esteja SEMPRE presente como 1ª aba (âncora).
+  // Cura o caso de "abrir o CRM de outra pessoa e voltar": o dashboard do papel
+  // antigo (ex.: gerente) ficava como única aba → a barra some com 1 aba só e não
+  // dá pra fechar. Com a home de volta, aparecem 2 abas: a home (âncora, sem X) e
+  // a estranha (com X, fechável). Não rouba o foco — só recoloca a âncora.
+  useEffect(() => {
+    if (roleLoading || roles.length === 0) return;
+    const homePath = roleHomePath(roles);
+    const resolved = resolveRoute(homePath);
+    if (!resolved) return;
+    const current = tabsRef.current;
+    if (current.some((t) => t.id === resolved.key)) return; // home já presente
+    const homeTab: Tab = {
+      id: resolved.key,
+      label: resolved.label,
+      icon: resolved.icon,
+      path: homePath,
+      closable: false,
+      componentKey: resolved.componentKey,
+      pattern: resolved.pattern,
+      noPadding: resolved.noPadding,
+    };
+    setTabs([homeTab, ...current]);
+  }, [roleLoading, roles]);
 
   // Persist on change
   useEffect(() => {
@@ -193,19 +228,23 @@ export function TabProvider({ children }: { children: ReactNode }) {
   const closeTab = useCallback((tabId: string) => {
     const current = tabsRef.current;
     const idx = current.findIndex((t) => t.id === tabId);
-    // A 1ª aba (âncora/home do login) nunca fecha; QUALQUER outra pode fechar,
-    // independente do `closable` do registro. Evita aba de dashboard de outro
-    // papel (ex.: abri o CRM de outra pessoa) ficar presa sem X.
-    if (idx <= 0) return;
-
+    if (idx < 0) return;
+    // QUALQUER aba pode fechar (inclusive uma de dashboard de outro papel que
+    // ficou presa, ex.: abri o CRM de outra pessoa e voltei). Se fechar a última,
+    // navega pra "/" → RoleHomeRedirect recria a home do papel atual.
     const newTabs = current.filter((t) => t.id !== tabId);
     setTabs(newTabs);
 
-    if (activeRef.current === tabId && newTabs.length > 0) {
-      const nextIdx = Math.min(idx, newTabs.length - 1);
-      const next = newTabs[nextIdx];
-      setActiveTabId(next.id);
-      navigateRef.current(next.path);
+    if (activeRef.current === tabId) {
+      if (newTabs.length > 0) {
+        const nextIdx = Math.min(idx, newTabs.length - 1);
+        const next = newTabs[nextIdx];
+        setActiveTabId(next.id);
+        navigateRef.current(next.path);
+      } else {
+        setActiveTabId("");
+        navigateRef.current("/");
+      }
     }
   }, []);
 
