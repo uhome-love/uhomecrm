@@ -41,7 +41,7 @@ export default function RoleHomeRedirect() {
     : isDiretor
     ? "/diretora"
     : isGestor
-    ? "/gerente/dashboard"
+    ? "/gerente/cockpit"
     : "/corretor";
 
   return <Navigate to={destino} replace />;

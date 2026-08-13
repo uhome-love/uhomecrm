@@ -48,6 +48,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   corretor: lazyRetry(() => import("@/pages/CorretorDashboard")),
   ceo: lazyRetry(() => import("@/pages/CeoDashboard")),
   diretora: lazyRetry(() => import("@/pages/DiretoraDashboard")),
+  "gerente-cockpit": lazyRetry(() => import("@/pages/GerenteCockpit")),
   
   "ceo-religacao-negocios": lazyRetry(() => import("@/pages/CeoReligacaoNegocios")),
   "gerente-dashboard": lazyRetry(() => import("@/pages/GerenteDashboard")),
@@ -138,7 +139,8 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/diretora":              { key: "diretora",             label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["diretor", "admin"] },
   
   "/ceo/religacao-negocios":{ key: "ceo-religacao-negocios", label: "Religação Negócios", icon: "Link2",         roles: ["admin", "diretor"] },
-  "/gerente/dashboard":     { key: "gerente-dashboard",    label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin"] },
+  "/gerente/dashboard":     { key: "gerente-dashboard",    label: "Dashboard (legado)",  icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin"] },
+  "/gerente/cockpit":       { key: "gerente-cockpit",      label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin", "diretor"] },
   "/backoffice":            { key: "backoffice",           label: "Dashboard BO",        icon: "LayoutGrid",    closable: false, roles: ["backoffice", "admin"] },
   "/rh":                    { key: "rh",                   label: "Dashboard RH",        icon: "LayoutGrid",    closable: false, roles: ["rh", "admin"] },
   "/central-do-gerente":    { key: "checkpoint",           label: "Central Gerente",     icon: "CheckCircle",   roles: ["gestor", "admin", "diretor"] },
