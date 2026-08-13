@@ -113,7 +113,7 @@ export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnl
     await supabase
       .from("rh_candidatos" as any)
       .update({
-        etapa: novo === "realizada" ? "pre_entrevista_realizada" : "sem_interesse",
+        etapa: novo === "realizada" ? "entrevista_realizada" : "sem_interesse",
         updated_at: new Date().toISOString(),
       })
       .eq("id", e.candidato_id);

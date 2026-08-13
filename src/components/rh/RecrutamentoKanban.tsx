@@ -150,6 +150,24 @@ function formatEntrevista(iso?: string | null): string | null {
   return `${get("day")}/${get("month")} às ${get("hour")}:${get("minute")}`;
 }
 
+function prefEntrevista(r?: QuizRespostas | null): { data: string; turno: "manha" | "tarde"; label: string } | null {
+  if (!r) return null;
+  const data = typeof r.pref_data === "string" ? r.pref_data : null;
+  const turno = r.pref_turno === "manha" || r.pref_turno === "tarde" ? r.pref_turno : null;
+  if (!data || !turno) return null;
+  const [ano, mes, dia] = data.split("-");
+  if (!ano || !mes || !dia) return null;
+  const d = new Date(`${data}T12:00:00-03:00`);
+  const semana = Number.isNaN(d.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "short" }).format(d).replace(".", "");
+  return {
+    data,
+    turno,
+    label: `${semana ? `${semana} ` : ""}${dia}/${mes} · ${turno === "manha" ? "Manhã" : "Tarde"}`,
+  };
+}
+
 function iniciais(nome?: string | null): string {
   const parts = (nome || "?").trim().split(/\s+/);
   return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "?";
@@ -466,7 +484,15 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   // ── Entrevista: marcar / remarcar / cancelar (RH/admin) ──────────────────────
   const abrirMarcar = (candidatoId: string) => {
     const { data, hora } = brtParts(null);
-    setEntrevistaDlg({ mode: "criar", candidatoId, data, hora, local: "" });
+    const cand = candidatos.find((c) => c.id === candidatoId);
+    const pref = prefEntrevista(cand?.respostas);
+    setEntrevistaDlg({
+      mode: "criar",
+      candidatoId,
+      data: pref?.data || data,
+      hora: pref ? (pref.turno === "manha" ? "09:00" : "14:00") : hora,
+      local: "",
+    });
   };
   const abrirRemarcar = (candidatoId: string, e: EntrevistaInfo) => {
     const { data, hora } = brtParts(e.data_entrevista);
@@ -585,6 +611,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const detailEntrevista = detailEntrevistaInfo ? formatEntrevista(detailEntrevistaInfo.data_entrevista) : null;
   const podeEntrevista = !readOnly && isRh; // RH/admin no board da RH
   const detailRespostas = detailCandidate?.respostas || null;
+  const detailPref = prefEntrevista(detailRespostas);
   const detailGerente = detailCandidate?.gerente_id ? gerenteById[detailCandidate.gerente_id] : null;
 
   return (
@@ -744,6 +771,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                       const temp = normTemp(c.temperatura);
                       const tags = miniTags(c.respostas);
                       const entrevista = etapa.key === "entrevista_marcada" ? formatEntrevista(entrevistas[c.id]?.data_entrevista) : null;
+                      const pref = !entrevista ? prefEntrevista(c.respostas) : null;
                       const ger = c.gerente_id ? gerenteById[c.gerente_id] : null;
                       return (
                         <Card
@@ -788,6 +816,12 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                             {entrevista && (
                               <p className="inline-flex items-center gap-1.5 rounded-lg bg-primary/8 text-primary px-2 py-1 text-[11px] font-semibold">
                                 <CalendarDays className="h-3 w-3" /> {entrevista}
+                              </p>
+                            )}
+
+                            {pref && (
+                              <p className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 text-muted-foreground px-2 py-1 text-[10.5px] font-semibold">
+                                <CalendarDays className="h-3 w-3" /> Prefere: {pref.label}
                               </p>
                             )}
 
@@ -992,10 +1026,12 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Entrevista</p>
-                          <p className="text-sm text-muted-foreground">Nenhuma entrevista marcada</p>
+                          <p className="text-sm text-muted-foreground">
+                            {detailPref ? `Prefere: ${detailPref.label}` : "Nenhuma entrevista marcada"}
+                          </p>
                         </div>
                         <Button size="sm" className="ml-auto h-8 rounded-full px-3 text-xs gap-1.5" onClick={() => abrirMarcar(detailCandidate.id)}>
-                          <Plus className="h-3.5 w-3.5" /> Marcar
+                          <Plus className="h-3.5 w-3.5" /> Agendar entrevista
                         </Button>
                       </div>
                     )

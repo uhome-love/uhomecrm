@@ -11272,6 +11272,47 @@ export type Database = {
         }
         Relationships: []
       }
+      rh_candidato_anexos: {
+        Row: {
+          candidato_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          mime: string | null
+          nome: string
+          path: string
+          tamanho: number | null
+        }
+        Insert: {
+          candidato_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mime?: string | null
+          nome: string
+          path: string
+          tamanho?: number | null
+        }
+        Update: {
+          candidato_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mime?: string | null
+          nome?: string
+          path?: string
+          tamanho?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_candidato_anexos_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "rh_candidatos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rh_candidatos: {
         Row: {
           created_at: string
@@ -11355,34 +11396,43 @@ export type Database = {
       }
       rh_entrevistas: {
         Row: {
+          cancelada_em: string | null
+          cancelada_por: string | null
           candidato_id: string
           created_at: string
           created_by: string | null
           data_entrevista: string
           id: string
           local: string | null
+          motivo_cancelamento: string | null
           observacoes: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          cancelada_em?: string | null
+          cancelada_por?: string | null
           candidato_id: string
           created_at?: string
           created_by?: string | null
           data_entrevista: string
           id?: string
           local?: string | null
+          motivo_cancelamento?: string | null
           observacoes?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          cancelada_em?: string | null
+          cancelada_por?: string | null
           candidato_id?: string
           created_at?: string
           created_by?: string | null
           data_entrevista?: string
           id?: string
           local?: string | null
+          motivo_cancelamento?: string | null
           observacoes?: string | null
           status?: string
           updated_at?: string
@@ -14879,6 +14929,7 @@ export type Database = {
         Args: { p_gestor_id: string; p_periodo?: string }
         Returns: Json
       }
+      get_dashboard_gerente_cockpit: { Args: never; Returns: Json }
       get_dashboard_gerente_v4_dia: {
         Args: { p_gestor_id: string; p_visitas_range?: string }
         Returns: Json
