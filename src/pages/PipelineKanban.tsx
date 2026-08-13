@@ -149,6 +149,20 @@ export default function PipelineKanban() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rolesReady, defaultTabForRole]);
 
+  // ?tab=equipes|negocios|kanban — abre numa aba específica (ex.: vindo do dashboard),
+  // mesmo se o Pipeline já estava aberto. Aplica e limpa o param (pra não brigar com
+  // a troca manual de abas e permitir re-navegar com o mesmo ?tab= de novo).
+  useEffect(() => {
+    if (!rolesReady) return;
+    const urlTab = searchParams.get("tab");
+    if (!urlTab) return;
+    if (allowedTabsForRole.includes(urlTab)) setActiveTab(urlTab);
+    const sp = new URLSearchParams(searchParams);
+    sp.delete("tab");
+    setSearchParams(sp, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, rolesReady]);
+
 
   // Se a role mudou (login/logout) e o tab salvo não pertence ao role atual, força default.
   useEffect(() => {
