@@ -18,12 +18,12 @@ const BALAO_HOST = "#EEF1FA";
 const TXT = "#151B2C";
 const TXT_SOFT = "#6A7389";
 
-const HORARIOS = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-];
 const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const TURNOS: { key: "manha" | "tarde"; label: string; hint: string }[] = [
+  { key: "manha", label: "Manhã", hint: "09h às 12h" },
+  { key: "tarde", label: "Tarde", hint: "13h às 17h" },
+];
 
 type Opcao = { label: string; pontos: number };
 type Pergunta =
