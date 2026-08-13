@@ -39,7 +39,7 @@ export default function RoleHomeRedirect() {
     : isRh
     ? "/rh"
     : isDiretor
-    ? "/ceo"
+    ? "/diretora"
     : isGestor
     ? "/gerente/dashboard"
     : "/corretor";

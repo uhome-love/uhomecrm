@@ -47,6 +47,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   home: lazyRetry(() => import("@/pages/HomeDashboard")),
   corretor: lazyRetry(() => import("@/pages/CorretorDashboard")),
   ceo: lazyRetry(() => import("@/pages/CeoDashboard")),
+  diretora: lazyRetry(() => import("@/pages/DiretoraDashboard")),
   
   "ceo-religacao-negocios": lazyRetry(() => import("@/pages/CeoReligacaoNegocios")),
   "gerente-dashboard": lazyRetry(() => import("@/pages/GerenteDashboard")),
@@ -134,6 +135,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/":                      { key: "home",                 label: "Home",                icon: "LayoutGrid",    closable: false },
   "/corretor":              { key: "corretor",             label: "Minha Rotina",        icon: "LayoutGrid",    closable: false },
   "/ceo":                   { key: "ceo",                  label: "Dashboard CEO",       icon: "LayoutGrid",    closable: false, roles: ["admin", "diretor"] },
+  "/diretora":              { key: "diretora",             label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["diretor", "admin"] },
   
   "/ceo/religacao-negocios":{ key: "ceo-religacao-negocios", label: "Religação Negócios", icon: "Link2",         roles: ["admin", "diretor"] },
   "/gerente/dashboard":     { key: "gerente-dashboard",    label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin"] },
