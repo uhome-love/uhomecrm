@@ -341,46 +341,43 @@ export default function VagaPage() {
   const temperatura = useMemo(() => (pontos >= 6 ? "quente" : pontos >= 3 ? "morno" : "frio"), [pontos]);
 
   const dias = useMemo(() => proximosDiasUteis(10), []);
-  const horariosLivres = useMemo(() => {
-    if (!diaSel) return [];
-    const agora = Date.now();
-    return HORARIOS.map((h) => ({ h, d: slotDate(diaSel, h) }))
-      .filter(({ d }) => d.getTime() > agora + 5 * 60 * 1000 && !ocupados.has(d.toISOString()));
-  }, [diaSel, ocupados]);
 
-  const agendar = async (d: Date) => {
+  /** Finaliza com PREFERÊNCIA (dia + turno). Não cria entrevista. */
+  const finalizar = async (dia: Date, turno: "manha" | "tarde") => {
     setEnviando(true);
     setErro(null);
-    const { data, error } = await supabase.functions.invoke("rh-vaga-candidato", {
+
+    const prefData = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, "0")}-${String(dia.getDate()).padStart(2, "0")}`;
+    const respostasFinal = { ...respostas, pref_data: prefData, pref_turno: turno };
+
+    const { data, error } = await supabase.functions.invoke("rh-vaga-lead", {
       body: {
+        acao: "finalizar",
         candidato_id: candidatoId,
         nome: respostas.nome,
         telefone: respostas.telefone,
-        respostas,
+        respostas: respostasFinal,
         temperatura,
-        horario: d.toISOString(),
       },
     });
     setEnviando(false);
     const res = data as any;
     if (error || !res?.ok) {
-      if (res?.error === "slot_ocupado") {
-        setErro(res.message || "Esse horário acabou de ser preenchido. Escolha outro.");
-        carregarAgenda();
-        return;
-      }
       setErro(res?.message || res?.error || "Não foi possível concluir. Tente novamente.");
       return;
     }
-    // Meta Pixel — conversão "Lead" (uma vez, no sucesso do agendamento)
-    fireEvent("CandidaturaVaga", { content_name: "Vaga Corretor" });
 
-    const quando = `${DIAS_SEMANA[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} às ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    setRespostas(respostasFinal);
+    fireEvent("CandidaturaVaga", { content_name: "Vaga Corretor", turno });
 
+    const turnoLabel = turno === "manha" ? "manhã" : "tarde";
+    const quando = `${DIAS_SEMANA[dia.getDay()]}, ${dia.getDate()} de ${MESES[dia.getMonth()]} · ${turno === "manha" ? "Manhã" : "Tarde"}`;
+
+    dizerEu(turno === "manha" ? "De manhã" : "À tarde");
     setDock("fim");
     setMsgs((m) => [...m, { tipo: "sucesso", quando, telefone: respostas.telefone || "" }]);
     enfileirar([
-      { tipo: "host", texto: "Nosso RH vai te confirmar pelo WhatsApp. Fica de olho nas mensagens!" },
+      { tipo: "host", texto: `Perfeito! Nossa RH te chama no WhatsApp pra confirmar o horário na ${turnoLabel}.` },
       { tipo: "host", texto: `Até já, ${nomeCurto} 👊` },
     ]);
   };
