@@ -184,8 +184,15 @@ serve(async (req) => {
         .eq("pipeline_tipo", "leads");
       const descarteStage = (stages || []).find((s: any) => s.tipo === "descarte");
       if (!descarteStage) throw new Error("Etapa de Descarte não encontrada.");
+      // Etapas que SEMPRE seguem para o gerente (lead com trabalho relevante feito)
       const avancados = new Set(
-        (stages || []).filter((s: any) => ["proposta", "contrato_gerado", "venda"].includes(s.tipo)).map((s: any) => s.id),
+        (stages || []).filter((s: any) =>
+          ["proposta", "contrato_gerado", "venda", "documentacao", "visita", "pos_visita", "aquecimento"].includes(s.tipo),
+        ).map((s: any) => s.id),
+      );
+      // Qualificação só vai ao gerente se houve toque humano nos últimos 30 dias
+      const qualificacaoIds = new Set(
+        (stages || []).filter((s: any) => s.tipo === "qualificacao").map((s: any) => s.id),
       );
       const intocaveis = new Set(
         (stages || []).filter((s: any) => ["descarte", "caiu"].includes(s.tipo)).map((s: any) => s.id),
@@ -193,15 +200,22 @@ serve(async (req) => {
 
       const { data: leads } = await supabase
         .from("pipeline_leads")
-        .select("id, stage_id, negocio_id")
+        .select("id, stage_id, negocio_id, ultimo_toque_at")
         .eq("corretor_id", fromUserId);
 
+      const limite30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
       const frios: string[] = [];
       const quentes: string[] = [];
+      const friosStage: Record<string, string> = {};
       (leads || []).forEach((l: any) => {
         if (intocaveis.has(l.stage_id)) return;
-        if (l.negocio_id || avancados.has(l.stage_id)) quentes.push(l.id);
-        else frios.push(l.id);
+        const toqueRecente = l.ultimo_toque_at && new Date(l.ultimo_toque_at).getTime() >= limite30d;
+        if (l.negocio_id || avancados.has(l.stage_id) || (qualificacaoIds.has(l.stage_id) && toqueRecente)) {
+          quentes.push(l.id);
+        } else {
+          frios.push(l.id);
+          friosStage[l.id] = l.stage_id;
+        }
       });
 
       const chunk = (arr: string[], n = 200) => {
@@ -220,6 +234,20 @@ serve(async (req) => {
           stage_changed_at: nowIso,
           updated_at: nowIso,
         }).in("id", part);
+      }
+
+      // 1b) Histórico da movimentação (guarda a etapa anterior → permite rollback)
+      for (const part of chunk(frios)) {
+        try {
+          await supabase.from("pipeline_historico").insert(
+            part.map((id) => ({
+              pipeline_lead_id: id,
+              stage_anterior_id: friosStage[id] || null,
+              stage_novo_id: descarteStage.id,
+              observacao: "Descartado automaticamente: corretor desligado",
+            })),
+          );
+        } catch (e) { console.error("Falha ao gravar histórico do descarte:", e); }
       }
 
       // 2) Tarefas pendentes dos leads descartados → canceladas
