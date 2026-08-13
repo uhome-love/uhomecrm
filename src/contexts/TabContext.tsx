@@ -193,7 +193,10 @@ export function TabProvider({ children }: { children: ReactNode }) {
   const closeTab = useCallback((tabId: string) => {
     const current = tabsRef.current;
     const idx = current.findIndex((t) => t.id === tabId);
-    if (idx < 0 || !current[idx].closable) return;
+    // A 1ª aba (âncora/home do login) nunca fecha; QUALQUER outra pode fechar,
+    // independente do `closable` do registro. Evita aba de dashboard de outro
+    // papel (ex.: abri o CRM de outra pessoa) ficar presa sem X.
+    if (idx <= 0) return;
 
     const newTabs = current.filter((t) => t.id !== tabId);
     setTabs(newTabs);

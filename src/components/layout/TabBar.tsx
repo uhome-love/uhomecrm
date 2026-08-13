@@ -38,8 +38,9 @@ export default function TabBar() {
         className="flex items-end gap-0 overflow-x-auto flex-1 px-1"
         style={{ scrollbarWidth: "none" }}
       >
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
+          const canClose = index > 0; // 1ª aba = âncora/home (sem X); demais fecháveis
 
           return (
             <button
@@ -69,7 +70,7 @@ export default function TabBar() {
               </span>
               <span className="truncate flex-1 text-left">{tab.label}</span>
 
-              {tab.closable && (
+              {canClose && (
                 <span
                   onClick={(e) => {
                     e.stopPropagation();
