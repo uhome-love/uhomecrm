@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabContext } from "@/contexts/TabContext";
+import { GreetingBar } from "@/components/ui/GreetingBar";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -123,17 +124,13 @@ export default function GerenteCockpit() {
   return (
     <div className="flex-1 min-h-0 overflow-auto bg-slate-50 dark:bg-gray-900">
       <div className="mx-auto max-w-6xl p-4 space-y-3">
-        {/* Saudação */}
-        <div className="flex items-center gap-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 text-white">
-          {perfil?.avatar_url ? <img src={perfil.avatar_url} alt={nome} className="h-14 w-14 shrink-0 rounded-full object-cover" /> : <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 text-[16px] font-bold">{iniciais(nome)}</div>}
-          <div className="min-w-0 flex-1">
-            <div className="text-[20px] font-extrabold leading-tight">{saud()}, {primeiro}! 👋</div>
-            <div className="text-[13px] text-white/80">Time bom é time que anda junto — bora fechar o mês.{data ? ` · ${data.corretores_total} corretores` : ""}</div>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 rounded-lg bg-white/15 px-3 h-9 text-[13px] font-semibold">
-            {(() => { const m = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone: "America/Sao_Paulo" }); return m.charAt(0).toUpperCase() + m.slice(1); })()}
-          </div>
-        </div>
+        {/* Saudação — mesmo componente do CEO (fonte única), sem filtro de data */}
+        <GreetingBar
+          name={nome}
+          avatarUrl={perfil?.avatar_url}
+          subtitle={`Time bom é time que anda junto — bora fechar o mês.${data ? ` · ${data.corretores_total} corretores` : ""}`}
+          showFilter={false}
+        />
 
         {isLoading || !data || !d ? (
           <div className="grid gap-3 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800" />)}</div>
