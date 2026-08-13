@@ -8,7 +8,7 @@ const META_PIXEL_ID = "2291720528296050";
 /**
  * /vaga — Página PÚBLICA (sem login) do anúncio de recrutamento.
  * Quiz conversacional hospedado pelo "Lucas Sarmento — Fundador · Uhome".
- * Grava via edge functions rh-vaga-disponibilidade / rh-vaga-candidato.
+ * Grava via edge function rh-vaga-lead (captura antecipada + preferência).
  * Camada de apresentação: conversa real (typing, uma mensagem por vez).
  */
 
@@ -78,14 +78,6 @@ function maskTelefone(v: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-/** Constrói o Date do slot em BRT (offset fixo -03:00). */
-function slotDate(dia: Date, hhmm: string) {
-  const y = dia.getFullYear();
-  const m = String(dia.getMonth() + 1).padStart(2, "0");
-  const d = String(dia.getDate()).padStart(2, "0");
-  return new Date(`${y}-${m}-${d}T${hhmm}:00.000-03:00`);
-}
-
 function proximosDiasUteis(qtd: number) {
   const dias: Date[] = [];
   const cursor = new Date();
@@ -110,7 +102,7 @@ type Item =
   | { tipo: "card" }
   | { tipo: "sucesso"; quando: string; telefone: string };
 
-type Dock = "nenhum" | "cta" | "pergunta" | "agenda" | "fim";
+type Dock = "nenhum" | "cta" | "pergunta" | "pref" | "fim";
 
 export default function VagaPage() {
   const [msgs, setMsgs] = useState<Item[]>([]);
@@ -125,7 +117,6 @@ export default function VagaPage() {
   const [candidatoId, setCandidatoId] = useState<string | null>(null);
   const [input, setInput] = useState("");
 
-  const [ocupados, setOcupados] = useState<Set<string>>(new Set());
   const [diaSel, setDiaSel] = useState<Date | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -246,13 +237,6 @@ export default function VagaPage() {
     if (dock === "pergunta" && ocioso) inputRef.current?.focus();
   }, [dock, ocioso, idx]);
 
-  // ── Agenda ──
-  const carregarAgenda = useCallback(async () => {
-    const { data } = await supabase.functions.invoke("rh-vaga-disponibilidade", { body: { dias: 21 } });
-    const lista: string[] = (data as any)?.ocupados || [];
-    setOcupados(new Set(lista.map((s) => new Date(s).toISOString())));
-  }, []);
-
   // Meta Pixel — helper de eventos de etapa do funil
   const fireEvent = (name: string, params?: Record<string, unknown>) => {
     try {
@@ -329,11 +313,10 @@ export default function VagaPage() {
       }
       const primeiro = (pergunta.id === "nome" ? valor : respostas.nome || "").trim().split(/\s+/)[0];
       enfileirar([
-        { tipo: "host", texto: `Show, ${primeiro}! Bora marcar sua entrevista com o nosso RH.` },
-        { tipo: "host", texto: "Escolha o melhor dia e horário 👇" },
+        { tipo: "host", texto: `Show, ${primeiro}! Nossa RH vai te chamar pra uma conversa.` },
+        { tipo: "host", texto: "Qual o melhor DIA pra nossa RH te chamar? 👇" },
       ]);
-      setDock("agenda");
-      carregarAgenda();
+      setDock("pref");
     }
   };
 
