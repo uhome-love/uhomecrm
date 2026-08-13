@@ -77,6 +77,25 @@ function MetaHero({ big }: { big?: boolean }) {
   );
 }
 
+// Meta em card CLARO (pro Cockpit) — cor sem competir com o roxo da saudação.
+function MetaCardLight() {
+  return (
+    <Card className="relative overflow-hidden">
+      <span className="absolute inset-y-0 left-0 w-1 bg-indigo-500" />
+      <div className="flex items-center gap-2"><Target className="h-4 w-4 text-indigo-500" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Meta do mês · VGV assinado</span></div>
+      <div className="mt-2 flex items-end gap-3">
+        <span className="text-4xl font-extrabold leading-none text-indigo-700">R$ 2,1M</span>
+        <span className="pb-1 text-[14px] font-semibold text-slate-500">de R$ 5,0M · 42%</span>
+      </div>
+      <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: "42%" }} /></div>
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[12px]">
+        <span className="text-slate-500">Faltam <b className="text-slate-800">R$ 2,9M</b> · restam 19 dias</span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700"><AlertTriangle className="h-3.5 w-3.5" /> Projeção: R$ 3,8M (76%) — abaixo</span>
+      </div>
+    </Card>
+  );
+}
+
 function SaudeNegocios() {
   return (
     <Card>
@@ -163,7 +182,7 @@ function ModeloA() {
   return (
     <div className="space-y-3">
       <div className="grid gap-3 lg:grid-cols-3">
-        <div className="lg:col-span-2"><MetaHero /></div>
+        <div className="lg:col-span-2"><MetaCardLight /></div>
         <Card>
           <div className="flex items-center gap-2"><Trophy className="h-4 w-4 text-emerald-600" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Vendas no mês</span></div>
           <div className="mt-2 flex items-baseline gap-2"><span className="text-3xl font-extrabold text-slate-800">7</span><span className="text-[13px] font-semibold text-slate-500">assinadas</span></div>
