@@ -473,15 +473,15 @@ export default function VagaPage() {
               return (
                 <div key={i} className="vaga-in rounded-2xl border border-[#DDF3E6] bg-white p-5 text-center shadow-[0_4px_16px_rgba(21,27,44,0.06)]">
                   <div className="mx-auto h-12 w-12 rounded-full bg-[#22C55E] flex items-center justify-center text-white text-[24px] font-bold">✓</div>
-                  <p className="mt-3 text-[17px] font-extrabold">Entrevista marcada!</p>
+                  <p className="mt-3 text-[17px] font-extrabold">Recebemos sua candidatura!</p>
                   <p className="mt-2 inline-block rounded-full bg-[#E9F9F0] text-[#137C46] text-[13px] font-bold px-3 py-1.5">
-                    📅 {m.quando}
+                    📅 Preferência: {m.quando}
                   </p>
                   <p className="mt-3 text-[12.5px]" style={{ color: TXT_SOFT }}>
-                    Nosso RH vai te confirmar pelo WhatsApp {m.telefone}. Até lá!
+                    Nossa RH vai te chamar no WhatsApp {m.telefone} pra confirmar o melhor horário. Fica de olho! 👊
                   </p>
                   <p className="mt-2 text-[12px]" style={{ color: TXT_SOFT }}>
-                    Sua entrevista será por Google Meet — nosso RH te envia o link na confirmação pelo WhatsApp.
+                    A entrevista é por Google Meet — o link vem junto com a confirmação.
                   </p>
                 </div>
               );
