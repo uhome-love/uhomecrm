@@ -50,7 +50,8 @@ function KpiMini({ icon, label, value, sub, tone = "text-slate-800" }: { icon: R
 const TIME = {
   corretores: 15, presentes: 12,
   leads: 803, leadsSaude: { em_dia: 612, atencao: 110, desatualizado: 62, estagnado: 18 } as Record<SaudeKey, number>,
-  visitasHoje: 6, agendadasSemana: 21, realizadasSemana: 14, realizadasMes: 58,
+  // VISITAS do mês: total agendadas · realizadas · comparecimento (realizadas/total)
+  visitasHoje: 6, visitasTotalMes: 72, visitasRealizadasMes: 58, comparecimento: 81,
   negocios: 12, negFunil: [
     { nome: "Pós-Visita", n: 9, dot: "bg-cyan-500" }, { nome: "Documentação", n: 3, dot: "bg-sky-500" },
     { nome: "Proposta", n: 5, dot: "bg-violet-500" }, { nome: "Contrato", n: 1, dot: "bg-indigo-500" },
@@ -59,17 +60,18 @@ const TIME = {
   meta: 4_000_000, assinado: 1_800_000, metaPct: 44, pipelineAtivo: "R$ 1,7M",
   // RESULTADO do mês
   vendasMes: 6, vgvMes: "R$ 1,8M", ticket: "R$ 300k",
-  conversao: 4.1,        // lead → venda (%)
-  aproveitamento: 22,    // lead → visita (%) — "quanto do lead vira visita"
+  convVisita: 22,   // lead → visita (%)
+  convVenda: 4.1,   // lead → venda (%)
 };
-// corretores — dados do MÊS (leads, visitas realizadas, vendas, saúde)
+// corretores — números rápidos do MÊS (sem saúde; a saúde do time já está em cima).
+// leads = recebidos no mês. Ranqueado por vendas → negócios → realizadas → leads.
 const CORRETORES = [
-  { nome: "Rafaela Sandin", presente: true, leads: 127, acao: 67, visitasMes: 9, vendasMes: 0, saude: { em_dia: 60, atencao: 40, desatualizado: 20, estagnado: 7 } as Record<SaudeKey, number> },
-  { nome: "William Brizola", presente: true, leads: 100, acao: 51, visitasMes: 12, vendasMes: 2, saude: { em_dia: 49, atencao: 30, desatualizado: 15, estagnado: 6 } as Record<SaudeKey, number> },
-  { nome: "Ebert Silva", presente: false, leads: 98, acao: 11, visitasMes: 3, vendasMes: 0, saude: { em_dia: 87, atencao: 7, desatualizado: 3, estagnado: 1 } as Record<SaudeKey, number> },
-  { nome: "Matheus Pasin", presente: true, leads: 87, acao: 49, visitasMes: 8, vendasMes: 1, saude: { em_dia: 38, atencao: 28, desatualizado: 15, estagnado: 6 } as Record<SaudeKey, number> },
-  { nome: "Luiza Clós", presente: true, leads: 79, acao: 41, visitasMes: 11, vendasMes: 1, saude: { em_dia: 38, atencao: 24, desatualizado: 12, estagnado: 5 } as Record<SaudeKey, number> },
-];
+  { nome: "William Brizola", leadsMes: 100, visitasTotais: 15, visitasReal: 12, negocios: 1, vendas: 2 },
+  { nome: "Matheus Pasin", leadsMes: 87, visitasTotais: 10, visitasReal: 8, negocios: 1, vendas: 1 },
+  { nome: "Luiza Clós", leadsMes: 79, visitasTotais: 13, visitasReal: 11, negocios: 0, vendas: 1 },
+  { nome: "Rafaela Sandin", leadsMes: 127, visitasTotais: 12, visitasReal: 9, negocios: 0, vendas: 0 },
+  { nome: "Ebert Silva", leadsMes: 98, visitasTotais: 4, visitasReal: 3, negocios: 0, vendas: 0 },
+].sort((a, b) => b.vendas - a.vendas || b.negocios - a.negocios || b.visitasReal - a.visitasReal || b.leadsMes - a.leadsMes);
 
 function Saudacao({ variante = "cockpit" }: { variante?: string }) {
   const frase = variante === "dia" ? "Bora organizar o dia do time." : "Time bom é time que anda junto — bora fechar o mês.";
@@ -105,8 +107,8 @@ function ResultadoKpis() {
   const items = [
     { icon: <Trophy className="h-3.5 w-3.5" />, label: "Vendas no mês", value: String(TIME.vendasMes), sub: `${TIME.vgvMes} · ticket ${TIME.ticket}`, tone: "text-emerald-600", to: "vendas" },
     { icon: <Users className="h-3.5 w-3.5" />, label: "Leads da equipe", value: TIME.leads.toLocaleString("pt-BR"), sub: "76% em dia", tone: "text-slate-800", to: "leads" },
-    { icon: <TrendingUp className="h-3.5 w-3.5" />, label: "Conversão lead→venda", value: `${TIME.conversao}%`, sub: "no mês", tone: "text-slate-800", to: "conv" },
-    { icon: <CalendarCheck className="h-3.5 w-3.5" />, label: "Aproveitamento", value: `${TIME.aproveitamento}%`, sub: "lead → visita", tone: "text-slate-800", to: "aprov" },
+    { icon: <CalendarCheck className="h-3.5 w-3.5" />, label: "Conversão lead→visita", value: `${TIME.convVisita}%`, sub: "no mês", tone: "text-slate-800", to: "convVisita" },
+    { icon: <TrendingUp className="h-3.5 w-3.5" />, label: "Conversão lead→venda", value: `${TIME.convVenda}%`, sub: "no mês", tone: "text-slate-800", to: "convVenda" },
   ];
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -149,14 +151,13 @@ function VisitasCard() {
   return (
     <button className="group w-full text-left">
     <Card className="transition-all group-hover:-translate-y-0.5 group-hover:shadow-md">
-      <div className="flex items-center gap-2"><CalendarCheck className="h-4 w-4 text-sky-600" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Visitas</span><ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500" /></div>
-      <div className="mt-2 grid grid-cols-4 gap-2 text-center">
-        <div><div className="text-2xl font-extrabold text-slate-800">{TIME.visitasHoje}</div><div className="text-[9px] font-semibold uppercase text-slate-400">hoje</div></div>
-        <div><div className="text-2xl font-extrabold text-slate-800">{TIME.agendadasSemana}</div><div className="text-[9px] font-semibold uppercase text-slate-400">agend. sem.</div></div>
-        <div><div className="text-2xl font-extrabold text-emerald-600">{TIME.realizadasSemana}</div><div className="text-[9px] font-semibold uppercase text-slate-400">real. sem.</div></div>
-        <div><div className="text-2xl font-extrabold text-emerald-600">{TIME.realizadasMes}</div><div className="text-[9px] font-semibold uppercase text-slate-400">real. mês</div></div>
+      <div className="flex items-center gap-2"><CalendarCheck className="h-4 w-4 text-sky-600" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Visitas do mês</span><ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500" /></div>
+      <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+        <div><div className="text-2xl font-extrabold text-slate-800">{TIME.visitasTotalMes}</div><div className="text-[9px] font-semibold uppercase text-slate-400">total</div></div>
+        <div><div className="text-2xl font-extrabold text-emerald-600">{TIME.visitasRealizadasMes}</div><div className="text-[9px] font-semibold uppercase text-slate-400">realizadas</div></div>
+        <div><div className="text-2xl font-extrabold text-indigo-600">{TIME.comparecimento}%</div><div className="text-[9px] font-semibold uppercase text-slate-400">comparec.</div></div>
       </div>
-      <div className="mt-2 text-[11px] text-slate-400">→ abrir agenda de visitas</div>
+      <div className="mt-2 text-[11px] text-slate-400">{TIME.visitasHoje} agendadas hoje · → abrir agenda</div>
     </Card>
     </button>
   );
@@ -201,14 +202,17 @@ function AgendaGerente({ big }: { big?: boolean }) {
     </Card>
   );
 }
-function CorretorRow({ c }: { c: typeof CORRETORES[number] }) {
+function CorretorRow({ c, rank }: { c: typeof CORRETORES[number]; rank: number }) {
+  const medalha = rank === 1 ? "bg-amber-100 text-amber-700" : rank === 2 ? "bg-slate-200 text-slate-600" : rank === 3 ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-400";
   return (
-    <button className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-slate-50">
-      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${c.presente ? "bg-emerald-500" : "bg-slate-300"}`} title={c.presente ? "presente hoje" : "ausente hoje"} />
-      <div className="w-36 shrink-0 min-w-0"><div className="truncate text-[13px] font-semibold text-slate-800">{c.nome}</div><div className="text-[11px] text-slate-400">{c.leads} leads · {c.acao} p/ ação</div></div>
-      <div className="hidden sm:block flex-1"><HealthBar counts={c.saude} order={LEAD_ORDER} h="h-1.5" /></div>
-      <div className="w-12 shrink-0 text-center"><div className="text-[13px] font-bold text-slate-800">{c.visitasMes}</div><div className="text-[9px] uppercase text-slate-400">visitas</div></div>
-      <div className="w-12 shrink-0 text-center"><div className="text-[13px] font-bold text-emerald-600">{c.vendasMes}</div><div className="text-[9px] uppercase text-slate-400">vendas</div></div>
+    <button className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:bg-slate-50">
+      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${medalha}`}>{rank}</span>
+      <div className="w-32 shrink-0 min-w-0"><div className="truncate text-[13px] font-semibold text-slate-800">{c.nome}</div><div className="text-[11px] text-slate-400">{c.leadsMes} leads no mês</div></div>
+      <div className="flex flex-1 items-center justify-end gap-4 sm:gap-6">
+        <div className="text-center"><div className="text-[13px] font-bold text-slate-700">{c.visitasTotais}<span className="text-slate-300"> / </span>{c.visitasReal}</div><div className="text-[9px] uppercase text-slate-400">vis. tot/real</div></div>
+        <div className="text-center"><div className="text-[13px] font-bold text-slate-700">{c.negocios}</div><div className="text-[9px] uppercase text-slate-400">negócios</div></div>
+        <div className="text-center"><div className="text-[15px] font-extrabold text-emerald-600">{c.vendas}</div><div className="text-[9px] uppercase text-slate-400">vendas</div></div>
+      </div>
       <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-slate-500" />
     </button>
   );
@@ -228,9 +232,9 @@ function ModeloA() {
       <div>
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Corretores do time · resultado do mês</span>
-          <span className="text-[11px] text-slate-400">leads · visitas · vendas</span>
+          <span className="text-[11px] text-slate-400">ranqueado por vendas → negócios → visitas → leads</span>
         </div>
-        <div className="space-y-2">{CORRETORES.map((c) => <CorretorRow key={c.nome} c={c} />)}</div>
+        <div className="space-y-1.5">{CORRETORES.map((c, i) => <CorretorRow key={c.nome} c={c} rank={i + 1} />)}</div>
       </div>
     </div>
   );
@@ -248,8 +252,8 @@ function ModeloB() {
         <KpiMini icon={<Target className="h-3.5 w-3.5" />} label="Meta" value={`${TIME.metaPct}%`} sub="R$1,8M/4,0M" tone="text-indigo-600" />
       </div>
       <div>
-        <div className="mb-2 flex items-center justify-between"><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Meu time</span><span className="text-[11px] text-slate-400">presença · leads · visitas · negócios</span></div>
-        <div className="space-y-2">{CORRETORES.map((c) => <CorretorRow key={c.nome} c={c} />)}</div>
+        <div className="mb-2 flex items-center justify-between"><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Meu time</span><span className="text-[11px] text-slate-400">ranqueado · leads · visitas · negócios · vendas</span></div>
+        <div className="space-y-1.5">{CORRETORES.map((c, i) => <CorretorRow key={c.nome} c={c} rank={i + 1} />)}</div>
       </div>
       <AgendaGerente />
     </div>
