@@ -8,7 +8,7 @@
 import { useState } from "react";
 import {
   Target, Handshake, Users, CalendarCheck, UserCheck, AlertTriangle, ArrowRight,
-  Sparkles, Clock, Bell, TrendingUp,
+  Sparkles, Clock, Bell, TrendingUp, Pencil, Trophy,
 } from "lucide-react";
 
 const NOME = "Bruno Schuler";
@@ -50,20 +50,25 @@ function KpiMini({ icon, label, value, sub, tone = "text-slate-800" }: { icon: R
 const TIME = {
   corretores: 15, presentes: 12,
   leads: 803, leadsSaude: { em_dia: 612, atencao: 110, desatualizado: 62, estagnado: 18 } as Record<SaudeKey, number>,
-  visitasHoje: 6, visitasSemana: 21, visitasRealizadasSemana: 14,
+  visitasHoje: 6, agendadasSemana: 21, realizadasSemana: 14, realizadasMes: 58,
   negocios: 12, negFunil: [
     { nome: "Pós-Visita", n: 9, dot: "bg-cyan-500" }, { nome: "Documentação", n: 3, dot: "bg-sky-500" },
     { nome: "Proposta", n: 5, dot: "bg-violet-500" }, { nome: "Contrato", n: 1, dot: "bg-indigo-500" },
     { nome: "Ganho (mês)", n: 2, dot: "bg-emerald-500" },
   ],
   meta: 4_000_000, assinado: 1_800_000, metaPct: 44, pipelineAtivo: "R$ 1,7M",
+  // RESULTADO do mês
+  vendasMes: 6, vgvMes: "R$ 1,8M", ticket: "R$ 300k",
+  conversao: 4.1,        // lead → venda (%)
+  aproveitamento: 22,    // lead → visita (%) — "quanto do lead vira visita"
 };
+// corretores — dados do MÊS (leads, visitas realizadas, vendas, saúde)
 const CORRETORES = [
-  { nome: "Rafaela Sandin", presente: true, leads: 127, acao: 67, visitas: 2, neg: 0, saude: { em_dia: 60, atencao: 40, desatualizado: 20, estagnado: 7 } as Record<SaudeKey, number> },
-  { nome: "William Brizola", presente: true, leads: 100, acao: 51, visitas: 1, neg: 1, saude: { em_dia: 49, atencao: 30, desatualizado: 15, estagnado: 6 } as Record<SaudeKey, number> },
-  { nome: "Ebert Silva", presente: false, leads: 98, acao: 11, visitas: 0, neg: 0, saude: { em_dia: 87, atencao: 7, desatualizado: 3, estagnado: 1 } as Record<SaudeKey, number> },
-  { nome: "Matheus Pasin", presente: true, leads: 87, acao: 49, visitas: 1, neg: 1, saude: { em_dia: 38, atencao: 28, desatualizado: 15, estagnado: 6 } as Record<SaudeKey, number> },
-  { nome: "Luiza Clós", presente: true, leads: 79, acao: 41, visitas: 2, neg: 0, saude: { em_dia: 38, atencao: 24, desatualizado: 12, estagnado: 5 } as Record<SaudeKey, number> },
+  { nome: "Rafaela Sandin", presente: true, leads: 127, acao: 67, visitasMes: 9, vendasMes: 0, saude: { em_dia: 60, atencao: 40, desatualizado: 20, estagnado: 7 } as Record<SaudeKey, number> },
+  { nome: "William Brizola", presente: true, leads: 100, acao: 51, visitasMes: 12, vendasMes: 2, saude: { em_dia: 49, atencao: 30, desatualizado: 15, estagnado: 6 } as Record<SaudeKey, number> },
+  { nome: "Ebert Silva", presente: false, leads: 98, acao: 11, visitasMes: 3, vendasMes: 0, saude: { em_dia: 87, atencao: 7, desatualizado: 3, estagnado: 1 } as Record<SaudeKey, number> },
+  { nome: "Matheus Pasin", presente: true, leads: 87, acao: 49, visitasMes: 8, vendasMes: 1, saude: { em_dia: 38, atencao: 28, desatualizado: 15, estagnado: 6 } as Record<SaudeKey, number> },
+  { nome: "Luiza Clós", presente: true, leads: 79, acao: 41, visitasMes: 11, vendasMes: 1, saude: { em_dia: 38, atencao: 24, desatualizado: 12, estagnado: 5 } as Record<SaudeKey, number> },
 ];
 
 function Saudacao({ variante = "cockpit" }: { variante?: string }) {
@@ -84,11 +89,35 @@ function MetaCard() {
   return (
     <Card className="relative overflow-hidden">
       <span className="absolute inset-y-0 left-0 w-1 bg-indigo-500" />
-      <div className="flex items-center gap-2"><Target className="h-4 w-4 text-indigo-500" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Meta do mês · VGV assinado</span></div>
+      <div className="flex items-center gap-2">
+        <Target className="h-4 w-4 text-indigo-500" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Meta do mês · VGV assinado</span>
+        <button className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 h-7 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"><Pencil className="h-3 w-3" /> Alterar meta</button>
+      </div>
       <div className="mt-2 flex items-end gap-3"><span className="text-4xl font-extrabold leading-none text-indigo-700">R$ 1,8M</span><span className="pb-1 text-[14px] font-semibold text-slate-500">de R$ 4,0M · {TIME.metaPct}%</span></div>
       <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${TIME.metaPct}%` }} /></div>
       <div className="mt-2.5 text-[12px] text-slate-500">Pipeline ativo: <b className="text-slate-800">{TIME.pipelineAtivo}</b> · faltam R$ 2,2M</div>
     </Card>
+  );
+}
+
+// Resultado do mês — KPIs de RESULTADO (o que o Lucas pediu). Clicáveis (setinha).
+function ResultadoKpis() {
+  const items = [
+    { icon: <Trophy className="h-3.5 w-3.5" />, label: "Vendas no mês", value: String(TIME.vendasMes), sub: `${TIME.vgvMes} · ticket ${TIME.ticket}`, tone: "text-emerald-600", to: "vendas" },
+    { icon: <Users className="h-3.5 w-3.5" />, label: "Leads da equipe", value: TIME.leads.toLocaleString("pt-BR"), sub: "76% em dia", tone: "text-slate-800", to: "leads" },
+    { icon: <TrendingUp className="h-3.5 w-3.5" />, label: "Conversão lead→venda", value: `${TIME.conversao}%`, sub: "no mês", tone: "text-slate-800", to: "conv" },
+    { icon: <CalendarCheck className="h-3.5 w-3.5" />, label: "Aproveitamento", value: `${TIME.aproveitamento}%`, sub: "lead → visita", tone: "text-slate-800", to: "aprov" },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {items.map((k) => (
+        <button key={k.label} className="group rounded-xl border border-slate-200 bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <div className="flex items-center gap-1.5 text-slate-400">{k.icon}<span className="text-[11px] font-semibold uppercase tracking-wide">{k.label}</span><ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500" /></div>
+          <div className={`mt-1 text-2xl font-extrabold ${k.tone}`}>{k.value}</div>
+          <div className="text-[11px] text-slate-400">{k.sub}</div>
+        </button>
+      ))}
+    </div>
   );
 }
 function PresencaCard() {
@@ -118,20 +147,24 @@ function LeadsCard() {
 }
 function VisitasCard() {
   return (
-    <Card>
-      <div className="flex items-center gap-2"><CalendarCheck className="h-4 w-4 text-sky-600" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Visitas</span></div>
-      <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-        <div><div className="text-2xl font-extrabold text-slate-800">{TIME.visitasHoje}</div><div className="text-[10px] font-semibold uppercase text-slate-400">hoje</div></div>
-        <div><div className="text-2xl font-extrabold text-slate-800">{TIME.visitasSemana}</div><div className="text-[10px] font-semibold uppercase text-slate-400">semana</div></div>
-        <div><div className="text-2xl font-extrabold text-emerald-600">{TIME.visitasRealizadasSemana}</div><div className="text-[10px] font-semibold uppercase text-slate-400">realizadas</div></div>
+    <button className="group w-full text-left">
+    <Card className="transition-all group-hover:-translate-y-0.5 group-hover:shadow-md">
+      <div className="flex items-center gap-2"><CalendarCheck className="h-4 w-4 text-sky-600" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Visitas</span><ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500" /></div>
+      <div className="mt-2 grid grid-cols-4 gap-2 text-center">
+        <div><div className="text-2xl font-extrabold text-slate-800">{TIME.visitasHoje}</div><div className="text-[9px] font-semibold uppercase text-slate-400">hoje</div></div>
+        <div><div className="text-2xl font-extrabold text-slate-800">{TIME.agendadasSemana}</div><div className="text-[9px] font-semibold uppercase text-slate-400">agend. sem.</div></div>
+        <div><div className="text-2xl font-extrabold text-emerald-600">{TIME.realizadasSemana}</div><div className="text-[9px] font-semibold uppercase text-slate-400">real. sem.</div></div>
+        <div><div className="text-2xl font-extrabold text-emerald-600">{TIME.realizadasMes}</div><div className="text-[9px] font-semibold uppercase text-slate-400">real. mês</div></div>
       </div>
+      <div className="mt-2 text-[11px] text-slate-400">→ abrir agenda de visitas</div>
     </Card>
+    </button>
   );
 }
 function FunilCard() {
   return (
     <Card>
-      <div className="mb-3 flex items-center gap-2"><Handshake className="h-4 w-4 text-slate-500" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Funil de negócios do time</span></div>
+      <div className="mb-3 flex items-center gap-2"><Handshake className="h-4 w-4 text-slate-500" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Funil de negócios do time</span><button className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 h-7 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">Ver no pipeline <ArrowRight className="h-3 w-3" /></button></div>
       <div className="flex flex-wrap items-stretch gap-2">
         {TIME.negFunil.map((s) => (
           <div key={s.nome} className="flex-1 min-w-[100px]">
@@ -170,13 +203,14 @@ function AgendaGerente({ big }: { big?: boolean }) {
 }
 function CorretorRow({ c }: { c: typeof CORRETORES[number] }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${c.presente ? "bg-emerald-500" : "bg-slate-300"}`} title={c.presente ? "presente" : "ausente"} />
+    <button className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-slate-50">
+      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${c.presente ? "bg-emerald-500" : "bg-slate-300"}`} title={c.presente ? "presente hoje" : "ausente hoje"} />
       <div className="w-36 shrink-0 min-w-0"><div className="truncate text-[13px] font-semibold text-slate-800">{c.nome}</div><div className="text-[11px] text-slate-400">{c.leads} leads · {c.acao} p/ ação</div></div>
       <div className="hidden sm:block flex-1"><HealthBar counts={c.saude} order={LEAD_ORDER} h="h-1.5" /></div>
-      <div className="w-10 shrink-0 text-center"><div className="text-[13px] font-bold text-slate-800">{c.visitas}</div><div className="text-[9px] uppercase text-slate-400">vis</div></div>
-      <div className="w-10 shrink-0 text-center"><div className="text-[13px] font-bold text-emerald-600">{c.neg}</div><div className="text-[9px] uppercase text-slate-400">neg</div></div>
-    </div>
+      <div className="w-12 shrink-0 text-center"><div className="text-[13px] font-bold text-slate-800">{c.visitasMes}</div><div className="text-[9px] uppercase text-slate-400">visitas</div></div>
+      <div className="w-12 shrink-0 text-center"><div className="text-[13px] font-bold text-emerald-600">{c.vendasMes}</div><div className="text-[9px] uppercase text-slate-400">vendas</div></div>
+      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-slate-500" />
+    </button>
   );
 }
 
@@ -185,11 +219,17 @@ function ModeloA() {
   return (
     <div className="space-y-3">
       <div className="grid gap-3 lg:grid-cols-3"><div className="lg:col-span-2"><MetaCard /></div><PresencaCard /></div>
+      {/* KPIs de RESULTADO do mês */}
+      <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Resultado do mês</div>
+      <ResultadoKpis />
       <div className="grid gap-3 lg:grid-cols-3"><div className="lg:col-span-2"><LeadsCard /></div><VisitasCard /></div>
       <FunilCard />
       <AgendaGerente big />
       <div>
-        <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Corretores do time</div>
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Corretores do time · resultado do mês</span>
+          <span className="text-[11px] text-slate-400">leads · visitas · vendas</span>
+        </div>
         <div className="space-y-2">{CORRETORES.map((c) => <CorretorRow key={c.nome} c={c} />)}</div>
       </div>
     </div>
