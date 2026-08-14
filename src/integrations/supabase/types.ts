@@ -15168,6 +15168,10 @@ export type Database = {
           turno: string
         }[]
       }
+      get_produtividade_gerente_dia: {
+        Args: { p_data?: string }
+        Returns: Json
+      }
       get_profile_id_for_auth: { Args: never; Returns: string }
       get_ranking_central: {
         Args: { p_end: string; p_gestor_id: string; p_start: string }
