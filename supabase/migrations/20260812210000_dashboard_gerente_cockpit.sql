@@ -34,7 +34,8 @@ BEGIN
   neg AS (SELECT n.id, n.fase, n.status, n.auth_user_id, COALESCE(n.vgv_final,n.vgv_estimado) AS vgv, n.data_assinatura
     FROM negocios n JOIN team t ON t.corretor = n.auth_user_id),
   vendas AS (SELECT * FROM neg WHERE fase='ganho' AND data_assinatura IS NOT NULL AND to_char(data_assinatura,'YYYY-MM')=v_mes),
-  presenca AS (SELECT count(DISTINCT rp.corretor_id) n FROM roleta_presencas rp JOIN team t ON t.corretor=rp.corretor_id
+  presenca AS (SELECT count(DISTINCT rp.corretor_id) n FROM roleta_presencas rp
+    JOIN profiles pp ON pp.id = rp.corretor_id JOIN team t ON t.corretor = pp.user_id
     WHERE rp.data = v_today AND rp.chegou_em IS NOT NULL),
   corr AS (
     SELECT t.corretor, t.nome,

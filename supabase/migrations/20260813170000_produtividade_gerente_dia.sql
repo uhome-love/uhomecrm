@@ -20,10 +20,10 @@ BEGIN
     RAISE EXCEPTION 'Acesso negado';
   END IF;
 
-  WITH team AS (
+  WITH team AS (  -- exclui o próprio gerente (ele aparece como membro do próprio time)
     SELECT tm.user_id AS corretor, COALESCE(p.nome,'Corretor') AS nome
     FROM team_members tm LEFT JOIN profiles p ON p.user_id = tm.user_id
-    WHERE tm.gerente_id = v_uid AND tm.status='ativo' AND tm.user_id IS NOT NULL),
+    WHERE tm.gerente_id = v_uid AND tm.status='ativo' AND tm.user_id IS NOT NULL AND tm.user_id <> v_uid),
   -- último toque ANTES do dia (pra saber a saúde "de manhã", sem o toque de hoje mascarar)
   prev AS (
     SELECT pa.pipeline_lead_id, max(pa.created_at) AS mx
@@ -110,7 +110,7 @@ BEGIN
         'nome', l.nome, 'presente', l.presente, 'situacao', l.situacao, 'dever_pct', l.dever_pct,
         'risco_toc', l.risco_toc, 'risco_dev', l.risco_dev, 'nov_at', l.nov_at, 'nov_rec', l.nov_rec,
         'sc_toc', l.sc_toc, 'sc_dev', l.sc_dev, 'vis_ag', l.vis_ag, 'avancos', l.avancos, 'vis_real', l.vis_real)
-      ORDER BY (l.situacao='parado' AND l.presente) DESC, (l.situacao='parado') DESC, (l.situacao='atencao') DESC, l.dever_pct NULLS LAST)
+      ORDER BY l.dever_pct DESC NULLS LAST, l.nome)
       FROM linhas l), '[]'::jsonb)
   ) INTO v_result;
   RETURN v_result;
