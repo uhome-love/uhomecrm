@@ -1,63 +1,45 @@
-# VisitaMarcada — auditoria da cobertura (o furo não é o que parecia)
+# Placar da TV: contar qualquer visita agendada no dia (1 por cliente por sessão)
 
-## (a) Como o VisitaMarcada é disparado hoje
+## O que verifiquei agora (dados reais de hoje, 14/08)
 
-Não é por mudança de etapa do lead. Já existe trigger **na própria tabela `visitas`**:
+- Visitas marcadas fora do mutirão **já contam** no placar: existe o gatilho `trg_visita_conta_mutirao` em `visitas`, que cria/atualiza o participante, soma 30 pontos, grava no extrato (`oferta_ativa_ligacoes`, origem `pipeline`) e dispara a celebração.
+- Sessão de hoje está `ao_vivo` (09:30 → 21:30 BRT).
+- Hoje foram criadas **8 visitas** e só **3 pontuaram**. As 5 que não pontuaram foram bloqueadas pela regra atual "só cliente inédito no funil":
+  - Paulinha Paim (visita anterior 09/07, realizada)
+  - Daniele Russi Jardim (26/06, realizada)
+  - patricia (várias visitas de jun/jul)
+  - Alexandre Tadashi (31/07, no_show)
+  - Carlos Temes Quadros (04/08, realizada)
 
-```text
-trg_visita_capi  AFTER INSERT OR UPDATE OF status ON public.visitas
-  → public._trg_visita_capi()
-      status = 'marcada'  → enqueue_meta_capi_event(..., 'VisitaMarcada',
-                              custom_data = {visita_id, data_visita, empreendimento})
-      status = 'realizada'→ 'VisitaRealizada'
-```
+Ou seja: o furo não é "pipeline não conta", é a trava de cliente inédito criada em 31/07.
 
-Ou seja, **o fix proposto (trigger AFTER INSERT em `visitas`) já está implementado em produção**. Criar outro trigger duplicaria evento sem cobrir nada novo.
+## Nova regra (decidida)
 
-Existe também um caminho paralelo da Lia (`trg_ia_apresentacao_capi` → `enqueue_meta_capi_event_lia`), que não interfere aqui.
+**1 visita pontuada por cliente por sessão.** Toda visita criada durante o mutirão pontua 30, inclusive remarcação de cliente que já visitou em outras datas — desde que aquele cliente ainda **não** tenha pontuado na sessão de hoje.
 
-## (b) Causa real das visitas sem evento
+Mantém-se:
+- 30 pontos por visita, aproveitado 5, tentativa 0.
+- Visita marcada dentro do mutirão continua contando uma única vez (sem duplicar com a do pipeline).
+- Vale para qualquer corretor, participando ou não do mutirão (entra no placar automaticamente).
+- Conta pelo dia em que a visita foi **marcada** (BRT), não pela data da visita.
 
-Auditoria das visitas criadas desde 05/08 (85 linhas, 20 sem evento):
+## O que muda tecnicamente
 
-| Motivo | Qtde | Natureza |
-|---|---|---|
-| Visita criada **antes de 05/08 19:24**, quando o evento ainda se chamava `Schedule` | 3 | Falso furo — o evento existe, com outro nome |
-| Lead **sem `meta_lead_id`** → bloqueado pela guarda da `enqueue_meta_capi_event` | 17 | Comportamento intencional |
-| `pipeline_lead_id` nulo | 0 | — |
-| Visita inserida já com status ≠ 'marcada' | 0 | — |
-
-Confirmado: **nenhuma visita foi perdida por “lead não mudou de etapa”**. A guarda da `enqueue_meta_capi_event` (regra fixa do projeto: sem `meta_lead_id` o evento não entra na fila) é a única causa dos 17.
-
-Origem dos 17 bloqueados: reengajamento 4, manual 3, oferta ativa 3, meta_ads 3, facebook leads ads 1, site/indicação 3.
-
-- **13 deles não são de anúncio Meta** (manual, indicação, site, oferta ativa, reengajamento). Não têm o que casar no Meta — enviar inflaria o volume sem atribuição. Cobertura correta = excluí-los da conta.
-- **4 são de origem Meta** (`meta_ads` / `Facebook Leads Ads`), mas são leads antigos (fev–jun/2026), anteriores à captura do `meta_lead_id`. Esses são o furo legítimo — e não têm remédio via trigger: falta o identificador na origem.
-
-**Cobertura recalculada** sobre a base elegível (visita desde 05/08 19:24, lead com `meta_lead_id`): **100%** — 0 furo. O “16%” medido comparava contra o universo total de visitas, incluindo leads que a guarda bloqueia de propósito.
-
-Higiene encontrada de brinde: 73 eventos `VisitaMarcada` na fila para 65 leads, com **2 duplicatas exatas** (mesmo lead + mesmo `visita_id`) — vindas de re-`UPDATE` de status voltando para 'marcada'. Impacto pequeno, mas é sobrecontagem real.
-
-## O que proponho fazer (aditivo, sem tocar no que funciona)
-
-Nada de trigger novo. Duas correções cirúrgicas:
-
-1. **Dedup dentro da `_trg_visita_capi`** — antes de enfileirar `VisitaMarcada`, checar se já existe evento com o mesmo `visita_id` em `meta_capi_queue`; se existir, não enfileira. Mesmo tratamento para `VisitaRealizada`. O disparo por INSERT e por mudança de status continua igual; só deixa de repetir. `event_id` e formato de payload permanecem intactos.
-2. **Medição honesta da cobertura** — a fórmula do painel passa a considerar só visitas cujo lead tem `meta_lead_id` (base elegível), e mostrar em separado a contagem de visitas bloqueadas pela guarda, com quebra por origem. Assim o furo de ingestão de `meta_lead_id` fica visível em vez de virar “furo de CAPI”.
-
-Fora do escopo desta correção, mas é a raiz do que sobrou: 4 visitas de leads Meta antigos sem `meta_lead_id`. Se quiser, avalio depois um backfill do `meta_lead_id` via Graph API para leads de origem Meta.
-
-## Detalhes técnicos
-
-- Migração (DDL, 1 migração): `CREATE OR REPLACE FUNCTION public._trg_visita_capi()` acrescentando, antes do `PERFORM`, o guard:
-  `IF EXISTS (SELECT 1 FROM public.meta_capi_queue q WHERE q.event_name = v_event AND q.payload->'custom_data'->>'visita_id' = NEW.id::text) THEN RETURN NEW; END IF;`
-  Bloco `EXCEPTION WHEN OTHERS` existente preservado (rastreamento nunca derruba a escrita da visita).
-- Índice aditivo para o lookup ficar barato: `CREATE INDEX IF NOT EXISTS idx_capi_queue_visita ON public.meta_capi_queue ((payload->'custom_data'->>'visita_id')) WHERE event_name IN ('VisitaMarcada','VisitaRealizada');`
-- Nenhum `event_name` novo, nenhuma alteração em `enqueue_meta_capi_event`, nada em roleta/distribuição.
-- Frontend: ajuste do cálculo de cobertura em `src/hooks/useCapiSaude.ts` + card correspondente.
+1. Migration substituindo `public.trg_visita_conta_mutirao`:
+   - **Remover** o bloqueio "existe visita anterior do mesmo cliente em qualquer data".
+   - **Manter/reforçar** o dedup por sessão usando a mesma chave SSOT (`pipeline_lead_id` > telefone só dígitos > nome normalizado): se já existe linha `visita_agendada` na sessão para aquele cliente, não pontua de novo.
+   - Para o dedup funcionar por cliente mesmo sem lead vinculado, comparar contra as visitas da sessão (join `oferta_ativa_ligacoes` × `visitas` do dia) em vez de só `pipeline_lead_id` + janela de 15 min.
+   - Continua `SECURITY DEFINER` com `EXCEPTION WHEN OTHERS` para nunca bloquear o agendamento da visita.
+2. Sem mudança de frontend: `PlacarTv`, `RankingPanel` e a função `oferta-ativa-ranking` já leem os contadores/extrato.
+3. Backfill opcional da sessão de hoje: reprocessar as 5 visitas bloqueadas (Paulinha, Daniele, patricia, Alexandre Tadashi, Carlos Temes) para somar +30 a cada corretor e aparecer no placar. Confirmar se quer isso — sem backfill, a regra nova só vale das próximas visitas em diante.
 
 ## Validação após o build
 
-1. Inserir uma visita de teste com lead que tenha `meta_lead_id` → 1 evento na fila; forçar re-update de status para 'marcada' → segue com 1 evento.
-2. Reconferir a query de cobertura: base elegível em 100%, bloqueados listados por origem.
-3. Nenhum evento novo aparecendo com `event_time` fora da janela de 7 dias.
+- Conferir na TV que os 5 corretores acima ganharam a visita (se o backfill for aprovado).
+- Marcar uma visita de teste por fora do mutirão e ver contador +1, +30 pontos e pop-up de celebração.
+- Marcar segunda visita do mesmo cliente de teste na mesma sessão: **não** deve pontuar de novo.
+- Excluir a visita de teste ao final.
+
+## Atualização de memória
+
+A regra `mem://features/oferta-ativa/visita-pontua-so-cliente-inedito` será reescrita para "1 visita por cliente por sessão".
