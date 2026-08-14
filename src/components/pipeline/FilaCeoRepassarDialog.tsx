@@ -139,7 +139,7 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
             Repassar lead manualmente
           </DialogTitle>
           <DialogDescription>
-            Escolha o corretor que vai receber <strong>{leadNome || "este lead"}</strong>.
+            Escolha quem vai receber <strong>{leadNome || "este lead"}</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -149,7 +149,7 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar corretor..."
+              placeholder="Buscar por nome..."
               className="pl-8"
             />
           </div>
@@ -159,26 +159,54 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
               <div className="flex justify-center py-6">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
-            ) : filtered.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">Nenhum corretor encontrado.</p>
+            ) : filtered.length === 0 && filteredGestao.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">Ninguém encontrado.</p>
             ) : (
-              filtered.map((c) => (
-                <button
-                  key={c.user_id}
-                  onClick={() => setSelected(c.user_id)}
-                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-sm text-left transition-colors ${
-                    selected === c.user_id
-                      ? "bg-primary/10 border border-primary/40 text-primary font-medium"
-                      : "hover:bg-muted border border-transparent"
-                  }`}
-                >
-                  <span className="truncate">{c.nome}</span>
-                  {c.equipe && <span className="text-[10px] text-muted-foreground shrink-0">{c.equipe}</span>}
-                </button>
-              ))
+              <>
+                {filteredGestao.length > 0 && (
+                  <p className="px-2 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Gestão
+                  </p>
+                )}
+                {filteredGestao.map((c) => (
+                  <button
+                    key={c.user_id}
+                    onClick={() => setSelected(c.user_id)}
+                    className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-sm text-left transition-colors ${
+                      selected === c.user_id
+                        ? "bg-primary/10 border border-primary/40 text-primary font-medium"
+                        : "hover:bg-muted border border-transparent"
+                    }`}
+                  >
+                    <span className="truncate">{c.nome}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{c.gestao}</span>
+                  </button>
+                ))}
+
+                {filtered.length > 0 && (
+                  <p className="px-2 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Corretores
+                  </p>
+                )}
+                {filtered.map((c) => (
+                  <button
+                    key={c.user_id}
+                    onClick={() => setSelected(c.user_id)}
+                    className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-sm text-left transition-colors ${
+                      selected === c.user_id
+                        ? "bg-primary/10 border border-primary/40 text-primary font-medium"
+                        : "hover:bg-muted border border-transparent"
+                    }`}
+                  >
+                    <span className="truncate">{c.nome}</span>
+                    {c.equipe && <span className="text-[10px] text-muted-foreground shrink-0">{c.equipe}</span>}
+                  </button>
+                ))}
+              </>
             )}
           </div>
         </div>
+
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
