@@ -67,6 +67,7 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
 
   useEffect(() => {
     if (!open) return;
+    if (type === "novos_agendamentos") { setRows([]); return; }
     setLoading(true);
     fetchData().finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
