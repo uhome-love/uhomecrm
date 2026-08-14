@@ -2,7 +2,8 @@
 -- Tabela CRUA `visitas` (tipo=lead) por DATA_VISITA no período. CADA visita conta —
 -- NÃO deduplica: um cliente pode visitar 2 empreendimentos no mesmo dia = 2 visitas reais
 -- (deduplicar por visitas_unicas subtraía visitas legítimas). Ignora cancelada + backfill_*.
--- Buckets MUTUAMENTE EXCLUSIVOS: total = a_realizar + realizadas + no_show.
+-- Buckets MUTUAMENTE EXCLUSIVOS (por data_visita): total = a_realizar + realizadas + no_show.
+-- + 'agendadas' = visitas MARCADAS no período (por created_at) — novos agendamentos.
 -- Espelhado em TS por src/lib/visitaKpis.ts (bucketVisitasCanonico) — andam juntas.
 -- Escopo: admin/diretor/gestor/rh veem o escopo pedido (null = todos); demais só a si.
 -- Já aplicada em produção em 14/08/2026 (v2 crua).
@@ -20,15 +21,22 @@ BEGIN
     v_scope := ARRAY[v_uid];
   END IF;
   SELECT jsonb_build_object(
-    'total', count(*),
-    'a_realizar', count(*) FILTER (WHERE v.status IN ('marcada','confirmada','reagendada')),
-    'realizadas', count(*) FILTER (WHERE v.status='realizada'),
-    'no_show', count(*) FILTER (WHERE v.status='no_show')
+    'total', count(*) FILTER (WHERE t.dvis),
+    'a_realizar', count(*) FILTER (WHERE t.dvis AND t.status IN ('marcada','confirmada','reagendada')),
+    'realizadas', count(*) FILTER (WHERE t.dvis AND t.status='realizada'),
+    'no_show', count(*) FILTER (WHERE t.dvis AND t.status='no_show'),
+    'agendadas', count(*) FILTER (WHERE t.dcreated)
   ) INTO v_result
-  FROM visitas v
-  WHERE v.data_visita BETWEEN p_start AND p_end
-    AND v.status <> 'cancelada' AND COALESCE(v.origem,'') NOT LIKE 'backfill_%'
-    AND COALESCE(v.tipo,'lead') = 'lead'
-    AND (v_scope IS NULL OR v.corretor_id = ANY(v_scope));
-  RETURN COALESCE(v_result, jsonb_build_object('total',0,'a_realizar',0,'realizadas',0,'no_show',0));
+  FROM (
+    SELECT v.status,
+      (v.data_visita BETWEEN p_start AND p_end) AS dvis,
+      ((v.created_at AT TIME ZONE 'America/Sao_Paulo')::date BETWEEN p_start AND p_end) AS dcreated
+    FROM visitas v
+    WHERE (v.data_visita BETWEEN p_start AND p_end
+           OR (v.created_at AT TIME ZONE 'America/Sao_Paulo')::date BETWEEN p_start AND p_end)
+      AND v.status <> 'cancelada' AND COALESCE(v.origem,'') NOT LIKE 'backfill_%'
+      AND COALESCE(v.tipo,'lead') = 'lead'
+      AND (v_scope IS NULL OR v.corretor_id = ANY(v_scope))
+  ) t;
+  RETURN COALESCE(v_result, jsonb_build_object('total',0,'a_realizar',0,'realizadas',0,'no_show',0,'agendadas',0));
 END; $function$;

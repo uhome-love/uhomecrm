@@ -615,7 +615,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
       ]);
 
-      const vis = ((visRes as any).data ?? {}) as { total?: number; a_realizar?: number; realizadas?: number; no_show?: number };
+      const vis = ((visRes as any).data ?? {}) as { total?: number; a_realizar?: number; realizadas?: number; no_show?: number; agendadas?: number };
       const visPrev = ((visPrevRes as any).data ?? {}) as typeof vis;
       const novoInteresseCount = (novoInt as any).count as number | null;
       const roletaRows = (roleta as any).data as { corretor_id: string | null }[] | null;
@@ -626,7 +626,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
       return {
         totalVisitas: vis.total ?? 0,
-        agendaVisitas: { total: vis.total ?? 0, aRealizar: vis.a_realizar ?? 0, realizadas: vis.realizadas ?? 0, noShow: vis.no_show ?? 0 },
+        agendaVisitas: { total: vis.total ?? 0, aRealizar: vis.a_realizar ?? 0, realizadas: vis.realizadas ?? 0, noShow: vis.no_show ?? 0, agendadas: vis.agendadas ?? 0 },
         agendaVisitasPrev: { total: visPrev.total ?? 0, aRealizar: visPrev.a_realizar ?? 0, realizadas: visPrev.realizadas ?? 0, noShow: visPrev.no_show ?? 0 },
         novoInteresse: novoInteresseCount || 0,
         presentesHoje: dispIds.size,

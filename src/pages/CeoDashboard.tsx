@@ -693,6 +693,10 @@ export default function CeoDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground bg-white dark:bg-white/[0.04] rounded-lg py-1.5 border border-[#e8e8f0] dark:border-white/[0.05]">
+                <CalendarCheck className="h-3 w-3 text-primary" />
+                <span className="font-bold text-foreground">{agendaVisitas.agendadas}</span> novos agendamentos no período
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { label: "Total", value: agendaVisitas.total, color: "text-primary", type: "visitas_criadas" as const, prev: agendaVisitasPrev?.total },
