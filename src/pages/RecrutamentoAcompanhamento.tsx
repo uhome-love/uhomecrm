@@ -6,7 +6,7 @@ import { KpiGrid, type KpiCardData } from "@/components/central-v2/shared/KpiCar
 import { FunnelChart } from "@/components/central-v2/shared/FunnelChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ETAPAS } from "@/components/rh/RecrutamentoKanban";
+import { ETAPAS } from "@/config/recrutamento";
 import { Users, Flame, CalendarCheck, UserCheck } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 

@@ -7,8 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Check, X, Clock, CalendarDays, Video, Search, Phone } from "lucide-react";
-import { MEET_LINK } from "@/config/recrutamento";
-import { ETAPAS } from "@/components/rh/RecrutamentoKanban";
+import { MEET_LINK, ETAPAS } from "@/config/recrutamento";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, isPast, parseISO, addDays, startOfDay, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
