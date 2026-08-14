@@ -30,7 +30,7 @@ BEGIN
   vis AS (SELECT vu.corretor_id, vu.status FROM visitas_unicas vu JOIN team t ON t.corretor=vu.corretor_id
     WHERE vu.data_visita >= v_mstart AND vu.status <> 'cancelada'),
   vis_hoje AS (SELECT count(*) n FROM visitas_unicas vu JOIN team t ON t.corretor=vu.corretor_id
-    WHERE vu.data_visita = v_today AND vu.status <> 'cancelada'),
+    WHERE (vu.created_at AT TIME ZONE 'America/Sao_Paulo')::date = v_today AND vu.status <> 'cancelada'),
   neg AS (SELECT n.id, n.fase, n.status, n.auth_user_id, COALESCE(n.vgv_final,n.vgv_estimado) AS vgv, n.data_assinatura
     FROM negocios n JOIN team t ON t.corretor = n.auth_user_id),
   vendas AS (SELECT * FROM neg WHERE fase='ganho' AND data_assinatura IS NOT NULL AND to_char(data_assinatura,'YYYY-MM')=v_mes),

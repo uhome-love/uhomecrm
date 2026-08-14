@@ -18,6 +18,7 @@ interface CorretorRow {
   presente: boolean;
   situacao: Situacao;
   dever_pct: number | null;
+  toques: number;
   risco_toc: number; risco_dev: number;
   nov_at: number; nov_rec: number;
   sc_toc: number; sc_dev: number;
@@ -156,7 +157,7 @@ export default function Produtividade() {
               <table className="w-full min-w-[760px] text-[12px] border-collapse">
                 <thead>
                   <tr className="text-[9.5px] uppercase tracking-wider text-center">
-                    <th className="bg-muted/40" colSpan={3}></th>
+                    <th className="bg-muted/40" colSpan={4}></th>
                     <th className="bg-primary/[0.06] text-primary font-bold py-2 border-l-2 border-background" colSpan={4}>Dever do dia · o esperado</th>
                     <th className="bg-teal-500/[0.07] text-teal-700 dark:text-teal-300 font-bold py-2 border-l-2 border-background" colSpan={2}>Resultado</th>
                   </tr>
@@ -164,6 +165,7 @@ export default function Produtividade() {
                     <th className="text-left font-medium px-3 py-2.5">Corretor</th>
                     <th className="font-semibold text-foreground/70 px-2">Situação</th>
                     <th className="font-medium px-2 w-[104px]">% dever</th>
+                    <th className="font-medium px-2 leading-tight" title="Total de leads que ele tocou hoje (esforço)">Tocou<br/>hoje</th>
                     <th className="font-medium px-2 py-2 bg-primary/[0.03] border-l-2 border-background leading-tight">Em risco<br/>tocados</th>
                     <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Novos<br/>atendidos</th>
                     <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Sem-contato<br/>tocados</th>
@@ -196,6 +198,7 @@ export default function Produtividade() {
                             </div>
                           )}
                         </td>
+                        <td className="px-2 py-3 text-center">{c.toques === 0 ? <span className="text-muted-foreground/40">0</span> : <span className="tabular-nums text-foreground/70">{c.toques}</span>}</td>
                         <td className="px-2 py-3 text-center bg-primary/[0.02] border-l-2 border-background"><Ratio feito={c.risco_toc} esperado={c.risco_dev} /></td>
                         <td className="px-2 py-3 text-center bg-primary/[0.02]"><Ratio feito={c.nov_at} esperado={c.nov_rec} /></td>
                         <td className="px-2 py-3 text-center bg-primary/[0.02]"><Ratio feito={c.sc_toc} esperado={c.sc_dev} /></td>

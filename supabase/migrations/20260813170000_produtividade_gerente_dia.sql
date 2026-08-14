@@ -55,6 +55,8 @@ BEGIN
   m_ativos AS (
     SELECT l.corretor_id AS corretor, count(*) AS n FROM leads l
     WHERE l.stage_tipo NOT IN ('descarte','convertido','venda','caiu') GROUP BY 1),
+  m_toques AS (  -- total de leads tocados hoje (esforço, mesmo verdes/novos) — distingue "não trabalhou" de "trabalhou nos leads errados"
+    SELECT l.corretor_id AS corretor, count(*) AS n FROM leads l WHERE l.toque_dia = v_data GROUP BY 1),
   m_vis_ag AS (
     SELECT ve.ator_id AS corretor, count(*) AS n FROM visita_eventos ve JOIN team t ON t.corretor = ve.ator_id
     WHERE ve.tipo='criada' AND (ve.created_at AT TIME ZONE v_tz)::date = v_data GROUP BY 1),
@@ -75,10 +77,10 @@ BEGIN
       COALESCE(mr.devido,0) AS risco_dev, COALESCE(mr.tocado,0) AS risco_toc,
       COALESCE(mn.recebidos,0) AS nov_rec, COALESCE(mn.atendidos,0) AS nov_at,
       COALESCE(ms.devido,0) AS sc_dev, COALESCE(ms.tocado,0) AS sc_toc,
-      COALESCE(ma.n,0) AS tem_ativos, COALESCE(mva.n,0) AS vis_ag, COALESCE(mvr.n,0) AS vis_real, COALESCE(mav.n,0) AS avancos
+      COALESCE(ma.n,0) AS tem_ativos, COALESCE(mtk.n,0) AS toques, COALESCE(mva.n,0) AS vis_ag, COALESCE(mvr.n,0) AS vis_real, COALESCE(mav.n,0) AS avancos
     FROM team t
     LEFT JOIN m_risco mr ON mr.corretor=t.corretor LEFT JOIN m_novos mn ON mn.corretor=t.corretor
-    LEFT JOIN m_sc ms ON ms.corretor=t.corretor LEFT JOIN m_ativos ma ON ma.corretor=t.corretor
+    LEFT JOIN m_sc ms ON ms.corretor=t.corretor LEFT JOIN m_ativos ma ON ma.corretor=t.corretor LEFT JOIN m_toques mtk ON mtk.corretor=t.corretor
     LEFT JOIN m_vis_ag mva ON mva.corretor=t.corretor LEFT JOIN m_vis_real mvr ON mvr.corretor=t.corretor
     LEFT JOIN m_avancos mav ON mav.corretor=t.corretor LEFT JOIN m_pres mp2 ON mp2.corretor=t.corretor),
   calc AS (
@@ -95,9 +97,9 @@ BEGIN
        + CASE WHEN c.s_sc IS NULL THEN 0 ELSE 0.20 END + CASE WHEN c.s_vis IS NULL THEN 0 ELSE 0.15 END) AS den
     FROM calc c),
   fim AS (SELECT s.*, CASE WHEN s.den = 0 THEN NULL ELSE round((s.num / s.den) * 100) END AS dever_pct FROM scored s),
-  linhas AS (
+  linhas AS (  -- Parado = presente sem trabalhar. Quem tocou >=3 leads mas cobriu pouco = Atenção (esforço conta).
     SELECT f.*, CASE WHEN f.den = 0 THEN 'sem_demanda' WHEN f.dever_pct >= 70 THEN 'produtivo'
-      WHEN f.dever_pct >= 25 THEN 'atencao' ELSE 'parado' END AS situacao FROM fim f)
+      WHEN f.dever_pct >= 25 OR f.toques >= 3 THEN 'atencao' ELSE 'parado' END AS situacao FROM fim f)
   SELECT jsonb_build_object(
     'data', v_data, 'total', (SELECT count(*) FROM linhas), 'presentes', (SELECT count(*) FROM linhas WHERE presente),
     'placar', jsonb_build_object(
@@ -107,7 +109,7 @@ BEGIN
       'presente_parado', (SELECT count(*) FROM linhas WHERE situacao='parado' AND presente),
       'sem_demanda', (SELECT count(*) FROM linhas WHERE situacao='sem_demanda')),
     'corretores', COALESCE((SELECT jsonb_agg(jsonb_build_object(
-        'nome', l.nome, 'presente', l.presente, 'situacao', l.situacao, 'dever_pct', l.dever_pct,
+        'nome', l.nome, 'presente', l.presente, 'situacao', l.situacao, 'dever_pct', l.dever_pct, 'toques', l.toques,
         'risco_toc', l.risco_toc, 'risco_dev', l.risco_dev, 'nov_at', l.nov_at, 'nov_rec', l.nov_rec,
         'sc_toc', l.sc_toc, 'sc_dev', l.sc_dev, 'vis_ag', l.vis_ag, 'avancos', l.avancos, 'vis_real', l.vis_real)
       ORDER BY l.dever_pct DESC NULLS LAST, l.nome)
