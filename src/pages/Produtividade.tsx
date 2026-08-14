@@ -165,10 +165,10 @@ export default function Produtividade() {
                     <th className="text-left font-medium px-3 py-2.5">Corretor</th>
                     <th className="font-semibold text-foreground/70 px-2">Situação</th>
                     <th className="font-medium px-2 w-[104px]">% dever</th>
-                    <th className="font-medium px-2 leading-tight" title="Total de leads que ele tocou hoje (esforço)">Tocou<br/>hoje</th>
-                    <th className="font-medium px-2 py-2 bg-primary/[0.03] border-l-2 border-background leading-tight">Em risco<br/>tocados</th>
+                    <th className="font-medium px-2 leading-tight" title="Leads com atividade registrada hoje (esforço)">Atividades<br/>hoje</th>
+                    <th className="font-medium px-2 py-2 bg-primary/[0.03] border-l-2 border-background leading-tight">Em risco<br/>atendidos</th>
                     <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Novos<br/>atendidos</th>
-                    <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Sem-contato<br/>tocados</th>
+                    <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Sem-contato<br/>atendidos</th>
                     <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Visita<br/>agendada</th>
                     <th className="font-medium px-2 bg-teal-500/[0.04] border-l-2 border-background leading-tight">Avanços<br/>de etapa</th>
                     <th className="font-medium px-2 bg-teal-500/[0.04] leading-tight">Visitas<br/>realiz.</th>
