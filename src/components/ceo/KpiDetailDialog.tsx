@@ -214,6 +214,19 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
     navigate(`/pipeline-leads?lead=${leadId}`);
   };
 
+  if (type === "novos_agendamentos") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-base">{label} — por equipe e corretor</DialogTitle>
+          </DialogHeader>
+          <VisitasPorEquipeList dateRange={dateRange} onOpenLead={goToLead} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
