@@ -7,11 +7,13 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { formatBRLCompact, brtRangeToUTC } from "@/lib/utils";
+import VisitasPorEquipeList from "@/components/ceo/VisitasPorEquipeList";
 
 export type KpiDetailType =
   | "total_leads"
   | "reaproveitados_oa"
   | "enviados_roleta"
+  | "novos_agendamentos"
   | "visitas_criadas"
   | "visitas_marcadas"
   | "visitas_realizadas"
@@ -66,6 +68,7 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
 
   useEffect(() => {
     if (!open) return;
+    if (type === "novos_agendamentos") { setRows([]); return; }
     setLoading(true);
     fetchData().finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,6 +214,19 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
     onOpenChange(false);
     navigate(`/pipeline-leads?lead=${leadId}`);
   };
+
+  if (type === "novos_agendamentos") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-base">{label} — por equipe e corretor</DialogTitle>
+          </DialogHeader>
+          <VisitasPorEquipeList dateRange={dateRange} onOpenLead={goToLead} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

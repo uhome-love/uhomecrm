@@ -627,7 +627,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       return {
         totalVisitas: vis.total ?? 0,
         agendaVisitas: { total: vis.total ?? 0, aRealizar: vis.a_realizar ?? 0, realizadas: vis.realizadas ?? 0, noShow: vis.no_show ?? 0, agendadas: vis.agendadas ?? 0 },
-        agendaVisitasPrev: { total: visPrev.total ?? 0, aRealizar: visPrev.a_realizar ?? 0, realizadas: visPrev.realizadas ?? 0, noShow: visPrev.no_show ?? 0 },
+        agendaVisitasPrev: { total: visPrev.total ?? 0, aRealizar: visPrev.a_realizar ?? 0, realizadas: visPrev.realizadas ?? 0, noShow: visPrev.no_show ?? 0, agendadas: visPrev.agendadas ?? 0 },
         novoInteresse: novoInteresseCount || 0,
         presentesHoje: dispIds.size,
         metasDiaTotal: {
@@ -704,7 +704,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     leadsReaproveitadosOA: pipelineData?.totalOfertaAtiva || 0,
     totalVisitasCriadas: extraKpis?.totalVisitas || 0,
     agendaVisitas: extraKpis?.agendaVisitas || { total: 0, aRealizar: 0, realizadas: 0, noShow: 0, agendadas: 0 },
-    agendaVisitasPrev: extraKpis?.agendaVisitasPrev || { total: 0, aRealizar: 0, realizadas: 0, noShow: 0 },
+    agendaVisitasPrev: extraKpis?.agendaVisitasPrev || { total: 0, aRealizar: 0, realizadas: 0, noShow: 0, agendadas: 0 },
 
     novoInteresse: extraKpis?.novoInteresse || 0,
     enviadosRoleta: pipelineData?.enviadosRoleta || 0,
