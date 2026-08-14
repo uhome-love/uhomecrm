@@ -8,7 +8,7 @@ const META_PIXEL_ID = "2291720528296050";
 /**
  * /vaga — Página PÚBLICA (sem login) do anúncio de recrutamento.
  * Quiz conversacional hospedado pelo "Lucas Sarmento — Fundador · Uhome".
- * Grava via edge functions rh-vaga-disponibilidade / rh-vaga-candidato.
+ * Grava via edge function rh-vaga-lead (captura antecipada + preferência).
  * Camada de apresentação: conversa real (typing, uma mensagem por vez).
  */
 
@@ -18,12 +18,12 @@ const BALAO_HOST = "#EEF1FA";
 const TXT = "#151B2C";
 const TXT_SOFT = "#6A7389";
 
-const HORARIOS = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-];
 const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const TURNOS: { key: "manha" | "tarde"; label: string; hint: string }[] = [
+  { key: "manha", label: "Manhã", hint: "09h às 12h" },
+  { key: "tarde", label: "Tarde", hint: "13h às 17h" },
+];
 
 type Opcao = { label: string; pontos: number };
 type Pergunta =
@@ -78,14 +78,6 @@ function maskTelefone(v: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-/** Constrói o Date do slot em BRT (offset fixo -03:00). */
-function slotDate(dia: Date, hhmm: string) {
-  const y = dia.getFullYear();
-  const m = String(dia.getMonth() + 1).padStart(2, "0");
-  const d = String(dia.getDate()).padStart(2, "0");
-  return new Date(`${y}-${m}-${d}T${hhmm}:00.000-03:00`);
-}
-
 function proximosDiasUteis(qtd: number) {
   const dias: Date[] = [];
   const cursor = new Date();
@@ -110,7 +102,7 @@ type Item =
   | { tipo: "card" }
   | { tipo: "sucesso"; quando: string; telefone: string };
 
-type Dock = "nenhum" | "cta" | "pergunta" | "agenda" | "fim";
+type Dock = "nenhum" | "cta" | "pergunta" | "pref" | "fim";
 
 export default function VagaPage() {
   const [msgs, setMsgs] = useState<Item[]>([]);
@@ -125,7 +117,6 @@ export default function VagaPage() {
   const [candidatoId, setCandidatoId] = useState<string | null>(null);
   const [input, setInput] = useState("");
 
-  const [ocupados, setOcupados] = useState<Set<string>>(new Set());
   const [diaSel, setDiaSel] = useState<Date | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -246,13 +237,6 @@ export default function VagaPage() {
     if (dock === "pergunta" && ocioso) inputRef.current?.focus();
   }, [dock, ocioso, idx]);
 
-  // ── Agenda ──
-  const carregarAgenda = useCallback(async () => {
-    const { data } = await supabase.functions.invoke("rh-vaga-disponibilidade", { body: { dias: 21 } });
-    const lista: string[] = (data as any)?.ocupados || [];
-    setOcupados(new Set(lista.map((s) => new Date(s).toISOString())));
-  }, []);
-
   // Meta Pixel — helper de eventos de etapa do funil
   const fireEvent = (name: string, params?: Record<string, unknown>) => {
     try {
@@ -329,11 +313,10 @@ export default function VagaPage() {
       }
       const primeiro = (pergunta.id === "nome" ? valor : respostas.nome || "").trim().split(/\s+/)[0];
       enfileirar([
-        { tipo: "host", texto: `Show, ${primeiro}! Bora marcar sua entrevista com o nosso RH.` },
-        { tipo: "host", texto: "Escolha o melhor dia e horário 👇" },
+        { tipo: "host", texto: `Show, ${primeiro}! Nossa RH vai te chamar pra uma conversa.` },
+        { tipo: "host", texto: "Qual o melhor DIA pra nossa RH te chamar? 👇" },
       ]);
-      setDock("agenda");
-      carregarAgenda();
+      setDock("pref");
     }
   };
 
@@ -341,46 +324,43 @@ export default function VagaPage() {
   const temperatura = useMemo(() => (pontos >= 6 ? "quente" : pontos >= 3 ? "morno" : "frio"), [pontos]);
 
   const dias = useMemo(() => proximosDiasUteis(10), []);
-  const horariosLivres = useMemo(() => {
-    if (!diaSel) return [];
-    const agora = Date.now();
-    return HORARIOS.map((h) => ({ h, d: slotDate(diaSel, h) }))
-      .filter(({ d }) => d.getTime() > agora + 5 * 60 * 1000 && !ocupados.has(d.toISOString()));
-  }, [diaSel, ocupados]);
 
-  const agendar = async (d: Date) => {
+  /** Finaliza com PREFERÊNCIA (dia + turno). Não cria entrevista. */
+  const finalizar = async (dia: Date, turno: "manha" | "tarde") => {
     setEnviando(true);
     setErro(null);
-    const { data, error } = await supabase.functions.invoke("rh-vaga-candidato", {
+
+    const prefData = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, "0")}-${String(dia.getDate()).padStart(2, "0")}`;
+    const respostasFinal = { ...respostas, pref_data: prefData, pref_turno: turno };
+
+    const { data, error } = await supabase.functions.invoke("rh-vaga-lead", {
       body: {
+        acao: "finalizar",
         candidato_id: candidatoId,
         nome: respostas.nome,
         telefone: respostas.telefone,
-        respostas,
+        respostas: respostasFinal,
         temperatura,
-        horario: d.toISOString(),
       },
     });
     setEnviando(false);
     const res = data as any;
     if (error || !res?.ok) {
-      if (res?.error === "slot_ocupado") {
-        setErro(res.message || "Esse horário acabou de ser preenchido. Escolha outro.");
-        carregarAgenda();
-        return;
-      }
       setErro(res?.message || res?.error || "Não foi possível concluir. Tente novamente.");
       return;
     }
-    // Meta Pixel — conversão "Lead" (uma vez, no sucesso do agendamento)
-    fireEvent("CandidaturaVaga", { content_name: "Vaga Corretor" });
 
-    const quando = `${DIAS_SEMANA[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} às ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    setRespostas(respostasFinal);
+    fireEvent("CandidaturaVaga", { content_name: "Vaga Corretor", turno });
 
+    const turnoLabel = turno === "manha" ? "manhã" : "tarde";
+    const quando = `${DIAS_SEMANA[dia.getDay()]}, ${dia.getDate()} de ${MESES[dia.getMonth()]} · ${turno === "manha" ? "Manhã" : "Tarde"}`;
+
+    dizerEu(turno === "manha" ? "De manhã" : "À tarde");
     setDock("fim");
     setMsgs((m) => [...m, { tipo: "sucesso", quando, telefone: respostas.telefone || "" }]);
     enfileirar([
-      { tipo: "host", texto: "Nosso RH vai te confirmar pelo WhatsApp. Fica de olho nas mensagens!" },
+      { tipo: "host", texto: `Perfeito! Nossa RH te chama no WhatsApp pra confirmar o horário na ${turnoLabel}.` },
       { tipo: "host", texto: `Até já, ${nomeCurto} 👊` },
     ]);
   };
@@ -473,15 +453,15 @@ export default function VagaPage() {
               return (
                 <div key={i} className="vaga-in rounded-2xl border border-[#DDF3E6] bg-white p-5 text-center shadow-[0_4px_16px_rgba(21,27,44,0.06)]">
                   <div className="mx-auto h-12 w-12 rounded-full bg-[#22C55E] flex items-center justify-center text-white text-[24px] font-bold">✓</div>
-                  <p className="mt-3 text-[17px] font-extrabold">Entrevista marcada!</p>
+                  <p className="mt-3 text-[17px] font-extrabold">Recebemos sua candidatura!</p>
                   <p className="mt-2 inline-block rounded-full bg-[#E9F9F0] text-[#137C46] text-[13px] font-bold px-3 py-1.5">
-                    📅 {m.quando}
+                    📅 Preferência: {m.quando}
                   </p>
                   <p className="mt-3 text-[12.5px]" style={{ color: TXT_SOFT }}>
-                    Nosso RH vai te confirmar pelo WhatsApp {m.telefone}. Até lá!
+                    Nossa RH vai te chamar no WhatsApp {m.telefone} pra confirmar o melhor horário. Fica de olho! 👊
                   </p>
                   <p className="mt-2 text-[12px]" style={{ color: TXT_SOFT }}>
-                    Sua entrevista será por Google Meet — nosso RH te envia o link na confirmação pelo WhatsApp.
+                    A entrevista é por Google Meet — o link vem junto com a confirmação.
                   </p>
                 </div>
               );
@@ -592,10 +572,10 @@ export default function VagaPage() {
             )
           )}
 
-          {ocioso && dock === "agenda" && (
+          {ocioso && dock === "pref" && (
             <div className="space-y-3 max-h-[46vh] overflow-y-auto vaga-scroll">
               <div>
-                <p className="text-[10.5px] font-extrabold tracking-[0.08em] mb-1.5" style={{ color: TXT_SOFT }}>ESCOLHA O DIA</p>
+                <p className="text-[10.5px] font-extrabold tracking-[0.08em] mb-1.5" style={{ color: TXT_SOFT }}>MELHOR DIA</p>
                 <div className="flex gap-2 overflow-x-auto pb-1 vaga-scroll">
                   {dias.map((d) => {
                     const ativo = !!diaSel && d.toDateString() === diaSel.toDateString();
@@ -621,32 +601,26 @@ export default function VagaPage() {
 
               {diaSel && (
                 <div>
-                  <p className="text-[10.5px] font-extrabold tracking-[0.08em] mb-1.5" style={{ color: TXT_SOFT }}>
-                    HORÁRIO · 30 MIN (ALMOÇO 12H–13H)
-                  </p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {horariosLivres.map(({ h, d }) => (
+                  <p className="text-[10.5px] font-extrabold tracking-[0.08em] mb-1.5" style={{ color: TXT_SOFT }}>MELHOR TURNO</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TURNOS.map((t) => (
                       <button
-                        key={h}
+                        key={t.key}
                         disabled={enviando}
-                        onClick={() => agendar(d)}
-                        className="rounded-xl py-2.5 text-[13px] font-bold transition hover:bg-[#F3F6FF] hover:border-[#4969FF] disabled:opacity-50"
+                        onClick={() => finalizar(diaSel, t.key)}
+                        className="rounded-xl py-3 text-[14px] font-bold transition hover:bg-[#F3F6FF] hover:border-[#4969FF] disabled:opacity-50"
                         style={{ border: "1.5px solid #D9E0F3", color: TXT }}
                       >
-                        {h}
+                        {t.label}
+                        <span className="block text-[10.5px] font-semibold opacity-70">{t.hint}</span>
                       </button>
                     ))}
-                    {horariosLivres.length === 0 && (
-                      <p className="col-span-4 text-[12.5px] py-1" style={{ color: TXT_SOFT }}>
-                        Nenhum horário livre nesse dia. Escolha outro dia.
-                      </p>
-                    )}
                   </div>
                 </div>
               )}
 
               {erro && <p className="text-[12.5px] text-[#D14343] font-semibold">{erro}</p>}
-              {enviando && <p className="text-[12.5px]" style={{ color: TXT_SOFT }}>Confirmando…</p>}
+              {enviando && <p className="text-[12.5px]" style={{ color: TXT_SOFT }}>Enviando…</p>}
             </div>
           )}
 
