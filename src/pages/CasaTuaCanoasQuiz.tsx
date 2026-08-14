@@ -2,10 +2,12 @@
  * CasaTuaCanoasQuiz — Funil conversacional público do empreendimento
  * Casa Tua Santos Ferreira (Canoas). Rota pública: /casatuacanoas-quiz
  *
- * Formato recompensa: cada resposta desbloqueia info personalizada (foto real),
- * libera o Guia (download na hora), e progride pra visita (preferência dia+turno,
- * corretor valida) OU falar com corretor. O lead cai em pipeline_leads via
- * receive-landing-lead (roleta). Pixel dispara evento CUSTOM próprio — nunca Lead.
+ * v5 — "descobre o motivo → encanta → preço de apê, casa de brinde → libera o
+ * material NA TELA". A conversa começa direto (sem botão de pedágio). Q1 descobre
+ * o motivo do clique; cada resposta revela foto/planta/valor reais; o contato
+ * destrava o material (fotos + plantas + valores + guia) ali mesmo. Fecha em
+ * visita OU "especialista me chama". Lead cai SEM DONO na Fila CEO via
+ * receive-quiz-lead. Pixel dedicado dispara eventos CUSTOM — nunca o "Lead" padrão.
  *
  * Visual congelado a partir do mockup validado com o Lucas. NÃO redesenhar.
  */
@@ -50,9 +52,13 @@ const CSS = `
 @keyframes ctpop{from{opacity:0; transform:scale(.92)}to{opacity:1; transform:none}}
 #ct-root .uchip{display:inline-flex; align-items:center; gap:5px; background:var(--terra); color:#fff; font-size:10.5px; font-weight:800; letter-spacing:.06em; padding:4px 9px; border-radius:999px; text-transform:uppercase; margin-bottom:9px}
 #ct-root .uphoto{width:100%; height:146px; object-fit:cover; border-radius:11px; margin-bottom:10px; display:block; background:#E6E2DC}
+#ct-root .uphoto.tall{height:300px; object-fit:contain; background:#FFFFFF; padding:4px}
 #ct-root .utitle{font-weight:800; font-size:14.5px; margin-bottom:4px}
 #ct-root .ulist{font-size:13px; line-height:1.55; color:#3A3324}
 #ct-root .ulist b{color:var(--ink)}
+#ct-root .bomb{color:var(--terra-ink); font-weight:800; font-size:14px; display:block; margin-top:6px}
+#ct-root .gal{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:8px 0}
+#ct-root .gal img{width:100%; height:88px; object-fit:cover; border-radius:9px; display:block; background:#E6E2DC}
 #ct-root .cond{margin-top:8px; background:#fff; border:1px solid #EADFD2; border-radius:10px; padding:9px 11px; font-size:12.5px; line-height:1.7}
 #ct-root .cond .cr{display:flex; justify-content:space-between; gap:10px}
 #ct-root .cond .cr b{color:var(--terra-ink)}
@@ -78,13 +84,6 @@ const CSS = `
 #ct-root .typing i{width:7px; height:7px; border-radius:50%; background:#C3C8DD; animation:ctblink 1s infinite}
 #ct-root .typing i:nth-child(2){animation-delay:.15s}#ct-root .typing i:nth-child(3){animation-delay:.3s}
 @keyframes ctblink{0%,60%,100%{opacity:.3}30%{opacity:1}}
-#ct-root .book{width:150px; margin:4px auto 2px; perspective:600px}
-#ct-root .book .cover{border-radius:6px 12px 12px 6px; padding:18px 15px 16px; color:#fff; background:linear-gradient(135deg,#3B4252,#20242E); box-shadow:-6px 8px 22px rgba(0,0,0,.28); border-left:6px solid var(--gold); animation:ctbookin .6s cubic-bezier(.2,1.2,.4,1) both; text-align:left}
-@keyframes ctbookin{from{opacity:0; transform:rotateY(-28deg) translateY(10px)}to{opacity:1; transform:none}}
-#ct-root .book .bk{font-size:9px; letter-spacing:.12em; color:var(--gold); font-weight:800; text-transform:uppercase}
-#ct-root .book .bt{font-size:18px; font-weight:800; line-height:1.1; margin:8px 0 6px; font-family:Georgia,'Times New Roman',serif}
-#ct-root .book .bs{font-size:10px; color:#C7CBD6; line-height:1.5}
-#ct-root .book .btag{margin-top:11px; display:inline-block; font-size:8.5px; font-weight:800; letter-spacing:.08em; background:var(--gold); color:#20242E; padding:3px 7px; border-radius:4px}
 #ct-root .dl{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; text-decoration:none; background:linear-gradient(120deg,var(--gold),var(--terra)); color:#fff; font-weight:800; font-size:14px; padding:13px; border-radius:13px; box-shadow:0 8px 20px rgba(154,106,75,.32); transition:.16s}
 #ct-root .dl:hover{filter:brightness(1.05); transform:translateY(-1px)}
 #ct-root .final{text-align:center; padding:4px}
@@ -133,6 +132,8 @@ export default function CasaTuaCanoasQuiz() {
       club: "/casatua/club.jpg",
       loc: "/casatua/loc.jpg",
       invest: "/casatua/invest.jpg",
+      planta3: "/casatua/planta3.jpg",
+      planta4: "/casatua/planta4.jpg",
     };
     const GUIA = "/casatua/guia-casa-tua-santos-ferreira.pdf";
 
@@ -146,7 +147,7 @@ export default function CasaTuaCanoasQuiz() {
     let unlocked = 0;
 
     const scroll = () => requestAnimationFrame(() => { body.scrollTop = body.scrollHeight; });
-    const photo = (k: string) => (IMG[k] ? `<img class="uphoto" src="${IMG[k]}" alt="">` : "");
+    const photo = (k: string, tall = false) => (IMG[k] ? `<img class="uphoto${tall ? " tall" : ""}" src="${IMG[k]}" alt="">` : "");
     const host = (html: string) => { const r = document.createElement("div"); r.className = "row"; r.innerHTML = `<div class="bubble">${html}</div>`; body.appendChild(r); scroll(); };
     const me = (txt: string) => { const r = document.createElement("div"); r.className = "row me"; r.innerHTML = `<div class="bubble me">${txt}</div>`; body.appendChild(r); scroll(); };
     const unlock = (html: string) => {
@@ -171,16 +172,16 @@ export default function CasaTuaCanoasQuiz() {
       (f.querySelector("#ct-sx") as HTMLElement).onclick = go; i.addEventListener("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") go(); });
     };
 
-    // ── Envio do lead ao CRM (pipeline_leads + roleta via receive-landing-lead)
-    const enviarLead = async (stage: "parcial" | "visita" | "corretor", temp: string) => {
+    // ── Envio do lead ao CRM: SEM DONO → Fila CEO (receive-quiz-lead, origem "Quiz") ──
+    const enviarLead = async (stage: "parcial" | "visita" | "material", temp: string) => {
       try {
         const metaCtx = getMetaContext();
         const interesse = stage === "visita"
           ? `Visita — ${A.dia || ""} · ${A.turno || ""}`
-          : stage === "corretor"
-          ? "Falar com um corretor agora"
-          : "Baixou o Book — ainda escolhendo";
-        const resumo = `Quiz Casa Tua Canoas · Tipologia: ${A.tipo || "-"} · Prioriza: ${A.peso || "-"} · Compra: ${A.compra || "-"} · ${interesse} · Temperatura: ${temp} (${score} pts)`;
+          : stage === "material"
+          ? "Recebeu o material — prefere ser contatado"
+          : "Deixou contato — material liberado";
+        const resumo = `Quiz Casa Tua Canoas · Motivo: ${A.motivo || "-"} · Dorms: ${A.dorms || "-"} · Momento: ${A.momento || "-"} · ${interesse} · Temperatura: ${temp} (${score} pts)`;
         await fetch(EDGE_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: ANON_KEY },
@@ -194,9 +195,9 @@ export default function CasaTuaCanoasQuiz() {
             temperatura: temp,
             message: resumo,
             field_data: [
-              { name: "Tipologia de interesse", values: [A.tipo || ""] },
-              { name: "O que mais importa", values: [A.peso || ""] },
-              { name: "Forma de compra", values: [A.compra || ""] },
+              { name: "Motivo do clique", values: [A.motivo || ""] },
+              { name: "Dormitórios", values: [A.dorms || ""] },
+              { name: "Momento de compra", values: [A.momento || ""] },
               { name: "Interesse", values: [interesse] },
               { name: "Temperatura", values: [`${temp} (${score} pts)`] },
             ],
@@ -210,123 +211,124 @@ export default function CasaTuaCanoasQuiz() {
       } catch { /* falha de envio não pode travar a UX; lead pode reenviar */ }
     };
 
-    // ── Fluxo ──────────────────────────────────────────────────────────
+    // ── Fluxo v5 ───────────────────────────────────────────────────────
     const start = () => {
       fbqCustom("VisitaIniciou"); // abriu o quiz (funil passo 1)
-      host(`<div class="lead">Você viu o Casa Tua no anúncio, né? 👀</div>Sou o Lucas, da Uhome. Já te adianto o principal 👇`);
+      host(`<div class="lead">Oi! Sou o Lucas, da Uhome 👋</div>O Casa Tua tá chamando MUITA atenção aqui em Canoas — e tem um motivo. 😏`);
       typing(() => {
-        // Valor imediato na entrada (sem pedir nada) — sacia a sede de quem veio do anúncio
         const r = document.createElement("div"); r.className = "row";
-        r.innerHTML = `<div class="bubble unlock"><span class="uchip">✨ Espia rápida</span>${photo("casa")}<div class="utitle">Casa Tua Santos Ferreira · Canoas</div><div class="ulist">🏡 Casas de <b>3 e 4 dorms</b> em <b>condomínio fechado</b> (não apê)<br>📍 Santos Ferreira — <b>4 min</b> do hospital, <b>6 min</b> do ParkShopping<br>🏊 Lazer completo: piscina, academia, salão<br>💰 Pré-venda <b>a partir de R$ 690 mil</b> <span style="color:#9A6A4B">(avaliada em R$ 836 mil)</span></div></div>`;
+        r.innerHTML = `<div class="bubble unlock"><span class="uchip">📍 Canoas · pré-lançamento</span>${photo("casa")}<div class="utitle">Casa Tua Santos Ferreira</div><div class="ulist">Casas de <b>3 e 4 dormitórios</b> em condomínio fechado com lazer completo · a partir de <b>R$ 690 mil</b>.</div></div>`;
         body.appendChild(r); scroll();
         typing(() => {
-          host(`Gostou? Eu monto um 📘 <strong>Book Casa Tua</strong> só pra você — com as <strong>plantas</strong>, os <strong>preços</strong> e uma <strong>simulação no seu nome</strong>. Respondo <strong>3 coisinhas rápidas</strong> e no fim é seu, na hora. 📲`);
-          clearDock();
-          const c = document.createElement("button"); c.className = "cta gold"; c.innerHTML = "Quero meu Book 📘";
-          c.onclick = () => { fbqCustom("VisitaComecou"); qTipo(); }; dock.appendChild(c);
-          const h = document.createElement("div"); h.className = "hint"; h.innerHTML = "📘 Book liberado no final · leva 1 minuto"; dock.appendChild(h); scroll();
-        }, 800);
+          host(`São <strong>3 perguntas rápidas</strong> (uns 30s) e eu já <strong>libero as fotos, as plantas e os valores</strong> pra você aqui mesmo. Deixa eu te entender: <strong>o que te fez clicar no anúncio?</strong>`);
+          q1();
+        }, 850);
       }, 700);
     };
 
-    const qTipo = () => {
-      host("Primeira: qual dessas <strong>casas</strong> te chama mais a atenção?");
+    const q1 = () => {
       opts([
-        { t: "Casa de <b>3 dormitórios</b>", ic: "🏠", fn: () => ansTipo("3 dormitórios", 1) },
-        { t: "Casa de <b>4 dormitórios</b>", ic: "🏡", fn: () => ansTipo("4 dormitórios", 1) },
-        { t: "Ainda não sei, quero ver as duas", ic: "👀", fn: () => ansTipo("as duas", 0) },
+        { t: "Quero mais espaço — pátio e terraço", ic: "🌳", fn: () => ansQ1("Mais espaço externo", "espaco") },
+        { t: "Quero a estrutura de um condomínio", ic: "🏊", fn: () => ansQ1("Estrutura de condomínio", "infra") },
+        { t: "Vi uma boa oportunidade de investir", ic: "📈", fn: () => ansQ1("Oportunidade de investir", "investir") },
+        { t: "Tudo isso me atrai", ic: "✨", fn: () => ansQ1("Tudo faz sentido", "todos") },
       ]);
     };
-    const ansTipo = (t: string, pts: number) => {
-      A.tipo = t; score += pts; me(t); fbqCustom("VisitaP1Tipologia");
+    const ansQ1 = (m: string, k: string) => {
+      A.motivo = m; me(m); fbqCustom("VisitaComecou");
       typing(() => {
-        if (t === "4 dormitórios")
-          unlock(`<span class="uchip">🔓 Desbloqueado · Planta & preço</span>${photo("casa")}<div class="utitle">Casa 4 dorms com Terraço</div><div class="ulist"><b>116 a 210m²</b> · 2 vagas · pátio privativo com churrasqueira · espaço pra piscina/spa no terraço<br>💰 Pré-venda a partir de <b>R$ 840 mil</b> <span style="color:#9A6A4B">(avaliada em R$ 976 mil)</span></div>`);
-        else if (t === "3 dormitórios")
-          unlock(`<span class="uchip">🔓 Desbloqueado · Planta & preço</span>${photo("casa")}<div class="utitle">Casa 3 dorms com Terraço</div><div class="ulist"><b>96 a 170m²</b> · 2 vagas · pátio privativo com churrasqueira · espaço pra piscina/spa no terraço<br>💰 Pré-venda a partir de <b>R$ 690 mil</b> <span style="color:#9A6A4B">(avaliada em R$ 836 mil)</span></div>`);
+        let img = "casa", txt = "";
+        if (k === "espaco") { img = "casa"; txt = `Casas de até <b>210m² privativos</b>, com <b>pátio e terraço</b> — o espaço que apê nenhum te dá. Dá pra ter churrasqueira, jardim, o que quiser.`; }
+        else if (k === "infra") { img = "club"; txt = `<b>Club house</b> com piscina, academia e salão, mais <b>portaria e segurança</b> — a família toda vive dentro do condomínio, com tranquilidade.`; }
+        else if (k === "investir") { img = "invest"; txt = `Lançamento em <b>tabela 0</b> em Canoas: valorização já na planta e a liquidez de uma casa em condomínio. 📈`; }
+        else { img = "casa"; txt = `Então segura essa: <b>espaço de casa</b> + <b>estrutura de condomínio</b> + <b>preço de lançamento</b>. É o pacote completo. 🙌`; }
+        unlock(`<span class="uchip">🔓 ${m}</span>${photo(img)}<div class="ulist">${txt}</div>`);
+        typing(() => {
+          unlock(`<div class="utitle">Agora o motivo de tanta gente parar aqui 👇</div><div class="ulist">Uma casa de <b>157m²</b>, com <b>pátio e terraço</b>, custa o mesmo que um <b>apartamento de 3 dormitórios</b> em Canoas e Porto Alegre.<span class="bomb">É preço de apê — a casa vem de brinde 🎁</span></div>`);
+          typing(() => { host(`Faz sentido? E me diz: vocês precisam de <strong>quantos dormitórios</strong>?`); q2(); }, 1000);
+        }, 900);
+      }, 500);
+    };
+
+    const q2 = () => {
+      opts([
+        { t: "Casa de <b>3 dormitórios</b>", ic: "🏠", fn: () => ansQ2("3 dormitórios", "3") },
+        { t: "Casa de <b>4 dormitórios</b>", ic: "🏡", fn: () => ansQ2("4 dormitórios", "4") },
+        { t: "Ainda não sei", ic: "🤔", fn: () => ansQ2("Ainda decidindo", "x") },
+      ]);
+    };
+    const ansQ2 = (m: string, t: string) => {
+      A.dorms = m; if (t !== "x") score += 1; me(m); fbqCustom("VisitaP1Tipologia");
+      typing(() => {
+        if (t === "4")
+          unlock(`<span class="uchip">🔓 Planta 4 dorms</span>${photo("planta4", true)}<div class="utitle">Casa 4 dorms · 176 a 210m² privativos</div><div class="ulist">Terraço · pátio com churrasqueira · 2 vagas<br>💰 A partir de <b>R$ 840 mil</b> <span style="color:#9A6A4B">(vale R$ 976 mil)</span></div>`);
+        else if (t === "3")
+          unlock(`<span class="uchip">🔓 Planta 3 dorms</span>${photo("planta3", true)}<div class="utitle">Casa 3 dorms · 157 a 170m² privativos</div><div class="ulist">Terraço · pátio com churrasqueira · 2 vagas<br>💰 A partir de <b>R$ 690 mil</b> <span style="color:#9A6A4B">(vale R$ 836 mil)</span></div>`);
         else
-          unlock(`<span class="uchip">🔓 Desbloqueado · As duas plantas</span>${photo("casa")}<div class="utitle">3 e 4 dorms com Terraço</div><div class="ulist">🏠 <b>3 dorms</b> · 96–170m² · a partir de <b>R$ 690 mil</b><br>🏡 <b>4 dorms</b> · 116–210m² · a partir de <b>R$ 840 mil</b><br>Todas com pátio privativo e terraço.</div>`);
-        typing(() => { host("Boa escolha! 🎉 Já é <strong>1/4</strong> do seu Book. Deixa eu te entender melhor:"); qPeso(); }, 700);
+          unlock(`<span class="uchip">🔓 As duas plantas</span>${photo("planta3", true)}<div class="ulist">🏠 <b>3 dorms</b> · 157–170m² · a partir de <b>R$ 690 mil</b><br>🏡 <b>4 dorms</b> · 176–210m² · a partir de <b>R$ 840 mil</b><br>Ambas com terraço e pátio.</div>`);
+        typing(() => { host(`Última: <strong>pra quando</strong> é o plano?`); q3(); }, 1000);
       }, 500);
     };
 
-    const qPeso = () => {
-      host("O que <strong>mais pesa</strong> pra você numa casa dessas?");
+    const q3 = () => {
       opts([
-        { t: "O lazer completo do condomínio", ic: "🏊", fn: () => ansPeso("Lazer", "club") },
-        { t: "Espaço e conforto pra família", ic: "👨‍👩‍👧", fn: () => ansPeso("Família", "casa") },
-        { t: "A localização em Canoas", ic: "📍", fn: () => ansPeso("Localização", "loc") },
-        { t: "Ser um bom investimento", ic: "📈", fn: () => ansPeso("Investimento", "invest") },
+        { t: "Quero comprar esse ano", ic: "🚀", fn: () => ansQ3("Comprar esse ano", 2) },
+        { t: "Tô começando a olhar agora", ic: "👀", fn: () => ansQ3("Começando a olhar", 1) },
+        { t: "Só pesquisando por enquanto", ic: "💭", fn: () => ansQ3("Pesquisando", 0) },
       ]);
     };
-    const ansPeso = (t: string, kind: string) => {
-      A.peso = t; me(t); fbqCustom("VisitaP2Prioridade");
+    const ansQ3 = (m: string, pts: number) => {
+      A.momento = m; score += pts; me(m); fbqCustom("VisitaP2Prioridade");
       typing(() => {
-        if (kind === "club") unlock(`<span class="uchip">🔓 Desbloqueado · Lazer</span>${photo("club")}<div class="utitle">Lazer que você usa todo dia</div><div class="ulist">Club House com <b>piscina adulto e infantil</b>, <b>academia</b>, <b>salão de festas</b>, além de portaria e segurança. Tudo dentro do condomínio.</div>`);
-        else if (kind === "casa") unlock(`<span class="uchip">🔓 Desbloqueado · Espaço</span>${photo("casa")}<div class="utitle">Espaço de casa, de verdade</div><div class="ulist">Sobrados de até <b>210m²</b>, <b>terraço</b> só seu, pátio com churrasqueira e <b>2 vagas</b>. Nada de dividir parede fininha de apê.</div>`);
-        else if (kind === "loc") unlock(`<span class="uchip">🔓 Desbloqueado · Localização</span>${photo("loc")}<div class="utitle">No coração de Canoas</div><div class="ulist"><b>4 min</b> do Hospital N.S. das Graças · <b>6 min</b> do ParkShopping · <b>7 min</b> do Bourbon Shopping e do Parque Getúlio Vargas.</div>`);
-        else unlock(`<span class="uchip">🔓 Desbloqueado · Investimento</span>${photo("invest")}<div class="utitle">Você entra na largada</div><div class="ulist">Comprando agora na pré-venda: casa avaliada em <b>R$ 836 mil</b> por <b>R$ 690 mil</b> — cerca de <b>R$ 146 mil</b> de diferença + <b>ITBI e registro grátis</b>.</div>`);
-        typing(() => { host("É <strong>2/4</strong>! Falta pouco pro seu Book. 😉"); qCompra(); }, 700);
-      }, 500);
-    };
-
-    const qCompra = () => {
-      host("Pra eu já preparar a <strong>condição certa</strong> pra você — como pensa em comprar?");
-      opts([
-        { t: "Tenho a entrada e financio o restante", ic: "✅", fn: () => ansCompra("Entrada + financiamento", 2) },
-        { t: "Financiamento pela Caixa (associativo)", ic: "🏦", fn: () => ansCompra("Associativo CEF", 2) },
-        { t: "Quero entender as condições e simular", ic: "🧮", fn: () => ansCompra("Quer simular", 1) },
-        { t: "Ainda estou me organizando", ic: "💭", fn: () => ansCompra("Se organizando", 0) },
-      ]);
-    };
-    const ansCompra = (t: string, pts: number) => {
-      A.compra = t; score += pts; me(t); fbqCustom("VisitaP3Compra");
-      typing(() => {
-        if (pts >= 1) unlock(`<span class="uchip">🔓 Desbloqueado · Sua condição</span><div class="utitle">Condição da pré-venda (casa 3 dorms)</div><div class="cond"><div class="cr"><span>Ato (entrada)</span><b>a partir de R$ 69 mil</b></div><div class="cr"><span>ITBI + Registro</span><b>grátis</b></div><div class="cr"><span>Financiamento CEF</span><b>até 90%</b></div><div class="cr"><span>Ou plano 30/70</span><b>36x de R$ 3.495</b></div></div><div class="ulist" style="margin-top:7px">Dá pra ajustar tudo isso no seu nome na visita. 👌</div>`);
-        else unlock(`<span class="uchip">🔓 Desbloqueado · Sem pressa</span><div class="utitle">Tem caminho pra todo mundo</div><div class="ulist">Sem problema! Tem <b>plano 30/70</b> (36x de R$ 3.495) e financiamento pela Caixa. No Book vai uma simulação pra te ajudar a se organizar.</div>`);
-        typing(() => { host("Prontinho, <strong>3/4</strong>! 🔥 Só me diz quem é você pra liberar o Book."); qNome(); }, 750);
+        unlock(`<span class="uchip">🔓 Condição de pré-venda · tabela 0</span><div class="ulist">Você pega o <b>menor valor</b> do lançamento — casa 3 dorms por <b>R$ 690 mil</b>. Casas parecidas em condomínios de Canoas valem mais. 📈</div><div class="cond"><div class="cr"><span>Entrada</span><b>10%</b></div><div class="cr"><span>Mensais</span><b>10% · ~R$ 1,9 mil/mês</b></div><div class="cr"><span>Reforços</span><b>10%</b></div><div class="cr"><span>Restante</span><b>financiado na entrega</b></div></div><div class="ulist" style="margin-top:7px">Ou 10% de entrada e o restante financiado. Dá pra ajustar no seu nome. 👌</div>`);
+        typing(pedirDados, 850);
       }, 520);
     };
 
+    const pedirDados = () => {
+      host(`Curtiu? 😍 Me passa teu <strong>nome</strong> e <strong>WhatsApp</strong> que eu <strong>libero na hora, aqui mesmo</strong>, o material completo — todas as fotos, as plantas e os valores. Leva 10 segundos, e depois um especialista te acompanha quando você quiser, <strong>sem pressão</strong>.`);
+      qNome();
+    };
     const qNome = () => {
-      host("Como é o seu <strong>nome</strong>?");
       textInput("Seu nome", "text", (v) => {
-        A.nomeCompleto = v; A.nome = v.split(" ")[0]; me(v); 
-        typing(() => { host(`Prazer, <strong>${A.nome}</strong>! E qual seu <strong>WhatsApp</strong>? É por onde nosso time confirma sua visita e garante sua condição de pré-venda.`); qZap(); });
+        A.nomeCompleto = v; A.nome = v.split(" ")[0]; me(v);
+        typing(() => { host(`Show, <strong>${A.nome}</strong>! E pra qual <strong>WhatsApp</strong> eu te envio?`); qZap(); });
       });
     };
     const qZap = () => {
-      textInput("(51) 9 9999-9999", "tel", (v) => { A.zap = v; me(v); fbqCustom("VisitaContato");
+      textInput("(51) 9 9999-9999", "tel", (v) => {
+        A.zap = v; me(v); fbqCustom("VisitaContato");
         unlocked = 4; pips.forEach((p) => p.classList.add("on")); pc.textContent = "4/4";
         // Captura o lead JÁ com o WhatsApp (garante o contato mesmo se largar antes da escolha final).
         const tempParcial = score >= 4 ? "quente" : score >= 2 ? "morno" : "frio";
         enviarLead("parcial", tempParcial);
-        typing(reward, 900);
+        typing(liberar, 900);
       });
     };
 
-    const reward = () => {
-      host(`🎉 Prontinho, <strong>${A.nome}</strong>! Seu Book está liberado — é só baixar:`);
+    const liberar = () => {
       fbqCustom("VisitaQuizCompleto", { content_name: "Casa Tua Santos Ferreira" });
-      fbqCustom("GuiaBaixado", { content_name: "Guia Casa Tua Santos Ferreira" });
+      host(`🔓 Liberado, <strong>${A.nome}</strong>! Tá tudo aqui pra você 👇`);
       typing(() => {
-        unlock(`<div class="book"><div class="cover"><div class="bk">Uhome · Book exclusivo</div><div class="bt">Casa Tua<br>Santos Ferreira</div><div class="bs">Plantas · Preços · Simulação sob medida · Tudo sobre o condomínio</div><div class="btag">PRÉ-LANÇAMENTO</div></div></div><a class="dl" href="${GUIA}" download="Guia-Casa-Tua-Santos-Ferreira.pdf">⬇️ Baixar meu Book (PDF)</a>`);
+        unlock(`<div class="utitle">📦 Material completo do Casa Tua</div><div class="gal"><img src="${IMG.casa}" alt=""><img src="${IMG.club}" alt=""><img src="${IMG.invest}" alt=""><img src="${IMG.loc}" alt=""></div><div class="ulist" style="margin-top:6px">✅ Fotos do empreendimento<br>✅ Plantas 3 e 4 dorms (área privativa)<br>✅ Tabela de valores e condições</div><a class="dl" id="ct-dl" href="${GUIA}" download="Guia-Casa-Tua-Santos-Ferreira.pdf">📄 Baixar o guia completo</a>`);
+        const dl = document.getElementById("ct-dl");
+        if (dl) dl.addEventListener("click", () => fbqCustom("GuiaBaixado", { content_name: "Guia Casa Tua Santos Ferreira" }), { once: true });
         typing(() => {
-          host(`Show! 📄 O Book é seu. E olha, ${A.nome}: a <strong>condição de pré-venda</strong> vale só pras <strong>30 primeiras famílias</strong>. 🔥<br><br>Como você prefere seguir daqui?`);
+          host(`Como você prefere seguir?`);
           clearDock();
-          const c = document.createElement("button"); c.className = "cta gold"; c.innerHTML = "Quero garantir minha visita 🔑";
-          c.onclick = () => { me("Quero garantir minha visita"); typing(qDia, 600); };
+          const c = document.createElement("button"); c.className = "cta gold"; c.innerHTML = "Quero já marcar minha visita 🔑";
+          c.onclick = () => { me("Quero marcar a visita"); score += 2; typing(qDia, 600); };
           dock.appendChild(c);
-          const b = document.createElement("button"); b.className = "cta alt"; b.innerHTML = "Falar agora com um corretor 💬";
-          b.onclick = () => { me("Quero falar com um corretor"); score += 2; typing(() => finish("corretor"), 700); };
+          const b = document.createElement("button"); b.className = "cta alt"; b.innerHTML = "Prefiro que um especialista me chame 💬";
+          b.onclick = () => { me("Prefiro que me chamem"); typing(() => finish("material"), 700); };
           dock.appendChild(b);
-          const h = document.createElement("div"); h.className = "hint"; h.innerHTML = "📘 Book já baixado · escolha como seguir"; dock.appendChild(h); scroll();
-        }, 1100);
+          const h = document.createElement("div"); h.className = "hint"; h.innerHTML = "🤝 Sem pressão — no seu tempo"; dock.appendChild(h); scroll();
+        }, 1000);
       }, 700);
     };
 
     const qDia = () => {
-      host("Boa! Qual o melhor <strong>dia</strong> pra você ir ao plantão?");
+      host("Boa! Qual o melhor <strong>dia</strong> pra você conhecer?");
       const hoje = new Date();
       const dias: Opt[] = [];
       const nomes = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -339,7 +341,7 @@ export default function CasaTuaCanoasQuiz() {
       }
       grid(dias);
     };
-    const ansDia = (t: string) => { A.dia = t; me(t.split(",")[0]); typing(() => { host("E você prefere <strong>de manhã</strong> ou <strong>à tarde</strong>? O consultor confirma o horário exato com você no WhatsApp."); qTurno(); }); };
+    const ansDia = (t: string) => { A.dia = t; me(t.split(",")[0]); typing(() => { host("E você prefere <strong>de manhã</strong> ou <strong>à tarde</strong>? O especialista confirma o horário exato com você no WhatsApp."); qTurno(); }); };
     const qTurno = () => grid([
       { t: "De manhã", fn: () => ansTurno("Manhã") },
       { t: "À tarde", fn: () => ansTurno("Tarde") },
@@ -347,24 +349,22 @@ export default function CasaTuaCanoasQuiz() {
     ]);
     const ansTurno = (t: string) => { A.turno = t; me(t); typing(() => finish("visita"), 800); };
 
-    const finish = (mode: "visita" | "corretor") => {
+    const finish = (mode: "visita" | "material") => {
       const temp = score >= 4 ? "quente" : score >= 2 ? "morno" : "frio";
       enviarLead(mode, temp);
       fbqCustom(mode === "visita" ? "VisitaAgendada" : "FalarComCorretor", { content_name: "Casa Tua Santos Ferreira", value: score });
-      const bookHtml = `<div class="book"><div class="cover"><div class="bk">Uhome · Book exclusivo</div><div class="bt">Casa Tua<br>Santos Ferreira</div><div class="bs">Baixado ✓</div><div class="btag">PRÉ-LANÇAMENTO</div></div></div>`;
       let inner: string;
       if (mode === "visita") {
         const diaNum = (A.dia.match(/\d+/) || ["16"])[0];
-        inner = `<h3 style="margin-top:14px">Visita pré-agendada, ${A.nome}! 🎉</h3><p>Nosso time vai te chamar no WhatsApp pra <b>confirmar o horário</b> e garantir sua condição de pré-venda.</p><div class="appt"><div class="cal"><small>${A.dia.split(",")[0].slice(0, 3)}</small><b>${diaNum}</b></div><div class="info"><b>${A.dia} · ${A.turno}</b><span>Plantão Casa Tua · Av. Santos Ferreira, 3511 — Canoas</span></div></div>`;
+        inner = `<h3>Visita marcada, ${A.nome}! 🎉</h3><p>Um especialista da Uhome confirma o horário no seu WhatsApp e te mostra a casa por dentro.</p><div class="appt"><div class="cal"><small>${A.dia.split(",")[0].slice(0, 3)}</small><b>${diaNum}</b></div><div class="info"><b>${A.dia} · ${A.turno}</b><span>Plantão Casa Tua · Av. Santos Ferreira, 3511 — Canoas</span></div></div>`;
       } else {
-        inner = `<h3 style="margin-top:14px">Tudo certo, ${A.nome}! 🎉</h3><p>Nosso time vai te chamar <b>agora no WhatsApp</b> pra seguir seu atendimento e tirar todas as dúvidas do Casa Tua.</p>`;
+        inner = `<h3>Tá tudo liberado, ${A.nome}! 🎉</h3><p>O material está aí em cima pra você ver quando quiser. Um especialista da Uhome vai te chamar no WhatsApp <b>só pra tirar dúvidas</b> — sem pressão.</p>`;
       }
-      body.innerHTML = "";
       const wrap = document.createElement("div"); wrap.className = "row";
-      wrap.innerHTML = `<div class="bubble" style="max-width:100%"><div class="final">${bookHtml}${inner}<a class="dl" style="margin-top:14px" href="${GUIA}" download="Guia-Casa-Tua-Santos-Ferreira.pdf">⬇️ Baixar o Book de novo</a></div></div>`;
+      wrap.innerHTML = `<div class="bubble" style="max-width:100%"><div class="final">${inner}</div></div>`;
       body.appendChild(wrap);
       clearDock();
-      const h = document.createElement("div"); h.className = "hint"; h.innerHTML = `📞 Time da Uhome vai te chamar no WhatsApp ${A.zap}`; dock.appendChild(h); scroll();
+      const h = document.createElement("div"); h.className = "hint"; h.innerHTML = `🤝 Atendimento humano no WhatsApp ${A.zap} · sem pressão`; dock.appendChild(h); scroll();
     };
 
     start();
@@ -379,7 +379,7 @@ export default function CasaTuaCanoasQuiz() {
           <div className="who"><b>Lucas Sarmento</b><span className="on"><i className="dot" /> Fundador · Uhome</span></div>
         </div>
         <div className="reward" id="ct-reward">
-          <span className="gift">📘</span><b>Book Casa Tua</b>
+          <span className="gift">🏡</span><b>Casa Tua Canoas</b>
           <span className="pips"><span className="pip" /><span className="pip" /><span className="pip" /><span className="pip" /></span>
           <span className="pc" id="ct-pc">0/4</span>
         </div>
