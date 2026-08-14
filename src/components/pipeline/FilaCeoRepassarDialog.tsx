@@ -94,7 +94,7 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
 
       if (error) throw error;
 
-      const corretorNome = corretores.find((c) => c.user_id === selected)?.nome || "corretor";
+      const corretorNome = todos.find((c) => c.user_id === selected)?.nome || "corretor";
 
       // Notifica o corretor que recebeu o lead (repasse manual = já é dele, sem aceite).
       try {
