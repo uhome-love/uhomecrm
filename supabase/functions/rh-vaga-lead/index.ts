@@ -1,5 +1,5 @@
 /**
- * rh-vaga-lead — Público (página /vaga).
+ * rh-vaga-lead — v3 (2026-08-14) — Público (página /vaga).
  * Captura ANTECIPADA do candidato: grava assim que temos nome + WhatsApp,
  * antes do agendamento. Assim nenhum WhatsApp é perdido.
  *
