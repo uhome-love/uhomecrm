@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { formatBRLCompact, brtRangeToUTC } from "@/lib/utils";
+import VisitasPorEquipeList from "@/components/ceo/VisitasPorEquipeList";
 
 export type KpiDetailType =
   | "total_leads"
