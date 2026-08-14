@@ -16,6 +16,7 @@ import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hoo
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { bucketVisitasCanonico, type VisitaKpiRow } from "@/lib/visitaKpis";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaResultadoDialog, { type ResultadoVisita, RESULTADO_LABELS } from "@/components/visitas/VisitaResultadoDialog";
@@ -607,6 +608,20 @@ export default function AgendaVisitas() {
     return { marcadas: b.aRealizar, realizadas: b.realizadas, noShow: b.noShow, taxa, total: b.total };
   }, [kpiBase]);
 
+  // Agendadas no período (novos agendamentos, por created_at) — respeita "Só minhas" e o papel.
+  const { data: agendadasPeriodo } = useQuery({
+    queryKey: ["visitas-agendadas", dateRange.from, dateRange.to, showOnlyMine, user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)("get_visitas_kpis", {
+        p_start: dateRange.from, p_end: dateRange.to,
+        p_corretores: showOnlyMine && user ? [user.id] : null,
+      });
+      return ((data as any)?.agendadas ?? 0) as number;
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
   // Pending for cobranca
   const pendingVisitas = useMemo(() => {
     const today = startOfDay(new Date());
@@ -839,7 +854,8 @@ export default function AgendaVisitas() {
       </div>
 
       {/* ═══════ KPIs ═══════ */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <StatCard label="Agendadas" value={agendadasPeriodo ?? 0} tone="primary" accent />
         <StatCard label="Total" value={kpis.total} tone="primary" />
         <StatCard
           label="A realizar"

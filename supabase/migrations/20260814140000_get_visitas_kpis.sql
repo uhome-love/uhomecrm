@@ -17,7 +17,16 @@ DECLARE
   v_result jsonb;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Acesso negado'; END IF;
-  IF NOT (public.has_role(v_uid,'admin') OR public.has_role(v_uid,'diretor') OR public.has_role(v_uid,'gestor') OR public.has_role(v_uid,'rh')) THEN
+  -- admin/diretor/rh = escopo pedido (null = todos); gestor com null = só o time dele; demais = só a si.
+  IF public.has_role(v_uid,'admin') OR public.has_role(v_uid,'diretor') OR public.has_role(v_uid,'rh') THEN
+    v_scope := p_corretores;
+  ELSIF public.has_role(v_uid,'gestor') THEN
+    IF p_corretores IS NULL THEN
+      v_scope := COALESCE((SELECT array_agg(tm.user_id) FROM team_members tm
+                           WHERE tm.gerente_id=v_uid AND tm.status='ativo' AND tm.user_id IS NOT NULL), ARRAY[]::uuid[]) || ARRAY[v_uid];
+    ELSE v_scope := p_corretores;
+    END IF;
+  ELSE
     v_scope := ARRAY[v_uid];
   END IF;
   SELECT jsonb_build_object(
