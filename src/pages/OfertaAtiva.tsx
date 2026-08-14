@@ -41,7 +41,7 @@ const FILTRO_VAZIO: BaseLeadsFiltro = {
 
 
 export default function OfertaAtiva() {
-  const { isAdmin, isGestor, isCorretor } = useUserRole();
+  const { isAdmin, isGestor, isCorretor, isDiretor } = useUserRole();
   const [activeTab, setActiveTab] = useState("campanhas");
   const [configSub, setConfigSub] = useState("radar");
   const [criarOpen, setCriarOpen] = useState(false);
@@ -66,11 +66,13 @@ export default function OfertaAtiva() {
       {activeTab === "campanhas" && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Button asChild variant="outline" size="sm" className="gap-1.5">
-              <Link to="/base-leads">
-                <Database size={14} /> Ver Base Única
-              </Link>
-            </Button>
+            {(isAdmin || isDiretor) ? (
+              <Button asChild variant="outline" size="sm" className="gap-1.5">
+                <Link to="/base-leads">
+                  <Database size={14} /> Ver Base Única
+                </Link>
+              </Button>
+            ) : <span />}
             {(isAdmin || isGestor) && (
               <Button size="sm" className="gap-1.5" onClick={() => setCriarOpen(true)}>
                 <Rocket size={14} /> Nova campanha
