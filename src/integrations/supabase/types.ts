@@ -9238,6 +9238,7 @@ export type Database = {
           empreendimento: string | null
           empreendimento_canonico_id: string | null
           escalation_level: number | null
+          estagnacao_carencia_ate: string | null
           estagnado: boolean
           estagnado_aviso_em: string | null
           estagnado_aviso2_em: string | null
@@ -9353,6 +9354,7 @@ export type Database = {
           empreendimento?: string | null
           empreendimento_canonico_id?: string | null
           escalation_level?: number | null
+          estagnacao_carencia_ate?: string | null
           estagnado?: boolean
           estagnado_aviso_em?: string | null
           estagnado_aviso2_em?: string | null
@@ -9468,6 +9470,7 @@ export type Database = {
           empreendimento?: string | null
           empreendimento_canonico_id?: string | null
           escalation_level?: number | null
+          estagnacao_carencia_ate?: string | null
           estagnado?: boolean
           estagnado_aviso_em?: string | null
           estagnado_aviso2_em?: string | null
@@ -15384,6 +15387,10 @@ export type Database = {
           vgv_pipeline: number
         }[]
       }
+      get_visitas_kpis: {
+        Args: { p_corretores?: string[]; p_end: string; p_start: string }
+        Returns: Json
+      }
       get_widget_corretor_semana: {
         Args: { _corretor_id?: string; _periodo?: string }
         Returns: Json
@@ -15439,10 +15446,24 @@ export type Database = {
         Args: { p_pipeline_lead_id: string }
         Returns: boolean
       }
-      lead_saude_status: {
-        Args: { p_ref: string; p_stage_tipo: string; p_ultimo_toque: string }
-        Returns: string
-      }
+      lead_saude_status:
+        | {
+            Args: {
+              p_ref: string
+              p_stage_tipo: string
+              p_ultimo_toque: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_carencia_ate: string
+              p_ref: string
+              p_stage_tipo: string
+              p_ultimo_toque: string
+            }
+            Returns: string
+          }
       lead_teve_contato_v3: { Args: { p_lead_id: string }; Returns: boolean }
       list_empreendimentos_nao_resolvidos: {
         Args: { p_dias?: number }
