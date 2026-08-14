@@ -35,7 +35,7 @@ export default function CarteiraKpis() {
           </span>
         )}
       </h2>
-      <div className={s.estagnado > 0 ? "grid grid-cols-2 gap-2 sm:grid-cols-4" : "grid grid-cols-3 gap-2"}>
+      <div className="grid grid-cols-3 gap-2">
         <StatCard
           label="Em dia"
           value={val(s.em_dia)}
@@ -59,14 +59,6 @@ export default function CarteiraKpis() {
           onClick={() => goPipeline("atrasado", "desatualizado")}
           className={BIG}
         />
-        {s.estagnado > 0 && (
-          <StatCard
-            label="Estagnado"
-            value={val(s.estagnado)}
-            onClick={() => goPipeline("estagnado", "estagnado")}
-            className={`${BIG} border-l-[3px] border-l-violet-500 [&>p:nth-child(2)]:text-violet-500`}
-          />
-        )}
       </div>
     </section>
   );
