@@ -40,12 +40,23 @@ export interface LeadSaudeInput {
   created_at?: string | null;
   /** tipo da etapa atual (pipeline_stages.tipo). */
   stage_tipo?: string | null;
+  /**
+   * Carência ÚNICA de transição (YYYY-MM-DD). Enquanto hoje <= esta data, o lead
+   * NÃO estagna (vira "ambar"), mesmo passando do prazo. Espelha a régua de 4 args
+   * do SQL (public.lead_saude_status). NULL = sem carência (régua crua). Expira sozinha.
+   */
+  estagnacao_carencia_ate?: string | null;
 }
 
 function diasSem(base: string): number {
   const t = new Date(base).getTime();
   if (Number.isNaN(t)) return Infinity;
   return (Date.now() - t) / 86_400_000;
+}
+
+/** Data de hoje em BRT no formato ISO (YYYY-MM-DD) — para comparar com a carência. */
+function hojeBRT(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 /** Retorna a saúde do lead pelo último toque. Etapas terminais → "terminal". */
@@ -58,7 +69,11 @@ export function leadSaude(input: LeadSaudeInput): LeadSaude {
 
   const dias = diasSem(base);
   const limiteEstagna = ESTAGNA_POR_ETAPA[tipo];
-  if (limiteEstagna != null && dias > limiteEstagna) return "estagnado";
+  if (limiteEstagna != null && dias > limiteEstagna) {
+    // Carência de transição: com prazo concedido não estagna — vira atenção (amarelo).
+    if (input.estagnacao_carencia_ate && input.estagnacao_carencia_ate >= hojeBRT()) return "ambar";
+    return "estagnado";
+  }
 
   const prazo = PRAZO_POR_ETAPA[tipo] ?? PRAZO_PADRAO;
   if (dias <= prazo) return "verde";

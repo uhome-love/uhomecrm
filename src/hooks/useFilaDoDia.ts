@@ -155,14 +155,15 @@ export function useFilaDoDia() {
       //    o que é cadência Sem Contato (some da timeline) e o que é retorno real.
       const { data: leadsRaw } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, empreendimento, temperatura, ultimo_toque_at, distribuido_em, aceito_em, created_at, flag_status, stage_id, pipeline_stages!inner(nome, tipo)")
+        .select("id, nome, telefone, empreendimento, temperatura, ultimo_toque_at, distribuido_em, aceito_em, created_at, estagnacao_carencia_ate, flag_status, stage_id, pipeline_stages!inner(nome, tipo)")
         .eq("corretor_id", uid)
         .eq("arquivado", false)
         .limit(1000);
       type Row = {
         id: string; nome: string; telefone: string | null; empreendimento: string | null;
         temperatura: string | null; ultimo_toque_at: string | null; distribuido_em: string | null;
-        aceito_em: string | null; created_at: string; flag_status: Record<string, unknown> | null;
+        aceito_em: string | null; created_at: string; estagnacao_carencia_ate: string | null;
+        flag_status: Record<string, unknown> | null;
         stage_id: string; pipeline_stages: { nome: string; tipo: string };
       };
       const rows = (leadsRaw ?? []) as unknown as Row[];
@@ -262,6 +263,7 @@ export function useFilaDoDia() {
         const saude = leadSaude({
           ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em,
           aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo,
+          estagnacao_carencia_ate: l.estagnacao_carencia_ate,
         });
         if (saude === "estagnado") continue;
         const flag = (l.flag_status || {}) as Record<string, unknown>;

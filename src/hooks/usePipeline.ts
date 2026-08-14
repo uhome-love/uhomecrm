@@ -52,6 +52,8 @@ export interface PipelineLead {
   imovel_url?: string | null;
   proxima_acao: string | null;
   data_proxima_acao: string | null;
+  /** Carência única de transição da estagnação (YYYY-MM-DD) — ver leadSaude.ts. */
+  estagnacao_carencia_ate?: string | null;
   motivo_descarte: string | null;
   valor_estimado: number | null;
   created_at: string;
@@ -281,7 +283,7 @@ export function usePipeline(
     loadingLeadsRef.current = true;
     try {
 
-    const selectFields = "id, nome, telefone, telefone2, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, imovel_codigo, imovel_url, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, ultimo_toque_at, distribuido_em, aceito_em, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, flag_status, is_redistribuicao";
+    const selectFields = "id, nome, telefone, telefone2, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, imovel_codigo, imovel_url, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, ultimo_toque_at, distribuido_em, aceito_em, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, flag_status, is_redistribuicao, estagnacao_carencia_ate";
     // Página de 1000 para todos: a query principal (arquivado=false, order by
     // updated_at, índice idx_pipeline_leads_updated) roda em <1ms no servidor;
     // o gargalo era o número de idas ao servidor. 1000/página corta ~1811 leads
