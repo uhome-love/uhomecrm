@@ -603,29 +603,31 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     queryKey: ["ceo-extra-kpis", rangeKey, hoje],
     queryFn: async () => {
       const { startUtc: startTs, endUtc: endTs } = brtRangeToUTC(range);
+      const prev = getPrevRange(period);
 
-      // NOTE: leads counts (marketing / OA / enviadosRoleta) come from pipelineData
-      // to guarantee identical classification with charts. Here we only fetch ancillary KPIs.
-      const [{ data: visitasRows }, { count: novoInteresseCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
-        (supabase.from("visitas_unicas" as never) as any).select("id, status, pipeline_lead_id, corretor_id").gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada").not("origem", "like", "backfill_%").order("created_at", { ascending: false }).range(0, 4999),
+      // Visitas = FONTE ÚNICA via RPC get_visitas_kpis (visitas_unicas por data_visita,
+      // Total = A realizar + Realizadas + No show). Período anterior no mesmo motor → setinha correta.
+      const [visRes, visPrevRes, novoInt, roleta, goalsRes] = await Promise.all([
+        (supabase.rpc as any)("get_visitas_kpis", { p_start: range.start, p_end: range.end }),
+        (supabase.rpc as any)("get_visitas_kpis", { p_start: prev.start, p_end: prev.end }),
         supabase.from("campaign_clicks").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).eq("lead_action", "updated"),
         supabase.from("roleta_credenciamentos").select("corretor_id").eq("data", hoje).in("status", ["aprovado", "saiu"]),
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
       ]);
 
-      // SSOT no banco (visitas_unicas): 1 visita por cliente por dia
-      const visitasUnicas = (visitasRows || []) as any[];
+      const vis = ((visRes as any).data ?? {}) as { total?: number; a_realizar?: number; realizadas?: number; no_show?: number };
+      const visPrev = ((visPrevRes as any).data ?? {}) as typeof vis;
+      const novoInteresseCount = (novoInt as any).count as number | null;
+      const roletaRows = (roleta as any).data as { corretor_id: string | null }[] | null;
+      const goals = (goalsRes as any).data as { meta_ligacoes?: number; meta_aproveitados?: number; meta_visitas_marcadas?: number }[] | null;
 
       const dispIds = new Set<string>();
       (roletaRows || []).forEach(r => { if (r.corretor_id) dispIds.add(r.corretor_id); });
 
       return {
-        totalVisitasCriadas: visitasUnicas.length,
-        agendaVisitas: {
-          marcadas: visitasUnicas.filter(v => ["marcada", "confirmada", "reagendada", "realizada"].includes(v.status as string)).length,
-          realizadas: visitasUnicas.filter(v => v.status === "realizada").length,
-          noShow: visitasUnicas.filter(v => v.status === "no_show").length,
-        },
+        totalVisitas: vis.total ?? 0,
+        agendaVisitas: { total: vis.total ?? 0, aRealizar: vis.a_realizar ?? 0, realizadas: vis.realizadas ?? 0, noShow: vis.no_show ?? 0 },
+        agendaVisitasPrev: { total: visPrev.total ?? 0, aRealizar: visPrev.a_realizar ?? 0, realizadas: visPrev.realizadas ?? 0, noShow: visPrev.no_show ?? 0 },
         novoInteresse: novoInteresseCount || 0,
         presentesHoje: dispIds.size,
         metasDiaTotal: {

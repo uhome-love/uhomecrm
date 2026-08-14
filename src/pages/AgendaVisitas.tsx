@@ -16,6 +16,7 @@ import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hoo
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { bucketVisitasCanonico, type VisitaKpiRow } from "@/lib/visitaKpis";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaResultadoDialog, { type ResultadoVisita, RESULTADO_LABELS } from "@/components/visitas/VisitaResultadoDialog";
 import { routeLeadAfterVisita } from "@/lib/visitaResultadoRouting";
@@ -599,13 +600,11 @@ export default function AgendaVisitas() {
   }, [visitas, equipeFilter, searchTerm]);
 
   const kpis = useMemo(() => {
-    const marcadas = kpiBase.filter(v => ["marcada", "confirmada", "reagendada"].includes(v.status)).length;
-    const realizadas = kpiBase.filter(v => v.status === "realizada").length;
-    const noShow = kpiBase.filter(v => v.status === "no_show").length;
-    // Taxa de comparecimento: das visitas com desfecho (realizada ou no-show), quantas compareceram
-    const comDesfecho = realizadas + noShow;
-    const taxa = comDesfecho > 0 ? Math.round((realizadas / comDesfecho) * 100) : 0;
-    return { marcadas, realizadas, noShow, taxa };
+    // Fonte única: mesma definição canônica do CEO (dedup 1/cliente/dia, baldes exclusivos).
+    const b = bucketVisitasCanonico(kpiBase as unknown as VisitaKpiRow[]);
+    const comDesfecho = b.realizadas + b.noShow;
+    const taxa = comDesfecho > 0 ? Math.round((b.realizadas / comDesfecho) * 100) : 0;
+    return { marcadas: b.aRealizar, realizadas: b.realizadas, noShow: b.noShow, taxa, total: b.total };
   }, [kpiBase]);
 
   // Pending for cobranca

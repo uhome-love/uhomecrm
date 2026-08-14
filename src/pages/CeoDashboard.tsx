@@ -174,7 +174,7 @@ export default function CeoDashboard() {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
     pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv, vendasPeriodo, vgvMesAtual,
     teams, corretoresRank, origens, leadsPorEmpreendimento, leadsPorCorretor, visitasPorEmp,
-    totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, agendaVisitas, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
+    totalLeadsPeriodo, leadsReaproveitadosOA, agendaVisitas, agendaVisitasPrev, novoInteresse, enviadosRoleta, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
     error: dashError, partial, partialSources, errors,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
@@ -349,7 +349,6 @@ export default function CeoDashboard() {
     propostas: acc.propostas + t.propostas, vgv: acc.vgv + t.vgv,
   }), { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0, visitasRealizadas: 0, propostas: 0, vgv: 0 });
 
-  const totalVisitas = kpis.visitasMarcadas + kpis.visitasRealizadas + kpis.noShows;
   const totalNeg = negocioFases.reduce((a: number, f: any) => a + f.count, 0);
   const negTotalVgv = negocioFases.reduce((a: number, f: any) => a + f.vgv, 0);
   // "Contrato" = fase canônica intermediária (contrato gerado/em assinatura)
@@ -696,10 +695,10 @@ export default function CeoDashboard() {
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { label: "Total Visitas (Novas)", value: totalVisitasCriadas, color: "text-primary", type: "visitas_criadas" as const },
-                  { label: "Marcadas", value: agendaVisitas.marcadas, color: "text-warning", type: "visitas_marcadas" as const, prev: prevKpis?.visitasMarcadas },
-                  { label: "Realizadas", value: agendaVisitas.realizadas, color: "text-success", type: "visitas_realizadas" as const, prev: prevKpis?.visitasRealizadas },
-                  { label: "No Show", value: agendaVisitas.noShow, color: "text-danger", type: "visitas_no_show" as const, prev: prevKpis?.noShows, invert: true },
+                  { label: "Total", value: agendaVisitas.total, color: "text-primary", type: "visitas_criadas" as const, prev: agendaVisitasPrev?.total },
+                  { label: "A realizar", value: agendaVisitas.aRealizar, color: "text-warning", type: "visitas_marcadas" as const, prev: agendaVisitasPrev?.aRealizar },
+                  { label: "Realizadas", value: agendaVisitas.realizadas, color: "text-success", type: "visitas_realizadas" as const, prev: agendaVisitasPrev?.realizadas },
+                  { label: "No Show", value: agendaVisitas.noShow, color: "text-danger", type: "visitas_no_show" as const, prev: agendaVisitasPrev?.noShow, invert: true },
 
                 ]).map(card => {
                   const d = delta(card.value, card.prev);
