@@ -12,6 +12,7 @@ export type KpiDetailType =
   | "total_leads"
   | "reaproveitados_oa"
   | "enviados_roleta"
+  | "novos_agendamentos"
   | "visitas_criadas"
   | "visitas_marcadas"
   | "visitas_realizadas"
