@@ -19,9 +19,7 @@ interface CorretorRow {
   situacao: Situacao;
   dever_pct: number | null;
   toques: number;
-  risco_toc: number; risco_dev: number;
-  nov_at: number; nov_rec: number;
-  sc_toc: number; sc_dev: number;
+  prio_at: number; prio_esp: number;
   vis_ag: number; avancos: number; vis_real: number;
 }
 interface ProdData {
@@ -111,7 +109,7 @@ export default function Produtividade() {
       <div className="mx-auto max-w-6xl p-4 space-y-4">
         <PageHeader
           title="Produtividade do time"
-          subtitle="Quem trabalhou os leads que pediam atenção — e quem só esteve presente."
+          subtitle="Quem atendeu a agenda de prioridades do dia — e quem só esteve presente."
           icon={<Activity size={18} strokeWidth={1.5} />}
           actions={
             <div className="flex gap-1 rounded-full border border-border/60 bg-background p-1">
@@ -157,19 +155,16 @@ export default function Produtividade() {
               <table className="w-full min-w-[760px] text-[12px] border-collapse">
                 <thead>
                   <tr className="text-[9.5px] uppercase tracking-wider text-center">
-                    <th className="bg-muted/40" colSpan={4}></th>
-                    <th className="bg-primary/[0.06] text-primary font-bold py-2 border-l-2 border-background" colSpan={4}>Dever do dia · o esperado</th>
+                    <th className="bg-muted/40" colSpan={6}></th>
                     <th className="bg-teal-500/[0.07] text-teal-700 dark:text-teal-300 font-bold py-2 border-l-2 border-background" colSpan={2}>Resultado</th>
                   </tr>
                   <tr className="bg-muted/40 text-[10px] text-muted-foreground text-center">
                     <th className="text-left font-medium px-3 py-2.5">Corretor</th>
                     <th className="font-semibold text-foreground/70 px-2">Situação</th>
-                    <th className="font-medium px-2 w-[104px]">% dever</th>
-                    <th className="font-medium px-2 leading-tight" title="Leads com atividade registrada hoje (esforço)">Atividades<br/>hoje</th>
-                    <th className="font-medium px-2 py-2 bg-primary/[0.03] border-l-2 border-background leading-tight">Em risco<br/>atendidos</th>
-                    <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Novos<br/>atendidos</th>
-                    <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Sem-contato<br/>atendidos</th>
-                    <th className="font-medium px-2 bg-primary/[0.03] leading-tight">Visita<br/>agendada</th>
+                    <th className="font-medium px-2 w-[112px] leading-tight">% do dever<br/><span className="font-normal text-[8px]">(prioridades)</span></th>
+                    <th className="font-medium px-2 leading-tight" title="Leads com atividade registrada hoje (esforço total, mesmo fora da prioridade)">Atividades<br/>hoje</th>
+                    <th className="font-medium px-2 py-2 bg-primary/[0.04] border-l-2 border-background leading-tight" title="Prioridades da agenda que ele atendeu hoje / total que tinha de manhã">Prioridades<br/>atendidas</th>
+                    <th className="font-medium px-2 leading-tight">Visita<br/>agendada</th>
                     <th className="font-medium px-2 bg-teal-500/[0.04] border-l-2 border-background leading-tight">Avanços<br/>de etapa</th>
                     <th className="font-medium px-2 bg-teal-500/[0.04] leading-tight">Visitas<br/>realiz.</th>
                   </tr>
@@ -199,10 +194,8 @@ export default function Produtividade() {
                           )}
                         </td>
                         <td className="px-2 py-3 text-center">{c.toques === 0 ? <span className="text-muted-foreground/40">0</span> : <span className="tabular-nums text-foreground/70">{c.toques}</span>}</td>
-                        <td className="px-2 py-3 text-center bg-primary/[0.02] border-l-2 border-background"><Ratio feito={c.risco_toc} esperado={c.risco_dev} /></td>
-                        <td className="px-2 py-3 text-center bg-primary/[0.02]"><Ratio feito={c.nov_at} esperado={c.nov_rec} /></td>
-                        <td className="px-2 py-3 text-center bg-primary/[0.02]"><Ratio feito={c.sc_toc} esperado={c.sc_dev} /></td>
-                        <td className="px-2 py-3 text-center bg-primary/[0.02]">
+                        <td className="px-2 py-3 text-center bg-primary/[0.02] border-l-2 border-background"><Ratio feito={c.prio_at} esperado={c.prio_esp} /></td>
+                        <td className="px-2 py-3 text-center">
                           {semDem ? <span className="text-muted-foreground/40">—</span> : c.vis_ag >= 1
                             ? <span className="font-semibold text-emerald-600 dark:text-emerald-400">✓ {c.vis_ag}</span>
                             : <span className="text-amber-600 dark:text-amber-400">0</span>}
@@ -222,7 +215,7 @@ export default function Produtividade() {
           <span><b className="text-emerald-600 dark:text-emerald-400">● Produtivo</b> cumpriu o dever</span>
           <span><b className="text-amber-600 dark:text-amber-400">● Atenção</b> mexeu pouco</span>
           <span><b className="text-red-600 dark:text-red-400">● Parado</b> presente sem trabalhar</span>
-          <span>Dever medido pelos leads que <b>pediam atenção</b> (saúde), não o pipeline todo · 🟢 presente</span>
+          <span><b>% do dever</b> = da <b>agenda de prioridades</b> do dia (a mesma fila do corretor), quantas ele atendeu · 🟢 presente</span>
         </div>
       </div>
     </div>
