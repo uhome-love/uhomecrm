@@ -2,8 +2,13 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock, CalendarDays, Video } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Check, X, Clock, CalendarDays, Video, Search, Phone } from "lucide-react";
 import { MEET_LINK } from "@/config/recrutamento";
+import { ETAPAS } from "@/components/rh/RecrutamentoKanban";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, isPast, parseISO, addDays, startOfDay, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -11,13 +16,18 @@ import { cn } from "@/lib/utils";
 
 /**
  * AgendaRecrutamento — agenda por DATA das entrevistas do funil de recrutamento.
- * Reaproveita rh_entrevistas + os candidatos já carregados pelo kanban.
+ * O candidato (nome, etapa, temperatura, gerente, telefone) é buscado DIRETO do
+ * banco (rh_candidatos), não do prop — antes o nome sumia quando a lista vinha
+ * filtrada/parcial. Filtros: busca, gerente, status e período.
  */
 
-interface CandidatoLite {
-  id: string;
+interface CandInfo {
   nome: string;
+  telefone: string | null;
   etapa: string;
+  temperatura: string | null;
+  gerente_id: string | null;
+  origem: string | null;
 }
 
 interface Entrevista {
@@ -27,6 +37,11 @@ interface Entrevista {
   local: string | null;
   observacoes: string | null;
   status: string;
+}
+
+interface GerenteOpt {
+  user_id: string;
+  nome: string;
 }
 
 type StatusFiltro = "todas" | "agendada" | "realizada" | "nao_compareceu";
@@ -44,6 +59,16 @@ const PERIODO_OPTS: { key: PeriodoFiltro; label: string }[] = [
   { key: "mes", label: "Este mês" },
   { key: "todas", label: "Todas" },
 ];
+
+const ETAPA_META: Record<string, { label: string; color: string }> = Object.fromEntries(
+  ETAPAS.map((e) => [e.key, { label: e.label, color: e.color }])
+);
+
+const TEMP_META: Record<string, { label: string; color: string; soft: string }> = {
+  quente: { label: "Quente", color: "#E0533A", soft: "rgba(224, 83, 58, 0.12)" },
+  morno: { label: "Morno", color: "#E0982A", soft: "rgba(224, 152, 42, 0.12)" },
+  frio: { label: "Frio", color: "#7C8AA3", soft: "rgba(124, 138, 163, 0.14)" },
+};
 
 function statusBadge(status: string) {
   switch (status) {
@@ -76,32 +101,63 @@ function dayLabel(d: Date) {
   return format(d, "EEE, dd/MM", { locale: ptBR });
 }
 
+function onlyDigits(s?: string | null) {
+  return (s || "").replace(/\D/g, "");
+}
+
 interface Props {
-  candidatos: CandidatoLite[];
+  /** Lista mínima (fallback). O nome real vem do banco. */
+  candidatos: { id: string; nome: string; etapa: string }[];
+  gerentes?: GerenteOpt[];
+  /** 'rh' mostra filtro por gerente; 'gerente' não precisa. */
+  scope?: "rh" | "gerente";
   onKanbanUpdate: () => void;
   readOnly?: boolean;
 }
 
-export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnly = false }: Props) {
+export default function AgendaRecrutamento({ candidatos, gerentes = [], scope = "rh", onKanbanUpdate, readOnly = false }: Props) {
   const [entrevistas, setEntrevistas] = useState<Entrevista[]>([]);
+  const [candInfo, setCandInfo] = useState<Record<string, CandInfo>>({});
   const [status, setStatus] = useState<StatusFiltro>("todas");
   const [periodo, setPeriodo] = useState<PeriodoFiltro>("7d");
+  const [busca, setBusca] = useState("");
+  const [filtroGerente, setFiltroGerente] = useState<string>("todos");
 
-  const nomeById = useMemo(() => {
+  const gerenteNome = useMemo(() => {
     const m: Record<string, string> = {};
-    for (const c of candidatos) m[c.id] = c.nome;
+    for (const g of gerentes) m[g.user_id] = g.nome;
     return m;
-  }, [candidatos]);
+  }, [gerentes]);
 
-  const fetchEntrevistas = useCallback(async () => {
-    const { data, error } = await supabase
+  const fetchTudo = useCallback(async () => {
+    const { data: ents, error } = await supabase
       .from("rh_entrevistas" as any)
       .select("id, candidato_id, data_entrevista, local, observacoes, status")
       .order("data_entrevista", { ascending: true });
-    if (!error) setEntrevistas(((data || []) as unknown as Entrevista[]));
-  }, []);
+    if (error) return;
+    const lista = ((ents || []) as unknown as Entrevista[]);
+    setEntrevistas(lista);
 
-  useEffect(() => { fetchEntrevistas(); }, [fetchEntrevistas]);
+    // Candidato buscado DIRETO do banco (RLS aplica escopo) — nome sempre correto.
+    const ids = Array.from(new Set(lista.map((e) => e.candidato_id).filter(Boolean)));
+    if (ids.length === 0) { setCandInfo({}); return; }
+    const { data: cands } = await supabase
+      .from("rh_candidatos" as any)
+      .select("id, nome, telefone, etapa, temperatura, gerente_id, origem")
+      .in("id", ids);
+    const map: Record<string, CandInfo> = {};
+    for (const c of (cands || []) as any[]) {
+      map[c.id] = {
+        nome: c.nome, telefone: c.telefone, etapa: c.etapa,
+        temperatura: c.temperatura, gerente_id: c.gerente_id, origem: c.origem,
+      };
+    }
+    // Fallback pelo prop (caso RLS não devolva algum, ainda mostra o nome do kanban).
+    for (const c of candidatos) if (!map[c.id]) map[c.id] = { nome: c.nome, telefone: null, etapa: c.etapa, temperatura: null, gerente_id: null, origem: null };
+    setCandInfo(map);
+  }, [candidatos]);
+
+  useEffect(() => { fetchTudo(); }, [fetchTudo]);
 
   const marcar = async (e: Entrevista, novo: "realizada" | "nao_compareceu") => {
     const { error } = await supabase
@@ -119,7 +175,7 @@ export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnl
       .eq("id", e.candidato_id);
 
     toast.success(novo === "realizada" ? "Entrevista marcada como realizada!" : "Candidato marcado como não compareceu");
-    fetchEntrevistas();
+    fetchTudo();
     onKanbanUpdate();
   };
 
@@ -127,12 +183,23 @@ export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnl
     const hoje = startOfDay(new Date());
     const limite =
       periodo === "7d" ? addDays(hoje, 7) : periodo === "mes" ? endOfMonth(hoje) : null;
+    const q = busca.trim().toLowerCase();
+    const qDigits = onlyDigits(busca);
 
     const filtradas = entrevistas.filter((e) => {
       if (status !== "todas" && e.status !== status) return false;
       if (limite) {
         const d = parseISO(e.data_entrevista);
         if (d < hoje || d > limite) return false;
+      }
+      const c = candInfo[e.candidato_id];
+      if (filtroGerente !== "todos" && (c?.gerente_id ?? "sem") !== filtroGerente) return false;
+      if (q) {
+        const nome = (c?.nome || "").toLowerCase();
+        const tel = onlyDigits(c?.telefone);
+        const hitNome = nome.includes(q);
+        const hitTel = qDigits.length >= 3 && tel.includes(qDigits);
+        if (!hitNome && !hitTel) return false;
       }
       return true;
     });
@@ -147,12 +214,41 @@ export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnl
     return [...map.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([key, v]) => ({ key, ...v }));
-  }, [entrevistas, status, periodo]);
+  }, [entrevistas, candInfo, status, periodo, busca, filtroGerente]);
+
+  const totalFiltradas = useMemo(() => grupos.reduce((n, g) => n + g.items.length, 0), [grupos]);
+  // Só mostra o filtro de gerente quando há gerentes atribuídos entre as entrevistas.
+  const temGerentes = scope === "rh" && gerentes.length > 0;
 
   return (
     <div className="space-y-4">
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[180px] flex-1 max-w-xs">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar candidato ou telefone…"
+            className="h-8 pl-8 text-xs rounded-full"
+          />
+        </div>
+
+        {temGerentes && (
+          <Select value={filtroGerente} onValueChange={setFiltroGerente}>
+            <SelectTrigger className="h-8 w-[170px] text-xs rounded-full">
+              <SelectValue placeholder="Gerente" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os gerentes</SelectItem>
+              <SelectItem value="sem">Sem gerente</SelectItem>
+              {gerentes.map((g) => (
+                <SelectItem key={g.user_id} value={g.user_id}>{g.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         <div className="flex items-center gap-1 rounded-full border border-border/60 bg-background/80 p-1 shadow-sm">
           {STATUS_OPTS.map((o) => (
             <button
@@ -205,6 +301,15 @@ export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnl
               {g.items.map((e) => {
                 const d = parseISO(e.data_entrevista);
                 const atrasada = e.status === "agendada" && isPast(d);
+                const c = candInfo[e.candidato_id];
+                const etapa = c ? ETAPA_META[c.etapa] : undefined;
+                const temp = c?.temperatura ? TEMP_META[(c.temperatura || "").toLowerCase()] : undefined;
+                const ger = c?.gerente_id ? gerenteNome[c.gerente_id] : null;
+                const tel = onlyDigits(c?.telefone);
+                const meta: string[] = [];
+                if (ger) meta.push(`👤 ${ger}`);
+                if (e.local) meta.push(e.local);
+                if (c?.origem) meta.push(c.origem);
                 return (
                   <div
                     key={e.id}
@@ -217,11 +322,42 @@ export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnl
                       {format(d, "HH:mm")}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground truncate">
-                        {nomeById[e.candidato_id] || "Candidato removido"}
-                      </p>
-                      {e.local && <p className="text-[11px] text-muted-foreground truncate">{e.local}</p>}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {c?.nome || "Candidato removido"}
+                        </p>
+                        {etapa && (
+                          <span
+                            className="inline-flex items-center rounded-full px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide"
+                            style={{ color: etapa.color, backgroundColor: `${etapa.color}1f` }}
+                          >
+                            {etapa.label}
+                          </span>
+                        )}
+                        {temp && (
+                          <span
+                            className="inline-flex items-center rounded-full px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide"
+                            style={{ color: temp.color, backgroundColor: temp.soft }}
+                          >
+                            {temp.label}
+                          </span>
+                        )}
+                      </div>
+                      {meta.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{meta.join(" · ")}</p>
+                      )}
                     </div>
+                    {tel.length >= 10 && (
+                      <a
+                        href={`https://wa.me/55${tel}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="WhatsApp"
+                        className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-colors"
+                      >
+                        <Phone className="h-3 w-3" />
+                      </a>
+                    )}
                     {statusBadge(e.status)}
                     {e.status === "agendada" && (
                       <a
@@ -259,6 +395,12 @@ export default function AgendaRecrutamento({ candidatos, onKanbanUpdate, readOnl
           </section>
         ))}
       </div>
+
+      {totalFiltradas > 0 && (
+        <p className="text-[11px] text-muted-foreground text-center pt-1">
+          {totalFiltradas} entrevista{totalFiltradas !== 1 ? "s" : ""} no filtro
+        </p>
+      )}
     </div>
   );
 }
