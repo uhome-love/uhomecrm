@@ -19,11 +19,22 @@ interface Corretor {
   user_id: string;
   nome: string;
   equipe: string | null;
+  gestao?: string | null;
+}
+
+const CARGOS_GESTAO = ["gerente", "diretor", "diretora"];
+
+function labelCargo(cargo: string | null | undefined) {
+  if (!cargo) return "Gestão";
+  const c = cargo.toLowerCase();
+  if (c.startsWith("diretor")) return c === "diretora" ? "Diretora" : "Diretor";
+  return "Gerente";
 }
 
 export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, leadNome, onDone }: Props) {
   const { user } = useAuth();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
+  const [gestao, setGestao] = useState<Corretor[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<string>("");
@@ -37,21 +48,34 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
     }
     setLoading(true);
     (async () => {
-      const { data, error } = await supabase
-        .from("team_members")
-        .select("user_id, nome, equipe")
-        .eq("status", "ativo")
-        .order("nome");
-      if (!error) setCorretores(((data || []) as any[]).filter((c) => c.user_id));
+      const [tmRes, profRes] = await Promise.all([
+        supabase.from("team_members").select("user_id, nome, equipe").eq("status", "ativo").order("nome"),
+        supabase.from("profiles").select("user_id, nome, cargo").eq("ativo", true).in("cargo", CARGOS_GESTAO).order("nome"),
+      ]);
+
+      const gestaoList: Corretor[] = ((profRes.data || []) as any[])
+        .filter((p) => p.user_id)
+        .map((p) => ({ user_id: p.user_id, nome: p.nome || "Gestor", equipe: null, gestao: labelCargo(p.cargo) }));
+      const gestaoIds = new Set(gestaoList.map((g) => g.user_id));
+
+      const corretoresList = ((tmRes.data || []) as any[])
+        .filter((c) => c.user_id && !gestaoIds.has(c.user_id))
+        .map((c) => ({ user_id: c.user_id, nome: c.nome, equipe: c.equipe }));
+
+      setGestao(gestaoList);
+      setCorretores(corretoresList);
       setLoading(false);
     })();
   }, [open]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return corretores;
-    return corretores.filter((c) => c.nome?.toLowerCase().includes(q) || c.equipe?.toLowerCase().includes(q));
-  }, [corretores, search]);
+  const match = (c: Corretor, q: string) =>
+    !q || c.nome?.toLowerCase().includes(q) || c.equipe?.toLowerCase().includes(q);
+
+  const q = search.trim().toLowerCase();
+  const filteredGestao = useMemo(() => gestao.filter((c) => match(c, q)), [gestao, q]);
+  const filtered = useMemo(() => corretores.filter((c) => match(c, q)), [corretores, q]);
+  const todos = useMemo(() => [...gestao, ...corretores], [gestao, corretores]);
+
 
   const handleConfirm = async () => {
     if (!leadId || !selected || !user) return;
