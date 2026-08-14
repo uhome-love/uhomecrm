@@ -702,8 +702,9 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     visitasPorEmp,
     totalLeadsPeriodo: pipelineData?.totalMarketing || 0,
     leadsReaproveitadosOA: pipelineData?.totalOfertaAtiva || 0,
-    totalVisitasCriadas: extraKpis?.totalVisitasCriadas || 0,
-    agendaVisitas: extraKpis?.agendaVisitas || { marcadas: 0, realizadas: 0, noShow: 0 },
+    totalVisitasCriadas: extraKpis?.totalVisitas || 0,
+    agendaVisitas: extraKpis?.agendaVisitas || { total: 0, aRealizar: 0, realizadas: 0, noShow: 0, agendadas: 0 },
+    agendaVisitasPrev: extraKpis?.agendaVisitasPrev || { total: 0, aRealizar: 0, realizadas: 0, noShow: 0 },
 
     novoInteresse: extraKpis?.novoInteresse || 0,
     enviadosRoleta: pipelineData?.enviadosRoleta || 0,
