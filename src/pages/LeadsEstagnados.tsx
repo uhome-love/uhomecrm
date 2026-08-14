@@ -54,8 +54,6 @@ import { cn } from "@/lib/utils";
 
 const TABS: { value: CategoriaEstagnacao; label: string }[] = [
   { value: "estagnado", label: "Estagnados" },
-  { value: "em_aviso", label: "Em aviso (48h)" },
-  { value: "candidato", label: "Em alerta" },
   { value: "em_parceria", label: "Em parceria" },
 ];
 
@@ -63,7 +61,7 @@ const TAB_INFO: Record<CategoriaEstagnacao, { icon: typeof AlarmClock; texto: st
   estagnado: {
     icon: AlarmClock,
     texto:
-      "Já estagnaram. Passaram do prazo da etapa e ficaram mais 48h sem nenhuma ação do corretor. Saíram do pipeline (arquivados) e aguardam sua decisão: Devolver, Repassar, Roleta ou Descartar.",
+      "Estagnados pela saúde do lead — a mesma régua que o corretor vê: passaram do prazo da etapa sem nenhuma atividade (Sem contato: 15 dias; Qualificação e Aquecimento: 21 dias, contados desde a última atividade). Continuam no pipeline do corretor e aguardam sua decisão: Devolver, Repassar, Roleta ou Descartar.",
   },
   em_aviso: {
     icon: AlertTriangle,
