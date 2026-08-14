@@ -840,9 +840,9 @@ export default function AgendaVisitas() {
 
       {/* ═══════ KPIs ═══════ */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        <StatCard label="Criadas" value={kpiBase.length} tone="primary" />
+        <StatCard label="Total" value={kpis.total} tone="primary" />
         <StatCard
-          label="Marcadas"
+          label="A realizar"
           value={kpis.marcadas}
           tone="warning"
           active={kpiFilter === "marcadas"}
