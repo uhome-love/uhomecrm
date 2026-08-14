@@ -25,11 +25,11 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 }
 
 export default function BaseLeadsPage() {
-  const { isAdmin, isDiretor, isGestor } = useUserRole();
+  const { isAdmin, isDiretor } = useUserRole();
   const [tab, setTab] = useState("base");
   const { data: resumo } = useBaseLeadsResumo();
 
-  if (!isAdmin && !isDiretor && !isGestor) return <Navigate to="/" replace />;
+  if (!isAdmin && !isDiretor) return <Navigate to="/" replace />;
 
   const fmt = (n?: number) => (n ?? 0).toLocaleString("pt-BR");
 

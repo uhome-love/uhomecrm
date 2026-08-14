@@ -693,10 +693,24 @@ export default function CeoDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground bg-white dark:bg-white/[0.04] rounded-lg py-1.5 border border-[#e8e8f0] dark:border-white/[0.05]">
-                <CalendarCheck className="h-3 w-3 text-primary" />
-                <span className="font-bold text-foreground">{agendaVisitas.agendadas}</span> novos agendamentos no período
-              </div>
+              {(() => {
+                const dNovos = delta(agendaVisitas.agendadas, agendaVisitasPrev?.agendadas);
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setKpiDetail({ type: "novos_agendamentos", label: "Novos agendamentos" })}
+                    className="w-full bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05] hover:border-primary/30 transition-colors"
+                  >
+                    <p className="text-3xl font-[800] text-primary">{agendaVisitas.agendadas}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Novos agendamentos no período</p>
+                    {dNovos != null && (
+                      <p className={`text-[9px] font-semibold mt-0.5 ${Math.round(dNovos) === 0 ? "text-muted-foreground" : dNovos > 0 ? "text-success" : "text-danger"}`}>
+                        {Math.round(dNovos) === 0 ? "→" : dNovos > 0 ? "▲" : "▼"} {Math.abs(Math.round(dNovos))}% vs. anterior
+                      </p>
+                    )}
+                  </button>
+                );
+              })()}
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { label: "Total", value: agendaVisitas.total, color: "text-primary", type: "visitas_criadas" as const, prev: agendaVisitasPrev?.total },
