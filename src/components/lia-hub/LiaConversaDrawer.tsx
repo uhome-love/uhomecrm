@@ -62,7 +62,7 @@ export default function LiaConversaDrawer({ estado, open, onOpenChange }: Props)
         </SheetHeader>
 
         <ScrollArea className="flex-1">
-          <div className="space-y-3 p-5">
+          <div className="space-y-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5">
             {isLoading ? (
               <>
                 <Skeleton className="h-12 w-2/3" />
@@ -78,7 +78,7 @@ export default function LiaConversaDrawer({ estado, open, onOpenChange }: Props)
                   <div key={i} className={cn("flex", isUser ? "justify-start" : "justify-end")}>
                     <div
                       className={cn(
-                        "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm",
+                        "max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm sm:max-w-[80%]",
                         isUser
                           ? "rounded-bl-sm bg-muted text-foreground"
                           : "rounded-br-sm bg-primary/10 text-foreground"
