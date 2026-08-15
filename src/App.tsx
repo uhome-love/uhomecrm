@@ -62,6 +62,7 @@ const VagaPage = lazyRetry(() => import("./pages/VagaPage"));
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const CasaTuaCanoasQuiz = lazyRetry(() => import("./pages/CasaTuaCanoasQuiz"));
+const LiaTeste = lazyRetry(() => import("./pages/LiaTeste"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
 const HeaderMockup = lazyRetry(() => import("./pages/HeaderMockup"));
 const EquipesMockup = lazyRetry(() => import("./pages/EquipesMockup"));
@@ -118,6 +119,7 @@ const App = () => (
               <Route path="/vaga" element={<Suspense fallback={<PageLoader />}><VagaPage /></Suspense>} />
               <Route path="/casatua" element={<Suspense fallback={<PageLoader />}><CasaTuaLanding /></Suspense>} />
               <Route path="/casatuacanoas-quiz" element={<Suspense fallback={<PageLoader />}><CasaTuaCanoasQuiz /></Suspense>} />
+              <Route path="/lia-teste" element={<Suspense fallback={<PageLoader />}><LiaTeste /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
               <Route path="/header-mockup" element={<Suspense fallback={<PageLoader />}><HeaderMockup /></Suspense>} />
               <Route path="/equipes-mockup" element={<Suspense fallback={<PageLoader />}><EquipesMockup /></Suspense>} />

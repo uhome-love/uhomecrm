@@ -169,3 +169,6 @@ verify_jwt = false
 
 [functions.rh-vaga-lead]
 verify_jwt = false
+
+[functions.lia-chat]
+verify_jwt = false
