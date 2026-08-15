@@ -34,6 +34,10 @@ const MEDIA: Record<string, string> = {
   planta4: `${MEDIA_BASE}/planta4.jpg`,
   aerea: `${MEDIA_BASE}/invest.jpg`,
 };
+// Documentos (PDF) que a LIA pode enviar por marcador [[midia:CHAVE]].
+const DOC: Record<string, { link: string; filename: string }> = {
+  ebook: { link: `${MEDIA_BASE}/guia-casa-tua-santos-ferreira.pdf`, filename: "Guia Casa Tua Santos Ferreira.pdf" },
+};
 const OPTOUT_RE = /n[aã]o quero (mais )?(receber|falar)|me tira|sai(r)? da lista|para de (me )?mandar|me bloqueia|descadastr|remover? da lista|n[aã]o me mand/i;
 
 // Mapa do nível de qualificação -> como o lead entra na Fila CEO (fonte única: coluna temperatura).
@@ -59,6 +63,7 @@ async function send360(to: string, payload: Record<string, unknown>) {
 }
 const sendText = (to: string, body: string) => send360(to, { type: "text", text: { body } });
 const sendImage = (to: string, link: string) => send360(to, { type: "image", image: { link } });
+const sendDoc = (to: string, link: string, filename: string) => send360(to, { type: "document", document: { link, filename } });
 
 const nowISO = () => new Date().toISOString();
 
@@ -146,7 +151,8 @@ serve(async (req) => {
             const mm = p.match(/^\[\[\s*midia\s*:\s*(\w+)\s*\]\]$/i);
             if (mm) {
               const k = mm[1].toLowerCase();
-              if (MEDIA[k] && media < 3) { media++; await sendImage(from, MEDIA[k]); }
+              if (DOC[k] && media < 3) { media++; await sendDoc(from, DOC[k].link, DOC[k].filename); }
+              else if (MEDIA[k] && media < 3) { media++; await sendImage(from, MEDIA[k]); }
             } else if (/^\[\[.*\]\]$/.test(p)) {
               continue; // marcador interno (ex.: sinal) que por acaso vazou: nunca envia
             } else {
@@ -192,9 +198,16 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     const jaEra = est.status === "qualificado";
     const subiuPraQuente = jaEra && est.nivel !== "quente" && nivel === "quente";
 
+    // resumo pro corretor continuar o contato (gera na 1ª qualificação, ou se ainda não tem)
+    let resumo: string = est.resumo ?? "";
+    if (!jaEra || !resumo) {
+      const novo = await gerarResumo(sb, from);
+      if (novo) resumo = novo;
+    }
+
     let leadId: string | null = est.lead_id ?? null;
     if (!leadId) {
-      leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel);
+      leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel, resumo);
     } else {
       // já estava na fila: atualiza a temperatura se subiu
       await sb.from("pipeline_leads").update({
@@ -207,6 +220,7 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
       nivel,
       lead_id: leadId,
       qualificado_em: est.qualificado_em ?? nowISO(),
+      resumo: resumo || est.resumo || null,
       updated_at: nowISO(),
     }).eq("telefone", from);
 
@@ -217,8 +231,26 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
   } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); }
 }
 
+// Gera o resumo da conversa pro corretor, chamando a lia-chat em modo resumo.
+async function gerarResumo(sb: any, from: string): Promise<string> {
+  try {
+    const { data: hist } = await sb
+      .from("lia_conversas").select("role, conteudo")
+      .eq("telefone", from).order("created_at", { ascending: true }).limit(60);
+    const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
+    if (!msgs.length) return "";
+    const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+      body: JSON.stringify({ messages: msgs, mode: "resumo" }),
+    });
+    const d = await r.json();
+    return String(d?.resumo ?? "").trim();
+  } catch (e) { console.error("[lia-whatsapp] gerarResumo erro", e); return ""; }
+}
+
 // Cria o lead SEM DONO na Fila CEO (mesmo padrão do receive-quiz-lead), origem 'LIA'.
-async function criarLeadFila(sb: any, from: string, nome: string | null, referral: any, nivel: string): Promise<string | null> {
+async function criarLeadFila(sb: any, from: string, nome: string | null, referral: any, nivel: string, resumo: string): Promise<string | null> {
   try {
     const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.qualificado;
     let telefone = from;
@@ -227,6 +259,8 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
     const { data: stage } = await sb
       .from("pipeline_stages").select("id").eq("tipo", "novo_lead").eq("ativo", true).limit(1).single();
     if (!stage) { console.error("[lia-whatsapp] stage novo_lead ausente"); return null; }
+
+    const resumoTxt = (resumo ?? "").trim();
 
     // dedup: já existe lead 'LIA' com esse telefone sem dono?
     const { data: exist } = await sb
@@ -251,7 +285,7 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
       prioridade_lead: map.prioridade,
       temperatura: map.temperatura,
       tags: ["qualificado_lia", `lia_${nivel}`],
-      observacoes: `Qualificado pela LIA (${map.label}).${referral ? `\nVeio de anúncio (Click-to-WhatsApp). ${referral?.source_url ?? ""}` : ""}`,
+      observacoes: `Resumo da LIA (${map.label}):\n${resumoTxt || "A LIA validou interesse e enviou pra Fila CEO."}${referral ? `\n\nVeio de anúncio (Click-to-WhatsApp). ${referral?.source_url ?? ""}` : ""}`,
       event_source_url: referral?.source_url ?? null,
     }).select("id").single();
     if (error || !ins) { console.error("[lia-whatsapp] insert lead falhou", error); return null; }
@@ -261,7 +295,9 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
         pipeline_lead_id: ins.id,
         tipo: "entrada",
         titulo: `${map.emoji} Lead ${map.label} qualificado pela LIA (WhatsApp)`,
-        descricao: `A LIA validou interesse e enviou pra Fila CEO.${campanha ? `\n${campanha}` : ""}`,
+        descricao: resumoTxt
+          ? `${resumoTxt}${campanha ? `\n\n${campanha}` : ""}`
+          : `A LIA validou interesse e enviou pra Fila CEO.${campanha ? `\n${campanha}` : ""}`,
         status: "concluida",
         created_by: "00000000-0000-0000-0000-000000000000",
       });
