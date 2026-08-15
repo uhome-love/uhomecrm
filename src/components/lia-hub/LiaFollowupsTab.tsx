@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, X, Clock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Check, X, Clock, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
@@ -16,6 +17,8 @@ export default function LiaFollowupsTab() {
   const { data: templates } = useLiaTemplates();
   const { data: estados } = useLiaEstados();
   const [emAcao, setEmAcao] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [rascunho, setRascunho] = useState("");
 
   const nomePorTelefone = useMemo(() => {
     const m = new Map<string, string>();
@@ -44,6 +47,19 @@ export default function LiaFollowupsTab() {
       qc.invalidateQueries({ queryKey: ["lia-hub", "followups"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Não foi possível atualizar"),
+  });
+
+  const salvarTexto = useMutation({
+    mutationFn: async ({ id, mensagem }: { id: string; mensagem: string }) => {
+      const { error } = await supabase.from("lia_followups").update({ mensagem }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Mensagem atualizada");
+      setEditandoId(null);
+      qc.invalidateQueries({ queryKey: ["lia-hub", "followups"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Não foi possível salvar"),
   });
 
   return (
@@ -91,9 +107,37 @@ export default function LiaFollowupsTab() {
                   </div>
                 </div>
 
-                <p className="mt-3 whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-sm text-foreground">
-                  {f.mensagem}
-                </p>
+                {editandoId === f.id ? (
+                  <div className="mt-3 space-y-2">
+                    <Textarea
+                      value={rascunho}
+                      onChange={(e) => setRascunho(e.target.value)}
+                      rows={5}
+                      className="text-sm"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditandoId(null)}
+                        disabled={salvarTexto.isPending}
+                      >
+                        Cancelar edição
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={salvarTexto.isPending || !rascunho.trim()}
+                        onClick={() => salvarTexto.mutate({ id: f.id, mensagem: rascunho })}
+                      >
+                        Salvar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-sm text-foreground">
+                    {f.mensagem}
+                  </p>
+                )}
 
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -102,6 +146,18 @@ export default function LiaFollowupsTab() {
                     agendado {formatBRT(f.agendado_para, "dd/MM HH:mm")}
                   </span>
                   <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={editandoId === f.id}
+                      onClick={() => {
+                        setRascunho(f.mensagem ?? "");
+                        setEditandoId(f.id);
+                      }}
+                      className="gap-1.5"
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Editar texto
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
