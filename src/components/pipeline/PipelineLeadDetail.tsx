@@ -56,7 +56,6 @@ import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
-import { MessageSquare } from "lucide-react";
 import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
