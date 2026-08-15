@@ -81,7 +81,7 @@ function roleHomePath(roles: AppRole[]): string {
   if (roles.includes("admin")) return "/ceo";
   if (roles.includes("diretor")) return "/diretora";
   if (roles.includes("gestor")) return "/gerente/cockpit";
-  if (roles.includes("backoffice")) return "/";
+  if (roles.includes("backoffice")) return "/corretor";
   if (roles.includes("rh")) return "/rh";
   return "/corretor";
 }
@@ -282,7 +282,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
       }
       let dest = "/corretor";
       if (r.includes("admin")) dest = "/ceo";
-      else if (r.includes("backoffice")) dest = "/";
+      else if (r.includes("backoffice")) dest = "/corretor";
       else if (r.includes("rh")) dest = "/rh";
       else if (r.includes("gestor")) dest = "/gerente/cockpit";
       navigateRef.current(dest, { replace: true });

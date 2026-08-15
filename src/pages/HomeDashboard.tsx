@@ -20,7 +20,7 @@ export default function HomeDashboard() {
     if (isAdmin) {
       navigate("/ceo", { replace: true });
     } else if (isBackoffice) {
-      navigate("/", { replace: true });
+      navigate("/corretor", { replace: true });
     } else if (isRh) {
       navigate("/rh", { replace: true });
     } else if (isDiretor) {

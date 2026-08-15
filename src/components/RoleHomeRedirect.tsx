@@ -35,7 +35,7 @@ export default function RoleHomeRedirect() {
   const destino = isAdmin
     ? "/ceo"
     : isBackoffice
-    ? "/"
+    ? "/corretor"
     : isRh
     ? "/rh"
     : isDiretor
