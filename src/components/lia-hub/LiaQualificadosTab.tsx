@@ -184,6 +184,7 @@ export default function LiaQualificadosTab() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Card>
     </div>

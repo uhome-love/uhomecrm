@@ -26,8 +26,11 @@ export default function LiaConversaDrawer({ estado, open, onOpenChange }: Props)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
-        <SheetHeader className="border-b border-border p-5 text-left">
+      <SheetContent
+        side="right"
+        className="flex h-[100dvh] w-full flex-col gap-0 p-0 sm:max-w-xl"
+      >
+        <SheetHeader className="border-b border-border p-4 pt-[max(1rem,env(safe-area-inset-top))] text-left sm:p-5 sm:pt-5">
           <SheetTitle className="text-lg">{estado?.nome || "Sem nome"}</SheetTitle>
           <SheetDescription>{estado?.telefone}</SheetDescription>
           <div className="mt-2 flex flex-wrap items-center gap-2">
