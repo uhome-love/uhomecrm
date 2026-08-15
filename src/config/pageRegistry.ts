@@ -130,6 +130,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "negocios-preview": lazyRetry(() => import("@/pages/NegociosWorkspace")),
   "presenca-roleta": lazyRetry(() => import("@/pages/PresencaRoleta")),
   "foco-corretores": lazyRetry(() => import("@/pages/FocoCorretores")),
+  "lia-hub": lazyRetry(() => import("@/pages/admin/LiaHub")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
@@ -140,6 +141,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/diretora":              { key: "diretora",             label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["diretor", "admin"] },
   
   "/ceo/religacao-negocios":{ key: "ceo-religacao-negocios", label: "Religação Negócios", icon: "Link2",         roles: ["admin", "diretor"] },
+  "/admin/lia-hub":         { key: "lia-hub",              label: "LIA · Uhome",         icon: "Bot",           roles: ["admin", "diretor"] },
   "/gerente/dashboard":     { key: "gerente-dashboard",    label: "Dashboard (legado)",  icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin"] },
   "/gerente/cockpit":       { key: "gerente-cockpit",      label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin", "diretor"] },
   "/produtividade":         { key: "produtividade",        label: "Produtividade",       icon: "Activity",      roles: ["gestor", "admin", "diretor"] },
