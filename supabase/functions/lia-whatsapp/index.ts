@@ -235,7 +235,9 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
   } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); }
 }
 
-// Gera o resumo da conversa pro corretor, chamando a lia-chat em modo resumo.
+// Gera o resumo da conversa pro corretor. A chamada acontece logo depois da resposta,
+// então pode pegar rate limit do gateway: re-tenta com espaçamento e, se ainda falhar,
+// cai num fallback com o que o lead falou (nunca deixa o corretor sem contexto).
 async function gerarResumo(sb: any, from: string): Promise<string> {
   try {
     const { data: hist } = await sb
@@ -243,13 +245,30 @@ async function gerarResumo(sb: any, from: string): Promise<string> {
       .eq("telefone", from).order("created_at", { ascending: true }).limit(60);
     const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
     if (!msgs.length) return "";
-    const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
-      body: JSON.stringify({ messages: msgs, mode: "resumo" }),
-    });
-    const d = await r.json();
-    return String(d?.resumo ?? "").trim();
+
+    // tenta o resumo por IA, com re-tentativas espaçadas (evita o rate limit da 2ª chamada)
+    for (let i = 0; i < 3; i++) {
+      if (i) await new Promise((r) => setTimeout(r, 2500));
+      try {
+        const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+          body: JSON.stringify({ messages: msgs, mode: "resumo" }),
+        });
+        const d = await r.json();
+        const resumo = String(d?.resumo ?? "").trim();
+        if (resumo) return resumo;
+      } catch (e) { console.error("[lia-whatsapp] gerarResumo tentativa", i, e); }
+    }
+
+    // fallback: sem IA, monta com o que o lead falou (últimas falas dele)
+    const ditos = msgs
+      .filter((m: any) => m.role === "user")
+      .map((m: any) => String(m.content).trim())
+      .filter((c: string) => c && !/gostaria de mais informa|informações do casa tua/i.test(c))
+      .slice(-6);
+    if (!ditos.length) return "";
+    return "Resumo automático indisponível agora. O lead disse: " + ditos.map((d: string) => `“${d}”`).join("; ") + ".";
   } catch (e) { console.error("[lia-whatsapp] gerarResumo erro", e); return ""; }
 }
 
