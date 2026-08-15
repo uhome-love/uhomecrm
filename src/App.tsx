@@ -76,7 +76,6 @@ const IngestaoPanel = lazyRetry(() => import("./pages/admin/IngestaoPanel"));
 const UsoPaginasPanel = lazyRetry(() => import("./pages/admin/UsoPaginasPanel"));
 const LiaConexao = lazyRetry(() => import("./pages/admin/LiaConexao"));
 const LiaSalaAoVivo = lazyRetry(() => import("./pages/admin/LiaSalaAoVivo"));
-const LiaHub = lazyRetry(() => import("./pages/admin/LiaHub"));
 
 
 const queryClient = new QueryClient({
