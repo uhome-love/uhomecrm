@@ -145,7 +145,10 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const [activeTab, setActiveTab] = useState<"novos" | "reengajamento" | "quiz">(initialTab ?? "novos");
   const [repasseLead, setRepasseLead] = useState<{ id: string; nome: string } | null>(null);
 
-  const isQuizLead = (l: any) => String(l.origem || "").toLowerCase() === "quiz";
+  const isQuizLead = (l: any) => {
+    const o = String(l.origem || "").toLowerCase();
+    return o === "quiz" || o === "lia";
+  };
 
   // Separa leads por categoria
   const leadsReengajamento = useMemo(() => allLeads.filter((l) => !!l.reativado_por_nutricao), [allLeads]);
@@ -240,9 +243,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       setAllLeads(leadsList);
 
       // Auto-seleciona aba com leads
-      const quizCount = leadsList.filter((l) => String(l.origem || "").toLowerCase() === "quiz").length;
+      const quizCount = leadsList.filter((l) => ["quiz", "lia"].includes(String(l.origem || "").toLowerCase())).length;
       const reengCount = leadsList.filter((l) => !!l.reativado_por_nutricao).length;
-      const novosCount = leadsList.filter((l) => !l.reativado_por_nutricao && String(l.origem || "").toLowerCase() !== "quiz").length;
+      const novosCount = leadsList.filter((l) => !l.reativado_por_nutricao && !["quiz", "lia"].includes(String(l.origem || "").toLowerCase())).length;
       setActiveTab(novosCount > 0 ? "novos" : quizCount > 0 ? "quiz" : reengCount > 0 ? "reengajamento" : "novos");
 
       console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${reengCount} reengajamento)`);
@@ -461,7 +464,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               </TabsTrigger>
               <TabsTrigger value="quiz" className="gap-2">
                 <Flame className="h-3.5 w-3.5" />
-                Lead qualificado quiz
+                LIA
                 <Badge variant="secondary" className="ml-1 h-5">{leadsQuiz.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="reengajamento" className="gap-2">
@@ -474,12 +477,12 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
             <TabsContent value="quiz" className="mt-4 space-y-3">
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
                 <p className="text-xs text-primary">
-                  🔥 <strong>Leads qualificados de quiz:</strong> vieram de um funil conversacional (já responderam a qualificação). Não entram na roleta — repasse manualmente pro corretor que você escolher.
+                  🔥 <strong>Leads qualificados pela LIA:</strong> vieram de um funil conversacional (já responderam a qualificação). Não entram na roleta — repasse manualmente pro corretor que você escolher.
                 </p>
               </div>
               {leadsQuiz.length === 0 ? (
                 <div className="text-center py-8 text-sm text-muted-foreground">
-                  Nenhum lead de quiz aguardando repasse. 🎉
+                  Nenhum lead da LIA aguardando repasse. 🎉
                 </div>
               ) : (
                 <div className="max-h-80 overflow-y-auto space-y-2">
