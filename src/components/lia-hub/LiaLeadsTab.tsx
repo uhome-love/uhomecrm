@@ -201,6 +201,7 @@ export default function LiaLeadsTab() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Card>
 
