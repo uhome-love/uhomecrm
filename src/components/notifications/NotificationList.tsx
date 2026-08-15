@@ -150,7 +150,7 @@ function getNotificationRoute(n: Notification): string | null {
   // Alertas de gestão
   if (categoria === "corretor_parado" || categoria === "corretor_inativo") return "/central-do-gerente";
   if (categoria === "lead_sem_atendimento") return "/pipeline-leads";
-  if (categoria === "meta_abaixo") return "/gerente/dashboard";
+  if (categoria === "meta_abaixo") return "/gerente/cockpit";
   
   if (categoria === "problema_atendimento") return "/pipeline-leads";
   if (categoria === "volume_leads") return "/pipeline-leads";

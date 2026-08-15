@@ -127,7 +127,10 @@ const App = () => (
 
               {/* Redirects */}
               <Route path="/fechamento-day" element={<Navigate to="/placar-do-dia" replace />} />
-              <Route path="/gestao" element={<Navigate to="/gerente/dashboard" replace />} />
+              <Route path="/gestao" element={<Navigate to="/gerente/cockpit" replace />} />
+              <Route path="/gerente/dashboard" element={<Navigate to="/gerente/cockpit" replace />} />
+              <Route path="/backoffice/*" element={<Navigate to="/" replace />} />
+              <Route path="/backoffice" element={<Navigate to="/" replace />} />
               <Route path="/index" element={<Navigate to="/" replace />} />
               <Route path="/central-usuarios" element={<Navigate to="/meu-time" replace />} />
               <Route path="/pdn" element={<Navigate to="/pipeline-negocios" replace />} />

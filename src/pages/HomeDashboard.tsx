@@ -20,13 +20,13 @@ export default function HomeDashboard() {
     if (isAdmin) {
       navigate("/ceo", { replace: true });
     } else if (isBackoffice) {
-      navigate("/backoffice", { replace: true });
+      navigate("/", { replace: true });
     } else if (isRh) {
       navigate("/rh", { replace: true });
     } else if (isDiretor) {
       navigate("/ceo", { replace: true });
     } else if (isGestor) {
-      navigate("/gerente/dashboard", { replace: true });
+      navigate("/gerente/cockpit", { replace: true });
     } else {
       navigate("/corretor", { replace: true });
     }
