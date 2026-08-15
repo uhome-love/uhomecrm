@@ -88,11 +88,14 @@ export default function LiaKanbanTab() {
 
   return (
     <>
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:snap-none sm:px-0">
         {COLUNAS.map((c) => {
           const itens = colunas[c.id];
           return (
-            <div key={c.id} className="flex w-[264px] shrink-0 flex-col rounded-xl border border-border bg-muted/20">
+            <div
+              key={c.id}
+              className="flex w-[82vw] max-w-[300px] shrink-0 snap-start flex-col rounded-xl border border-border bg-muted/20 sm:w-[264px] sm:max-w-none sm:snap-align-none"
+            >
               <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
                 <div className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${c.cor}`} />
@@ -100,7 +103,7 @@ export default function LiaKanbanTab() {
                 </div>
                 <Badge variant="secondary">{itens.length}</Badge>
               </div>
-              <div className="max-h-[62vh] space-y-2 overflow-y-auto p-2">
+              <div className="max-h-[55vh] space-y-2 overflow-y-auto p-2 sm:max-h-[62vh]">
                 {itens.length === 0 ? (
                   <p className="px-2 py-6 text-center text-xs text-muted-foreground">Vazio</p>
                 ) : (

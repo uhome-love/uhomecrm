@@ -32,7 +32,7 @@ function Kpi({
             <Icon className="h-4 w-4" strokeWidth={1.75} />
           </span>
         </div>
-        <div className="mt-2 text-2xl font-bold tabular-nums text-foreground">
+        <div className="mt-2 text-xl font-bold tabular-nums text-foreground sm:text-2xl">
           {loading ? <Skeleton className="h-7 w-16" /> : value}
         </div>
       </CardContent>
