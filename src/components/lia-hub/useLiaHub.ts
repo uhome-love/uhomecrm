@@ -215,7 +215,7 @@ export function useLiaPipelineLeads() {
         corretores = new Map((profs ?? []).map((p: any) => [p.id, p.nome as string]));
       }
 
-      const stages = new Map(
+      const stages = new Map<string, { nome: string; tipo: string; ordem: number }>(
         (stagesRes.data ?? []).map((s: any) => [
           s.id as string,
           { nome: s.nome as string, tipo: s.tipo as string, ordem: s.ordem as number },
