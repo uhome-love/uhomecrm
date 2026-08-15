@@ -4,8 +4,9 @@
  * Recebe o webhook do 360dialog (formato WhatsApp Cloud API), pega a mensagem do
  * lead, monta o histórico (lia_conversas = memória), chama a lia-chat pra gerar a
  * resposta E o SINAL de triagem, envia de volta (texto + as 7 mídias), e age pelo sinal:
- *   - qualificado/quente  -> cria/promove o lead na Fila CEO (temperatura + tag) e
- *                            NOTIFICA o Lucas na hora (ele repassa). Só quando qualifica.
+ *   - quente/morno/frio   -> cria/atualiza o lead na Fila CEO com a temperatura certa
+ *                            (quente=alta, morno=media, frio=baixa) + resumo pro corretor.
+ *                            Notifica o Lucas em morno/quente; frio entra sem push.
  *   - descartar           -> marca o estado como descartado (fica FORA da fila; o CEO
  *                            pode retomar depois). Não cria lead.
  *   - seguindo            -> só conversa; nada entra na fila ainda.
@@ -40,10 +41,11 @@ const DOC: Record<string, { link: string; filename: string }> = {
 };
 const OPTOUT_RE = /n[aã]o quero (mais )?(receber|falar)|me tira|sai(r)? da lista|para de (me )?mandar|me bloqueia|descadastr|remover? da lista|n[aã]o me mand/i;
 
-// Mapa do nível de qualificação -> como o lead entra na Fila CEO (fonte única: coluna temperatura).
-const NIVEL_MAP: Record<string, { temperatura: string; prioridade: string; emoji: string; label: string }> = {
-  quente: { temperatura: "quente", prioridade: "alta", emoji: "🔥", label: "QUENTE" },
-  qualificado: { temperatura: "morno", prioridade: "media", emoji: "🟡", label: "qualificado" },
+// Temperatura do lead -> como ele entra na Fila CEO (fonte única: coluna temperatura).
+const NIVEL_MAP: Record<string, { temperatura: string; prioridade: string; emoji: string; label: string; rank: number }> = {
+  quente: { temperatura: "quente", prioridade: "alta", emoji: "🔥", label: "Quente", rank: 3 },
+  morno: { temperatura: "morno", prioridade: "media", emoji: "🟡", label: "Morno", rank: 2 },
+  frio: { temperatura: "frio", prioridade: "baixa", emoji: "🧊", label: "Frio", rank: 1 },
 };
 
 const svc = () =>
@@ -165,7 +167,7 @@ serve(async (req) => {
         // AGE PELO SINAL DE TRIAGEM
         const jaOptout = OPTOUT_RE.test(texto);
         if (!jaOptout) {
-          if ((sinal === "quente" || sinal === "qualificado") && est.status !== "descartado") {
+          if ((sinal === "quente" || sinal === "morno" || sinal === "frio") && est.status !== "descartado") {
             await qualificar(sb, from, est, contactName, referral, sinal);
           } else if (sinal === "descartar" && est.status !== "qualificado" && !est.lead_id) {
             await sb.from("lia_estado").update({
@@ -194,9 +196,10 @@ serve(async (req) => {
  */
 async function qualificar(sb: any, from: string, est: any, nome: string | null, referral: any, nivel: string) {
   try {
-    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.qualificado;
+    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
     const jaEra = est.status === "qualificado";
-    const subiuPraQuente = jaEra && est.nivel !== "quente" && nivel === "quente";
+    const oldRank = (est.nivel && NIVEL_MAP[est.nivel]?.rank) || 0;
+    const subiu = map.rank > oldRank; // esquentou desde a última leitura
 
     // resumo pro corretor continuar o contato (gera na 1ª qualificação, ou se ainda não tem)
     let resumo: string = est.resumo ?? "";
@@ -224,8 +227,9 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
       updated_at: nowISO(),
     }).eq("telefone", from);
 
-    // notifica só na transição (primeira qualificação ou upgrade pra quente)
-    if (leadId && (!jaEra || subiuPraQuente)) {
+    // notifica o Lucas só pra lead acionável (morno/quente) e na transição/quando esquenta;
+    // frio entra na Fila CEO sem push (ele vê e dispara quando quiser).
+    if (leadId && map.rank >= 2 && (!jaEra || subiu)) {
       await notificar(sb, leadId, est.nome ?? nome, nivel);
     }
   } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); }
@@ -252,7 +256,7 @@ async function gerarResumo(sb: any, from: string): Promise<string> {
 // Cria o lead SEM DONO na Fila CEO (mesmo padrão do receive-quiz-lead), origem 'LIA'.
 async function criarLeadFila(sb: any, from: string, nome: string | null, referral: any, nivel: string, resumo: string): Promise<string | null> {
   try {
-    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.qualificado;
+    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
     let telefone = from;
     if (telefone.startsWith("55") && telefone.length > 11) telefone = telefone.slice(2);
 
@@ -294,7 +298,7 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
       await sb.from("pipeline_atividades").insert({
         pipeline_lead_id: ins.id,
         tipo: "entrada",
-        titulo: `${map.emoji} Lead ${map.label} qualificado pela LIA (WhatsApp)`,
+        titulo: `${map.emoji} Lead ${map.label} · atendido pela LIA (WhatsApp)`,
         descricao: resumoTxt
           ? `${resumoTxt}${campanha ? `\n\n${campanha}` : ""}`
           : `A LIA validou interesse e enviou pra Fila CEO.${campanha ? `\n${campanha}` : ""}`,
@@ -313,7 +317,7 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
 // Notifica admin/diretor na hora — é assim que o Lucas fica sabendo pra repassar.
 async function notificar(sb: any, leadId: string, nome: string | null, nivel: string) {
   try {
-    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.qualificado;
+    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
     const { data: tops } = await sb.from("user_roles").select("user_id").in("role", ["admin", "diretor"]);
     const seen = new Set<string>();
     for (const t of (tops ?? []) as Array<{ user_id: string }>) {
