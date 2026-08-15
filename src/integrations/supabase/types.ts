@@ -5811,6 +5811,63 @@ export type Database = {
         }
         Relationships: []
       }
+      lia_conversas: {
+        Row: {
+          conteudo: string | null
+          created_at: string
+          id: string
+          role: string
+          telefone: string
+          wa_message_id: string | null
+        }
+        Insert: {
+          conteudo?: string | null
+          created_at?: string
+          id?: string
+          role: string
+          telefone: string
+          wa_message_id?: string | null
+        }
+        Update: {
+          conteudo?: string | null
+          created_at?: string
+          id?: string
+          role?: string
+          telefone?: string
+          wa_message_id?: string | null
+        }
+        Relationships: []
+      }
+      lia_estado: {
+        Row: {
+          created_at: string
+          lead_id: string | null
+          nome: string | null
+          optout: boolean
+          referral: Json | null
+          telefone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          lead_id?: string | null
+          nome?: string | null
+          optout?: boolean
+          referral?: Json | null
+          telefone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          lead_id?: string | null
+          nome?: string | null
+          optout?: boolean
+          referral?: Json | null
+          telefone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marketing_entries: {
         Row: {
           anuncio: string | null
