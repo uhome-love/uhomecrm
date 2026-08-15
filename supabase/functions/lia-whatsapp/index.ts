@@ -31,8 +31,8 @@ const MEDIA: Record<string, string> = {
   clubhouse: `${MEDIA_BASE}/club.jpg`,
   salao: `${MEDIA_BASE}/salao.jpg`,
   academia: `${MEDIA_BASE}/academia.jpg`,
-  planta3: `${MEDIA_BASE}/planta3.jpg`,
-  planta4: `${MEDIA_BASE}/planta4.jpg`,
+  planta3: `${MEDIA_BASE}/planta3-v2.jpg`,
+  planta4: `${MEDIA_BASE}/planta4-v2.jpg`,
   aerea: `${MEDIA_BASE}/invest.jpg`,
 };
 // Documentos (PDF) que a LIA pode enviar por marcador [[midia:CHAVE]].
@@ -134,6 +134,15 @@ serve(async (req) => {
           }).eq("telefone", from);
         }
 
+        // ANTI-TRAVAMENTO (junta a rajada): espera um instante; se chegou uma mensagem
+        // mais nova do lead, deixa ELA responder (com o contexto completo) e para esta.
+        await new Promise((r) => setTimeout(r, 4000));
+        const { data: ultima } = await sb
+          .from("lia_conversas").select("wa_message_id")
+          .eq("telefone", from).eq("role", "user")
+          .order("created_at", { ascending: false }).limit(1);
+        if (ultima?.[0]?.wa_message_id && ultima[0].wa_message_id !== waId) continue;
+
         // monta histórico e chama o cérebro da LIA
         const { data: hist } = await sb
           .from("lia_conversas").select("role, conteudo")
@@ -221,10 +230,13 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     if (!leadId) {
       leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel, resumo);
     } else {
-      // já estava na fila: atualiza a temperatura se subiu
+      // já estava na fila: atualiza a temperatura E o título do histórico pra bater com a fila
       await sb.from("pipeline_leads").update({
         temperatura: map.temperatura, prioridade_lead: map.prioridade,
       }).eq("id", leadId);
+      await sb.from("pipeline_atividades").update({
+        titulo: `${map.emoji} Lead ${map.label} · atendido pela LIA (WhatsApp)`,
+      }).eq("pipeline_lead_id", leadId).eq("tipo", "entrada");
     }
 
     await sb.from("lia_estado").update({

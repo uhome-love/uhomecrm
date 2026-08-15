@@ -22,7 +22,10 @@ import {
   Plus, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
   Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat
+
 } from "lucide-react";
+import DrawerLiaConversaTab from "./DrawerLiaConversaTab";
+
 import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { formatBRT } from "@/lib/brtTime";
@@ -564,7 +567,9 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
 
 
   // Narrativa (história) × Sistema (andaime). Começa na Narrativa.
-  const [histView, setHistView] = useState<"narrativa" | "sistema">("narrativa");
+  const [histView, setHistView] = useState<"narrativa" | "sistema" | "lia">("narrativa");
+  const isLia = String(lead.origem ?? "").toUpperCase() === "LIA";
+
   const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
   const sistemaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "sistema"), [timeline]);
   const shownItems = histView === "narrativa" ? narrativaItems : sistemaItems;
@@ -704,11 +709,24 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             ⚙️ Sistema
             <span className={`text-[10px] font-bold rounded-full px-1.5 ${histView === "sistema" ? "bg-zinc-200 text-zinc-700" : "bg-zinc-200 text-zinc-500"}`}>{sistemaItems.length}</span>
           </button>
+          {isLia && (
+            <button
+              onClick={() => setHistView("lia")}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "lia" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+            >
+              <MessageSquare className="h-3.5 w-3.5" /> Conversa Lia
+            </button>
+          )}
+
         </div>
       </div>
 
       {/* Timeline agrupada por dia (Drawer Wide v4) */}
+      {histView === "lia" ? (
+        <DrawerLiaConversaTab leadId={leadId} />
+      ) : (
       <div className="px-7 pt-4">
+
         <DrawerTimelineGroup
           items={shownItems.slice(0, 40).map((item, i) => {
             const tipoGuess = (() => {
@@ -798,6 +816,8 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
           } : undefined}
         />
       </div>
+      )}
+
 
       {/* Modal Novo Histórico */}
       <Dialog

@@ -9,30 +9,29 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
 import LiaConversaDrawer from "./LiaConversaDrawer";
-import { origemDoReferral, useLiaEstados, useLiaFollowups, type LiaEstado } from "./useLiaHub";
+import { NIVEL_META, origemDoReferral, useLiaEstados, type LiaEstado } from "./useLiaHub";
 
 type ColunaId =
   | "novo"
   | "em_conversa"
-  | "interesse"
-  | "apresentacao"
-  | "followup"
+  | "quente"
+  | "morno"
+  | "frio"
   | "descartado"
   | "opt_out";
 
 const COLUNAS: { id: ColunaId; titulo: string; cor: string }[] = [
   { id: "novo", titulo: "Novo", cor: "bg-primary" },
   { id: "em_conversa", titulo: "Em conversa", cor: "bg-warning" },
-  { id: "interesse", titulo: "Interesse confirmado", cor: "bg-success" },
-  { id: "apresentacao", titulo: "Apresentação agendada", cor: "bg-success" },
-  { id: "followup", titulo: "Follow-up", cor: "bg-muted-foreground" },
+  { id: "quente", titulo: `${NIVEL_META.quente.emoji} ${NIVEL_META.quente.label}`, cor: NIVEL_META.quente.dot },
+  { id: "morno", titulo: `${NIVEL_META.morno.emoji} ${NIVEL_META.morno.label}`, cor: NIVEL_META.morno.dot },
+  { id: "frio", titulo: `${NIVEL_META.frio.emoji} ${NIVEL_META.frio.label}`, cor: NIVEL_META.frio.dot },
   { id: "descartado", titulo: "Descartados", cor: "bg-muted-foreground" },
   { id: "opt_out", titulo: "Opt-out", cor: "bg-destructive" },
 ];
 
 export default function LiaKanbanTab() {
   const { data: estados, isLoading } = useLiaEstados();
-  const { data: followups } = useLiaFollowups();
   const [selecionado, setSelecionado] = useState<LiaEstado | null>(null);
   const qc = useQueryClient();
 
@@ -52,29 +51,28 @@ export default function LiaKanbanTab() {
   });
 
   const colunas = useMemo(() => {
-    const pendentes = new Set(
-      (followups ?? []).filter((f) => f.status === "pendente" || f.status === "aprovado").map((f) => f.telefone)
-    );
     const mapa: Record<ColunaId, LiaEstado[]> = {
       novo: [],
       em_conversa: [],
-      interesse: [],
-      apresentacao: [],
-      followup: [],
+      quente: [],
+      morno: [],
+      frio: [],
       descartado: [],
       opt_out: [],
     };
     for (const e of estados ?? []) {
       if (e.status === "opt_out" || e.optout) mapa.opt_out.push(e);
       else if (e.status === "descartado") mapa.descartado.push(e);
-      else if (e.status === "qualificado" && e.nivel === "quente") mapa.apresentacao.push(e);
-      else if (e.status === "qualificado") mapa.interesse.push(e);
-      else if (pendentes.has(e.telefone)) mapa.followup.push(e);
-      else if (e.status === "em_conversa") mapa.em_conversa.push(e);
+      else if (e.status === "qualificado") {
+        const nivel = String(e.nivel ?? "").toLowerCase();
+        if (nivel === "quente") mapa.quente.push(e);
+        else if (nivel === "morno") mapa.morno.push(e);
+        else mapa.frio.push(e);
+      } else if (e.status === "em_conversa") mapa.em_conversa.push(e);
       else mapa.novo.push(e);
     }
     return mapa;
-  }, [estados, followups]);
+  }, [estados]);
 
   if (isLoading) {
     return (
@@ -121,9 +119,13 @@ export default function LiaKanbanTab() {
                         <Badge variant="outline" className="text-[10px]">
                           {origemDoReferral(e.referral)}
                         </Badge>
-                        {e.nivel === "quente" ? (
-                          <Badge variant="outline" className="border-warning/20 bg-warning/10 text-[10px] text-warning">
-                            🔥 Quente
+                        {NIVEL_META[String(e.nivel ?? "").toLowerCase()] ? (
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] ${NIVEL_META[String(e.nivel).toLowerCase()].cls}`}
+                          >
+                            {NIVEL_META[String(e.nivel).toLowerCase()].emoji}{" "}
+                            {NIVEL_META[String(e.nivel).toLowerCase()].label}
                           </Badge>
                         ) : null}
                       </div>
