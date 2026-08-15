@@ -913,6 +913,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               />
             </TabsContent>
 
+            {/* ===== TAB: CONVERSA COM A LIA ===== */}
+            {String(lead.origem ?? "").toUpperCase() === "LIA" && (
+              <TabsContent value="lia" className="mt-0">
+                <DrawerLiaConversaTab leadId={lead.id} />
+              </TabsContent>
+            )}
+
+
             {/* ===== TAB: NEGÓCIO (Pipeline unificado — Fase 1) ===== */}
             {lead.negocio_id && (
               <TabsContent value="negocio" className="mt-0">
