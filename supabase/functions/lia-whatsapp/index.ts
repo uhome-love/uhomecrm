@@ -69,6 +69,15 @@ const sendDoc = (to: string, link: string, filename: string) => send360(to, { ty
 
 const nowISO = () => new Date().toISOString();
 
+// Normaliza o telefone do WhatsApp pro formato brasileiro +55 DDD 9XXXXXXXX.
+// O WhatsApp entrega alguns números do RS SEM o 9 do celular (12 dígitos), então recolocamos.
+function telBR(from: string): string {
+  let d = String(from).replace(/\D/g, "");
+  if (d.startsWith("55") && d.length >= 12) d = d.slice(2); // tira o código do país
+  if (d.length === 10) d = d.slice(0, 2) + "9" + d.slice(2); // DDD + 8 dígitos -> insere o 9
+  return "+55" + d;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method === "GET") return new Response("ok", { headers: cors });
@@ -276,8 +285,7 @@ async function gerarResumo(sb: any, from: string): Promise<string> {
 async function criarLeadFila(sb: any, from: string, nome: string | null, referral: any, nivel: string, resumo: string): Promise<string | null> {
   try {
     const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
-    let telefone = from;
-    if (telefone.startsWith("55") && telefone.length > 11) telefone = telefone.slice(2);
+    const telefone = telBR(from);
 
     const { data: stage } = await sb
       .from("pipeline_stages").select("id").eq("tipo", "novo_lead").eq("ativo", true).limit(1).single();
