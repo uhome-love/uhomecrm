@@ -56,8 +56,6 @@ import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
-import DrawerLiaConversaTab from "./DrawerLiaConversaTab";
-import { MessageSquare } from "lucide-react";
 import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
@@ -830,11 +828,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsTrigger value="visitas" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
                 📊 Visitas
               </TabsTrigger>
-              {String(lead.origem ?? "").toUpperCase() === "LIA" && (
-                <TabsTrigger value="lia" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
-                  <MessageSquare className="h-3 w-3" /> Conversa
-                </TabsTrigger>
-              )}
               {lead.negocio_id && (
                 <TabsTrigger value="negocio" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
                   💼 Negócio
@@ -913,12 +906,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               />
             </TabsContent>
 
-            {/* ===== TAB: CONVERSA COM A LIA ===== */}
-            {String(lead.origem ?? "").toUpperCase() === "LIA" && (
-              <TabsContent value="lia" className="mt-0">
-                <DrawerLiaConversaTab leadId={lead.id} />
-              </TabsContent>
-            )}
 
 
             {/* ===== TAB: NEGÓCIO (Pipeline unificado — Fase 1) ===== */}
