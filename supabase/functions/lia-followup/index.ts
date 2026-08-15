@@ -22,6 +22,7 @@ const cors = {
 };
 
 const D360_URL = "https://waba-v2.360dialog.io/messages";
+const EDGE_BASE = "https://hunbxqzhvuemgntklyzb.supabase.co";
 const MAX_CUTUCOES = 3;
 const STALL_HOURS = 4;     // silêncio mínimo do lead antes do 1º cutucão
 const SPACING_HOURS = 20;  // intervalo entre um cutucão e o próximo
@@ -56,14 +57,54 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const sb = svc();
+    const resumos = await backfillResumos(sb);
     const rascunhados = await detectar(sb);
     const enviados = await disparar(sb);
-    return new Response(JSON.stringify({ ok: true, rascunhados, enviados }), { headers: { ...cors, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, resumos, rascunhados, enviados }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[lia-followup] erro:", e);
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
   }
 });
+
+/** Rede de segurança: gera por IA o resumo dos leads qualificados que ficaram sem resumo real
+ * (null ou no fallback). Roda espaçado no cron, sem competir com a resposta do webhook. */
+async function backfillResumos(sb: any): Promise<number> {
+  const { data: pend } = await sb
+    .from("lia_estado")
+    .select("telefone, lead_id, resumo")
+    .eq("status", "qualificado")
+    .not("lead_id", "is", null)
+    .limit(15);
+  if (!pend?.length) return 0;
+  let n = 0;
+  for (const e of pend) {
+    const r = String(e.resumo ?? "");
+    if (r.trim() && !r.startsWith("Resumo automático indisponível")) continue;
+    const { data: hist } = await sb
+      .from("lia_conversas").select("role, conteudo")
+      .eq("telefone", e.telefone).order("created_at", { ascending: true }).limit(60);
+    const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
+    if (!msgs.length) continue;
+    let resumo = "";
+    try {
+      const rr = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+        body: JSON.stringify({ messages: msgs, mode: "resumo" }),
+      });
+      const d = await rr.json();
+      resumo = String(d?.resumo ?? "").trim();
+    } catch (_e) { /* tenta na próxima rodada */ }
+    if (!resumo) continue;
+    await sb.from("lia_estado").update({ resumo }).eq("telefone", e.telefone);
+    await sb.from("pipeline_atividades").update({ descricao: resumo })
+      .eq("pipeline_lead_id", e.lead_id).eq("tipo", "entrada");
+    n++;
+    await new Promise((res) => setTimeout(res, 1500)); // espaça entre leads
+  }
+  return n;
+}
 
 /** Acha leads esfriados e cria cutucões PENDENTES (pro Lucas aprovar). */
 async function detectar(sb: any): Promise<number> {
