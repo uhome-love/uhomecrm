@@ -64,7 +64,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   marketplace: lazyRetry(() => import("@/pages/MarketplaceScripts")),
   pipeline: lazyRetry(() => import("@/pages/PipelineKanban")),
   
-  disponibilidade: lazyRetry(() => import("@/pages/DisponibilidadePage")),
   
   templates: lazyRetry(() => import("@/pages/TemplatesComunicacao")),
   aceite: lazyRetry(() => import("@/pages/AceiteLeads")),
@@ -72,7 +71,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "minhas-vitrines": lazyRetry(() => import("@/pages/MinhasVitrines")),
   "corretor-call": lazyRetry(() => import("@/pages/CorretorCall")),
   "agenda-visitas": lazyRetry(() => import("@/pages/AgendaVisitas")),
-  conquistas: lazyRetry(() => import("@/pages/Conquistas")),
   academia: lazyRetry(() => import("@/pages/AcademiaPage")),
   "academia-trilha": lazyRetry(() => import("@/pages/AcademiaTrilhaPage")),
   "academia-aula": lazyRetry(() => import("@/pages/AcademiaAulaPage")),
@@ -144,7 +142,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/pipeline":              { key: "pipeline",             label: "Pipeline",            icon: "AlignLeft",     noPadding: true },
   "/pipeline-leads":        { key: "pipeline",             label: "Pipeline",            icon: "AlignLeft",     noPadding: true },
   
-  "/disponibilidade":       { key: "disponibilidade",      label: "Disponibilidade",     icon: "Clock",         roles: ["gestor", "admin", "diretor"] },
   
   "/templates-comunicacao": { key: "templates",            label: "Templates",           icon: "ClipboardList", roles: ["gestor", "admin", "diretor"] },
   "/aceite":                { key: "aceite",               label: "Aceite de Leads",     icon: "UserCheck" },
@@ -153,7 +150,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/corretor/call":         { key: "corretor-call",        label: "Oferta Ativa",        icon: "Phone" },
   "/visitas":               { key: "agenda-visitas",       label: "Visitas",      icon: "CalendarDays" },
   "/agenda-visitas":        { key: "agenda-visitas",       label: "Visitas",      icon: "CalendarDays" },
-  "/conquistas":            { key: "conquistas",           label: "Conquistas",          icon: "Trophy" },
   "/academia":              { key: "academia",             label: "Academia",            icon: "GraduationCap" },
   // "/academia/gerenciar" virou aba do hub /academia?tab=gerenciar (redirect em App.tsx)
   "/onboarding":            { key: "onboarding",           label: "Onboarding",          icon: "Lightbulb" },
