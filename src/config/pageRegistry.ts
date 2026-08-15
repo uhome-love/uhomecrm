@@ -110,7 +110,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   intermediacao: lazyRetry(() => import("@/pages/IntermediacaoPage")),
   "leads-estagnados": lazyRetry(() => import("@/pages/LeadsEstagnados")),
   "simulador-financiamento": lazyRetry(() => import("@/pages/SimuladorFinanciamento")),
-  "negocios-preview": lazyRetry(() => import("@/pages/NegociosWorkspace")),
   "presenca-roleta": lazyRetry(() => import("@/pages/PresencaRoleta")),
   "foco-corretores": lazyRetry(() => import("@/pages/FocoCorretores")),
   "lia-hub": lazyRetry(() => import("@/pages/admin/LiaHub")),
@@ -186,7 +185,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor", "diretor"] },
   "/leads-estagnados":      { key: "leads-estagnados",     label: "Leads Estagnados",    icon: "AlarmClock",    roles: ["admin", "gestor", "diretor"] },
   "/simulador-financiamento": { key: "simulador-financiamento", label: "Simulador Financiamento", icon: "Calculator" },
-  "/negocios-preview":      { key: "negocios-preview",     label: "Negócios (preview)",  icon: "Briefcase",     roles: ["admin"] },
   "/roleta/presenca":       { key: "presenca-roleta",      label: "Presença",     icon: "CalendarCheck", roles: ["admin", "gestor", "diretor"] },
   "/foco-corretores":       { key: "foco-corretores",      label: "Foco Corretores",     icon: "Target",        roles: ["admin", "gestor", "diretor"] },
 };
