@@ -112,15 +112,16 @@ export default function LiaFollowupsTab() {
                     <Textarea
                       value={rascunho}
                       onChange={(e) => setRascunho(e.target.value)}
-                      rows={5}
-                      className="text-sm"
+                      rows={6}
+                      className="text-base sm:text-sm"
                     />
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => setEditandoId(null)}
                         disabled={salvarTexto.isPending}
+                        className="w-full sm:w-auto"
                       >
                         Cancelar edição
                       </Button>
