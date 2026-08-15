@@ -708,7 +708,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
       </div>
 
       {/* Timeline agrupada por dia (Drawer Wide v4) */}
+      {histView === "lia" ? (
+        <DrawerLiaConversaTab leadId={leadId} />
+      ) : (
       <div className="px-7 pt-4">
+
         <DrawerTimelineGroup
           items={shownItems.slice(0, 40).map((item, i) => {
             const tipoGuess = (() => {
