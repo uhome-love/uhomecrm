@@ -129,6 +129,7 @@ export default function LiaFollowupsTab() {
                         size="sm"
                         disabled={salvarTexto.isPending || !rascunho.trim()}
                         onClick={() => salvarTexto.mutate({ id: f.id, mensagem: rascunho })}
+                        className="w-full sm:w-auto"
                       >
                         Salvar
                       </Button>
@@ -140,13 +141,13 @@ export default function LiaFollowupsTab() {
                   </p>
                 )}
 
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
                     {f.motivo ? `${f.motivo} · ` : ""}
                     agendado {formatBRT(f.agendado_para, "dd/MM HH:mm")}
                   </span>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:flex">
                     <Button
                       size="sm"
                       variant="outline"
@@ -155,7 +156,7 @@ export default function LiaFollowupsTab() {
                         setRascunho(f.mensagem ?? "");
                         setEditandoId(f.id);
                       }}
-                      className="gap-1.5"
+                      className="w-full gap-1.5 sm:w-auto"
                     >
                       <Pencil className="h-3.5 w-3.5" /> Editar texto
                     </Button>
@@ -164,7 +165,7 @@ export default function LiaFollowupsTab() {
                       variant="outline"
                       disabled={emAcao === f.id}
                       onClick={() => decidir.mutate({ id: f.id, status: "cancelado" })}
-                      className="gap-1.5"
+                      className="w-full gap-1.5 sm:w-auto"
                     >
                       <X className="h-3.5 w-3.5" /> Cancelar
                     </Button>
@@ -172,7 +173,7 @@ export default function LiaFollowupsTab() {
                       size="sm"
                       disabled={emAcao === f.id}
                       onClick={() => decidir.mutate({ id: f.id, status: "aprovado" })}
-                      className="gap-1.5"
+                      className="w-full gap-1.5 sm:w-auto"
                     >
                       <Check className="h-3.5 w-3.5" /> Aprovar
                     </Button>
