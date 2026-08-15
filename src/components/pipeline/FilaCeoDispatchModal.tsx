@@ -18,6 +18,14 @@ function tempFromRespostas(fr: any): QuizTemp | null {
   if (v.includes("frio")) return "frio";
   return null;
 }
+// Temperatura do lead: primeiro o quiz (form_respostas); senão a coluna temperatura (leads da LIA).
+function tempDoLead(l: any): QuizTemp | null {
+  const q = tempFromRespostas(l?.form_respostas);
+  if (q) return q;
+  const t = String(l?.temperatura || "").toLowerCase();
+  if (t === "quente" || t === "morno" || t === "frio") return t as QuizTemp;
+  return null;
+}
 const TEMP_META: Record<QuizTemp, { label: string; cls: string; ord: number }> = {
   quente: { label: "🔥 Quente", cls: "border-red-500/40 text-red-600 dark:text-red-400 bg-red-500/5", ord: 0 },
   morno: { label: "🌤️ Morno", cls: "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5", ord: 1 },
@@ -156,7 +164,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const leadsQuiz = useMemo(() => {
     return allLeads
       .filter((l) => isQuizLead(l))
-      .sort((a, b) => (TEMP_META[tempFromRespostas(a.form_respostas) as QuizTemp]?.ord ?? 3) - (TEMP_META[tempFromRespostas(b.form_respostas) as QuizTemp]?.ord ?? 3));
+      .sort((a, b) => (TEMP_META[tempDoLead(a) as QuizTemp]?.ord ?? 3) - (TEMP_META[tempDoLead(b) as QuizTemp]?.ord ?? 3));
   }, [allLeads]);
   // Não existe mais categoria "redistribuição": lead retornado à Fila do CEO
   // é tratado como lead novo. Só "reengajamento" (reativado por nutrição) e "quiz" são separados.
@@ -487,7 +495,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               ) : (
                 <div className="max-h-80 overflow-y-auto space-y-2">
                   {leadsQuiz.map((l) => {
-                    const temp = tempFromRespostas(l.form_respostas);
+                    const temp = tempDoLead(l);
                     const respostas = Array.isArray(l.form_respostas)
                       ? (l.form_respostas as any[]).filter((r) => r?.pergunta && r?.resposta && !/temperatura/i.test(r.pergunta))
                       : [];
