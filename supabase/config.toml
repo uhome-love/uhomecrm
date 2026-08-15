@@ -172,3 +172,6 @@ verify_jwt = false
 
 [functions.lia-chat]
 verify_jwt = false
+
+[functions.lia-whatsapp]
+verify_jwt = false
