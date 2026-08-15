@@ -798,6 +798,8 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
           } : undefined}
         />
       </div>
+      )}
+
 
       {/* Modal Novo Histórico */}
       <Dialog
