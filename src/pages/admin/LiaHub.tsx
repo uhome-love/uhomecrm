@@ -23,14 +23,14 @@ export default function LiaHub() {
   const aba = params.get("aba") ?? "painel";
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 sm:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:space-y-5 sm:p-6">
+      <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-10 sm:w-10">
             <Bot className="h-5 w-5" strokeWidth={1.9} />
           </span>
-          <div>
-            <h1 className="text-xl font-bold text-foreground sm:text-2xl">LIA · Uhome</h1>
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-foreground sm:text-2xl">LIA · Uhome</h1>
             <p className="text-xs text-muted-foreground sm:text-sm">
               Acompanhamento da atendente de IA no WhatsApp.
             </p>
@@ -39,7 +39,7 @@ export default function LiaHub() {
         <Button
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="w-full gap-2 sm:w-auto"
           onClick={() => qc.invalidateQueries({ queryKey: ["lia-hub"] })}
         >
           <RefreshCw className="h-4 w-4" />
@@ -52,13 +52,15 @@ export default function LiaHub() {
         onValueChange={(v) => setParams({ aba: v }, { replace: true })}
         className="w-full"
       >
-        <TabsList className="flex w-full flex-wrap justify-start gap-1">
-          {ABAS.map((a) => (
-            <TabsTrigger key={a.valor} value={a.valor}>
-              {a.rotulo}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList className="flex w-max min-w-full justify-start gap-1">
+            {ABAS.map((a) => (
+              <TabsTrigger key={a.valor} value={a.valor} className="h-9 shrink-0 px-3 text-xs sm:text-sm">
+                {a.rotulo}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         <TabsContent value="painel" className="mt-5">
           <LiaPainelTab />
