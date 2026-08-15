@@ -38,9 +38,21 @@ const CSS = `
 #lia-root .dock input{flex:1;border:none;outline:none;background:#fff;border-radius:22px;padding:11px 15px;font:inherit;font-size:14.5px}
 #lia-root .snd{width:44px;height:44px;border-radius:50%;background:var(--wa);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex:none}
 #lia-root .snd:disabled{opacity:.5}
+#lia-root .b.media{padding:4px;max-width:74%}
+#lia-root .b img{width:100%;border-radius:6px;display:block}
 `;
 
-type Bubble = { who: "lia" | "me"; text: string };
+type Bubble = { who: "lia" | "me"; text?: string; media?: string };
+
+const MEDIA: Record<string, string> = {
+  mapa: "/casatua/mapa.jpg",
+  clubhouse: "/casatua/club.jpg",
+  salao: "/casatua/salao.jpg",
+  academia: "/casatua/academia.jpg",
+  planta3: "/casatua/planta3.jpg",
+  planta4: "/casatua/planta4.jpg",
+  aerea: "/casatua/invest.jpg",
+};
 
 export default function LiaTeste() {
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
@@ -50,6 +62,7 @@ export default function LiaTeste() {
   const history = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
+  const mediaCount = useRef(0);
 
   const scroll = () => requestAnimationFrame(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; });
 
@@ -68,7 +81,19 @@ export default function LiaTeste() {
       const content = String(data.content || "").trim();
       history.current.push({ role: "assistant", content });
       const parts = content.split(/\s*\|\|\|\s*/).map((p) => p.trim()).filter(Boolean);
-      for (const p of parts) setBubbles((b) => [...b, { who: "lia", text: p }]);
+      for (const p of parts) {
+        const m = p.match(/^\[\[\s*midia\s*:\s*(\w+)\s*\]\]$/i);
+        if (m) {
+          const key = m[1].toLowerCase();
+          if (MEDIA[key] && mediaCount.current < 3) {
+            mediaCount.current += 1;
+            setBubbles((b) => [...b, { who: "lia", media: MEDIA[key] }]);
+          }
+          // marcador inválido ou acima do teto: ignora (não mostra o texto cru)
+        } else {
+          setBubbles((b) => [...b, { who: "lia", text: p }]);
+        }
+      }
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -112,7 +137,9 @@ export default function LiaTeste() {
       <div className="body" ref={bodyRef}>
         {bubbles.map((b, i) => (
           <div key={i} className={"row " + (b.who === "me" ? "me" : "")}>
-            <div className={"b " + (b.who === "me" ? "me" : "in")}>{b.text}</div>
+            <div className={"b " + (b.who === "me" ? "me" : "in") + (b.media ? " media" : "")}>
+              {b.media ? <img src={b.media} alt="" /> : b.text}
+            </div>
           </div>
         ))}
         {busy && (
