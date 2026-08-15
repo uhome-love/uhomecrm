@@ -51,7 +51,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "gerente-cockpit": lazyRetry(() => import("@/pages/GerenteCockpit")),
   "produtividade": lazyRetry(() => import("@/pages/Produtividade")),
   
-  "ceo-religacao-negocios": lazyRetry(() => import("@/pages/CeoReligacaoNegocios")),
   "gerente-dashboard": lazyRetry(() => import("@/pages/GerenteDashboard")),
   checkpoint: lazyRetry(() => import("@/pages/CheckpointGerente")),
   scripts: lazyRetry(() => import("@/pages/ScriptsGenerator")),
@@ -75,16 +74,13 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "corretor-call": lazyRetry(() => import("@/pages/CorretorCall")),
   "agenda-visitas": lazyRetry(() => import("@/pages/AgendaVisitas")),
   conquistas: lazyRetry(() => import("@/pages/Conquistas")),
-  progresso: lazyRetry(() => import("@/pages/CorretorProgresso")),
   academia: lazyRetry(() => import("@/pages/AcademiaPage")),
   "academia-trilha": lazyRetry(() => import("@/pages/AcademiaTrilhaPage")),
   "academia-aula": lazyRetry(() => import("@/pages/AcademiaAulaPage")),
   "academia-gerenciar": lazyRetry(() => import("@/pages/AcademiaGerenciarPage")),
   onboarding: lazyRetry(() => import("@/pages/Onboarding")),
   homi: lazyRetry(() => import("@/pages/HomiWorkspace")),
-  "homi-assistant": lazyRetry(() => import("@/pages/HomiAssistant")),
   "homi-gerente": lazyRetry(() => import("@/pages/HomiGerencial")),
-  "homi-ceo": lazyRetry(() => import("@/pages/HomiCeo")),
   "base-conhecimento": lazyRetry(() => import("@/pages/BaseConhecimento")),
   
   "vendas-realizadas": lazyRetry(() => import("@/pages/VendasRealizadas")),
@@ -119,7 +115,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "rh-conversas": lazyRetry(() => import("@/pages/RhConversas")),
   "rh-sala-reuniao": lazyRetry(() => import("@/pages/RhSalaReuniao")),
   "import-brevo": lazyRetry(() => import("@/pages/ImportBrevoContacts")),
-  "gestao-whatsapp": lazyRetry(() => import("@/pages/GestaoWhatsAppDashboard")),
   "report-center": lazyRetry(() => import("@/pages/CentralRelatorios")),
   materiais: lazyRetry(() => import("@/pages/MateriaisPage")),
   "materiais-analytics": lazyRetry(() => import("@/pages/MateriaisAnalytics")),
@@ -139,7 +134,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/ceo":                   { key: "ceo",                  label: "Dashboard CEO",       icon: "LayoutGrid",    closable: false, roles: ["admin", "diretor"] },
   "/diretora":              { key: "diretora",             label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["diretor", "admin"] },
   
-  "/ceo/religacao-negocios":{ key: "ceo-religacao-negocios", label: "Religação Negócios", icon: "Link2",         roles: ["admin", "diretor"] },
   "/admin/lia-hub":         { key: "lia-hub",              label: "LIA · Uhome",         icon: "Bot",           roles: ["admin", "diretor"] },
   "/gerente/dashboard":     { key: "gerente-dashboard",    label: "Dashboard (legado)",  icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin"] },
   "/gerente/cockpit":       { key: "gerente-cockpit",      label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin", "diretor"] },
@@ -171,14 +165,11 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/visitas":               { key: "agenda-visitas",       label: "Visitas",      icon: "CalendarDays" },
   "/agenda-visitas":        { key: "agenda-visitas",       label: "Visitas",      icon: "CalendarDays" },
   "/conquistas":            { key: "conquistas",           label: "Conquistas",          icon: "Trophy" },
-  "/progresso":             { key: "progresso",            label: "Progresso",           icon: "Target" },
   "/academia":              { key: "academia",             label: "Academia",            icon: "GraduationCap" },
   // "/academia/gerenciar" virou aba do hub /academia?tab=gerenciar (redirect em App.tsx)
   "/onboarding":            { key: "onboarding",           label: "Onboarding",          icon: "Lightbulb" },
   "/homi":                  { key: "homi",                 label: "HOMI",                icon: "Bot",           noPadding: true },
-  "/homi-assistente":       { key: "homi-assistant",       label: "HOMI Assistente",     icon: "Bot" },
   "/homi-gerente":          { key: "homi-gerente",         label: "HOMI Gerente",        icon: "Bot",           roles: ["gestor", "admin", "diretor"] },
-  "/homi-ceo":              { key: "homi-ceo",             label: "HOMI CEO",            icon: "Bot",           roles: ["admin"] },
   // "/pipeline-negocios" desativado — negócios agora vivem no Pipeline de Leads (lente Negócios). Redirect em App.tsx.
   "/vendas-realizadas":     { key: "vendas-realizadas",    label: "Vendas",              icon: "TrendingUp" },
   
@@ -209,7 +200,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/rh/conversas":          { key: "rh-conversas",         label: "Conversas 1:1",       icon: "MessageSquare", roles: ["rh", "admin"] },
   "/rh/sala-reuniao":       { key: "rh-sala-reuniao",      label: "Sala de Reunião",     icon: "Video",         roles: ["rh", "admin"] },
   "/import-brevo-contacts": { key: "import-brevo",         label: "Import Brevo",        icon: "Database",      roles: ["admin"] },
-  "/gestor/whatsapp-dashboard": { key: "gestao-whatsapp", label: "Gestão WhatsApp",     icon: "BarChart2",     roles: ["gestor", "admin", "diretor"] },
   "/central-relatorios":        { key: "report-center",     label: "Performance",  icon: "BarChart2",     roles: ["admin", "gestor", "corretor", "diretor"], noPadding: true },
   "/dados-anuncios":                { key: "relatorio-origem-performance", label: "Central de Marketing", icon: "BarChart2", roles: ["admin", "gestor", "diretor"], noPadding: true },
   "/relatorio-performance-origem":  { key: "relatorio-origem-performance", label: "Central de Marketing", icon: "BarChart2", roles: ["admin", "gestor", "diretor"], noPadding: true },

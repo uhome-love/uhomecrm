@@ -64,16 +64,11 @@ const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const CasaTuaCanoasQuiz = lazyRetry(() => import("./pages/CasaTuaCanoasQuiz"));
 const LiaTeste = lazyRetry(() => import("./pages/LiaTeste"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
-const HeaderMockup = lazyRetry(() => import("./pages/HeaderMockup"));
-const EquipesMockup = lazyRetry(() => import("./pages/EquipesMockup"));
-const GerenteMockup = lazyRetry(() => import("./pages/GerenteMockup"));
-const DiretoraMockup = lazyRetry(() => import("./pages/DiretoraMockup"));
 const PlacarTvPage = lazyRetry(() => import("./pages/PlacarTvPage"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
 const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"));
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
 const IngestaoPanel = lazyRetry(() => import("./pages/admin/IngestaoPanel"));
-const UsoPaginasPanel = lazyRetry(() => import("./pages/admin/UsoPaginasPanel"));
 const LiaConexao = lazyRetry(() => import("./pages/admin/LiaConexao"));
 const LiaSalaAoVivo = lazyRetry(() => import("./pages/admin/LiaSalaAoVivo"));
 
@@ -121,16 +116,11 @@ const App = () => (
               <Route path="/casatuacanoas-quiz" element={<Suspense fallback={<PageLoader />}><CasaTuaCanoasQuiz /></Suspense>} />
               <Route path="/lia-teste" element={<Suspense fallback={<PageLoader />}><LiaTeste /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
-              <Route path="/header-mockup" element={<Suspense fallback={<PageLoader />}><HeaderMockup /></Suspense>} />
-              <Route path="/equipes-mockup" element={<Suspense fallback={<PageLoader />}><EquipesMockup /></Suspense>} />
-              <Route path="/diretora-mockup" element={<Suspense fallback={<PageLoader />}><DiretoraMockup /></Suspense>} />
-              <Route path="/gerente-mockup" element={<Suspense fallback={<PageLoader />}><GerenteMockup /></Suspense>} />
               <Route path="/placar-tv" element={<Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense>} />
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
               <Route path="/diagnostico-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/ceo/telemetria-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/admin/ingestao" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
-              <Route path="/admin/uso-paginas" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><UsoPaginasPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/admin/lia" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><LiaConexao /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/admin/lia/sala" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><LiaSalaAoVivo /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
 
