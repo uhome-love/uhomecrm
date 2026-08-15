@@ -1,7 +1,12 @@
 import { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RotateCcw } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
 import LiaConversaDrawer from "./LiaConversaDrawer";
 import { origemDoReferral, useLiaEstados, useLiaFollowups, type LiaEstado } from "./useLiaHub";
@@ -29,6 +34,22 @@ export default function LiaKanbanTab() {
   const { data: estados, isLoading } = useLiaEstados();
   const { data: followups } = useLiaFollowups();
   const [selecionado, setSelecionado] = useState<LiaEstado | null>(null);
+  const qc = useQueryClient();
+
+  const retomar = useMutation({
+    mutationFn: async (telefone: string) => {
+      const { error } = await supabase
+        .from("lia_estado")
+        .update({ status: "em_conversa", descartado_em: null, motivo: null })
+        .eq("telefone", telefone);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Lead retomado");
+      qc.invalidateQueries({ queryKey: ["lia-hub", "estados"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Não foi possível retomar"),
+  });
 
   const colunas = useMemo(() => {
     const pendentes = new Set(
@@ -106,6 +127,20 @@ export default function LiaKanbanTab() {
                       <div className="mt-2 text-[10px] text-muted-foreground">
                         {formatBRT(e.last_msg_em, "dd/MM HH:mm")}
                       </div>
+                      {c.id === "descartado" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 h-7 w-full gap-1.5 text-xs"
+                          disabled={retomar.isPending && retomar.variables === e.telefone}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            retomar.mutate(e.telefone);
+                          }}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" /> Retomar
+                        </Button>
+                      ) : null}
                     </Card>
                   ))
                 )}
