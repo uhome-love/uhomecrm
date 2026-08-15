@@ -99,7 +99,7 @@ serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: MODEL,
+        model: (typeof (body as any).model === "string" && (body as any).model) || MODEL,
         messages: [{ role: "system", content: LIA_SYSTEM }, ...messages],
         stream: false,
         temperature: 0.5,
