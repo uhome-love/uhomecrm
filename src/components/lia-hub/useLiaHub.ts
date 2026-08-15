@@ -235,3 +235,26 @@ export const STATUS_META: Record<string, { label: string; cls: string }> = {
   descartado: { label: "Descartado", cls: "bg-muted text-muted-foreground border-border" },
   opt_out: { label: "Opt-out", cls: "bg-destructive/10 text-destructive border-destructive/20" },
 };
+
+export const NIVEL_META: Record<string, { emoji: string; label: string; cls: string; dot: string }> = {
+  quente: {
+    emoji: "🔥",
+    label: "Quente",
+    cls: "bg-red-500/10 text-red-600 border-red-500/20",
+    dot: "bg-red-500",
+  },
+  morno: {
+    emoji: "🟡",
+    label: "Morno",
+    cls: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    dot: "bg-amber-500",
+  },
+  frio: {
+    emoji: "🧊",
+    label: "Frio",
+    cls: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    dot: "bg-blue-500",
+  },
+};
+
+export const NIVEIS: Array<keyof typeof NIVEL_META | string> = ["quente", "morno", "frio"];

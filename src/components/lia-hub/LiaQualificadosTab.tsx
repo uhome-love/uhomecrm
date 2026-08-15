@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRT } from "@/lib/brtTime";
-import { useLiaEstados, useLiaPipelineLeads } from "./useLiaHub";
+import { NIVEL_META, useLiaEstados, useLiaPipelineLeads } from "./useLiaHub";
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -58,8 +58,15 @@ export default function LiaQualificadosTab() {
       const s = l.stage_id ? stages?.get(l.stage_id) : null;
       return s ? (s.ordem ?? 0) >= 4 && s.tipo !== "descarte" && s.tipo !== "caiu" : false;
     }).length;
+    const porNivel = (n: string) =>
+      (estados ?? []).filter(
+        (e) => e.status === "qualificado" && String(e.nivel ?? "").toLowerCase() === n
+      ).length;
     return {
       total,
+      quente: porNivel("quente"),
+      morno: porNivel("morno"),
+      frio: porNivel("frio"),
       qualificados,
       assumidos,
       vendas,
@@ -86,6 +93,16 @@ export default function LiaQualificadosTab() {
         <CardContent className="space-y-4">
           <FunilLinha label="Contatos" value={kpis.total} max={kpis.total} />
           <FunilLinha label="Qualificados" value={kpis.qualificados} max={kpis.total} />
+          <div className="grid grid-cols-3 gap-2">
+            {(["quente", "morno", "frio"] as const).map((n) => (
+              <div key={n} className={`rounded-lg border px-3 py-2 ${NIVEL_META[n].cls}`}>
+                <div className="text-[11px] font-semibold">
+                  {NIVEL_META[n].emoji} {NIVEL_META[n].label}
+                </div>
+                <div className="text-lg font-bold tabular-nums">{kpis[n]}</div>
+              </div>
+            ))}
+          </div>
           <FunilLinha label="No pipeline" value={leads.length} max={kpis.total} />
           <FunilLinha label="Assumidos por corretor" value={kpis.assumidos} max={kpis.total} />
           <FunilLinha label="Visita ou além" value={kpis.visitas} max={kpis.total} />
