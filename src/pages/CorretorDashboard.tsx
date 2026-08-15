@@ -11,15 +11,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
-import { useConquistas } from "@/hooks/useConquistas";
 
 import RoletaStatusBar from "@/components/corretor/RoletaStatusBar";
-import CelebrationOverlay from "@/components/corretor/CelebrationOverlay";
 import OnboardingWidget from "@/components/corretor/OnboardingWidget";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
 import CarteiraKpis from "@/components/corretor/CarteiraKpis";
-import ConquistasKpis from "@/components/corretor/ConquistasKpis";
 import CaminhosCards from "@/components/corretor/CaminhosCards";
 import AgendaResumoWidget from "@/components/corretor/AgendaResumoWidget";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
@@ -53,7 +50,6 @@ export default function CorretorDashboard() {
     .toUpperCase();
 
   const motivation = useDailyMotivation();
-  const { newlyUnlocked, dismissCelebration } = useConquistas();
   const [focusOpen] = useState(false);
 
   const dataFormatada = new Date().toLocaleDateString("pt-BR", {
@@ -64,7 +60,6 @@ export default function CorretorDashboard() {
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto pb-10">
-      <CelebrationOverlay achievement={newlyUnlocked} onDismiss={dismissCelebration} />
       <OnboardingWidget />
 
       {/* CTA Mutirão Inteligente (aparece quando ao vivo ou janela típica) */}
@@ -113,7 +108,6 @@ export default function CorretorDashboard() {
         {/* Coluna principal */}
         <div className="flex-1 min-w-0 space-y-5">
           <CarteiraKpis />
-          <ConquistasKpis />
           <CaminhosCards />
         </div>
 

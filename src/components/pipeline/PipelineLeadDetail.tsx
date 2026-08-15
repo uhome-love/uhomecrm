@@ -54,6 +54,7 @@ import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
+import { leadSaude, diasSemToque } from "@/lib/leadSaude";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
 import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
@@ -471,47 +472,40 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
 
           {(() => {
-            const diasSemContato = noContactAlert
-              ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
-              : 0;
-            // Detecta se a nextTask está vencida (mesma lógica de overdueTasks,
-            // considerando também hora_vencimento quando presente).
-            const nextTaskOverdue = (() => {
-              if (!nextTask) return false;
-              const due = parseDateBRTSafe((nextTask as any).vence_em);
-              if (!due) return false;
-              const hora = (nextTask as any).hora_vencimento as string | null | undefined;
-              if (hora && /^\d{2}:\d{2}/.test(hora)) {
-                const [hh, mm] = hora.split(":").map(Number);
-                due.setHours(hh || 0, mm || 0, 0, 0);
-              } else {
-                due.setHours(23, 59, 59, 999);
-              }
-              return due.getTime() < Date.now();
-            })();
-            const chipColor = nextTask
-              ? (nextTaskOverdue
-                  ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Atrasado' }
-                  : { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' })
-              : noContactAlert === 'critical'
-                ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
-                : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
-            const motivosDesat: string[] = [];
-            if (!nextTask) motivosDesat.push('sem tarefa futura');
-            if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
-            if (nextTaskOverdue) motivosDesat.push('tarefa vencida');
-            const showTooltip = motivosDesat.length > 0;
+            // Chip de saúde = MESMA régua do card/agenda (leadSaude), não conta própria.
+            const saudeInput = {
+              ultimo_toque_at: lead.ultimo_toque_at,
+              distribuido_em: lead.distribuido_em,
+              aceito_em: (lead as any).aceito_em,
+              created_at: lead.created_at,
+              stage_tipo: currentStage?.tipo,
+              estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate,
+            };
+            const cor = leadSaude(saudeInput);
+            if (cor === "terminal") return null;
+            const dias = diasSemToque(saudeInput);
+            const meta: Record<string, { cls: string; dot: string; text: string }> = {
+              verde:     { cls: "bg-success-500/12 text-success-700 dark:text-success-500", dot: "bg-success-500", text: "Em dia" },
+              ambar:     { cls: "bg-warning-500/12 text-warning-700 dark:text-warning-500", dot: "bg-warning-500", text: "Atenção" },
+              vermelho:  { cls: "bg-danger-500/12 text-danger-700 dark:text-danger-500",   dot: "bg-danger-500",  text: "Desatualizado" },
+              estagnado: { cls: "bg-violet-500/12 text-violet-700 dark:text-violet-400",   dot: "bg-violet-500",  text: "Estagnado" },
+            };
+            const m = meta[cor] ?? meta.vermelho;
+            const motivos: string[] = [];
+            if (dias != null) motivos.push(`${dias}d sem atividade`);
+            if (!nextTask) motivos.push("sem próximo passo");
+            const showTooltip = motivos.length > 0;
             return (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default" style={{ background: chipColor.bg, color: chipColor.color }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
-                    {chipColor.text}
+                  <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default ${m.cls}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${m.dot}`} />
+                    {m.text}
                   </span>
                 </TooltipTrigger>
                 {showTooltip && (
                   <TooltipContent side="bottom" className="text-xs">
-                    {motivosDesat.join(' · ')}
+                    {motivos.join(" · ")}
                   </TooltipContent>
                 )}
               </Tooltip>

@@ -76,7 +76,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Time",
       items: [
-        { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Usuários",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
@@ -143,7 +143,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Time",
       items: [
-        { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Usuários",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
@@ -208,7 +208,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Time",
       items: [
-        { label: "Meu Time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
+        { label: "Usuários",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
         { label: "Meus Candidatos",    path: "/gerente/candidatos", icon: <Users       size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },

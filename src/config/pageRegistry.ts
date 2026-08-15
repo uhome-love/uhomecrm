@@ -132,10 +132,10 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
 
   "/performance-legado":    { key: "ranking-legado",       label: "Performance (legado)", icon: "Star",         roles: ["admin"] },
 
-  "/meu-time":              { key: "meu-time",             label: "Meu Time",            icon: "Users",         roles: ["gestor", "admin", "diretor"] },
+  "/meu-time":              { key: "meu-time",             label: "Usuários",            icon: "Users",         roles: ["gestor", "admin", "diretor"] },
   "/oferta-ativa":          { key: "oferta-ativa",         label: "Oferta Ativa",        icon: "Phone" },
   "/base-leads":            { key: "base-leads",           label: "Base Única de Leads", icon: "Database",      roles: ["admin", "diretor"] },
-  "/oferta-ativa-ao-vivo":  { key: "oferta-ativa-ao-vivo", label: "Mutirão Inteligente", icon: "Radio",         noPadding: true },
+  "/oferta-ativa-ao-vivo":  { key: "oferta-ativa-ao-vivo", label: "Mutirão ao Vivo", icon: "Radio",         noPadding: true },
   "/roleta":                { key: "roleta",               label: "Roleta",              icon: "Target",        roles: ["admin"] },
   "/marketplace":           { key: "marketplace",          label: "Marketplace",         icon: "Lightbulb" },
   "/pipeline":              { key: "pipeline",             label: "Pipeline",            icon: "AlignLeft",     noPadding: true },
