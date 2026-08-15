@@ -92,17 +92,6 @@ const REGRAS: Regra[] = [
     },
   },
   {
-    match: /^\/pdn/,
-    ctx: {
-      area: "PDN",
-      sugestoes: [
-        "Qual o forecast do meu PDN para o mês?",
-        "Quais negócios estão em risco no PDN?",
-        "Resuma o PDN por corretor",
-      ],
-    },
-  },
-  {
     match: /^\/(central-nutricao|reengajamento)/,
     ctx: {
       area: "Reengajamento",

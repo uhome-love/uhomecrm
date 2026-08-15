@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2, Lock } from "lucide-react";
-import { MoneyInput } from "@/components/pdn/MoneyInput";
+import { MoneyInput } from "@/components/ui/MoneyInput";
 import { useEditarVenda } from "@/hooks/useEditarVenda";
 import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
 import { fmtMoney } from "@/lib/fmtMoney";

@@ -138,6 +138,7 @@ const App = () => (
               <Route path="/gestao" element={<Navigate to="/gerente/dashboard" replace />} />
               <Route path="/index" element={<Navigate to="/" replace />} />
               <Route path="/central-usuarios" element={<Navigate to="/meu-time" replace />} />
+              <Route path="/pdn" element={<Navigate to="/pipeline-negocios" replace />} />
               <Route path="/index.html" element={<Navigate to="/" replace />} />
               <Route path="/relatorio-semanal" element={<Navigate to="/central-relatorios?secao=visao" replace />} />
               <Route path="/relatorios" element={<Navigate to="/central-relatorios?secao=relatorio-1a1" replace />} />

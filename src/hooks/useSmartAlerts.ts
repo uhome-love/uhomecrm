@@ -125,9 +125,9 @@ export function useSmartAlerts() {
             severity: "warning",
             title: `${stalledNegocios.length} negócio(s) parado(s)`,
             description: `Existem negócios sem atualização há mais de 7 dias. Ex: ${stalledNegocios[0].nome_cliente}`,
-            action: { label: "Ver no PDN", url: "/pdn" },
+            action: { label: "Ver negócios", url: "/pipeline-negocios" },
           });
-          badgeCounts["/pdn"] = (badgeCounts["/pdn"] || 0) + stalledNegocios.length;
+          badgeCounts["/pipeline-negocios"] = (badgeCounts["/pipeline-negocios"] || 0) + stalledNegocios.length;
         }
       } catch (e) {
         console.error("Alert check stalled negocios:", e);

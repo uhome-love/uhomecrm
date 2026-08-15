@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { ConferenciaVisitasMes } from "@/components/pdn/ConferenciaVisitasMes";
+import { ConferenciaVisitasMes } from "@/components/visitas/ConferenciaVisitasMes";
 import { useSearchParams, useLocation } from "react-router-dom";
 import {
   format, startOfDay, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth,
