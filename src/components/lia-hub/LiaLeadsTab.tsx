@@ -17,6 +17,7 @@ import { formatBRT } from "@/lib/brtTime";
 import { useDebounce } from "@/hooks/useDebounce";
 import LiaConversaDrawer from "./LiaConversaDrawer";
 import {
+  NIVEL_META,
   STATUS_META,
   origemDoReferral,
   useLiaEstados,
@@ -40,6 +41,7 @@ export default function LiaLeadsTab() {
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState("todos");
   const [origem, setOrigem] = useState("todas");
+  const [nivel, setNivel] = useState("todos");
   const [selecionado, setSelecionado] = useState<LiaEstado | null>(null);
   const buscaDeb = useDebounce(busca, 250);
 
@@ -52,13 +54,14 @@ export default function LiaLeadsTab() {
     const q = buscaDeb.trim().toLowerCase();
     return (estados ?? []).filter((e) => {
       if (status !== "todos" && e.status !== status) return false;
+      if (nivel !== "todos" && String(e.nivel ?? "").toLowerCase() !== nivel) return false;
       if (origem !== "todas" && origemDoReferral(e.referral) !== origem) return false;
       if (!q) return true;
       return (
         (e.nome ?? "").toLowerCase().includes(q) || (e.telefone ?? "").toLowerCase().includes(q)
       );
     });
-  }, [estados, buscaDeb, status, origem]);
+  }, [estados, buscaDeb, status, origem, nivel]);
 
   return (
     <div className="space-y-4">
@@ -82,6 +85,27 @@ export default function LiaLeadsTab() {
               onClick={() => setStatus(p.valor)}
             >
               {p.rotulo}
+            </Button>
+          ))}
+        </div>
+        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Button
+            size="sm"
+            className="shrink-0"
+            variant={nivel === "todos" ? "default" : "outline"}
+            onClick={() => setNivel("todos")}
+          >
+            Todas temperaturas
+          </Button>
+          {(["quente", "morno", "frio"] as const).map((n) => (
+            <Button
+              key={n}
+              size="sm"
+              className={cn("shrink-0", nivel === n && NIVEL_META[n].cls)}
+              variant={nivel === n ? "secondary" : "outline"}
+              onClick={() => setNivel(n)}
+            >
+              {NIVEL_META[n].emoji} {NIVEL_META[n].label}
             </Button>
           ))}
         </div>
@@ -148,6 +172,15 @@ export default function LiaLeadsTab() {
                     <Badge variant="secondary" className="text-[10px]">
                       {origemDoReferral(e.referral)}
                     </Badge>
+                    {e.status === "qualificado" && NIVEL_META[String(e.nivel ?? "").toLowerCase()] ? (
+                      <Badge
+                        variant="outline"
+                        className={cn("text-[10px]", NIVEL_META[String(e.nivel).toLowerCase()].cls)}
+                      >
+                        {NIVEL_META[String(e.nivel).toLowerCase()].emoji}{" "}
+                        {NIVEL_META[String(e.nivel).toLowerCase()].label}
+                      </Badge>
+                    ) : null}
                   </div>
                 </button>
               );
@@ -185,9 +218,20 @@ export default function LiaLeadsTab() {
                         {origemDoReferral(e.referral)}
                       </td>
                       <td className="px-4 py-2.5">
-                        <Badge variant="outline" className={cn(meta.cls)}>
-                          {meta.label}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge variant="outline" className={cn(meta.cls)}>
+                            {meta.label}
+                          </Badge>
+                          {e.status === "qualificado" && NIVEL_META[String(e.nivel ?? "").toLowerCase()] ? (
+                            <Badge
+                              variant="outline"
+                              className={cn("text-[10px]", NIVEL_META[String(e.nivel).toLowerCase()].cls)}
+                            >
+                              {NIVEL_META[String(e.nivel).toLowerCase()].emoji}{" "}
+                              {NIVEL_META[String(e.nivel).toLowerCase()].label}
+                            </Badge>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="max-w-[320px] truncate px-4 py-2.5 text-muted-foreground">
                         {ultima?.conteudo ?? "—"}

@@ -7,6 +7,7 @@ import {
   useLiaConversasHoje,
   useLiaEstados,
   useLiaFollowups,
+  NIVEL_META,
   type LiaEstado,
 } from "./useLiaHub";
 
@@ -89,8 +90,17 @@ export default function LiaPainelTab() {
       (e) => e.status === "em_conversa" || e.status === "qualificado"
     ).length;
     const qualificados = list.filter((e) => e.status === "qualificado").length;
-    const quentes = list.filter((e) => e.nivel === "quente").length;
-    return { falaram, responderam, engajaram, qualificados, quentes };
+    const porNivel = (n: string) =>
+      list.filter((e) => e.status === "qualificado" && String(e.nivel ?? "").toLowerCase() === n).length;
+    return {
+      falaram,
+      responderam,
+      engajaram,
+      qualificados,
+      quente: porNivel("quente"),
+      morno: porNivel("morno"),
+      frio: porNivel("frio"),
+    };
   }, [estados]);
 
   const atencao = useMemo(() => {
@@ -111,7 +121,7 @@ export default function LiaPainelTab() {
         <Kpi label="Conversas hoje" value={kpis.conversasHojeCount} icon={MessageSquare} loading={loadingConv} />
         <Kpi label="Leads novos hoje" value={kpis.novosHoje} icon={UserPlus} loading={isLoading} />
         <Kpi label="Qualificados hoje" value={kpis.qualificadosHoje} icon={CheckCircle2} loading={isLoading} />
-        <Kpi label="Apresentações hoje" value={kpis.quentesHoje} icon={Flame} loading={isLoading} />
+        <Kpi label="Quentes hoje" value={kpis.quentesHoje} icon={Flame} loading={isLoading} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -129,7 +139,19 @@ export default function LiaPainelTab() {
                 <FunilLinha label="Responderam" value={funil.responderam} max={funil.falaram} />
                 <FunilLinha label="Engajaram" value={funil.engajaram} max={funil.falaram} />
                 <FunilLinha label="Qualificados" value={funil.qualificados} max={funil.falaram} />
-                <FunilLinha label="Quentes (apresentação)" value={funil.quentes} max={funil.falaram} />
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  {(["quente", "morno", "frio"] as const).map((n) => (
+                    <div
+                      key={n}
+                      className={`rounded-lg border px-3 py-2 ${NIVEL_META[n].cls}`}
+                    >
+                      <div className="text-[11px] font-semibold">
+                        {NIVEL_META[n].emoji} {NIVEL_META[n].label}
+                      </div>
+                      <div className="text-lg font-bold tabular-nums">{funil[n]}</div>
+                    </div>
+                  ))}
+                </div>
               </>
             )}
           </CardContent>
