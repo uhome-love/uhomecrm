@@ -190,7 +190,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       const [leadsRes, segRes, campRes, empRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, origem_detalhe, form_respostas, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
+          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, origem_detalhe, form_respostas, temperatura, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
           .eq("arquivado", false)
