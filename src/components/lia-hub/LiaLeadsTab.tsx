@@ -69,14 +69,15 @@ export default function LiaLeadsTab() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome ou telefone…"
-            className="pl-9"
+            className="pl-9 text-base lg:text-sm"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PILULAS.map((p) => (
             <Button
               key={p.valor}
               size="sm"
+              className="shrink-0"
               variant={status === p.valor ? "default" : "outline"}
               onClick={() => setStatus(p.valor)}
             >
@@ -111,7 +112,48 @@ export default function LiaLeadsTab() {
             Nenhum contato com esses filtros.
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="divide-y divide-border lg:hidden">
+            {linhas.map((e) => {
+              const meta = STATUS_META[e.status ?? ""] ?? {
+                label: e.status ?? "—",
+                cls: "bg-muted text-muted-foreground border-border",
+              };
+              const ultima = ultimas?.get(e.telefone);
+              return (
+                <button
+                  key={e.telefone}
+                  type="button"
+                  onClick={() => setSelecionado(e)}
+                  className="w-full px-3 py-3 text-left transition-colors active:bg-muted/50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-foreground">
+                        {e.nome || "Sem nome"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{e.telefone}</div>
+                    </div>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
+                    {ultima?.conteudo ?? "—"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <Badge variant="outline" className={cn("text-[10px]", meta.cls)}>
+                      {meta.label}
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {origemDoReferral(e.referral)}
+                    </Badge>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="hidden overflow-x-auto lg:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -159,6 +201,7 @@ export default function LiaLeadsTab() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Card>
 

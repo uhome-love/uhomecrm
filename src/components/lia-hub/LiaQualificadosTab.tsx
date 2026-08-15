@@ -13,7 +13,7 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
         <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
         </span>
-        <div className="mt-2 text-2xl font-bold tabular-nums text-foreground">{value}</div>
+        <div className="mt-2 text-xl font-bold tabular-nums text-foreground sm:text-2xl">{value}</div>
         {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
       </CardContent>
     </Card>
@@ -109,7 +109,42 @@ export default function LiaQualificadosTab() {
             Nenhum lead da LIA no pipeline ainda.
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="divide-y divide-border border-t border-border lg:hidden">
+            {leads.map((l) => {
+              const stage = l.stage_id ? stages?.get(l.stage_id) : null;
+              return (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => navigate(`/pipeline-leads?lead=${l.id}`)}
+                  className="w-full px-3 py-3 text-left transition-colors active:bg-muted/50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-foreground">
+                        {l.nome || "Sem nome"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{l.telefone}</div>
+                    </div>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {formatBRT(l.created_at, "dd/MM/yy HH:mm")}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <Badge variant="secondary" className="text-[10px]">
+                      {stage?.nome ?? "—"}
+                    </Badge>
+                    <span>
+                      {(l.corretor_id && corretores?.get(l.corretor_id)) || "Sem corretor"}
+                    </span>
+                    <span>· {l.aceite_status ?? "—"}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="hidden overflow-x-auto lg:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-y border-border bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -149,6 +184,7 @@ export default function LiaQualificadosTab() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Card>
     </div>
