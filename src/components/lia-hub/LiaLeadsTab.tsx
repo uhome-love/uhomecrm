@@ -69,14 +69,15 @@ export default function LiaLeadsTab() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome ou telefone…"
-            className="pl-9"
+            className="pl-9 text-base lg:text-sm"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PILULAS.map((p) => (
             <Button
               key={p.valor}
               size="sm"
+              className="shrink-0"
               variant={status === p.valor ? "default" : "outline"}
               onClick={() => setStatus(p.valor)}
             >
