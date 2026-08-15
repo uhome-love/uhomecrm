@@ -564,7 +564,9 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
 
 
   // Narrativa (história) × Sistema (andaime). Começa na Narrativa.
-  const [histView, setHistView] = useState<"narrativa" | "sistema">("narrativa");
+  const [histView, setHistView] = useState<"narrativa" | "sistema" | "lia">("narrativa");
+  const isLia = String(lead.origem ?? "").toUpperCase() === "LIA";
+
   const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
   const sistemaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "sistema"), [timeline]);
   const shownItems = histView === "narrativa" ? narrativaItems : sistemaItems;
