@@ -2,10 +2,14 @@
  * lia-whatsapp — liga o WhatsApp (360dialog, API oficial) no cérebro da LIA.
  *
  * Recebe o webhook do 360dialog (formato WhatsApp Cloud API), pega a mensagem do
- * lead, monta o histórico (lia_conversas), chama a função lia-chat pra gerar a
- * resposta, envia de volta pelo 360dialog (texto + as 7 mídias), cria/qualifica o
- * lead SEM DONO na Fila CEO (origem 'LIA'), e respeita a TRAVA DE OPT-OUT
- * (lia_estado.optout): quem pediu pra sair não recebe mais resposta, de verdade.
+ * lead, monta o histórico (lia_conversas = memória), chama a lia-chat pra gerar a
+ * resposta E o SINAL de triagem, envia de volta (texto + as 7 mídias), e age pelo sinal:
+ *   - qualificado/quente  -> cria/promove o lead na Fila CEO (temperatura + tag) e
+ *                            NOTIFICA o Lucas na hora (ele repassa). Só quando qualifica.
+ *   - descartar           -> marca o estado como descartado (fica FORA da fila; o CEO
+ *                            pode retomar depois). Não cria lead.
+ *   - seguindo            -> só conversa; nada entra na fila ainda.
+ * Respeita a TRAVA DE OPT-OUT (lia_estado.optout). Idempotência por wa_message_id.
  *
  * Público (verify_jwt=false) — o 360dialog posta aqui sem auth. Segredo D360_API_KEY.
  */
@@ -32,6 +36,12 @@ const MEDIA: Record<string, string> = {
 };
 const OPTOUT_RE = /n[aã]o quero (mais )?(receber|falar)|me tira|sai(r)? da lista|para de (me )?mandar|me bloqueia|descadastr|remover? da lista|n[aã]o me mand/i;
 
+// Mapa do nível de qualificação -> como o lead entra na Fila CEO (fonte única: coluna temperatura).
+const NIVEL_MAP: Record<string, { temperatura: string; prioridade: string; emoji: string; label: string }> = {
+  quente: { temperatura: "quente", prioridade: "alta", emoji: "🔥", label: "QUENTE" },
+  qualificado: { temperatura: "morno", prioridade: "media", emoji: "🟡", label: "qualificado" },
+};
+
 const svc = () =>
   createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -50,13 +60,13 @@ async function send360(to: string, payload: Record<string, unknown>) {
 const sendText = (to: string, body: string) => send360(to, { type: "text", text: { body } });
 const sendImage = (to: string, link: string) => send360(to, { type: "image", image: { link } });
 
+const nowISO = () => new Date().toISOString();
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  // Alguns provedores validam o webhook com um GET; responde 200.
   if (req.method === "GET") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return new Response("no", { status: 405, headers: cors });
 
-  // Sempre responde 200 rápido pro 360dialog não re-tentar em massa; processa dentro do try.
   try {
     const body = await req.json().catch(() => ({} as any));
     const sb = svc();
@@ -67,8 +77,7 @@ serve(async (req) => {
       const contactName = value?.contacts?.[0]?.profile?.name ?? null;
       const messages = value?.messages ?? [];
       for (const m of messages) {
-        // só mensagens de entrada (ignora status delivered/read etc.)
-        if (!m?.from || !m?.id) continue;
+        if (!m?.from || !m?.id) continue; // ignora status delivered/read etc.
         const from = String(m.from).replace(/\D/g, "");
         const waId = String(m.id);
         const texto =
@@ -82,25 +91,31 @@ serve(async (req) => {
         const { data: dup } = await sb.from("lia_conversas").select("id").eq("wa_message_id", waId).limit(1);
         if (dup && dup.length) continue;
 
-        // estado do lead (opt-out / lead_id)
+        // estado do lead (memória)
         const { data: estRows } = await sb.from("lia_estado").select("*").eq("telefone", from).limit(1);
-        const est = estRows?.[0] ?? null;
+        let est = estRows?.[0] ?? null;
 
-        // grava a entrada
+        // grava a mensagem de entrada
         await sb.from("lia_conversas").insert({ telefone: from, role: "user", conteudo, wa_message_id: waId });
 
         // TRAVA DE OPT-OUT: quem já saiu não recebe mais resposta.
         if (est?.optout) continue;
 
-        // cria/atualiza estado + lead na Fila CEO (uma vez)
+        // cria o estado na primeira mensagem (ainda NÃO cria lead na Fila CEO)
         const referral = m.referral ?? null;
-        let leadId = est?.lead_id ?? null;
         if (!est) {
-          await sb.from("lia_estado").insert({ telefone: from, nome: contactName, referral });
-        }
-        if (!leadId) {
-          leadId = await criarLead(sb, from, contactName, referral);
-          if (leadId) await sb.from("lia_estado").update({ lead_id: leadId, updated_at: new Date().toISOString() }).eq("telefone", from);
+          const { data: novo } = await sb.from("lia_estado").insert({
+            telefone: from, nome: contactName, referral,
+            status: "novo", last_user_at: nowISO(), last_msg_em: nowISO(),
+          }).select("*").single();
+          est = novo ?? { telefone: from, nome: contactName, referral, status: "novo", lead_id: null, followup_count: 0 };
+        } else {
+          await sb.from("lia_estado").update({
+            last_user_at: nowISO(), last_msg_em: nowISO(),
+            nome: est.nome ?? contactName,
+            status: est.status === "novo" ? "em_conversa" : est.status,
+            updated_at: nowISO(),
+          }).eq("telefone", from);
         }
 
         // monta histórico e chama o cérebro da LIA
@@ -110,6 +125,7 @@ serve(async (req) => {
         const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
 
         let reply = "";
+        let sinal = "seguindo";
         try {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
@@ -118,8 +134,10 @@ serve(async (req) => {
           });
           const d = await r.json();
           reply = String(d?.content ?? "").trim();
+          if (typeof d?.sinal === "string") sinal = d.sinal;
         } catch (e) { console.error("[lia-whatsapp] lia-chat falhou", e); }
 
+        // envia a resposta (texto + mídias), ignorando qualquer marcador interno que sobre
         if (reply) {
           await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: reply });
           const parts = reply.split(/\s*\|\|\|\s*/).map((p) => p.trim()).filter(Boolean);
@@ -129,29 +147,80 @@ serve(async (req) => {
             if (mm) {
               const k = mm[1].toLowerCase();
               if (MEDIA[k] && media < 3) { media++; await sendImage(from, MEDIA[k]); }
+            } else if (/^\[\[.*\]\]$/.test(p)) {
+              continue; // marcador interno (ex.: sinal) que por acaso vazou: nunca envia
             } else {
               await sendText(from, p);
             }
           }
+          await sb.from("lia_estado").update({ last_msg_em: nowISO() }).eq("telefone", from);
         }
 
-        // opt-out: se o lead pediu pra sair, trava daqui pra frente (a resposta de encerramento já foi enviada)
-        if (OPTOUT_RE.test(texto)) {
-          await sb.from("lia_estado").update({ optout: true, updated_at: new Date().toISOString() }).eq("telefone", from);
+        // AGE PELO SINAL DE TRIAGEM
+        const jaOptout = OPTOUT_RE.test(texto);
+        if (!jaOptout) {
+          if ((sinal === "quente" || sinal === "qualificado") && est.status !== "descartado") {
+            await qualificar(sb, from, est, contactName, referral, sinal);
+          } else if (sinal === "descartar" && est.status !== "qualificado" && !est.lead_id) {
+            await sb.from("lia_estado").update({
+              status: "descartado", descartado_em: nowISO(), motivo: "Descartado pela LIA (não serve)", updated_at: nowISO(),
+            }).eq("telefone", from);
+          }
+        }
+
+        // opt-out: a resposta de encerramento já foi enviada; trava daqui pra frente
+        if (jaOptout) {
+          await sb.from("lia_estado").update({ optout: true, status: "opt_out", updated_at: nowISO() }).eq("telefone", from);
         }
       }
     }
     return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[lia-whatsapp] erro:", e);
-    // ainda responde 200 pro provedor não re-tentar em loop
     return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, "Content-Type": "application/json" } });
   }
 });
 
-// Cria o lead SEM DONO na Fila CEO (mesmo padrão do receive-quiz-lead), origem 'LIA'.
-async function criarLead(sb: any, from: string, nome: string | null, referral: any): Promise<string | null> {
+/**
+ * Qualifica o lead: cria (ou promove) na Fila CEO com temperatura + tag, marca o
+ * estado, e NOTIFICA o Lucas na hora. Só notifica na transição (primeira vez que
+ * qualifica, e de novo se subir pra QUENTE), nunca a cada mensagem.
+ */
+async function qualificar(sb: any, from: string, est: any, nome: string | null, referral: any, nivel: string) {
   try {
+    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.qualificado;
+    const jaEra = est.status === "qualificado";
+    const subiuPraQuente = jaEra && est.nivel !== "quente" && nivel === "quente";
+
+    let leadId: string | null = est.lead_id ?? null;
+    if (!leadId) {
+      leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel);
+    } else {
+      // já estava na fila: atualiza a temperatura se subiu
+      await sb.from("pipeline_leads").update({
+        temperatura: map.temperatura, prioridade_lead: map.prioridade,
+      }).eq("id", leadId);
+    }
+
+    await sb.from("lia_estado").update({
+      status: "qualificado",
+      nivel,
+      lead_id: leadId,
+      qualificado_em: est.qualificado_em ?? nowISO(),
+      updated_at: nowISO(),
+    }).eq("telefone", from);
+
+    // notifica só na transição (primeira qualificação ou upgrade pra quente)
+    if (leadId && (!jaEra || subiuPraQuente)) {
+      await notificar(sb, leadId, est.nome ?? nome, nivel);
+    }
+  } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); }
+}
+
+// Cria o lead SEM DONO na Fila CEO (mesmo padrão do receive-quiz-lead), origem 'LIA'.
+async function criarLeadFila(sb: any, from: string, nome: string | null, referral: any, nivel: string): Promise<string | null> {
+  try {
+    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.qualificado;
     let telefone = from;
     if (telefone.startsWith("55") && telefone.length > 11) telefone = telefone.slice(2);
 
@@ -163,9 +232,12 @@ async function criarLead(sb: any, from: string, nome: string | null, referral: a
     const { data: exist } = await sb
       .from("pipeline_leads").select("id")
       .eq("telefone", telefone).eq("origem", "LIA").eq("arquivado", false).limit(1);
-    if (exist && exist.length) return exist[0].id;
+    if (exist && exist.length) {
+      await sb.from("pipeline_leads").update({ temperatura: map.temperatura, prioridade_lead: map.prioridade }).eq("id", exist[0].id);
+      return exist[0].id;
+    }
 
-    const campanha = referral?.headline || referral?.source_id ? `Anúncio: ${referral?.headline ?? referral?.source_id}` : null;
+    const campanha = (referral?.headline || referral?.source_id) ? `Anúncio: ${referral?.headline ?? referral?.source_id}` : null;
     const { data: ins, error } = await sb.from("pipeline_leads").insert({
       nome: nome || "Lead LIA",
       telefone,
@@ -176,8 +248,10 @@ async function criarLead(sb: any, from: string, nome: string | null, referral: a
       campanha,
       corretor_id: null,
       aceite_status: "pendente_distribuicao",
-      prioridade_lead: "media",
-      observacoes: referral ? `Veio de anúncio (Click-to-WhatsApp). ${referral?.source_url ?? ""}` : "Atendimento LIA no WhatsApp",
+      prioridade_lead: map.prioridade,
+      temperatura: map.temperatura,
+      tags: ["qualificado_lia", `lia_${nivel}`],
+      observacoes: `Qualificado pela LIA (${map.label}).${referral ? `\nVeio de anúncio (Click-to-WhatsApp). ${referral?.source_url ?? ""}` : ""}`,
       event_source_url: referral?.source_url ?? null,
     }).select("id").single();
     if (error || !ins) { console.error("[lia-whatsapp] insert lead falhou", error); return null; }
@@ -186,34 +260,38 @@ async function criarLead(sb: any, from: string, nome: string | null, referral: a
       await sb.from("pipeline_atividades").insert({
         pipeline_lead_id: ins.id,
         tipo: "entrada",
-        titulo: "📣 Lead atendido pela LIA (WhatsApp)",
-        descricao: `Origem: LIA (assistente de WhatsApp).${campanha ? `\n${campanha}` : ""}`,
+        titulo: `${map.emoji} Lead ${map.label} qualificado pela LIA (WhatsApp)`,
+        descricao: `A LIA validou interesse e enviou pra Fila CEO.${campanha ? `\n${campanha}` : ""}`,
         status: "concluida",
         created_by: "00000000-0000-0000-0000-000000000000",
       });
     } catch (e) { console.error("[lia-whatsapp] atividade falhou (nao critico)", e); }
 
-    try {
-      const { data: tops } = await sb.from("user_roles").select("user_id").in("role", ["admin", "diretor"]);
-      const seen = new Set<string>();
-      for (const t of (tops ?? []) as Array<{ user_id: string }>) {
-        if (!t.user_id || seen.has(t.user_id)) continue;
-        seen.add(t.user_id);
-        await sb.rpc("criar_notificacao", {
-          p_user_id: t.user_id,
-          p_tipo: "lead",
-          p_categoria: "lead_qualificado_lia",
-          p_titulo: "🔥 Novo lead da LIA (WhatsApp)",
-          p_mensagem: `${nome || "Lead"} · Casa Tua Santos Ferreira`,
-          p_dados: { pipeline_lead_id: ins.id, url: "/ceo" },
-          p_agrupamento_key: `lead_lia:${ins.id}`,
-        });
-      }
-    } catch (e) { console.error("[lia-whatsapp] notificacao falhou (nao critico)", e); }
-
     return ins.id;
   } catch (e) {
-    console.error("[lia-whatsapp] criarLead erro", e);
+    console.error("[lia-whatsapp] criarLeadFila erro", e);
     return null;
   }
+}
+
+// Notifica admin/diretor na hora — é assim que o Lucas fica sabendo pra repassar.
+async function notificar(sb: any, leadId: string, nome: string | null, nivel: string) {
+  try {
+    const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.qualificado;
+    const { data: tops } = await sb.from("user_roles").select("user_id").in("role", ["admin", "diretor"]);
+    const seen = new Set<string>();
+    for (const t of (tops ?? []) as Array<{ user_id: string }>) {
+      if (!t.user_id || seen.has(t.user_id)) continue;
+      seen.add(t.user_id);
+      await sb.rpc("criar_notificacao", {
+        p_user_id: t.user_id,
+        p_tipo: "lead",
+        p_categoria: "lead_qualificado_lia",
+        p_titulo: `${map.emoji} Lead ${map.label} da LIA`,
+        p_mensagem: `${nome || "Lead"} · Casa Tua Santos Ferreira · pronto pra repassar`,
+        p_dados: { pipeline_lead_id: leadId, nivel, url: "/ceo" },
+        p_agrupamento_key: `lead_lia:${leadId}:${nivel}`,
+      });
+    }
+  } catch (e) { console.error("[lia-whatsapp] notificacao falhou (nao critico)", e); }
 }
