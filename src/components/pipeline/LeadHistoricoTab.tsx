@@ -706,6 +706,15 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             ⚙️ Sistema
             <span className={`text-[10px] font-bold rounded-full px-1.5 ${histView === "sistema" ? "bg-zinc-200 text-zinc-700" : "bg-zinc-200 text-zinc-500"}`}>{sistemaItems.length}</span>
           </button>
+          {isLia && (
+            <button
+              onClick={() => setHistView("lia")}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "lia" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+            >
+              <MessageSquare className="h-3.5 w-3.5" /> Conversa Lia
+            </button>
+          )}
+
         </div>
       </div>
 
