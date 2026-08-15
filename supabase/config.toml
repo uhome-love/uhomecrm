@@ -169,3 +169,12 @@ verify_jwt = false
 
 [functions.rh-vaga-lead]
 verify_jwt = false
+
+[functions.lia-chat]
+verify_jwt = false
+
+[functions.lia-whatsapp]
+verify_jwt = false
+
+[functions.lia-followup]
+verify_jwt = false

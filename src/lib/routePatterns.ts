@@ -25,6 +25,7 @@ const DYNAMIC_PATTERNS: string[] = [
   "/ceo/telemetria-rede",
   "/admin/ingestao",
   "/admin/uso-paginas",
+  "/admin/lia-hub",
 ];
 
 const REDIRECT_ALIASES: string[] = [

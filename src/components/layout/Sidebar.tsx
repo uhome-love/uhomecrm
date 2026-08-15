@@ -102,6 +102,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Ferramentas",
       items: [
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
+        { label: "LIA · Uhome",        path: "/admin/lia-hub",     icon: <MessageSquare size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
@@ -170,6 +171,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "HOMI Gerente",       path: "/homi-gerente",      icon: <Bot          size={15} strokeWidth={1.5} /> },
+        { label: "LIA · Uhome",        path: "/admin/lia-hub",     icon: <MessageSquare size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Templates",          path: "/templates-comunicacao", icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },

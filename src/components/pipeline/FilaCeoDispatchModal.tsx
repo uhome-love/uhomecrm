@@ -18,6 +18,14 @@ function tempFromRespostas(fr: any): QuizTemp | null {
   if (v.includes("frio")) return "frio";
   return null;
 }
+// Temperatura do lead: primeiro o quiz (form_respostas); senão a coluna temperatura (leads da LIA).
+function tempDoLead(l: any): QuizTemp | null {
+  const q = tempFromRespostas(l?.form_respostas);
+  if (q) return q;
+  const t = String(l?.temperatura || "").toLowerCase();
+  if (t === "quente" || t === "morno" || t === "frio") return t as QuizTemp;
+  return null;
+}
 const TEMP_META: Record<QuizTemp, { label: string; cls: string; ord: number }> = {
   quente: { label: "🔥 Quente", cls: "border-red-500/40 text-red-600 dark:text-red-400 bg-red-500/5", ord: 0 },
   morno: { label: "🌤️ Morno", cls: "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5", ord: 1 },
@@ -145,7 +153,10 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const [activeTab, setActiveTab] = useState<"novos" | "reengajamento" | "quiz">(initialTab ?? "novos");
   const [repasseLead, setRepasseLead] = useState<{ id: string; nome: string } | null>(null);
 
-  const isQuizLead = (l: any) => String(l.origem || "").toLowerCase() === "quiz";
+  const isQuizLead = (l: any) => {
+    const o = String(l.origem || "").toLowerCase();
+    return o === "quiz" || o === "lia";
+  };
 
   // Separa leads por categoria
   const leadsReengajamento = useMemo(() => allLeads.filter((l) => !!l.reativado_por_nutricao), [allLeads]);
@@ -153,7 +164,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const leadsQuiz = useMemo(() => {
     return allLeads
       .filter((l) => isQuizLead(l))
-      .sort((a, b) => (TEMP_META[tempFromRespostas(a.form_respostas) as QuizTemp]?.ord ?? 3) - (TEMP_META[tempFromRespostas(b.form_respostas) as QuizTemp]?.ord ?? 3));
+      .sort((a, b) => (TEMP_META[tempDoLead(a) as QuizTemp]?.ord ?? 3) - (TEMP_META[tempDoLead(b) as QuizTemp]?.ord ?? 3));
   }, [allLeads]);
   // Não existe mais categoria "redistribuição": lead retornado à Fila do CEO
   // é tratado como lead novo. Só "reengajamento" (reativado por nutrição) e "quiz" são separados.
@@ -179,7 +190,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       const [leadsRes, segRes, campRes, empRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, origem_detalhe, form_respostas, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
+          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, origem_detalhe, form_respostas, temperatura, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
           .eq("arquivado", false)
@@ -240,9 +251,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       setAllLeads(leadsList);
 
       // Auto-seleciona aba com leads
-      const quizCount = leadsList.filter((l) => String(l.origem || "").toLowerCase() === "quiz").length;
+      const quizCount = leadsList.filter((l) => ["quiz", "lia"].includes(String(l.origem || "").toLowerCase())).length;
       const reengCount = leadsList.filter((l) => !!l.reativado_por_nutricao).length;
-      const novosCount = leadsList.filter((l) => !l.reativado_por_nutricao && String(l.origem || "").toLowerCase() !== "quiz").length;
+      const novosCount = leadsList.filter((l) => !l.reativado_por_nutricao && !["quiz", "lia"].includes(String(l.origem || "").toLowerCase())).length;
       setActiveTab(novosCount > 0 ? "novos" : quizCount > 0 ? "quiz" : reengCount > 0 ? "reengajamento" : "novos");
 
       console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${reengCount} reengajamento)`);
@@ -461,7 +472,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               </TabsTrigger>
               <TabsTrigger value="quiz" className="gap-2">
                 <Flame className="h-3.5 w-3.5" />
-                Lead qualificado quiz
+                LIA
                 <Badge variant="secondary" className="ml-1 h-5">{leadsQuiz.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="reengajamento" className="gap-2">
@@ -474,17 +485,17 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
             <TabsContent value="quiz" className="mt-4 space-y-3">
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
                 <p className="text-xs text-primary">
-                  🔥 <strong>Leads qualificados de quiz:</strong> vieram de um funil conversacional (já responderam a qualificação). Não entram na roleta — repasse manualmente pro corretor que você escolher.
+                  🔥 <strong>Leads qualificados pela LIA:</strong> vieram de um funil conversacional (já responderam a qualificação). Não entram na roleta — repasse manualmente pro corretor que você escolher.
                 </p>
               </div>
               {leadsQuiz.length === 0 ? (
                 <div className="text-center py-8 text-sm text-muted-foreground">
-                  Nenhum lead de quiz aguardando repasse. 🎉
+                  Nenhum lead da LIA aguardando repasse. 🎉
                 </div>
               ) : (
                 <div className="max-h-80 overflow-y-auto space-y-2">
                   {leadsQuiz.map((l) => {
-                    const temp = tempFromRespostas(l.form_respostas);
+                    const temp = tempDoLead(l);
                     const respostas = Array.isArray(l.form_respostas)
                       ? (l.form_respostas as any[]).filter((r) => r?.pergunta && r?.resposta && !/temperatura/i.test(r.pergunta))
                       : [];

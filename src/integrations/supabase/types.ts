@@ -5811,6 +5811,176 @@ export type Database = {
         }
         Relationships: []
       }
+      lia_conversas: {
+        Row: {
+          conteudo: string | null
+          created_at: string
+          id: string
+          role: string
+          telefone: string
+          wa_message_id: string | null
+        }
+        Insert: {
+          conteudo?: string | null
+          created_at?: string
+          id?: string
+          role: string
+          telefone: string
+          wa_message_id?: string | null
+        }
+        Update: {
+          conteudo?: string | null
+          created_at?: string
+          id?: string
+          role?: string
+          telefone?: string
+          wa_message_id?: string | null
+        }
+        Relationships: []
+      }
+      lia_estado: {
+        Row: {
+          created_at: string
+          descartado_em: string | null
+          followup_count: number
+          last_msg_em: string | null
+          last_user_at: string | null
+          lead_id: string | null
+          motivo: string | null
+          nivel: string | null
+          nome: string | null
+          optout: boolean
+          qualificado_em: string | null
+          referral: Json | null
+          resumo: string | null
+          status: string
+          telefone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descartado_em?: string | null
+          followup_count?: number
+          last_msg_em?: string | null
+          last_user_at?: string | null
+          lead_id?: string | null
+          motivo?: string | null
+          nivel?: string | null
+          nome?: string | null
+          optout?: boolean
+          qualificado_em?: string | null
+          referral?: Json | null
+          resumo?: string | null
+          status?: string
+          telefone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descartado_em?: string | null
+          followup_count?: number
+          last_msg_em?: string | null
+          last_user_at?: string | null
+          lead_id?: string | null
+          motivo?: string | null
+          nivel?: string | null
+          nome?: string | null
+          optout?: boolean
+          qualificado_em?: string | null
+          referral?: Json | null
+          resumo?: string | null
+          status?: string
+          telefone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lia_followups: {
+        Row: {
+          agendado_para: string | null
+          created_at: string
+          dentro_24h: boolean
+          enviado_em: string | null
+          id: string
+          lead_id: string | null
+          mensagem: string
+          motivo: string | null
+          status: string
+          telefone: string
+          template_key: string | null
+          tentativa: number
+          updated_at: string
+        }
+        Insert: {
+          agendado_para?: string | null
+          created_at?: string
+          dentro_24h?: boolean
+          enviado_em?: string | null
+          id?: string
+          lead_id?: string | null
+          mensagem: string
+          motivo?: string | null
+          status?: string
+          telefone: string
+          template_key?: string | null
+          tentativa?: number
+          updated_at?: string
+        }
+        Update: {
+          agendado_para?: string | null
+          created_at?: string
+          dentro_24h?: boolean
+          enviado_em?: string | null
+          id?: string
+          lead_id?: string | null
+          mensagem?: string
+          motivo?: string | null
+          status?: string
+          telefone?: string
+          template_key?: string | null
+          tentativa?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lia_followups_template_key_fkey"
+            columns: ["template_key"]
+            isOneToOne: false
+            referencedRelation: "lia_templates"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      lia_templates: {
+        Row: {
+          ativo: boolean
+          corpo: string
+          created_at: string
+          dentro_24h: boolean
+          descricao: string | null
+          key: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          corpo: string
+          created_at?: string
+          dentro_24h?: boolean
+          descricao?: string | null
+          key: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          corpo?: string
+          created_at?: string
+          dentro_24h?: boolean
+          descricao?: string | null
+          key?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       marketing_entries: {
         Row: {
           anuncio: string | null
