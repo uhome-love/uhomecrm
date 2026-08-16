@@ -563,8 +563,11 @@ export default function AcademiaTrilhaPage() {
 
   useEffect(() => {
     if (trilhaAulas.length > 0 && !selectedAulaId) {
+      // a Academia abre uma aula específica com ?aula=<id>; sem isso, cai na próxima pendente
+      const pedida = new URLSearchParams(window.location.search).get("aula");
+      const alvo = pedida && trilhaAulas.some(a => a.id === pedida) ? pedida : null;
       const next = trilhaAulas.find(a => getAulaStatus(a.id) !== "concluida");
-      setSelectedAulaId(next?.id || trilhaAulas[0].id);
+      setSelectedAulaId(alvo || next?.id || trilhaAulas[0].id);
     }
   }, [trilhaAulas, selectedAulaId, getAulaStatus]);
 
