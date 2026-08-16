@@ -143,9 +143,14 @@ async function detectar(sb: any): Promise<number> {
     const tpl = T[key];
     if (!tpl) continue;
 
-    const nome = primeiroNome(c.nome);
-    const mensagem = String(tpl.corpo).replaceAll("{nome}", nome).replace(/\s{2,}/g, " ").trim();
-    const motivo = !dentro24h ? "Frio, passou de 24h" : (c.status === "qualificado" ? "Engajou, não marcou horário" : "Esfriou depois de engajar");
+    // só usa o nome se for um nome de verdade (WhatsApp às vezes manda só um emoji)
+    const bruto = primeiroNome(c.nome);
+    const nome = /\p{L}/u.test(bruto) ? bruto.replace(/[^\p{L}\p{M}'.-]/gu, "").trim() : "";
+    const mensagem = String(tpl.corpo)
+      .replaceAll("Oi {nome}, ", nome ? `Oi ${nome}, ` : "Oi! ")
+      .replaceAll("{nome}", nome)
+      .replace(/\s{2,}/g, " ").trim();
+    const motivo = !dentro24h ? "Frio, passou de 24h" : (c.status === "novo" ? "Só abriu, não respondeu" : c.status === "qualificado" ? "Engajou, não marcou horário" : "Esfriou depois de engajar");
 
     const { error } = await sb.from("lia_followups").insert({
       telefone: c.telefone,
