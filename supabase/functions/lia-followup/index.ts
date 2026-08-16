@@ -115,7 +115,7 @@ async function detectar(sb: any): Promise<number> {
   const { data: cands } = await sb
     .from("lia_estado")
     .select("telefone, nome, lead_id, status, last_user_at, last_msg_em, followup_count")
-    .in("status", ["em_conversa", "qualificado"])
+    .in("status", ["novo", "em_conversa", "qualificado"])
     .eq("optout", false)
     .lt("followup_count", MAX_CUTUCOES)
     .lt("last_user_at", stallCut)
@@ -139,7 +139,7 @@ async function detectar(sb: any): Promise<number> {
     if (aberto && aberto.length) continue;
 
     const dentro24h = (agora - new Date(c.last_user_at).getTime()) < 24 * 3600_000;
-    const key = !dentro24h ? "reativacao" : (c.status === "qualificado" ? "sem_horario" : "sumiu_planta");
+    const key = !dentro24h ? "reativacao" : (c.status === "novo" ? "primeiro_retorno" : c.status === "qualificado" ? "sem_horario" : "sumiu_planta");
     const tpl = T[key];
     if (!tpl) continue;
 
