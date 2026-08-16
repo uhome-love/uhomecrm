@@ -142,6 +142,17 @@ async function detectar(sb: any): Promise<number> {
     .limit(200);
   if (!cands?.length) return 0;
 
+  // quem já foi REPASSADO (tem corretor no caso) sai do follow-up: o humano assumiu.
+  const leadIds = [...new Set(cands.map((c: any) => c.lead_id).filter(Boolean))];
+  const repassados = new Set<string>();
+  if (leadIds.length) {
+    const { data: pls } = await sb
+      .from("pipeline_leads").select("id, corretor_id, aceite_status")
+      .in("id", leadIds);
+    for (const pl of pls ?? [])
+      if (pl.corretor_id && pl.aceite_status === "aceito") repassados.add(pl.id);
+  }
+
   // templates ativos
   const { data: tpls } = await sb.from("lia_templates").select("*").eq("ativo", true);
   const T: Record<string, any> = {};
@@ -150,6 +161,7 @@ async function detectar(sb: any): Promise<number> {
   let criados = 0;
   for (const c of cands) {
     if (!c.last_user_at) continue;
+    if (c.lead_id && repassados.has(c.lead_id)) continue; // já tem corretor: humano assumiu
     // espaçamento: se já cutucou, espera SPACING_HOURS desde a última mensagem enviada
     if (c.followup_count > 0 && c.last_msg_em && (agora - new Date(c.last_msg_em).getTime()) < SPACING_HOURS * 3600_000) continue;
 
@@ -208,6 +220,15 @@ async function disparar(sb: any): Promise<number> {
     if (est?.optout || (est?.followup_count ?? 0) >= MAX_CUTUCOES) {
       await sb.from("lia_followups").update({ status: "cancelado", updated_at: nowISO() }).eq("id", f.id);
       continue;
+    }
+    // se um corretor assumiu o caso no meio-tempo, não cutuca (humano assumiu)
+    if (f.lead_id) {
+      const { data: plRows } = await sb.from("pipeline_leads").select("corretor_id, aceite_status").eq("id", f.lead_id).limit(1);
+      const pl = plRows?.[0];
+      if (pl?.corretor_id && pl.aceite_status === "aceito") {
+        await sb.from("lia_followups").update({ status: "cancelado", updated_at: nowISO() }).eq("id", f.id);
+        continue;
+      }
     }
 
     const ok = await send360Text(f.telefone, f.mensagem);
