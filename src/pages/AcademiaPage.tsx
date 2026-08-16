@@ -35,8 +35,11 @@ export default function AcademiaPage() {
 
   /** Os níveis da jornada, na ordem. O "agora" é o primeiro não concluído. */
   const niveis = useMemo(() => {
-    // trilha sem aula não vira nível: ela só polui a jornada e não dá o que fazer
-    const comConteudo = trilhas.filter((t) => aulas.some((a) => a.trilha_id === t.id));
+    // a jornada é a formação publicada: trilha despublicada (arquivo) e trilha sem
+    // aula não viram nível, nem para quem é gestor. Isso é assunto da aba Gerenciar.
+    const comConteudo = trilhas.filter(
+      (t) => t.publicada !== false && aulas.some((a) => a.trilha_id === t.id)
+    );
     const ordenadas = [...comConteudo].sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
     let achouAtual = false;
     return ordenadas.map((trilha, i) => {
