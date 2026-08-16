@@ -67,6 +67,12 @@ export default function AcademiaPage() {
     return aulas.filter((a) => a.trilha_id === id).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
   }, [aulas, trilhaAberta, nivelAtual]);
 
+  /** A prova do nível aberto, se existir: é o atalho de quem já sabe. */
+  const provaDoNivel = useMemo(
+    () => aulasDoNivel.find((a) => a.tipo === "quiz") || null,
+    [aulasDoNivel]
+  );
+
   const trilhaExibida = useMemo(
     () => niveis.find((n) => n.trilha.id === (trilhaAberta || nivelAtual?.trilha.id)) || null,
     [niveis, trilhaAberta, nivelAtual]
@@ -93,10 +99,11 @@ export default function AcademiaPage() {
     const pega = (tipos: string[]) =>
       doNivel.find((a) => tipos.includes(a.tipo) && getAulaStatus(a.id) !== "concluida");
 
+    // A semana é: uma pra ver e uma pra treinar. O "faça no CRM" foi cortado a
+    // pedido do Lucas: exercício obrigatório bagunça a rotina do corretor.
     const ver = pega(["apresentacao", "pdf", "texto", "youtube", "vimeo", "video", "video_upload"]);
     const treinar = pega(["simulador", "quiz"]);
-    const fazer = pega(["exercicio", "checklist"]);
-    return [ver, treinar, fazer].filter(Boolean).slice(0, 3) as typeof doNivel;
+    return [ver, treinar].filter(Boolean) as typeof doNivel;
   }, [aulas, nivelAtual, getAulaStatus]);
 
   const abrirTrilha = (id: string) => {
@@ -281,10 +288,10 @@ export default function AcademiaPage() {
                             aula={a}
                             estado={estado}
                             sugerida={a.id === aulaDeHoje?.id}
-                            /* a prova só existe onde existe quiz de verdade */
-                            temProva={estado !== "feito" && a.tipo === "quiz"}
+                            /* quem já sabe vai direto pra prova do nível */
+                            temProva={estado !== "feito" && a.tipo !== "quiz" && !!provaDoNivel}
                             onAbrir={() => abrirAula(a.id, a.trilha_id)}
-                            onProva={() => abrirAula(a.id, a.trilha_id)}
+                            onProva={() => provaDoNivel && abrirAula(provaDoNivel.id, provaDoNivel.trilha_id)}
                           />
                         );
                       })}

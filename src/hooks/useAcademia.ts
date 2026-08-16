@@ -184,10 +184,10 @@ export function useAcademia() {
   const completeAula = useCallback(async (aulaId: string, trilhaId: string, quizScore?: number) => {
     if (!profileId) return;
     const aula = aulas.find(a => a.id === aulaId);
-    let xp = aula?.xp_recompensa || 10;
-
-    // Bonus XP for 100% quiz
-    if (quizScore === 100) xp += 50;
+    // Regra da casa: TODA ação vale o mesmo (20 XP). Existia um bônus escondido
+    // de +50 no quiz que fazia a prova valer 70 e virar a ação mais lucrativa
+    // da Academia, o oposto do que a gente quis.
+    const xp = aula?.xp_recompensa ?? 20;
 
     console.log("[completeAula] profileId:", profileId, "aulaId:", aulaId, "trilhaId:", trilhaId, "xp:", xp);
 
@@ -216,17 +216,57 @@ export function useAcademia() {
       a.id === aulaId || progresso.some(p => p.aula_id === a.id && p.status === "concluida")
     ).length;
 
-    if (completedCount >= trilhaAulas.length) {
+    if (completedCount >= trilhaAulas.length && !certificados.some((c: any) => c.trilha_id === trilhaId)) {
       const trilha = trilhas.find(t => t.id === trilhaId);
       const codigo = `UHOME-${Date.now().toString(36).toUpperCase()}`;
       await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
-      toast(`🏆 TRILHA CONCLUÍDA! ${trilha?.titulo || ""}`, { description: `+100 XP bônus · Certificado emitido!`, duration: 6000 });
+      // Nada de "+100 XP bônus": esse bônus nunca foi creditado e o corretor
+      // conferia o placar e não batia.
+      toast(`🏆 Nível concluído! ${trilha?.titulo || ""}`, { description: "Certificado emitido.", duration: 6000 });
     }
 
     await queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });
     await queryClient.invalidateQueries({ queryKey: ["academia-certificados"] });
     await queryClient.refetchQueries({ queryKey: ["academia-progresso", profileId] });
-  }, [profileId, aulas, progresso, trilhas, queryClient]);
+  }, [profileId, aulas, progresso, trilhas, certificados, queryClient]);
+
+  /**
+   * "Quem já sabe pula a aula e faz a prova, que conta igual" (regra do Lucas).
+   * Como a prova é uma aula só, no fim do nível, gabaritar fecha as aulas
+   * daquele nível que ainda estavam abertas.
+   */
+  const concluirNivelPelaProva = useCallback(async (trilhaId: string) => {
+    if (!profileId) return;
+    const pendentes = aulas.filter(
+      a => a.trilha_id === trilhaId &&
+           !progresso.some(p => p.aula_id === a.id && p.status === "concluida")
+    );
+    if (pendentes.length === 0) return;
+    await supabase.from("academia_progresso").upsert(
+      pendentes.map(a => ({
+        corretor_id: profileId,
+        trilha_id: trilhaId,
+        aula_id: a.id,
+        status: "concluida",
+        xp_ganho: a.xp_recompensa ?? 20,
+        concluida_at: new Date().toISOString(),
+      })),
+      { onConflict: "corretor_id,aula_id" }
+    );
+    // O certificado é emitido no completeAula olhando o estado ANTES desta
+    // rodada, então nesse caminho ele não sairia e a tela prometia que sim.
+    const jaTem = certificados.some((c: any) => c.trilha_id === trilhaId);
+    if (!jaTem) {
+      const codigo = `UHOME-${Date.now().toString(36).toUpperCase()}`;
+      await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
+      const trilha = trilhas.find(t => t.id === trilhaId);
+      toast(`🏆 Nível concluído! ${trilha?.titulo || ""}`, { description: "Certificado emitido.", duration: 6000 });
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });
+    await queryClient.invalidateQueries({ queryKey: ["academia-certificados"] });
+    await queryClient.refetchQueries({ queryKey: ["academia-progresso", profileId] });
+  }, [profileId, aulas, progresso, certificados, trilhas, queryClient]);
 
   const startAula = useCallback(async (aulaId: string, trilhaId: string) => {
     if (!profileId) return;
@@ -330,7 +370,7 @@ export function useAcademia() {
   }, [progresso]);
 
   return {
-    trilhas, aulas, progresso, certificados, totalXp, studyLevel, canManage,
+    trilhas, aulas, progresso, certificados, totalXp, studyLevel, canManage, concluirNivelPelaProva,
     getTrilhaProgress, getAulaStatus, getTrilhaDuration,
     completeAula, startAula,
     createTrilha, updateTrilha, deleteTrilha,

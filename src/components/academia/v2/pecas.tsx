@@ -13,7 +13,6 @@ export const ICONE_TIPO: Record<string, React.ComponentType<{ className?: string
   texto: BookOpen,
   simulador: MessageSquare,
   quiz: Target,
-  exercicio: CheckSquare,
   checklist: CheckSquare,
   youtube: Play,
   vimeo: Play,
@@ -27,7 +26,6 @@ export const ROTULO_TIPO: Record<string, string> = {
   texto: "Leitura",
   simulador: "Simulador",
   quiz: "Quiz",
-  exercicio: "Faça no CRM",
   checklist: "Faça no CRM",
   youtube: "Vídeo",
   vimeo: "Vídeo",
@@ -118,7 +116,7 @@ export function AulaLinha({ aula, estado, sugerida, temProva, onAbrir, onProva }
             onProva?.();
           }}
         >
-          já sei · fazer a prova
+          já sei · ir pra prova
         </button>
       )}
     </div>
@@ -136,7 +134,6 @@ export function SemanaItem({ aula, feito, onClick }: SemanaProps) {
   const Icone = ICONE_TIPO[aula.tipo] || BookOpen;
   const verbo =
     aula.tipo === "simulador" ? "Treinar" :
-    aula.tipo === "exercicio" || aula.tipo === "checklist" ? "Fazer no CRM" :
     aula.tipo === "quiz" ? "Responder" : "Assistir";
 
   return (

@@ -27,6 +27,7 @@ export default function AcademiaTrilhaPage() {
   const { openTab } = useTabContext();
   const {
     trilhas, aulas, getTrilhaProgress, getAulaStatus, completeAula, startAula, certificados, loading,
+    concluirNivelPelaProva,
   } = useAcademia();
 
   const trilha = trilhas.find((t) => t.id === trilhaId);
@@ -64,9 +65,12 @@ export default function AcademiaTrilhaPage() {
     async (nota?: number) => {
       if (!aula || !trilhaId) return;
       await completeAula(aula.id, trilhaId, nota);
+      // Gabaritou a prova do nível? Então ele sabe o nível: as aulas que ele
+      // pulou fecham junto. É a regra do "já sei, faço a prova, conta igual".
+      if (aula.tipo === "quiz" && nota === 100) await concluirNivelPelaProva(trilhaId);
       if (proxima) setAulaId(proxima.id);
     },
-    [aula, trilhaId, completeAula, proxima]
+    [aula, trilhaId, completeAula, concluirNivelPelaProva, proxima]
   );
 
   const trocarAula = (id: string) => {
