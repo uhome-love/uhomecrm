@@ -21,11 +21,12 @@ import { useTabContext } from "@/contexts/TabContext";
 import { useAcademia } from "@/hooks/useAcademia";
 import { FalaHomi, Homi } from "@/components/academia/v2/Homi";
 import { NivelCard, AulaLinha, SemanaItem, type EstadoNivel } from "@/components/academia/v2/pecas";
+import { MeuTime } from "@/components/academia/v2/MeuTime";
 import "@/styles/academia.css";
 
 const AcademiaGerenciarPage = lazy(() => import("@/pages/AcademiaGerenciarPage"));
 
-type Aba = "inicio" | "trilha" | "gerenciar";
+type Aba = "inicio" | "trilha" | "time" | "gerenciar";
 
 export default function AcademiaPage() {
   // O CRM monta as páginas pelo sistema de abas. navigate() sozinho troca a URL
@@ -140,9 +141,14 @@ export default function AcademiaPage() {
               Minha trilha
             </button>
             {canManage && (
-              <button type="button" role="tab" aria-selected={aba === "gerenciar"} className="uac-aba" onClick={() => setAba("gerenciar")}>
-                Gerenciar
-              </button>
+              <>
+                <button type="button" role="tab" aria-selected={aba === "time"} className="uac-aba" onClick={() => setAba("time")}>
+                  Meu time
+                </button>
+                <button type="button" role="tab" aria-selected={aba === "gerenciar"} className="uac-aba" onClick={() => setAba("gerenciar")}>
+                  Gerenciar
+                </button>
+              </>
             )}
           </nav>
         </header>
@@ -309,6 +315,11 @@ export default function AcademiaPage() {
               </section>
             )}
           </>
+        )}
+
+        {/* ------------------------------------------------------------ MEU TIME */}
+        {aba === "time" && canManage && (
+          <MeuTime totalAulas={aulas.filter((a) => niveis.some((n) => n.trilha.id === a.trilha_id)).length} />
         )}
 
         {/* ------------------------------------------------------------ GERENCIAR */}

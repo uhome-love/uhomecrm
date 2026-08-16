@@ -864,3 +864,58 @@
 /* a sangria acompanha o padding real do CRM (p-4 / sm:p-6 / lg:p-8) */
 @media (min-width: 1024px) { .uac { --uac-bleed: 2rem; } }
 @media (max-width: 639px) { .uac { --uac-bleed: 1rem; } }
+
+/* ============================================================================
+   MEU TIME — a visão do gerente
+   ========================================================================== */
+.uac-numeros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 0.8rem;
+  margin: 1.4rem 0;
+}
+.uac-numero {
+  background: var(--uac-card);
+  border: 1px solid var(--uac-rule);
+  border-radius: var(--uac-raio);
+  padding: 1rem;
+  box-shadow: var(--uac-sombra);
+}
+.uac-numero b { display: block; font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+.uac-numero small {
+  font-family: var(--uac-mono);
+  font-size: 0.66rem;
+  color: var(--uac-ink-3);
+  line-height: 1.35;
+  display: block;
+  margin-top: 0.3rem;
+}
+.uac-numero.dorme { position: relative; overflow: hidden; }
+.uac-numero.dorme .uac-homi { position: absolute; right: -6px; bottom: -10px; opacity: 0.85; }
+
+.uac-corretor {
+  background: var(--uac-card);
+  border: 1px solid var(--uac-rule);
+  border-left: 4px solid var(--uac-rule);
+  border-radius: 12px;
+  padding: 0.8rem 1.1rem;
+  margin-bottom: 0.4rem;
+  box-shadow: var(--uac-sombra);
+  display: grid;
+  grid-template-columns: 12rem auto 1fr auto;
+  gap: 0.9rem;
+  align-items: center;
+}
+.uac-corretor.voando { border-left-color: var(--uac-ok); }
+.uac-corretor.ok { border-left-color: var(--uac-azul); }
+.uac-corretor.sumiu { border-left-color: var(--uac-alerta); background: var(--uac-alerta-soft); }
+.uac-corretor b { font-size: 0.93rem; }
+.uac-corretor p { font-size: 0.85rem; color: var(--uac-ink-2); }
+.uac-corretor-ultima { font-family: var(--uac-mono); font-size: 0.66rem; color: var(--uac-ink-3); }
+.uac-corretor.sumiu .uac-corretor-ultima { color: var(--uac-alerta); }
+@media (max-width: 760px) {
+  .uac-corretor { grid-template-columns: 1fr auto; row-gap: 0.3rem; }
+  .uac-corretor p { grid-column: 1 / -1; }
+}
+/* quem ainda não começou não é alarme: é só quem falta convidar */
+.uac-corretor.novo { border-left-color: var(--uac-rule); opacity: 0.88; }
