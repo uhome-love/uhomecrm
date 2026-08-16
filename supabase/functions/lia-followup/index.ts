@@ -23,6 +23,10 @@ const cors = {
 
 const D360_URL = "https://waba-v2.360dialog.io/messages";
 const EDGE_BASE = "https://hunbxqzhvuemgntklyzb.supabase.co";
+const MEDIA_BASE = "https://uhomesales.com/casatua";
+const FOTO_FACHADA = `${MEDIA_BASE}/casa.jpg`;   // fachada das casas (sobrados ao entardecer)
+const FOTO_INFRA = `${MEDIA_BASE}/club.jpg`;      // infra do condomínio (piscina + club house)
+const FECHO_ABRIU = "E aí, o que você achou? 😊"; // pergunta leve depois das fotos
 const MAX_CUTUCOES = 3;
 const STALL_HOURS = 4;     // silêncio mínimo do lead antes do 1º cutucão
 const SPACING_HOURS = 20;  // intervalo entre um cutucão e o próximo
@@ -52,6 +56,22 @@ async function send360Text(to: string, body: string) {
     return true;
   } catch (e) { console.error("[lia-followup] erro no send", e); return false; }
 }
+
+async function send360Image(to: string, link: string) {
+  const key = Deno.env.get("D360_API_KEY");
+  if (!key) return false;
+  try {
+    const r = await fetch(D360_URL, {
+      method: "POST",
+      headers: { "D360-API-KEY": key, "Content-Type": "application/json" },
+      body: JSON.stringify({ messaging_product: "whatsapp", to, type: "image", image: { link } }),
+    });
+    if (!r.ok) { console.error("[lia-followup] imagem falhou", r.status, await r.text().catch(() => "")); return false; }
+    return true;
+  } catch (e) { console.error("[lia-followup] erro na imagem", e); return false; }
+}
+
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -192,8 +212,18 @@ async function disparar(sb: any): Promise<number> {
 
     const ok = await send360Text(f.telefone, f.mensagem);
     if (!ok) continue;
-
     await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: f.mensagem });
+
+    // "abriu e sumiu": entrega valor com 2 fotos e fecha com uma pergunta leve (nada de cobrança)
+    if (f.template_key === "primeiro_retorno") {
+      await sleep(1200); if (await send360Image(f.telefone, FOTO_FACHADA))
+        await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: "[foto] Fachada das casas" });
+      await sleep(1200); if (await send360Image(f.telefone, FOTO_INFRA))
+        await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: "[foto] Infra do condomínio" });
+      await sleep(1200); if (await send360Text(f.telefone, FECHO_ABRIU))
+        await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: FECHO_ABRIU });
+    }
+
     await sb.from("lia_followups").update({ status: "enviado", enviado_em: nowISO(), updated_at: nowISO() }).eq("id", f.id);
     await sb.from("lia_estado").update({
       followup_count: (est?.followup_count ?? 0) + 1,
