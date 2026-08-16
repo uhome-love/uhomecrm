@@ -43,9 +43,24 @@ function Palco({ children, cheia }: { children: React.ReactNode; cheia?: () => v
 /* ---------------------------------------------------------------- apresentação */
 function Apresentacao({ url }: { url: string }) {
   const caixa = useRef<HTMLDivElement>(null);
+  /**
+   * Tela cheia é o que salva a leitura no celular, onde o palco fica com 340px.
+   * O iOS não deixa nenhum elemento entrar em fullscreen (só vídeo), então lá a
+   * saída é abrir o treino numa aba própria. Sem isso o corretor de iPhone fica
+   * com o deck espremido e desiste.
+   */
+  const abrirGrande = () => {
+    const el = caixa.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
+    const pedir = el?.requestFullscreen || el?.webkitRequestFullscreen;
+    if (el && pedir) {
+      Promise.resolve(pedir.call(el)).catch(() => window.open(url, "_blank", "noopener"));
+    } else {
+      window.open(url, "_blank", "noopener");
+    }
+  };
   return (
     <div ref={caixa} className="uac-palco-wrap">
-      <Palco cheia={() => caixa.current?.requestFullscreen?.()}>
+      <Palco cheia={abrirGrande}>
         <iframe
           src={url}
           title="Apresentação"

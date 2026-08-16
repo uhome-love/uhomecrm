@@ -587,6 +587,8 @@
   transition: opacity 0.2s var(--uac-mola);
 }
 .uac-palco:hover .uac-cheia, .uac-cheia:focus-visible { opacity: 1; }
+/* em toque não existe hover: o botão fica sempre à mostra, senão ninguém acha */
+@media (hover: none) { .uac-cheia { opacity: 1; } }
 .uac-carregando { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; }
 .uac-baixar { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.8rem; text-decoration: none; }
 

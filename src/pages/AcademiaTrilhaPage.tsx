@@ -11,7 +11,8 @@
  * nenhuma aula abrir ("Trilha não encontrada").
  */
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useTabContext } from "@/contexts/TabContext";
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Award } from "lucide-react";
 import { useAcademia, type Aula } from "@/hooks/useAcademia";
 import { PalcoAula } from "@/components/academia/v2/players";
@@ -23,7 +24,7 @@ import "@/styles/academia.css";
 export default function AcademiaTrilhaPage() {
   const { pathname, search } = useLocation();
   const trilhaId = decodeURIComponent(pathname.split("/academia/trilha/")[1]?.split("/")[0] || "");
-  const navigate = useNavigate();
+  const { openTab } = useTabContext();
   const {
     trilhas, aulas, getTrilhaProgress, getAulaStatus, completeAula, startAula, certificados, loading,
   } = useAcademia();
@@ -92,7 +93,7 @@ export default function AcademiaTrilhaPage() {
           <Homi pose="pensando" tamanho={90} />
           <b>Não encontrei esse módulo.</b>
           <span>Ele pode ter sido despublicado.</span>
-          <button type="button" className="uac-bt" onClick={() => navigate("/academia")}>
+          <button type="button" className="uac-bt" onClick={() => openTab("/academia")}>
             Voltar para a Academia
           </button>
         </div>
@@ -105,7 +106,7 @@ export default function AcademiaTrilhaPage() {
       <div className="uac-tela">
         {/* ------------------------------------------------------ cabeçalho */}
         <header className="uac-topo">
-          <button type="button" className="uac-voltar" onClick={() => navigate("/academia")}>
+          <button type="button" className="uac-voltar" onClick={() => openTab("/academia")}>
             <ArrowLeft className="h-3.5 w-3.5" /> Academia
           </button>
           <div className="uac-topo-trilha">

@@ -16,8 +16,8 @@
  * tabelas que ainda não existem. Nada aqui inventa dado.
  */
 import { lazy, Suspense, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useTabContext } from "@/contexts/TabContext";
 import { useAcademia } from "@/hooks/useAcademia";
 import { FalaHomi, Homi } from "@/components/academia/v2/Homi";
 import { NivelCard, AulaLinha, SemanaItem, type EstadoNivel } from "@/components/academia/v2/pecas";
@@ -28,7 +28,9 @@ const AcademiaGerenciarPage = lazy(() => import("@/pages/AcademiaGerenciarPage")
 type Aba = "inicio" | "trilha" | "gerenciar";
 
 export default function AcademiaPage() {
-  const navigate = useNavigate();
+  // O CRM monta as páginas pelo sistema de abas. navigate() sozinho troca a URL
+  // mas NÃO abre a aba, e o corretor clica em "Continuar" e nada acontece.
+  const { openTab } = useTabContext();
   const { trilhas, aulas, totalXp, getTrilhaProgress, getAulaStatus, canManage, loading } = useAcademia();
   const [aba, setAba] = useState<Aba>("inicio");
   const [trilhaAberta, setTrilhaAberta] = useState<string | null>(null);
@@ -103,7 +105,7 @@ export default function AcademiaPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const abrirAula = (aulaId: string, trilhaId: string | null) => {
-    navigate(`/academia/trilha/${trilhaId}?aula=${aulaId}`);
+    openTab(`/academia/trilha/${trilhaId}?aula=${aulaId}`);
   };
 
   if (loading) {
