@@ -89,8 +89,15 @@ function Quiz({ aula, status, onConcluir }: { aula: Aula; status: Status; onConc
       const { data } = await supabase.from("academia_quiz").select("*").eq("aula_id", aula.id).order("ordem");
       let lista = (data || []) as QuizQuestion[];
       if (lista.length === 0) {
+        // formato legado: colunas opcao_a..d + resposta_correta ("a".."d").
+        // Sem converter, a pergunta aparecia sem nenhuma alternativa.
         const alt = await supabase.from("academia_quiz_perguntas").select("*").eq("aula_id", aula.id).order("ordem");
-        lista = (alt.data || []) as QuizQuestion[];
+        lista = (alt.data || []).map((p: any) => ({
+          ...p,
+          opcoes: (["a", "b", "c", "d"] as const)
+            .filter((letra) => p[`opcao_${letra}`])
+            .map((letra) => ({ texto: p[`opcao_${letra}`], correta: p.resposta_correta === letra })),
+        })) as QuizQuestion[];
       }
       if (vivo) { setPerguntas(lista); setCarregando(false); }
     })();
