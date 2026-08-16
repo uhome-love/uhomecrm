@@ -522,3 +522,343 @@
   .uac-destaque .uac-quem { display: none; }
   .uac-semana-item { padding: 0.8rem 0.9rem; }
 }
+
+/* ============================================================================
+   PLAYER DA AULA — formato de curso: palco à esquerda, sumário à direita
+   ========================================================================== */
+.uac-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--uac-mono);
+  font-size: 0.7rem;
+  background: transparent;
+  border: 1px solid var(--uac-rule);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  color: var(--uac-ink-2);
+  cursor: pointer;
+  transition: all 0.2s var(--uac-mola);
+}
+.uac-voltar:hover { border-color: var(--uac-azul); color: var(--uac-azul); }
+.uac-topo-trilha b { display: block; font-size: 0.95rem; line-height: 1.2; }
+.uac-topo-trilha span { font-family: var(--uac-mono); font-size: 0.66rem; color: var(--uac-ink-3); }
+.uac-topo-progresso { margin-left: auto; display: flex; align-items: center; gap: 0.7rem; min-width: 180px; }
+.uac-topo-progresso .uac-trilho { flex: 1; }
+
+.uac-player { display: grid; grid-template-columns: 1fr 320px; gap: 1.6rem; align-items: start; }
+@media (max-width: 1000px) { .uac-player { grid-template-columns: 1fr; } }
+
+.uac-aula-titulo { font-size: clamp(1.3rem, 2.6vw, 1.9rem); font-weight: 800; margin-bottom: 0.3rem; }
+.uac-aula-desc { color: var(--uac-ink-2); font-size: 0.92rem; margin-bottom: 1.1rem; }
+
+/* o palco: 16:9, fundo escuro, cantos arredondados */
+.uac-palco-wrap { position: relative; }
+.uac-palco {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  background: #14161c;
+  border-radius: var(--uac-raio);
+  overflow: hidden;
+  box-shadow: var(--uac-sombra);
+}
+.uac-quadro { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.uac-quadro.branco { background: #fff; }
+.uac-palco:fullscreen, .uac-palco-wrap:fullscreen { aspect-ratio: auto; height: 100%; border-radius: 0; }
+.uac-palco-wrap:fullscreen .uac-palco { height: 100%; aspect-ratio: auto; border-radius: 0; }
+.uac-cheia {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--uac-mono);
+  font-size: 0.66rem;
+  background: rgba(20, 22, 28, 0.72);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s var(--uac-mola);
+}
+.uac-palco:hover .uac-cheia, .uac-cheia:focus-visible { opacity: 1; }
+.uac-carregando { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; }
+.uac-baixar { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.8rem; text-decoration: none; }
+
+/* texto da aula */
+.uac-texto {
+  background: var(--uac-card);
+  border: 1px solid var(--uac-rule);
+  border-radius: var(--uac-raio);
+  padding: clamp(1.2rem, 2.4vw, 2rem);
+  box-shadow: var(--uac-sombra);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--uac-ink-2);
+}
+.uac-texto :is(h1, h2, h3) { margin: 1.4em 0 0.5em; color: var(--uac-ink); }
+.uac-texto :is(h1, h2, h3):first-child { margin-top: 0; }
+.uac-texto p { margin-bottom: 0.9em; }
+.uac-texto ul, .uac-texto ol { margin: 0 0 1em 1.2em; }
+.uac-texto li { margin-bottom: 0.35em; }
+.uac-texto strong { color: var(--uac-ink); }
+
+/* barra do próximo passo */
+.uac-barra {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--uac-rule);
+  flex-wrap: wrap;
+}
+.uac-barra .uac-bt:not(.claro) { margin-left: auto; margin-right: auto; }
+.uac-bt:disabled { opacity: 0.45; cursor: not-allowed; }
+.uac-bt.claro { display: inline-flex; align-items: center; gap: 0.35rem; }
+.uac-feita {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 auto;
+  font-family: var(--uac-mono);
+  font-size: 0.72rem;
+  color: var(--uac-ok);
+  background: var(--uac-ok-soft);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+}
+.uac-fim-modulo { margin-top: 1.4rem; }
+
+/* sumário do módulo */
+.uac-sumario {
+  position: sticky;
+  top: 1rem;
+  background: var(--uac-card);
+  border: 1px solid var(--uac-rule);
+  border-radius: var(--uac-raio);
+  padding: 1.1rem;
+  box-shadow: var(--uac-sombra);
+}
+.uac-lista-aulas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.uac-sumario-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 0.7rem;
+  align-items: center;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.6rem 0.5rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: background 0.2s var(--uac-mola);
+}
+.uac-sumario-item:hover { background: var(--uac-paper-2); }
+.uac-sumario-item.atual { background: var(--uac-azul-soft); }
+.uac-sumario-n {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--uac-paper-2);
+  color: var(--uac-ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--uac-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.uac-sumario-item.atual .uac-sumario-n { background: var(--uac-azul); color: #fff; }
+.uac-sumario-item.feita .uac-sumario-n { background: var(--uac-ok-soft); color: var(--uac-ok); }
+.uac-sumario-txt b { display: block; font-size: 0.86rem; font-weight: 600; line-height: 1.25; }
+.uac-sumario-item.atual .uac-sumario-txt b { font-weight: 700; }
+.uac-sumario-txt small { font-family: var(--uac-mono); font-size: 0.62rem; color: var(--uac-ink-3); }
+.uac-certificado {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--uac-rule);
+  font-family: var(--uac-mono);
+  font-size: 0.66rem;
+  color: var(--uac-ouro);
+}
+
+/* quiz */
+.uac-quiz {
+  background: var(--uac-card);
+  border: 1px solid var(--uac-rule);
+  border-radius: var(--uac-raio);
+  padding: clamp(1.1rem, 2.2vw, 1.8rem);
+  box-shadow: var(--uac-sombra);
+}
+.uac-quiz-p { font-size: 1.15rem; font-weight: 800; margin-bottom: 1.1rem; }
+.uac-escolhas { display: flex; flex-direction: column; gap: 0.6rem; }
+.uac-escolha {
+  text-align: left;
+  background: var(--uac-card);
+  border: 1px solid var(--uac-rule);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  font-family: var(--uac-fonte);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--uac-ink);
+  transition: all 0.2s var(--uac-mola);
+}
+.uac-escolha:hover:not(:disabled) { border-color: var(--uac-azul); transform: translateX(3px); }
+.uac-escolha.marcada { border-color: var(--uac-azul); background: var(--uac-azul-soft); }
+.uac-escolha.certa { background: var(--uac-ok-soft); border-color: var(--uac-ok); font-weight: 700; }
+.uac-escolha.errada { background: #fbeceb; border-color: #c8322d; }
+.uac-escolha:disabled { cursor: default; }
+.uac-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin-top: 1rem;
+  border-left: 3px solid var(--uac-azul);
+  background: var(--uac-paper);
+  border-radius: 0 12px 12px 0;
+  padding: 0.85rem 1rem;
+  font-size: 0.88rem;
+  color: var(--uac-ink-2);
+}
+.uac-nota.ok { border-left-color: var(--uac-ok); }
+.uac-nota.nao { border-left-color: #c8322d; }
+.uac-acoes { display: flex; align-items: center; gap: 0.7rem; margin-top: 1.1rem; flex-wrap: wrap; }
+.uac-quiz-fim {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  background: var(--uac-card);
+  border: 1px solid var(--uac-rule);
+  border-radius: var(--uac-raio);
+  padding: 2rem 1.2rem;
+  box-shadow: var(--uac-sombra);
+}
+.uac-quiz-fim b { font-size: 1.15rem; }
+.uac-quiz-fim p { color: var(--uac-ink-2); font-size: 0.9rem; }
+
+/* checklist */
+.uac-checklist {
+  background: var(--uac-card);
+  border: 1px solid var(--uac-rule);
+  border-radius: var(--uac-raio);
+  padding: clamp(1.1rem, 2.2vw, 1.8rem);
+  box-shadow: var(--uac-sombra);
+}
+.uac-instrucoes {
+  background: var(--uac-paper-2);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.86rem;
+  color: var(--uac-ink-2);
+  margin-bottom: 1rem;
+}
+.uac-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--uac-rule);
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+.uac-item:first-of-type { border-top: 0; }
+.uac-item input { position: absolute; opacity: 0; width: 0; height: 0; }
+.uac-cx {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 2px solid var(--uac-rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all 0.2s var(--uac-mola);
+}
+.uac-item.ok .uac-cx { background: var(--uac-ok); border-color: var(--uac-ok); color: #fff; }
+.uac-item.ok span:last-child { color: var(--uac-ink-3); }
+.uac-item input:focus-visible + .uac-cx { outline: 2px solid var(--uac-azul); outline-offset: 2px; }
+
+/* esqueleto de carregamento, já na identidade certa */
+.uac-esqueleto { display: flex; flex-direction: column; gap: 1rem; }
+.uac-esqueleto .bloco {
+  display: block;
+  height: 90px;
+  border-radius: var(--uac-raio);
+  background: linear-gradient(90deg, var(--uac-paper-2) 25%, #f7f6f3 50%, var(--uac-paper-2) 75%);
+  background-size: 200% 100%;
+  animation: uac-brilho 1.4s linear infinite;
+}
+.uac-esqueleto .bloco.alto { height: 300px; }
+.uac-esqueleto .bloco.curto { height: 50px; width: 60%; }
+@keyframes uac-brilho {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ============================================================================
+   ACESSIBILIDADE E MOVIMENTO
+   ========================================================================== */
+
+/* Onde o teclado está tem que aparecer. Sem isso, quem navega por Tab fica cego. */
+.uac :is(button, a, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--uac-azul);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+/* o botão que abre a aula usa display:contents e não tem caixa própria,
+   então o anel vai na linha inteira */
+.uac-aula:focus-within { border-color: var(--uac-azul); box-shadow: 0 0 0 3px var(--uac-azul-soft); }
+.uac-aula-abrir:focus-visible { outline: none; }
+
+/* ---------------------------------------------------------------- entrada */
+@keyframes uac-sobe {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.uac-secao, .uac-player { animation: uac-sobe 0.4s var(--uac-mola) both; }
+/* os cartões entram em cascata, não todos de uma vez */
+.uac-semana-item, .uac-nivel, .uac-aula, .uac-selo {
+  animation: uac-sobe 0.45s var(--uac-mola) both;
+}
+.uac-semana-item:nth-child(2), .uac-nivel:nth-child(2), .uac-aula:nth-child(2) { animation-delay: 0.06s; }
+.uac-semana-item:nth-child(3), .uac-nivel:nth-child(3), .uac-aula:nth-child(3) { animation-delay: 0.12s; }
+.uac-nivel:nth-child(4), .uac-aula:nth-child(4) { animation-delay: 0.18s; }
+.uac-nivel:nth-child(5), .uac-aula:nth-child(5) { animation-delay: 0.24s; }
+.uac-aula:nth-child(6) { animation-delay: 0.3s; }
+.uac-aula:nth-child(n + 7) { animation-delay: 0.36s; }
+
+/* ---------------------------------------------------------------- respeito ao motion
+   Quem pediu menos movimento no sistema não vê o Homi flutuando nem nada entrar. */
+@media (prefers-reduced-motion: reduce) {
+  .uac *,
+  .uac *::before,
+  .uac *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.12s !important;
+    scroll-behavior: auto !important;
+  }
+  .uac-homi { animation: none !important; }
+  .uac-esqueleto .bloco { animation: none !important; background: var(--uac-paper-2); }
+}
+
+/* a sangria acompanha o padding real do CRM (p-4 / sm:p-6 / lg:p-8) */
+@media (min-width: 1024px) { .uac { --uac-bleed: 2rem; } }
+@media (max-width: 639px) { .uac { --uac-bleed: 1rem; } }
