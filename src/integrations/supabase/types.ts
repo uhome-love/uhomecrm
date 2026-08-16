@@ -15033,6 +15033,18 @@ export type Database = {
           subtipo: string
         }[]
       }
+      get_academia_time: {
+        Args: never
+        Returns: {
+          aulas_feitas: number
+          avatar_url: string
+          corretor_id: string
+          nivel_atual: string
+          nome: string
+          ultima_atividade: string
+          xp: number
+        }[]
+      }
       get_bairros_disponiveis: {
         Args: { p_cidade?: string; p_cidades?: string[] }
         Returns: {
