@@ -540,9 +540,12 @@ export function useRaioXCorretor(
         fetchAll<VisitaRow>((f, t) => supabase.from("visitas")
           .select("data_visita, status, origem, empreendimento, empreendimento_canonico_id")
           .eq("corretor_id", uid).gte("data_visita", de).lt("data_visita", ate).range(f, t)),
+        // Régua VGV: o corretor conta a METADE dele em cada venda. Filtra só por
+        // corretor_auth_id (cada venda dele = 1 linha com o vgv_rateado da parte
+        // dele), SEM conta_como_venda — senão o 2º parceiro perde a venda dele.
         fetchAll<VendaRow>((f, t) => supabase.from("v_fato_venda")
           .select("negocio_id, data_assinatura, empreendimento, empreendimento_canonico_id, pipeline_lead_id, vgv_rateado, em_parceria")
-          .eq("corretor_auth_id", uid).eq("conta_como_venda", true)
+          .eq("corretor_auth_id", uid)
           .gte("data_assinatura", de).lt("data_assinatura", ate).range(f, t)),
         fetchAll<AtividadeRow>((f, t) => supabase.from("pipeline_atividades")
           .select("created_at, pipeline_lead_id")
