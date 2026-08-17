@@ -30,6 +30,9 @@ export function ModuloRow({
 }: Props) {
   const cat = CATEGORIAS.find(c => c.key === modulo.categoria);
   const totalMin = aulas.reduce((s, a) => s + (a.duracao_minutos || 0), 0);
+  // O XP vinha do campo gravado trilha.xp_total, que envelhece sozinho: mostrava
+  // 650 XP num módulo de 7 aulas (140 reais). A verdade é a soma das aulas.
+  const totalXp = aulas.reduce((s, a) => s + (a.xp_recompensa || 0), 0);
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -54,7 +57,7 @@ export function ModuloRow({
             </Badge>
           </div>
           <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-            <span>{aulas.length} aula{aulas.length === 1 ? "" : "s"} · {totalMin} min · {modulo.xp_total || 0} XP</span>
+            <span>{aulas.length} aula{aulas.length === 1 ? "" : "s"} · {totalMin} min · {totalXp} XP</span>
             {engagement && (
               <span className="flex items-center gap-1">
                 <Users className="h-3 w-3" />
