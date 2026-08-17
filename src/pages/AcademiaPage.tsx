@@ -15,7 +15,7 @@
  * Ranking, selos e a visão do gerente entram na onda seguinte, junto com as
  * tabelas que ainda não existem. Nada aqui inventa dado.
  */
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useTabContext } from "@/contexts/TabContext";
 import { useAcademia } from "@/hooks/useAcademia";
@@ -330,6 +330,11 @@ export default function AcademiaPage() {
                   <p className="uac-sub">{trilhaExibida.trilha.descricao}</p>
                 )}
 
+                {/* A abertura do nível: o Homi contando, em oito segundos, por que
+                    esse nível existe. Fica pelo número do nível — não é aula, não
+                    dá XP e não entra na contagem; é a boas-vindas. */}
+                <AberturaDoNivel ordem={trilhaExibida.ordem} titulo={trilhaExibida.trilha.titulo} />
+
                 {aulasDoNivel.length > 0 ? (
                   <>
                     <p className="uac-nota-nivel">
@@ -382,5 +387,33 @@ export default function AcademiaPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * O vídeo de abertura de um nível, se existir.
+ *
+ * Os arquivos moram em /treinos/abertura-nivel-<n>.mp4, do lado dos decks.
+ * Se o nível ainda não tem vídeo, o bloco simplesmente não aparece — nada
+ * de player quebrado ou espaço vazio.
+ */
+function AberturaDoNivel({ ordem, titulo }: { ordem: number; titulo: string }) {
+  const [existe, setExiste] = useState<boolean | null>(null);
+  const src = `/treinos/abertura-nivel-${ordem}.mp4`;
+
+  useEffect(() => {
+    let vivo = true;
+    fetch(src, { method: "HEAD" })
+      .then((r) => vivo && setExiste(r.ok && (r.headers.get("content-type") || "").includes("video")))
+      .catch(() => vivo && setExiste(false));
+    return () => { vivo = false; };
+  }, [src]);
+
+  if (!existe) return null;
+  return (
+    <figure className="uac-abertura">
+      <video src={src} controls preload="metadata" playsInline />
+      <figcaption>O Homi apresenta: {titulo}</figcaption>
+    </figure>
   );
 }

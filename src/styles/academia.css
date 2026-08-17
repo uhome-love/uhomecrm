@@ -1046,3 +1046,20 @@
 /* o título de seção e seu texto de apoio */
 .uac-titulao { margin-bottom: 0.4rem; }
 .uac-sub { margin-bottom: 1.35rem; }
+
+/* ---------------------------------------------------------------- abertura
+   O vídeo do Homi que abre cada nível. Largura de leitura, não de cinema:
+   ele é uma boas-vindas de 8 segundos, não o conteúdo da tela. */
+.uac-abertura { margin: 0 0 1.6rem; max-width: 640px; }
+.uac-abertura video {
+  width: 100%;
+  display: block;
+  border-radius: var(--uac-raio);
+  background: #12141a;
+  box-shadow: var(--uac-sombra);
+}
+.uac-abertura figcaption {
+  font-size: 0.8rem;
+  color: var(--uac-ink-3);
+  margin-top: 0.5rem;
+}
