@@ -165,7 +165,9 @@ serve(async (req) => {
           const t = await transcreverAudio(m.audio.id);
           if (t) texto = `🎤 ${t}`;
         }
-        const conteudo = texto || `(o cliente enviou ${m.type || "uma mídia"})`;
+        // se não deu pra transcrever, guarda o id da mídia no placeholder pra permitir recuperar depois
+        const idMidia = m.audio?.id ? ` · id:${m.audio.id}` : "";
+        const conteudo = texto || `(o cliente enviou ${m.type || "uma mídia"}${idMidia})`;
 
         // estado do lead (memória)
         const { data: estRows } = await sb.from("lia_estado").select("*").eq("telefone", from).limit(1);
