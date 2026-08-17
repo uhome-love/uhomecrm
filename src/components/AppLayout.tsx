@@ -208,18 +208,6 @@ export default function AppLayout() {
                   ⌘K
                 </kbd>
               </Button>
-              <button
-                type="button"
-                onClick={() => setOnboardingOpen(true)}
-                title="Ver o guia da Nova Gestão"
-                aria-label="Ver o guia da Nova Gestão"
-                className={cn(
-                  "hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors",
-                  theme === "dark" ? "text-zinc-400 hover:bg-white/5 hover:text-zinc-200" : "text-zinc-500 hover:bg-[#f0f0f5] hover:text-zinc-700"
-                )}
-              >
-                <GraduationCap className="h-[18px] w-[18px]" />
-              </button>
               <HomiHeaderButton />
               <NotificationBell />
               <DropdownMenu>
@@ -357,7 +345,7 @@ export default function AppLayout() {
         <NewLeadBanner />
         <GlobalSearch />
         <BackendHealthBanner />
-        <AgendaOnboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
+        
       </HomiProvider>
     </SidebarProvider>
   );
