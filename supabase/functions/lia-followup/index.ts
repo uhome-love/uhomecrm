@@ -169,7 +169,7 @@ async function detectar(sb: any): Promise<number> {
   const { data: cands } = await sb
     .from("lia_estado")
     .select("telefone, nome, lead_id, status, last_user_at, last_msg_em, followup_count")
-    .in("status", ["novo", "em_conversa", "qualificado"])
+    .in("status", ["novo", "em_conversa"]) // qualificado NÃO recebe cutucão: já é do corretor
     .eq("optout", false)
     .lt("followup_count", MAX_CUTUCOES)
     .lt("last_user_at", stallCut)
@@ -254,10 +254,15 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
   let enviados = 0;
   for (const f of aprovados) {
     // revalida o estado do lead (pode ter saído/qualificado no meio-tempo)
-    const { data: estRows } = await sb.from("lia_estado").select("optout, followup_count, last_user_at, nome").eq("telefone", f.telefone).limit(1);
+    const { data: estRows } = await sb.from("lia_estado").select("optout, followup_count, last_user_at, nome, status").eq("telefone", f.telefone).limit(1);
     const est = estRows?.[0];
     if (est?.optout || (est?.followup_count ?? 0) >= MAX_CUTUCOES) {
       await sb.from("lia_followups").update({ status: "cancelado", updated_at: nowISO() }).eq("id", f.id);
+      continue;
+    }
+    // se o lead qualificou entre o rascunho e o envio, o corretor assume: não cutuca
+    if (est?.status === "qualificado") {
+      await sb.from("lia_followups").update({ status: "cancelado", motivo: `${f.motivo ?? ""} · lead já qualificado`.trim(), updated_at: nowISO() }).eq("id", f.id);
       continue;
     }
     // template oficial do WhatsApp passa mesmo pós-24h; cutucão livre (texto/foto) só vale até 24h.
