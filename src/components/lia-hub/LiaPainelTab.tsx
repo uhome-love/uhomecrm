@@ -142,6 +142,22 @@ export default function LiaPainelTab() {
     return { naFila, esfriando, optoutsHoje };
   }, [estados, followups, hoje]);
 
+  // recuperação: de quem recebeu um follow-up (enviado), quantos voltaram a falar depois dele
+  const recuperacao = useMemo(() => {
+    const ultimoEnvio = new Map<string, string>();
+    for (const f of followups ?? []) {
+      if (f.status !== "enviado" || !f.enviado_em || !f.telefone) continue;
+      const prev = ultimoEnvio.get(f.telefone);
+      if (!prev || f.enviado_em > prev) ultimoEnvio.set(f.telefone, f.enviado_em);
+    }
+    let voltaram = 0;
+    for (const e of estados ?? []) {
+      const env = ultimoEnvio.get(e.telefone);
+      if (env && e.last_user_at && e.last_user_at > env) voltaram++;
+    }
+    return { cutucados: ultimoEnvio.size, voltaram };
+  }, [followups, estados]);
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -183,6 +199,17 @@ export default function LiaPainelTab() {
                     </div>
                   ))}
                 </div>
+                {recuperacao.cutucados > 0 && (
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">🔁 Recuperados pelo follow-up</span>
+                    <span className="font-semibold tabular-nums text-foreground">
+                      {recuperacao.voltaram}{" "}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        de {recuperacao.cutucados} cutucados
+                      </span>
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </CardContent>
