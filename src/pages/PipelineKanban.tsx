@@ -41,7 +41,7 @@ import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type 
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import PipelineHeader from "@/components/pipeline/PipelineHeader";
-import NovaGestaoOnboarding from "@/components/pipeline/NovaGestaoOnboarding";
+
 import ModoTimeView from "@/components/pipeline/modo-time/ModoTimeView";
 import { calcGestorOwnRow } from "@/lib/calcGestorOwnRow";
 import type { AlertaAction } from "@/hooks/useTimeAlertas";
@@ -678,7 +678,7 @@ export default function PipelineKanban() {
         staleSince={pipeline.staleSince}
         onRetry={() => pipeline.reload()}
       />
-      <NovaGestaoOnboarding />
+      
       {/* ═══ HEADER (Fase 6: extraído para PipelineHeader.tsx) ═══ */}
       <PipelineHeader
         filteredLeadsCount={filteredLeads.length}
