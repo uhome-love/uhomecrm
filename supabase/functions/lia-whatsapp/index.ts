@@ -219,9 +219,11 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     const oldRank = (est.nivel && NIVEL_MAP[est.nivel]?.rank) || 0;
     const subiu = map.rank > oldRank; // esquentou desde a última leitura
 
-    // resumo pro corretor continuar o contato (gera na 1ª qualificação, ou se ainda não tem)
+    // resumo pro corretor: gera na 1ª qualificação, se ainda não tem, OU quando o lead ESQUENTA
+    // (subiu). Regenerar ao esquentar é o que captura o agendamento no momento em que a pessoa
+    // marca a apresentação, e mantém o handoff fresco pro corretor.
     let resumo: string = est.resumo ?? "";
-    if (!jaEra || !resumo) {
+    if (!jaEra || !resumo || subiu) {
       const novo = await gerarResumo(sb, from);
       if (novo) resumo = novo;
     }
