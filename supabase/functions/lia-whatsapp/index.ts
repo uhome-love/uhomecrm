@@ -65,6 +65,59 @@ async function send360(to: string, payload: Record<string, unknown>) {
 }
 const sendText = (to: string, body: string) => send360(to, { type: "text", text: { body } });
 const sendImage = (to: string, link: string) => send360(to, { type: "image", image: { link } });
+
+const D360_BASE = "https://waba-v2.360dialog.io";
+function bytesToB64(bytes: Uint8Array): string {
+  let bin = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  return btoa(bin);
+}
+// Baixa a mídia de áudio do 360dialog (metadados -> url -> binário) e devolve base64 + formato.
+async function baixarAudio(mediaId: string): Promise<{ b64: string; fmt: string } | null> {
+  const key = Deno.env.get("D360_API_KEY");
+  if (!key) return null;
+  try {
+    const meta = await fetch(`${D360_BASE}/${mediaId}`, { headers: { "D360-API-KEY": key } });
+    if (!meta.ok) { console.error("[audio] meta", meta.status); return null; }
+    const md = await meta.json();
+    const url: string | undefined = md?.url;
+    const mime: string = md?.mime_type || "audio/ogg";
+    if (!url) return null;
+    const bin = await fetch(url, { headers: { "D360-API-KEY": key } });
+    if (!bin.ok) { console.error("[audio] download", bin.status); return null; }
+    const buf = new Uint8Array(await bin.arrayBuffer());
+    const fmt = /mp3|mpeg/.test(mime) ? "mp3" : /wav/.test(mime) ? "wav" : /m4a|mp4|aac/.test(mime) ? "m4a" : "ogg";
+    return { b64: bytesToB64(buf), fmt };
+  } catch (e) { console.error("[audio] baixar erro", e); return null; }
+}
+// Transcreve um áudio do WhatsApp usando o gateway (Gemini). Fallback: "" (nunca quebra o fluxo).
+async function transcreverAudio(mediaId: string): Promise<string> {
+  const audio = await baixarAudio(mediaId);
+  if (!audio) return "";
+  const key = Deno.env.get("LOVABLE_API_KEY");
+  if (!key) return "";
+  try {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-3.6-flash",
+        temperature: 0,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: "Transcreva este áudio em português do Brasil. Responda SÓ com a transcrição, sem comentários nem aspas." },
+            { type: "input_audio", input_audio: { data: audio.b64, format: audio.fmt } },
+          ],
+        }],
+      }),
+    });
+    if (!r.ok) { console.error("[audio] gateway", r.status, await r.text().catch(() => "")); return ""; }
+    const d = await r.json();
+    return String(d?.choices?.[0]?.message?.content ?? "").trim();
+  } catch (e) { console.error("[audio] transcrever erro", e); return ""; }
+}
 const sendDoc = (to: string, link: string, filename: string) => send360(to, { type: "document", document: { link, filename } });
 
 const nowISO = () => new Date().toISOString();
@@ -96,16 +149,23 @@ serve(async (req) => {
         if (!m?.from || !m?.id) continue; // ignora status delivered/read etc.
         const from = String(m.from).replace(/\D/g, "");
         const waId = String(m.id);
-        const texto =
+        let texto =
           m.type === "text" ? (m.text?.body ?? "") :
           m.type === "button" ? (m.button?.text ?? "") :
           m.type === "interactive" ? (m.interactive?.button_reply?.title ?? m.interactive?.list_reply?.title ?? "") :
           "";
-        const conteudo = texto || `(o cliente enviou ${m.type || "uma mídia"})`;
 
         // idempotência: já processado?
         const { data: dup } = await sb.from("lia_conversas").select("id").eq("wa_message_id", waId).limit(1);
         if (dup && dup.length) continue;
+
+        // áudio/voz: transcreve com o gateway (Gemini) e trata como se a pessoa tivesse digitado.
+        // Se a transcrição falhar, cai no placeholder (nunca quebra o atendimento).
+        if (!texto && (m.type === "audio" || m.type === "voice") && m.audio?.id) {
+          const t = await transcreverAudio(m.audio.id);
+          if (t) texto = `🎤 ${t}`;
+        }
+        const conteudo = texto || `(o cliente enviou ${m.type || "uma mídia"})`;
 
         // estado do lead (memória)
         const { data: estRows } = await sb.from("lia_estado").select("*").eq("telefone", from).limit(1);
