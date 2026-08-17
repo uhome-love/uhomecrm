@@ -147,6 +147,47 @@ ON public.negocios
 FOR EACH ROW
 EXECUTE FUNCTION public.trg_consolidar_lead_ganho();
 
+
+CREATE OR REPLACE FUNCTION public.trg_proteger_lead_ganho()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_corretor_esperado uuid;
+BEGIN
+  SELECT p.user_id INTO v_corretor_esperado
+  FROM public.negocios n
+  JOIN public.profiles p ON p.id = n.corretor_id
+  WHERE n.fase = 'ganho'
+    AND COALESCE(n.status, 'ativo') = 'ativo'
+    AND (n.id = OLD.negocio_id OR n.pipeline_lead_id = OLD.id OR n.lead_id = OLD.id)
+  ORDER BY n.updated_at DESC NULLS LAST
+  LIMIT 1;
+
+  IF v_corretor_esperado IS NOT NULL
+     AND (
+       NEW.corretor_id IS DISTINCT FROM v_corretor_esperado
+       OR NEW.aceite_status IS DISTINCT FROM 'aceito'
+       OR NEW.aceite_expira_em IS NOT NULL
+       OR NEW.arquivado IS DISTINCT FROM false
+     ) THEN
+    RAISE EXCEPTION 'Lead com venda ganha não pode voltar à distribuição'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS trg_proteger_lead_ganho ON public.pipeline_leads;
+CREATE TRIGGER trg_proteger_lead_ganho
+BEFORE UPDATE OF corretor_id, aceite_status, aceite_expira_em, arquivado
+ON public.pipeline_leads
+FOR EACH ROW
+EXECUTE FUNCTION public.trg_proteger_lead_ganho();
+
 CREATE OR REPLACE FUNCTION public.rejeitar_lead(p_lead_id uuid, p_corretor_id uuid, p_motivo text DEFAULT 'outro'::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -197,7 +238,7 @@ BEGIN
 
   RETURN jsonb_build_object('success', true);
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.expirar_aceites_roleta()
  RETURNS jsonb
@@ -260,7 +301,7 @@ BEGIN
   END LOOP;
   RETURN jsonb_build_object('expired', v_count, 'at', now());
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.reciclar_leads_expirados()
  RETURNS TABLE(lead_id uuid, corretor_anterior uuid, lead_nome text, lead_empreendimento text, lead_telefone text, segmento_id uuid)
@@ -322,7 +363,7 @@ BEGIN
     END IF;
   END LOOP;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.decidir_lead_estagnado(p_lead_id uuid, p_acao text, p_corretor_destino uuid DEFAULT NULL::uuid, p_motivo text DEFAULT NULL::text)
  RETURNS jsonb
