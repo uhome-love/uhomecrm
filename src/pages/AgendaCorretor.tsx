@@ -88,15 +88,6 @@ function ComoFuncionaFila() {
           <p><b className="text-foreground">Sem Contato</b> vira um bloco só ("X leads da cadência pra hoje"), pra não entupir a fila.</p>
           <p><b className="text-foreground">Fica de fora</b> (segue no Pipeline): descartados, vendidos, estagnados e quem não tem nenhum gatilho de ação hoje.</p>
         </div>
-        <div className="border-t border-border p-2.5">
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new Event("open-onboarding"))}
-            className="w-full rounded-lg bg-muted px-3 py-2 text-[12.5px] font-semibold text-foreground hover:bg-muted-foreground/15"
-          >
-            Ver tour completo da Agenda
-          </button>
-        </div>
       </PopoverContent>
     </Popover>
   );

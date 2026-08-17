@@ -7,7 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/hooks/useTheme";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { User, Settings, LogOut, ChevronDown, Loader2, Users, RefreshCw, GraduationCap } from "lucide-react";
+import { User, Settings, LogOut, ChevronDown, Loader2, Users, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import HomiHeaderButton from "@/components/homi/HomiHeaderButton";
@@ -35,7 +35,7 @@ import BackendHealthBanner from "@/components/system/BackendHealthBanner";
 import GlobalSearch from "@/components/GlobalSearch";
 import { Search } from "lucide-react";
 import { HomiProvider } from "@/contexts/HomiContext";
-import AgendaOnboarding, { jaViuOnboarding } from "@/components/pipeline/AgendaOnboarding";
+
 import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
@@ -83,9 +83,6 @@ export default function AppLayout() {
   const { isFullscreen, isSession } = useArenaMode();
   const { tabs, activeTabId } = useTabContext();
 
-  // Onboarding da Nova Gestão — abre ao entrar no CRM (1x por corretor) e pode
-  // ser reaberto pelo 🎓 no header ou pelo botão "Como funciona" da Agenda.
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   // Derive role for the new Sidebar.
   // Diretora Comercial (diretor) tem visão executiva própria, abaixo do CEO e
@@ -102,15 +99,6 @@ export default function AppLayout() {
     ? "gestor"
     : "corretor";
 
-  // Abre o tour na primeira entrada do corretor; reabre via evento global.
-  useEffect(() => {
-    const abrir = () => setOnboardingOpen(true);
-    window.addEventListener("open-onboarding", abrir);
-    return () => window.removeEventListener("open-onboarding", abrir);
-  }, []);
-  useEffect(() => {
-    if (sidebarRole === "corretor" && !jaViuOnboarding()) setOnboardingOpen(true);
-  }, [sidebarRole]);
 
   const fetchProfile = useCallback(() => {
     if (!user) return;
