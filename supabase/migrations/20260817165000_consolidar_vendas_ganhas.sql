@@ -517,7 +517,7 @@ BEGIN
 
   RETURN jsonb_build_object('success', false, 'error', 'Ação inválida');
 END;
-$function$
+$function$;
 
 -- Preserva as permissões restritas da rejeição; as demais funções mantêm seus ACLs ao serem substituídas.
 REVOKE ALL ON FUNCTION public.rejeitar_lead(uuid, uuid, text) FROM PUBLIC, anon;
