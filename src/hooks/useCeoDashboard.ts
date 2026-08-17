@@ -13,7 +13,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subW
 import { todayBRT, dateToBRT, formatBRLCompact, brtRangeToUTC } from "@/lib/utils";
 import { fetchKPIs as fetchOfficialKPIs } from "@/lib/metricsService";
 import { fetchAllRows } from "@/lib/paginatedFetch";
-import { isLeadDeMarketing, isOfertaAtiva, empreendimentoLabel, SEM_EMPREENDIMENTO_LABEL } from "@/lib/leadOrigemUtils";
+import { isLeadDeMarketing, isOfertaAtiva, empreendimentoLabel, SEM_EMPREENDIMENTO_LABEL, rotuloOrigem } from "@/lib/leadOrigemUtils";
 
 export type DashPeriod = "hoje" | "ontem" | "semana" | "mes" | "ultimos_30d" | "custom";
 
@@ -307,9 +307,10 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       })[0];
       if (bestCamp && bestCamp[1].leads >= 3) alertas.push({ tipo: "green", mensagem: `Campanha ${bestCamp[0]} com melhor taxa de conversão`, link: "/pipeline-leads" });
 
+      // Origem LEGÍVEL (fonte única): ig→Instagram, fb→Facebook, an→Audience Network...
       const origMap = new Map<string, number>();
       for (const l of mktLeads) {
-        const orig = (l.origem || "").trim() || "Desconhecido";
+        const orig = rotuloOrigem(l.origem);
         origMap.set(orig, (origMap.get(orig) || 0) + 1);
       }
       const origens = Array.from(origMap.entries()).map(([origem, count]) => ({ origem, count })).sort((a, b) => b.count - a.count);

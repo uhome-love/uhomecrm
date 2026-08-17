@@ -30,6 +30,40 @@ export function isLeadDeMarketing(origem?: string | null): boolean {
   return !isOfertaAtiva(origem);
 }
 
+/**
+ * Nome LEGÍVEL da origem do lead (fonte única para dashboards e relatórios).
+ * Traduz os códigos crus em nomes de gente. ig/fb/an são os canais do Meta:
+ * Instagram, Facebook e Audience Network (rede de apps/sites parceiros do Meta).
+ */
+const ROTULO_ORIGEM: Record<string, string> = {
+  ig: "Instagram", instagram: "Instagram",
+  fb: "Facebook", facebook: "Facebook",
+  an: "Audience Network",
+  meta_ads: "Meta Ads", meta_backfill: "Meta Ads (importado)",
+  imovelweb: "ImovelWeb", zap: "Zap Imóveis", vivareal: "Viva Real",
+  indicacao: "Indicação", site: "Site", site_uhome: "Site (uhome.com.br)",
+  jetimob: "Jetimob", whatsapp: "WhatsApp", lia: "LIA · WhatsApp",
+  reengajamento: "Reengajamento", "reengajamento (nutricao)": "Reengajamento",
+  manual: "Cadastro manual", quiz: "Quiz", outro: "Outro",
+  "oferta ativa": "Oferta Ativa", oferta_ativa: "Oferta Ativa",
+  "nao informado": "Não informada",
+};
+
+/** Chave sem acento/caixa para casar "Indicação" com "indicacao". */
+function chaveOrigem(s: string): string {
+  return s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+/** Origem crua → nome legível. Fonte única; use em todo gráfico/relatório de origem. */
+export function rotuloOrigem(bruta?: string | null): string {
+  const raw = (bruta ?? "").toString().trim();
+  if (!raw) return "Não informada";
+  const mapped = ROTULO_ORIGEM[chaveOrigem(raw)];
+  if (mapped) return mapped;
+  // fallback: troca _ por espaço e capitaliza cada palavra
+  return raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 /** Friendly label used in dashboards when origem is missing. */
 export const SEM_EMPREENDIMENTO_LABEL = "Sem empreendimento";
 

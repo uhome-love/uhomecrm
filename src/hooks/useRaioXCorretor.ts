@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { leadSaude } from "@/lib/leadSaude";
+import { rotuloOrigem } from "@/lib/leadOrigemUtils";
 import {
   addDias,
   calcJanela,
@@ -249,33 +250,7 @@ function normEmp(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-/** Origem crua do lead vira rótulo de gente ("meta_ads" → "Meta Ads"). */
-const ROTULO_ORIGEM: Record<string, string> = {
-  meta_ads: "Meta Ads",
-  meta_backfill: "Meta Ads (importado)",
-  facebook: "Facebook",
-  fb: "Facebook",
-  instagram: "Instagram",
-  ig: "Instagram",
-  imovelweb: "ImovelWeb",
-  zap: "Zap Imóveis",
-  vivareal: "Viva Real",
-  indicacao: "Indicação",
-  site: "Site",
-  jetimob: "Jetimob",
-  whatsapp: "WhatsApp",
-  "oferta ativa": "Oferta Ativa",
-  "nao informado": "Não informada",
-};
-function rotuloOrigem(bruta: string | null | undefined): string {
-  const raw = (bruta ?? "").trim();
-  if (!raw) return "Não informada";
-  const k = normEmp(raw);
-  if (ROTULO_ORIGEM[k]) return ROTULO_ORIGEM[k];
-  return raw
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
+// rótulo de origem legível: fonte única em leadOrigemUtils (rotuloOrigem).
 interface PresencaRow { data: string; turno: string; status: string }
 interface CredRow { data: string; janela: string; status: string | null }
 interface AtividadeRow { created_at: string | null; pipeline_lead_id: string | null }
