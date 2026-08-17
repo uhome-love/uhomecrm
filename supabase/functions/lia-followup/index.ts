@@ -215,10 +215,21 @@ async function disparar(sb: any): Promise<number> {
   let enviados = 0;
   for (const f of aprovados) {
     // revalida o estado do lead (pode ter saído/qualificado no meio-tempo)
-    const { data: estRows } = await sb.from("lia_estado").select("optout, followup_count").eq("telefone", f.telefone).limit(1);
+    const { data: estRows } = await sb.from("lia_estado").select("optout, followup_count, last_user_at").eq("telefone", f.telefone).limit(1);
     const est = estRows?.[0];
     if (est?.optout || (est?.followup_count ?? 0) >= MAX_CUTUCOES) {
       await sb.from("lia_followups").update({ status: "cancelado", updated_at: nowISO() }).eq("id", f.id);
+      continue;
+    }
+    // janela do WhatsApp: cutucão livre (texto/foto) só vale até 24h após a última fala da pessoa.
+    // Fora disso o envio seria rejeitado; cancela com motivo claro em vez de tentar pra sempre.
+    const ultimaFala = est?.last_user_at ? new Date(est.last_user_at).getTime() : 0;
+    if (!ultimaFala || (Date.now() - ultimaFala) > 24 * 3600_000) {
+      await sb.from("lia_followups").update({
+        status: "cancelado",
+        motivo: `${f.motivo ?? ""} · janela 24h fechada (precisa de template aprovado)`.trim(),
+        updated_at: nowISO(),
+      }).eq("id", f.id);
       continue;
     }
     // se um corretor assumiu o caso no meio-tempo, não cutuca (humano assumiu)
