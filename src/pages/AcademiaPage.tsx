@@ -332,10 +332,10 @@ export default function AcademiaPage() {
 
                 {aulasDoNivel.length > 0 ? (
                   <>
-                    <FalaHomi pose="apontando" className="mb-4" >
-                      Todas as {aulasDoNivel.length} estão abertas, você escolhe a ordem. E se já sabe alguma,{" "}
-                      <b>pula a aula e faz a prova</b>, que conta igual.
-                    </FalaHomi>
+                    <p className="uac-nota-nivel">
+                      As {aulasDoNivel.length} aulas estão abertas e você escolhe a ordem. Se já
+                      sabe alguma, <b>pula direto pra prova</b>, que conta igual.
+                    </p>
                     <div className="uac-aulas">
                       {aulasDoNivel.map((a) => {
                         const st = getAulaStatus(a.id);

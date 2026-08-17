@@ -435,7 +435,7 @@
 .uac-aulas { display: flex; flex-direction: column; gap: 0.4rem; }
 .uac-aula {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto;
   gap: 1rem;
   align-items: center;
   background: var(--uac-card);
@@ -568,7 +568,10 @@
 .uac-palco {
   position: relative;
   aspect-ratio: 16 / 9;
-  width: 100%;
+  /* usa a altura que sobra: sem isso o slide parava em 16:9 da largura
+     e ficava menor do que a tela permitia */
+  width: min(100%, calc((100vh - 260px) * 16 / 9));
+  margin-inline: auto;
   background: #14161c;
   border-radius: var(--uac-raio);
   overflow: hidden;
@@ -991,3 +994,21 @@
    ficava em 4,42:1. Nesses lugares entra o tom escuro. */
 .uac-aula-xp, .uac-aula-estado, .uac-semana-tag, .uac-rotulo,
 .uac-nivel.agora .uac-nivel-tag, .uac-aula-prova:hover { color: var(--uac-azul-escuro); }
+
+/* o selo da sugestão vira parte da linha de meta, sem caixa alta gritando */
+.uac-sugerida { text-transform: none; letter-spacing: 0; margin-left: 0.5em;
+  padding: 0.15em 0.55em; font-size: 0.72rem; }
+@media (max-width: 760px) { .uac-aula-estado { grid-row: 2; } }
+
+/* a frase do nível é sempre a mesma: não precisa do Homi e de um balão de
+   quatro linhas toda vez que o corretor abre a trilha */
+.uac-nota-nivel {
+  font-size: 0.88rem;
+  color: var(--uac-ink-2);
+  max-width: 66ch;
+  line-height: 1.5;
+  padding: 0.7rem 0.95rem;
+  background: var(--uac-azul-soft);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}

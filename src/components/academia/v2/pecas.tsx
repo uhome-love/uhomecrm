@@ -96,14 +96,13 @@ export function AulaLinha({ aula, estado, sugerida, temProva, onAbrir, onProva }
           <Icone className="h-4 w-4" />
         </span>
         <span className="uac-aula-txt">
-          <b>
-            {aula.titulo}
+          <b>{aula.titulo}</b>
+          <small>
+            {[rotulo, dur].filter(Boolean).join(" · ")}
             {sugerida && <span className="uac-sugerida">sugerida pelo Homi</span>}
-          </b>
-          <small>{[rotulo, dur].filter(Boolean).join(" · ")}</small>
+          </small>
         </span>
         {!temProva && <span />}
-        <span className="uac-aula-xp">+{aula.xp_recompensa || 20} XP</span>
         <span className="uac-aula-estado">
           {estado === "feito" ? "✓" : estado === "agora" ? "continuar" : "começar"}
         </span>

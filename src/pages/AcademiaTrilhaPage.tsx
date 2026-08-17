@@ -41,13 +41,18 @@ export default function AcademiaTrilhaPage() {
   const [aulaId, setAulaId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (trilhaAulas.length > 0 && !aulaId) {
-      // a Academia abre uma aula específica com ?aula=<id>; sem isso, cai na próxima pendente
-      const pedida = new URLSearchParams(search).get("aula");
-      const alvo = pedida && trilhaAulas.some((a) => a.id === pedida) ? pedida : null;
-      const proxima = trilhaAulas.find((a) => getAulaStatus(a.id) !== "concluida");
-      setAulaId(alvo || proxima?.id || trilhaAulas[0].id);
-    }
+    if (trilhaAulas.length === 0) return;
+    // O CRM REUSA esta página entre trilhas (mesma aba, componente não remonta).
+    // Se olhar só "!aulaId", ao abrir um segundo módulo o id da aula anterior
+    // continua no estado, não pertence a esta trilha, e a tela dizia
+    // "ainda não tem aula publicada" com o módulo cheio do lado.
+    if (aulaId && trilhaAulas.some((a) => a.id === aulaId)) return;
+
+    // a Academia abre uma aula específica com ?aula=<id>; sem isso, cai na próxima pendente
+    const pedida = new URLSearchParams(search).get("aula");
+    const alvo = pedida && trilhaAulas.some((a) => a.id === pedida) ? pedida : null;
+    const proxima = trilhaAulas.find((a) => getAulaStatus(a.id) !== "concluida");
+    setAulaId(alvo || proxima?.id || trilhaAulas[0].id);
   }, [trilhaAulas, aulaId, getAulaStatus, search]);
 
   const aula = trilhaAulas.find((a) => a.id === aulaId) || null;
