@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquare, UserPlus, CheckCircle2, Flame, AlertTriangle } from "lucide-react";
+import { MessageSquare, UserPlus, CheckCircle2, Flame, AlertTriangle, CalendarCheck } from "lucide-react";
 import { todayBRT, dateToBRT } from "@/lib/brtTime";
 import {
   useLiaConversasHoje,
   useLiaEstados,
   useLiaFollowups,
+  useLiaPipelineLeads,
   NIVEL_META,
   type LiaEstado,
 } from "./useLiaHub";
@@ -62,6 +63,7 @@ export default function LiaPainelTab() {
   const { data: estados, isLoading } = useLiaEstados();
   const { data: conversasHoje, isLoading: loadingConv } = useLiaConversasHoje();
   const { data: followups } = useLiaFollowups();
+  const { data: pipe } = useLiaPipelineLeads();
 
   const hoje = todayBRT();
 
@@ -79,7 +81,10 @@ export default function LiaPainelTab() {
     const quentesHoje = list.filter(
       (e) => e.nivel === "quente" && e.qualificado_em && dateToBRT(e.qualificado_em) === hoje
     ).length;
-    return { conversasHojeCount, novosHoje, qualificadosHoje, quentesHoje };
+    const agendadasHoje = list.filter(
+      (e) => e.agendou && e.agendou_em && dateToBRT(e.agendou_em) === hoje
+    ).length;
+    return { conversasHojeCount, novosHoje, qualificadosHoje, quentesHoje, agendadasHoje };
   }, [estados, conversasHoje, hoje]);
 
   const funil = useMemo(() => {
@@ -90,18 +95,34 @@ export default function LiaPainelTab() {
       (e) => e.status === "em_conversa" || e.status === "qualificado"
     ).length;
     const qualificados = list.filter((e) => e.status === "qualificado").length;
+    const agendaram = list.filter((e) => e.agendou).length;
     const porNivel = (n: string) =>
       list.filter((e) => e.status === "qualificado" && String(e.nivel ?? "").toLowerCase() === n).length;
+
+    // etapas reais do pipeline pros leads da LIA: visita (ordem>=4) e venda (tipo=venda)
+    const leads = pipe?.leads ?? [];
+    const stages = pipe?.stages;
+    let visitaram = 0;
+    let venderam = 0;
+    for (const l of leads) {
+      const s = l.stage_id && stages ? stages.get(l.stage_id) : undefined;
+      if (!s) continue;
+      if (s.tipo === "venda") venderam++;
+      if (s.ordem >= 4 && s.ordem <= 9) visitaram++; // Visita..Ganho, fora de Caiu/Descarte
+    }
     return {
       falaram,
       responderam,
       engajaram,
       qualificados,
+      agendaram,
+      visitaram,
+      venderam,
       quente: porNivel("quente"),
       morno: porNivel("morno"),
       frio: porNivel("frio"),
     };
-  }, [estados]);
+  }, [estados, pipe]);
 
   const atencao = useMemo(() => {
     const list: LiaEstado[] = estados ?? [];
@@ -117,10 +138,11 @@ export default function LiaPainelTab() {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Kpi label="Conversas hoje" value={kpis.conversasHojeCount} icon={MessageSquare} loading={loadingConv} />
         <Kpi label="Leads novos hoje" value={kpis.novosHoje} icon={UserPlus} loading={isLoading} />
         <Kpi label="Qualificados hoje" value={kpis.qualificadosHoje} icon={CheckCircle2} loading={isLoading} />
+        <Kpi label="Agendadas hoje" value={kpis.agendadasHoje} icon={CalendarCheck} loading={isLoading} />
         <Kpi label="Quentes hoje" value={kpis.quentesHoje} icon={Flame} loading={isLoading} />
       </div>
 
@@ -128,7 +150,7 @@ export default function LiaPainelTab() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Funil da LIA</CardTitle>
-            <CardDescription>Base completa de contatos atendidos pela IA.</CardDescription>
+            <CardDescription>Do primeiro oi até a venda. O que importa é o fundo.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
@@ -139,6 +161,9 @@ export default function LiaPainelTab() {
                 <FunilLinha label="Responderam" value={funil.responderam} max={funil.falaram} />
                 <FunilLinha label="Engajaram" value={funil.engajaram} max={funil.falaram} />
                 <FunilLinha label="Qualificados" value={funil.qualificados} max={funil.falaram} />
+                <FunilLinha label="Agendaram apresentação" value={funil.agendaram} max={funil.falaram} />
+                <FunilLinha label="Foram pra visita" value={funil.visitaram} max={funil.falaram} />
+                <FunilLinha label="Viraram venda" value={funil.venderam} max={funil.falaram} />
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   {(["quente", "morno", "frio"] as const).map((n) => (
                     <div

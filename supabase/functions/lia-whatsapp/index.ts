@@ -239,12 +239,17 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
       }).eq("pipeline_lead_id", leadId).eq("tipo", "entrada");
     }
 
+    // marca "agendou apresentação" quando o resumo traz um dia/turno (métrica-norte do funil)
+    const ag = lerAgendamento(resumo);
     await sb.from("lia_estado").update({
       status: "qualificado",
       nivel,
       lead_id: leadId,
       qualificado_em: est.qualificado_em ?? nowISO(),
       resumo: resumo || est.resumo || null,
+      agendou: ag.agendou || est.agendou || false,
+      agendamento: ag.quando ?? est.agendamento ?? null,
+      agendou_em: (ag.agendou && !est.agendou) ? nowISO() : (est.agendou_em ?? null),
       updated_at: nowISO(),
     }).eq("telefone", from);
 
@@ -291,6 +296,14 @@ async function gerarResumo(sb: any, from: string): Promise<string> {
     if (!ditos.length) return "";
     return "Resumo automático indisponível agora. O lead disse: " + ditos.map((d: string) => `“${d}”`).join("; ") + ".";
   } catch (e) { console.error("[lia-whatsapp] gerarResumo erro", e); return ""; }
+}
+
+// Lê a linha "Agendamento:" do resumo e diz se a pessoa marcou a apresentação (e quando).
+function lerAgendamento(resumo: string): { agendou: boolean; quando: string | null } {
+  const m = String(resumo || "").match(/Agendamento:\s*(.+)/i);
+  const val = (m?.[1] ?? "").split("\n")[0].trim();
+  if (!val || /n[ãa]o\s+agend|n[ãa]o\s+inform|sem\s+agend|nenhum/i.test(val)) return { agendou: false, quando: null };
+  return { agendou: true, quando: val.slice(0, 120) };
 }
 
 // Cria o lead SEM DONO na Fila CEO (mesmo padrão do receive-quiz-lead), origem 'LIA'.

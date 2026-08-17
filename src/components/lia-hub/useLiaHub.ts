@@ -18,6 +18,9 @@ export interface LiaEstado {
   referral: any;
   lead_id: string | null;
   optout: boolean | null;
+  agendou: boolean | null;
+  agendamento: string | null;
+  agendou_em: string | null;
 }
 
 export interface LiaConversa {
@@ -85,7 +88,7 @@ export function useLiaEstados() {
       const { data, error } = await supabase
         .from("lia_estado")
         .select(
-          "telefone,nome,status,nivel,qualificado_em,descartado_em,motivo,last_user_at,last_msg_em,followup_count,referral,lead_id,optout"
+          "telefone,nome,status,nivel,qualificado_em,descartado_em,motivo,last_user_at,last_msg_em,followup_count,referral,lead_id,optout,agendou,agendamento,agendou_em"
         )
         .order("last_msg_em", { ascending: false, nullsFirst: false })
         .limit(1000);
