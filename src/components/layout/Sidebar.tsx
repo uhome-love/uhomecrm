@@ -48,29 +48,22 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
   // ── ADMIN / CEO ────────────────────────────────────────────────────────────
   admin: [
     {
-      title: "Principal",
+      title: "Início",
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
+        { label: "Relatórios",         path: "/raio-x",            icon: <BarChart3    size={15} strokeWidth={1.5} /> },
       ],
     },
     {
-      title: "Leads",
+      title: "Comercial",
       items: [
         { label: "Roleta",             path: "/roleta",            icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
-        { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
-        { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Negócios",
-      items: [
+        { label: "LIA · Uhome",        path: "/admin/lia-hub",     icon: <MessageSquare size={15} strokeWidth={1.5} /> },
+        { label: "Pipeline",           path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
+        { label: "Visitas",            path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
-        { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
+        { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -79,14 +72,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Usuários",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
-        { label: "Relatórios",         path: "/raio-x",         icon: <BarChart3   size={15} strokeWidth={1.5} /> },
-
-      ],
-    },
-    {
-      title: "RH",
-      items: [
         { label: "Recrutamento",       path: "/recrutamento/acompanhamento", icon: <UsersRound size={15} strokeWidth={1.5} /> },
         { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
       ],
@@ -102,13 +87,15 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Ferramentas",
       items: [
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
-        { label: "LIA · Uhome",        path: "/admin/lia-hub",     icon: <MessageSquare size={15} strokeWidth={1.5} /> },
-        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
+        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
+        { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
+        { label: "Simulador de financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
+        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
+        { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
       ],
     },
-
   ],
 
   // ── DIRETOR / DIRETORA COMERCIAL ───────────────────────────────────────────
