@@ -799,7 +799,13 @@ export function usePipeline(
             if (dealDetails?.vgvFinal != null) faseUpdate.vgv_final = dealDetails.vgvFinal;
             if (dealDetails?.unidade) faseUpdate.unidade = dealDetails.unidade;
           }
-          await supabase.from("negocios").update(faseUpdate as any).eq("id", negocioId);
+          // A atualização de fase dispara a consolidação transacional do lead no
+          // backend. Não seguir com celebração/pós-venda se essa operação falhar.
+          const { error: faseError } = await supabase
+            .from("negocios")
+            .update(faseUpdate as any)
+            .eq("id", negocioId);
+          if (faseError) throw faseError;
 
           // Registra a mudança de fase no histórico do negócio
           await supabase.from("negocios_atividades").insert({

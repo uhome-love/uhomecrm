@@ -14977,6 +14977,7 @@ export type Database = {
       cleanup_jetimob_processed: { Args: never; Returns: undefined }
       cleanup_old_network_telemetry: { Args: never; Returns: undefined }
       cleanup_ops_events: { Args: never; Returns: undefined }
+      consolidar_lead_ganho: { Args: { p_negocio_id: string }; Returns: Json }
       contar_leads_desatualizados: {
         Args: { p_corretor_id: string }
         Returns: number
@@ -15760,6 +15761,7 @@ export type Database = {
         Args: { p_pipeline_lead_id: string }
         Returns: boolean
       }
+      lead_em_estado_final: { Args: { p_lead_id: string }; Returns: boolean }
       lead_saude_status:
         | {
             Args: {

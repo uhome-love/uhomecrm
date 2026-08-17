@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.guard_decidir_lead_estagnado_final();
