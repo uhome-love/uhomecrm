@@ -77,6 +77,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const sb = svc();
+    const body = await req.json().catch(() => ({}));
+    // envio direcionado e imediato de um cutucão já APROVADO (ex.: lead esperando resposta agora).
+    // Ignora o horário comercial e manda só pro telefone pedido; não roda detect/backfill.
+    if (body?.soTelefone) {
+      const enviados = await disparar(sb, { soTelefone: String(body.soTelefone), ignorarHorario: body.agora === true });
+      return new Response(JSON.stringify({ ok: true, enviados, alvo: body.soTelefone }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
     const resumos = await backfillResumos(sb);
     const rascunhados = await detectar(sb);
     const enviados = await disparar(sb);
@@ -199,17 +206,21 @@ async function detectar(sb: any): Promise<number> {
   return criados;
 }
 
-/** Dispara os cutucões APROVADOS pelo Lucas, em horário comercial. */
-async function disparar(sb: any): Promise<number> {
+/** Dispara os cutucões APROVADOS pelo Lucas, em horário comercial.
+ * opts.ignorarHorario: envia mesmo fora da janela (só no envio direcionado).
+ * opts.soTelefone: envia só pra este número. */
+async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: string } = {}): Promise<number> {
   const h = horaBRT();
-  if (h < HORA_INI || h >= HORA_FIM) return 0; // fora da janela: tenta na próxima rodada
+  if (!opts.ignorarHorario && (h < HORA_INI || h >= HORA_FIM)) return 0; // fora da janela: tenta na próxima rodada
 
-  const { data: aprovados } = await sb
+  let q = sb
     .from("lia_followups")
     .select("*")
     .eq("status", "aprovado")
     .or(`agendado_para.is.null,agendado_para.lte.${nowISO()}`)
     .limit(50);
+  if (opts.soTelefone) q = q.eq("telefone", opts.soTelefone);
+  const { data: aprovados } = await q;
   if (!aprovados?.length) return 0;
 
   let enviados = 0;
