@@ -43,9 +43,21 @@ export default function AcademiaPage() {
    */
   const ORDEM_BIBLIOTECA = 90;
 
+  /**
+   * A tela Gerenciar deixa marcar um módulo como "só gerentes" ou "só
+   * corretores", mas a jornada nunca leu esse campo: um módulo de gestão
+   * apareceria para o time inteiro. Aqui ela passa a respeitar.
+   */
   const publicadasComAula = useMemo(
-    () => trilhas.filter((t) => t.publicada !== false && aulas.some((a) => a.trilha_id === t.id)),
-    [trilhas, aulas]
+    () =>
+      trilhas.filter((t) => {
+        if (t.publicada === false) return false;
+        if (!aulas.some((a) => a.trilha_id === t.id)) return false;
+        const vis = t.visibilidade || "todos";
+        if (vis === "gerentes") return canManage;
+        return true;
+      }),
+    [trilhas, aulas, canManage]
   );
 
   /** Os níveis da jornada, na ordem. O "agora" é o primeiro não concluído. */
