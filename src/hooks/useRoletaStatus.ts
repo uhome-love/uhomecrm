@@ -5,6 +5,7 @@
 // =============================================================================
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { filaCeoStageOrFilter } from "@/lib/filaCeoStages";
 import { todayBRT } from "@/lib/utils";
 
 export interface RoletaStatus {
@@ -27,18 +28,22 @@ export function useRoletaStatus(enabled = true) {
       const todayStart = `${hoje}T00:00:00-03:00`;
       const todayEnd = `${hoje}T23:59:59-03:00`;
 
+      const stageFilter = await filaCeoStageOrFilter();
+      let filaCeoQuery = supabase
+        .from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("aceite_status", "pendente_distribuicao")
+        .is("corretor_id", null)
+        .eq("arquivado", false);
+      if (stageFilter) filaCeoQuery = filaCeoQuery.or(stageFilter);
+
       const [histRes, filaCeoRes, aguardandoRes] = await Promise.all([
         supabase
           .from("distribuicao_historico")
           .select("acao")
           .gte("created_at", todayStart)
           .lte("created_at", todayEnd),
-        supabase
-          .from("pipeline_leads")
-          .select("id", { count: "exact", head: true })
-          .eq("aceite_status", "pendente_distribuicao")
-          .is("corretor_id", null)
-          .eq("arquivado", false),
+        filaCeoQuery,
         supabase
           .from("pipeline_leads")
           .select("id", { count: "exact", head: true })

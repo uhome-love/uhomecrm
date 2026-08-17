@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { filaCeoStageOrFilter } from "@/lib/filaCeoStages";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { compareRoletaSegmentos } from "@/hooks/useRoletaSegmentos";
@@ -790,12 +791,17 @@ export function useRoleta() {
   const [leadsAcumulados, setLeadsAcumulados] = useState(0);
   useEffect(() => {
     if (!isAdmin) return;
-    supabase.from("pipeline_leads")
-      .select("id", { count: "exact", head: true })
-      .is("corretor_id", null)
-      .eq("aceite_status", "pendente_distribuicao")
-      .eq("arquivado", false)
-      .then(({ count }) => setLeadsAcumulados(count || 0));
+    (async () => {
+      const stageFilter = await filaCeoStageOrFilter();
+      let q = supabase.from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .is("corretor_id", null)
+        .eq("aceite_status", "pendente_distribuicao")
+        .eq("arquivado", false);
+      if (stageFilter) q = q.or(stageFilter);
+      const { count } = await q;
+      setLeadsAcumulados(count || 0);
+    })();
   }, [isAdmin]);
 
   return {

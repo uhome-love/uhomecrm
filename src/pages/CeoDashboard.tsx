@@ -6,6 +6,7 @@ import TabEmpresa from "@/components/ceo/TabEmpresa";
 import { GreetingBar } from "@/components/ui/GreetingBar";
 import { StatCard } from "@/components/ui/StatCard";
 import { supabase } from "@/integrations/supabase/client";
+import { filaCeoStageOrFilter } from "@/lib/filaCeoStages";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCeoDashboard, type DashPeriod } from "@/hooks/useCeoDashboard";
@@ -211,8 +212,11 @@ export default function CeoDashboard() {
 
   // Fila CEO
   const loadFilaCeo = useCallback(async () => {
+    const stageFilter = await filaCeoStageOrFilter();
+    let filaQuery = supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).eq("aceite_status", "pendente_distribuicao").is("corretor_id", null).eq("arquivado", false);
+    if (stageFilter) filaQuery = filaQuery.or(stageFilter);
     const [countRes, logRes] = await Promise.all([
-      supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).eq("aceite_status", "pendente_distribuicao").is("corretor_id", null).eq("arquivado", false),
+      filaQuery,
       supabase.from("audit_log").select("created_at, depois").eq("acao", "dispatch_fila_ceo").order("created_at", { ascending: false }).limit(1),
     ]);
     setFilaCeoCount(countRes.count || 0);

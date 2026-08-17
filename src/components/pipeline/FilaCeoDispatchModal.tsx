@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { filaCeoStageOrFilter } from "@/lib/filaCeoStages";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -187,15 +188,19 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
     setCampanhas([]);
     setReengEmpreendimento({});
     (async () => {
+      const stageFilter = await filaCeoStageOrFilter();
+      let leadsQuery = supabase
+        .from("pipeline_leads")
+        .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, origem_detalhe, form_respostas, temperatura, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
+        .is("corretor_id", null)
+        .eq("aceite_status", "pendente_distribuicao")
+        .eq("arquivado", false)
+        .order("created_at", { ascending: true })
+        .limit(2000);
+      if (stageFilter) leadsQuery = leadsQuery.or(stageFilter);
+
       const [leadsRes, segRes, campRes, empRes] = await Promise.all([
-        supabase
-          .from("pipeline_leads")
-          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, origem_detalhe, form_respostas, temperatura, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
-          .is("corretor_id", null)
-          .eq("aceite_status", "pendente_distribuicao")
-          .eq("arquivado", false)
-          .order("created_at", { ascending: true })
-          .limit(2000),
+        leadsQuery,
         supabase
           .from("roleta_segmentos")
           .select("id, nome, ativo")
@@ -358,7 +363,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const leadsToDispatch = includeUnidentified ? allLeadIds : identifiedLeadIds;
 
   const refetchLeads = async () => {
-    const { data } = await supabase
+    const stageFilter = await filaCeoStageOrFilter();
+    let q = supabase
       .from("pipeline_leads")
       .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
       .is("corretor_id", null)
@@ -366,6 +372,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       .eq("arquivado", false)
       .order("created_at", { ascending: true })
       .limit(2000);
+    if (stageFilter) q = q.or(stageFilter);
+    const { data } = await q;
     setAllLeads((data || []) as any[]);
     onDispatched?.();
   };
