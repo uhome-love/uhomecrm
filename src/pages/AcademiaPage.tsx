@@ -424,7 +424,8 @@ function AberturaDoNivel({ ordem, titulo }: { ordem: number; titulo: string }) {
   if (!existe) return null;
   return (
     <figure className="uac-abertura">
-      <video src={src} controls preload="metadata" playsInline />
+      {/* sem poster o player fica um retângulo preto até alguém dar play */}
+      <video src={src} poster={`/treinos/abertura-nivel-${ordem}.jpg`} controls preload="metadata" playsInline />
       <figcaption>O Homi apresenta: {titulo}</figcaption>
     </figure>
   );
