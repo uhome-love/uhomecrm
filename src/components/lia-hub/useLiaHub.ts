@@ -231,6 +231,28 @@ export function useLiaPipelineLeads() {
   });
 }
 
+export interface LiaCusto {
+  ok: boolean;
+  investimento: number;
+  anuncios?: number;
+  anuncios_com_gasto?: number;
+  motivo?: string;
+  atualizado_em?: string;
+}
+
+/** Investimento real dos anúncios que trouxeram os leads da LIA (via edge function lia-custo). */
+export function useLiaCusto() {
+  return useQuery({
+    queryKey: ["lia-hub", "custo"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("lia-custo");
+      if (error) throw error;
+      return data as LiaCusto;
+    },
+    staleTime: 10 * 60_000,
+  });
+}
+
 export const STATUS_META: Record<string, { label: string; cls: string }> = {
   novo: { label: "Novo", cls: "bg-primary/10 text-primary border-primary/20" },
   em_conversa: { label: "Em conversa", cls: "bg-warning/10 text-warning border-warning/20" },

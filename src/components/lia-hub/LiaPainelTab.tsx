@@ -1,16 +1,21 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquare, UserPlus, CheckCircle2, Flame, AlertTriangle, CalendarCheck } from "lucide-react";
+import { MessageSquare, UserPlus, CheckCircle2, Flame, AlertTriangle, CalendarCheck, DollarSign } from "lucide-react";
 import { todayBRT, dateToBRT } from "@/lib/brtTime";
 import {
   useLiaConversasHoje,
   useLiaEstados,
   useLiaFollowups,
   useLiaPipelineLeads,
+  useLiaCusto,
   NIVEL_META,
   type LiaEstado,
 } from "./useLiaHub";
+
+const brl = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const custoPor = (total: number, n: number) => (n > 0 ? brl(total / n) : "—");
 
 function Kpi({
   label,
@@ -64,6 +69,7 @@ export default function LiaPainelTab() {
   const { data: conversasHoje, isLoading: loadingConv } = useLiaConversasHoje();
   const { data: followups } = useLiaFollowups();
   const { data: pipe } = useLiaPipelineLeads();
+  const { data: custo, isLoading: loadingCusto } = useLiaCusto();
 
   const hoje = todayBRT();
 
@@ -197,6 +203,45 @@ export default function LiaPainelTab() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <DollarSign className="h-4 w-4 text-primary" />
+            Investimento e custo
+          </CardTitle>
+          <CardDescription>
+            Gasto real dos anúncios que trouxeram os leads da LIA. O número-norte é o custo por apresentação agendada.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingCusto ? (
+            <Skeleton className="h-16 w-full" />
+          ) : !custo?.ok ? (
+            <p className="text-sm text-muted-foreground">
+              {custo?.motivo === "sem_token"
+                ? "Meta Ads ainda não conectado nas configurações."
+                : "Não foi possível carregar o investimento agora."}
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <CustoStat label="Investimento" valor={brl(custo.investimento)} destaque />
+              <CustoStat label="Custo por lead" valor={custoPor(custo.investimento, funil.falaram)} />
+              <CustoStat label="Custo por qualificado" valor={custoPor(custo.investimento, funil.qualificados)} />
+              <CustoStat label="Custo por apresentação" valor={custoPor(custo.investimento, funil.agendaram)} destaque />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function CustoStat({ label, valor, destaque }: { label: string; valor: string; destaque?: boolean }) {
+  return (
+    <div className={`rounded-lg border px-3 py-2.5 ${destaque ? "border-primary/30 bg-primary/5" : "border-border bg-muted/30"}`}>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-1 text-lg font-bold tabular-nums text-foreground">{valor}</div>
     </div>
   );
 }
