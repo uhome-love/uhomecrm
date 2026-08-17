@@ -139,7 +139,11 @@ export default function LiaPainelTab() {
     const optoutsHoje = list.filter(
       (e) => e.status === "opt_out" && e.last_msg_em && dateToBRT(e.last_msg_em) === hoje
     ).length;
-    return { naFila, esfriando, optoutsHoje };
+    // quentes que ainda NÃO marcaram apresentação: o time tem que atacar agora
+    const quentesSemAgenda = list.filter(
+      (e) => e.status === "qualificado" && String(e.nivel ?? "").toLowerCase() === "quente" && !e.agendou
+    ).length;
+    return { naFila, esfriando, optoutsHoje, quentesSemAgenda };
   }, [estados, followups, hoje]);
 
   // recuperação: de quem recebeu um follow-up (enviado), quantos voltaram a falar depois dele
@@ -224,6 +228,7 @@ export default function LiaPainelTab() {
             <CardDescription>Pontos que travam resultado agora.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <LinhaAtencao label="Quentes sem apresentação agendada" value={atencao.quentesSemAgenda} />
             <LinhaAtencao label="Qualificados aguardando na fila" value={atencao.naFila} />
             <LinhaAtencao label="Esfriando (follow-up pendente)" value={atencao.esfriando} />
             <LinhaAtencao label="Opt-outs de hoje" value={atencao.optoutsHoje} />

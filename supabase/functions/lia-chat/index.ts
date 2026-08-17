@@ -145,7 +145,7 @@ const RESUMO_SYSTEM = `Você resume, para um CORRETOR da Uhome, a conversa que a
 Quer: <morar ou investir; quantos dormitórios; a FAIXA DE VALOR/orçamento que a pessoa busca, se ela falou; o que mais importa pra ela>
 Perfil: <de onde a pessoa é (cidade/bairro); o PRAZO pra comprar ou mudar; COMO pensa em pagar (à vista, financiamento, FGTS, consórcio, tem imóvel pra vender); família/pet. Só o que ela entregou; o resto é "não informado">
 Situação: <objeções, dúvidas, o que já foi respondido/enviado, e se a pessoa falou de renda, entrada, orçamento ou que não enquadra, registre aqui EXATAMENTE o que ela disse, com os valores>
-Agendamento: <se a pessoa marcou a apresentação, escreva o DIA e o TURNO que ela deu (ex.: "quarta à tarde"); se não marcou, escreva "não agendou">
+Agendamento: <se a pessoa marcou a apresentação por VÍDEO, escreva o DIA e o TURNO (ex.: "quarta à tarde"); se ela prefere conhecer PRESENCIAL no estande (abre 1º/09), escreva "estande" + o dia/turno que prefere (ex.: "estande, fim de semana"); se não marcou nada, escreva "não agendou">
 Como seguir: <próximo passo concreto pro corretor. Se NÃO enquadra no Casa Tua (orçamento menor que R$ 690 mil, outra região ou outro tipo), monte o FILTRO que a pessoa deu: região/bairro, faixa de valor e características desejadas (quartos, garagem, etc), e diga pra oferecer imóveis nesse perfil. Se enquadra: confirmar dia/turno da apresentação, mandar o material X, retomar a dúvida Y, etc.>
 Regras: seja específico com o que apareceu na conversa; se algo não apareceu, escreva "não informado"; se a pessoa falou renda, entrada OU orçamento/faixa de valor, SEMPRE cite o número; no máximo 5 linhas; nunca invente nada.`;
 
