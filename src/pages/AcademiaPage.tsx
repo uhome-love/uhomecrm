@@ -36,13 +36,23 @@ export default function AcademiaPage() {
   const [aba, setAba] = useState<Aba>("inicio");
   const [trilhaAberta, setTrilhaAberta] = useState<string | null>(null);
 
+  /**
+   * Trilha com ordem a partir daqui é BIBLIOTECA, não degrau da jornada.
+   * O corretor precisa da ficha do empreendimento na quarta-feira, não quando
+   * "chegar no nível 3" — então produto sai da esteira e vira consulta.
+   */
+  const ORDEM_BIBLIOTECA = 90;
+
+  const publicadasComAula = useMemo(
+    () => trilhas.filter((t) => t.publicada !== false && aulas.some((a) => a.trilha_id === t.id)),
+    [trilhas, aulas]
+  );
+
   /** Os níveis da jornada, na ordem. O "agora" é o primeiro não concluído. */
   const niveis = useMemo(() => {
     // a jornada é a formação publicada: trilha despublicada (arquivo) e trilha sem
     // aula não viram nível, nem para quem é gestor. Isso é assunto da aba Gerenciar.
-    const comConteudo = trilhas.filter(
-      (t) => t.publicada !== false && aulas.some((a) => a.trilha_id === t.id)
-    );
+    const comConteudo = publicadasComAula.filter((t) => (t.ordem || 0) < ORDEM_BIBLIOTECA);
     const ordenadas = [...comConteudo].sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
     let achouAtual = false;
     return ordenadas.map((trilha, i) => {
@@ -58,7 +68,20 @@ export default function AcademiaPage() {
       }
       return { trilha, ordem: i + 1, feitas: p.completed, total: p.total, estado };
     });
-  }, [trilhas, aulas, getTrilhaProgress]);
+  }, [publicadasComAula, getTrilhaProgress]);
+
+  /** As trilhas de consulta: sempre abertas, sem ordem e sem "sua vez". */
+  const biblioteca = useMemo(
+    () =>
+      publicadasComAula
+        .filter((t) => (t.ordem || 0) >= ORDEM_BIBLIOTECA)
+        .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+        .map((trilha) => {
+          const p = getTrilhaProgress(trilha.id);
+          return { trilha, feitas: p.completed, total: p.total };
+        }),
+    [publicadasComAula, getTrilhaProgress]
+  );
 
   const nivelAtual = niveis.find((n) => n.estado === "agora") || niveis[0] || null;
 
@@ -168,10 +191,9 @@ export default function AcademiaPage() {
                     />
                     <div className="dentro">
                       {nivelAtual && (
-                        <FalaHomi pose="apontando" escuro className="mb-4">
-                          Você está no <b>{nivelAtual.trilha.titulo}</b> e fechou{" "}
-                          <b>{nivelAtual.feitas} de {nivelAtual.total} aulas</b>. Essa é a próxima.
-                        </FalaHomi>
+                        <p className="uac-destaque-contexto">
+                          {nivelAtual.trilha.titulo} · {nivelAtual.feitas} de {nivelAtual.total} aulas
+                        </p>
                       )}
                       <h2>{aulaDeHoje.titulo}</h2>
                       {aulaDeHoje.descricao && <p>{aulaDeHoje.descricao}</p>}
@@ -197,7 +219,7 @@ export default function AcademiaPage() {
                         <span style={{ width: `${nivelAtual && nivelAtual.total ? Math.round((nivelAtual.feitas / nivelAtual.total) * 100) : 0}%` }} />
                       </div>
                       <p className="uac-apoio" style={{ marginTop: 0 }}>
-                        Toda ação vale 20 XP: assistir, treinar ou fazer no CRM.
+                        Toda ação vale 20 XP, seja assistir uma aula ou fazer uma prova.
                       </p>
                     </div>
                   </div>
@@ -224,7 +246,9 @@ export default function AcademiaPage() {
                     />
                   ))}
                 </div>
-                <p className="uac-apoio">Fechou as {semana.length === 1 ? "essa" : semana.length}, sua semana está feita.</p>
+                <p className="uac-apoio">
+                  {semana.length === 1 ? "Fechando essa, sua semana está feita." : `Fechando essas ${semana.length}, sua semana está feita.`}
+                </p>
               </section>
             )}
 
@@ -247,6 +271,30 @@ export default function AcademiaPage() {
                 <p className="uac-apoio">
                   Os níveis são a formação da casa e todo mundo faz. <b>Nenhum deles fica trancado</b>:
                   se você precisa de uma aula de um nível adiante hoje, ela abre hoje.
+                </p>
+              </section>
+            )}
+
+            {biblioteca.length > 0 && (
+              <section className="uac-secao">
+                <p className="uac-rotulo">Consulta rápida</p>
+                <div className="uac-biblioteca">
+                  {biblioteca.map((b) => (
+                    <button
+                      key={b.trilha.id}
+                      type="button"
+                      className="uac-biblio-card"
+                      onClick={() => abrirTrilha(b.trilha.id)}
+                    >
+                      <b>{b.trilha.titulo}</b>
+                      {b.trilha.descricao && <small>{b.trilha.descricao}</small>}
+                      <span className="uac-biblio-conta">{b.total} {b.total === 1 ? "ficha" : "fichas"}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="uac-apoio">
+                  Isso não é degrau de jornada, é <b>consulta</b>: abre quando você precisa,
+                  na ordem que você quiser.
                 </p>
               </section>
             )}
@@ -275,8 +323,12 @@ export default function AcademiaPage() {
 
             {trilhaExibida && (
               <section className="uac-secao">
-                <p className="uac-rotulo">{trilhaExibida.trilha.titulo}</p>
-                <h2 className="uac-titulao">{trilhaExibida.trilha.descricao || "As aulas deste nível"}</h2>
+                {/* o nome do nível é o título; a descrição é apoio, não manchete */}
+                <p className="uac-rotulo">Nível {trilhaExibida.ordem} de {niveis.length}</p>
+                <h2 className="uac-titulao">{trilhaExibida.trilha.titulo}</h2>
+                {trilhaExibida.trilha.descricao && (
+                  <p className="uac-sub">{trilhaExibida.trilha.descricao}</p>
+                )}
 
                 {aulasDoNivel.length > 0 ? (
                   <>

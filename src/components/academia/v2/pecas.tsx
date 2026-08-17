@@ -48,8 +48,9 @@ interface NivelProps {
 const TAG: Record<EstadoNivel, string> = {
   feito: "concluído",
   agora: "você está aqui",
-  // nada fica trancado: o nível marca o progresso, não bloqueia o conteúdo
-  adiante: "ainda não é a sua vez",
+  // nada fica trancado: o nível marca o progresso, não bloqueia o conteúdo.
+  // rótulo curto de propósito: em duas palavras ele não quebra a linha do card.
+  adiante: "mais adiante",
 };
 
 export function NivelCard({ ordem, trilha, feitas, total, estado, onClick }: NivelProps) {

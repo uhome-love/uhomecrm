@@ -82,6 +82,8 @@ export function MeuTime({ totalAulas }: { totalAulas: number }) {
   /** ninguém tocou na Academia: nem entrou. Um só que abriu já muda a leitura da tela. */
   const ninguemComecou = linhas.every((c) => c.estado === "novo");
   const maisUrgente = sumidos[0] || null;
+  const ativos = ordenadas.filter((c) => c.estado !== "novo");
+  const novos = ordenadas.filter((c) => c.estado === "novo");
 
   if (isLoading) {
     return (
@@ -142,24 +144,38 @@ export function MeuTime({ totalAulas }: { totalAulas: number }) {
           )
         )}
 
-        <div>
-          {ordenadas.map((c) => (
-            <div key={c.corretor_id} className={cn("uac-corretor", c.estado)}>
-              <b>{c.nome || "Sem nome"}</b>
-              <span className="uac-chip-nivel">
-                {c.nivel_atual ? c.nivel_atual.replace(" · ", " ") : "não começou"}
-              </span>
-              <p>
-                {c.aulas_feitas > 0
-                  ? `${c.aulas_feitas} de ${totalAulas} aulas · ${c.xp} XP`
-                  : c.dias !== null
-                    ? "entrou, ainda não concluiu nenhuma aula"
-                    : "ainda não abriu a Academia"}
-              </p>
-              <span className="uac-corretor-ultima">{quando(c.dias)}</span>
+        {/* Quem já mexeu na Academia merece a linha inteira. Quem nunca abriu
+            dizia a mesma coisa três vezes ("não começou", "ainda não abriu",
+            "nunca entrou") em 28 linhas iguais — vira uma lista de nomes. */}
+        {ativos.length > 0 && (
+          <div>
+            {ativos.map((c) => (
+              <div key={c.corretor_id} className={cn("uac-corretor", c.estado)}>
+                <b>{c.nome || "Sem nome"}</b>
+                <span className="uac-chip-nivel">
+                  {c.nivel_atual ? c.nivel_atual.replace(" · ", " ") : "começando"}
+                </span>
+                <p>
+                  {c.aulas_feitas > 0
+                    ? `${c.aulas_feitas} de ${totalAulas} aulas · ${c.xp} XP`
+                    : "entrou, ainda não concluiu nenhuma aula"}
+                </p>
+                <span className="uac-corretor-ultima">{quando(c.dias)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {novos.length > 0 && (
+          <div className="uac-naoabriram">
+            <p className="uac-rotulo">Ainda não abriram · {novos.length}</p>
+            <div className="uac-nomes">
+              {novos.map((c) => (
+                <span key={c.corretor_id}>{c.nome || "Sem nome"}</span>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </section>
     </>
   );
