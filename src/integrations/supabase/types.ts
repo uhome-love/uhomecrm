@@ -14,6 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_negocios_baseunica_16ago: {
+        Row: {
+          auth_user_id: string | null
+          construtora: string | null
+          contrato_situacao: string | null
+          corretor_id: string | null
+          created_at: string | null
+          data_assinatura: string | null
+          documentacao_situacao: string | null
+          empreendimento: string | null
+          empreendimento_canonico_id: string | null
+          equipe_gerente_auth_id: string | null
+          fase: string | null
+          fase_changed_at: string | null
+          gerente_id: string | null
+          id: string | null
+          imovel_interesse: string | null
+          lead_id: string | null
+          lead_id_match_metodo: string | null
+          lead_id_match_score: number | null
+          lead_id_proposto: string | null
+          motivo_queda: string | null
+          negociacao_contra_proposta: string | null
+          negociacao_pendencia: string | null
+          negociacao_situacao: string | null
+          nome_cliente: string | null
+          observacoes: string | null
+          origem: string | null
+          pipeline_lead_id: string | null
+          proposta_imovel: string | null
+          proposta_situacao: string | null
+          proposta_valor: number | null
+          requer_aprovacao_ceo: boolean | null
+          status: string | null
+          telefone: string | null
+          unidade: string | null
+          updated_at: string | null
+          vgv_estimado: number | null
+          vgv_final: number | null
+          visita_id: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          construtora?: string | null
+          contrato_situacao?: string | null
+          corretor_id?: string | null
+          created_at?: string | null
+          data_assinatura?: string | null
+          documentacao_situacao?: string | null
+          empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
+          equipe_gerente_auth_id?: string | null
+          fase?: string | null
+          fase_changed_at?: string | null
+          gerente_id?: string | null
+          id?: string | null
+          imovel_interesse?: string | null
+          lead_id?: string | null
+          lead_id_match_metodo?: string | null
+          lead_id_match_score?: number | null
+          lead_id_proposto?: string | null
+          motivo_queda?: string | null
+          negociacao_contra_proposta?: string | null
+          negociacao_pendencia?: string | null
+          negociacao_situacao?: string | null
+          nome_cliente?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          pipeline_lead_id?: string | null
+          proposta_imovel?: string | null
+          proposta_situacao?: string | null
+          proposta_valor?: number | null
+          requer_aprovacao_ceo?: boolean | null
+          status?: string | null
+          telefone?: string | null
+          unidade?: string | null
+          updated_at?: string | null
+          vgv_estimado?: number | null
+          vgv_final?: number | null
+          visita_id?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          construtora?: string | null
+          contrato_situacao?: string | null
+          corretor_id?: string | null
+          created_at?: string | null
+          data_assinatura?: string | null
+          documentacao_situacao?: string | null
+          empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
+          equipe_gerente_auth_id?: string | null
+          fase?: string | null
+          fase_changed_at?: string | null
+          gerente_id?: string | null
+          id?: string | null
+          imovel_interesse?: string | null
+          lead_id?: string | null
+          lead_id_match_metodo?: string | null
+          lead_id_match_score?: number | null
+          lead_id_proposto?: string | null
+          motivo_queda?: string | null
+          negociacao_contra_proposta?: string | null
+          negociacao_pendencia?: string | null
+          negociacao_situacao?: string | null
+          nome_cliente?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          pipeline_lead_id?: string | null
+          proposta_imovel?: string | null
+          proposta_situacao?: string | null
+          proposta_valor?: number | null
+          requer_aprovacao_ceo?: boolean | null
+          status?: string | null
+          telefone?: string | null
+          unidade?: string | null
+          updated_at?: string | null
+          vgv_estimado?: number | null
+          vgv_final?: number | null
+          visita_id?: string | null
+        }
+        Relationships: []
+      }
       _pdn_entries_backup_passo2: {
         Row: {
           caiu: boolean
@@ -5840,6 +5963,9 @@ export type Database = {
       }
       lia_estado: {
         Row: {
+          agendamento: string | null
+          agendou: boolean
+          agendou_em: string | null
           created_at: string
           descartado_em: string | null
           followup_count: number
@@ -5858,6 +5984,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agendamento?: string | null
+          agendou?: boolean
+          agendou_em?: string | null
           created_at?: string
           descartado_em?: string | null
           followup_count?: number
@@ -5876,6 +6005,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agendamento?: string | null
+          agendou?: boolean
+          agendou_em?: string | null
           created_at?: string
           descartado_em?: string | null
           followup_count?: number
