@@ -191,16 +191,6 @@ export default function AcademiaPage() {
         {/* ------------------------------------------------------------ INÍCIO */}
         {aba === "inicio" && (
           <>
-            {/* A abertura vinha só na aba "Minha trilha" e a Academia abre no
-                Início: o Homi ficava escondido atrás de um clique. Ele é a
-                primeira coisa que a pessoa deve encontrar. */}
-            {nivelAtual && (
-              <section className="uac-secao">
-                <p className="uac-rotulo">Comece por aqui</p>
-                <AberturaDoNivel ordem={nivelAtual.ordem} titulo={nivelAtual.trilha.titulo} />
-              </section>
-            )}
-
             {aulaDeHoje ? (
               <section className="uac-secao">
                 <p className="uac-rotulo">A sua aula de hoje</p>
