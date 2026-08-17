@@ -64,6 +64,13 @@ const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const CasaTuaCanoasQuiz = lazyRetry(() => import("./pages/CasaTuaCanoasQuiz"));
 const LiaTeste = lazyRetry(() => import("./pages/LiaTeste"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
+const PreviewRelatorioGeral = lazyRetry(() => import("./pages/PreviewRelatorioGeral"));
+const PreviewRelatorioConversao = lazyRetry(() => import("./pages/PreviewRelatorioConversao"));
+const PreviewRaioXCorretor = lazyRetry(() => import("./pages/PreviewRaioXCorretor"));
+const RaioXCorretorImpressao = lazyRetry(() =>
+  import("./pages/RaioXCorretorPage").then((m) => ({ default: m.RaioXCorretorImpressao })));
+const PreviewRelatorioVendas = lazyRetry(() => import("./pages/PreviewRelatorioVendas"));
+const PreviewRelatorioVisitas = lazyRetry(() => import("./pages/PreviewRelatorioVisitas"));
 const PlacarTvPage = lazyRetry(() => import("./pages/PlacarTvPage"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
 const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"));
@@ -116,6 +123,13 @@ const App = () => (
               <Route path="/casatuacanoas-quiz" element={<Suspense fallback={<PageLoader />}><CasaTuaCanoasQuiz /></Suspense>} />
               <Route path="/lia-teste" element={<Suspense fallback={<PageLoader />}><LiaTeste /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
+              <Route path="/preview-relatorio-geral" element={<Suspense fallback={<PageLoader />}><PreviewRelatorioGeral /></Suspense>} />
+              <Route path="/preview-relatorio-conversao" element={<Suspense fallback={<PageLoader />}><PreviewRelatorioConversao /></Suspense>} />
+              <Route path="/preview-raio-x-corretor" element={<Suspense fallback={<PageLoader />}><PreviewRaioXCorretor /></Suspense>} />
+              {/* Versão de impressão: mesma página fora do shell de abas, para o PDF sair só com o relatório. */}
+              <Route path="/raio-x-corretor/imprimir" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["gestor", "admin", "diretor"]}><Suspense fallback={<PageLoader />}><RaioXCorretorImpressao /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
+              <Route path="/preview-relatorio-vendas" element={<Suspense fallback={<PageLoader />}><PreviewRelatorioVendas /></Suspense>} />
+              <Route path="/preview-relatorio-visitas" element={<Suspense fallback={<PageLoader />}><PreviewRelatorioVisitas /></Suspense>} />
               <Route path="/placar-tv" element={<Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense>} />
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
               <Route path="/diagnostico-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
@@ -132,6 +146,7 @@ const App = () => (
               <Route path="/backoffice/*" element={<Navigate to="/" replace />} />
               <Route path="/backoffice" element={<Navigate to="/" replace />} />
               <Route path="/conquistas" element={<Navigate to="/corretor" replace />} />
+              <Route path="/produtividade" element={<Navigate to="/raio-x" replace />} />
               <Route path="/index" element={<Navigate to="/" replace />} />
               <Route path="/central-usuarios" element={<Navigate to="/meu-time" replace />} />
               <Route path="/pdn" element={<Navigate to="/pipeline-negocios" replace />} />

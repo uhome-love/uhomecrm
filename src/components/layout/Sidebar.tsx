@@ -80,7 +80,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
-        { label: "Produtividade",      path: "/produtividade",      icon: <Activity    size={15} strokeWidth={1.5} /> },
+        { label: "Relatórios",         path: "/raio-x",         icon: <BarChart3   size={15} strokeWidth={1.5} /> },
 
       ],
     },
@@ -148,7 +148,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
 
-        { label: "Produtividade",      path: "/produtividade",      icon: <Activity    size={15} strokeWidth={1.5} /> },
+        { label: "Relatórios",         path: "/raio-x",         icon: <BarChart3   size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -212,7 +212,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Meus Candidatos",    path: "/gerente/candidatos", icon: <Users       size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Produtividade",      path: "/produtividade",      icon: <Activity    size={15} strokeWidth={1.5} /> },
+        { label: "Relatórios",         path: "/raio-x",         icon: <BarChart3   size={15} strokeWidth={1.5} /> },
 
       ],
     },
@@ -264,7 +264,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Crescimento",
       items: [
-        { label: "Meus resultados",    path: "/central-relatorios", icon: <BarChart2    size={15} strokeWidth={1.5} /> },
+        { label: "Meus resultados",    path: "/raio-x",         icon: <BarChart2    size={15} strokeWidth={1.5} /> },
 
         { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
