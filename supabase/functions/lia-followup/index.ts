@@ -71,6 +71,33 @@ async function send360Image(to: string, link: string) {
   } catch (e) { console.error("[lia-followup] erro na imagem", e); return false; }
 }
 
+// Templates OFICIAIS do WhatsApp (passam mesmo depois das 24h). key -> nome/idioma/doc do cabeçalho.
+const WA_TEMPLATES: Record<string, { name: string; lang: string; headerDoc?: { link: string; filename: string } }> = {
+  followup_casatuacanoaslia: {
+    name: "followup_casatuacanoaslia",
+    lang: "pt_BR",
+    headerDoc: { link: `${MEDIA_BASE}/guia-casa-tua-santos-ferreira.pdf`, filename: "Guia Casa Tua Santos Ferreira.pdf" },
+  },
+};
+
+// Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
+async function sendTemplate(to: string, tpl: { name: string; lang: string; headerDoc?: { link: string; filename: string } }, nome: string): Promise<boolean> {
+  const key = Deno.env.get("D360_API_KEY");
+  if (!key) return false;
+  const components: any[] = [];
+  if (tpl.headerDoc) components.push({ type: "header", parameters: [{ type: "document", document: { link: tpl.headerDoc.link, filename: tpl.headerDoc.filename } }] });
+  components.push({ type: "body", parameters: [{ type: "text", text: (nome || "você").slice(0, 60) }] });
+  try {
+    const r = await fetch(D360_URL, {
+      method: "POST",
+      headers: { "D360-API-KEY": key, "Content-Type": "application/json" },
+      body: JSON.stringify({ messaging_product: "whatsapp", to, type: "template", template: { name: tpl.name, language: { code: tpl.lang }, components } }),
+    });
+    if (!r.ok) { console.error("[lia-followup] template falhou", r.status, await r.text().catch(() => "")); return false; }
+    return true;
+  } catch (e) { console.error("[lia-followup] erro no template", e); return false; }
+}
+
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 serve(async (req) => {
@@ -178,7 +205,8 @@ async function detectar(sb: any): Promise<number> {
     if (aberto && aberto.length) continue;
 
     const dentro24h = (agora - new Date(c.last_user_at).getTime()) < 24 * 3600_000;
-    const key = !dentro24h ? "reativacao" : (c.status === "novo" ? "primeiro_retorno" : c.status === "qualificado" ? "sem_horario" : "sumiu_planta");
+    // pós-24h agora usa o TEMPLATE oficial (único que passa); dentro de 24h segue texto livre
+    const key = !dentro24h ? "followup_casatuacanoaslia" : (c.status === "novo" ? "primeiro_retorno" : c.status === "qualificado" ? "sem_horario" : "sumiu_planta");
     const tpl = T[key];
     if (!tpl) continue;
 
@@ -226,22 +254,24 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
   let enviados = 0;
   for (const f of aprovados) {
     // revalida o estado do lead (pode ter saído/qualificado no meio-tempo)
-    const { data: estRows } = await sb.from("lia_estado").select("optout, followup_count, last_user_at").eq("telefone", f.telefone).limit(1);
+    const { data: estRows } = await sb.from("lia_estado").select("optout, followup_count, last_user_at, nome").eq("telefone", f.telefone).limit(1);
     const est = estRows?.[0];
     if (est?.optout || (est?.followup_count ?? 0) >= MAX_CUTUCOES) {
       await sb.from("lia_followups").update({ status: "cancelado", updated_at: nowISO() }).eq("id", f.id);
       continue;
     }
-    // janela do WhatsApp: cutucão livre (texto/foto) só vale até 24h após a última fala da pessoa.
-    // Fora disso o envio seria rejeitado; cancela com motivo claro em vez de tentar pra sempre.
-    const ultimaFala = est?.last_user_at ? new Date(est.last_user_at).getTime() : 0;
-    if (!ultimaFala || (Date.now() - ultimaFala) > 24 * 3600_000) {
-      await sb.from("lia_followups").update({
-        status: "cancelado",
-        motivo: `${f.motivo ?? ""} · janela 24h fechada (precisa de template aprovado)`.trim(),
-        updated_at: nowISO(),
-      }).eq("id", f.id);
-      continue;
+    // template oficial do WhatsApp passa mesmo pós-24h; cutucão livre (texto/foto) só vale até 24h.
+    const ehTemplate = !!WA_TEMPLATES[f.template_key];
+    if (!ehTemplate) {
+      const ultimaFala = est?.last_user_at ? new Date(est.last_user_at).getTime() : 0;
+      if (!ultimaFala || (Date.now() - ultimaFala) > 24 * 3600_000) {
+        await sb.from("lia_followups").update({
+          status: "cancelado",
+          motivo: `${f.motivo ?? ""} · janela 24h fechada (precisa de template aprovado)`.trim(),
+          updated_at: nowISO(),
+        }).eq("id", f.id);
+        continue;
+      }
     }
     // se um corretor assumiu o caso no meio-tempo, não cutuca (humano assumiu)
     if (f.lead_id) {
@@ -253,12 +283,17 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
       }
     }
 
-    const ok = await send360Text(f.telefone, f.mensagem);
+    // nome limpo pro corpo do template (WhatsApp às vezes manda só emoji)
+    const bruto = primeiroNome(est?.nome ?? "");
+    const nomeLead = /\p{L}/u.test(bruto) ? bruto.replace(/[^\p{L}\p{M}'.-]/gu, "").trim() : "";
+    const ok = ehTemplate
+      ? await sendTemplate(f.telefone, WA_TEMPLATES[f.template_key], nomeLead)
+      : await send360Text(f.telefone, f.mensagem);
     if (!ok) continue;
     await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: f.mensagem });
 
     // "abriu e sumiu": entrega valor com 2 fotos e fecha com uma pergunta leve (nada de cobrança)
-    if (f.template_key === "primeiro_retorno") {
+    if (!ehTemplate && f.template_key === "primeiro_retorno") {
       await sleep(1200); if (await send360Image(f.telefone, FOTO_FACHADA))
         await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: "[foto] Fachada das casas" });
       await sleep(1200); if (await send360Image(f.telefone, FOTO_INFRA))
