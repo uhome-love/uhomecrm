@@ -182,17 +182,35 @@ export interface RaioXCorretorFull extends Fatia {
 
 // ── util ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Paginador com páginas em PARALELO. A 1ª página vem sozinha; se veio cheia,
+ * há mais, então busca em lotes de LOTE páginas ao mesmo tempo até esvaziar.
+ * Uma tabela account-wide (ex.: gasto do Meta, ~13 mil linhas) que levava 13
+ * idas em fila passa a ~3 rodadas. Mesma semântica de resultado do sequencial.
+ */
+const LOTE = 6;
 async function fetchAll<T>(builder: (from: number, to: number) => any): Promise<T[]> {
-  const out: T[] = [];
   const size = 1000;
-  let from = 0;
+  const first = await builder(0, size - 1);
+  if (first.error) throw first.error;
+  const primeira = (first.data ?? []) as T[];
+  if (primeira.length < size) return primeira;
+
+  const out: T[] = [...primeira];
+  let from = size;
   for (;;) {
-    const { data, error } = await builder(from, from + size - 1);
-    if (error) throw error;
-    const rows = (data ?? []) as T[];
-    out.push(...rows);
-    if (rows.length < size) break;
-    from += size;
+    const lote = await Promise.all(
+      Array.from({ length: LOTE }, (_, i) => builder(from + i * size, from + (i + 1) * size - 1)),
+    );
+    let curto = false;
+    for (const r of lote) {
+      if (r.error) throw r.error;
+      const rows = (r.data ?? []) as T[];
+      out.push(...rows);
+      if (rows.length < size) curto = true;
+    }
+    if (curto) break;
+    from += LOTE * size;
   }
   return out;
 }
@@ -468,44 +486,35 @@ export function useRaioXCorretor(
       const de = [janela.start, janelaAnterior.start, evoStart].sort()[0];
       const ate = [janela.end, addDias(hoje, 1)].sort().slice(-1)[0];
 
+      // O gasto do Meta só entra nas DUAS janelas comparadas (período × anterior),
+      // nunca na evolução do ano. Então busca só esse intervalo curto — não os ~8
+      // meses da carga geral. Era o maior gargalo (conta inteira, 14 páginas em fila).
+      const spendDe = [janela.start, janelaAnterior.start].sort()[0];
+      const spendAte = [janela.end, janelaAnterior.end].sort().slice(-1)[0];
+
       // 1) Identidade.
       //    ATENÇÃO: creci, email e telefone têm grant de coluna negado para
       //    'authenticated' (proteção de dado pessoal). Pedir qualquer um deles
       //    derruba a consulta INTEIRA com "permission denied for table profiles",
       //    e o relatório fica sem nome. Não reintroduzir esses campos aqui.
-      const { data: perfil, error: erroPerfil } = await supabase
-        .from("profiles")
-        .select("id, user_id, nome, avatar_url, cargo, created_at")
-        .eq("user_id", uid)
-        .maybeSingle();
-      if (erroPerfil) throw erroPerfil;
-      const profileId = (perfil as any)?.id ?? null;
+      // 1) Preâmbulo em PARALELO: identidade, vínculo de equipe e etapas de uma
+      //    vez (antes eram idas ao banco em fila, somando ~1,5s antes da carga).
+      //    ATENÇÃO: creci, email e telefone têm grant de coluna negado para
+      //    'authenticated'. Pedir qualquer um deles derruba a consulta INTEIRA
+      //    com "permission denied for table profiles". Não reintroduzir aqui.
+      const [perfilR, tmR, stagesR] = await Promise.all([
+        supabase.from("profiles")
+          .select("id, user_id, nome, avatar_url, cargo, created_at").eq("user_id", uid).maybeSingle(),
+        supabase.from("team_members")
+          .select("gerente_id").eq("user_id", uid).eq("status", "ativo").maybeSingle(),
+        supabase.from("pipeline_stages").select("id, tipo"),
+      ]);
+      if (perfilR.error) throw perfilR.error;
+      const perfil = perfilR.data as any;
+      const profileId = perfil?.id ?? null;
+      const tm = tmR.data as any;
 
-      const { data: tm } = await supabase
-        .from("team_members")
-        .select("gerente_id")
-        .eq("user_id", uid)
-        .eq("status", "ativo")
-        .maybeSingle();
-      let gerenteNome: string | null = null;
-      if ((tm as any)?.gerente_id) {
-        const { data: g } = await supabase
-          .from("profiles").select("nome").eq("user_id", (tm as any).gerente_id).maybeSingle();
-        gerenteNome = (g as any)?.nome ?? null;
-      }
-
-      const corretor: CorretorIdentidade = {
-        user_id: uid,
-        profile_id: profileId,
-        nome: (perfil as any)?.nome ?? "Corretor",
-        avatar_url: (perfil as any)?.avatar_url ?? null,
-        cargo: (perfil as any)?.cargo ?? null,
-        gerente_nome: gerenteNome,
-        desde: dia((perfil as any)?.created_at),
-      };
-
-      // 2) Etapas primeiro (define os baldes do histórico).
-      const { data: stagesRows } = await supabase.from("pipeline_stages").select("id, tipo");
+      const stagesRows = stagesR.data as any[] | null;
       const tipoDeStage = new Map<string, string>();
       (stagesRows ?? []).forEach((s: any) => tipoDeStage.set(s.id, s.tipo));
       const B_DESCARTE = new Set(["descarte"]);
@@ -515,7 +524,7 @@ export function useRaioXCorretor(
         .map((s: any) => s.id);
 
       // PERFORMANCE: TODAS as buscas em PARALELO (antes eram ~10 em fila → lentidão).
-      const [ativosRows, leadsRows, hist, visitas, vendas, atividades, tarefas, spend, presencas, credenciamentos] = await Promise.all([
+      const [ativosRows, leadsRows, hist, visitas, vendas, atividades, tarefas, spend, presencas, credenciamentos, gerenteR] = await Promise.all([
         fetchAll<any>((f, t) => supabase.from("pipeline_leads")
           .select("id, ultimo_toque_at, distribuido_em, aceito_em, created_at, estagnacao_carencia_ate, pipeline_stages!inner(tipo)")
           .eq("corretor_id", uid).eq("arquivado", false).range(f, t)),
@@ -543,7 +552,7 @@ export function useRaioXCorretor(
           .eq("responsavel_id", uid).gte("created_at", de).range(f, t)),
         fetchAll<SpendRow>((f, t) => supabase.from("marketing_entries_ad")
           .select("date_start, spend, leads")
-          .gte("date_start", de).lt("date_start", ate).range(f, t)),
+          .gte("date_start", spendDe).lt("date_start", spendAte).range(f, t)),
         profileId
           ? fetchAll<PresencaRow>((f, t) => supabase.from("roleta_presencas")
               .select("data, turno, status").eq("corretor_id", profileId).gte("data", de).lt("data", ate).range(f, t))
@@ -552,7 +561,20 @@ export function useRaioXCorretor(
           ? fetchAll<CredRow>((f, t) => supabase.from("roleta_credenciamentos")
               .select("data, janela, status").eq("corretor_id", profileId).gte("data", de).lt("data", ate).range(f, t))
           : Promise.resolve([] as CredRow[]),
+        tm?.gerente_id
+          ? supabase.from("profiles").select("nome").eq("user_id", tm.gerente_id).maybeSingle()
+          : Promise.resolve({ data: null } as any),
       ]);
+
+      const corretor: CorretorIdentidade = {
+        user_id: uid,
+        profile_id: profileId,
+        nome: perfil?.nome ?? "Corretor",
+        avatar_url: perfil?.avatar_url ?? null,
+        cargo: perfil?.cargo ?? null,
+        gerente_nome: (gerenteR as any)?.data?.nome ?? null,
+        desde: dia(perfil?.created_at),
+      };
 
       // Snapshot pela etapa (fonte única): pipeline ativo · estagnados · negócio aberto por etapa.
       let ativos = 0, estagnados = 0, emDocumentacao = 0, emNegociacao = 0, emContrato = 0;
