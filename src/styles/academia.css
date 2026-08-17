@@ -51,16 +51,16 @@
   color: var(--uac-ink);
 }
 
-.uac h1,
-.uac h2,
-.uac h3,
-.uac h4 {
+/* :where() tem especificidade ZERO. Sem isso, este reset (0,1,1) vencia
+   TODA classe de margem escrita depois (0,1,0) e o texto colava: título
+   grudado na descrição, descrição grudada no card. */
+.uac :where(h1, h2, h3, h4) {
   margin: 0;
   letter-spacing: -0.03em;
   line-height: 1.1;
   color: var(--uac-ink);
 }
-.uac p { margin: 0; }
+.uac :where(p) { margin: 0; }
 .uac b, .uac strong { font-weight: 700; }
 .uac a { color: var(--uac-azul); text-decoration: none; }
 
@@ -560,8 +560,8 @@
 .uac-player { display: grid; grid-template-columns: 1fr 320px; gap: 1.6rem; align-items: start; }
 @media (max-width: 1000px) { .uac-player { grid-template-columns: 1fr; } }
 
-.uac-aula-titulo { font-size: clamp(1.3rem, 2.6vw, 1.9rem); font-weight: 800; margin-bottom: 0.3rem; }
-.uac-aula-desc { color: var(--uac-ink-2); font-size: 0.92rem; margin-bottom: 1.1rem; }
+.uac-aula-titulo { font-size: clamp(1.3rem, 2.6vw, 1.9rem); font-weight: 800; line-height: 1.18; margin-bottom: 0.55rem; }
+.uac-aula-desc { color: var(--uac-ink-2); font-size: 0.92rem; line-height: 1.55; max-width: 68ch; margin-bottom: 1.75rem; }
 
 /* o palco: 16:9, fundo escuro, cantos arredondados */
 .uac-palco-wrap { position: relative; }
@@ -1012,3 +1012,37 @@
   border-radius: 10px;
   margin-bottom: 1rem;
 }
+
+/* respiro do cabeçalho da aula e do miolo da prova: sem isso as três linhas
+   (rótulo, título, descrição) leem como um bloco só */
+.uac-palco-area > .uac-rotulo { margin-bottom: 0.7rem; }
+.uac-quiz > .uac-apoio { margin-bottom: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.uac-quiz-p { line-height: 1.35; margin-bottom: 1.3rem; }
+.uac-quiz { display: flex; flex-direction: column; }
+.uac-escolha { line-height: 1.4; }
+
+/* ---------------------------------------------------------------- respiro
+   O reset de margens vinha vencendo as classes (ver :where acima), e o padrão
+   "título + legenda" ficou colado em TODA a Academia: card de nível, linha de
+   aula, item da semana, sumário do player, biblioteca e números do gestor.
+   Aqui o par ganha um degrau de respiro, calibrado por tamanho de texto. */
+.uac-nivel-txt b,
+.uac-biblio-card b { display: block; margin-bottom: 0.35rem; }
+
+.uac-aula-txt b,
+.uac-semana-item b,
+.uac-sumario-txt b { display: block; margin-bottom: 0.45rem; line-height: 1.3; }
+
+.uac-numero b { margin-bottom: 0.4rem; }
+.uac-corretor b { line-height: 1.35; }
+
+/* legendas ganham entrelinha própria: 12-13px sem respiro vira bloco cinza */
+.uac-aula-txt small,
+.uac-semana-item small,
+.uac-sumario-txt small,
+.uac-biblio-card small,
+.uac-numero small { line-height: 1.45; display: block; }
+
+/* o título de seção e seu texto de apoio */
+.uac-titulao { margin-bottom: 0.4rem; }
+.uac-sub { margin-bottom: 1.35rem; }
