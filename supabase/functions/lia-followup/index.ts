@@ -81,9 +81,9 @@ const WA_TEMPLATES: Record<string, { name: string; lang: string; headerDoc?: { l
 };
 
 // Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
-async function sendTemplate(to: string, tpl: { name: string; lang: string; headerDoc?: { link: string; filename: string } }, nome: string): Promise<boolean> {
+async function sendTemplate(to: string, tpl: { name: string; lang: string; headerDoc?: { link: string; filename: string } }, nome: string): Promise<{ ok: boolean; err?: string }> {
   const key = Deno.env.get("D360_API_KEY");
-  if (!key) return false;
+  if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const components: any[] = [];
   if (tpl.headerDoc) components.push({ type: "header", parameters: [{ type: "document", document: { link: tpl.headerDoc.link, filename: tpl.headerDoc.filename } }] });
   components.push({ type: "body", parameters: [{ type: "text", text: (nome || "você").slice(0, 60) }] });
@@ -93,9 +93,9 @@ async function sendTemplate(to: string, tpl: { name: string; lang: string; heade
       headers: { "D360-API-KEY": key, "Content-Type": "application/json" },
       body: JSON.stringify({ messaging_product: "whatsapp", to, type: "template", template: { name: tpl.name, language: { code: tpl.lang }, components } }),
     });
-    if (!r.ok) { console.error("[lia-followup] template falhou", r.status, await r.text().catch(() => "")); return false; }
-    return true;
-  } catch (e) { console.error("[lia-followup] erro no template", e); return false; }
+    if (!r.ok) { const t = await r.text().catch(() => ""); console.error("[lia-followup] template falhou", r.status, t); return { ok: false, err: `${r.status} ${t}`.slice(0, 260) }; }
+    return { ok: true };
+  } catch (e) { return { ok: false, err: String(e).slice(0, 260) }; }
 }
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -291,9 +291,14 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
     // nome limpo pro corpo do template (WhatsApp às vezes manda só emoji)
     const bruto = primeiroNome(est?.nome ?? "");
     const nomeLead = /\p{L}/u.test(bruto) ? bruto.replace(/[^\p{L}\p{M}'.-]/gu, "").trim() : "";
-    const ok = ehTemplate
-      ? await sendTemplate(f.telefone, WA_TEMPLATES[f.template_key], nomeLead)
-      : await send360Text(f.telefone, f.mensagem);
+    let ok = false;
+    if (ehTemplate) {
+      const res = await sendTemplate(f.telefone, WA_TEMPLATES[f.template_key], nomeLead);
+      ok = res.ok;
+      if (!res.ok && res.err) await sb.from("lia_followups").update({ motivo: `ERRO TEMPLATE: ${res.err}`, updated_at: nowISO() }).eq("id", f.id);
+    } else {
+      ok = await send360Text(f.telefone, f.mensagem);
+    }
     if (!ok) continue;
     await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: f.mensagem });
 
