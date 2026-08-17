@@ -389,7 +389,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const [{ data: ativos }, { data: ganhosPeriodo }] = await Promise.all([
         supabase
           .from("negocios")
-          .select("id, fase, status, vgv_estimado, vgv_final, auth_user_id, updated_at, empreendimento, created_at, data_assinatura")
+          .select("id, fase, status, vgv_estimado, vgv_final, auth_user_id, updated_at, empreendimento, created_at, data_assinatura, pipeline_lead_id")
           .eq("status", "ativo")
           .neq("fase", "ganho")
           .limit(1000),
@@ -407,15 +407,36 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const vgvDe = (n: { vgv_final?: number | null; vgv_estimado?: number | null }) =>
         Number(n.vgv_final ?? 0) || Number(n.vgv_estimado ?? 0) || 0;
 
+      // FONTE ÚNICA: a etapa do negócio é a ETAPA DO PIPELINE do lead
+      // (documentacao → proposta → contrato_gerado), não a coluna `fase` antiga
+      // (que só tem em_negociacao/contrato e engolia a Documentação em "Em Negociação").
+      // Negócio sem lead/etapa (manual) cai no mapeamento da fase.
+      const ativosRows = (ativos || []) as any[];
+      const leadIds = [...new Set(ativosRows.map((n) => n.pipeline_lead_id).filter(Boolean))] as string[];
+      const [{ data: stagesRows }, leadsStageRes] = await Promise.all([
+        supabase.from("pipeline_stages").select("id, tipo"),
+        leadIds.length
+          ? supabase.from("pipeline_leads").select("id, stage_id").in("id", leadIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const tipoDeStage = new Map<string, string>((stagesRows || []).map((s: any) => [s.id, s.tipo]));
+      const stageDoLead = new Map<string, string>(((leadsStageRes as any).data || []).map((l: any) => [l.id, l.stage_id]));
+      const FASE_TO_TIPO: Record<string, string> = { em_negociacao: "proposta", contrato: "contrato_gerado" };
+      const etapaDoNegocio = (n: any): string => {
+        const sid = n.pipeline_lead_id ? stageDoLead.get(n.pipeline_lead_id) : null;
+        const tipo = sid ? tipoDeStage.get(sid) : null;
+        return tipo || FASE_TO_TIPO[n.fase as string] || "proposta";
+      };
+
       const now = new Date();
       const faseMap = new Map<string, { count: number; vgv: number }>();
       let risco = 0;
-      for (const n of (ativos || [])) {
-        const fase = n.fase || "desconhecido";
-        const curr = faseMap.get(fase) || { count: 0, vgv: 0 };
+      for (const n of ativosRows) {
+        const etapa = etapaDoNegocio(n);
+        const curr = faseMap.get(etapa) || { count: 0, vgv: 0 };
         curr.count++;
         curr.vgv += vgvDe(n);
-        faseMap.set(fase, curr);
+        faseMap.set(etapa, curr);
         const diffDays = Math.floor((now.getTime() - new Date(n.updated_at || "").getTime()) / 86400000);
         if (diffDays > 15) risco += vgvDe(n);
       }
@@ -493,7 +514,11 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const allMemberUserIds = (members || []).map(m => m.user_id).filter(Boolean) as string[];
       if (allMemberUserIds.length === 0) return { teams: [] as TeamData[], corretoresRank: [] as CorretorRankData[] };
 
-      const { data: corrProfs } = await supabase.from("profiles").select("id, nome, user_id").in("user_id", allMemberUserIds);
+      const { data: corrProfs } = await supabase.from("profiles").select("id, nome, user_id, ativo").in("user_id", allMemberUserIds);
+      // Ranking/performance são de ATIVIDADE atual: corretor inativo (saiu da empresa)
+      // não entra como linha fantasma. (Vendas históricas de inativo seguem no VGV da
+      // empresa — cálculo separado; ver memória corretor-inativo-historico.)
+      const ativoSet = new Set((corrProfs || []).filter((p: any) => p.ativo !== false).map((p: any) => p.user_id));
       const corrNameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"]));
       // Map user_id -> profile_id for negocios lookup
       const userToProfileId = new Map((corrProfs || []).map(p => [p.user_id, p.id]));
@@ -532,7 +557,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const teamDataArr: TeamData[] = [];
       for (const gId of gerenteIds) {
         const teamMbrs = (members || []).filter(m => m.gerente_id === gId);
-        const memberUserIds = teamMbrs.map(m => m.user_id).filter(Boolean) as string[];
+        const memberUserIds = teamMbrs.map(m => m.user_id).filter((id) => !!id && ativoSet.has(id)) as string[];
         if (memberUserIds.length === 0) continue;
         let tLig = 0, tAprov = 0, tVM = 0, tVR = 0, tProp = 0, tVgv = 0;
         const gerenteNome = profMap.get(gId) || "Gerente";

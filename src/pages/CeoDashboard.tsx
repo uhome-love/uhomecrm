@@ -356,7 +356,7 @@ export default function CeoDashboard() {
   const totalNeg = negocioFases.reduce((a: number, f: any) => a + f.count, 0);
   const negTotalVgv = negocioFases.reduce((a: number, f: any) => a + f.vgv, 0);
   // "Contrato" = fase canônica intermediária (contrato gerado/em assinatura)
-  const contratoGerado = negocioFases.find((f: any) => f.fase === "contrato");
+  const contratoGerado = negocioFases.find((f: any) => f.fase === "contrato_gerado");
   const vgvContrato = contratoGerado?.vgv || 0;
   const countContrato = contratoGerado?.count || 0;
   const leadsDistribuidos = enviadosRoleta;
@@ -386,15 +386,17 @@ export default function CeoDashboard() {
 
   // Funil de negócios — 3 fases canônicas (pós-consolidação 07/2026).
   // "Perdido" vive em coluna status, não em fase, portanto fora deste funil.
-  const negFunnelOrder = ["em_negociacao", "contrato", "ganho"];
+  const negFunnelOrder = ["documentacao", "proposta", "contrato_gerado", "ganho"];
   const negFunnelLabels: Record<string,string> = {
-    em_negociacao: "Em Negociação",
-    contrato: "Contrato",
+    documentacao: "Documentação",
+    proposta: "Em Negociação",
+    contrato_gerado: "Contrato",
     ganho: "Ganho",
   };
   const negFunnelColors: Record<string,string> = {
-    em_negociacao: "#F59E0B",
-    contrato: "#8B5CF6",
+    documentacao: "#4969FF",
+    proposta: "#F59E0B",
+    contrato_gerado: "#8B5CF6",
     ganho: "#22C55E",
   };
 
@@ -769,7 +771,7 @@ export default function CeoDashboard() {
           <MiniKpi label="Total de Negócios" value={totalNeg} variant="highlight"
             sub="situação atual do pipeline"
             onClick={() => setKpiDetail({ type: "negocios", label: "Negócios ativos" })} />
-          <MiniKpi label="VGV em Contrato Gerado" value={formatBRLCompact(vgvContrato)}
+          <MiniKpi label="VGV em Contrato Gerado" value={vgvContrato > 0 ? formatBRLCompact(vgvContrato) : "sem valor"}
             sub={`${countContrato} negócio${countContrato !== 1 ? "s" : ""} · situação atual`}
             onClick={() => setKpiDetail({ type: "contratos", label: "Negócios em contrato" })} />
           <MiniKpi label="VGV Assinado" value={formatBRLCompact(kpis.vgvAssinado)} variant="success"
@@ -792,7 +794,7 @@ export default function CeoDashboard() {
           <CardHeader className="pb-4">
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
             <p className="text-[10px] text-muted-foreground">
-              Em Negociação e Contrato = situação atual do pipeline (não filtram por período) · Ganho = vendas assinadas em {periodoLabel}
+              Documentação, Em Negociação e Contrato = situação atual do pipeline (não filtram por período) · Ganho = vendas assinadas em {periodoLabel}
             </p>
           </CardHeader>
 
@@ -803,7 +805,7 @@ export default function CeoDashboard() {
               errorTitle="Falha ao carregar o funil de negócios"
               className="space-y-4"
             >
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 gap-3">
               {negFunnelOrder.map((fase, idx) => {
                 const data = negocioFases.find((f: any) => f.fase === fase);
                 const count = data?.count || 0;
@@ -813,7 +815,7 @@ export default function CeoDashboard() {
                 const color = negFunnelColors[fase] || "#a1a1aa";
                 const isCaiu = fase.toLowerCase().includes("caiu") || fase.toLowerCase().includes("perdid");
                 const detailType: KpiDetailType | null =
-                  fase === "em_negociacao" ? "negociacao" : fase === "contrato" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
+                  fase === "proposta" ? "negociacao" : fase === "contrato_gerado" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
                 return (
                   <button
                     key={fase}
@@ -840,7 +842,7 @@ export default function CeoDashboard() {
                       {negFunnelLabels[fase] || fase}
                     </span>
                     <span className="text-[10px] font-medium text-muted-foreground">
-                      {formatBRLCompact(vgv)}
+                      {vgv > 0 ? formatBRLCompact(vgv) : "—"}
                     </span>
                   </button>
                 );

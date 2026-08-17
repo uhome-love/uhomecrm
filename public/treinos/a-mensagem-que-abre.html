@@ -377,6 +377,13 @@ b, strong { font-weight:700; }
 .slide.cheio::after { color: rgba(255,255,255,.55); }
 .slide.cheio .selo { background-image: var(--logo-branco); }
 .slide.cheio .kicker { color: rgba(255,255,255,.7); }
+.slide.cheio .medidor-rotulo small { color: rgba(255,255,255,.72); }
+.slide.cheio .col-valor { color: rgba(255,255,255,.72); }
+.slide.cheio .col.forte .col-valor { color:#fff; }
+.slide.cheio .col-rotulo { color: rgba(255,255,255,.78); }
+.slide.cheio .col-trilho { background: rgba(255,255,255,.18); }
+.slide.cheio .col-preenche { background: rgba(255,255,255,.55); }
+.slide.cheio .col.forte .col-preenche { background:#fff; }
 
 /* ---------- SCRIPT PRONTO ---------- */
 .script {
@@ -1068,9 +1075,16 @@ class Treino {
       else if(e.key==='n'||e.key==='N'){e.preventDefault();this.notes.classList.toggle('open');}
       else if(e.key==='Escape'){this.notes.classList.remove('open');}
     });
+    // O trackpad manda eventos de INERCIA por 1-2s depois do gesto. Com um lock
+    // fixo de 750ms, a inercia atravessava a trava e passava 2 ou 3 slides de
+    // uma vez. Agora cada evento que chega RENOVA a trava: ela so libera
+    // quando o gesto realmente parou.
+    let solta=null;
+    const trava=()=>{ this.locked=true; clearTimeout(solta);
+      solta=setTimeout(()=>{this.locked=false},280); };
     window.addEventListener('wheel',e=>{ if(Math.abs(e.deltaY)<12) return; e.preventDefault();
-      if(this.locked) return; this.locked=true; e.deltaY>0?this.next():this.prev();
-      setTimeout(()=>{this.locked=false},750); },{passive:false});
+      if(this.locked){ trava(); return; }
+      trava(); e.deltaY>0?this.next():this.prev(); },{passive:false});
     let sy=null;
     window.addEventListener('touchstart',e=>{sy=e.touches[0].clientY},{passive:true});
     window.addEventListener('touchend',e=>{ if(sy===null) return;
@@ -1079,7 +1093,16 @@ class Treino {
         setTimeout(()=>{this.locked=false},600);} },{passive:true});
   }
 }
-document.addEventListener('DOMContentLoaded',()=>new Treino());
+document.addEventListener('DOMContentLoaded',()=>{
+  new Treino();
+  // Dentro do CRM o deck roda em iframe. Sem foco, as setas do teclado vao
+  // para a pagina de fora e o corretor acha que "a seta nao passa slide".
+  const pegarFoco=()=>{ try{ window.focus(); document.body.focus(); }catch(_){} };
+  document.body.tabIndex=-1; pegarFoco();
+  window.addEventListener('pointerdown',pegarFoco);
+  window.addEventListener('pointerenter',pegarFoco);
+  document.addEventListener('mouseover',pegarFoco,{once:true});
+});
 </script>
 </body>
 </html>

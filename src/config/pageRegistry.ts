@@ -210,13 +210,13 @@ const DYNAMIC_PATTERNS: Array<{
     regex: /^\/academia\/trilha\/(.+)$/,
     pattern: "/academia/trilha/:trilhaId",
     componentKey: "academia-trilha",
-    config: (m) => ({ key: `academia-trilha-${m[1]}`, label: "Trilha", icon: "GraduationCap" }),
+    config: () => ({ key: "academia-trilha", label: "Aula", icon: "GraduationCap" }),
   },
   {
     regex: /^\/academia\/aula\/(.+)$/,
     pattern: "/academia/aula/:aulaId",
     componentKey: "academia-aula",
-    config: (m) => ({ key: `academia-aula-${m[1]}`, label: "Aula", icon: "GraduationCap" }),
+    config: () => ({ key: "academia-aula", label: "Aula", icon: "GraduationCap" }),
   },
 ];
 

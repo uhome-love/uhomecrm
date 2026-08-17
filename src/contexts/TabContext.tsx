@@ -55,13 +55,31 @@ function loadFromStorage(): { tabs: Tab[]; activeTabId: string } | null {
     const data = JSON.parse(raw);
     if (Array.isArray(data.tabs) && typeof data.activeTabId === "string") {
       // Remove ghost tabs from legacy "/" route
-      const cleaned = data.tabs
+      const semFantasma = data.tabs
         .filter((t: any) => t.path !== "/" && t.path !== "/index.html" && t.path !== "/index")
         .map((t: any) => ({ ...t, path: normalizeLegacyPath(t.path) }));
-      const activeStillExists = cleaned.some((t: any) => t.id === data.activeTabId);
+
+      // Abas órfãs: guardadas com uma key que a rota não gera mais. Acontecia
+      // com a Academia, que criava uma aba por trilha (academia-trilha-<uuid>)
+      // e o corretor acumulava várias "Trilha" idênticas. Aqui elas são
+      // reconciliadas com a key atual e as repetidas somem.
+      const vistas = new Set<string>();
+      const cleaned = semFantasma
+        .map((t: any) => {
+          const atual = resolveRoute(t.path.split("?")[0]);
+          return atual ? { ...t, id: atual.key, label: atual.label } : t;
+        })
+        .filter((t: any) => (vistas.has(t.id) ? false : (vistas.add(t.id), true)));
+      // a aba ativa também pode estar guardada com a key antiga: reconcilia
+      // pelo path, senão o corretor volta e cai numa aba que não era a dele
+      const ativaAntiga = data.tabs.find((t: any) => t.id === data.activeTabId);
+      const ativaAgora = ativaAntiga
+        ? resolveRoute(normalizeLegacyPath(ativaAntiga.path).split("?")[0])?.key ?? data.activeTabId
+        : data.activeTabId;
+      const activeStillExists = cleaned.some((t: any) => t.id === ativaAgora);
       return {
         tabs: cleaned,
-        activeTabId: activeStillExists ? data.activeTabId : (cleaned[0]?.id ?? ""),
+        activeTabId: activeStillExists ? ativaAgora : (cleaned[0]?.id ?? ""),
       };
     }
   } catch {}
