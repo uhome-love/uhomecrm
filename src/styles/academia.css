@@ -12,14 +12,14 @@
   --uac-paper-2: #f0eee8;
   --uac-ink: #15171c;
   --uac-ink-2: #4b515c;
-  --uac-ink-3: #8b919c;
+  --uac-ink-3: #676d79;
   --uac-rule: #e4e2db;
   --uac-azul: #4969ff;
   --uac-azul-soft: #e9edff;
   --uac-azul-escuro: #2c47cc;
   --uac-ok: #12864a;
   --uac-ok-soft: #e7f4ec;
-  --uac-ouro: #b8860b;
+  --uac-ouro: #8f6408;
   --uac-ouro-soft: #fbf3e0;
   --uac-alerta: #b45309;
   --uac-alerta-soft: #fdf1e3;
@@ -986,3 +986,8 @@
   border-radius: 999px;
   padding: 0.35em 0.8em;
 }
+
+/* contraste: o azul da marca vive bem como fundo, mas como TEXTO pequeno
+   ficava em 4,42:1. Nesses lugares entra o tom escuro. */
+.uac-aula-xp, .uac-aula-estado, .uac-semana-tag, .uac-rotulo,
+.uac-nivel.agora .uac-nivel-tag, .uac-aula-prova:hover { color: var(--uac-azul-escuro); }
