@@ -15761,6 +15761,7 @@ export type Database = {
         Args: { p_pipeline_lead_id: string }
         Returns: boolean
       }
+      lead_em_estado_final: { Args: { p_lead_id: string }; Returns: boolean }
       lead_saude_status:
         | {
             Args: {
