@@ -27,7 +27,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import BulkEmpreendimentoAssign from "@/components/ceo/BulkEmpreendimentoAssign";
-import { formatBRLCompact as _formatBRLCompactLegacy } from "@/lib/utils";
+import { formatBRLCompact as _formatBRLCompactLegacy, cn } from "@/lib/utils";
 import { fmtMoney } from "@/lib/fmtMoney";
 void _formatBRLCompactLegacy; // M5 cleanup
 const formatBRLCompact = (v: number) => fmtMoney(v, "short");
@@ -120,6 +120,31 @@ const MiniKpi = forwardRef<HTMLDivElement, {
   );
 });
 MiniKpi.displayName = "MiniKpi";
+
+// ─── Card da faixa de destaque (números-herói do topo) ───
+function HeroKpi({ label, value, hint, delta: d, tone = "neutral" }: {
+  label: string; value: string; hint?: string; delta?: number | null;
+  tone?: "neutral" | "success" | "accent";
+}) {
+  const showDelta = d != null && Number.isFinite(d);
+  const dir = showDelta ? (Math.round(d!) === 0 ? "flat" : d! > 0 ? "up" : "down") : null;
+  const valColor = tone === "success" ? "text-success-500" : tone === "accent" ? "text-primary" : "text-foreground";
+  return (
+    <div className="bg-white dark:bg-white/[0.04] p-4 min-w-0">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground truncate">{label}</p>
+      <p className={cn("text-[26px] font-[850] mt-1.5 leading-none tabular-nums", valColor)}>{value}</p>
+      <p className="text-[10.5px] mt-1 font-semibold">
+        {showDelta ? (
+          <span className={dir === "flat" ? "text-muted-foreground" : dir === "up" ? "text-success-500" : "text-danger-500"}>
+            {dir === "flat" ? "→" : dir === "up" ? "▲" : "▼"} {Math.abs(Math.round(d!))}% vs. anterior
+          </span>
+        ) : (
+          <span className="text-muted-foreground/70">{hint || " "}</span>
+        )}
+      </p>
+    </div>
+  );
+}
 
 // ─── Horizontal Bar ───
 function HBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
@@ -463,6 +488,32 @@ export default function CeoDashboard() {
         >
 
 
+
+      {/* ═══ FAIXA DE DESTAQUE — o período em 2 segundos ═══ */}
+      <section>
+        <SectionLabel icon={TrendingUp}>{`Visão geral · ${periodoLabel}`}</SectionLabel>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border rounded-2xl overflow-hidden border border-border">
+          <div className="bg-gradient-to-br from-[#4969FF] to-[#6D5CF0] text-white p-4 min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wide opacity-90 truncate">VGV assinado</p>
+            <p className="text-[26px] font-[850] mt-1.5 leading-none tabular-nums whitespace-nowrap">
+              {kpis.vgvAssinado > 0 ? formatBRLCompact(kpis.vgvAssinado) : (vgvMesAtual.vgv > 0 ? formatBRLCompact(vgvMesAtual.vgv) : "sem dado")}
+            </p>
+            <p className="text-[10.5px] opacity-90 mt-1 font-semibold">
+              {ceoMetas.meta_vgv_assinado > 0
+                ? `${Math.round((kpis.vgvAssinado / ceoMetas.meta_vgv_assinado) * 100)}% da meta`
+                : (kpis.vgvAssinado === 0 && vgvMesAtual.vgv > 0 ? "mês atual" : "no período")}
+            </p>
+          </div>
+          <HeroKpi label="Vendas" value={String(vendasPeriodo.length)} tone="success"
+            hint={vendasPeriodo.length > 0 ? `ticket ${formatBRLCompact(kpis.vgvAssinado / vendasPeriodo.length)}` : "no período"} />
+          <HeroKpi label="Visitas realizadas" value={String(kpis.visitasRealizadas)}
+            delta={delta(kpis.visitasRealizadas, prevKpis?.visitasRealizadas)} hint="realizadas" />
+          <HeroKpi label="Leads gerados" value={String(totalLeadsPeriodo)} hint="marketing no período" />
+          <HeroKpi label="Lead → Venda"
+            value={totalLeadsPeriodo > 0 ? `${((vendasPeriodo.length / totalLeadsPeriodo) * 100).toFixed(1)}%` : "—"}
+            tone="accent" hint="taxa do funil" />
+        </div>
+      </section>
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {errors.roleta && (
