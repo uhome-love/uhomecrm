@@ -74,6 +74,9 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
   const [customData, setCustomData] = useState("");
   const [customHora, setCustomHora] = useState("09:00");
   const [busy, setBusy] = useState(false);
+  /** obs escrita sem tipo de contato → pedimos o tipo antes de salvar */
+  const [pedindoTipo, setPedindoTipo] = useState(false);
+
   // Avançar etapa opcional — registrar + mover num toque só. O corretor ESCOLHE a
   // etapa à frente (ex.: de Novo Lead pode ir pra Qualificação, Visita, etc.).
   const [etapasFrente, setEtapasFrente] = useState<{ id: string; nome: string }[]>([]);
