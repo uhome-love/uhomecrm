@@ -442,7 +442,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
               <X className="h-4 w-4" /> Pular
             </button>
           )}
-          <button type="button" onClick={concluir} disabled={busy || obsFaltando} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+          <button type="button" onClick={() => concluir()} disabled={busy || obsFaltando} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
             {busy ? "Salvando…" : (modoConclusao ? "Registrar e concluir" : "Concluir")}
           </button>
         </div>
