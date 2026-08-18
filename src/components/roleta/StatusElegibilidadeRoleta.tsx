@@ -114,7 +114,7 @@ export function StatusElegibilidadeRoleta() {
                 </p>
               ) : (
                 <p className="text-sm text-destructive mt-0.5">
-                  🔒 Você está bloqueado — veja o que fazer abaixo
+                  🔒 {motivoBloqueio?.titulo ?? "Você está bloqueado — veja o que fazer abaixo"}
                 </p>
               )}
             </div>
