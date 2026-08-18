@@ -53,7 +53,7 @@ export default function OfertaAtiva() {
   const tabs = isAdmin || isGestor ? TABS : TABS.filter((t) => t.value !== "config");
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
+    <div className="bg-[#f0f0f5] dark:bg-background p-6 -m-6 min-h-full space-y-4">
       <PageHeader
         title="Oferta ativa"
         subtitle="Campanhas temporárias criadas a partir da Base Única — operação, ao vivo e resultado"

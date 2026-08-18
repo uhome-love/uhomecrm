@@ -160,7 +160,7 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
   if (compact) {
     return (
       <div className="inline-flex items-center gap-1">
-      <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] p-0.5">
+      <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-border bg-[#f7f7fb] dark:bg-muted/50 p-0.5">
         {visibleBadges.map((b) => {
           const isActive = active === b.key;
           const count = counts[b.key];

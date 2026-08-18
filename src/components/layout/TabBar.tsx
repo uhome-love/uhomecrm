@@ -30,7 +30,7 @@ export default function TabBar() {
       className={cn(
         "flex items-end h-[36px] min-h-[36px] overflow-hidden select-none",
         "bg-muted/50 border-b border-border",
-        "dark:bg-card dark:border-white/[0.05]"
+        "dark:bg-card dark:border-border"
       )}
     >
       <div

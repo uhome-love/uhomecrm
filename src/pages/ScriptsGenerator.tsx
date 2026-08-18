@@ -14,7 +14,7 @@ export default function ScriptsGenerator({ showHeader = true }: { showHeader?: b
   const [activeTab, setActiveTab] = useState(isManager ? "time" : "meus");
 
   const triggerCls =
-    "gap-1.5 py-2.5 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:bg-gray-100 font-semibold";
+    "gap-1.5 py-2.5 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:bg-muted font-semibold";
 
   return (
     <div className="space-y-5">

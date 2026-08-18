@@ -34,7 +34,7 @@ export default function BaseLeadsPage() {
   const fmt = (n?: number) => (n ?? 0).toLocaleString("pt-BR");
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
+    <div className="bg-[#f0f0f5] dark:bg-background p-6 -m-6 min-h-full space-y-4">
       <PageHeader
         title="Base Única de Leads"
         subtitle="Todo o histórico de leads da U.Home em um só lugar — e campanhas temporárias de Oferta Ativa"

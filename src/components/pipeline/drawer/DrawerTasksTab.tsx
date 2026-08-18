@@ -83,7 +83,7 @@ const TIPO_CIRCLE: Record<TipoCanon, string> = {
   msg: "bg-indigo-100 text-indigo-600",
   followup: "bg-purple-100 text-purple-700",
   visit: "bg-emerald-100 text-emerald-600",
-  outro: "bg-zinc-100 text-zinc-500",
+  outro: "bg-zinc-100 text-muted-foreground",
 };
 
 const TIPO_BADGE: Record<TipoCanon, string> = {
@@ -91,7 +91,7 @@ const TIPO_BADGE: Record<TipoCanon, string> = {
   msg: "bg-indigo-100 text-indigo-600",
   followup: "bg-purple-100 text-purple-700",
   visit: "bg-emerald-100 text-emerald-600",
-  outro: "bg-zinc-100 text-zinc-500",
+  outro: "bg-zinc-100 text-muted-foreground",
 };
 
 const TIPO_OPTIONS: { value: string; label: string }[] = [
@@ -112,8 +112,8 @@ const GROUPS: Array<{ key: keyof ReturnType<typeof groupTasksByDeadline>; icon: 
   { key: "atrasadas", icon: "⚠️", label: "Atrasadas", color: "text-red-600" },
   { key: "hoje", icon: "📅", label: "Hoje", color: "text-amber-700" },
   { key: "amanha", icon: "⏰", label: "Amanhã", color: "text-indigo-600" },
-  { key: "semana", icon: "📌", label: "Esta semana", color: "text-zinc-500" },
-  { key: "proximas", icon: "📅", label: "Próximas", color: "text-zinc-500" },
+  { key: "semana", icon: "📌", label: "Esta semana", color: "text-muted-foreground" },
+  { key: "proximas", icon: "📅", label: "Próximas", color: "text-muted-foreground" },
 ];
 
 export default function DrawerTasksTab({
@@ -178,7 +178,7 @@ export default function DrawerTasksTab({
       <div className="px-7 pt-6 pb-4 flex justify-between items-end border-b border-zinc-100">
         <div>
           <div className="text-lg font-bold text-zinc-900 tracking-tight">Lembretes</div>
-          <div className="text-xs text-zinc-500 mt-0.5">
+          <div className="text-xs text-muted-foreground mt-0.5">
             {countAtrasadas > 0 && <>{countAtrasadas} atrasada{countAtrasadas !== 1 ? "s" : ""} · </>}
             {countHoje > 0 && <>{countHoje} hoje · </>}
             {countProximas} próxima{countProximas !== 1 ? "s" : ""}
@@ -219,7 +219,7 @@ export default function DrawerTasksTab({
           <div className="text-base font-semibold text-zinc-900 mb-1.5">
             Nenhum lembrete pendente
           </div>
-          <div className="text-xs text-zinc-500 max-w-xs mx-auto mb-5 leading-relaxed">
+          <div className="text-xs text-muted-foreground max-w-xs mx-auto mb-5 leading-relaxed">
             {isVisitaStage
               ? "Etapa Visita: os lembretes de confirmação, remarcação e feedback são criados automaticamente pela Agenda. Se precisar, agende um contato/follow-up manual."
               : "Este lead está em dia. Crie um lembrete de follow-up pra manter o ritmo de contato."}
@@ -243,7 +243,7 @@ export default function DrawerTasksTab({
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${g.color}`}>
                     {g.icon} {g.label}
                   </span>
-                  <span className="bg-zinc-100 text-zinc-500 text-[10px] px-1.5 py-0.5 rounded-md font-medium">
+                  <span className="bg-zinc-100 text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-md font-medium">
                     {list.length}
                   </span>
                 </div>
@@ -273,7 +273,7 @@ export default function DrawerTasksTab({
           >
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Concluídas
-              <span className="bg-zinc-100 text-zinc-500 text-[10px] px-1.5 py-0.5 rounded-md font-medium">
+              <span className="bg-zinc-100 text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-md font-medium">
                 {concluidas.length}
               </span>
             </span>
@@ -306,7 +306,7 @@ export default function DrawerTasksTab({
                         </div>
                       )}
                       {t.descricao && (
-                        <div className="text-[12px] text-zinc-500 mt-1 leading-snug whitespace-pre-wrap">
+                        <div className="text-[12px] text-muted-foreground mt-1 leading-snug whitespace-pre-wrap">
                           {t.descricao}
                         </div>
                       )}
@@ -378,7 +378,7 @@ function TaskCard({
     ? "bg-red-50/40 border border-red-200/60"
     : isHoje
     ? "bg-amber-50/40 border border-amber-200/60"
-    : "bg-white border border-zinc-200";
+    : "bg-card border border-border";
 
   const barCls = isAtrasada ? "bg-red-600" : isHoje ? "bg-amber-600" : "";
 
@@ -393,7 +393,7 @@ function TaskCard({
           <span aria-hidden>{emoji}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-semibold text-zinc-500 mb-0.5 flex items-center gap-1.5 flex-wrap">
+          <div className="text-[11px] font-semibold text-muted-foreground mb-0.5 flex items-center gap-1.5 flex-wrap">
             <span>{formatTaskDeadline(tarefa.vence_em, tarefa.hora_vencimento)}</span>
             <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-medium uppercase tracking-tight ${TIPO_BADGE[tipo]}`}>
               {TIPO_LABEL[tipo]}
@@ -406,7 +406,7 @@ function TaskCard({
       </div>
 
       {tarefa.descricao && (
-        <div className="text-xs text-zinc-600 leading-relaxed mb-2.5 pl-10">
+        <div className="text-xs text-muted-foreground leading-relaxed mb-2.5 pl-10">
           {tarefa.descricao}
         </div>
       )}
@@ -420,14 +420,14 @@ function TaskCard({
         </button>
         <button
           onClick={onDispensar}
-          className="bg-white border border-zinc-200 hover:bg-zinc-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 flex items-center gap-1"
+          className="bg-card border border-border hover:bg-muted rounded-md px-2.5 py-1 text-[11px] font-medium text-muted-foreground flex items-center gap-1"
           title="Dispensar — conclui sem registrar (não conta)"
         >
           <CheckCircle2 className="h-3 w-3" /> Dispensar
         </button>
         <button
           onClick={onEdit}
-          className="bg-white border border-zinc-200 hover:bg-zinc-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 flex items-center gap-1"
+          className="bg-card border border-border hover:bg-muted rounded-md px-2.5 py-1 text-[11px] font-medium text-muted-foreground flex items-center gap-1"
         >
           <Pencil className="h-3 w-3" /> Editar
         </button>
@@ -435,7 +435,7 @@ function TaskCard({
           onClick={() => {
             if (confirm("Excluir este lembrete?")) onDelete();
           }}
-          className="bg-white border border-red-200/50 hover:bg-red-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-red-600 flex items-center gap-1"
+          className="bg-card border border-red-200/50 hover:bg-danger-500/10 rounded-md px-2.5 py-1 text-[11px] font-medium text-red-600 flex items-center gap-1"
           aria-label="Excluir lembrete"
         >
           <Trash2 className="h-3 w-3" />
@@ -484,11 +484,11 @@ function EditTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; 
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <label className="text-[11px] font-medium text-zinc-500">Título</label>
+            <label className="text-[11px] font-medium text-muted-foreground">Título</label>
             <Input value={titulo} onChange={e => setTitulo(e.target.value)} />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-500">Tipo</label>
+            <label className="text-[11px] font-medium text-muted-foreground">Tipo</label>
             <select
               className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
               value={tipo}
@@ -499,16 +499,16 @@ function EditTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; 
           </div>
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-[11px] font-medium text-zinc-500">Data</label>
+              <label className="text-[11px] font-medium text-muted-foreground">Data</label>
               <Input type="date" value={data} onChange={e => setData(e.target.value)} />
             </div>
             <div className="w-32">
-              <label className="text-[11px] font-medium text-zinc-500">Hora</label>
+              <label className="text-[11px] font-medium text-muted-foreground">Hora</label>
               <Input type="time" value={hora} onChange={e => setHora(e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-500">Descrição</label>
+            <label className="text-[11px] font-medium text-muted-foreground">Descrição</label>
             <Textarea rows={3} value={descricao} onChange={e => setDescricao(e.target.value)} />
           </div>
         </div>
