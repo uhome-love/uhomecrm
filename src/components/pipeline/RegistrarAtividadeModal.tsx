@@ -74,6 +74,9 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
   const [customData, setCustomData] = useState("");
   const [customHora, setCustomHora] = useState("09:00");
   const [busy, setBusy] = useState(false);
+  /** obs escrita sem tipo de contato → pedimos o tipo antes de salvar */
+  const [pedindoTipo, setPedindoTipo] = useState(false);
+
   // Avançar etapa opcional — registrar + mover num toque só. O corretor ESCOLHE a
   // etapa à frente (ex.: de Novo Lead pode ir pra Qualificação, Visita, etc.).
   const [etapasFrente, setEtapasFrente] = useState<{ id: string; nome: string }[]>([]);
@@ -159,11 +162,18 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
 
   // Salva o que estiver selecionado (atividade + obs + lembrete). Em modo
   // conclusão, também marca o lembrete como concluído.
-  const concluir = async () => {
+  const concluir = async (forcarNota = false) => {
     if (busy) return;
     const textoObs = obs.trim();
-    // obs escrita sem tipo escolhido → vira uma nota
-    const ativ = ativSel ?? (textoObs ? ATIVIDADES.find((a) => a.tipo === "nota")! : null);
+    const notaDef = ATIVIDADES.find((a) => a.tipo === "nota")!;
+    // Observação escrita SEM tipo: antes virava Nota silenciosa (não conta como
+    // contato → lead seguia vermelho/atrasado e o corretor achava que era bug).
+    // Agora pedimos o tipo explicitamente; "Só anotar" força a nota.
+    if (!ativSel && textoObs && !forcarNota) {
+      setPedindoTipo(true);
+      return;
+    }
+    const ativ = ativSel ?? (forcarNota && textoObs ? notaDef : null);
 
     if (ativ && !textoObs) {
       toast.error("Escreva uma observação para registrar a atividade.");
@@ -176,6 +186,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
       fechar();
       return;
     }
+
 
     setBusy(true);
     try {
@@ -230,7 +241,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
 
     const avancouMsg = etapaAlvo ? ` → ${etapaAlvo.nome}` : "";
     if (ativ && lembreteSel) toast.success(`⚡ ${ativ.label} · 📅 ${lembreteSel.label}${avancouMsg}`);
-    else if (ativ) toast.success(`${ativ.toque ? `⚡ ${ativ.label} registrado` : `${ativ.label} salva`}${avancouMsg}`);
+    else if (ativ) toast.success(ativ.toque ? `⚡ ${ativ.label} registrado${avancouMsg}` : `Anotação salva — lead segue pendente de contato${avancouMsg}`);
     else if (lembreteSel) toast.success(`📅 Lembrete: ${lembreteSel.label}${avancouMsg}`);
     else if (etapaAlvo) toast.success(`Movido para ${etapaAlvo.nome} ✅`);
     // Recarrega o board para a cor do card refletir o toque na hora (o trigger
@@ -266,12 +277,14 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
                   key={a.tipo}
                   type="button"
                   disabled={busy}
-                  onClick={() => setAtivSel(on ? null : a)}
+                  onClick={() => { setPedindoTipo(false); setAtivSel(on ? null : a); }}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-xl border py-2.5 text-[11px] font-semibold transition-colors",
                     on
                       ? "border-success-500/50 bg-success-500/10 text-success-700 dark:text-success-500"
-                      : "border-border text-foreground hover:border-primary/50 hover:bg-primary/[0.04]"
+                      : pedindoTipo && a.tipo !== "nota"
+                        ? "border-primary/60 bg-primary/[0.06] text-foreground"
+                        : "border-border text-foreground hover:border-primary/50 hover:bg-primary/[0.04]"
                   )}
                 >
                   {on ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" strokeWidth={1.9} />}
@@ -280,6 +293,30 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
               );
             })}
           </div>
+
+          {pedindoTipo && !ativSel && (
+            <div className="mt-2 rounded-xl border border-primary/40 bg-primary/[0.06] px-3 py-2">
+              <div className="text-[12.5px] font-semibold text-foreground">Como foi esse contato?</div>
+              <div className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground">
+                Escolha acima para o lead sair de atrasado no pipeline e na agenda.
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => concluir(true)}
+                className="mt-1.5 text-[11.5px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+              >
+                Só anotar (não conta como contato)
+              </button>
+            </div>
+          )}
+
+          {ativSel?.tipo === "nota" && (
+            <div className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+              Anotação — não conta como contato: o lead continua marcado como desatualizado.
+            </div>
+          )}
+
 
           {/* Observação — obrigatória ao registrar atividade (alimenta o histórico) */}
           <div className="mt-2.5">
@@ -431,7 +468,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
               <X className="h-4 w-4" /> Pular
             </button>
           )}
-          <button type="button" onClick={concluir} disabled={busy || obsFaltando} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+          <button type="button" onClick={() => concluir()} disabled={busy || obsFaltando} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
             {busy ? "Salvando…" : (modoConclusao ? "Registrar e concluir" : "Concluir")}
           </button>
         </div>
