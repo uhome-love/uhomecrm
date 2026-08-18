@@ -128,6 +128,19 @@ export function StatusElegibilidadeRoleta() {
           </button>
         </div>
 
+        {/* Motivo real do bloqueio */}
+        {!elegívelProxima && motivoBloqueio?.bloqueado && (
+          <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <p className="text-xs font-semibold text-destructive">{motivoBloqueio.titulo}</p>
+            <p className="text-xs text-muted-foreground mt-1">{motivoBloqueio.texto}</p>
+            {motivoBloqueio.codigo === "descartes" && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Seu gestor e a diretoria já foram avisados automaticamente.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Barra de progresso */}
         <div className="mt-3">
           <div className="flex justify-between items-center mb-1">
