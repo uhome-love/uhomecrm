@@ -14,6 +14,14 @@ export interface LeadDesatualizado {
   dias_sem_tarefa: number;
 }
 
+export interface MotivoBloqueioRoleta {
+  bloqueado: boolean;
+  codigo: "descartes" | "vermelhos" | "sem_visita_hoje" | "presenca" | "ok" | string;
+  titulo: string;
+  texto: string;
+  [k: string]: unknown;
+}
+
 export interface ElegibilidadeRoleta {
   pode_roleta_manha: boolean;
   pode_roleta_tarde: boolean;
