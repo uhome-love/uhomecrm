@@ -15,8 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "Arial", "system-ui", "sans-serif"],
-        display: ["Montserrat", "Inter", "Arial", "system-ui", "sans-serif"],
-        mono: ["IBM Plex Mono", "SF Mono", "Menlo", "monospace"],
+        display: ["Inter", "Arial", "system-ui", "sans-serif"],
       },
       fontSize: {
         "2xs": ["0.6875rem", { lineHeight: "1rem" }],       /* 11px — tagline HOMI */

@@ -62,7 +62,7 @@ export function StatCard({
       </p>
       <p
         className={cn(
-          "font-display text-[22px] font-[800] leading-none mt-1 tracking-[-0.5px] tabular-nums",
+          "text-[22px] font-[800] leading-none mt-1 tracking-[-0.5px] tabular-nums",
           TONE_VALUE[tone]
         )}
       >
