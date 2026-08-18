@@ -129,7 +129,7 @@ async function backfillResumos(sb: any): Promise<number> {
   //  então lead novo podia nunca entrar na janela.)
   const { data: pend, error: errPend } = await sb
     .from("lia_estado")
-    .select("telefone, lead_id, resumo, qualificado_em")
+    .select("telefone, lead_id, resumo, qualificado_em, agendou_em")
     .eq("status", "qualificado")
     .not("lead_id", "is", null)
     .or("resumo.is.null,resumo.like.Resumo automático indisponível%")
@@ -163,7 +163,19 @@ async function backfillResumos(sb: any): Promise<number> {
       } catch (err) { console.error("[lia-followup] resumo erro de rede", e.telefone, err); }
     }
     if (!resumo) continue;
-    await sb.from("lia_estado").update({ resumo }).eq("telefone", e.telefone);
+    // o resumo é a fonte da flag "agendou": se ele nasceu quebrado, a preferência
+    // de dia/turno que o lead deu ficou invisível no painel. Ao refazer o resumo,
+    // reprocessa a flag também.
+    const mAg = resumo.match(/Agendamento:\s*(.+)/i);
+    const valAg = (mAg?.[1] ?? "").split("\n")[0].trim();
+    const agendou = !!valAg && !/n[ãa]o\s+agend|n[ãa]o\s+inform|sem\s+agend|nenhum/i.test(valAg);
+    const patch: Record<string, unknown> = { resumo };
+    if (agendou) {
+      patch.agendou = true;
+      patch.agendamento = valAg.slice(0, 120);
+      if (!e.agendou_em) patch.agendou_em = new Date().toISOString();
+    }
+    await sb.from("lia_estado").update(patch).eq("telefone", e.telefone);
     await sb.from("pipeline_atividades").update({ descricao: resumo })
       .eq("pipeline_lead_id", e.lead_id).eq("tipo", "entrada");
     n++;
