@@ -175,12 +175,13 @@ FORMATO DA SUA RESPOSTA: máximo TRÊS mensagens curtas por turno. Quando enviar
 
 // Modo resumo: gera um resumo curto e útil da conversa PRO CORRETOR continuar o contato.
 const RESUMO_SYSTEM = `Você resume, para um CORRETOR da Uhome, a conversa que a assistente LIA teve com um lead do Casa Tua Santos Ferreira (Canoas). O corretor vai continuar o atendimento e precisa saber, rápido, o que já rolou e como seguir. Gere um resumo curto, direto e fiel à conversa, NESTE formato exato (uma linha por bloco, sem markdown, sem asterisco):
+Engajamento: <ALTO, MÉDIO ou BAIXO + uma palavra do porquê. ALTO = trocou muitas mensagens, fez várias perguntas de verdade (preço, pagamento, entrega, detalhes) e se envolveu, é PRIORIDADE de contato mesmo que ainda não tenha marcado dia. MÉDIO = conversou e tirou algumas dúvidas. BAIXO = respondeu pouco, sem se aprofundar.>
 Quer: <morar ou investir; quantos dormitórios; a FAIXA DE VALOR/orçamento que a pessoa busca, se ela falou; o que mais importa pra ela>
 Perfil: <de onde a pessoa é (cidade/bairro); o PRAZO pra comprar ou mudar; COMO pensa em pagar (à vista, financiamento, FGTS, consórcio, tem imóvel pra vender); família/pet. Só o que ela entregou; o resto é "não informado">
 Situação: <objeções, dúvidas, o que já foi respondido/enviado, e se a pessoa falou de renda, entrada, orçamento ou que não enquadra, registre aqui EXATAMENTE o que ela disse, com os valores>
 Agendamento: <a pessoa sinalizou QUANDO ou COMO quer conhecer? Se deu QUALQUER preferência pra videochamada (um dia, um turno, ou até "durante a semana de manhã"), escreva ela. Se prefere conhecer PRESENCIAL na casa modelo (abre 1º/09), escreva "casa modelo" + a preferência (ex.: "casa modelo, fim de semana"). Só escreva "não agendou" se ela NÃO sinalizou nenhuma intenção de conhecer.>
 Como seguir: <próximo passo concreto pro corretor. Se NÃO enquadra no Casa Tua (orçamento menor que R$ 690 mil, outra região ou outro tipo), monte o FILTRO que a pessoa deu: região/bairro, faixa de valor e características desejadas (quartos, garagem, etc), e diga pra oferecer imóveis nesse perfil. Se enquadra: confirmar dia/turno da apresentação, mandar o material X, retomar a dúvida Y, etc.>
-Regras: seja específico com o que apareceu na conversa; se algo não apareceu, escreva "não informado"; se a pessoa falou renda, entrada OU orçamento/faixa de valor, SEMPRE cite o número; no máximo 5 linhas; nunca invente nada.`;
+Regras: seja específico com o que apareceu na conversa; se algo não apareceu, escreva "não informado"; se a pessoa falou renda, entrada OU orçamento/faixa de valor, SEMPRE cite o número; no máximo 6 linhas; nunca invente nada.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
