@@ -34,6 +34,7 @@ const MEDIA: Record<string, string> = {
   planta3: `${MEDIA_BASE}/planta3-v2.jpg`,
   planta4: `${MEDIA_BASE}/planta4-v2.jpg`,
   aerea: `${MEDIA_BASE}/invest.jpg`,
+  comparativo: `${MEDIA_BASE}/comparativo.jpg`,
 };
 // Documentos (PDF) que a LIA pode enviar por marcador [[midia:CHAVE]].
 const DOC: Record<string, { link: string; filename: string }> = {

@@ -52,6 +52,7 @@ const MEDIA: Record<string, string> = {
   planta3: "/casatua/planta3.jpg",
   planta4: "/casatua/planta4.jpg",
   aerea: "/casatua/invest.jpg",
+  comparativo: "/casatua/comparativo.jpg",
 };
 
 export default function LiaTeste() {
