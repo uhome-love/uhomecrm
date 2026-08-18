@@ -339,7 +339,7 @@ async function gerarResumo(sb: any, from: string): Promise<string> {
 
     // tenta o resumo por IA, com re-tentativas espaçadas (evita o rate limit da 2ª chamada)
     for (let i = 0; i < 3; i++) {
-      if (i) await new Promise((r) => setTimeout(r, 12000)); // 12s: o gateway recusa chamadas em rajada
+      if (i) await new Promise((r) => setTimeout(r, 2500));
       try {
         const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
           method: "POST",

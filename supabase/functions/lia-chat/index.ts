@@ -184,11 +184,19 @@ serve(async (req) => {
       .map((m: any) => ({ role: m.role, content: m.content }));
 
     // Modo resumo: devolve { resumo } (pro corretor), sem conversar.
+    // A conversa vai como TRANSCRIÇÃO dentro de uma única mensagem do usuário.
+    // Mandar o histórico cru quebrava: quando a última fala era da LIA (o caso
+    // normal, ela responde e o resumo sai logo depois), o gateway devolvia
+    // 400 "Requests ending with a model turn are not supported" e o resumo
+    // vinha vazio, jogando todo lead no texto de fallback.
     if ((body as any).mode === "resumo") {
+      const transcricao = messages
+        .map((m: any) => `${m.role === "user" ? "LEAD" : "LIA"}: ${String(m.content).replace(/\[\[midia:[^\]]*\]\]/g, "(enviou uma mídia)").replace(/\|\|\|/g, " ")}`)
+        .join("\n");
       const rr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: MODEL, messages: [{ role: "system", content: RESUMO_SYSTEM }, ...messages], stream: false, temperature: 0.3 }),
+        body: JSON.stringify({ model: MODEL, messages: [{ role: "system", content: RESUMO_SYSTEM }, { role: "user", content: `Transcrição da conversa:\n\n${transcricao}\n\nGere o resumo no formato pedido.` }], stream: false, temperature: 0.3 }),
       });
       if (!rr.ok) { console.error("[lia-chat] resumo erro", rr.status, await rr.text().catch(() => "")); return new Response(JSON.stringify({ resumo: "" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
       const rd = await rr.json();
