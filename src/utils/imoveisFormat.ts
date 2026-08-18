@@ -249,7 +249,7 @@ export function siteImovelToMapPin(imovel: SiteImovel, bounds?: BuscaFilters["bo
 
 /* ── Public constants ── */
 
-export const CIDADES_PERMITIDAS = ["Porto Alegre", "Canoas", "Cachoeirinha", "Gravataí", "Guaíba"];
+export const CIDADES_PERMITIDAS = ["Porto Alegre", "Canoas", "Cachoeirinha", "Gravataí", "Guaíba", "Alvorada"];
 
 export const PROPERTY_TYPES = [
   { value: "apartamento", label: "Apartamento" },
