@@ -214,46 +214,47 @@
     --pipeline-empty-icon-bg: 239 84% 67%;
   }
 
-  /* Dark mode — paleta indigo-violeta inspirada no Modo Foco (#0F0F23 / #1A1A2E / #16213E)
-     hue 240° + tint frio. Identidade contínua entre CRM e Modo Foco. */
+  /* Dark mode — slate neutro-frio com ESCADA DE ELEVAÇÃO real (fundo < card <
+     caixa), bordas visíveis e texto legível. Desacoplado do gradiente do Modo
+     Foco (que é um modo imersivo à parte). Passos de ~4-5% de luz entre camadas. */
   .dark {
-    --background:          240 45% 10%;     /* #0F0F23 — topo do gradient Modo Foco */
-    --foreground:          210 40% 96%;
-    --card:                240 35% 13%;     /* #16162B — lift sutil sobre bg */
-    --card-foreground:     210 40% 96%;
-    --popover:             240 35% 15%;     /* #1A1A30 */
-    --popover-foreground:  210 40% 96%;
+    --background:          219 21% 13%;     /* #1B2029 — Dim: canvas cinza-azulado (nível médio) */
+    --foreground:          214 30% 95%;     /* #EDF1F7 — texto primário */
+    --card:                217 19% 18%;     /* #262D38 — card sobe CLARO do fundo */
+    --card-foreground:     214 30% 95%;
+    --popover:             218 20% 17%;     /* #222833 */
+    --popover-foreground:  214 30% 95%;
     --primary:             var(--primary-500);
     --primary-foreground:  0 0% 100%;
-    --secondary:           240 28% 17%;     /* #1F1F37 */
-    --secondary-foreground: 215 20% 78%;
-    --muted:               240 28% 14%;     /* #1A1A2E — meio Modo Foco */
-    --muted-foreground:    230 18% 62%;     /* #8C92AD tint indigo */
-    --accent:              240 35% 18%;     /* #23234A — tint indigo perceptível */
-    --accent-foreground:   210 40% 96%;
+    --secondary:           217 17% 20%;     /* #2A313B */
+    --secondary-foreground: 216 24% 85%;    /* #CFD6E1 */
+    --muted:               216 17% 23%;     /* #313945 — inset (caixa) visível sobre o card */
+    --muted-foreground:    217 18% 73%;     /* #AEB7C6 — texto secundário legível */
+    --accent:              216 19% 25%;     /* #333C4A — hover/selecionado perceptível */
+    --accent-foreground:   214 30% 95%;
     --destructive:         0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border:              240 25% 20%;     /* #26263F tint frio */
-    --input:               240 25% 20%;
+    --border:              217 14% 32%;     /* #454E5C — borda VISÍVEL */
+    --input:               217 14% 32%;
     --ring:                var(--primary-400);
-    --sidebar-background:  240 50% 7%;      /* #0B0B1B */
-    --sidebar-foreground:  230 18% 70%;
-    --sidebar-accent:      240 35% 14%;     /* #181830 */
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border:      240 30% 12%;     /* #16162A */
+    --sidebar-background:  218 21% 11%;     /* #151A22 — nav um pouco mais fundo que o canvas */
+    --sidebar-foreground:  217 18% 74%;
+    --sidebar-accent:      218 20% 17%;     /* #222833 */
+    --sidebar-accent-foreground: 214 30% 95%;
+    --sidebar-border:      217 17% 19%;     /* #262C36 */
 
-    /* Pipeline Dark Mode Tokens — alinhados ao novo hue 240 */
-    --pipeline-card-bg: 240 35% 13%;        /* #16162B */
-    --pipeline-card-border: 240 25% 22%;    /* #2B2B47 */
+    /* Pipeline Dark Mode Tokens — alinhados à escada Dim */
+    --pipeline-card-bg: 217 19% 18%;        /* = card */
+    --pipeline-card-border: 217 14% 30%;    /* borda visível */
     --pipeline-card-border-hover: 228 100% 70%;
-    --pipeline-text-primary: 210 40% 96%;
-    --pipeline-text-secondary: 230 18% 70%;
-    --pipeline-text-muted: 230 18% 62%;
-    --pipeline-column-bg: 240 40% 11%;      /* #121226 */
-    --pipeline-column-border: 240 25% 18%;
-    --pipeline-tab-bg: 240 40% 10%;         /* #101023 */
-    --pipeline-tab-active-bg: 240 32% 17%;  /* #1F1F38 */
-    --pipeline-progress-track: 240 25% 20%;
+    --pipeline-text-primary: 214 30% 95%;
+    --pipeline-text-secondary: 217 18% 74%;
+    --pipeline-text-muted: 217 14% 62%;
+    --pipeline-column-bg: 219 20% 15%;      /* entre fundo e card */
+    --pipeline-column-border: 217 15% 24%;
+    --pipeline-tab-bg: 219 21% 13%;
+    --pipeline-tab-active-bg: 217 19% 20%;  /* aba ativa sobe do trilho */
+    --pipeline-progress-track: 217 14% 28%;
     --pipeline-empty-icon-bg: 228 100% 64%;
   }
 

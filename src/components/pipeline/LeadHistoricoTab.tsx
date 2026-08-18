@@ -697,14 +697,14 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
         <div className="inline-flex rounded-lg bg-zinc-100 p-0.5">
           <button
             onClick={() => setHistView("narrativa")}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "narrativa" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "narrativa" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           >
             📖 Narrativa
             <span className={`text-[10px] font-bold rounded-full px-1.5 ${histView === "narrativa" ? "bg-indigo-100 text-indigo-700" : "bg-zinc-200 text-zinc-500"}`}>{narrativaItems.length}</span>
           </button>
           <button
             onClick={() => setHistView("sistema")}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "sistema" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "sistema" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           >
             ⚙️ Sistema
             <span className={`text-[10px] font-bold rounded-full px-1.5 ${histView === "sistema" ? "bg-zinc-200 text-zinc-700" : "bg-zinc-200 text-zinc-500"}`}>{sistemaItems.length}</span>
@@ -712,7 +712,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
           {isLia && (
             <button
               onClick={() => setHistView("lia")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "lia" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "lia" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               <MessageSquare className="h-3.5 w-3.5" /> Conversa Lia
             </button>
