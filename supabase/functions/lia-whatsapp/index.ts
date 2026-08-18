@@ -339,16 +339,18 @@ async function gerarResumo(sb: any, from: string): Promise<string> {
 
     // tenta o resumo por IA, com re-tentativas espaçadas (evita o rate limit da 2ª chamada)
     for (let i = 0; i < 3; i++) {
-      if (i) await new Promise((r) => setTimeout(r, 2500));
+      if (i) await new Promise((r) => setTimeout(r, 12000)); // 12s: o gateway recusa chamadas em rajada
       try {
         const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
           body: JSON.stringify({ messages: msgs, mode: "resumo" }),
         });
+        if (!r.ok) { console.error("[lia-whatsapp] resumo HTTP", r.status, await r.text().catch(() => "")); continue; }
         const d = await r.json();
         const resumo = String(d?.resumo ?? "").trim();
         if (resumo) return resumo;
+        console.error("[lia-whatsapp] resumo veio vazio (tentativa", i, ")");
       } catch (e) { console.error("[lia-whatsapp] gerarResumo tentativa", i, e); }
     }
 

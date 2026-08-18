@@ -134,7 +134,7 @@ async function backfillResumos(sb: any): Promise<number> {
     .not("lead_id", "is", null)
     .or("resumo.is.null,resumo.like.Resumo automático indisponível%")
     .order("qualificado_em", { ascending: false })
-    .limit(10);
+    .limit(3); // o gateway limita por frequência: poucos por rodada, bem espaçados
   if (errPend) console.error("[lia-followup] backfill select falhou", errPend);
   if (!pend?.length) return 0;
   let n = 0;
@@ -149,7 +149,7 @@ async function backfillResumos(sb: any): Promise<number> {
     // duas tentativas espaçadas: a 1ª pode pegar rate limit do gateway.
     let resumo = "";
     for (let t = 0; t < 2 && !resumo; t++) {
-      if (t) await new Promise((res) => setTimeout(res, 4000));
+      if (t) await new Promise((res) => setTimeout(res, 15000)); // 15s: abaixo disso o gateway recusa
       try {
         const rr = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
           method: "POST",
@@ -167,7 +167,7 @@ async function backfillResumos(sb: any): Promise<number> {
     await sb.from("pipeline_atividades").update({ descricao: resumo })
       .eq("pipeline_lead_id", e.lead_id).eq("tipo", "entrada");
     n++;
-    await new Promise((res) => setTimeout(res, 1500)); // espaça entre leads
+    await new Promise((res) => setTimeout(res, 12000)); // espaça entre leads (rate limit do gateway)
   }
   return n;
 }
