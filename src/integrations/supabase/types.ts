@@ -16185,6 +16185,10 @@ export type Database = {
               isSetofReturn: true
             }
           }
+      roleta_motivo_bloqueio: {
+        Args: { p_auth_user_id: string; p_janela?: string }
+        Returns: Json
+      }
       rpc_carteira_saude: {
         Args: { p_gerente_id?: string; p_user_id?: string }
         Returns: Json
