@@ -27,9 +27,9 @@ const MEDIA_BASE = "https://uhomesales.com/casatua";
 const FOTO_FACHADA = `${MEDIA_BASE}/casa.jpg`;   // fachada das casas (sobrados ao entardecer)
 const FOTO_INFRA = `${MEDIA_BASE}/club.jpg`;      // infra do condomínio (piscina + club house)
 const FECHO_ABRIU = "E aí, o que você achou? 😊"; // pergunta leve depois das fotos
-const MAX_CUTUCOES = 3;
+const MAX_CUTUCOES = 5;
 const STALL_HOURS = 4;     // silêncio mínimo do lead antes do 1º cutucão
-const SPACING_HOURS = 20;  // intervalo entre um cutucão e o próximo
+const SPACING_HOURS = 44;  // intervalo entre um cutucão e o próximo (~2 dias, como o material)
 const HORA_INI = 9;        // janela de envio (BRT)
 const HORA_FIM = 20;
 
@@ -205,8 +205,21 @@ async function detectar(sb: any): Promise<number> {
     if (aberto && aberto.length) continue;
 
     const dentro24h = (agora - new Date(c.last_user_at).getTime()) < 24 * 3600_000;
-    // pós-24h agora usa o TEMPLATE oficial (único que passa); dentro de 24h segue texto livre
-    const key = !dentro24h ? "followup_casatuacanoaslia" : (c.status === "novo" ? "primeiro_retorno" : c.status === "qualificado" ? "sem_horario" : "sumiu_planta");
+    // Cadência dos 5 toques (playbook do time). Pós-24h só o TEMPLATE oficial passa;
+    // dentro de 24h, texto livre escalando pelo número do toque (followup_count).
+    const n = c.followup_count ?? 0; // 0 = primeiro toque
+    let key: string;
+    if (!dentro24h) {
+      key = "followup_casatuacanoaslia";       // "Procura-se" + ebook (humor/spoiler, único pós-24h)
+    } else if (n === 0) {
+      key = c.status === "novo" ? "primeiro_retorno" : "sumiu_planta"; // 1º toque: spoiler/foto
+    } else if (n === 1) {
+      key = "novidade_estande";                // 2º toque: novidade (lista do estande)
+    } else if (n === 2) {
+      key = "condicao_pagamento";              // 3º toque: condição de pagamento
+    } else {
+      key = "porta_aberta";                    // 4º+ toque: porta aberta (responde 1/2/3)
+    }
     const tpl = T[key];
     if (!tpl) continue;
 
@@ -217,7 +230,15 @@ async function detectar(sb: any): Promise<number> {
       .replaceAll("Oi {nome}, ", nome ? `Oi ${nome}, ` : "Oi! ")
       .replaceAll("{nome}", nome)
       .replace(/\s{2,}/g, " ").trim();
-    const motivo = !dentro24h ? "Frio, passou de 24h" : (c.status === "novo" ? "Só abriu, não respondeu" : c.status === "qualificado" ? "Engajou, não marcou horário" : "Esfriou depois de engajar");
+    const MOTIVOS: Record<string, string> = {
+      followup_casatuacanoaslia: "Sumiu (passou de 24h), reativação",
+      primeiro_retorno: "1º toque: só abriu e sumiu",
+      sumiu_planta: "1º toque: esfriou depois de engajar",
+      novidade_estande: "2º toque: novidade do estande",
+      condicao_pagamento: "3º toque: condição de pagamento",
+      porta_aberta: "4º toque: porta aberta",
+    };
+    const motivo = MOTIVOS[key] ?? "Follow-up";
 
     const { error } = await sb.from("lia_followups").insert({
       telefone: c.telefone,
