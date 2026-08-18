@@ -126,7 +126,7 @@ function HBar({ label, value, max, color }: { label: string; value: number; max:
         <span className="truncate text-muted-foreground group-hover/bar:text-foreground transition-colors">{label}</span>
         <span className="font-semibold text-foreground ml-2 shrink-0">{value}</span>
       </div>
-      <div className="h-2 rounded-full bg-[#e8e8f0] dark:bg-white/[0.06] overflow-hidden">
+      <div className="h-2 rounded-full bg-[#e8e8f0] dark:bg-muted/60 overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
     </div>
@@ -141,7 +141,7 @@ function FunnelStep({ label, value, pct, color, isLast }: { label: string; value
         <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: color }}>
           {value}
         </div>
-        {!isLast && <div className="w-px h-4 bg-[#e8e8f0] dark:bg-white/[0.07]" />}
+        {!isLast && <div className="w-px h-4 bg-[#e8e8f0] dark:bg-muted/60" />}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[11px] font-medium text-foreground truncate">{label}</p>
@@ -449,7 +449,7 @@ export default function CeoDashboard() {
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {errors.roleta && (
-        <Card className="border-danger/40 bg-[#f7f7fb] dark:bg-[#141e30]">
+        <Card className="border-danger/40 bg-[#f7f7fb] dark:bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Aprovações Pendentes</CardTitle>
           </CardHeader>
@@ -464,7 +464,7 @@ export default function CeoDashboard() {
         </Card>
       )}
       {!errors.roleta && localPendentes.length > 0 && (
-        <Card className="border-primary/40 bg-[#f7f7fb] dark:bg-[#141e30]">
+        <Card className="border-primary/40 bg-[#f7f7fb] dark:bg-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -481,7 +481,7 @@ export default function CeoDashboard() {
           <CardContent>
             <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
               {localPendentes.map((c: any) => (
-                <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border border-border bg-white dark:bg-white/[0.03]">
+                <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border border-border bg-white dark:bg-muted/50">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       {c.avatar && <AvatarImage src={c.avatar} />}
@@ -546,7 +546,7 @@ export default function CeoDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Leads por Campanha/Empreendimento */}
-          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs font-semibold flex items-center gap-2">
@@ -578,7 +578,7 @@ export default function CeoDashboard() {
           </Card>
 
           {/* Leads por Origem */}
-          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <Megaphone className="h-3.5 w-3.5 text-primary" /> Leads por Origem
@@ -597,7 +597,7 @@ export default function CeoDashboard() {
           </Card>
 
           {/* Leads por Corretor */}
-          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <Users className="h-3.5 w-3.5 text-primary" /> Leads por Corretor
@@ -637,7 +637,7 @@ export default function CeoDashboard() {
         <SectionLabel icon={BarChart3}>Gestão de Leads</SectionLabel>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Funil do Pipeline - 2/3 */}
-          <Card className="lg:col-span-2 bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="lg:col-span-2 bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-xs font-semibold">Funil do Pipeline</CardTitle>
@@ -661,7 +661,7 @@ export default function CeoDashboard() {
                   return (
                     <div key={s.id} className="flex items-center gap-2 group/stage">
                       <span className="text-[10px] text-muted-foreground w-28 truncate group-hover/stage:text-foreground transition-colors">{s.nome}</span>
-                      <div className="flex-1 h-6 rounded-lg bg-[#e8e8f0]/50 dark:bg-white/[0.04] relative overflow-hidden">
+                      <div className="flex-1 h-6 rounded-lg bg-[#e8e8f0]/50 dark:bg-muted/50 relative overflow-hidden">
                         <div className="h-full rounded-lg transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: stageColor, opacity: 0.8 }} />
                         <span className="absolute inset-0 flex items-center px-2 text-[10px] font-bold text-foreground">{s.count}</span>
                       </div>
@@ -675,7 +675,7 @@ export default function CeoDashboard() {
           </Card>
 
           {/* Agenda de Visitas - 1/3 */}
-          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <CalendarCheck className="h-3.5 w-3.5 text-primary" /> Agenda de Visitas
@@ -688,7 +688,7 @@ export default function CeoDashboard() {
                   <button
                     type="button"
                     onClick={() => setKpiDetail({ type: "novos_agendamentos", label: "Novos agendamentos" })}
-                    className="w-full bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05] hover:border-primary/30 transition-colors"
+                    className="w-full bg-white dark:bg-muted/50 rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-border hover:border-primary/30 transition-colors"
                   >
                     <p className="text-3xl font-[800] text-primary">{agendaVisitas.agendadas}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">Novos agendamentos no período</p>
@@ -715,7 +715,7 @@ export default function CeoDashboard() {
                       key={card.label}
                       type="button"
                       onClick={() => setKpiDetail({ type: card.type, label: card.label })}
-                      className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05] hover:border-primary/30 transition-colors"
+                      className="bg-white dark:bg-muted/50 rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-border hover:border-primary/30 transition-colors"
                     >
                       <p className={`text-2xl font-[800] ${card.color}`}>{card.value}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">{card.label}</p>
@@ -730,12 +730,12 @@ export default function CeoDashboard() {
               </div>
 
               {ceoMetas.meta_visitas_realizadas > 0 && (
-                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 border border-[#e8e8f0] dark:border-white/[0.05]">
+                <div className="bg-white dark:bg-muted/50 rounded-xl p-3 border border-[#e8e8f0] dark:border-border">
                   <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
                     <span>Meta Visitas Realizadas</span>
                     <span className="font-semibold text-foreground">{Math.round((kpis.visitasRealizadas / ceoMetas.meta_visitas_realizadas) * 100)}%</span>
                   </div>
-                  <div className="h-2 rounded-full bg-[#e8e8f0] dark:bg-white/[0.06] overflow-hidden">
+                  <div className="h-2 rounded-full bg-[#e8e8f0] dark:bg-muted/60 overflow-hidden">
                     <div className="h-full rounded-full bg-success transition-all" style={{ width: `${Math.min((kpis.visitasRealizadas / ceoMetas.meta_visitas_realizadas) * 100, 100)}%` }} />
                   </div>
                 </div>
@@ -773,7 +773,7 @@ export default function CeoDashboard() {
             onClick={() => setKpiDetail({ type: "propostas", label: "Propostas" })} />
         </div>
 
-        <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+        <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
             <p className="text-[10px] text-muted-foreground">
@@ -835,7 +835,7 @@ export default function CeoDashboard() {
             {/* Taxas de conversão do período */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
               {conversoes.map(c => (
-                <div key={c.label} className="bg-white dark:bg-white/[0.04] rounded-lg px-3 py-2 border border-[#e8e8f0] dark:border-white/[0.05]">
+                <div key={c.label} className="bg-white dark:bg-muted/50 rounded-lg px-3 py-2 border border-[#e8e8f0] dark:border-border">
                   <p className="text-[10px] text-muted-foreground truncate">{c.label}</p>
                   <p className="text-base font-[800] text-foreground leading-tight">{c.value}</p>
                   <p className="text-[9px] text-muted-foreground/70 truncate">{c.sub}</p>
@@ -847,7 +847,7 @@ export default function CeoDashboard() {
         </Card>
 
         {/* Vendas assinadas no período */}
-        <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none mt-4">
+        <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none mt-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold flex items-center gap-2">
               <DollarSign className="h-3.5 w-3.5 text-success" /> Vendas assinadas no período
@@ -862,7 +862,7 @@ export default function CeoDashboard() {
             ) : (
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
                 <table className="w-full text-[11px]">
-                  <thead className="sticky top-0 bg-[#f7f7fb] dark:bg-[#141e30]">
+                  <thead className="sticky top-0 bg-[#f7f7fb] dark:bg-card">
                     <tr className="text-[10px] text-muted-foreground text-left">
                       <th className="py-1.5 pr-2 font-medium">Cliente</th>
                       <th className="py-1.5 pr-2 font-medium">Empreendimento</th>
@@ -876,7 +876,7 @@ export default function CeoDashboard() {
                       <tr
                         key={v.id}
                         onClick={() => v.leadId && navigate(`/pipeline-leads?lead=${v.leadId}`)}
-                        className={`border-t border-[#e8e8f0] dark:border-white/[0.05] ${v.leadId ? "cursor-pointer hover:bg-white/60 dark:hover:bg-white/[0.04]" : ""}`}
+                        className={`border-t border-[#e8e8f0] dark:border-border ${v.leadId ? "cursor-pointer hover:bg-white/60 dark:hover:bg-white/[0.04]" : ""}`}
                       >
                         <td className="py-1.5 pr-2 font-medium text-foreground truncate max-w-[160px]">{v.cliente}</td>
                         <td className="py-1.5 pr-2 text-muted-foreground truncate max-w-[160px]">{v.empreendimento}</td>
@@ -917,7 +917,7 @@ export default function CeoDashboard() {
             variant={kpis.taxaConversao >= 10 ? "success" : kpis.taxaConversao >= 5 ? "warning" : "default"} />
         </div>
 
-        <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+        <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold">Performance por Equipe</CardTitle>
           </CardHeader>
@@ -945,7 +945,7 @@ export default function CeoDashboard() {
                 </thead>
                 <tbody>
                   {teams.sort((a, b) => b.ligacoes - a.ligacoes).map(t => (
-                    <tr key={t.gerente_id} className="border-b border-[#e8e8f0]/50 dark:border-white/[0.04] hover:bg-white/50 dark:hover:bg-white/[0.02] transition-colors">
+                    <tr key={t.gerente_id} className="border-b border-[#e8e8f0]/50 dark:border-border hover:bg-white/50 dark:hover:bg-white/[0.02] transition-colors">
                       <td className="py-2 font-medium text-foreground">{t.gerente_nome}</td>
                       <td className="py-2 text-right font-semibold text-primary">{t.ligacoes}</td>
                       <td className="py-2 text-right text-success font-semibold">{t.aproveitados}</td>
@@ -977,7 +977,7 @@ export default function CeoDashboard() {
 
         {/* Top Corretores */}
         {(corretoresRank.length > 0 || errors.teams) && (
-          <Card className="mt-3 bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="mt-3 bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold">Top Corretores — Oferta Ativa</CardTitle>
             </CardHeader>
@@ -1003,7 +1003,7 @@ export default function CeoDashboard() {
                   </thead>
                   <tbody>
                     {[...corretoresRank].sort((a, b) => b.ligacoes - a.ligacoes).slice(0, 10).map((c, i) => (
-                      <tr key={c.corretor_id} className="border-b border-[#e8e8f0]/50 dark:border-white/[0.04]">
+                      <tr key={c.corretor_id} className="border-b border-[#e8e8f0]/50 dark:border-border">
                         <td className="py-1.5 font-bold text-muted-foreground">{i + 1}</td>
                         <td className="py-1.5 font-medium text-foreground">{c.nome}</td>
                         <td className="py-1.5 text-muted-foreground">{c.gerente_nome}</td>
@@ -1028,22 +1028,22 @@ export default function CeoDashboard() {
         <SectionLabel icon={Activity}>Dados Gerais</SectionLabel>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Marketing */}
-          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <Megaphone className="h-3.5 w-3.5 text-primary" /> Marketing
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Total Leads Gerados</span>
                 <span className="text-sm font-bold text-primary">{totalLeadsPeriodo}</span>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Origens Ativas</span>
                 <span className="text-sm font-bold">{origens.length}</span>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Top Origem</span>
                 <span className="text-sm font-bold">{origens[0]?.origem || "—"}</span>
               </div>
@@ -1056,22 +1056,22 @@ export default function CeoDashboard() {
           </Card>
 
           {/* RH */}
-          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <UserCheck className="h-3.5 w-3.5 text-primary" /> RH & Equipe
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Presentes Hoje</span>
                 <span className="text-sm font-bold text-success">{presentesHoje}</span>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Equipes Ativas</span>
                 <span className="text-sm font-bold">{teams.length}</span>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Total Corretores</span>
                 <span className="text-sm font-bold">{corretoresRank.length}</span>
               </div>
@@ -1084,7 +1084,7 @@ export default function CeoDashboard() {
           </Card>
 
           {/* Alertas & Info */}
-          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-border shadow-none">
+          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <Eye className="h-3.5 w-3.5 text-primary" /> Alertas & Atenção

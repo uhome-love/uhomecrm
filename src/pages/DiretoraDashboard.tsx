@@ -246,7 +246,7 @@ export default function DiretoraDashboard() {
             {d.alertas.length === 0 ? <div className="py-4 text-center text-[12px] text-emerald-600 dark:text-emerald-400">Tudo sob controle — sem alertas. 🎉</div> : (
               <div className="space-y-2">
                 {d.alertas.map((a) => (
-                  <div key={a.t} role="button" tabIndex={0} onClick={() => openTab(a.to)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTab(a.to); } }} className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-gray-700/50">
+                  <div key={a.t} role="button" tabIndex={0} onClick={() => openTab(a.to)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTab(a.to); } }} className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 transition-colors hover:bg-muted dark:hover:bg-gray-700/50">
                     <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${a.ico}`}><AlertTriangle className={`h-4 w-4 ${a.cls}`} /></div>
                     <div className="min-w-0 flex-1"><div className={`text-[13px] font-semibold ${a.cls}`}>{a.t}</div><div className="text-[11px] text-slate-400">{a.d}</div></div>
                     <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />

@@ -180,7 +180,7 @@ export default function TemplatesComunicacao() {
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-sm" style={{ color: "#1F2937" }}>{tmpl.titulo}</h3>
                   <div className="flex gap-1 shrink-0">
-                    <button onClick={() => handleEdit(tmpl)} className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors" style={{ color: "#6B7280" }}>
+                    <button onClick={() => handleEdit(tmpl)} className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors" style={{ color: "#6B7280" }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button onClick={() => handleDelete(tmpl.id)} className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors" style={{ color: "#EF4444" }}>

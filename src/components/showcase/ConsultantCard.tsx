@@ -49,7 +49,7 @@ export default function ConsultantCard({ corretor, cor, whatsappLink, contextLab
       {corretor.telefone && (
         <a
           href={`tel:+55${corretor.telefone.replace(/\D/g, "")}`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-muted transition-colors"
         >
           <Phone className="h-4 w-4" style={{ color: cor }} />
           Ligar agora

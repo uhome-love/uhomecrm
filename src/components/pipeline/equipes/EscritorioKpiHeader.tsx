@@ -36,7 +36,7 @@ export function SaudeStat({ k, n, big, onClick }: { k: EquipesSaudeKey; n: numbe
       type="button"
       onClick={onClick}
       title={`Ver leads em ${s.label}`}
-      className="group inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 hover:bg-slate-50 dark:hover:bg-gray-800"
+      className="group inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 hover:bg-muted dark:hover:bg-gray-800"
     >
       <span className={`h-2 w-2 rounded-full ${s.dot}`} />
       <span className={`${big ? "text-[15px]" : "text-[13px]"} font-bold ${s.text}`}>{n.toLocaleString("pt-BR")}</span>

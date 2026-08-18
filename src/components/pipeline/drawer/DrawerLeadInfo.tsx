@@ -37,7 +37,7 @@ export default function DrawerLeadInfo({ children, header, resetKey }: Props) {
 
   return (
     <aside
-      className="hidden md:flex flex-col shrink-0 min-w-0 w-full md:w-[36%] md:max-w-[440px] border-r border-border/50 bg-[#fafafa] dark:bg-white/[0.02]"
+      className="hidden md:flex flex-col shrink-0 min-w-0 w-full md:w-[36%] md:max-w-[440px] border-r border-border/50 bg-[#fafafa] dark:bg-muted/50"
       data-drawer-pane="info"
     >
       {header && (

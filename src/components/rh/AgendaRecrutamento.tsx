@@ -296,7 +296,7 @@ export default function AgendaRecrutamento({ candidatos, gerentes = [], scope = 
               <span className="flex-1 h-px bg-border/60" />
             </div>
 
-            <div className="rounded-2xl border border-border/60 bg-background/70 dark:bg-white/[0.03] divide-y divide-border/50 overflow-hidden">
+            <div className="rounded-2xl border border-border/60 bg-background/70 dark:bg-muted/50 divide-y divide-border/50 overflow-hidden">
               {g.items.map((e) => {
                 const d = parseISO(e.data_entrevista);
                 const atrasada = e.status === "agendada" && isPast(d);

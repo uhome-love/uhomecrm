@@ -37,7 +37,7 @@ export default function PipelineGestorSelect({
       : `h-[32px] text-[12px] max-w-[170px] min-w-[140px] shrink rounded-lg font-medium truncate ${
           active
             ? "border-violet-500 bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300"
-            : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
+            : "border-[#e8e8f0] dark:border-border bg-[#f7f7fb] dark:bg-muted/50 text-[#52525b] dark:text-[#a1a1aa]"
         }`;
 
   return (

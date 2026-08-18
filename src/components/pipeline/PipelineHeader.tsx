@@ -413,7 +413,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 segmentado, só a bolinha + número; rótulo aparece na ativa). Sem estagnado. */}
             {activeTab === "negocios" && negResumo && setNegocioSaudeFilter && (
               <div className="inline-flex items-center gap-1">
-              <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] p-0.5">
+              <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-border bg-[#f7f7fb] dark:bg-muted/50 p-0.5">
                 {([
                   { key: "verde", label: "em dia", n: negResumo.saude.verde, color: "#047857", dot: "#22c55e", bgActive: "rgba(34,197,94,0.12)" },
                   { key: "ambar", label: "atenção", n: negResumo.saude.ambar, color: "#B45309", dot: "hsl(var(--warning-500))", bgActive: "rgba(245,158,11,0.12)" },

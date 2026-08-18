@@ -39,7 +39,7 @@ export default function GestorCard({ gestor, expanded, onToggle, children }: Pro
       <button
         type="button"
         onClick={onToggle}
-        className="w-full text-left p-4 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-gray-700/40 transition"
+        className="w-full text-left p-4 flex items-start gap-3 hover:bg-muted dark:hover:bg-gray-700/40 transition"
       >
         <Avatar className="h-10 w-10">
           {gestor.avatar_url && <AvatarImage src={gestor.avatar_url} alt={gestor.nome ?? ""} />}

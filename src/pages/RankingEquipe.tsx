@@ -171,7 +171,7 @@ export default function RankingEquipe() {
   };
 
   return (
-    <div className="bg-background dark:bg-[#0e1525] p-6 max-w-6xl mx-auto space-y-4 -m-6 min-h-full">
+    <div className="bg-background dark:bg-background p-6 max-w-6xl mx-auto space-y-4 -m-6 min-h-full">
       <PageHeader
         title="Performance"
         subtitle="Visão geral, rankings e desempenho da equipe ao vivo"

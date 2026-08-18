@@ -46,7 +46,7 @@ export default function ModoTimeRow({ row, onClick }: Props) {
   return (
     <tr
       onClick={() => onClick(row.corretor_id)}
-      className="border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors"
+      className="border-b border-neutral-100 hover:bg-muted cursor-pointer transition-colors"
     >
       <td className="px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">

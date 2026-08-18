@@ -142,7 +142,7 @@ export default function GerenteCockpit() {
             <span className="absolute inset-y-0 left-0 w-1 bg-indigo-500" />
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-indigo-500" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Meta do mês · VGV assinado</span>
-              <button onClick={() => { setMetaVal(d.meta ? String(d.meta) : ""); setMetaOpen(true); }} className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 h-7 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-700"><Pencil className="h-3 w-3" /> Alterar meta</button>
+              <button onClick={() => { setMetaVal(d.meta ? String(d.meta) : ""); setMetaOpen(true); }} className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 h-7 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-muted dark:hover:bg-gray-700"><Pencil className="h-3 w-3" /> Alterar meta</button>
             </div>
             <div className="mt-2 flex items-end gap-3"><span className="text-4xl font-extrabold leading-none text-indigo-700 dark:text-indigo-300">{money(d.assinado)}</span><span className="pb-1 text-[14px] font-semibold text-slate-500 dark:text-slate-400">{d.meta > 0 ? `de ${money(d.meta)} · ${d.metaPct}%` : "meta não configurada"}</span></div>
             <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-gray-700"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.min(100, d.metaPct ?? 0)}%` }} /></div>
@@ -193,7 +193,7 @@ export default function GerenteCockpit() {
 
         {/* Funil */}
         <Card onClick={() => openTab(NEGOCIOS)}>
-          <div className="mb-3 flex items-center gap-2"><Handshake className="h-4 w-4 text-slate-500" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Funil de negócios do time</span><span className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 h-7 text-[11px] font-semibold text-slate-600 dark:text-slate-300 group-hover:bg-slate-50">Ver no pipeline <ArrowRight className="h-3 w-3" /></span></div>
+          <div className="mb-3 flex items-center gap-2"><Handshake className="h-4 w-4 text-slate-500" /><span className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Funil de negócios do time</span><span className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 h-7 text-[11px] font-semibold text-slate-600 dark:text-slate-300 group-hover:bg-muted">Ver no pipeline <ArrowRight className="h-3 w-3" /></span></div>
           <div className="flex flex-wrap items-stretch gap-2">
             {d.funil.map((s) => (<div key={s.nome} className="flex-1 min-w-[100px]"><div className="flex items-center gap-1.5"><span className={`h-2 w-2 rounded-full ${s.dot}`} /><span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{s.nome}</span></div><div className="mt-1 text-2xl font-extrabold text-slate-800 dark:text-slate-100">{s.n}</div></div>))}
           </div>

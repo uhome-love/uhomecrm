@@ -606,7 +606,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
   const detailGerente = detailCandidate?.gerente_id ? gerenteById[detailCandidate.gerente_id] : null;
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-4 sm:p-6 lg:p-8 -m-4 sm:-m-6 lg:-m-8 h-[calc(100%+2rem)] sm:h-[calc(100%+3rem)] lg:h-[calc(100%+4rem)] min-h-[520px] flex flex-col gap-4 overflow-hidden">
+    <div className="bg-[#f0f0f5] dark:bg-background p-4 sm:p-6 lg:p-8 -m-4 sm:-m-6 lg:-m-8 h-[calc(100%+2rem)] sm:h-[calc(100%+3rem)] lg:h-[calc(100%+4rem)] min-h-[520px] flex flex-col gap-4 overflow-hidden">
       <PageHeader
         title={title ?? "Candidatos"}
         subtitle={subtitle ?? "Pipeline de recrutamento"}
@@ -744,7 +744,7 @@ export default function RecrutamentoKanban({ scope, title, subtitle }: Props) {
                     }
                   }}
                   className={cn(
-                    "min-w-[248px] max-w-[248px] flex-shrink-0 flex flex-col rounded-2xl border bg-background/70 dark:bg-white/[0.03] shadow-sm transition-colors",
+                    "min-w-[248px] max-w-[248px] flex-shrink-0 flex flex-col rounded-2xl border bg-background/70 dark:bg-muted/50 shadow-sm transition-colors",
                     dragOverCol === etapa.key ? "border-primary ring-2 ring-primary/30 bg-primary/[0.04]" : "border-border/60"
                   )}
                 >
