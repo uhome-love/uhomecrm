@@ -277,12 +277,14 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
                   key={a.tipo}
                   type="button"
                   disabled={busy}
-                  onClick={() => setAtivSel(on ? null : a)}
+                  onClick={() => { setPedindoTipo(false); setAtivSel(on ? null : a); }}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-xl border py-2.5 text-[11px] font-semibold transition-colors",
                     on
                       ? "border-success-500/50 bg-success-500/10 text-success-700 dark:text-success-500"
-                      : "border-border text-foreground hover:border-primary/50 hover:bg-primary/[0.04]"
+                      : pedindoTipo && a.tipo !== "nota"
+                        ? "border-primary/60 bg-primary/[0.06] text-foreground"
+                        : "border-border text-foreground hover:border-primary/50 hover:bg-primary/[0.04]"
                   )}
                 >
                   {on ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" strokeWidth={1.9} />}
@@ -291,6 +293,30 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
               );
             })}
           </div>
+
+          {pedindoTipo && !ativSel && (
+            <div className="mt-2 rounded-xl border border-primary/40 bg-primary/[0.06] px-3 py-2">
+              <div className="text-[12.5px] font-semibold text-foreground">Como foi esse contato?</div>
+              <div className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground">
+                Escolha acima para o lead sair de atrasado no pipeline e na agenda.
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => concluir(true)}
+                className="mt-1.5 text-[11.5px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+              >
+                Só anotar (não conta como contato)
+              </button>
+            </div>
+          )}
+
+          {ativSel?.tipo === "nota" && (
+            <div className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+              Anotação — não conta como contato: o lead continua marcado como desatualizado.
+            </div>
+          )}
+
 
           {/* Observação — obrigatória ao registrar atividade (alimenta o histórico) */}
           <div className="mt-2.5">
