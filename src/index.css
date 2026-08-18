@@ -273,10 +273,10 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Mescla de fonte (identidade dos slides): TÍTULOS em Montserrat, TEXTO/tabelas
-     seguem em Inter (mais legível em telas densas). CardTitle é <h3>, então todos
-     os títulos de card entram junto. Números com .font-mono usam IBM Plex Mono. */
-  h1, h2, h3, h4, h5, h6 {
+  /* Identidade UhomeSales: Montserrat só nos MOMENTOS DE MARCA (título de página =
+     h1/h2), Inter no trabalho. Título de card (h3) e menores seguem em Inter, pra
+     não pesar em tela densa. Números-herói ganham .font-display no componente. */
+  h1, h2 {
     @apply font-display;
   }
 

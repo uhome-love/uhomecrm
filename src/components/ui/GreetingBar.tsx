@@ -195,7 +195,7 @@ export function GreetingBar({
 
       {/* Texto */}
       <div className="relative z-10 min-w-0 flex-1">
-        <p className="text-[16px] font-extrabold tracking-[-0.3px] text-white leading-snug">
+        <p className="font-display text-[16px] font-extrabold tracking-[-0.3px] text-white leading-snug">
           {getGreeting()}, {(() => { const f = name.split(" ")[0]; return f.charAt(0).toUpperCase() + f.slice(1).toLowerCase(); })()}! {getEmoji()}
         </p>
         <p className="mt-0.5 text-[11.5px] font-medium text-white/55">
