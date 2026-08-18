@@ -241,7 +241,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
 
     const avancouMsg = etapaAlvo ? ` → ${etapaAlvo.nome}` : "";
     if (ativ && lembreteSel) toast.success(`⚡ ${ativ.label} · 📅 ${lembreteSel.label}${avancouMsg}`);
-    else if (ativ) toast.success(`${ativ.toque ? `⚡ ${ativ.label} registrado` : `${ativ.label} salva`}${avancouMsg}`);
+    else if (ativ) toast.success(ativ.toque ? `⚡ ${ativ.label} registrado${avancouMsg}` : `Anotação salva — lead segue pendente de contato${avancouMsg}`);
     else if (lembreteSel) toast.success(`📅 Lembrete: ${lembreteSel.label}${avancouMsg}`);
     else if (etapaAlvo) toast.success(`Movido para ${etapaAlvo.nome} ✅`);
     // Recarrega o board para a cor do card refletir o toque na hora (o trigger
