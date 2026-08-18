@@ -124,12 +124,18 @@ serve(async (req) => {
 /** Rede de segurança: gera por IA o resumo dos leads qualificados que ficaram sem resumo real
  * (null ou no fallback). Roda espaçado no cron, sem competir com a resposta do webhook. */
 async function backfillResumos(sb: any): Promise<number> {
-  const { data: pend } = await sb
+  // Só quem REALMENTE está sem resumo, e os mais recentes primeiro.
+  // (antes o filtro do fallback era feito em JS depois de um limit(15) sem ordem,
+  //  então lead novo podia nunca entrar na janela.)
+  const { data: pend, error: errPend } = await sb
     .from("lia_estado")
-    .select("telefone, lead_id, resumo")
+    .select("telefone, lead_id, resumo, qualificado_em")
     .eq("status", "qualificado")
     .not("lead_id", "is", null)
-    .limit(15);
+    .or("resumo.is.null,resumo.like.Resumo automático indisponível%")
+    .order("qualificado_em", { ascending: false })
+    .limit(10);
+  if (errPend) console.error("[lia-followup] backfill select falhou", errPend);
   if (!pend?.length) return 0;
   let n = 0;
   for (const e of pend) {
@@ -140,16 +146,22 @@ async function backfillResumos(sb: any): Promise<number> {
       .eq("telefone", e.telefone).order("created_at", { ascending: true }).limit(60);
     const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
     if (!msgs.length) continue;
+    // duas tentativas espaçadas: a 1ª pode pegar rate limit do gateway.
     let resumo = "";
-    try {
-      const rr = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
-        body: JSON.stringify({ messages: msgs, mode: "resumo" }),
-      });
-      const d = await rr.json();
-      resumo = String(d?.resumo ?? "").trim();
-    } catch (_e) { /* tenta na próxima rodada */ }
+    for (let t = 0; t < 2 && !resumo; t++) {
+      if (t) await new Promise((res) => setTimeout(res, 4000));
+      try {
+        const rr = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+          body: JSON.stringify({ messages: msgs, mode: "resumo" }),
+        });
+        if (!rr.ok) { console.error("[lia-followup] resumo HTTP", rr.status, await rr.text().catch(() => "")); continue; }
+        const d = await rr.json();
+        resumo = String(d?.resumo ?? "").trim();
+        if (!resumo) console.error("[lia-followup] resumo veio vazio para", e.telefone);
+      } catch (err) { console.error("[lia-followup] resumo erro de rede", e.telefone, err); }
+    }
     if (!resumo) continue;
     await sb.from("lia_estado").update({ resumo }).eq("telefone", e.telefone);
     await sb.from("pipeline_atividades").update({ descricao: resumo })
