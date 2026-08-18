@@ -215,8 +215,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           supabase
             .from("pipeline_leads")
             .select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id")
-            // Exclui vendas fechadas (etapa Ganho) da contagem da Roleta
-            .neq("stage_id", "2d7739eb-1787-4ad6-887a-7a4a32dcfc05")
+            // (vendas fechadas são excluídas por TIPO logo abaixo — sem UUID fixo)
             .gte("created_at", startUtc)
             .lt("created_at", endUtc)
             .order("created_at", { ascending: true })
@@ -243,10 +242,17 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         ),
       ]);
 
+      // Exclui vendas fechadas (etapa tipo 'venda') da contagem da Roleta — por TIPO,
+      // sem UUID escrito na mão (que quebraria se a etapa mudasse de id).
+      const vendaStageId = (stages || []).find((s: any) => s.tipo === "venda")?.id ?? null;
+      const leadsCriadosSemVenda = vendaStageId
+        ? (leadsCriados || []).filter((l) => l.stage_id !== vendaStageId)
+        : (leadsCriados || []);
+
       // Merge reativados into the leads list, marking origem as "Reengajamento (Nutrição)"
       // so they appear as their own bucket in "Leads por Origem" and still count toward
       // "Leads por Corretor" (using their current corretor_id).
-      const criadosIds = new Set((leadsCriados || []).map(l => l.id));
+      const criadosIds = new Set(leadsCriadosSemVenda.map(l => l.id));
       const reativadosNovos = (reativados || [])
         .filter(r => !criadosIds.has(r.id))
         .map(r => ({
@@ -258,7 +264,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           origem: "Reengajamento (Nutrição)",
           corretor_id: r.corretor_id,
         }));
-      const leads = [...(leadsCriados || []), ...reativadosNovos];
+      const leads = [...leadsCriadosSemVenda, ...reativadosNovos];
 
       const stageData = (stages || []).map(s => ({
         id: s.id, nome: s.nome, tipo: s.tipo, ordem: s.ordem,
