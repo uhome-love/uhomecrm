@@ -36,7 +36,7 @@ function getCorBarra(desatualizados: number, limite: number): string {
 // Componente principal
 // ---------------------------------------------------------------------------
 export function StatusElegibilidadeRoleta() {
-  const { elegibilidade, carregando, erro, recarregar } = useElegibilidadeRoleta();
+  const { elegibilidade, carregando, erro, recarregar, motivoBloqueio } = useElegibilidadeRoleta();
   const [expandido, setExpandido] = useState(false);
   const navigate = useNavigate();
   const proximaRoleta = getProximaRoleta();
@@ -114,7 +114,7 @@ export function StatusElegibilidadeRoleta() {
                 </p>
               ) : (
                 <p className="text-sm text-destructive mt-0.5">
-                  🔒 Você está bloqueado — veja o que fazer abaixo
+                  🔒 {motivoBloqueio?.titulo ?? "Você está bloqueado — veja o que fazer abaixo"}
                 </p>
               )}
             </div>
@@ -127,6 +127,19 @@ export function StatusElegibilidadeRoleta() {
             {expandido ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
+
+        {/* Motivo real do bloqueio */}
+        {!elegívelProxima && motivoBloqueio?.bloqueado && (
+          <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <p className="text-xs font-semibold text-destructive">{motivoBloqueio.titulo}</p>
+            <p className="text-xs text-muted-foreground mt-1">{motivoBloqueio.texto}</p>
+            {motivoBloqueio.codigo === "descartes" && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Seu gestor e a diretoria já foram avisados automaticamente.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Barra de progresso */}
         <div className="mt-3">
