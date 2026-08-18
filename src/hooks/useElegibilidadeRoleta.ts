@@ -91,6 +91,29 @@ export function useElegibilidadeRoleta() {
 
   const leadsDesatualizados = elegibilidade?.leads_desatualizados ?? 0;
 
+  const [motivo, setMotivo] = useState<MotivoBloqueioRoleta | null>(null);
+
+  useEffect(() => {
+    if (!user?.id || !elegibilidade || podeFazerRoleta) {
+      setMotivo(null);
+      return;
+    }
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const janela = mins >= 18 * 60 + 30 ? "noturna" : mins >= 13 * 60 + 30 ? "tarde" : "manha";
+    let cancelado = false;
+    (async () => {
+      const { data, error } = await supabase.rpc("roleta_motivo_bloqueio", {
+        p_auth_user_id: user.id,
+        p_janela: janela,
+      });
+      if (!cancelado && !error && data) setMotivo(data as unknown as MotivoBloqueioRoleta);
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [user?.id, elegibilidade, podeFazerRoleta]);
+
   return {
     elegibilidade,
     carregando,
@@ -98,5 +121,6 @@ export function useElegibilidadeRoleta() {
     recarregar: carregar,
     podeFazerRoleta,
     leadsDesatualizados,
+    motivoBloqueio: motivo,
   };
 }
