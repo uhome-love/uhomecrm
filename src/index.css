@@ -273,13 +273,6 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Identidade UhomeSales: Montserrat só nos MOMENTOS DE MARCA (título de página =
-     h1/h2), Inter no trabalho. Título de card (h3) e menores seguem em Inter, pra
-     não pesar em tela densa. Números-herói ganham .font-display no componente. */
-  h1, h2 {
-    @apply font-display;
-  }
-
   /* Scrollbar refinada */
   ::-webkit-scrollbar {
     width: 5px;

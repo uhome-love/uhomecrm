@@ -602,7 +602,7 @@ export default function Sidebar({
   if (collapsed) {
     return (
       <aside
-        className={cn("font-display hidden md:flex flex-col h-screen w-[60px] min-w-[60px] overflow-hidden transition-all duration-200", sb)}
+        className={cn("hidden md:flex flex-col h-screen w-[60px] min-w-[60px] overflow-hidden transition-all duration-200", sb)}
       >
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
@@ -654,7 +654,7 @@ export default function Sidebar({
   // Expanded desktop sidebar
   return (
     <aside
-      className={cn("font-display hidden md:flex flex-col h-screen w-[228px] min-w-[228px] overflow-y-auto transition-all duration-200", sb)}
+      className={cn("hidden md:flex flex-col h-screen w-[228px] min-w-[228px] overflow-y-auto transition-all duration-200", sb)}
       style={{ scrollbarWidth: "none" }}
     >
       {renderFullNav()}
