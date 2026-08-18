@@ -159,11 +159,18 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
 
   // Salva o que estiver selecionado (atividade + obs + lembrete). Em modo
   // conclusão, também marca o lembrete como concluído.
-  const concluir = async () => {
+  const concluir = async (forcarNota = false) => {
     if (busy) return;
     const textoObs = obs.trim();
-    // obs escrita sem tipo escolhido → vira uma nota
-    const ativ = ativSel ?? (textoObs ? ATIVIDADES.find((a) => a.tipo === "nota")! : null);
+    const notaDef = ATIVIDADES.find((a) => a.tipo === "nota")!;
+    // Observação escrita SEM tipo: antes virava Nota silenciosa (não conta como
+    // contato → lead seguia vermelho/atrasado e o corretor achava que era bug).
+    // Agora pedimos o tipo explicitamente; "Só anotar" força a nota.
+    if (!ativSel && textoObs && !forcarNota) {
+      setPedindoTipo(true);
+      return;
+    }
+    const ativ = ativSel ?? (forcarNota && textoObs ? notaDef : null);
 
     if (ativ && !textoObs) {
       toast.error("Escreva uma observação para registrar a atividade.");
@@ -176,6 +183,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
       fechar();
       return;
     }
+
 
     setBusy(true);
     try {
