@@ -189,6 +189,18 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
         });
         if (error) throw error;
       }
+      // Registrar um CONTATO real (toque) cumpre os lembretes VENCIDOS do lead:
+      // senão o lead volta como "atrasado" mesmo depois de atualizado (bug relatado
+      // pela Adriana registrando pela aba Prioridades, que não passa concluirTarefaId).
+      // Fecha só os vencidos; lembretes de hoje/futuro (inclusive o novo agendado
+      // agora) permanecem intactos.
+      if (ativ?.toque && user) {
+        await supabase.from("pipeline_tarefas")
+          .update({ status: "concluida", concluida_em: new Date().toISOString() } as never)
+          .eq("pipeline_lead_id", lead.id)
+          .eq("status", "pendente")
+          .lt("vence_em", dataBRT(0));
+      }
       if (lembreteSel && user) {
         const { error } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: lead.id,
