@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_lembretes_vencidos_18ago: {
+        Row: {
+          backup_em: string | null
+          id: string | null
+          pipeline_lead_id: string | null
+          responsavel_id: string | null
+          status_antes: string | null
+          vence_em: string | null
+        }
+        Insert: {
+          backup_em?: string | null
+          id?: string | null
+          pipeline_lead_id?: string | null
+          responsavel_id?: string | null
+          status_antes?: string | null
+          vence_em?: string | null
+        }
+        Update: {
+          backup_em?: string | null
+          id?: string | null
+          pipeline_lead_id?: string | null
+          responsavel_id?: string | null
+          status_antes?: string | null
+          vence_em?: string | null
+        }
+        Relationships: []
+      }
       _backup_negocios_baseunica_16ago: {
         Row: {
           auth_user_id: string | null
