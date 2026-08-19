@@ -51,6 +51,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Início",
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
+        { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
         { label: "Relatórios",         path: "/raio-x",            icon: <BarChart3    size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -105,6 +106,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
+        { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -172,6 +174,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/gerente/cockpit", icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
+        { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
       ],
     },
     {
