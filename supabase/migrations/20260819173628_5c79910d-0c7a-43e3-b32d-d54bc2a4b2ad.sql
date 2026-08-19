@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.trg_pa_default_responsavel() FROM PUBLIC, anon, authenticated;
