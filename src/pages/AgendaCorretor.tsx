@@ -532,7 +532,8 @@ function NegociosTimeView({
       ) : (
         <>
           <div className="mb-3 rounded-xl border border-border bg-primary/[0.04] px-3.5 py-2.5 text-[12.5px] text-muted-foreground">
-            <b className="text-foreground">{negocios.length}</b> negócios ativos · potencial <b className="text-foreground">{formatBRLCompact(totalValor)}</b>
+            <b className="text-foreground">{negocios.length}</b> negócios ativos
+            {totalValor > 0 && <> · potencial <b className="text-foreground">{formatBRLCompact(totalValor)}</b></>}
           </div>
           <div className="space-y-2">
             {negocios.map((n) => (
