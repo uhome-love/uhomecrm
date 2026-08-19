@@ -183,6 +183,12 @@ Agendamento: <a pessoa sinalizou QUANDO ou COMO quer conhecer? Se deu QUALQUER p
 Como seguir: <próximo passo concreto pro corretor. Se NÃO enquadra no Casa Tua (orçamento menor que R$ 690 mil, outra região ou outro tipo), monte o FILTRO que a pessoa deu: região/bairro, faixa de valor e características desejadas (quartos, garagem, etc), e diga pra oferecer imóveis nesse perfil. Se enquadra: confirmar dia/turno da apresentação, mandar o material X, retomar a dúvida Y, etc.>
 Regras: seja específico com o que apareceu na conversa; se algo não apareceu, escreva "não informado"; se a pessoa falou renda, entrada OU orçamento/faixa de valor, SEMPRE cite o número; no máximo 6 linhas; nunca invente nada.`;
 
+// Modo copiloto: sugere pro CORRETOR humano a próxima mensagem a mandar pro lead.
+const COPILOTO_SYSTEM = `Você é o COPILOTO de um corretor humano da Uhome. A LIA já atendeu e qualificou este lead do Casa Tua Santos Ferreira (Canoas), e agora o CORRETOR vai continuar o contato pelo WhatsApp. Com base na conversa, sugira UMA próxima mensagem, curta, humana e calorosa, pro corretor mandar pro lead pra AVANÇAR de onde parou (retomar o interesse, resolver a próxima dúvida, ou marcar de conhecer, conforme o momento).
+A mensagem é na voz do CORRETOR (uma pessoa da equipe), não da LIA, e NUNCA se apresenta de novo (a conversa já está em andamento).
+Regras: português do Brasil, SEM TRAVESSÃO, específica ao que o lead falou (nada de mensagem genérica), leva pro próximo passo com sensibilidade (não empurra agenda por cima de uma dúvida ou de um adiamento). Se o lead prefere presencial, foca na casa modelo (abre 1º/09); se topa vídeo, na apresentação. LINHAS VERMELHAS: nunca prometa aprovação de crédito, nunca projete valorização, nunca crave parcela ou taxa; isso é do especialista.
+Responda APENAS com a mensagem sugerida, pronta pra copiar e colar, sem aspas, sem "sugestão:", sem explicação.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
@@ -218,6 +224,22 @@ serve(async (req) => {
       const rd = await rr.json();
       const resumo = String(rd?.choices?.[0]?.message?.content ?? "").trim();
       return new Response(JSON.stringify({ resumo }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Modo copiloto: devolve { sugestao }, a próxima mensagem pro CORRETOR mandar (não conversa).
+    if ((body as any).mode === "copiloto") {
+      const transcricao = messages
+        .map((m: any) => `${m.role === "user" ? "LEAD" : "LIA"}: ${String(m.content).replace(/\[\[midia:[^\]]*\]\]/g, "(enviou uma mídia)").replace(/\|\|\|/g, " ")}`)
+        .join("\n");
+      const rr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: MODEL, messages: [{ role: "system", content: COPILOTO_SYSTEM }, { role: "user", content: `Conversa até aqui:\n\n${transcricao}\n\nSugira a próxima mensagem pro corretor mandar pro lead.` }], stream: false, temperature: 0.6 }),
+      });
+      if (!rr.ok) { console.error("[lia-chat] copiloto erro", rr.status, await rr.text().catch(() => "")); return new Response(JSON.stringify({ sugestao: "" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
+      const rd = await rr.json();
+      const sugestao = String(rd?.choices?.[0]?.message?.content ?? "").trim().replace(/^["']+|["']+$/g, "");
+      return new Response(JSON.stringify({ sugestao }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
