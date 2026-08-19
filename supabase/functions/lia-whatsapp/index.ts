@@ -148,6 +148,7 @@ serve(async (req) => {
       const messages = value?.messages ?? [];
       for (const m of messages) {
         if (!m?.from || !m?.id) continue; // ignora status delivered/read etc.
+        if (m.type === "reaction" || m.type === "system") continue; // reação (emoji) não é mensagem, não responde
         const from = String(m.from).replace(/\D/g, "");
         const waId = String(m.id);
         let texto =
