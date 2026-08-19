@@ -200,7 +200,7 @@ serve(async (req) => {
 
         // ANTI-TRAVAMENTO (junta a rajada): espera um instante; se chegou uma mensagem
         // mais nova do lead, deixa ELA responder (com o contexto completo) e para esta.
-        await new Promise((r) => setTimeout(r, 4000));
+        await new Promise((r) => setTimeout(r, 6000));
         const { data: ultima } = await sb
           .from("lia_conversas").select("wa_message_id")
           .eq("telefone", from).eq("role", "user")
@@ -225,6 +225,14 @@ serve(async (req) => {
           reply = String(d?.content ?? "").trim();
           if (typeof d?.sinal === "string") sinal = d.sinal;
         } catch (e) { console.error("[lia-whatsapp] lia-chat falhou", e); }
+
+        // reconfere DEPOIS de gerar: se chegou mensagem mais nova do lead durante a geração,
+        // NÃO envia esta (a mais nova vai responder com o contexto completo). Evita resposta dupla.
+        const { data: ultima2 } = await sb
+          .from("lia_conversas").select("wa_message_id")
+          .eq("telefone", from).eq("role", "user")
+          .order("created_at", { ascending: false }).limit(1);
+        if (ultima2?.[0]?.wa_message_id && ultima2[0].wa_message_id !== waId) continue;
 
         // envia a resposta (texto + mídias), ignorando qualquer marcador interno que sobre
         if (reply) {
