@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilaDoDia, lembreteAutomatico, type LeadFila, type MotivoFila, type Compromisso, type LembretesAgrupados } from "@/hooks/useFilaDoDia";
@@ -506,9 +507,11 @@ type RegistrarState = { id: string; nome: string; concluirTarefaId?: string; ori
 
 export default function AgendaCorretor() {
   const { data, isLoading } = useFilaDoDia();
+  const { isGestor } = useUserRole();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"prioridades" | "lembretes">("prioridades");
+  const autoTab = useRef(false);
   const [registrar, setRegistrar] = useState<RegistrarState>(null);
   const [foco, setFoco] = useState<"pendentes" | MotivoFila | "feitos">("pendentes");
   const [feitoId, setFeitoId] = useState<string | null>(null);
@@ -528,6 +531,15 @@ export default function AgendaCorretor() {
     () => data?.lembretes ?? { atrasados: [], hoje: [], amanha: [], semana: [], proximos: [] },
     [data?.lembretes]
   );
+
+  // Abre direto em Lembretes quando a fila de Prioridades está vazia — evita que
+  // gestor/diretora/CEO (sem carteira) caiam numa tela vazia. Roda 1x por carga.
+  useEffect(() => {
+    if (autoTab.current || isLoading || !data) return;
+    autoTab.current = true;
+    const filaVazia = prioridades.length + cadencia.total === 0;
+    if (filaVazia && (isGestor || (data.totalLembretes ?? 0) > 0)) setTab("lembretes");
+  }, [isLoading, data, isGestor, prioridades.length, cadencia.total]);
 
   // Contagem por motivo (pros chips de foco).
   const contagemMotivo = useMemo(() => {
