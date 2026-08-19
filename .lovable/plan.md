@@ -1,37 +1,44 @@
-# Douglas na roleta — diagnóstico e correção
+# Relatório de trabalho — Empreendimento Flow (para o incorporador)
 
-## O que os dados mostram
+Entregável: um relatório de prestação de contas do trabalho da Uhome sobre a verba de mídia do Flow, em formato pronto para o Claude montar a apresentação (documento com números + tabelas + arquivo de dados anexo). Não altera nada no CRM — é só leitura e geração de arquivo.
 
-**1. Os registros de atividade DO Douglas funcionaram.** Consultei as atividades dele nos últimos 3 dias: hoje (18/08) há ~40 registros (WhatsApp, Liguei, Visita agendada/realizada) e em todos eles o `ultimo_toque_at` do lead foi carimbado com o mesmo horário do registro. Só 1 registro entrou como "Nota" (Tatiele Mattos, 13:50) — nota não conta como toque, mesmo comportamento que já corrigimos no caso da Andreza.
+## O que já foi verificado na base (números preliminares)
 
-Resultado hoje: **0 leads vermelhos** e 10 leads sem tarefa pendente. Ou seja, ele arrumou a carteira.
+- Leads Flow no pipeline: **151** por empreendimento canônico (**160** contando também campanha/formulário/anúncio com "Flow"). Primeiro lead **11/11/2025**, último **10/08/2026**.
+- Situação atual dos leads: Descarte 95 · Qualificação 26 · Sem Contato 19 · Aquecimento 9 · Visita 1 · Novo Lead 1.
+- Visitas registradas: **24 no total** — 11 realizadas e 13 no-show.
+- Negócios abertos: **7 em negociação** (sem VGV final preenchido ainda).
+- Investimento de mídia lançado em `marketing_entries` com campanha "Flow": **R$ 3.517,33** em 32 linhas diárias — número visivelmente parcial, precisa ser conferido antes de ir para o incorporador.
+- Reengajamento: ainda não medido — a consulta precisa passar pelas tabelas certas (`reengajamento_dispatch_queue` / `reengajamento_meta_disparos` / `comunicacao_historico`), o que será feito na execução.
 
-**2. O bloqueio dele NÃO é por leads desatualizados — é pelo teto de descartes do mês.**
-- `corretor_pode_entrar_roleta` = false
-- `contar_leads_vermelhos` = 0 (e o limite de vermelhos só vale para a roleta noturna)
-- descartes no mês de agosto = **100**, e o limite (`limite_descartes_mes`) é **100** → a regra bloqueia em `>= limite`
+## Conteúdo do relatório
 
-Por isso, mesmo depois dele atualizar tudo, a roleta continuou fechada: ele bateu exatamente o teto de descartes.
+1. **Capa e período** — Flow, período coberto (11/11/2025 a hoje) e escopo.
+2. **Resumo executivo** — 6 números-chave: leads gerados, leads trabalhados (com ao menos um contato humano), reengajamentos disparados, visitas totais, visitas realizadas, negócios em andamento.
+3. **Funil do Flow** — leads → contatados → qualificados → visitas marcadas → visitas realizadas → negócios, com taxa de conversão em cada passo.
+4. **Origem dos leads** — por campanha/anúncio/formulário e por canal (Meta, site, indicação), com investimento por campanha e custo por lead / por visita.
+5. **Trabalho de atendimento** — volume de atividades registradas (ligações, WhatsApp, mensagens), tempo médio até o primeiro contato, número de corretores envolvidos.
+6. **Reengajamento** — quantos leads frios receberam disparo, quantos responderam, quantos voltaram para atendimento ativo.
+7. **Visitas** — lista detalhada (data, cliente anonimizado ou nome, corretor, resultado) e comparativo realizadas × no-show.
+8. **Situação atual da carteira** — onde estão os 151 leads hoje e o que segue em trabalho.
+9. **Notas de método** — definição de cada métrica (visita conta 1 por cliente/dia, fuso BRT, o que é descarte reengajável etc.), para o número não ser questionado.
 
-**3. Outros casos.** Ninguém mais está bloqueado hoje. Próximos do teto em agosto: Andressa Madril 76, Thalia de Oliveira 73, Marcos Aurelio Farias 70, Adriana Kaiser 63. Não há nenhum desbloqueio manual registrado neste mês.
+## Formato de entrega
 
-## O que proponho fazer
+- `relatorio-flow.xlsx` — abas: Resumo, Funil, Leads (linha a linha), Visitas, Reengajamento, Mídia.
+- `relatorio-flow.md` — o texto do relatório com todos os números e tabelas, pronto para o Claude transformar em apresentação.
 
-### Fase 1 — Destravar o Douglas (decisão sua)
-Opção A: registrar um desbloqueio manual de agosto para ele (a tela Gestão da Roleta > Corretores Bloqueados já faz isso; posso fazer pelo banco se preferir).
-Opção B: não destravar e manter o teto valendo.
+## Detalhes técnicos
 
-Preciso da sua decisão antes de executar.
+- Fonte dos leads: `pipeline_leads` filtrado por `empreendimento_canonico_id = 0d4aa2d5-…` **unido** ao match textual em `campanha/formulario/anuncio/empreendimento`, deduplicado por id (cobre os leads antigos sem canônico).
+- Visitas: `v_fato_visita` / `visitas` pelo mesmo conjunto de leads, aplicando a definição canônica de visitas (exclui canceladas e origem `backfill_*`).
+- Atividades e toques: `pipeline_atividades` (coluna de vínculo a confirmar) + `comunicacao_historico`.
+- Reengajamento: `reengajamento_dispatch_queue`, `reengajamento_meta_disparos` e `reengajamento_eventos` cruzados com o conjunto de leads.
+- Mídia: `marketing_entries` (linhas diárias, campo `periodo` texto) filtrado por campanha do Flow — validar cobertura antes de publicar o custo por lead.
+- Tudo em BRT. Somente leitura (SELECT), sem migration e sem alteração de código do CRM.
 
-### Fase 2 — Deixar o motivo do bloqueio explícito para o corretor
-Hoje o corretor vê a tela de elegibilidade, mas o time entendeu o bloqueio como "leads desatualizados". Ajuste em `StatusElegibilidadeRoleta.tsx`:
-- Quando o bloqueio for por descarte, mostrar em destaque no topo: "Roleta bloqueada: você atingiu o teto de X descartes em agosto. Fale com seu gestor para desbloqueio." — separado e acima do bloco de leads desatualizados.
-- Quando não houver bloqueio nenhum, deixar claro "Você está apto".
+## Pontos a confirmar antes de finalizar
 
-### Fase 3 — Aviso para quem está chegando perto
-No painel do gestor (`CorretoresBloqueadosPanel.tsx`), listar também quem está em zona de risco (>= 70% do teto) com badge âmbar, para o gestor agir antes do bloqueio.
-
-## Notas técnicas
-- Regra atual: `corretor_pode_entrar_roleta` bloqueia com `v_descartes_mes >= v_limite_descartes` (100), contando `pipeline_leads` em stage tipo `descarte` com `stage_changed_at` no mês corrente.
-- Limite de vermelhos (10) só é avaliado quando a janela é `noturna` (`limite_vermelhos_apenas_noturna = true`).
-- Nenhuma migration é necessária nas fases 2 e 3 — são só ajustes de UI.
+- Período do relatório: histórico completo desde nov/2025 ou apenas a janela em que houve verba de mídia?
+- Incluir nomes reais dos clientes nas visitas ou anonimizar?
+- Mostrar o investimento de mídia e o custo por lead, ou só o volume de trabalho?
