@@ -12,7 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn, formatBRLCompact } from "@/lib/utils";
+import { useNegociosTime, type NegocioTime } from "@/hooks/useNegociosTime";
 import { waLink, telLink, formatPhoneBR } from "@/lib/phone";
 import { dispensarLead, restaurarLead } from "@/lib/filaDispensados";
 import { limparRegistro } from "@/lib/registroLimpo";
@@ -496,13 +497,99 @@ const GRUPO_META: Record<GrupoLembrete, { label: string; accent: string; tone: s
 
 type RegistrarState = { id: string; nome: string; concluirTarefaId?: string; origem?: "fila" } | null;
 
+// ─── Negócios do time pra acompanhar (Agenda do gestor/diretora/CEO) ──────────
+function NegociosTimeView({
+  negocios, loading, onOpen, onLembrete,
+}: {
+  negocios: NegocioTime[];
+  loading: boolean;
+  onOpen: (id: string) => void;
+  onLembrete: (n: NegocioTime) => void;
+}) {
+  const totalValor = negocios.reduce((s, n) => s + (n.valor ?? 0), 0);
+  return (
+    <>
+      <div className="mb-2 flex items-center gap-2">
+        <HandCoins className="h-4 w-4 text-primary" />
+        <span className="text-[13.5px] font-semibold text-foreground">Negócios do time pra acompanhar</span>
+        <span className="text-[11.5px] text-muted-foreground">· em negociação e contrato</span>
+      </div>
+      {loading ? (
+        <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+      ) : negocios.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border bg-card px-4 py-8 text-center text-[13px] text-muted-foreground">
+          Nenhum negócio do time em negociação ou contrato agora.
+        </div>
+      ) : (
+        <>
+          <div className="mb-3 rounded-xl border border-border bg-primary/[0.04] px-3.5 py-2.5 text-[12.5px] text-muted-foreground">
+            <b className="text-foreground">{negocios.length}</b> negócios ativos · potencial <b className="text-foreground">{formatBRLCompact(totalValor)}</b>
+          </div>
+          <div className="space-y-2">
+            {negocios.map((n) => (
+              <div
+                key={n.id}
+                onClick={() => onOpen(n.id)}
+                className="relative cursor-pointer overflow-hidden rounded-xl border border-border bg-card p-3 pl-4 transition-colors hover:border-border/80 hover:bg-muted/20 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary"
+              >
+                <div className="flex items-start justify-between gap-2 min-w-0">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                        n.etapaTipo === "contrato_gerado"
+                          ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300"
+                          : "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                      )}>
+                        {n.etapa}
+                      </span>
+                      <span className="truncate text-[15px] font-bold text-foreground leading-tight">{n.nome}</span>
+                    </div>
+                    <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                      {n.corretor_nome}{n.empreendimento ? ` · ${n.empreendimento}` : ""}
+                    </div>
+                  </div>
+                  {n.valor != null && (
+                    <span className="shrink-0 rounded-lg bg-emerald-50 px-2 py-1 text-[12px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                      {formatBRLCompact(n.valor)}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2.5 flex items-center justify-end gap-1.5 border-t border-border/50 pt-2.5">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onLembrete(n); }}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-foreground hover:bg-muted"
+                  >
+                    <Bell className="h-3.5 w-3.5" /> Lembrete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpen(n.id); }}
+                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    Abrir
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 export default function AgendaCorretor() {
   const { data, isLoading } = useFilaDoDia();
   const { isGestor } = useUserRole();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"prioridades" | "lembretes">("prioridades");
+  const [tab, setTab] = useState<"prioridades" | "lembretes" | "negocios">("prioridades");
   const autoTab = useRef(false);
+  // Negócios do time pra acompanhar (só gestor/diretora/CEO).
+  const { data: negociosTime = [], isLoading: negLoading } = useNegociosTime(isGestor);
+  const [lembreteNegocio, setLembreteNegocio] = useState<{ id: string; nome: string } | null>(null);
   const [registrar, setRegistrar] = useState<RegistrarState>(null);
   const [foco, setFoco] = useState<"pendentes" | MotivoFila | "feitos">("pendentes");
   const [feitoId, setFeitoId] = useState<string | null>(null);
@@ -656,6 +743,7 @@ export default function AgendaCorretor() {
       <div className="mb-4 inline-flex rounded-xl border border-border bg-card p-1">
         <TabBtn id="prioridades" label="Prioridades" badge={totalFila} />
         <TabBtn id="lembretes" label="Lembretes" badge={data?.totalLembretes} />
+        {isGestor && <TabBtn id="negocios" label="Negócios do time" badge={negociosTime.length} />}
       </div>
 
       {tab === "prioridades" ? (
@@ -744,6 +832,13 @@ export default function AgendaCorretor() {
           )}
 
         </>
+      ) : tab === "negocios" ? (
+        <NegociosTimeView
+          negocios={negociosTime}
+          loading={negLoading}
+          onOpen={abrirLead}
+          onLembrete={(n) => setLembreteNegocio({ id: n.id, nome: n.nome })}
+        />
       ) : (
         <>
           <div className="mb-2 flex items-center gap-2">
@@ -841,6 +936,14 @@ export default function AgendaCorretor() {
         lead={null}
         permitirNota
         onClose={() => setCriarLembrete(false)}
+        onSaved={invalidar}
+      />
+
+      {/* Lembrete criado a partir de um negócio do time (lead já fixado). */}
+      <CriarLembreteModal
+        open={!!lembreteNegocio}
+        lead={lembreteNegocio}
+        onClose={() => setLembreteNegocio(null)}
         onSaved={invalidar}
       />
     </div>
