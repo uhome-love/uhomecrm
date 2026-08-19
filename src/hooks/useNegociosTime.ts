@@ -59,19 +59,34 @@ export function useNegociosTime(enabled: boolean) {
         if (corretorIds.length === 0) return [];
       }
 
-      // 3) Leads nas etapas avançadas, maiores primeiro.
+      // 3) Leads nas etapas avançadas. Ordenação real é por valor do negócio
+      //    (tabela negocios), então buscamos um teto e ordenamos no cliente.
       let q = supabase
         .from("pipeline_leads")
         .select("id, nome, corretor_id, empreendimento, valor_estimado, stage_id")
         .eq("arquivado", false)
         .in("stage_id", stageIds)
-        .order("valor_estimado", { ascending: false, nullsFirst: false })
-        .limit(LIMITE);
+        .limit(120);
       if (corretorIds) q = q.in("corretor_id", corretorIds);
       const { data: leads } = await q;
       if (!leads || leads.length === 0) return [];
+      const leadIds = leads.map((l) => l.id as string);
 
-      // 4) Resolve nome do corretor.
+      // 4) Valor real do negócio (proposta, senão VGV). Vem da tabela `negocios`,
+      //    ligada por pipeline_lead_id. Um lead pode ter mais de um negócio → maior.
+      const valorDe = new Map<string, number>();
+      const { data: negs } = await supabase
+        .from("negocios")
+        .select("pipeline_lead_id, proposta_valor, vgv_final, vgv_estimado")
+        .in("pipeline_lead_id", leadIds);
+      for (const n of negs ?? []) {
+        const lid = n.pipeline_lead_id as string | null;
+        if (!lid) continue;
+        const v = (n.proposta_valor as number) || (n.vgv_final as number) || (n.vgv_estimado as number) || 0;
+        if (v > 0 && v > (valorDe.get(lid) ?? 0)) valorDe.set(lid, v);
+      }
+
+      // 5) Resolve nome do corretor.
       const cids = [...new Set(leads.map((l) => l.corretor_id).filter(Boolean) as string[])];
       const nomeDe = new Map<string, string>();
       if (cids.length > 0) {
@@ -82,19 +97,27 @@ export function useNegociosTime(enabled: boolean) {
         for (const p of profs ?? []) nomeDe.set(p.user_id as string, (p.nome as string) ?? "Corretor");
       }
 
-      return leads.map((l) => {
+      const lista: NegocioTime[] = leads.map((l) => {
         const tipo = stageTipo.get(l.stage_id as string);
+        const valor = valorDe.get(l.id as string) ?? (l.valor_estimado as number) ?? null;
         return {
           id: l.id as string,
           nome: (l.nome as string) ?? "Lead",
           corretor_id: (l.corretor_id as string) ?? null,
           corretor_nome: l.corretor_id ? (nomeDe.get(l.corretor_id as string) ?? "Corretor") : "Sem dono",
           empreendimento: (l.empreendimento as string) ?? null,
-          valor: (l.valor_estimado as number) ?? null,
+          valor: valor && valor > 0 ? valor : null,
           etapa: tipo === "contrato_gerado" ? "Contrato" : "Em Negociação",
           etapaTipo: (tipo === "contrato_gerado" ? "contrato_gerado" : "proposta"),
         } as NegocioTime;
       });
+
+      // Contrato antes de Em Negociação; dentro, maior valor primeiro.
+      lista.sort((a, b) => {
+        if (a.etapaTipo !== b.etapaTipo) return a.etapaTipo === "contrato_gerado" ? -1 : 1;
+        return (b.valor ?? 0) - (a.valor ?? 0);
+      });
+      return lista.slice(0, LIMITE);
     },
   });
 }
