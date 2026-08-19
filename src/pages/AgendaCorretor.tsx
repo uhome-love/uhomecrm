@@ -19,7 +19,7 @@ import { baixarICS } from "@/lib/ics";
 import {
   Target, Zap, Phone, MessageCircle, Home, Bell, Flame, Copy,
   Sparkles, AlertTriangle, ClockAlert, History, Layers, MoreVertical,
-  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, CalendarPlus, CheckCircle2, type LucideIcon,
+  HandCoins, PhoneCall, ChevronDown, X, HelpCircle, Plus, CalendarPlus, CheckCircle2, StickyNote, Check, type LucideIcon,
 } from "lucide-react";
 
 const MOTIVO_META: Record<MotivoFila, { label: string; icon: LucideIcon; chip: string }> = {
@@ -384,6 +384,7 @@ function CardLembrete({
 }) {
   const meta = COMP_ICON[c.icon];
   const Icon = meta.icon;
+  const isNota = c.tipo === "lembrete" && !c.lead_id;
   const isLembrete = c.tipo === "lembrete" && !!c.lead_id;
   const clickOpen = c.lead_id ? () => onOpen(c.lead_id!) : undefined;
   return (
@@ -397,15 +398,31 @@ function CardLembrete({
     >
       <div className="flex items-start justify-between gap-2 min-w-0">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="truncate text-[15px] font-bold text-foreground leading-tight">{c.lead_nome}</span>
-            {c.lead_stage && <span className="shrink-0 text-[12px] text-muted-foreground">· {c.lead_stage}</span>}
-          </div>
-          <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
-            <Icon className="h-3.5 w-3.5" />
-            <span className="font-medium text-foreground/80">{acaoDoTitulo(c.titulo)}</span>
-            {c.hora ? <span>· {c.hora}</span> : <span className="text-muted-foreground/60">· sem hora</span>}
-          </div>
+          {isNota ? (
+            <>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">Anotação</span>
+                <span className="truncate text-[15px] font-bold text-foreground leading-tight">{c.titulo}</span>
+              </div>
+              <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                <StickyNote className="h-3.5 w-3.5" />
+                <span>só você vê</span>
+                {c.hora ? <span>· {c.hora}</span> : <span className="text-muted-foreground/60">· sem hora</span>}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="truncate text-[15px] font-bold text-foreground leading-tight">{c.lead_nome}</span>
+                {c.lead_stage && <span className="shrink-0 text-[12px] text-muted-foreground">· {c.lead_stage}</span>}
+              </div>
+              <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                <Icon className="h-3.5 w-3.5" />
+                <span className="font-medium text-foreground/80">{acaoDoTitulo(c.titulo)}</span>
+                {c.hora ? <span>· {c.hora}</span> : <span className="text-muted-foreground/60">· sem hora</span>}
+              </div>
+            </>
+          )}
         </div>
       </div>
       {c.descricao && (
@@ -414,7 +431,9 @@ function CardLembrete({
         </div>
       )}
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2.5">
-        <AcoesContato telefone={c.telefone} />
+        {isNota
+          ? <span className="text-[11px] font-medium text-muted-foreground/70">lembrete pessoal</span>
+          : <AcoesContato telefone={c.telefone} />}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -423,8 +442,8 @@ function CardLembrete({
             onClick={(e) => {
               e.stopPropagation();
               baixarICS({
-                titulo: `${acaoDoTitulo(c.titulo)}: ${c.lead_nome}`,
-                descricao: [c.descricao, c.telefone ? `Contato: ${c.telefone}` : null].filter(Boolean).join("\n") || null,
+                titulo: isNota ? c.titulo : `${acaoDoTitulo(c.titulo)}: ${c.lead_nome}`,
+                descricao: [c.descricao, !isNota && c.telefone ? `Contato: ${c.telefone}` : null].filter(Boolean).join("\n") || null,
                 data: c.data,
                 hora: c.hora,
               });
@@ -434,6 +453,15 @@ function CardLembrete({
           >
             <CalendarPlus className="h-3.5 w-3.5" />
           </button>
+          {isNota && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDispensar(c); }}
+              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Check className="h-3.5 w-3.5" strokeWidth={2.4} /> Concluir
+            </button>
+          )}
           {isLembrete && (
             <>
               <button
@@ -715,7 +743,7 @@ export default function AgendaCorretor() {
               onClick={() => setCriarLembrete(true)}
               className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
             >
-              <Plus className="h-3.5 w-3.5" /> Lembrete
+              <Plus className="h-3.5 w-3.5" /> Lembrete ou anotação
             </button>
           </div>
 
@@ -799,6 +827,7 @@ export default function AgendaCorretor() {
       <CriarLembreteModal
         open={criarLembrete}
         lead={null}
+        permitirNota
         onClose={() => setCriarLembrete(false)}
         onSaved={invalidar}
       />

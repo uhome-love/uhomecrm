@@ -43,16 +43,20 @@ interface Props {
   open: boolean;
   /** Lead já conhecido (⋮ do card, modal do lead). Se null, o modal busca o lead. */
   lead?: LeadRef | null;
+  /** Habilita o modo "Anotação pessoal" (lembrete solto, sem cliente). Usado na Agenda. */
+  permitirNota?: boolean;
   onClose: () => void;
   onSaved?: () => void;
 }
 
-export default function CriarLembreteModal({ open, lead, onClose, onSaved }: Props) {
+export default function CriarLembreteModal({ open, lead, permitirNota = false, onClose, onSaved }: Props) {
   const { user } = useAuth();
+  const [modo, setModo] = useState<"cliente" | "nota">("cliente");
   const [leadSel, setLeadSel] = useState<LeadRef | null>(lead ?? null);
   const [busca, setBusca] = useState("");
   const [resultados, setResultados] = useState<LeadRef[]>([]);
   const [tipo, setTipo] = useState<Tipo>(TIPOS[0]);
+  const [tituloNota, setTituloNota] = useState("");
   const [data, setData] = useState(dataBRT(1));
   const [hora, setHora] = useState("09:00");
   const [nota, setNota] = useState("");
@@ -62,8 +66,9 @@ export default function CriarLembreteModal({ open, lead, onClose, onSaved }: Pro
   // Sincroniza com o lead recebido quando o modal (re)abre.
   useEffect(() => {
     if (open) {
+      setModo("cliente");
       setLeadSel(lead ?? null);
-      setBusca(""); setResultados([]);
+      setBusca(""); setResultados([]); setTituloNota("");
       setTipo(TIPOS[0]); setData(dataBRT(1)); setHora("09:00"); setNota("");
     }
   }, [open, lead]);
@@ -86,31 +91,36 @@ export default function CriarLembreteModal({ open, lead, onClose, onSaved }: Pro
     return () => clearTimeout(buscaTimer.current);
   }, [busca, lead, user]);
 
+  const isNota = permitirNota && modo === "nota";
+
   const titulo = useMemo(
-    () => (leadSel ? `${tipo.prefixo}: ${leadSel.nome}` : tipo.prefixo),
-    [tipo, leadSel]
+    () => (isNota ? tituloNota.trim() : leadSel ? `${tipo.prefixo}: ${leadSel.nome}` : tipo.prefixo),
+    [isNota, tituloNota, tipo, leadSel]
   );
 
-  const podeSalvar = !!leadSel && !!data && !!hora && !busy;
+  const podeSalvar = isNota
+    ? !!tituloNota.trim() && !!data && !!hora && !busy
+    : !!leadSel && !!data && !!hora && !busy;
 
   const salvar = async () => {
-    if (!podeSalvar || !user || !leadSel) return;
+    if (!podeSalvar || !user) return;
+    if (!isNota && !leadSel) return;
     setBusy(true);
     const { error } = await supabase.from("pipeline_tarefas").insert({
-      pipeline_lead_id: leadSel.id,
-      tipo: "lembrete",
+      pipeline_lead_id: isNota ? null : leadSel!.id,
+      tipo: isNota ? "anotacao" : "lembrete",
       titulo,
       descricao: nota.trim() || null,
       vence_em: data,
       hora_vencimento: hora,
       responsavel_id: user.id,
       created_by: user.id,
-      origem: "manual",
+      origem: isNota ? "nota" : "manual",
     } as never);
     setBusy(false);
-    if (error) { toast.error("Não foi possível criar o lembrete."); return; }
+    if (error) { toast.error(isNota ? "Não foi possível criar a anotação." : "Não foi possível criar o lembrete."); return; }
     const dataBr = new Date(data + "T00:00:00").toLocaleDateString("pt-BR");
-    toast.success(`📌 Lembrete criado · ${dataBr} ${hora}`);
+    toast.success(`${isNota ? "📝 Anotação criada" : "📌 Lembrete criado"} · ${dataBr} ${hora}`);
     window.dispatchEvent(new CustomEvent("pipeline-reload"));
     onSaved?.();
     onClose();
@@ -121,16 +131,58 @@ export default function CriarLembreteModal({ open, lead, onClose, onSaved }: Pro
       <DialogContent className="sm:max-w-sm gap-0 p-0 overflow-hidden">
         <div className="border-b border-border px-5 py-3.5">
           <div className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
-            <Bell className="h-4 w-4 text-primary" strokeWidth={2.2} /> Novo lembrete
+            <Bell className="h-4 w-4 text-primary" strokeWidth={2.2} /> {isNota ? "Nova anotação" : "Novo lembrete"}
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground">
-            um alarme pra você não esquecer — não conta ponto, só ⚡ Registrar conta
+            {isNota
+              ? "um lembrete só seu, sem precisar de cliente (reunião, recado, meta)"
+              : "um alarme pra você não esquecer — não conta ponto, só ⚡ Registrar conta"}
           </div>
         </div>
 
         <div className="space-y-3.5 px-5 py-4">
+          {/* Alternador: Lembrete de cliente x Anotação pessoal */}
+          {permitirNota && !lead && (
+            <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-muted/50 p-1">
+              <button
+                type="button"
+                onClick={() => setModo("cliente")}
+                className={cn(
+                  "rounded-lg py-2 text-[12.5px] font-semibold transition-colors",
+                  !isNota ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Lembrete de cliente
+              </button>
+              <button
+                type="button"
+                onClick={() => setModo("nota")}
+                className={cn(
+                  "rounded-lg py-2 text-[12.5px] font-semibold transition-colors",
+                  isNota ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Anotação pessoal
+              </button>
+            </div>
+          )}
+
+          {/* Anotação: título livre (sem cliente) */}
+          {isNota && (
+            <div>
+              <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">O que anotar <span className="text-destructive">*</span></div>
+              <input
+                autoFocus
+                value={tituloNota}
+                onChange={(e) => setTituloNota(e.target.value)}
+                placeholder="ex.: reunião de metas com a diretoria"
+                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/70 focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+            </div>
+          )}
+
           {/* Lead */}
-          {leadSel && !lead ? (
+          {isNota ? null : leadSel && !lead ? (
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 px-3 py-2">
               <span className="text-[13px] font-semibold text-foreground">{leadSel.nome}</span>
               <button type="button" onClick={() => setLeadSel(null)} className="text-muted-foreground hover:text-foreground">
@@ -172,6 +224,7 @@ export default function CriarLembreteModal({ open, lead, onClose, onSaved }: Pro
           )}
 
           {/* Tipo */}
+          {!isNota && (
           <div>
             <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">O que fazer</div>
             <div className="grid grid-cols-4 gap-2">
@@ -195,6 +248,7 @@ export default function CriarLembreteModal({ open, lead, onClose, onSaved }: Pro
               })}
             </div>
           </div>
+          )}
 
           {/* Data + hora (obrigatórios) */}
           <div className="flex gap-2">
@@ -233,7 +287,7 @@ export default function CriarLembreteModal({ open, lead, onClose, onSaved }: Pro
             <X className="h-4 w-4" /> Cancelar
           </button>
           <button type="button" onClick={salvar} disabled={!podeSalvar} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {busy ? "Salvando…" : "Criar lembrete"}
+            {busy ? "Salvando…" : isNota ? "Criar anotação" : "Criar lembrete"}
           </button>
         </div>
       </DialogContent>
