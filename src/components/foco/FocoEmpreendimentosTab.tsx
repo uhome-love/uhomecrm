@@ -98,11 +98,25 @@ export function FocoEmpreendimentosTab() {
                         <span className={cn("font-medium truncate", !e.ativo && "text-muted-foreground line-through")}>
                           {e.nome}
                         </span>
-                        {e.segmento_nome && (
-                          <Badge variant="outline" className="text-[10px] font-normal shrink-0">
-                            {e.segmento_nome}
-                          </Badge>
-                        )}
+                        <Select
+                          value={e.segmento_id ?? undefined}
+                          disabled={isPendingSeg}
+                          onValueChange={(v) => {
+                            if (v !== e.segmento_id) setSegmento({ id: e.id, segmentoId: v });
+                          }}
+                        >
+                          <SelectTrigger className="h-6 w-[150px] shrink-0 text-[10px] px-2">
+                            <SelectValue placeholder="Sem segmento" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {segmentos.map((s) => (
+                              <SelectItem key={s.id} value={s.id} className="text-xs">
+                                {s.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground shrink-0 w-24 text-right">
