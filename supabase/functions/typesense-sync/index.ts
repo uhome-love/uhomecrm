@@ -37,7 +37,21 @@ serve(async (req) => {
       sb.from("ops_events").insert({ fn: "typesense-sync", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
     };
 
-    // ── Overlap guard ──
+    // ── Early-exit (A2): leitura barata do estado ANTES de qualquer guard/insert.
+    // Sem fila de sync, o tick termina aqui: 0 escrita em ops_events, 0 varredura.
+    const { data: state } = await sb
+      .from("typesense_sync_state")
+      .select("status, next_page")
+      .eq("id", "default")
+      .maybeSingle();
+
+    if (!state || state.status !== "running") {
+      return new Response(JSON.stringify({ message: "Sync complete or not started", idle: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Overlap guard (só quando há trabalho a fazer) ──
     const guardCutoff = new Date(Date.now() - 50_000).toISOString();
     const { data: recentRun } = await sb
       .from("ops_events")
@@ -58,19 +72,6 @@ serve(async (req) => {
       fn: "typesense-sync", level: "info", category: "guard",
       message: "run_start", trace_id: traceId, ctx: {}, error_detail: null,
     });
-
-    // Get current sync state
-    const { data: state } = await sb
-      .from("typesense_sync_state")
-      .select("*")
-      .eq("id", "default")
-      .single();
-
-    if (!state || state.status !== "running") {
-      return new Response(JSON.stringify({ message: "Sync complete or not started" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const page = state.next_page;
     const pageSize = 500;
