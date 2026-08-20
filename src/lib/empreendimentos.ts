@@ -10,6 +10,7 @@ export const EMPREENDIMENTOS: string[] = [
   "Alto Lindóia",
   "Avulso",
   "Avulso Canoas",
+  "AWA",
   "Boa Vista",
   "Boa Vista Country Club",
   "Botanique",
