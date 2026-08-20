@@ -1,96 +1,29 @@
-# Redução dos top-ups de Cloud & AI — plano de execução (revisado com a régua do Lucas)
+# Deixar o template `awa_reengajamento_v1` pronto para disparo
 
-Régua: **cortar custo sem perder nenhuma qualidade, função ou comportamento do sistema.** Nada de mudança de regra de negócio, nada de degradar atendimento.
+## O que já verifiquei (estado atual)
 
-Foco: top-ups da tela **Cloud & AI balance** (US$ 211,58 Cloud + US$ 35,31 AI), não os créditos de mensagem do editor.
+- A Central de Reengajamento está **destravada**: `paused = false`, `paused_until_release = false`, sem motivo de pausa.
+- O template **não está na lista de bloqueados** (hoje só `casatua_maio` e `reativacao_opcoes_perfil_v2`).
+- Na Meta o template aparece como **Ativo — Qualidade pendente** (normal para template novo), com imagem de header, corpo com a variável `{{1}}` (nome) e os dois botões Sim/Não.
 
-## 1. Diagnóstico (linha de base medida)
+Faltam duas amarrações no CRM:
 
-Últimos 30 dias (21/jul → 20/ago), só itens de Cloud + AI:
+1. A arte não está mapeada ao template — ao selecionar `awa_reengajamento_v1` a URL da imagem de header vem **vazia**, e você teria que colar na mão.
+2. Não existe regra de empreendimento para "awa" — quem responder **SIM** cairia na Fila do CEO **sem o rótulo do produto**.
 
-| Item | Créditos 30d | % |
-|---|---|---|
-| Cloud compute Large | 167,8 | 43% |
-| Cloud compute XL | 163,3 | 42% |
-| AI Gateway gemini-3.6-flash | 32,2 | 8% |
-| AI Gateway outros modelos + embeddings | 11,7 | 3% |
-| Cloud egress | 8,6 | 2% |
-| Cloud functions | 4,3 | 1% |
-| Realtime + cached egress + storage | 3,7 | 1% |
+## O que vou fazer
 
-Mês anterior (21/jun → 20/jul): compute 332, egress **43,5**, AI ~2.
+1. **Subir a arte** (a imagem anexada) para o bucket público de imagens de campanha como `campaign-images/reengajamento/awa-reengajamento-v1.jpg`.
+2. **Mapear template → imagem**: ao escolher `awa_reengajamento_v1` na Central, o header já vem preenchido sozinho.
+3. **Cadastrar o empreendimento canônico "AWA"** (construtora ABF) na lista de empreendimentos, para poder ser usado em filtros, alocação e rótulos.
+4. **Rotular o produto no reengajamento**: templates com "awa" passam a ser rotulados como **AWA** na Fila do CEO. Quem responder SIM segue o fluxo padrão (SIM → Fila do CEO, já com o produto AWA).
+5. **Validar ao vivo** no preview `/central-nutricao`: selecionar o template, conferir que a imagem aparece no preview, que não há aviso de bloqueio/pausa e que o botão de disparo fica habilitado — **sem disparar nada**.
 
-- **85% é compute do banco**, cobrado por hora de instância ligada.
-- Existem **7 crons a cada minuto**, 1 a cada 2 min, 3 a cada 5 min, 2 a cada 10 min — ~15 mil execuções/dia, muitas achando fila vazia.
-- **AI**: 3.753 chamadas em 7 dias, ~13.000 tokens de entrada por turno (95% do custo é input).
-- Egress sobe quando telas puxam tabela inteira (ex.: `visitas` com 27 colunas sem filtro).
+## Detalhes técnicos
 
-## 2. Bloco A — Segue já (economia sem risco de qualidade)
-
-**A1. Índices nas colunas de fila** que os workers varrem a cada minuto (`status`, `vence_em`, `aceite_expira_em`, `processado_em` e equivalentes). Mesmo comportamento, sem sequential scan.
-
-**A2. Early-exit barato em cada worker**: começar por um `SELECT ... LIMIT 1` indexado e sair sem abrir transação quando não há fila. O job faz exatamente a mesma coisa quando há trabalho.
-
-**A3. Espaçar só os crons pesados e não sensíveis a tempo** — **APLICADO em 20/08/2026 15:20 UTC** (aprovação item a item do Lucas):
-
-| Cron | Antes | Agora |
-|---|---|---|
-| `typesense-sync-cron` (jobid 14) | 1 min | 5 min |
-| `typesense-batch-reindex` (jobid 30) | 2 min | 10 min |
-| `mailgun-batch-send` (jobid 26) | 1 min | 5 min |
-| `meta-leads-backfill-1h` (jobid 52) | 5 min | 15 min |
-| `homi-alerts-engine-10min` (jobid 24) | 10 min | 30 min |
-
-Não alterados por decisão do Lucas: `execute-automations-every-5min` (mantido em 5 min) e `secrets-tripwire-10min` (**mantido em 10 min — vigilância de segurança não é reduzida; teto absoluto 15 min se algum dia precisar de alívio**). Nenhum cron do Bloco C entrou.
-
-> **REVERSÃO RÁPIDA — `meta-leads-backfill` (jobid 52).** É a rede de segurança do Meta. Ao primeiro sinal de falha ou buraco de webhook (lead do Meta que não entrou no CRM, erro em `receive-meta-lead`, alerta de ingestão), voltar imediatamente para 5 min:
-> ```sql
-> select cron.alter_job(52, schedule => '*/5 * * * *');
-> ```
-> Vigiar: `ops_events` de ingestão, contagem diária de leads Meta vs. Graph API, alertas do `capi-health-alert`.
-
-> **Medição para o B1 já começou.** Marco zero: 20/08/2026 15:20 UTC. Coletar por 7 dias a curva de CPU/memória da instância e créditos por `billable_item`, comparando com a linha de base da seção 1. Decisão de redimensionamento só em 27/08/2026, com o dado na mão e folga sobre o pico.
-
-
-**A4. Frontend**: colunas explícitas no lugar de `select('*')`, agregações via RPC, e cache do React Query com a regra pedida —
-- cache **curto** para dado vivo: notificações, disponibilidade, roleta, aceite pendente;
-- cache **longo** só para estático: perfil, papéis/roles, preferências, listas de empreendimento.
-Cada tela alterada é testada campo a campo depois da mudança (checklist por tela, sem "achismo").
-
-**A5. IA sem chamada em turno vazio**: mensagem tipo "ok", figurinha, duplicata e eco não disparam modelo — resposta por regra. Mais um teto de rajada por lead como trava de segurança. Não altera o atendimento.
-
-**A6. Alertas de custo** de saldo Cloud/AI + revisão mensal de 5 min do breakdown contra esta linha de base.
-
-> Observação de coordenação: A5 toca comportamento de gatilho da LIA. **Não será implementado sem alinhamento prévio com você**, junto do combinado do Bloco D.
-
-## 3. Bloco B — Segue com medição antes/depois e reversível
-
-**B1. Redimensionar a instância** — só depois de 7 dias com A1–A3 no ar, com a curva real de CPU/memória na mão e folga sobre o pico. Reversível na hora. Nunca no chute.
-
-**B2. Modelo mais barato apenas em tarefas internas** (resumo, classificação, detecção de intenção) — nunca na resposta ao cliente. Entra só se passar em teste lado a lado com amostra real; se piorar, volta o modelo atual.
-
-## 4. Bloco C — Não mexer
-
-**C1. Prompt e base de conhecimento da conversa da LIA** ficam como estão. Qualidade de atendimento e conformidade acima da economia — é fatia pequena do custo.
-
-**C2. Crons sensíveis a tempo mantêm a frequência atual**: `lead-escalation-every-minute`, `expirar-aceites-roleta`, `meta-capi-dispatch-5min`, `lia-poll-meta-1min`, `reengajamento-worker-tick`, `lia-followup-15min`. Atraso aqui vira lead frio.
-
-## 5. Bloco D — Regra de coordenação com a LIA
-
-`lia-chat`, `lia-whatsapp`, `lia-followup` e os crons da LIA estão sendo mexidos em paralelo pelo seu lado. **Nenhuma alteração nessas funções sem alinhamento prévio com você**, inclusive A5 e B2. Se alguma otimização depender delas, ela é proposta e fica parada até seu OK.
-
-## 6. Método de execução
-
-- Uma fase por vez, com medição antes e depois (créditos por `billable_item` + curva de compute).
-- Tudo reversível por alguns dias antes de virar definitivo: schedules antigos anotados, índices podem cair, queries de frontend em commits separados por tela.
-- Nenhuma fase entra em build sem mockup/plano específico aprovado, conforme o padrão de trabalho.
-
-### Ordem
-A1 + A2 (maior efeito, risco zero) → A4 por tela → A3 item a item com sua aprovação → A6 → medir 7 dias → B1 → B2 (se passar no teste). A5 só depois do alinhamento do Bloco D.
-
-## 7. Detalhes técnicos
-- Fonte: ledger de créditos por `billable_item` (30 e 90 dias), `cron.job` do banco, 7 dias de logs do AI Gateway.
-- A1 e A3 entram como migration (só DDL / `cron.schedule`), respeitando o limite de migrations por dia e janela fora do pico.
-- A2 mexe nas edge functions de worker que não são da LIA.
-- A4 mexe em hooks e queries do frontend, um commit por tela para permitir rollback isolado.
-- B1 é ação de infraestrutura, feita só com métrica na mão.
+- Upload em bucket público `campaign-images`, pasta `reengajamento`.
+- `src/components/central-nutricao/DisparoCustomizadoCard.tsx`: nova entrada em `TEMPLATE_HEADER_IMAGES` para `awa_reengajamento_v1`.
+- `src/lib/reengajamentoEmpreendimento.ts`: nova regra `awa` → "AWA" (match por palavra, para não colidir com outros nomes que contenham "awa").
+- `src/lib/empreendimentos.ts`: incluir "AWA" na lista (ordem alfabética).
+- Insert de 1 linha em `public.empreendimentos_canonicos` (nome "AWA", ativo) — DML, sem migration de schema.
+- Sem alteração de edge function e sem mudança no motor de disparo.
