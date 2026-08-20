@@ -585,6 +585,15 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                             {l.reativado_em ? `Reativado em ${new Date(l.reativado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : "Reativado pela Nutrição"}
                           </p>
                         </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1.5 shrink-0"
+                          onClick={() => setRepasseLead({ id: l.id, nome: l.nome || "Sem nome" })}
+                        >
+                          <UserPlus className="h-3 w-3" />
+                          Repassar
+                        </Button>
                       </div>
                     ))}
                   </div>
