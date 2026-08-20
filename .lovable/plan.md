@@ -1,59 +1,72 @@
-# Análise de gastos de créditos (top-ups) — Uhome CRM
+# Por que os top-ups de Cloud & AI queimam todo mês — diagnóstico e plano de redução
 
-## Onde o dinheiro está indo (dados reais da workspace)
+Foco: os top-ups da tela **Cloud & AI balance** (US$ 211,58 em Cloud + US$ 35,31 em AI), não os créditos de mensagem do editor.
 
-Período 23/mai a 20/ago (90 dias): **6.807 créditos** consumidos.
+## 1. Onde o dinheiro está indo (dados reais do ledger)
 
-| Item | 90 dias | % |
+Últimos 30 dias (21/jul → 20/ago), só itens de Cloud + AI:
+
+| Item | Créditos 30d | % do Cloud+AI |
 |---|---|---|
-| Mensagens em Build mode | 4.744 | 69,7% |
-| Mensagens em Plan mode | 816 | 12,0% |
-| Cloud compute XL | 661 | 9,7% |
-| Cloud compute Large | 366 | 5,4% |
-| Cloud egress (tráfego) | 155 | 2,3% |
-| AI Gateway (Gemini, embeddings) | ~46 | 0,7% |
-| Realtime / functions / storage | ~19 | 0,3% |
+| Cloud compute Large | 167,8 | 43% |
+| Cloud compute XL | 163,3 | 42% |
+| AI Gateway (gemini-3.6-flash in+out) | 32,2 | 8% |
+| AI Gateway (gemini-2.5-flash / pro / embeddings) | 11,7 | 3% |
+| Cloud egress | 8,6 | 2% |
+| Cloud functions | 4,3 | 1% |
+| Realtime + cached egress + storage | 3,7 | 1% |
 
-Últimos 30 dias (21/jul a 20/ago): **2.968 créditos** — mês anterior: **2.156**. Ou seja, o consumo *subiu ~38%* no último mês.
+Mês anterior (21/jun → 20/jul): compute 332 créditos, egress **43,5**, AI Gateway ~2.
 
-Plano cobre 400 créditos/mês + 400 de rollover + 5/dia. Consumo real ≈ 2.100–3.000/mês → daí os top-ups constantes (12.098 créditos comprados em top-up até hoje, restam 103).
+Leituras diretas:
+- **85% do gasto é COMPUTE do banco**, cobrado por hora de instância ligada — não por uso. Rodar Large 24/7 e escalar para XL é o custo, independentemente de ter 1 ou 100 usuários online.
+- **A conta de AI multiplicou por ~20 no último mês** (de ~2 para ~44 créditos) — é a LIA/HOMI.
+- Egress caiu de 43,5 para 8,6, mas volta a subir quando alguém abre telas que puxam tabela inteira.
 
-## Por que se gasta tanto
+## 2. Causa raiz do compute
 
-1. **Conversa com o agente é 82% do custo.** Não é infraestrutura, não é IA do app — é volume de mensagens de Build e Plan. Cada mensagem custa créditos independentemente do tamanho da mudança; sessões longas de "vai e volta" (ajuste visual, debug em loop, pedido vago que precisa de 5 idas) multiplicam o custo.
-2. **Plan mode virou 12% sozinho.** O fluxo obrigatório mockup → plano → validação → build é ótimo para qualidade, mas cada rodada de revisão de plano é uma mensagem cheia.
-3. **Banco em compute Large + picos XL = ~330 créditos/mês** (11% do total) rodando 24/7. Parte disso é o próprio uso do CRM (crons de hora em hora, reengajamento, sync Meta, polling), parte é dimensionamento.
-4. **Egress de 155 créditos** em 90 dias indica consultas trazendo linhas/colunas demais para o frontend (pipeline com 114 colunas, listas sem `.select()` enxuto).
-5. **IA do app (Gemini/HOMI/LIA) é irrelevante no custo** (<1%). Não é aí que se economiza.
+O banco nunca fica ocioso. Hoje existem **7 cron jobs rodando a cada minuto** (`lead-escalation-every-minute`, `typesense-sync-cron`, `mailgun-batch-send`, `expirar-aceites-roleta`, `reengajamento-worker-tick`, `meta-capi-dispatch-5min`, `lia-poll-meta-1min`), mais `typesense-batch-reindex` a cada 2 min, 3 jobs a cada 5 min e 2 a cada 10 min.
 
-## Plano de redução (ordem de impacto)
+Isso é ~15 mil execuções/dia batendo no banco, boa parte delas achando "nada para fazer". Cada tick acorda conexões, roda queries e mantém a CPU alta o suficiente para justificar Large/XL o tempo todo — inclusive de madrugada e fim de semana, quando não há operação.
 
-### Fase 1 — Disciplina de conversa (alvo: −30% a −40%, sem tocar em código)
-- Agrupar pedidos: um briefing com 5 itens relacionados em vez de 5 mensagens separadas.
-- Anexar print + descrição do comportamento esperado logo na primeira mensagem (evita 2–3 rodadas de diagnóstico).
-- Usar Plan mode só para mudanças estruturais; correções pequenas e óbvias vão direto para Build.
-- Ajustes puramente visuais (cor, espaçamento, texto) via edição visual/Dev mode em vez de mensagem ao agente.
-- Encerrar chats muito longos e abrir novo por tema: contexto gigante encarece cada mensagem.
-- Definir critério de "pronto" antes de começar, para não abrir rodadas de refinamento em cima do já feito.
+Somado a isso: o frontend refaz o mesmo conjunto de queries a cada troca de tela (perfil, user_roles, notificações, disponibilidade repetem a cada navegação, várias vezes por minuto por usuário logado).
 
-### Fase 2 — Reduzir custo de Cloud (alvo: −150 a −250 créditos/mês)
-- Auditar por que o compute escala para XL: identificar queries lentas e crons concorrentes, e reagendar os pesados (reengajamento, sync Meta, backfills) para fora do horário comercial.
-- Revisar índices nas tabelas mais consultadas (`pipeline_leads`, `pipeline_tarefas`, `pipeline_atividades`) — CPU alta costuma ser sequential scan.
-- Avaliar rebaixar o instance size depois que os picos sumirem, monitorando por uma semana.
+## 3. Causa raiz do AI
 
-### Fase 3 — Reduzir egress (alvo: −40 créditos/mês)
-- Trocar `select('*')` por listas de colunas explícitas nas telas de maior tráfego (Pipeline, Base Única, Central de Marketing).
-- Paginar de fato o que hoje carrega milhares de linhas para filtrar no cliente.
-- Mover agregações pesadas para RPC/views (retornar o número, não as linhas).
+3.753 chamadas ao gateway em 7 dias, quase todas `gemini-3.6-flash` com **~13.000 tokens de entrada por mensagem** e 500–2.000 de saída. Ou seja: a cada turno de conversa da LIA o prompt inteiro (persona + regras + tabela de preços + histórico) é reenviado. O custo é ~95% input, não output. Multiplicado por ~500 chamadas/dia, dá a conta de AI.
 
-### Fase 4 — Controle e visibilidade
-- Configurar alerta de crédito em um patamar mensal (ex.: 70% do orçamento) para não descobrir o estouro no top-up.
-- Revisão mensal de 5 minutos do breakdown por item para ver se a curva está caindo.
+## 4. Plano de redução
+
+### Fase A — Compute (alvo: −40% a −60% do maior bucket)
+1. **Auditar cada cron de 1 minuto** e reclassificar:
+   - o que é realmente tempo-real (aceite de roleta, dispatch CAPI) fica;
+   - o que pode ir para 5/10/15 min (typesense sync e reindex, mailgun batch, reengajamento tick, lia-poll) sobe o intervalo;
+   - o que só faz sentido em horário comercial ganha janela (ex.: `7-22 * * 1-6` em vez de `* * * * *`).
+2. **Saída antecipada barata**: cada worker deve começar por um `SELECT ... LIMIT 1` indexado e sair sem abrir transação quando não há fila. Hoje vários rodam varredura completa antes de descobrir que não têm trabalho.
+3. **Índices** nas colunas de fila que esses jobs varrem (`status`, `vence_em`, `aceite_expira_em`, `processado_em`) — sequential scan a cada minuto é o que segura CPU alta.
+4. Depois de 7 dias com os ticks reduzidos, **medir a curva de CPU e rebaixar o instance size** (XL→Large→Medium se couber). Só rebaixar com métrica na mão, nunca no chute.
+
+### Fase B — AI (alvo: −50% a −70% do gasto de gateway)
+1. **Cortar o prompt fixo da LIA**: mover tabela de preços/ficha de empreendimento para consulta sob demanda (só injeta o produto que a conversa citou), em vez de mandar tudo sempre.
+2. **Truncar histórico** para as últimas N mensagens + resumo curto, com teto duro de tokens de entrada.
+3. **Usar modelo mais barato para tarefas simples** (classificação, detecção de intenção, follow-up automático) e reservar o flash grande para a conversa.
+4. **Não chamar o modelo em turno vazio**: mensagens tipo "ok", figurinha, áudio já transcrito repetido devem ser respondidas por regra, não por LLM.
+5. Ligar teto diário de chamadas por lead para evitar loop de burst.
+
+### Fase C — Egress e frontend (alvo: −30 a −40 créditos/mês nos picos)
+1. Trocar `select('*')` por colunas explícitas nas telas pesadas (Pipeline, Base Única, Agenda/Visitas — a query de `visitas` hoje puxa 27 colunas sem filtro).
+2. Cachear no React Query o que hoje é refeito a cada navegação (perfil, roles, preferências, disponibilidade) com `staleTime` longo.
+3. Agregações em RPC/view: devolver o número, não milhares de linhas para contar no cliente.
+
+### Fase D — Controle
+- Alerta de saldo Cloud/AI em um patamar mensal, para não descobrir no top-up.
+- Revisão mensal de 5 min do breakdown por item, comparando com esta linha de base.
 
 ## Detalhes técnicos
-- Fonte: ledger de créditos da workspace agrupado por `billable_item`, janelas de 30 e 90 dias.
-- Nenhuma alteração de código nas Fases 1 e 4. Fase 2 mexe em agendamento de crons e índices (migrations). Fase 3 mexe em queries do frontend e possíveis views novas.
-- Fase 2 e 3 exigem antes uma auditoria de slow queries e das telas de maior tráfego; cada uma vira uma fase própria com plano específico.
+- Fonte: ledger de créditos agrupado por `billable_item` (janelas de 30 e 90 dias), `cron.job` do banco e 7 dias de logs do AI Gateway.
+- Fase A mexe em `cron.schedule` (migration) e em edge functions de worker; Fase B em `lia-chat`/`lia-whatsapp`/`lia-followup`; Fase C em hooks e queries do frontend.
+- Redimensionamento de instância é ação de infraestrutura, feita só depois da medição da Fase A.
+- Nada aqui altera regra de negócio: as automações continuam rodando, apenas com cadência e payload proporcionais ao uso real.
 
 ## Ordem sugerida
-Fase 1 imediatamente (é onde estão 82% do custo e não precisa de código). Depois auditoria de Cloud (Fase 2), depois egress (Fase 3), com Fase 4 em paralelo.
+Fase A primeiro (85% do custo), Fase B em seguida (crescimento mais rápido), depois C e D. Cada fase entra como plano próprio, com medição antes e depois.
