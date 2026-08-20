@@ -16333,6 +16333,10 @@ export type Database = {
         Args: { p_ativo: boolean; p_empreendimento_id: string }
         Returns: undefined
       }
+      set_empreendimento_segmento: {
+        Args: { p_empreendimento_id: string; p_segmento_id: string }
+        Returns: undefined
+      }
       set_meta_ads_token: { Args: { p_token: string }; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

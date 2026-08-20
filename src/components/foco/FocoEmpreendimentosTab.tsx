@@ -2,12 +2,19 @@ import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Power, PowerOff } from "lucide-react";
-import { useEmpreendimentosCanonicos, useLeadsPorEmpreendimento, useSetEmpreendimentoAtivo } from "@/hooks/useFocoCorretores";
+import {
+  useEmpreendimentosCanonicos,
+  useLeadsPorEmpreendimento,
+  useSetEmpreendimentoAtivo,
+  useSegmentos,
+  useSetEmpreendimentoSegmento,
+} from "@/hooks/useFocoCorretores";
 import { EmpreendimentosNaoResolvidosCard } from "./EmpreendimentosNaoResolvidosCard";
 import { cn } from "@/lib/utils";
+
 
 /**
  * Aba CEO — liga/desliga empreendimentos.
@@ -17,6 +24,9 @@ export function FocoEmpreendimentosTab() {
   const { data: all = [], isLoading } = useEmpreendimentosCanonicos({ includeInactive: true });
   const { data: leadCounts = {} } = useLeadsPorEmpreendimento(30);
   const { mutate: setAtivo, isPending } = useSetEmpreendimentoAtivo();
+  const { data: segmentos = [] } = useSegmentos();
+  const { mutate: setSegmento, isPending: isPendingSeg } = useSetEmpreendimentoSegmento();
+
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"todos" | "ativos" | "inativos">("todos");
 
@@ -91,11 +101,25 @@ export function FocoEmpreendimentosTab() {
                         <span className={cn("font-medium truncate", !e.ativo && "text-muted-foreground line-through")}>
                           {e.nome}
                         </span>
-                        {e.segmento_nome && (
-                          <Badge variant="outline" className="text-[10px] font-normal shrink-0">
-                            {e.segmento_nome}
-                          </Badge>
-                        )}
+                        <Select
+                          value={e.segmento_id ?? undefined}
+                          disabled={isPendingSeg}
+                          onValueChange={(v) => {
+                            if (v !== e.segmento_id) setSegmento({ id: e.id, segmentoId: v });
+                          }}
+                        >
+                          <SelectTrigger className="h-6 w-[150px] shrink-0 text-[10px] px-2">
+                            <SelectValue placeholder="Sem segmento" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {segmentos.map((s) => (
+                              <SelectItem key={s.id} value={s.id} className="text-xs">
+                                {s.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground shrink-0 w-24 text-right">

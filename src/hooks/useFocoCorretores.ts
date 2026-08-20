@@ -68,6 +68,53 @@ export function useSetEmpreendimentoAtivo() {
   });
 }
 
+export interface SegmentoOption {
+  id: string;
+  nome: string;
+}
+
+/** Lista de segmentos canônicos (S1..S4). */
+export function useSegmentos() {
+  return useQuery({
+    queryKey: ["foco", "segmentos"],
+    queryFn: async (): Promise<SegmentoOption[]> => {
+      const { data, error } = await supabase
+        .from("roleta_segmentos")
+        .select("id, nome")
+        .order("nome");
+      if (error) throw error;
+      return (data || []) as SegmentoOption[];
+    },
+    staleTime: 30 * 60_000,
+  });
+}
+
+/** Mutation: troca o segmento do empreendimento (só CEO/Admin/Diretor). */
+export function useSetEmpreendimentoSegmento() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; segmentoId: string }) => {
+      const { error } = await (supabase.rpc as any)("set_empreendimento_segmento", {
+        p_empreendimento_id: input.id,
+        p_segmento_id: input.segmentoId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Segmento atualizado");
+      qc.invalidateQueries({ queryKey: ["foco", "empreendimentos-canonicos"] });
+      qc.invalidateQueries({ queryKey: ["foco", "empreendimentos-com-leads"] });
+    },
+    onError: (e: any) => {
+      const msg = String(e?.message || e);
+      if (msg.toLowerCase().includes("apenas")) toast.error("Apenas CEO/Diretor pode alterar");
+      else toast.error("Erro: " + msg);
+    },
+  });
+}
+
+
+
 /** Contagem de leads por empreendimento nos últimos N dias (default 30d). */
 export function useLeadsPorEmpreendimento(days = 30) {
   return useQuery({
