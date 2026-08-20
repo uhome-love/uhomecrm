@@ -24,6 +24,9 @@ export function FocoEmpreendimentosTab() {
   const { data: all = [], isLoading } = useEmpreendimentosCanonicos({ includeInactive: true });
   const { data: leadCounts = {} } = useLeadsPorEmpreendimento(30);
   const { mutate: setAtivo, isPending } = useSetEmpreendimentoAtivo();
+  const { data: segmentos = [] } = useSegmentos();
+  const { mutate: setSegmento, isPending: isPendingSeg } = useSetEmpreendimentoSegmento();
+
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"todos" | "ativos" | "inativos">("todos");
 
