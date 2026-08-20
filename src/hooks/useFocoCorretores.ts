@@ -157,7 +157,7 @@ export function useCorretoresComAlocacao(scope: "all" | "gerente", gerenteId?: s
       if (ids.length === 0) return [];
 
       const [profRes, teamRes, allocRes] = await Promise.all([
-        supabase.from("profiles").select("user_id, nome, avatar_url").in("user_id", ids),
+        supabase.from("profiles").select("user_id, nome, avatar_url").in("user_id", ids).eq("ativo", true),
         supabase.from("team_members").select("user_id, equipe, gerente_id, status").in("user_id", ids).eq("status", "ativo"),
         supabase.from("corretor_alocacao").select("user_id, empreendimentos").in("user_id", ids),
       ]);
