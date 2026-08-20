@@ -2,12 +2,19 @@ import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Power, PowerOff } from "lucide-react";
-import { useEmpreendimentosCanonicos, useLeadsPorEmpreendimento, useSetEmpreendimentoAtivo } from "@/hooks/useFocoCorretores";
+import {
+  useEmpreendimentosCanonicos,
+  useLeadsPorEmpreendimento,
+  useSetEmpreendimentoAtivo,
+  useSegmentos,
+  useSetEmpreendimentoSegmento,
+} from "@/hooks/useFocoCorretores";
 import { EmpreendimentosNaoResolvidosCard } from "./EmpreendimentosNaoResolvidosCard";
 import { cn } from "@/lib/utils";
+
 
 /**
  * Aba CEO — liga/desliga empreendimentos.
