@@ -6005,6 +6005,7 @@ export type Database = {
           optout: boolean
           qualificado_em: string | null
           referral: Json | null
+          repassado_em: string | null
           resumo: string | null
           status: string
           telefone: string
@@ -6026,6 +6027,7 @@ export type Database = {
           optout?: boolean
           qualificado_em?: string | null
           referral?: Json | null
+          repassado_em?: string | null
           resumo?: string | null
           status?: string
           telefone: string
@@ -6047,6 +6049,7 @@ export type Database = {
           optout?: boolean
           qualificado_em?: string | null
           referral?: Json | null
+          repassado_em?: string | null
           resumo?: string | null
           status?: string
           telefone?: string
