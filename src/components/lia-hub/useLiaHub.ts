@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { todayBRT } from "@/lib/brtTime";
 
@@ -250,6 +250,55 @@ export function useLiaCusto() {
       return data as LiaCusto;
     },
     staleTime: 10 * 60_000,
+  });
+}
+
+/** Motivos fixos de descarte manual pelo hub (o operador escolhe um). */
+export const MOTIVOS_DESCARTE = [
+  "Não respondeu (sumiu após follow-ups)",
+  "Fora de perfil (não serve pro produto)",
+  "Sem interesse real",
+  "Número inválido / não é WhatsApp",
+  "Duplicado",
+] as const;
+
+/** Descarta manualmente um lead da LIA que NÃO foi qualificado: marca o estado como
+ * descartado com motivo (some da fila ativa) e cancela os follow-ups em aberto pra
+ * parar a cadência. Reversível (ver useReativarLead). Só admin/diretor (RLS). */
+export function useDescartarLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ telefone, motivo }: { telefone: string; motivo: string }) => {
+      const agora = new Date().toISOString();
+      const { error } = await supabase
+        .from("lia_estado")
+        .update({ status: "descartado", descartado_em: agora, motivo, updated_at: agora })
+        .eq("telefone", telefone);
+      if (error) throw error;
+      // para a linha de follow-up: cancela o que estava pendente/aprovado pra este contato
+      await supabase
+        .from("lia_followups")
+        .update({ status: "cancelado", updated_at: agora })
+        .eq("telefone", telefone)
+        .in("status", ["pendente", "aprovado"]);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lia-hub"] }),
+  });
+}
+
+/** Desfaz o descarte: volta o lead pra "em conversa" e limpa o motivo. Reversível. */
+export function useReativarLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ telefone }: { telefone: string }) => {
+      const agora = new Date().toISOString();
+      const { error } = await supabase
+        .from("lia_estado")
+        .update({ status: "em_conversa", descartado_em: null, motivo: null, updated_at: agora })
+        .eq("telefone", telefone);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lia-hub"] }),
   });
 }
 
