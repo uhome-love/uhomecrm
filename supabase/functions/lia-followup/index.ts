@@ -347,8 +347,9 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
     if (!ok) continue;
     await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: f.mensagem });
 
-    // "abriu e sumiu": entrega valor com 2 fotos e fecha com uma pergunta leve (nada de cobrança)
-    if (!ehTemplate && f.template_key === "primeiro_retorno") {
+    // 1º toque (spoiler da obra): entrega valor com 2 fotos e fecha com uma pergunta leve (nada de
+    // cobrança). Vale pra quem "abriu e sumiu" (primeiro_retorno) e pra quem engajou e esfriou (sumiu_planta).
+    if (!ehTemplate && (f.template_key === "primeiro_retorno" || f.template_key === "sumiu_planta")) {
       await sleep(1200); if (await send360Image(f.telefone, FOTO_FACHADA))
         await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: "[foto] Fachada das casas" });
       await sleep(1200); if (await send360Image(f.telefone, FOTO_INFRA))
