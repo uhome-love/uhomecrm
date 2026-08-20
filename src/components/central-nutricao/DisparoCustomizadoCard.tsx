@@ -97,6 +97,7 @@ const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
   connectjw_julho: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/connectjw-julho.png",
   flow_novidade2: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/flow-novidade2.jpg",
   awa_reengajamento_v1: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/awa-reengajamento-v1.jpg",
+  awa_disparo2: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/awa-disparo2.png",
 };
 
 const RECENCIA_LABELS: Record<Recencia, string> = {
