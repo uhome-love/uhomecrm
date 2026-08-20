@@ -31,7 +31,26 @@ Mês anterior (21/jun → 20/jul): compute 332, egress **43,5**, AI ~2.
 
 **A2. Early-exit barato em cada worker**: começar por um `SELECT ... LIMIT 1` indexado e sair sem abrir transação quando não há fila. O job faz exatamente a mesma coisa quando há trabalho.
 
-**A3. Espaçar só os crons pesados e não sensíveis a tempo** — candidatos: `typesense-sync-cron` (1 min), `typesense-batch-reindex` (2 min), `mailgun-batch-send` (1 min), limpezas e sweeps. Cada candidato é listado com justificativa e aprovado item a item antes de mudar o schedule. Nenhum cron do Bloco C entra aqui.
+**A3. Espaçar só os crons pesados e não sensíveis a tempo** — **APLICADO em 20/08/2026 15:20 UTC** (aprovação item a item do Lucas):
+
+| Cron | Antes | Agora |
+|---|---|---|
+| `typesense-sync-cron` (jobid 14) | 1 min | 5 min |
+| `typesense-batch-reindex` (jobid 30) | 2 min | 10 min |
+| `mailgun-batch-send` (jobid 26) | 1 min | 5 min |
+| `meta-leads-backfill-1h` (jobid 52) | 5 min | 15 min |
+| `homi-alerts-engine-10min` (jobid 24) | 10 min | 30 min |
+
+Não alterados por decisão do Lucas: `execute-automations-every-5min` (mantido em 5 min) e `secrets-tripwire-10min` (**mantido em 10 min — vigilância de segurança não é reduzida; teto absoluto 15 min se algum dia precisar de alívio**). Nenhum cron do Bloco C entrou.
+
+> **REVERSÃO RÁPIDA — `meta-leads-backfill` (jobid 52).** É a rede de segurança do Meta. Ao primeiro sinal de falha ou buraco de webhook (lead do Meta que não entrou no CRM, erro em `receive-meta-lead`, alerta de ingestão), voltar imediatamente para 5 min:
+> ```sql
+> select cron.alter_job(52, schedule => '*/5 * * * *');
+> ```
+> Vigiar: `ops_events` de ingestão, contagem diária de leads Meta vs. Graph API, alertas do `capi-health-alert`.
+
+> **Medição para o B1 já começou.** Marco zero: 20/08/2026 15:20 UTC. Coletar por 7 dias a curva de CPU/memória da instância e créditos por `billable_item`, comparando com a linha de base da seção 1. Decisão de redimensionamento só em 27/08/2026, com o dado na mão e folga sobre o pico.
+
 
 **A4. Frontend**: colunas explícitas no lugar de `select('*')`, agregações via RPC, e cache do React Query com a regra pedida —
 - cache **curto** para dado vivo: notificações, disponibilidade, roleta, aceite pendente;
