@@ -171,6 +171,8 @@ SINAL DE TRIAGEM (interno, o cliente NUNCA vê isso): ao final de CADA turno seu
 [[sinal:seguindo]] — ainda no comecinho, abrindo ou validando, sem uma leitura clara da temperatura ainda.
 Regras do sinal: coloque SEMPRE, uma vez, na última linha, sozinho. Nunca escreva a palavra "sinal" no texto que o cliente lê. Se já houve opt-out, é descartar. Renda baixa NUNCA é descartar (é frio, ver ENTENDER A RENDA). Seja honesta na temperatura: quente é só pra quem está mesmo evoluído; a maioria começa em morno ou frio, e vai esquentando conforme avança.
 
+PASSAGEM DE BASTÃO (marcador [[repassar]], interno, o cliente NUNCA vê a palavra): além do sinal de temperatura, quando o PRÉ-ATENDIMENTO chega ao fim e é hora de um especialista humano do time seguir com a pessoa, você acrescenta também o marcador [[repassar]] (sozinho, numa mensagem separada por |||, junto do sinal de temperatura). Por que isso importa: o especialista humano é a CONTINUAÇÃO do seu atendimento, mas se ele chega sem a pessoa saber, ela acha que é um segundo vendedor falando da mesma coisa e não responde. Então o marcador [[repassar]] faz o sistema AVISAR o lead, na hora certa, que alguém do time vai chamar. Emita [[repassar]] APENAS quando: (a) a pessoa deu um dia/turno pra conhecer e topou avançar (agendou); OU (b) pediu explicitamente falar com um corretor/pessoa agora; OU (c) o assunto virou coisa de especialista (fechar, detalhe de financiamento/FGTS/contrato, condição de pagamento) e você já entregou o que dava; OU (d) o pré-atendimento chegou num fim natural, com o lead qualificado e satisfeito, sem mais dúvidas abertas. NÃO emita [[repassar]] enquanto ainda está nutrindo, respondendo dúvida, mandando material ou contornando objeção: aí é só o sinal de temperatura, sem repassar. Emita no MÁXIMO UMA vez na conversa inteira. Quando emitir [[repassar]], sua mensagem visível deve ser um fecho curto e caloroso, e você NÃO promete nome, número, nem horário do contato humano, nem diz "vou te passar pro fulano": quem faz esse aviso é o sistema, logo depois da sua mensagem. Você só fecha bonito.
+
 FORMATO DA SUA RESPOSTA: máximo TRÊS mensagens curtas por turno. Quando enviar mais de uma mensagem, separe cada uma com uma linha contendo apenas ||| (três barras verticais). NUNCA separe ideias com quebra de linha dupla: se são duas mensagens, o separador é sempre |||, senão vira um paredão de texto no WhatsApp. Não use markdown, não use asteriscos, não use listas.`;
 
 // Modo resumo: gera um resumo curto e útil da conversa PRO CORRETOR continuar o contato.
@@ -270,14 +272,19 @@ serve(async (req) => {
     // pega o sinal ONDE QUER que ele apareça (mesmo colado inline, sem o separador |||)
     const sm = raw.match(/\[\[\s*sinal\s*:\s*(\w+)\s*\]\]/i);
     if (sm && VALID.has(sm[1].toLowerCase())) sinal = sm[1].toLowerCase();
-    // remove QUALQUER marcador de sinal do texto, esteja onde estiver, e limpa as bolhas
+    // passagem de bastão: o cérebro pede pro sistema avisar o lead que um humano vai seguir
+    const repassar = /\[\[\s*repassar\s*\]\]/i.test(raw);
+    // remove QUALQUER marcador interno do texto (sinal e repassar), esteja onde estiver, e limpa as bolhas
     const kept: string[] = [];
     for (const p of raw.split(/\s*\|\|\|\s*/)) {
-      const clean = p.replace(/\[\[\s*sinal\s*:\s*\w+\s*\]\]/ig, "").trim();
+      const clean = p
+        .replace(/\[\[\s*sinal\s*:\s*\w+\s*\]\]/ig, "")
+        .replace(/\[\[\s*repassar\s*\]\]/ig, "")
+        .trim();
       if (clean) kept.push(clean);
     }
     const content = kept.join("\n|||\n");
-    return new Response(JSON.stringify({ content, sinal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ content, sinal, repassar }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[lia-chat] erro:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

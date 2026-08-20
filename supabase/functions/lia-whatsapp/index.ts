@@ -215,6 +215,7 @@ serve(async (req) => {
 
         let reply = "";
         let sinal = "seguindo";
+        let repassar = false;
         try {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
@@ -224,6 +225,7 @@ serve(async (req) => {
           const d = await r.json();
           reply = String(d?.content ?? "").trim();
           if (typeof d?.sinal === "string") sinal = d.sinal;
+          repassar = d?.repassar === true;
         } catch (e) { console.error("[lia-whatsapp] lia-chat falhou", e); }
 
         // reconfere DEPOIS de gerar: se chegou mensagem mais nova do lead durante a geração,
@@ -259,6 +261,12 @@ serve(async (req) => {
         if (!jaOptout) {
           if ((sinal === "quente" || sinal === "morno" || sinal === "frio") && est.status !== "descartado") {
             await qualificar(sb, from, est, contactName, referral, sinal);
+            // PASSAGEM DE BASTÃO: quando o cérebro conclui o pré-atendimento (repassar),
+            // a LIA avisa o lead que um especialista humano vai seguir. Só pra lead acionável
+            // (morno/quente), uma única vez por conversa (trava: repassado_em).
+            if (repassar && (sinal === "quente" || sinal === "morno")) {
+              await passagemDeBastao(sb, from);
+            }
           } else if (sinal === "descartar" && est.status !== "qualificado" && !est.lead_id) {
             await sb.from("lia_estado").update({
               status: "descartado", descartado_em: nowISO(), motivo: "Descartado pela LIA (não serve)", updated_at: nowISO(),
@@ -333,6 +341,31 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
       await notificar(sb, leadId, est.nome ?? nome, nivel);
     }
   } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); }
+}
+
+// PASSAGEM DE BASTÃO: avisa o lead, na hora do desfecho, que um especialista humano
+// vai seguir o atendimento. Isso resolve o problema de o corretor ligar e o lead achar
+// que é contato duplicado (o humano é a CONTINUAÇÃO da LIA, não um segundo vendedor).
+// Roda no MÁXIMO uma vez por conversa (trava: repassado_em) e enquadra o próximo contato
+// como o mesmo atendimento, avisando que pode vir de outro número.
+async function passagemDeBastao(sb: any, from: string) {
+  try {
+    const { data: rows } = await sb
+      .from("lia_estado").select("repassado_em, agendou").eq("telefone", from).limit(1);
+    const est = rows?.[0];
+    if (!est || est.repassado_em) return; // já avisou antes: não repete
+
+    const foco = est.agendou
+      ? "pra organizar e confirmar tua visita"
+      : "pra seguir de onde a gente parou";
+    const msg =
+      `Que bom falar contigo! 🙌 Daqui pra frente quem segue com você é o nosso time de especialistas do Casa Tua, ${foco}.` +
+      `\n\nEm breve alguém do time te chama por aqui no WhatsApp. Pode ser de um número diferente do meu, mas é o mesmo atendimento e a pessoa já vai com todo o teu contexto, tá? 😉`;
+
+    await sendText(from, msg);
+    await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: msg });
+    await sb.from("lia_estado").update({ repassado_em: nowISO(), last_msg_em: nowISO(), updated_at: nowISO() }).eq("telefone", from);
+  } catch (e) { console.error("[lia-whatsapp] passagemDeBastao erro", e); }
 }
 
 // Gera o resumo da conversa pro corretor. A chamada acontece logo depois da resposta,
