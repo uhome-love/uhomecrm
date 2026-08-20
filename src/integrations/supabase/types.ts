@@ -10350,7 +10350,7 @@ export type Database = {
           id: string
           origem: string | null
           origem_ref: string | null
-          pipeline_lead_id: string
+          pipeline_lead_id: string | null
           prioridade: string
           responsavel_id: string | null
           retries_count: number
@@ -10371,7 +10371,7 @@ export type Database = {
           id?: string
           origem?: string | null
           origem_ref?: string | null
-          pipeline_lead_id: string
+          pipeline_lead_id?: string | null
           prioridade?: string
           responsavel_id?: string | null
           retries_count?: number
@@ -10392,7 +10392,7 @@ export type Database = {
           id?: string
           origem?: string | null
           origem_ref?: string | null
-          pipeline_lead_id?: string
+          pipeline_lead_id?: string | null
           prioridade?: string
           responsavel_id?: string | null
           retries_count?: number
