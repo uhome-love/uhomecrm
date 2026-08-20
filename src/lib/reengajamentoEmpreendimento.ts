@@ -22,6 +22,8 @@ const RULES: TemplateRule[] = [
   { match: (t) => t.includes("casatua") || t.includes("casa tua") || t.includes("casa_tua"), empreendimento: "Casa Tua" },
   { match: (t) => t.includes("vivid"), empreendimento: "Vivid Terrace" },
   { match: (t) => t.includes("atrio") || t.includes("átrio"), empreendimento: "Átrio" },
+  // AWA (construtora ABF) — match por palavra para não colidir com outros nomes que contenham "awa"
+  { match: (t) => /(^|[^a-z])awa([^a-z]|$)/.test(t), empreendimento: "AWA" },
 ];
 
 /**
