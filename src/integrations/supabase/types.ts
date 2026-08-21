@@ -16092,6 +16092,10 @@ export type Database = {
         Returns: Json
       }
       reset_roleta_turno: { Args: never; Returns: undefined }
+      resolve_alias_prefixo: {
+        Args: { p_texto: string; p_tipos: string[] }
+        Returns: string
+      }
       resolve_corretor_scope_ids: {
         Args: { p_corretor_id: string }
         Returns: string[]
