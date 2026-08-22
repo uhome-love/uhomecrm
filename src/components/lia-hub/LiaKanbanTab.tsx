@@ -111,10 +111,16 @@ export default function LiaKanbanTab() {
                       onClick={() => setSelecionado(e)}
                       className="cursor-pointer p-3 transition-colors hover:border-primary/40"
                     >
-                      <div className="truncate text-sm font-medium text-foreground">
-                        {e.nome || "Sem nome"}
+                      <div className="flex items-start justify-between gap-1">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-foreground">
+                            {e.nome || "Sem nome"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{e.telefone}</div>
+                        </div>
+                        <LiaLeadAcoesMenu estado={e} className="-mr-1 -mt-1 shrink-0" />
                       </div>
-                      <div className="text-xs text-muted-foreground">{e.telefone}</div>
+
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <Badge variant="outline" className="text-[10px]">
                           {origemDoReferral(e.referral)}
