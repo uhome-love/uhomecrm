@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { todayBRT } from "@/lib/brtTime";
+import { toast } from "sonner";
 
 export type LiaStatus = "novo" | "em_conversa" | "qualificado" | "descartado" | "opt_out";
 
