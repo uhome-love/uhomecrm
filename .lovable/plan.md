@@ -37,12 +37,13 @@ Nada é alterado no pipeline: o lead do CRM continua exatamente como está.
    - `CREATE POLICY` de `DELETE` para `admin` em `lia_estado`, `lia_conversas` e `lia_followups` (esta última já tem policy `ALL` para admin/diretor; será restringida a admin apenas para DELETE se necessário, sem quebrar o acesso atual).
    - `GRANT DELETE` a `authenticated` nessas três tabelas (RLS continua restringindo a admin).
 2. **Novos componentes** em `src/components/lia-hub/`:
-   - `LiaDescartarDialog.tsx` — reaproveita `discardReasons` + `buildMotivoDescarte`.
+   - `LiaDescartarDialog.tsx` — espelho do `DiscardLeadDialog` do pipeline (motivo + destino reengajável/definitivo), reaproveitando `discardReasons` + `buildMotivoDescarte`.
    - `LiaExcluirDialog.tsx` — confirmação destrutiva.
    - `LiaLeadAcoesMenu.tsx` — menu ⋯ compartilhado pelas duas abas, oculto para não-admin (`useUserRole`).
-3. **Hooks** em `useLiaHub.ts`: `useLiaDescartar` e `useLiaExcluir`, ambos invalidando `["lia-hub"]` e com toast de sucesso/erro.
+3. **Hooks** em `useLiaHub.ts`: `useLiaDescartar` (recebe `tipo: reengajavel | definitivo`) e `useLiaExcluir`, ambos invalidando `["lia-hub"]` e com toast de sucesso/erro.
 4. **Integração**: `LiaLeadsTab.tsx` (linhas mobile e tabela desktop) e `LiaKanbanTab.tsx` (card).
 
 ## Validação
 
-Após o build: abrir `/admin/lia-hub` como CEO, descartar um contato de teste (conferir que ele vai para Descartados e que o motivo aparece no padrão `Descartado: …`), excluir esse mesmo contato e confirmar que sumiu das duas abas; confirmar que o lead correspondente no pipeline permanece intacto.
+Após o build: abrir `/admin/lia-hub` como CEO, descartar um contato de teste (vai para **Descartados**, motivo `Descartado: …`), inativar outro (vai para **Opt-out**, motivo `Inativado: …`, follow-ups cancelados), excluir esse contato e confirmar que sumiu das duas abas; confirmar que o lead correspondente no pipeline permanece intacto e que um usuário não-admin não vê as ações.
+
