@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { formatBRT } from "@/lib/brtTime";
 import { useDebounce } from "@/hooks/useDebounce";
 import LiaConversaDrawer from "./LiaConversaDrawer";
+import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
 import {
   NIVEL_META,
   STATUS_META,
@@ -145,11 +146,12 @@ export default function LiaLeadsTab() {
               };
               const ultima = ultimas?.get(e.telefone);
               return (
-                <button
+                <div
                   key={e.telefone}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelecionado(e)}
-                  className="w-full px-3 py-3 text-left transition-colors active:bg-muted/50"
+                  className="w-full cursor-pointer px-3 py-3 text-left transition-colors active:bg-muted/50"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -158,9 +160,12 @@ export default function LiaLeadsTab() {
                       </div>
                       <div className="text-xs text-muted-foreground">{e.telefone}</div>
                     </div>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <span className="text-[11px] text-muted-foreground">
+                        {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
+                      </span>
+                      <LiaLeadAcoesMenu estado={e} />
+                    </div>
                   </div>
                   <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
                     {ultima?.conteudo ?? "—"}
@@ -182,7 +187,7 @@ export default function LiaLeadsTab() {
                       </Badge>
                     ) : null}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -237,8 +242,12 @@ export default function LiaLeadsTab() {
                         {ultima?.conteudo ?? "—"}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs text-muted-foreground">
-                        {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
+                        <div className="flex items-center justify-end gap-1">
+                          {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
+                          <LiaLeadAcoesMenu estado={e} />
+                        </div>
                       </td>
+
                     </tr>
                   );
                 })}

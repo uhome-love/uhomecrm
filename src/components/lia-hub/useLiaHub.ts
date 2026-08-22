@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { todayBRT } from "@/lib/brtTime";
+import { toast } from "sonner";
 
 export type LiaStatus = "novo" | "em_conversa" | "qualificado" | "descartado" | "opt_out";
 
@@ -333,3 +334,64 @@ export const NIVEL_META: Record<string, { emoji: string; label: string; cls: str
 };
 
 export const NIVEIS: Array<keyof typeof NIVEL_META | string> = ["quente", "morno", "frio"];
+
+/**
+ * Descarta ou inativa um contato dentro da caixa isolada da LIA.
+ * Não altera `pipeline_leads` — o lead do CRM segue como está.
+ */
+export function useLiaDescartar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: {
+      telefone: string;
+      tipo: "reengajavel" | "definitivo";
+      motivo: string;
+    }) => {
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from("lia_estado")
+        .update({
+          status: "descartado",
+          descartado_em: nowIso,
+          motivo: p.motivo,
+          ...(p.tipo === "definitivo" ? { optout: true } : {}),
+        })
+        .eq("telefone", p.telefone);
+      if (error) throw error;
+
+      if (p.tipo === "definitivo") {
+        const { error: errFu } = await supabase
+          .from("lia_followups")
+          .update({ status: "cancelado" })
+          .eq("telefone", p.telefone)
+          .eq("status", "pendente");
+        if (errFu) throw errFu;
+      }
+    },
+    onSuccess: (_d, p) => {
+      toast.success(p.tipo === "definitivo" ? "Contato inativado" : "Contato descartado");
+      qc.invalidateQueries({ queryKey: ["lia-hub"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Não foi possível descartar"),
+  });
+}
+
+/** Exclusão definitiva dos dados da LIA daquele telefone (apenas CEO/admin). */
+export function useLiaExcluir() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (telefone: string) => {
+      const fu = await supabase.from("lia_followups").delete().eq("telefone", telefone);
+      if (fu.error) throw fu.error;
+      const cv = await supabase.from("lia_conversas").delete().eq("telefone", telefone);
+      if (cv.error) throw cv.error;
+      const st = await supabase.from("lia_estado").delete().eq("telefone", telefone);
+      if (st.error) throw st.error;
+    },
+    onSuccess: () => {
+      toast.success("Contato excluído da LIA");
+      qc.invalidateQueries({ queryKey: ["lia-hub"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Não foi possível excluir"),
+  });
+}
