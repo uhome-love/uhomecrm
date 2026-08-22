@@ -5786,6 +5786,51 @@ export type Database = {
           },
         ]
       }
+      lia_produtos: {
+        Row: {
+          ativo: boolean
+          campanha_ids: string[]
+          created_at: string
+          empreendimento: string
+          ficha: string | null
+          id: string
+          midias: Json
+          nome: string
+          perguntar_se_sem_anuncio: boolean
+          slug: string
+          template_reativacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          campanha_ids?: string[]
+          created_at?: string
+          empreendimento: string
+          ficha?: string | null
+          id?: string
+          midias?: Json
+          nome: string
+          perguntar_se_sem_anuncio?: boolean
+          slug: string
+          template_reativacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          campanha_ids?: string[]
+          created_at?: string
+          empreendimento?: string
+          ficha?: string | null
+          id?: string
+          midias?: Json
+          nome?: string
+          perguntar_se_sem_anuncio?: boolean
+          slug?: string
+          template_reativacao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lia_templates: {
         Row: {
           ativo: boolean
