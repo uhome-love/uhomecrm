@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
 import LiaConversaDrawer from "./LiaConversaDrawer";
+import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
 import { NIVEL_META, origemDoReferral, useLiaEstados, type LiaEstado } from "./useLiaHub";
 
 type ColunaId =
