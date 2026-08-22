@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquare, UserPlus, CheckCircle2, Flame, AlertTriangle, CalendarCheck, DollarSign } from "lucide-react";
+import { MessageSquare, UserPlus, CheckCircle2, Flame, AlertTriangle, CalendarCheck, DollarSign, Send, Trash2 } from "lucide-react";
 import { todayBRT, dateToBRT } from "@/lib/brtTime";
 import {
   useLiaConversasHoje,
@@ -162,6 +162,32 @@ export default function LiaPainelTab() {
     return { cutucados: ultimoEnvio.size, voltaram };
   }, [followups, estados]);
 
+  // passagem de bastão: quantos leads a LIA avisou do repasse, e quantos o corretor assumiu
+  const repasse = useMemo(() => {
+    const list: LiaEstado[] = estados ?? [];
+    const avisados = list.filter((e) => !!e.repassado_em);
+    const leadsAceitos = new Set(
+      (pipe?.leads ?? [])
+        .filter((l) => l.corretor_id && l.aceite_status === "aceito")
+        .map((l) => l.id)
+    );
+    const assumidos = avisados.filter((e) => e.lead_id && leadsAceitos.has(e.lead_id)).length;
+    return { avisados: avisados.length, assumidos };
+  }, [estados, pipe]);
+
+  // descartes manuais pelo hub, agrupados por motivo
+  const descartes = useMemo(() => {
+    const list: LiaEstado[] = estados ?? [];
+    const desc = list.filter((e) => e.status === "descartado");
+    const porMotivo = new Map<string, number>();
+    for (const e of desc) {
+      const m = (e.motivo ?? "").trim() || "Sem motivo";
+      porMotivo.set(m, (porMotivo.get(m) ?? 0) + 1);
+    }
+    const linhas = Array.from(porMotivo.entries()).sort((a, b) => b[1] - a[1]);
+    return { total: desc.length, linhas };
+  }, [estados]);
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -232,6 +258,62 @@ export default function LiaPainelTab() {
             <LinhaAtencao label="Qualificados aguardando na fila" value={atencao.naFila} />
             <LinhaAtencao label="Esfriando (follow-up pendente)" value={atencao.esfriando} />
             <LinhaAtencao label="Opt-outs de hoje" value={atencao.optoutsHoje} />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Send className="h-4 w-4 text-primary" />
+              Passagem de bastão
+            </CardTitle>
+            <CardDescription>
+              A LIA avisa o lead que um especialista vai seguir. Aqui você vê se o time assumiu.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <LinhaAtencao label="Avisados do repasse" value={repasse.avisados} />
+            <LinhaAtencao label="Assumidos por um corretor" value={repasse.assumidos} />
+            {repasse.avisados > 0 && (
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
+                <span className="text-muted-foreground">Taxa de repasse assumido</span>
+                <span className="font-semibold tabular-nums text-foreground">
+                  {Math.round((repasse.assumidos / repasse.avisados) * 100)}%
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
+              Descartados por motivo
+            </CardTitle>
+            <CardDescription>Leads tirados da fila da LIA à mão, e o porquê.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {isLoading ? (
+              <Skeleton className="h-24 w-full" />
+            ) : descartes.total === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">Nenhum descarte ainda.</p>
+            ) : (
+              <>
+                <div className="flex items-baseline justify-between border-b border-border pb-2">
+                  <span className="text-sm text-muted-foreground">Total descartados</span>
+                  <span className="text-lg font-bold tabular-nums text-foreground">{descartes.total}</span>
+                </div>
+                {descartes.linhas.map(([motivo, n]) => (
+                  <div key={motivo} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-muted-foreground">{motivo}</span>
+                    <span className="font-semibold tabular-nums text-foreground">{n}</span>
+                  </div>
+                ))}
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
