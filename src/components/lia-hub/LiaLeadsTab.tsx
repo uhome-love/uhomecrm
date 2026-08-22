@@ -237,8 +237,12 @@ export default function LiaLeadsTab() {
                         {ultima?.conteudo ?? "—"}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs text-muted-foreground">
-                        {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
+                        <div className="flex items-center justify-end gap-1">
+                          {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
+                          <LiaLeadAcoesMenu estado={e} />
+                        </div>
                       </td>
+
                     </tr>
                   );
                 })}
