@@ -538,6 +538,15 @@ function LeadRow({
                 </span>
               </>
             )}
+            {lead.motivo && (
+              <>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <ShieldAlert className="h-3 w-3" />
+                  {lead.motivo}
+                </span>
+              </>
+            )}
           </div>
         </button>
       </div>
