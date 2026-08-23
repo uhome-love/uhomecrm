@@ -115,7 +115,7 @@ export default function LeadsEstagnados() {
   const { data, isLoading } = usePipelineEstagnacao();
   const meta = usePipelineMeta();
   const drawer = useEstagnadoLeadDrawer();
-  const [tab, setTab] = useState<CategoriaEstagnacao>("estagnado");
+  const [tab, setTab] = useState<CategoriaEstagnacao>("aguardando_decisao");
   const [decision, setDecision] = useState<
     { leads: LeadEstagnacao[]; acao: AcaoEstagnacao } | null
   >(null);
@@ -136,6 +136,7 @@ export default function LeadsEstagnados() {
       em_aviso: 0,
       em_parceria: 0,
       estagnado: 0,
+      aguardando_decisao: 0,
     };
     (data ?? []).forEach((l) => {
       c[l.categoria] = (c[l.categoria] ?? 0) + 1;
