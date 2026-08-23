@@ -16,6 +16,7 @@ import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRol
 import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
 import { parseFormRespostas, formatFormRespostas } from "../_shared/formRespostas.ts";
 import { capturarLeadLia } from "../_shared/liaCapture.ts";
+import { pontoDeEntradaFormLia } from "../_shared/liaFormBridge.ts";
 
 
 const corsHeaders = {
@@ -426,6 +427,26 @@ Deno.serve(async (req) => {
     // ── Desvio de captura da Lia (Casa Tua Canoas) ──
     // Listas vazias em ia_config.captura_lia = nada muda.
     if (!isTestLead && telefone) {
+      // ── PONTE DO FORMULÁRIO → LIA (multiproduto) ──
+      // Se a campanha (de formulário) é de um imóvel ATIVO da LIA, a LIA manda o 1º contato
+      // por template e assume o lead. Se não for da LIA, ou se o envio falhar, segue o fluxo
+      // NORMAL (roleta). Rede de segurança: nunca perde lead.
+      try {
+        const ponte = await pontoDeEntradaFormLia(supabase, {
+          nome: name, telefone, campaign_id: campaignId || null,
+          meta_lead_id: externalLeadId || null, ad_id: adId || null, headline: null,
+        });
+        if (ponte.desviar) {
+          logOps("info", "business", "lia_form_bridge", { motivo: ponte.motivo, produto_slug: ponte.produto_slug, campaign_id: campaignId });
+          return new Response(
+            JSON.stringify({ success: true, action: "lia_form_bridge", motivo: ponte.motivo, trace_id: traceId }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      } catch (e) {
+        L.warn("lia form bridge falhou (segue fluxo normal)", { campaignId }, e);
+      }
+
       try {
         const lia = await capturarLeadLia(supabase, {
           nome: name,

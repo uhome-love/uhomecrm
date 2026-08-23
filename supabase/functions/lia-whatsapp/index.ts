@@ -154,7 +154,7 @@ async function resolverProduto(sb: any, telefone: string, est: any, referral: an
 // produto; senão, o hardcoded do Casa Tua (MEDIA + DOC). Chave → url; .pdf vira documento.
 function montarMidias(produto: any | null): Record<string, { url: string; doc: boolean; filename?: string }> {
   const map: Record<string, { url: string; doc: boolean; filename?: string }> = {};
-  if (produto?.midias && typeof produto.midias === "object") {
+  if (produto?.midias && typeof produto.midias === "object" && Object.keys(produto.midias).length > 0) {
     for (const [k, v] of Object.entries(produto.midias as Record<string, string>)) {
       const url = String(v);
       const isDoc = /\.pdf(\?|$)/i.test(url);
@@ -216,9 +216,27 @@ serve(async (req) => {
         const idMidia = m.audio?.id ? ` · id:${m.audio.id}` : "";
         const conteudo = texto || `(o cliente enviou ${m.type || "uma mídia"}${idMidia})`;
 
-        // estado do lead (memória)
-        const { data: estRows } = await sb.from("lia_estado").select("*").eq("telefone", from).limit(1);
-        let est = estRows?.[0] ?? null;
+        // estado do lead (memória): casa por telefone exato; se não achar, tenta pelo FINAL
+        // (últimos 8 dígitos) — rede pro pré-cadastro do formulário, que pode ter formato
+        // levemente diferente do que o WhatsApp entrega. Ao achar por final, realinha o
+        // telefone pro formato real do WhatsApp pra as próximas buscas casarem exato.
+        let est: any = null;
+        {
+          const { data: exato } = await sb.from("lia_estado").select("*").eq("telefone", from).limit(1);
+          est = exato?.[0] ?? null;
+          if (!est && from.length >= 8) {
+            const l8 = from.slice(-8);
+            const { data: porFinal } = await sb.from("lia_estado").select("*")
+              .ilike("telefone", `%${l8}`).order("updated_at", { ascending: false }).limit(1);
+            if (porFinal?.[0]) {
+              est = porFinal[0];
+              if (est.telefone !== from) {
+                await sb.from("lia_estado").update({ telefone: from, updated_at: nowISO() }).eq("telefone", est.telefone);
+                est.telefone = from;
+              }
+            }
+          }
+        }
 
         // grava a mensagem de entrada
         await sb.from("lia_conversas").insert({ telefone: from, role: "user", conteudo, wa_message_id: waId });
