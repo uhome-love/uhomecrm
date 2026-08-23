@@ -5676,6 +5676,7 @@ export type Database = {
           nivel: string | null
           nome: string | null
           optout: boolean
+          produto_slug: string | null
           qualificado_em: string | null
           referral: Json | null
           repassado_em: string | null
@@ -5698,6 +5699,7 @@ export type Database = {
           nivel?: string | null
           nome?: string | null
           optout?: boolean
+          produto_slug?: string | null
           qualificado_em?: string | null
           referral?: Json | null
           repassado_em?: string | null
@@ -5720,6 +5722,7 @@ export type Database = {
           nivel?: string | null
           nome?: string | null
           optout?: boolean
+          produto_slug?: string | null
           qualificado_em?: string | null
           referral?: Json | null
           repassado_em?: string | null
@@ -5792,6 +5795,7 @@ export type Database = {
           campanha_ids: string[]
           created_at: string
           empreendimento: string
+          empreendimento_canonico_id: string | null
           ficha: string | null
           id: string
           midias: Json
@@ -5806,6 +5810,7 @@ export type Database = {
           campanha_ids?: string[]
           created_at?: string
           empreendimento: string
+          empreendimento_canonico_id?: string | null
           ficha?: string | null
           id?: string
           midias?: Json
@@ -5820,6 +5825,7 @@ export type Database = {
           campanha_ids?: string[]
           created_at?: string
           empreendimento?: string
+          empreendimento_canonico_id?: string | null
           ficha?: string | null
           id?: string
           midias?: Json
@@ -5829,7 +5835,15 @@ export type Database = {
           template_reativacao?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lia_produtos_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lia_templates: {
         Row: {
