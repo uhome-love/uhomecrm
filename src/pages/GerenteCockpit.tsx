@@ -18,6 +18,7 @@ import {
   Target, Handshake, Users, CalendarCheck, UserCheck, ArrowRight, TrendingUp, Trophy, Pencil,
 } from "lucide-react";
 import FilaPosVisita from "@/components/gerente/dashboard-v3/FilaPosVisita";
+import AlertasGerente from "@/components/gerente/dashboard-v3/AlertasGerente";
 
 type SaudeKey = "em_dia" | "atencao" | "desatualizado" | "estagnado";
 const SAUDE = {
@@ -200,8 +201,9 @@ export default function GerenteCockpit() {
           </div>
         </Card>
 
-        {/* Prioridades do time · Fila de Pós-Visita (fonte: get_gerente_fila_pos_visita) */}
+        {/* Prioridades do time · Fila de Pós-Visita + Alertas (fonte: RPCs dedicadas) */}
         <FilaPosVisita />
+        <AlertasGerente />
 
         {/* Corretores ranqueados */}
         <div>
