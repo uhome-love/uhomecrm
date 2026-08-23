@@ -53,11 +53,17 @@ import { formatBRT } from "@/lib/brtTime";
 import { cn } from "@/lib/utils";
 
 const TABS: { value: CategoriaEstagnacao; label: string }[] = [
-  { value: "estagnado", label: "Estagnados" },
+  { value: "aguardando_decisao", label: "Aguardando decisão" },
+  { value: "estagnado", label: "Estagnados por inatividade" },
   { value: "em_parceria", label: "Em parceria" },
 ];
 
 const TAB_INFO: Record<CategoriaEstagnacao, { icon: typeof AlarmClock; texto: string }> = {
+  aguardando_decisao: {
+    icon: ShieldAlert,
+    texto:
+      "Leads que o sistema já marcou como estagnados pela cadência Sem Contato (7 tentativas esgotadas ou tarefa atrasada há 48h) — são exatamente os leads da notificação '🛑 Lead estagnado'. Eles saíram do fluxo do corretor e aguardam sua decisão: Devolver, Repassar, Roleta ou Descartar.",
+  },
   estagnado: {
     icon: AlarmClock,
     texto:
