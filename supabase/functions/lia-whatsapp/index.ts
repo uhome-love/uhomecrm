@@ -123,6 +123,51 @@ const sendDoc = (to: string, link: string, filename: string) => send360(to, { ty
 
 const nowISO = () => new Date().toISOString();
 
+// ── MULTIPRODUTO (Etapa B, aditivo) ────────────────────────────────────────
+// Resolve de qual imóvel é a conversa. Ordem: (1) produto já fixado na conversa
+// (lia_estado.produto_slug); (2) pelo anúncio (referral) casando contra
+// lia_produtos.campanha_ids; (3) null = Canoas (comportamento de hoje, intocado).
+async function resolverProduto(sb: any, telefone: string, est: any, referral: any): Promise<any | null> {
+  try {
+    if (est?.produto_slug) {
+      const { data } = await sb.from("lia_produtos").select("*").eq("slug", est.produto_slug).eq("ativo", true).maybeSingle();
+      if (data) return data;
+    }
+    // pelo anúncio: source_id / ad_id / campanha do referral vs campanha_ids do produto
+    const cands = [referral?.source_id, referral?.ad_id, referral?.campaign_id]
+      .filter(Boolean).map((x: any) => String(x));
+    if (cands.length) {
+      const { data: prods } = await sb.from("lia_produtos").select("*").eq("ativo", true);
+      for (const p of (prods ?? [])) {
+        const camps = (p.campanha_ids ?? []).map(String);
+        if (cands.some((c: string) => camps.includes(c))) {
+          await sb.from("lia_estado").update({ produto_slug: p.slug, updated_at: nowISO() }).eq("telefone", telefone);
+          return p;
+        }
+      }
+    }
+  } catch (e) { console.error("[lia-whatsapp] resolverProduto erro", e); }
+  return null; // desconhecido → Canoas (default)
+}
+
+// Monta o mapa de mídias da conversa: do produto (lia_produtos.midias) quando há
+// produto; senão, o hardcoded do Casa Tua (MEDIA + DOC). Chave → url; .pdf vira documento.
+function montarMidias(produto: any | null): Record<string, { url: string; doc: boolean; filename?: string }> {
+  const map: Record<string, { url: string; doc: boolean; filename?: string }> = {};
+  if (produto?.midias && typeof produto.midias === "object") {
+    for (const [k, v] of Object.entries(produto.midias as Record<string, string>)) {
+      const url = String(v);
+      const isDoc = /\.pdf(\?|$)/i.test(url);
+      map[k.toLowerCase()] = { url, doc: isDoc, filename: isDoc ? `${produto.nome || "Material"}.pdf` : undefined };
+    }
+    return map;
+  }
+  // Canoas (default, intocado): imagens do MEDIA + o ebook do DOC
+  for (const [k, url] of Object.entries(MEDIA)) map[k.toLowerCase()] = { url, doc: false };
+  for (const [k, d] of Object.entries(DOC)) map[k.toLowerCase()] = { url: d.link, doc: true, filename: d.filename };
+  return map;
+}
+
 // Normaliza o telefone do WhatsApp pro formato brasileiro +55 DDD 9XXXXXXXX.
 // O WhatsApp entrega alguns números do RS SEM o 9 do celular (12 dígitos), então recolocamos.
 function telBR(from: string): string {
@@ -198,6 +243,10 @@ serve(async (req) => {
           }).eq("telefone", from);
         }
 
+        // MULTIPRODUTO: resolve o imóvel desta conversa (null = Canoas, comportamento de hoje)
+        const produto = await resolverProduto(sb, from, est, referral);
+        const midias = montarMidias(produto);
+
         // ANTI-TRAVAMENTO (junta a rajada): espera um instante; se chegou uma mensagem
         // mais nova do lead, deixa ELA responder (com o contexto completo) e para esta.
         await new Promise((r) => setTimeout(r, 6000));
@@ -220,7 +269,7 @@ serve(async (req) => {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
-            body: JSON.stringify({ messages: msgs }),
+            body: JSON.stringify({ messages: msgs, ...(produto?.ficha ? { ficha: produto.ficha } : {}) }),
           });
           const d = await r.json();
           reply = String(d?.content ?? "").trim();
@@ -245,8 +294,12 @@ serve(async (req) => {
             const mm = p.match(/^\[\[\s*midia\s*:\s*(\w+)\s*\]\]$/i);
             if (mm) {
               const k = mm[1].toLowerCase();
-              if (DOC[k] && media < 3) { media++; await sendDoc(from, DOC[k].link, DOC[k].filename); }
-              else if (MEDIA[k] && media < 3) { media++; await sendImage(from, MEDIA[k]); }
+              const mid = midias[k];
+              if (mid && media < 3) {
+                media++;
+                if (mid.doc) await sendDoc(from, mid.url, mid.filename || "Material.pdf");
+                else await sendImage(from, mid.url);
+              }
             } else if (/^\[\[.*\]\]$/.test(p)) {
               continue; // marcador interno (ex.: sinal) que por acaso vazou: nunca envia
             } else {
@@ -260,12 +313,12 @@ serve(async (req) => {
         const jaOptout = OPTOUT_RE.test(texto);
         if (!jaOptout) {
           if ((sinal === "quente" || sinal === "morno" || sinal === "frio") && est.status !== "descartado") {
-            await qualificar(sb, from, est, contactName, referral, sinal);
+            await qualificar(sb, from, est, contactName, referral, sinal, produto);
             // PASSAGEM DE BASTÃO: quando o cérebro conclui o pré-atendimento (repassar),
             // a LIA avisa o lead que um especialista humano vai seguir. Só pra lead acionável
             // (morno/quente), uma única vez por conversa (trava: repassado_em).
             if (repassar && (sinal === "quente" || sinal === "morno")) {
-              await passagemDeBastao(sb, from);
+              await passagemDeBastao(sb, from, produto);
             }
           } else if (sinal === "descartar" && est.status !== "qualificado" && !est.lead_id) {
             await sb.from("lia_estado").update({
@@ -292,7 +345,7 @@ serve(async (req) => {
  * estado, e NOTIFICA o Lucas na hora. Só notifica na transição (primeira vez que
  * qualifica, e de novo se subir pra QUENTE), nunca a cada mensagem.
  */
-async function qualificar(sb: any, from: string, est: any, nome: string | null, referral: any, nivel: string) {
+async function qualificar(sb: any, from: string, est: any, nome: string | null, referral: any, nivel: string, produto: any | null) {
   try {
     const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
     const jaEra = est.status === "qualificado";
@@ -310,7 +363,7 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
 
     let leadId: string | null = est.lead_id ?? null;
     if (!leadId) {
-      leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel, resumo);
+      leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel, resumo, produto);
     } else {
       // já estava na fila: atualiza a temperatura E o título do histórico pra bater com a fila
       await sb.from("pipeline_leads").update({
@@ -338,7 +391,7 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     // notifica o Lucas só pra lead acionável (morno/quente) e na transição/quando esquenta;
     // frio entra na Fila CEO sem push (ele vê e dispara quando quiser).
     if (leadId && map.rank >= 2 && (!jaEra || subiu)) {
-      await notificar(sb, leadId, est.nome ?? nome, nivel);
+      await notificar(sb, leadId, est.nome ?? nome, nivel, produto);
     }
   } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); }
 }
@@ -348,18 +401,19 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
 // que é contato duplicado (o humano é a CONTINUAÇÃO da LIA, não um segundo vendedor).
 // Roda no MÁXIMO uma vez por conversa (trava: repassado_em) e enquadra o próximo contato
 // como o mesmo atendimento, avisando que pode vir de outro número.
-async function passagemDeBastao(sb: any, from: string) {
+async function passagemDeBastao(sb: any, from: string, produto: any | null) {
   try {
     const { data: rows } = await sb
       .from("lia_estado").select("repassado_em, agendou").eq("telefone", from).limit(1);
     const est = rows?.[0];
     if (!est || est.repassado_em) return; // já avisou antes: não repete
 
+    const empNome = produto?.nome ?? produto?.empreendimento ?? "Casa Tua";
     const foco = est.agendou
       ? "pra organizar e confirmar tua visita"
       : "pra seguir de onde a gente parou";
     const msg =
-      `Que bom falar contigo! 🙌 Daqui pra frente quem segue com você é o nosso time de especialistas do Casa Tua, ${foco}.` +
+      `Que bom falar contigo! 🙌 Daqui pra frente quem segue com você é o nosso time de especialistas do ${empNome}, ${foco}.` +
       `\n\nEm breve alguém do time te chama por aqui no WhatsApp. Pode ser de um número diferente do meu, mas é o mesmo atendimento e a pessoa já vai com todo o teu contexto, tá? 😉`;
 
     await sendText(from, msg);
@@ -416,7 +470,7 @@ function lerAgendamento(resumo: string): { agendou: boolean; quando: string | nu
 }
 
 // Cria o lead SEM DONO na Fila CEO (mesmo padrão do receive-quiz-lead), origem 'LIA'.
-async function criarLeadFila(sb: any, from: string, nome: string | null, referral: any, nivel: string, resumo: string): Promise<string | null> {
+async function criarLeadFila(sb: any, from: string, nome: string | null, referral: any, nivel: string, resumo: string, produto: any | null): Promise<string | null> {
   try {
     const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
     const telefone = telBR(from);
@@ -440,7 +494,8 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
     const { data: ins, error } = await sb.from("pipeline_leads").insert({
       nome: nome || "Lead LIA",
       telefone,
-      empreendimento: "Casa Tua Santos Ferreira",
+      empreendimento: produto?.empreendimento ?? "Casa Tua Santos Ferreira",
+      empreendimento_canonico_id: produto?.empreendimento_canonico_id ?? null,
       stage_id: stage.id,
       origem: "LIA",
       origem_detalhe: "whatsapp",
@@ -476,9 +531,10 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
 }
 
 // Notifica admin/diretor na hora — é assim que o Lucas fica sabendo pra repassar.
-async function notificar(sb: any, leadId: string, nome: string | null, nivel: string) {
+async function notificar(sb: any, leadId: string, nome: string | null, nivel: string, produto: any | null) {
   try {
     const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
+    const empNome = produto?.empreendimento ?? "Casa Tua Santos Ferreira";
     const { data: tops } = await sb.from("user_roles").select("user_id").in("role", ["admin", "diretor"]);
     const seen = new Set<string>();
     for (const t of (tops ?? []) as Array<{ user_id: string }>) {
@@ -489,7 +545,7 @@ async function notificar(sb: any, leadId: string, nome: string | null, nivel: st
         p_tipo: "lead",
         p_categoria: "lead_qualificado_lia",
         p_titulo: `${map.emoji} Lead ${map.label} da LIA`,
-        p_mensagem: `${nome || "Lead"} · Casa Tua Santos Ferreira · pronto pra repassar`,
+        p_mensagem: `${nome || "Lead"} · ${empNome} · pronto pra repassar`,
         p_dados: { pipeline_lead_id: leadId, nivel, url: "/ceo" },
         p_agrupamento_key: `lead_lia:${leadId}:${nivel}`,
       });
