@@ -665,9 +665,10 @@ export default function AgendaVisitas() {
     await updateStatus(id, "marcada");
   }, [updateStatus, updateVisita]);
 
-  const handleResultadoSubmit = useCallback(async (resultado: ResultadoVisita, observacoes?: string, feedback?: { objecao?: string; temperatura?: string; proxima_acao?: string }) => {
+  const handleResultadoSubmit = useCallback(async (resultado: ResultadoVisita, observacoes?: string, feedback?: { objecao?: string; temperatura?: string; proxima_acao?: string; data_proxima_acao?: string }) => {
     if (!resultadoVisita) return;
     const updates: any = { resultado_visita: resultado };
+    if (feedback?.objecao) updates.objecao = feedback.objecao;
     if (observacoes) {
       updates.observacoes = [resultadoVisita.observacoes, observacoes].filter(Boolean).join(" | ");
     }
@@ -707,6 +708,7 @@ export default function AgendaVisitas() {
         const leadUpdates: any = {};
         if (feedback.temperatura) leadUpdates.temperatura = feedback.temperatura;
         if (feedback.proxima_acao) leadUpdates.proxima_acao = feedback.proxima_acao;
+        if (feedback.data_proxima_acao) leadUpdates.data_proxima_acao = feedback.data_proxima_acao;
         if (feedback.objecao) {
           leadUpdates.observacoes = [resultadoVisita.observacoes, `Objeção: ${feedback.objecao}`].filter(Boolean).join(" | ");
         }
@@ -716,6 +718,30 @@ export default function AgendaVisitas() {
             ultima_acao_at: new Date().toISOString(),
           } as any).eq("id", resultadoVisita.pipeline_lead_id);
         }
+      }
+
+      // No-show: mantém o lead QUENTE para remarcar (não esfria em Aquecimento).
+      // Cria tarefa automática de remarcar em 24h + próxima ação no card.
+      if (resultado === "nao_compareceu") {
+        const amanha = new Date(Date.now() + 24 * 60 * 60 * 1000)
+          .toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        await supabase.from("pipeline_tarefas").insert({
+          pipeline_lead_id: resultadoVisita.pipeline_lead_id,
+          titulo: "Remarcar visita (no-show)",
+          descricao: "Cliente faltou à visita. Reagendar enquanto o interesse está quente.",
+          tipo: "follow_up",
+          subtipo: "remarcar_no_show",
+          status: "pendente",
+          vence_em: amanha,
+          responsavel_id: resultadoVisita.corretor_id || user?.id || null,
+          created_by: user?.id || null,
+          origem: "no_show_auto",
+        } as any);
+        await supabase.from("pipeline_leads").update({
+          proxima_acao: "Remarcar visita (no-show)",
+          data_proxima_acao: amanha,
+          ultima_acao_at: new Date().toISOString(),
+        } as any).eq("id", resultadoVisita.pipeline_lead_id);
       }
     }
     setResultadoVisita(null);

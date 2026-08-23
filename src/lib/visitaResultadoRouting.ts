@@ -53,7 +53,10 @@ const ROUTES: Record<ResultadoVisita, RouteRule> = {
     destinoTipo: "pos_visita",
     flags: { status_visita: "realizada" },
   },
-  nao_compareceu: { destinoTipo: "aquecimento", flags: { status_visita: "no_show" } },
+  // No-show NÃO esfria: mantém o lead na etapa Visita (destinoTipo null) com o selo
+  // "👻 No-show" para remarcar enquanto o interesse ainda está quente. Só vai para
+  // Aquecimento depois de esgotar as tentativas de reagendamento.
+  nao_compareceu: { destinoTipo: null, flags: { status_visita: "no_show", remarcar: "sim" } },
   reagendar: { destinoTipo: null, flags: { status_visita: "reagendada" } },
 };
 

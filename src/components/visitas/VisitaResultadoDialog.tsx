@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, ClipboardCheck } from "lucide-react";
 
 export type ResultadoVisita =
@@ -29,15 +29,17 @@ export const RESULTADO_LABELS: Record<string, string> = Object.fromEntries(
   RESULTADO_OPTIONS.map(o => [o.value, `${o.emoji} ${o.label}`])
 );
 
+// Objeções padronizadas (chip de 1 clique). Alinhado ao que aparece nas visitas reais
+// do Casa Tua: prazo de entrega, renda/financiamento, decisão em família.
 const OBJECAO_OPTIONS = [
-  "Preço alto",
-  "Localização",
-  "Tamanho do imóvel",
+  "Preço",
   "Prazo de entrega",
-  "Condições de pagamento",
-  "Quer mais opções",
-  "Indeciso(a)",
-  "Outro",
+  "Renda / financiamento",
+  "Decisão em família",
+  "Localização",
+  "Tamanho / planta",
+  "Quer comparar",
+  "Outra",
 ];
 
 const TEMPERATURA_OPTIONS = [
@@ -53,6 +55,7 @@ export interface FeedbackCompleto {
   objecao?: string;
   temperatura?: string;
   proxima_acao?: string;
+  data_proxima_acao?: string;
 }
 
 interface Props {
@@ -62,12 +65,28 @@ interface Props {
   nomeCliente: string;
 }
 
+// chip reutilizável (single-select)
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-[11px] px-2.5 py-1.5 rounded-full border transition-colors ${
+        active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-border text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCliente }: Props) {
   const [selected, setSelected] = useState<ResultadoVisita | null>(null);
   const [obs, setObs] = useState("");
   const [objecao, setObjecao] = useState("");
   const [temperatura, setTemperatura] = useState("");
   const [proximaAcao, setProximaAcao] = useState("");
+  const [dataProximaAcao, setDataProximaAcao] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -77,18 +96,29 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
       setObjecao("");
       setTemperatura("");
       setProximaAcao("");
+      setDataProximaAcao("");
       setSubmitting(false);
     }
   }, [open]);
 
+  // Regras de obrigatoriedade. Toda visita que REALIZOU (não é no-show nem reagendamento)
+  // exige registro completo, é o gargalo da venda que estamos fechando.
+  const realizou = !!selected && !["nao_compareceu", "reagendar"].includes(selected);
+  const exigeObjecao = realizou && selected !== "gostou_quer_proposta";
+  const faltaObrigatorio =
+    !selected ||
+    (realizou && (!temperatura || !proximaAcao.trim() || !dataProximaAcao || !obs.trim())) ||
+    (exigeObjecao && !objecao);
+
   const handleSubmit = async () => {
-    if (!selected) return;
+    if (!selected || faltaObrigatorio) return;
     setSubmitting(true);
     try {
       const feedbackExtra = {
         objecao: objecao || undefined,
         temperatura: temperatura || undefined,
         proxima_acao: proximaAcao || undefined,
+        data_proxima_acao: dataProximaAcao || undefined,
       };
       await onSubmit(selected, obs || undefined, feedbackExtra);
       onClose();
@@ -111,32 +141,35 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Resultado */}
-          <div className="grid grid-cols-2 gap-2">
-            {RESULTADO_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setSelected(opt.value)}
-                className={`rounded-lg border p-3 text-left transition-all hover:shadow-sm ${
-                  selected === opt.value
-                    ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                    : "hover:border-muted-foreground/30"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{opt.emoji}</span>
-                  <span className="text-xs font-semibold">{opt.label}</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1">{opt.desc}</p>
-              </button>
-            ))}
+          {/* 1. O que aconteceu? */}
+          <div>
+            <Label className="text-xs font-semibold">1. O que aconteceu na visita? *</Label>
+            <div className="grid grid-cols-2 gap-2 mt-1.5">
+              {RESULTADO_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSelected(opt.value)}
+                  className={`rounded-lg border p-3 text-left transition-all hover:shadow-sm ${
+                    selected === opt.value
+                      ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                      : "hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{opt.emoji}</span>
+                    <span className="text-xs font-semibold">{opt.label}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Temperatura do lead */}
-          {selected && selected !== "nao_compareceu" && (
+          {/* 2. Temperatura */}
+          {realizou && (
             <div>
-              <Label className="text-xs font-semibold">🌡️ Temperatura atualizada do lead</Label>
+              <Label className="text-xs font-semibold">2. Temperatura do lead *</Label>
               <div className="grid grid-cols-2 gap-1.5 mt-1.5">
                 {TEMPERATURA_OPTIONS.map(t => (
                   <button
@@ -157,51 +190,66 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
             </div>
           )}
 
-          {/* Objeção principal */}
-          {selected && !["nao_compareceu", "gostou_quer_proposta"].includes(selected) && (
+          {/* 3. Objeção (obrigatória quando não é "quer proposta") */}
+          {exigeObjecao && (
             <div>
-              <Label className="text-xs font-semibold">🚧 Objeção principal (opcional)</Label>
-              <Select value={objecao} onValueChange={setObjecao}>
-                <SelectTrigger className="h-9 text-xs mt-1.5">
-                  <SelectValue placeholder="Selecione a objeção..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {OBJECAO_OPTIONS.map(o => (
-                    <SelectItem key={o} value={o}>{o}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs font-semibold">3. Qual a objeção? *</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {OBJECAO_OPTIONS.map(o => (
+                  <Chip key={o} active={objecao === o} onClick={() => setObjecao(objecao === o ? "" : o)}>{o}</Chip>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Próxima ação */}
-          {selected && (
-            <div>
-              <Label className="text-xs font-semibold">📋 Próxima ação</Label>
-              <Textarea
-                value={proximaAcao}
-                onChange={e => setProximaAcao(e.target.value)}
-                placeholder="Ex: Enviar proposta, ligar em 2 dias, reagendar para sábado..."
-                rows={2}
-                className="mt-1.5 text-xs"
-              />
+          {/* 4. Próximo passo + quando */}
+          {realizou && (
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+              <div>
+                <Label className="text-xs font-semibold">4. Próximo passo *</Label>
+                <Textarea
+                  value={proximaAcao}
+                  onChange={e => setProximaAcao(e.target.value)}
+                  placeholder="Ex: Enviar proposta, ligar para tratar o prazo de entrega..."
+                  rows={2}
+                  className="mt-1.5 text-xs"
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Quando *</Label>
+                <Input
+                  type="date"
+                  value={dataProximaAcao}
+                  onChange={e => setDataProximaAcao(e.target.value)}
+                  className="mt-1.5 h-9 text-xs"
+                />
+              </div>
             </div>
           )}
 
-          {/* Observações */}
+          {/* 5. Observação (sempre obrigatória quando realizou) */}
           <div>
-            <Label className="text-xs">Observações (opcional)</Label>
+            <Label className="text-xs font-semibold">
+              {realizou ? "5. Observação *" : "Observação"}
+            </Label>
             <Textarea
               value={obs}
               onChange={e => setObs(e.target.value)}
-              placeholder="Detalhes sobre a visita..."
-              rows={2}
+              placeholder="O que o cliente falou, contexto da objeção, detalhes que ajudem o gerente e a LIA..."
+              rows={3}
+              className="mt-1.5 text-xs"
             />
           </div>
 
+          {faltaObrigatorio && selected && realizou && (
+            <p className="text-[11px] text-amber-600">
+              Preencha temperatura, {exigeObjecao ? "objeção, " : ""}próximo passo com data e observação para registrar.
+            </p>
+          )}
+
           <Button
             className="w-full gap-2"
-            disabled={!selected || submitting}
+            disabled={faltaObrigatorio || submitting}
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
