@@ -15206,6 +15206,7 @@ export type Database = {
           estagnado_prazo_em: string
           etapa: string
           lead_id: string
+          motivo: string
           nome: string
           stage_id: string
           ultima_acao_humana: string
