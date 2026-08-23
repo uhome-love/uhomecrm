@@ -12631,6 +12631,7 @@ export type Database = {
           local_visita: string | null
           negocio_id: string | null
           nome_cliente: string
+          objecao: string | null
           observacoes: string | null
           origem: string
           origem_detalhe: string | null
@@ -12676,6 +12677,7 @@ export type Database = {
           local_visita?: string | null
           negocio_id?: string | null
           nome_cliente: string
+          objecao?: string | null
           observacoes?: string | null
           origem?: string
           origem_detalhe?: string | null
@@ -12721,6 +12723,7 @@ export type Database = {
           local_visita?: string | null
           negocio_id?: string | null
           nome_cliente?: string
+          objecao?: string | null
           observacoes?: string | null
           origem?: string
           origem_detalhe?: string | null
