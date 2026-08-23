@@ -15,8 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Target, Handshake, Users, CalendarCheck, UserCheck, ArrowRight, TrendingUp, Trophy, Pencil, Sparkles,
+  Target, Handshake, Users, CalendarCheck, UserCheck, ArrowRight, TrendingUp, Trophy, Pencil,
 } from "lucide-react";
+import FilaPosVisita from "@/components/gerente/dashboard-v3/FilaPosVisita";
 
 type SaudeKey = "em_dia" | "atencao" | "desatualizado" | "estagnado";
 const SAUDE = {
@@ -199,11 +200,8 @@ export default function GerenteCockpit() {
           </div>
         </Card>
 
-        {/* Agenda do gerente — feature futura (teaser) */}
-        <Card className="border-indigo-200 dark:border-indigo-900 bg-indigo-50/30 dark:bg-indigo-950/20">
-          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-indigo-600" /><span className="text-[11px] font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-400">Agenda do gerente · prioridades do time</span><span className="ml-auto rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold text-white">EM BREVE</span></div>
-          <p className="mt-1.5 text-[12px] text-slate-500 dark:text-slate-400">Em breve: as prioridades do dia (negócios em risco, corretores sem atividade, visitas a acompanhar) num lugar só, pro gerente se organizar.</p>
-        </Card>
+        {/* Prioridades do time · Fila de Pós-Visita (fonte: get_gerente_fila_pos_visita) */}
+        <FilaPosVisita />
 
         {/* Corretores ranqueados */}
         <div>
