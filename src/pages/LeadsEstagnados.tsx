@@ -53,11 +53,17 @@ import { formatBRT } from "@/lib/brtTime";
 import { cn } from "@/lib/utils";
 
 const TABS: { value: CategoriaEstagnacao; label: string }[] = [
-  { value: "estagnado", label: "Estagnados" },
+  { value: "aguardando_decisao", label: "Aguardando decisão" },
+  { value: "estagnado", label: "Estagnados por inatividade" },
   { value: "em_parceria", label: "Em parceria" },
 ];
 
 const TAB_INFO: Record<CategoriaEstagnacao, { icon: typeof AlarmClock; texto: string }> = {
+  aguardando_decisao: {
+    icon: ShieldAlert,
+    texto:
+      "Leads que o sistema já marcou como estagnados pela cadência Sem Contato (7 tentativas esgotadas ou tarefa atrasada há 48h) — são exatamente os leads da notificação '🛑 Lead estagnado'. Eles saíram do fluxo do corretor e aguardam sua decisão: Devolver, Repassar, Roleta ou Descartar.",
+  },
   estagnado: {
     icon: AlarmClock,
     texto:
@@ -109,7 +115,7 @@ export default function LeadsEstagnados() {
   const { data, isLoading } = usePipelineEstagnacao();
   const meta = usePipelineMeta();
   const drawer = useEstagnadoLeadDrawer();
-  const [tab, setTab] = useState<CategoriaEstagnacao>("estagnado");
+  const [tab, setTab] = useState<CategoriaEstagnacao>("aguardando_decisao");
   const [decision, setDecision] = useState<
     { leads: LeadEstagnacao[]; acao: AcaoEstagnacao } | null
   >(null);
@@ -130,6 +136,7 @@ export default function LeadsEstagnados() {
       em_aviso: 0,
       em_parceria: 0,
       estagnado: 0,
+      aguardando_decisao: 0,
     };
     (data ?? []).forEach((l) => {
       c[l.categoria] = (c[l.categoria] ?? 0) + 1;
@@ -528,6 +535,15 @@ function LeadRow({
                 <span className="opacity-40">·</span>
                 <span className="text-warning-foreground font-medium">
                   Prazo: {formatBRT(lead.estagnado_prazo_em, "dd/MM HH:mm")}
+                </span>
+              </>
+            )}
+            {lead.motivo && (
+              <>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <ShieldAlert className="h-3 w-3" />
+                  {lead.motivo}
                 </span>
               </>
             )}

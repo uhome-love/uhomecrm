@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type CategoriaEstagnacao = "candidato" | "em_parceria" | "em_aviso" | "estagnado";
+export type CategoriaEstagnacao = "candidato" | "em_parceria" | "em_aviso" | "estagnado" | "aguardando_decisao";
 
 export interface LeadEstagnacao {
   lead_id: string;
@@ -17,6 +17,7 @@ export interface LeadEstagnacao {
   dias_sem_acao: number;
   categoria: CategoriaEstagnacao;
   estagnado_prazo_em: string | null;
+  motivo: string | null;
 }
 
 export type AcaoEstagnacao = "devolver" | "repassar" | "roleta" | "descartar";
