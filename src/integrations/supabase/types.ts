@@ -15027,6 +15027,8 @@ export type Database = {
         Args: { p_corretor_id: string }
         Returns: Json
       }
+      get_gerente_alertas: { Args: never; Returns: Json }
+      get_gerente_fila_pos_visita: { Args: never; Returns: Json }
       get_gerentes_recrutamento: {
         Args: never
         Returns: {
