@@ -589,6 +589,22 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     }
   }, [leads, stages, onMoveLead]);
 
+  // Padronização do pós-visita: não deixa avançar de Visita para Pós-Visita sem
+  // registrar o resultado. O registro é o caminho único, e é ele que dispara o move
+  // via trigger do banco. Como o trigger já move sozinho quando a visita vira
+  // "realizada", esse bloqueio só atinge o caso problemático (avanço sem registro).
+  const bloqueiaAvancoSemResultado = useCallback((lead: PipelineLead, targetStage: PipelineStage): boolean => {
+    const origem = stages.find(s => s.id === lead.stage_id);
+    if (origem?.tipo === "visita" && targetStage.tipo === "pos_visita") {
+      toast.info("Registre o resultado da visita para avançar", {
+        description: "No card da visita, clique em “Resultado da Visita”. É o único caminho para o Pós-Visita, e garante objeção, próximo passo e temperatura.",
+        duration: 6000,
+      });
+      return true;
+    }
+    return false;
+  }, [stages]);
+
   const handleDrop = (e: React.DragEvent, stageId: string) => {
     e.preventDefault();
     setDragOverStage(null);
@@ -600,6 +616,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
     const targetStage = stages.find(s => s.id === stageId);
     if (!targetStage) return;
+
+    if (bloqueiaAvancoSemResultado(lead, targetStage)) return;
 
     // Check if this stage needs a transition popup
     if (needsTransitionPopup(targetStage.nome, targetStage.tipo, lead)) {
@@ -1133,6 +1151,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     onMoveLead={(leadId: string, stageId: string) => {
                       const lead = leads.find(l => l.id === leadId);
                       const targetStage = stages.find(s => s.id === stageId);
+                      if (lead && targetStage && bloqueiaAvancoSemResultado(lead, targetStage)) return;
                       if (lead && targetStage && needsTransitionPopup(targetStage.nome, targetStage.tipo, lead)) {
                         setTransitionPopup({ lead, targetStage });
                         return;

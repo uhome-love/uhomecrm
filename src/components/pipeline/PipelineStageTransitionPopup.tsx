@@ -656,64 +656,9 @@ function VisitaMarcadaForm({ lead, onConfirm, targetStageId }: { lead: PipelineL
   );
 }
 
-// ─── Visita Realizada ───
-function VisitaRealizadaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
-  const [feedback, setFeedback] = useState("");
-  const [interesse, setInteresse] = useState("");
-
-  return (
-    <>
-      <DialogHeader>
-        <DialogTitle className="text-base flex items-center gap-2">✅ Feedback da Visita Realizada</DialogTitle>
-      </DialogHeader>
-      <p className="text-xs text-muted-foreground">Cliente: <strong>{lead.nome}</strong></p>
-
-      <div className="space-y-3">
-        <div>
-          <Label className="text-xs mb-2 block">Nível de interesse do cliente *</Label>
-          <RadioGroup value={interesse} onValueChange={setInteresse} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="muito_interessado" id="int-muito" />
-              <Label htmlFor="int-muito" className="text-xs cursor-pointer">🔥 Muito interessado — quer proposta</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="interessado" id="int-sim" />
-              <Label htmlFor="int-sim" className="text-xs cursor-pointer">👍 Interessado — pensando</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="morno" id="int-morno" />
-              <Label htmlFor="int-morno" className="text-xs cursor-pointer">🤔 Morno — precisa de mais opções</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="sem_interesse" id="int-nao" />
-              <Label htmlFor="int-nao" className="text-xs cursor-pointer">👎 Sem interesse após visita</Label>
-            </div>
-          </RadioGroup>
-        </div>
-        <div>
-          <Label className="text-xs">Feedback da visita *</Label>
-          <Textarea value={feedback} onChange={e => setFeedback(e.target.value)} className="text-xs h-24" placeholder="Como foi a visita? O que o cliente achou? Próximos passos..." />
-        </div>
-      </div>
-
-      <DialogFooter>
-        <Button
-          size="sm"
-          className="text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
-          disabled={!interesse || !feedback.trim()}
-          onClick={() => onConfirm({
-            leadId: lead.id,
-            targetStageId,
-            observacao: `Visita Realizada | Interesse: ${interesse.replace(/_/g, " ")} | ${feedback}`,
-            extraData: { interesse, feedback, registrarVisitaRealizada: true },
-          })}
-        >
-          ✅ Confirmar visita realizada
-        </Button>
-      </DialogFooter>
-    </>
-  );
-}
+// (Removido) VisitaRealizadaForm: caminho único de registro do resultado da visita
+// agora é o VisitaResultadoDialog (padronizado). Este formulário não abria (o move
+// para Pós-Visita é feito pelo trigger do banco quando a visita vira "realizada").
 
 // ─── Descarte ───
 function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
@@ -1252,9 +1197,8 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     if (stageType === "visita" || stageType === "visita_marcada" || stageName === "visita" || stageName.includes("visita marcada")) {
       return <VisitaMarcadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageType === "pos_visita" || stageType === "visita_realizada" || stageName.includes("pós-visita") || stageName.includes("visita realizada")) {
-      return <VisitaRealizadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
-    }
+    // Pós-Visita não tem formulário de transição: o resultado da visita é registrado
+    // pelo caminho único (VisitaResultadoDialog) e o move é feito pelo trigger do banco.
     if (stageType === "proposta" || stageName.includes("proposta")) {
       return <PropostaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
