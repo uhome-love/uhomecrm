@@ -95,13 +95,23 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
     const { data: sup } = await admin.from("meta_supressao").select("id").eq("telefone_last8", l8).limit(1).maybeSingle();
     if (sup) { await logPonte(admin, "opt_out", { slug: produto.slug, camp }); return { desviar: true, motivo: "opt_out" }; }
 
-    // 3. DEDUP: se o telefone já tem conversa ATIVA ou encerrada da LIA, NÃO re-mensageia nem
-    //    duplica na roleta (ele já é da LIA). Só lead realmente novo recebe o 1º contato.
+    // 3a. DEDUP LIA: se o telefone JÁ tem qualquer estado na LIA, NÃO reenvia o 1º contato
+    //     (evita disparo duplicado quando o backfill reprocessa a mesma submissão). O reengajamento
+    //     de quem já está na LIA é papel do lia-followup, nunca da ponte.
     const { data: jaExiste } = await admin.from("lia_estado").select("telefone,status")
       .ilike("telefone", `%${l8}`).order("updated_at", { ascending: false }).limit(1).maybeSingle();
-    if (jaExiste && ["em_conversa", "qualificado", "opt_out", "descartado"].includes(String(jaExiste.status))) {
-      await logPonte(admin, "ja_em_atendimento_lia", { slug: produto.slug, status: jaExiste.status });
-      return { desviar: true, motivo: "ja_em_atendimento_lia" };
+    if (jaExiste) {
+      await logPonte(admin, "ja_tem_estado_lia", { slug: produto.slug, status: jaExiste.status });
+      return { desviar: true, motivo: "ja_tem_estado_lia" };
+    }
+
+    // 3b. DEDUP PIPELINE: se já é lead ativo NO PIPELINE com corretor, o humano assumiu —
+    //     a LIA NÃO cutuca de novo (evita contato duplicado com quem o time já atende).
+    const { data: jaPipe } = await admin.from("pipeline_leads").select("id")
+      .ilike("telefone", `%${l8}`).not("corretor_id", "is", null).eq("arquivado", false).limit(1).maybeSingle();
+    if (jaPipe) {
+      await logPonte(admin, "ja_no_pipeline_com_corretor", { slug: produto.slug });
+      return { desviar: true, motivo: "ja_no_pipeline_com_corretor" };
     }
 
     // 4. Template de PRIMEIRO CONTATO aprovado (mensagem de boas-vindas, NUNCA o de reativação
