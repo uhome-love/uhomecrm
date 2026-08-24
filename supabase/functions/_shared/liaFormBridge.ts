@@ -85,9 +85,19 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
     const { data: sup } = await admin.from("meta_supressao").select("id").eq("telefone_last8", l8).limit(1).maybeSingle();
     if (sup) return { desviar: true, motivo: "opt_out" }; // não manda nada, e não joga na roleta
 
-    // 3. Precisa de template aprovado pra falar com quem não escreveu antes.
-    const tplName = produto.template_reativacao;
-    if (!tplName) return { desviar: false, motivo: "sem_template" }; // sem template → roleta (segurança)
+    // 3. DEDUP: se o telefone já tem conversa ATIVA ou encerrada da LIA, NÃO re-mensageia nem
+    //    duplica na roleta (ele já é da LIA). Só lead realmente novo recebe o 1º contato.
+    const { data: jaExiste } = await admin.from("lia_estado").select("telefone,status")
+      .ilike("telefone", `%${l8}`).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    if (jaExiste && ["em_conversa", "qualificado", "opt_out", "descartado"].includes(String(jaExiste.status))) {
+      return { desviar: true, motivo: "ja_em_atendimento_lia" };
+    }
+
+    // 4. Template de PRIMEIRO CONTATO aprovado (mensagem de boas-vindas, NUNCA o de reativação
+    //    "procura-se"). SEM ele, a LIA NÃO manda nada e o lead segue pra roleta — jamais um
+    //    template errado sai pra um lead que acabou de se cadastrar.
+    const tplName = produto.template_primeiro_contato;
+    if (!tplName) return { desviar: false, motivo: "sem_template_primeiro_contato" };
 
     const to = telWa(input.telefone);
     // Params do template: por ora {{1}} = primeiro nome. (Se o template pedir mais, ajustar aqui.)
