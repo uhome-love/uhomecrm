@@ -323,6 +323,17 @@ serve(async (req) => {
                 if (mid.doc) await sendDoc(from, mid.url, mid.filename || "Material.pdf");
                 else await sendImage(from, mid.url);
               }
+            } else if (/^\[\[\s*nome\s*:/i.test(p)) {
+              // [[nome:Fulano]] — a LIA capturou o nome REAL que a pessoa disse; salva no CRM
+              // (o WhatsApp costuma trazer apelido/nome de perfil que não presta). Nunca envia ao cliente.
+              const nm = p.match(/^\[\[\s*nome\s*:\s*(.+?)\s*\]\]$/i);
+              const novoNome = nm?.[1]?.trim().slice(0, 80);
+              if (novoNome) {
+                await sb.from("lia_estado").update({ nome: novoNome, updated_at: nowISO() }).eq("telefone", from);
+                est.nome = novoNome;
+                const l8 = telBR(from).replace(/\D/g, "").slice(-8);
+                await sb.from("pipeline_leads").update({ nome: novoNome }).ilike("telefone", `%${l8}`).eq("arquivado", false);
+              }
             } else if (/^\[\[.*\]\]$/.test(p)) {
               continue; // marcador interno (ex.: sinal) que por acaso vazou: nunca envia
             } else {
