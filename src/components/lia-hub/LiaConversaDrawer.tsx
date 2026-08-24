@@ -30,6 +30,7 @@ import {
   STATUS_META,
   MOTIVOS_DESCARTE,
   origemDoReferral,
+  produtoLabel,
   useLiaConversa,
   useDescartarLead,
   useReativarLead,
@@ -99,6 +100,11 @@ export default function LiaConversaDrawer({ estado, open, onOpenChange }: Props)
           <SheetTitle className="text-lg">{estado?.nome || "Sem nome"}</SheetTitle>
           <SheetDescription>{estado?.telefone}</SheetDescription>
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            {estado?.produto_slug ? (
+              <Badge variant="secondary" className="border-primary/20 bg-primary/10 text-primary">
+                {produtoLabel(estado.produto_slug)}
+              </Badge>
+            ) : null}
             <Badge variant="outline" className={meta.cls}>{meta.label}</Badge>
             {estado?.nivel ? (
               <Badge variant="outline" className="border-warning/20 bg-warning/10 text-warning">

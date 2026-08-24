@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRT } from "@/lib/brtTime";
-import { NIVEL_META, useLiaEstados, useLiaPipelineLeads } from "./useLiaHub";
+import FiltroImovel from "./FiltroImovel";
+import { NIVEL_META, produtoLabel, produtosDeEstados, useLiaEstados, useLiaPipelineLeads } from "./useLiaHub";
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -39,12 +40,24 @@ function FunilLinha({ label, value, max }: { label: string; value: number; max: 
 
 export default function LiaQualificadosTab() {
   const navigate = useNavigate();
-  const { data: estados } = useLiaEstados();
+  const { data: estadosRaw } = useLiaEstados();
   const { data, isLoading } = useLiaPipelineLeads();
 
-  const leads = data?.leads ?? [];
+  const [produto, setProduto] = useState("todos");
+  const produtos = useMemo(() => produtosDeEstados(estadosRaw), [estadosRaw]);
+  const estados = useMemo(
+    () => (produto === "todos" ? estadosRaw : (estadosRaw ?? []).filter((e) => (e.produto_slug ?? "") === produto)),
+    [estadosRaw, produto],
+  );
   const stages = data?.stages;
   const corretores = data?.corretores;
+  // leads da LIA no pipeline, filtrados pelo imóvel escolhido (via lead_id dos estados filtrados)
+  const leads = useMemo(() => {
+    const all = data?.leads ?? [];
+    if (produto === "todos") return all;
+    const ids = new Set((estados ?? []).map((e) => e.lead_id).filter(Boolean));
+    return all.filter((l) => ids.has(l.id));
+  }, [data, estados, produto]);
 
   const kpis = useMemo(() => {
     const total = (estados ?? []).length;
@@ -78,6 +91,7 @@ export default function LiaQualificadosTab() {
 
   return (
     <div className="space-y-5">
+      <FiltroImovel produtos={produtos} valor={produto} onChange={setProduto} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Qualificados" value={String(kpis.qualificados)} hint={`de ${kpis.total} contatos`} />
         <Kpi label="Taxa de qualificação" value={`${kpis.taxaQualificacao}%`} />

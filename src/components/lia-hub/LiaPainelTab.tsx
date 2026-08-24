@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquare, UserPlus, CheckCircle2, Flame, AlertTriangle, CalendarCheck, DollarSign, Send, Trash2 } from "lucide-react";
 import { todayBRT, dateToBRT } from "@/lib/brtTime";
+import FiltroImovel from "./FiltroImovel";
 import {
   useLiaConversasHoje,
   useLiaEstados,
   useLiaFollowups,
   useLiaPipelineLeads,
   useLiaCusto,
+  produtosDeEstados,
   NIVEL_META,
   type LiaEstado,
 } from "./useLiaHub";
@@ -65,18 +67,32 @@ function FunilLinha({ label, value, max }: { label: string; value: number; max: 
 }
 
 export default function LiaPainelTab() {
-  const { data: estados, isLoading } = useLiaEstados();
+  const { data: estadosRaw, isLoading } = useLiaEstados();
   const { data: conversasHoje, isLoading: loadingConv } = useLiaConversasHoje();
   const { data: followups } = useLiaFollowups();
-  const { data: pipe } = useLiaPipelineLeads();
+  const { data: pipeRaw } = useLiaPipelineLeads();
   const { data: custo, isLoading: loadingCusto } = useLiaCusto();
+
+  const [produto, setProduto] = useState("todos");
+  const produtos = useMemo(() => produtosDeEstados(estadosRaw), [estadosRaw]);
+  // filtra na fonte: com um imóvel escolhido, TODOS os KPIs/funil abaixo recalculam sozinhos.
+  const estados = useMemo(
+    () => (produto === "todos" ? estadosRaw : (estadosRaw ?? []).filter((e) => (e.produto_slug ?? "") === produto)),
+    [estadosRaw, produto],
+  );
+  const pipe = useMemo(() => {
+    if (produto === "todos" || !pipeRaw) return pipeRaw;
+    const ids = new Set((estados ?? []).map((e) => e.lead_id).filter(Boolean));
+    return { ...pipeRaw, leads: (pipeRaw.leads ?? []).filter((l: any) => ids.has(l.id)) };
+  }, [pipeRaw, estados, produto]);
 
   const hoje = todayBRT();
 
   const kpis = useMemo(() => {
     const list: LiaEstado[] = estados ?? [];
+    const telsProduto = new Set(list.map((e) => e.telefone));
     const conversasHojeCount = new Set(
-      (conversasHoje ?? []).filter((c) => c.role === "user").map((c) => c.telefone)
+      (conversasHoje ?? []).filter((c) => c.role === "user" && telsProduto.has(c.telefone)).map((c) => c.telefone)
     ).size;
     const novosHoje = list.filter(
       (e) => e.last_msg_em && dateToBRT(e.last_msg_em) === hoje && e.status === "novo"
@@ -190,6 +206,7 @@ export default function LiaPainelTab() {
 
   return (
     <div className="space-y-5">
+      <FiltroImovel produtos={produtos} valor={produto} onChange={setProduto} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Kpi label="Conversas hoje" value={kpis.conversasHojeCount} icon={MessageSquare} loading={loadingConv} />
         <Kpi label="Leads novos hoje" value={kpis.novosHoje} icon={UserPlus} loading={isLoading} />

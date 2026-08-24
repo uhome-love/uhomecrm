@@ -17,10 +17,13 @@ import { formatBRT } from "@/lib/brtTime";
 import { useDebounce } from "@/hooks/useDebounce";
 import LiaConversaDrawer from "./LiaConversaDrawer";
 import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
+import FiltroImovel from "./FiltroImovel";
 import {
   NIVEL_META,
   STATUS_META,
   origemDoReferral,
+  produtoLabel,
+  produtosDeEstados,
   useLiaEstados,
   useLiaUltimasMensagens,
   type LiaEstado,
@@ -43,6 +46,7 @@ export default function LiaLeadsTab() {
   const [status, setStatus] = useState("todos");
   const [origem, setOrigem] = useState("todas");
   const [nivel, setNivel] = useState("todos");
+  const [produto, setProduto] = useState("todos");
   const [selecionado, setSelecionado] = useState<LiaEstado | null>(null);
   const buscaDeb = useDebounce(busca, 250);
 
@@ -50,10 +54,12 @@ export default function LiaLeadsTab() {
     const set = new Set((estados ?? []).map((e) => origemDoReferral(e.referral)));
     return Array.from(set).sort();
   }, [estados]);
+  const produtos = useMemo(() => produtosDeEstados(estados), [estados]);
 
   const linhas = useMemo(() => {
     const q = buscaDeb.trim().toLowerCase();
     return (estados ?? []).filter((e) => {
+      if (produto !== "todos" && (e.produto_slug ?? "") !== produto) return false;
       if (status !== "todos" && e.status !== status) return false;
       if (nivel !== "todos" && String(e.nivel ?? "").toLowerCase() !== nivel) return false;
       if (origem !== "todas" && origemDoReferral(e.referral) !== origem) return false;
@@ -62,10 +68,11 @@ export default function LiaLeadsTab() {
         (e.nome ?? "").toLowerCase().includes(q) || (e.telefone ?? "").toLowerCase().includes(q)
       );
     });
-  }, [estados, buscaDeb, status, origem, nivel]);
+  }, [estados, buscaDeb, status, origem, nivel, produto]);
 
   return (
     <div className="space-y-4">
+      <FiltroImovel produtos={produtos} valor={produto} onChange={setProduto} />
       <Card className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -171,10 +178,15 @@ export default function LiaLeadsTab() {
                     {ultima?.conteudo ?? "—"}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {e.produto_slug ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {produtoLabel(e.produto_slug)}
+                      </Badge>
+                    ) : null}
                     <Badge variant="outline" className={cn("text-[10px]", meta.cls)}>
                       {meta.label}
                     </Badge>
-                    <Badge variant="secondary" className="text-[10px]">
+                    <Badge variant="outline" className="text-[10px]">
                       {origemDoReferral(e.referral)}
                     </Badge>
                     {e.status === "qualificado" && NIVEL_META[String(e.nivel ?? "").toLowerCase()] ? (
@@ -196,7 +208,7 @@ export default function LiaLeadsTab() {
               <thead>
                 <tr className="border-b border-border bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-2 text-left font-semibold">Contato</th>
-                  <th className="px-4 py-2 text-left font-semibold">Origem</th>
+                  <th className="px-4 py-2 text-left font-semibold">Imóvel · Origem</th>
                   <th className="px-4 py-2 text-left font-semibold">Status</th>
                   <th className="px-4 py-2 text-left font-semibold">Última mensagem</th>
                   <th className="px-4 py-2 text-right font-semibold">Quando</th>
@@ -219,8 +231,11 @@ export default function LiaLeadsTab() {
                         <div className="font-medium text-foreground">{e.nome || "Sem nome"}</div>
                         <div className="text-xs text-muted-foreground">{e.telefone}</div>
                       </td>
-                      <td className="px-4 py-2.5 text-muted-foreground">
-                        {origemDoReferral(e.referral)}
+                      <td className="px-4 py-2.5">
+                        {e.produto_slug ? (
+                          <div className="font-medium text-foreground">{produtoLabel(e.produto_slug)}</div>
+                        ) : null}
+                        <div className="text-xs text-muted-foreground">{origemDoReferral(e.referral)}</div>
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex flex-wrap items-center gap-1.5">

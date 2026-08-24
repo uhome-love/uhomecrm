@@ -109,7 +109,16 @@ export function useLiaEstados() {
       return (data ?? []) as LiaEstado[];
     },
     staleTime: 30_000,
+    refetchInterval: 45_000, // status ao vivo: reatualiza sozinho a cada 45s
+    refetchOnWindowFocus: true,
   });
+}
+
+/** Lista de slugs de imóvel presentes na base (para montar o FiltroImovel). */
+export function produtosDeEstados(estados?: { produto_slug?: string | null }[] | null): string[] {
+  const set = new Set<string>();
+  for (const e of estados ?? []) if (e.produto_slug) set.add(e.produto_slug);
+  return Array.from(set).sort();
 }
 
 /** Últimas mensagens (para preview de "última mensagem" na tabela). */
