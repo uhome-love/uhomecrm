@@ -14,7 +14,16 @@
 //  · 30/60/90 dias → a janela imediatamente anterior, do mesmo tamanho.
 // =============================================================================
 
-export type PeriodoOpt = "mes" | "mes_passado" | "d30" | "d60" | "d90" | "ano" | "custom";
+export type PeriodoOpt =
+  | "semana"
+  | "semana_passada"
+  | "mes"
+  | "mes_passado"
+  | "d30"
+  | "d60"
+  | "d90"
+  | "ano"
+  | "custom";
 
 export interface Janela {
   start: string;
@@ -22,14 +31,17 @@ export interface Janela {
 }
 
 export const PERIODO_OPCOES: { value: PeriodoOpt; label: string }[] = [
-  { value: "mes", label: "Mês atual" },
+  { value: "semana", label: "Semana atual" },
+  { value: "semana_passada", label: "Semana anterior" },
+  { value: "mes", label: "Mês (acumulado)" },
+  { value: "custom", label: "Personalizado" },
   { value: "mes_passado", label: "Mês passado" },
   { value: "d30", label: "Últimos 30 dias" },
   { value: "d60", label: "Últimos 60 dias" },
   { value: "d90", label: "Últimos 90 dias" },
   { value: "ano", label: "Ano inteiro" },
-  { value: "custom", label: "Personalizado" },
 ];
+
 
 /** Hoje em BRT, no formato 'YYYY-MM-DD'. */
 export function hojeBRT(): string {
@@ -58,12 +70,26 @@ export function mesDeslocado(ref: string, delta: number): string {
   return iso(Math.floor(total / 12), (total % 12) + 1);
 }
 
+/** Segunda-feira da semana de `data` ('YYYY-MM-DD'). */
+export function segundaDaSemana(data: string): string {
+  const dow = new Date(`${data}T00:00:00Z`).getUTCDay(); // 0 = domingo
+  return addDias(data, -((dow + 6) % 7));
+}
+
 /** Janela do filtro escolhido. `custom` usa as datas informadas (fim inclusivo na UI). */
 export function calcJanela(opt: PeriodoOpt, custom?: { inicio: string; fim: string }): Janela {
   const hoje = hojeBRT();
   const [y, m] = hoje.split("-").map(Number);
 
   switch (opt) {
+    case "semana": {
+      // segunda-feira desta semana até hoje (acumulado da semana corrente)
+      return { start: segundaDaSemana(hoje), end: addDias(hoje, 1) };
+    }
+    case "semana_passada": {
+      const segAtual = segundaDaSemana(hoje);
+      return { start: addDias(segAtual, -7), end: segAtual };
+    }
     case "ano":
       return { start: iso(y, 1), end: iso(y + 1, 1) };
     case "mes_passado": {
@@ -83,13 +109,12 @@ export function calcJanela(opt: PeriodoOpt, custom?: { inicio: string; fim: stri
       return { start: inicio, end: addDias(fim, 1) };
     }
     case "mes":
-    default: {
-      const nm = m === 12 ? 1 : m + 1;
-      const ny = m === 12 ? y + 1 : y;
-      return { start: iso(y, m), end: iso(ny, nm) };
-    }
+    default:
+      // acumulado do mês: dia 1º até hoje (inclusive)
+      return { start: iso(y, m), end: addDias(hoje, 1) };
   }
 }
+
 
 /**
  * Janela anterior comparável. Trunca no mesmo número de dias já decorridos,

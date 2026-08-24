@@ -1,6 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { calcJanela, labelOpcao, type Janela } from "@/lib/periodoFiltro";
 import { useRelatorioGeral, type RaioXCorretor, type RaioXTime, type RelatorioGeral as RGData } from "@/hooks/useRelatorioGeral";
 import { ConversaoView } from "@/pages/RelatorioConversao";
+
 
 /**
  * RelatorioGeral — aba GERAL dos relatórios: o Raio-X do Time. Caminho completo
@@ -168,35 +170,25 @@ export function RaioXView({ times, totalGeral, filtro, periodoLabel }: RGData & 
   );
 }
 
-type PeriodoOpt = "mes" | "mes_passado" | "ano";
-const PERIODO_LABEL: Record<PeriodoOpt, string> = { mes: "Mês atual", mes_passado: "Mês passado", ano: "Este ano" };
-function calcPeriodo(opt: PeriodoOpt): { start: string; end: string } {
-  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-  const [y, m] = hoje.split("-").map(Number);
-  const iso = (yy: number, mm: number) => `${yy}-${String(mm).padStart(2, "0")}-01`;
-  if (opt === "ano") return { start: `${y}-01-01`, end: `${y + 1}-01-01` };
-  if (opt === "mes_passado") {
-    const pm = m === 1 ? 12 : m - 1, py = m === 1 ? y - 1 : y;
-    return { start: iso(py, pm), end: iso(y, m) };
-  }
-  const nm = m === 12 ? 1 : m + 1, ny = m === 12 ? y + 1 : y;
-  return { start: iso(y, m), end: iso(ny, nm) };
+interface RelatorioGeralProps {
+  /** Janela vinda do filtro único da página Relatórios (start inclusivo, end exclusivo). */
+  janela?: Janela;
+  /** Rótulo do período (ex.: "Semana atual"), exibido no cabeçalho e no PDF. */
+  periodoLabel?: string;
 }
 
-export default function RelatorioGeral() {
-  const [opt, setOpt] = useState<PeriodoOpt>("mes");
+export default function RelatorioGeral({ janela, periodoLabel }: RelatorioGeralProps = {}) {
   const [equipe, setEquipe] = useState<string>("");
-  const { data, isLoading } = useRelatorioGeral(calcPeriodo(opt));
+  const janelaEfetiva = useMemo(() => janela ?? calcJanela("mes"), [janela]);
+  const label = periodoLabel ?? labelOpcao("mes");
+  const { data, isLoading } = useRelatorioGeral(janelaEfetiva);
   const controles = (
     <>
-      <select value={opt} onChange={(e) => setOpt(e.target.value as PeriodoOpt)}>
-        <option value="mes">Mês atual</option>
-        <option value="mes_passado">Mês passado</option>
-        <option value="ano">Este ano</option>
-      </select>
+      <span style={{ fontSize: 12, fontWeight: 700, color: "#5B6B7F" }}>{label}</span>
       <button className="rg-pdf" onClick={() => window.print()}>⬇ Baixar PDF</button>
     </>
   );
+
   if (isLoading) return <div className="rgeral"><style>{RG_STYLE}</style><div className="rg-loading">Montando o relatório geral…</div></div>;
 
   const times = data?.times ?? [];
@@ -217,10 +209,11 @@ export default function RelatorioGeral() {
           <span style={{ fontSize: 11.5, color: "#93A0B2" }}>uma equipe por vez, troque aqui</span>
         </div>
       )}
-      <RaioXView times={mostrados} totalGeral={data?.totalGeral ?? ({} as RGData["totalGeral"])} filtro={controles} periodoLabel={PERIODO_LABEL[opt]} />
+      <RaioXView times={mostrados} totalGeral={data?.totalGeral ?? ({} as RGData["totalGeral"])} filtro={controles} periodoLabel={label} />
       {mostrados.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <ConversaoView times={mostrados} periodoLabel={PERIODO_LABEL[opt]} />
+          <ConversaoView times={mostrados} periodoLabel={label} />
+
         </div>
       )}
     </div>

@@ -594,8 +594,9 @@ function useEstadoDaUrl() {
   return { params, opt, custom, corretor, set };
 }
 
-function ConteudoRaioX({ modoImpressao }: { modoImpressao?: boolean }) {
+function ConteudoRaioX({ modoImpressao, esconderPeriodo }: { modoImpressao?: boolean; esconderPeriodo?: boolean }) {
   const { params, opt, custom, corretor, set } = useEstadoDaUrl();
+
   const { data: corretores } = useCorretoresDoEscopo();
   const { user } = useAuth();
   const { isCorretor, isGestor } = useUserRole();
@@ -633,13 +634,15 @@ function ConteudoRaioX({ modoImpressao }: { modoImpressao?: boolean }) {
           </select>
         </div>
       )}
-      <div className="f">
-        <label>Período</label>
-        <select value={opt} onChange={(e) => set({ periodo: e.target.value })}>
-          {PERIODO_OPCOES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-      {opt === "custom" && (
+      {!esconderPeriodo && (
+        <div className="f">
+          <label>Período</label>
+          <select value={opt} onChange={(e) => set({ periodo: e.target.value })}>
+            {PERIODO_OPCOES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      )}
+      {!esconderPeriodo && opt === "custom" && (
         <>
           <div className="f">
             <label>De</label>
@@ -653,6 +656,7 @@ function ConteudoRaioX({ modoImpressao }: { modoImpressao?: boolean }) {
           </div>
         </>
       )}
+
       <button className="rx-print" onClick={abrirImpressao}>Baixar PDF</button>
     </>
   );
@@ -673,9 +677,10 @@ function ConteudoRaioX({ modoImpressao }: { modoImpressao?: boolean }) {
   return <RaioXCorretorView data={data} filtros={filtros} periodoLabel={label} />;
 }
 
-export default function RaioXCorretorPage() {
-  return <ConteudoRaioX />;
+export default function RaioXCorretorPage({ esconderPeriodo }: { esconderPeriodo?: boolean } = {}) {
+  return <ConteudoRaioX esconderPeriodo={esconderPeriodo} />;
 }
+
 
 /**
  * Versão de impressão: mesma página, fora do shell do CRM (sem menu lateral nem
