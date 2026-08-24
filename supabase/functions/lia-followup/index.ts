@@ -73,14 +73,17 @@ async function send360Image(to: string, link: string) {
 
 // Templates OFICIAIS do WhatsApp APROVADOS (passam mesmo depois das 24h). key = nome do template
 // no 360dialog. Todos são {{1}} = primeiro nome no corpo. Só o casatuacanoaslia tem cabeçalho (ebook).
-const WA_TEMPLATES: Record<string, { name: string; lang: string; headerDoc?: { link: string; filename: string } }> = {
-  followup_novidade_lia:     { name: "followup_novidade_lia",     lang: "pt_BR" },
-  followup_simulacao_lia:    { name: "followup_simulacao_lia",    lang: "pt_BR" },
-  followup_procurase_lia:    { name: "followup_procurase_lia",    lang: "pt_BR" },
-  followup_encerramento_lia: { name: "followup_encerramento_lia", lang: "pt_BR" },
+// vars = nº de variáveis {{n}} no CORPO do template aprovado (os 4 de follow-up são texto genérico,
+// SEM variável = 0; mandar 1 param dava erro #132000 "número de parâmetros não bate").
+const WA_TEMPLATES: Record<string, { name: string; lang: string; vars?: number; headerDoc?: { link: string; filename: string } }> = {
+  followup_novidade_lia:     { name: "followup_novidade_lia",     lang: "pt_BR", vars: 0 },
+  followup_simulacao_lia:    { name: "followup_simulacao_lia",    lang: "pt_BR", vars: 0 },
+  followup_procurase_lia:    { name: "followup_procurase_lia",    lang: "pt_BR", vars: 0 },
+  followup_encerramento_lia: { name: "followup_encerramento_lia", lang: "pt_BR", vars: 0 },
   followup_casatuacanoaslia: {
     name: "followup_casatuacanoaslia",
     lang: "pt_BR",
+    vars: 0,
     headerDoc: { link: `${MEDIA_BASE}/guia-casa-tua-santos-ferreira.pdf`, filename: "Guia Casa Tua Santos Ferreira.pdf" },
   },
 };
@@ -96,12 +99,14 @@ const CADENCIA: string[] = [
 ];
 
 // Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
-async function sendTemplate(to: string, tpl: { name: string; lang: string; headerDoc?: { link: string; filename: string } }, nome: string): Promise<{ ok: boolean; err?: string }> {
+async function sendTemplate(to: string, tpl: { name: string; lang: string; vars?: number; headerDoc?: { link: string; filename: string } }, nome: string): Promise<{ ok: boolean; err?: string }> {
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const components: any[] = [];
   if (tpl.headerDoc) components.push({ type: "header", parameters: [{ type: "document", document: { link: tpl.headerDoc.link, filename: tpl.headerDoc.filename } }] });
-  components.push({ type: "body", parameters: [{ type: "text", text: (nome || "você").slice(0, 60) }] });
+  // só manda parâmetro do corpo se o template TEM variável (vars>=1). Templates genéricos (vars=0)
+  // NÃO levam body params — mandar 1 dava #132000. Default 1 pra compatibilidade com templates antigos.
+  if ((tpl.vars ?? 1) >= 1) components.push({ type: "body", parameters: [{ type: "text", text: (nome || "você").slice(0, 60) }] });
   try {
     const r = await fetch(D360_URL, {
       method: "POST",
