@@ -475,26 +475,8 @@ export default function PipelineAdvancedFilters({
 
             <Separator />
 
-            {/* Corretor */}
-            {isManager && corretorList.length > 0 && (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Corretor responsável</Label>
-                  <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                    {corretorList.map(([id, nome]) => (
-                      <label key={id} className="flex items-center gap-2 cursor-pointer py-0.5">
-                        <Checkbox
-                          checked={filters.corretores.includes(id)}
-                          onCheckedChange={() => update({ corretores: toggleArrayItem(filters.corretores, id) })}
-                        />
-                        <span className="text-xs">{nome}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <Separator />
-              </>
-            )}
+            {/* Corretor: filtro oficial fica no cabeçalho do Pipeline (evita dois controles concorrentes) */}
+
 
             {/* Origem */}
             {origens.length > 0 && (
