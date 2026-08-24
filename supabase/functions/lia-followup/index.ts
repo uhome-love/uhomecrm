@@ -217,12 +217,14 @@ async function backfillResumos(sb: any): Promise<number> {
 
 // Texto do toque pro LOG interno (lia_conversas/hub). A mensagem REAL enviada é o template
 // aprovado no WhatsApp; isto é só a referência legível pro time. Aproximação do corpo do template.
+// Espelha o CORPO real do template aprovado (só o log do hub; o envio é o template do WhatsApp
+// com {{1}}=primeiro nome e {{2}}=imóvel preenchidos). "[nome]"/"[imóvel]" marcam as variáveis.
 const RESUMO_TOQUE: Record<string, string> = {
-  followup_novidade_lia:     "Oi! Lembrei de você — tenho novidades do imóvel 😊",
-  followup_simulacao_lia:    "Posso te fazer uma simulação rapidinha do imóvel?",
-  followup_procurase_lia:    "🔍 Procura-se! Sumiu — ainda quer ver o imóvel?",
-  followup_encerramento_lia: "Vou encerrar por aqui, mas a porta segue aberta 🙂",
-  followup_casatuacanoaslia: "🔍 Procura-se! Deixei o guia do Casa Tua aqui pra você.",
+  followup_novidade_lia:     "Olá [nome], lembrei de você, tem uma novidade no [imóvel] que combina com o que você procurava. Posso te contar rapidinho por aqui?",
+  followup_simulacao_lia:    "Oi [nome]! Posso te fazer uma simulação rapidinha do [imóvel], sem compromisso, pra você ter uma noção?",
+  followup_procurase_lia:    "🔍 Procura-se [nome]! Sumiu das minhas mensagens 😅 ainda quer ver o [imóvel]? Tenho novidades pra te mostrar.",
+  followup_encerramento_lia: "[nome], vou parar de te chamar por aqui pra não incomodar, mas a porta segue aberta. Quando quiser saber do [imóvel], é só me dar um oi 🙂",
+  followup_casatuacanoaslia: "🔍 Procura-se [nome]! Deixei o guia do [imóvel] aqui pra você.",
 };
 
 /** CADÊNCIA AUTOMÁTICA: acha leads que esfriaram (INCLUSIVE quem só recebeu o 1º contato e nunca
