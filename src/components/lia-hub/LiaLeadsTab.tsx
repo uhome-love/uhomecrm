@@ -16,8 +16,10 @@ import { cn } from "@/lib/utils";
 import { formatBRT } from "@/lib/brtTime";
 import { useDebounce } from "@/hooks/useDebounce";
 import LiaConversaDrawer from "./LiaConversaDrawer";
+import LiaConversaPane from "./LiaConversaPane";
 import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
 import FiltroImovel from "./FiltroImovel";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   NIVEL_META,
   origemDoReferral,
@@ -78,6 +80,7 @@ export default function LiaLeadsTab() {
   const [produto, setProduto] = useState("todos");
   const [selecionado, setSelecionado] = useState<LiaEstado | null>(null);
   const buscaDeb = useDebounce(busca, 250);
+  const isMobile = useIsMobile();
 
   const origens = useMemo(() => {
     const set = new Set((estados ?? []).map((e) => origemDoReferral(e.referral)));
@@ -276,6 +279,8 @@ export default function LiaLeadsTab() {
         </Select>
       </Card>
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,400px)_1fr] lg:items-start lg:gap-4">
+        <div className="space-y-4 lg:max-h-[74vh] lg:overflow-y-auto lg:pr-1">
       {isLoading ? (
         <Card className="space-y-2 p-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -332,9 +337,29 @@ export default function LiaLeadsTab() {
         </Card>
       )}
 
+        </div>
+
+        {/* desktop: a conversa abre inline ao lado (estilo WhatsApp), com a ficha do lead */}
+        <div className="hidden lg:sticky lg:top-4 lg:block">
+          <Card className="flex h-[74vh] flex-col overflow-hidden">
+            {selecionado ? (
+              <LiaConversaPane estado={selecionado} />
+            ) : (
+              <div className="grid h-full place-items-center p-8 text-center">
+                <div className="text-sm text-muted-foreground">
+                  <div className="mb-1 text-3xl">💬</div>
+                  Selecione uma conversa à esquerda pra ver as mensagens e a ficha do lead.
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      {/* mobile: a conversa abre em tela cheia (drawer); no desktop usa o painel ao lado */}
       <LiaConversaDrawer
         estado={selecionado}
-        open={!!selecionado}
+        open={isMobile && !!selecionado}
         onOpenChange={(v) => !v && setSelecionado(null)}
       />
     </div>
