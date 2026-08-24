@@ -28,8 +28,8 @@ const FOTO_FACHADA = `${MEDIA_BASE}/casa.jpg`;   // fachada das casas (sobrados 
 const FOTO_INFRA = `${MEDIA_BASE}/club.jpg`;      // infra do condomínio (piscina + club house)
 const FECHO_ABRIU = "E aí, o que você achou? 😊"; // pergunta leve depois das fotos
 const MAX_CUTUCOES = 4;     // = tamanho da CADENCIA (4 toques de template aprovado)
-const STALL_HOURS = 4;     // silêncio mínimo do lead antes do 1º cutucão
-const SPACING_HOURS = 44;  // intervalo entre um cutucão e o próximo (~2 dias, como o material)
+const STALL_HOURS = 24;    // silêncio mínimo do lead antes do 1º cutucão (régua Lucas: 24h)
+const SPACING_HOURS = 24;  // intervalo entre um cutucão e o próximo (régua Lucas: 24/48/72/96h)
 const HORA_INI = 9;        // janela de envio (BRT)
 const HORA_FIM = 20;
 

@@ -11,6 +11,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
 import { produtoLabel, useLiaEstados, useLiaFollowups, useLiaTemplates } from "./useLiaHub";
 
+// Rótulo amigável da cadência: mostra QUAL toque (e o tempo) cada lead está recebendo.
+// Régua: 1º contato na entrada → +24h → +48h → +72h → +96h (despedida).
+const TOQUE_LABEL: Record<string, string> = {
+  primeirocontato_lia: "1º contato",
+  followup_novidade_lia: "Toque 1 · Novidade · 24h",
+  followup_simulacao_lia: "Toque 2 · Simulação · 48h",
+  followup_procurase_lia: "Toque 3 · Procura-se · 72h",
+  followup_casatuacanoaslia: "Toque 3 · Reativação · 72h",
+  followup_encerramento_lia: "Toque 4 · Despedida · 96h",
+};
+const toqueLabel = (key?: string | null) => (key ? TOQUE_LABEL[key] ?? key : "—");
+
 export default function LiaFollowupsTab() {
   const qc = useQueryClient();
   const { data: followups, isLoading } = useLiaFollowups();
@@ -147,8 +159,7 @@ export default function LiaFollowupsTab() {
                         {produtoLabel(produtoPorTelefone.get(f.telefone ?? ""))}
                       </Badge>
                     ) : null}
-                    {f.template_key ? <Badge variant="outline">{f.template_key}</Badge> : null}
-                    <Badge variant="secondary">Toque {f.tentativa ?? 1}</Badge>
+                    {f.template_key ? <Badge variant="outline">{toqueLabel(f.template_key)}</Badge> : null}
                   </div>
                 </div>
 
@@ -227,7 +238,7 @@ export default function LiaFollowupsTab() {
                       {nomePorTelefone.get(f.telefone ?? "") ?? f.telefone}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                      {f.template_key ?? "—"} · {formatBRT(f.enviado_em ?? f.created_at, "dd/MM HH:mm")}
+                      {toqueLabel(f.template_key)} · {formatBRT(f.enviado_em ?? f.created_at, "dd/MM HH:mm")}
                     </div>
                   </div>
                   <Badge variant="secondary">{f.status}</Badge>
