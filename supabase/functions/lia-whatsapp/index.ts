@@ -520,12 +520,25 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
 
     const resumoTxt = (resumo ?? "").trim();
 
-    // dedup: já existe lead 'LIA' com esse telefone sem dono?
+    // DEDUP FORTE: já existe QUALQUER lead ativo com esse telefone (qualquer origem: ig/fb/LIA/CTWA)?
+    // Se sim, a LIA NUNCA cria outro (evita lead duplicado). Enriquece o existente (temperatura +
+    // nota no histórico) e retorna ele. Casa por últimos-8 dígitos (padrão do projeto, pega o número
+    // com/sem o 9). O corretor que já estiver no lead permanece.
+    const l8 = telefone.replace(/\D/g, "").slice(-8);
     const { data: exist } = await sb
-      .from("pipeline_leads").select("id")
-      .eq("telefone", telefone).eq("origem", "LIA").eq("arquivado", false).limit(1);
+      .from("pipeline_leads").select("id, corretor_id")
+      .ilike("telefone", `%${l8}`).eq("arquivado", false)
+      .order("created_at", { ascending: false }).limit(1);
     if (exist && exist.length) {
       await sb.from("pipeline_leads").update({ temperatura: map.temperatura, prioridade_lead: map.prioridade }).eq("id", exist[0].id);
+      await sb.from("pipeline_atividades").insert({
+        pipeline_lead_id: exist[0].id,
+        tipo: "entrada",
+        titulo: `${map.emoji} Lead ${map.label} · qualificado pela LIA (WhatsApp)`,
+        descricao: resumoTxt || "A LIA conversou e qualificou este lead pelo WhatsApp.",
+        status: "concluida",
+        created_by: "00000000-0000-0000-0000-000000000000",
+      }).then(() => {}).catch(() => {});
       return exist[0].id;
     }
 
