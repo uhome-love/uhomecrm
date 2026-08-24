@@ -5802,6 +5802,7 @@ export type Database = {
           nome: string
           perguntar_se_sem_anuncio: boolean
           slug: string
+          template_primeiro_contato: string | null
           template_reativacao: string | null
           updated_at: string
         }
@@ -5817,6 +5818,7 @@ export type Database = {
           nome: string
           perguntar_se_sem_anuncio?: boolean
           slug: string
+          template_primeiro_contato?: string | null
           template_reativacao?: string | null
           updated_at?: string
         }
@@ -5832,6 +5834,7 @@ export type Database = {
           nome?: string
           perguntar_se_sem_anuncio?: boolean
           slug?: string
+          template_primeiro_contato?: string | null
           template_reativacao?: string | null
           updated_at?: string
         }
