@@ -268,12 +268,19 @@ export function useLiaPipelineLeads() {
   return useQuery({
     queryKey: ["lia-hub", "pipeline-leads"],
     queryFn: async () => {
+      // Leads que a LIA está LINKADA (qualquer origem: LIA, ig, fb…). Não filtra por origem="LIA",
+      // senão perde o lead que já era do corretor (veio do Instagram) e a LIA atendeu depois.
+      const { data: links } = await supabase.from("lia_estado").select("lead_id").not("lead_id", "is", null);
+      const linkedIds = Array.from(new Set((links ?? []).map((r: any) => r.lead_id).filter(Boolean))) as string[];
+
       const [leadsRes, stagesRes] = await Promise.all([
-        supabase
-          .from("pipeline_leads")
-          .select("id,nome,telefone,temperatura,tags,corretor_id,aceite_status,stage_id,created_at")
-          .eq("origem", "LIA")
-          .limit(1000),
+        linkedIds.length
+          ? supabase
+              .from("pipeline_leads")
+              .select("id,nome,telefone,temperatura,tags,corretor_id,aceite_status,stage_id,created_at")
+              .in("id", linkedIds)
+              .limit(1000)
+          : Promise.resolve({ data: [] as any[], error: null } as any),
         supabase.from("pipeline_stages").select("id,nome,tipo,ordem"),
       ]);
       if (leadsRes.error) throw leadsRes.error;
@@ -286,11 +293,12 @@ export function useLiaPipelineLeads() {
 
       let corretores = new Map<string, string>();
       if (corretorIds.length > 0) {
+        // corretor_id do pipeline === profiles.user_id (o id de auth), NÃO profiles.id
         const { data: profs } = await supabase
           .from("profiles")
-          .select("id,nome")
-          .in("id", corretorIds);
-        corretores = new Map((profs ?? []).map((p: any) => [p.id, p.nome as string]));
+          .select("user_id,nome")
+          .in("user_id", corretorIds);
+        corretores = new Map((profs ?? []).map((p: any) => [p.user_id as string, p.nome as string]));
       }
 
       const stages = new Map<string, { nome: string; tipo: string; ordem: number }>(

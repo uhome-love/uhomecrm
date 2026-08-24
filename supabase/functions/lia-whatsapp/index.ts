@@ -440,9 +440,13 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     }).eq("telefone", from);
 
     // notifica o Lucas só pra lead acionável (morno/quente) e na transição/quando esquenta;
-    // frio entra na Fila CEO sem push (ele vê e dispara quando quiser).
+    // frio entra na Fila CEO sem push (ele vê e dispara quando quiser). Se o lead JÁ tem corretor
+    // dono, re-notifica esse corretor do pré-atendimento da LIA (ele segue de onde a LIA parou).
     if (leadId && map.rank >= 2 && (!jaEra || subiu)) {
-      await notificar(sb, leadId, est.nome ?? nome, nivel, produto);
+      const { data: donoRows } = await sb.from("pipeline_leads").select("corretor_id, aceite_status").eq("id", leadId).limit(1);
+      const dono = donoRows?.[0];
+      const corretorId = (dono?.corretor_id && dono?.aceite_status === "aceito") ? dono.corretor_id : null;
+      await notificar(sb, leadId, est.nome ?? nome, nivel, produto, corretorId);
     }
   } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); }
 }
@@ -612,8 +616,10 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
   }
 }
 
-// Notifica admin/diretor na hora — é assim que o Lucas fica sabendo pra repassar.
-async function notificar(sb: any, leadId: string, nome: string | null, nivel: string, produto: any | null) {
+// Notifica admin/diretor na hora — é assim que o Lucas fica sabendo pra repassar. E, quando o lead
+// JÁ tem um corretor dono (ex.: lead que veio do Instagram e a LIA atendeu depois), RE-NOTIFICA esse
+// corretor de que houve um pré-atendimento da LIA, pra ele seguir de onde parou (e não recomeçar do zero).
+async function notificar(sb: any, leadId: string, nome: string | null, nivel: string, produto: any | null, corretorId?: string | null) {
   try {
     const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
     const empNome = produto?.empreendimento ?? "Casa Tua Santos Ferreira";
@@ -630,6 +636,18 @@ async function notificar(sb: any, leadId: string, nome: string | null, nivel: st
         p_mensagem: `${nome || "Lead"} · ${empNome} · pronto pra repassar`,
         p_dados: { pipeline_lead_id: leadId, nivel, url: "/ceo" },
         p_agrupamento_key: `lead_lia:${leadId}:${nivel}`,
+      });
+    }
+    // corretor DONO do lead: avisa do pré-atendimento da LIA pra ele seguir (não é admin/diretor)
+    if (corretorId && !seen.has(corretorId)) {
+      await sb.rpc("criar_notificacao", {
+        p_user_id: corretorId,
+        p_tipo: "lead",
+        p_categoria: "pre_atendimento_lia",
+        p_titulo: `${map.emoji} A LIA falou com o seu lead`,
+        p_mensagem: `${nome || "Lead"} · ${empNome} · pré-atendimento da LIA (${map.label}). Abra a conversa da LIA e siga o atendimento.`,
+        p_dados: { pipeline_lead_id: leadId, nivel, url: `/pipeline-leads?lead=${leadId}` },
+        p_agrupamento_key: `pre_atend_lia:${leadId}:${nivel}`,
       });
     }
   } catch (e) { console.error("[lia-whatsapp] notificacao falhou (nao critico)", e); }

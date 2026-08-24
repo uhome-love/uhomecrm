@@ -30,6 +30,7 @@ import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { formatBRT } from "@/lib/brtTime";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHistorico } from "@/hooks/usePipelineLeadData";
 import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
@@ -568,7 +569,17 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
 
   // Narrativa (história) × Sistema (andaime). Começa na Narrativa.
   const [histView, setHistView] = useState<"narrativa" | "sistema" | "lia">("narrativa");
-  const isLia = String(lead.origem ?? "").toUpperCase() === "LIA";
+  // A aba "Conversa Lia" aparece quando a origem é LIA OU quando existe uma conversa da LIA
+  // linkada a este lead (ex.: lead que já era do corretor, veio do Instagram, e a LIA atendeu depois).
+  const { data: temLiaConversa } = useQuery({
+    queryKey: ["lead-tem-lia-conversa", leadId],
+    queryFn: async () => {
+      const { data } = await supabase.from("lia_estado").select("telefone").eq("lead_id", leadId).maybeSingle();
+      return !!data?.telefone;
+    },
+    staleTime: 60_000,
+  });
+  const isLia = String(lead.origem ?? "").toUpperCase() === "LIA" || !!temLiaConversa;
 
   const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
   const sistemaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "sistema"), [timeline]);
