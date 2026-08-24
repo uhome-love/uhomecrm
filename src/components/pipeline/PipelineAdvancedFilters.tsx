@@ -593,7 +593,7 @@ export default function PipelineAdvancedFilters({
                 ].map(p => (
                   <button
                     key={p.value}
-                    onClick={() => update({ periodoEntrada: filters.periodoEntrada === p.value ? "" : p.value })}
+                    onClick={() => update({ periodoEntrada: filters.periodoEntrada === p.value ? "" : p.value, periodoCustomStart: undefined, periodoCustomEnd: undefined })}
                     className={cn(
                       "text-[11px] px-2.5 py-1 rounded-full border transition-all",
                       filters.periodoEntrada === p.value
