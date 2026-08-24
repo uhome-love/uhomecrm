@@ -19,7 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Select primitives no longer used here — corretor/gestor selects extraídos.
-import PipelineAdvancedFilters, { type PipelineFilters } from "@/components/pipeline/PipelineAdvancedFilters";
+import PipelineAdvancedFilters, { type PipelineFilters, TEMPERATURA_LABELS, PERIODO_LABELS } from "@/components/pipeline/PipelineAdvancedFilters";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
 import { PipelineSortDropdown } from "@/components/pipeline/PipelineSortDropdown";
 import type { PipelineSortOrder } from "@/lib/pipelineSortOrder";
