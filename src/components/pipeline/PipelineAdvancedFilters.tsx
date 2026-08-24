@@ -297,13 +297,14 @@ interface Props {
   stages: PipelineStage[];
   segmentos: PipelineSegmento[];
   leads: PipelineLead[];
-  corretorNomes: Record<string, string>;
+  /** @deprecated filtro de corretor vive no cabeçalho do Pipeline */
+  corretorNomes?: Record<string, string>;
   isManager: boolean;
   visitaLeadIds?: Set<string>;
 }
 
 export default function PipelineAdvancedFilters({
-  filters, onChange, stages, segmentos, leads, corretorNomes, isManager, visitaLeadIds,
+  filters, onChange, stages, segmentos, leads, isManager,
 }: Props) {
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>(() => loadSavedFilters());
   const [saveName, setSaveName] = useState("");
@@ -323,10 +324,6 @@ export default function PipelineAdvancedFilters({
     return Array.from(set).sort();
   }, [leads]);
 
-  const corretorList = useMemo(() =>
-    Object.entries(corretorNomes).sort((a, b) => a[1].localeCompare(b[1])),
-    [corretorNomes]
-  );
 
   const update = (partial: Partial<PipelineFilters>) => onChange({ ...filters, ...partial });
 
