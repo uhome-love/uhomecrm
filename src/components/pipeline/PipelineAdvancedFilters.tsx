@@ -221,15 +221,16 @@ export function applyFilters(
   }
 
   if (filters.periodoEntrada) {
-    const now = new Date();
+    const hoje = todayBRT();
     let start: Date | null = null;
     let end: Date | null = null;
-    if (filters.periodoEntrada === "hoje") start = startOfDay(now);
-    else if (filters.periodoEntrada === "semana") start = startOfWeek(now, { weekStartsOn: 1 });
-    else if (filters.periodoEntrada === "mes") start = startOfMonth(now);
+    if (filters.periodoEntrada === "hoje") start = brtDayStart(hoje);
+    else if (filters.periodoEntrada === "7d") start = brtDayStart(dateToBRT(subDays(new Date(), 6)));
+    else if (filters.periodoEntrada === "30d") start = brtDayStart(dateToBRT(subDays(new Date(), 29)));
+    else if (filters.periodoEntrada === "mes") start = brtDayStart(`${hoje.slice(0, 8)}01`);
     else if (filters.periodoEntrada === "custom") {
-      start = filters.periodoCustomStart || null;
-      end = filters.periodoCustomEnd || null;
+      start = filters.periodoCustomStart ? brtDayStart(dateToBRT(filters.periodoCustomStart)) : null;
+      end = filters.periodoCustomEnd ? brtDayEnd(dateToBRT(filters.periodoCustomEnd)) : null;
     }
     if (start) {
       result = result.filter(l => {
