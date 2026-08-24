@@ -705,7 +705,6 @@ export default function PipelineAdvancedFilters({
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="sem_gerente">Sem gerente</SelectItem>
                       <SelectItem value="com_gerente">Com gerente</SelectItem>
-                      <SelectItem value="criticos">⚠️ Críticos (sem gerente)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
