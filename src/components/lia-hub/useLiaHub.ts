@@ -23,7 +23,18 @@ export interface LiaEstado {
   agendou: boolean | null;
   agendamento: string | null;
   agendou_em: string | null;
+  produto_slug: string | null;
 }
+
+/** Rótulo curto e legível de cada produto (imóvel) da LIA. Fallback = o próprio slug. */
+export const PRODUTO_LABEL: Record<string, string> = {
+  "casa-tua-canoas": "Casa Tua Canoas",
+  "casa-tua-porto-alegre": "Casa Tua POA",
+  "connect-joao-wallig": "Connect JW",
+  "awa-wellness": "AWA",
+};
+export const produtoLabel = (slug?: string | null) =>
+  slug ? (PRODUTO_LABEL[slug] ?? slug) : "Sem produto";
 
 export interface LiaConversa {
   telefone: string;
@@ -90,7 +101,7 @@ export function useLiaEstados() {
       const { data, error } = await supabase
         .from("lia_estado")
         .select(
-          "telefone,nome,status,nivel,qualificado_em,descartado_em,motivo,repassado_em,last_user_at,last_msg_em,followup_count,referral,lead_id,optout,agendou,agendamento,agendou_em"
+          "telefone,nome,status,nivel,qualificado_em,descartado_em,motivo,repassado_em,last_user_at,last_msg_em,followup_count,referral,lead_id,optout,agendou,agendamento,agendou_em,produto_slug"
         )
         .order("last_msg_em", { ascending: false, nullsFirst: false })
         .limit(1000);

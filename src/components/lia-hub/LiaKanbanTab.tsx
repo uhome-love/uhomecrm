@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
 import LiaConversaDrawer from "./LiaConversaDrawer";
 import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
-import { NIVEL_META, origemDoReferral, useLiaEstados, type LiaEstado } from "./useLiaHub";
+import { NIVEL_META, origemDoReferral, produtoLabel, useLiaEstados, type LiaEstado } from "./useLiaHub";
 
 type ColunaId =
   | "novo"
@@ -34,7 +34,23 @@ const COLUNAS: { id: ColunaId; titulo: string; cor: string }[] = [
 export default function LiaKanbanTab() {
   const { data: estados, isLoading } = useLiaEstados();
   const [selecionado, setSelecionado] = useState<LiaEstado | null>(null);
+  const [filtroProduto, setFiltroProduto] = useState<string>("todos");
   const qc = useQueryClient();
+
+  // produtos presentes na base (pra montar os botões de filtro)
+  const produtos = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of estados ?? []) if (e.produto_slug) set.add(e.produto_slug);
+    return Array.from(set).sort();
+  }, [estados]);
+
+  const filtrados = useMemo(
+    () =>
+      filtroProduto === "todos"
+        ? (estados ?? [])
+        : (estados ?? []).filter((e) => (e.produto_slug ?? "") === filtroProduto),
+    [estados, filtroProduto]
+  );
 
   const retomar = useMutation({
     mutationFn: async (telefone: string) => {
@@ -61,7 +77,7 @@ export default function LiaKanbanTab() {
       descartado: [],
       opt_out: [],
     };
-    for (const e of estados ?? []) {
+    for (const e of filtrados) {
       if (e.status === "opt_out" || e.optout) mapa.opt_out.push(e);
       else if (e.status === "descartado") mapa.descartado.push(e);
       else if (e.status === "qualificado") {
@@ -73,7 +89,7 @@ export default function LiaKanbanTab() {
       else mapa.novo.push(e);
     }
     return mapa;
-  }, [estados]);
+  }, [filtrados]);
 
   if (isLoading) {
     return (
@@ -87,6 +103,30 @@ export default function LiaKanbanTab() {
 
   return (
     <>
+      {produtos.length > 1 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-medium text-muted-foreground">Imóvel:</span>
+          <Button
+            size="sm"
+            variant={filtroProduto === "todos" ? "default" : "outline"}
+            className="h-7 text-xs"
+            onClick={() => setFiltroProduto("todos")}
+          >
+            Todos
+          </Button>
+          {produtos.map((slug) => (
+            <Button
+              key={slug}
+              size="sm"
+              variant={filtroProduto === slug ? "default" : "outline"}
+              className="h-7 text-xs"
+              onClick={() => setFiltroProduto(slug)}
+            >
+              {produtoLabel(slug)}
+            </Button>
+          ))}
+        </div>
+      ) : null}
       <div className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:snap-none sm:px-0">
         {COLUNAS.map((c) => {
           const itens = colunas[c.id];
@@ -123,6 +163,11 @@ export default function LiaKanbanTab() {
                       </div>
 
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {e.produto_slug ? (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {produtoLabel(e.produto_slug)}
+                          </Badge>
+                        ) : null}
                         <Badge variant="outline" className="text-[10px]">
                           {origemDoReferral(e.referral)}
                         </Badge>
