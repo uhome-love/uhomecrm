@@ -70,12 +70,26 @@ export function mesDeslocado(ref: string, delta: number): string {
   return iso(Math.floor(total / 12), (total % 12) + 1);
 }
 
+/** Segunda-feira da semana de `data` ('YYYY-MM-DD'). */
+export function segundaDaSemana(data: string): string {
+  const dow = new Date(`${data}T00:00:00Z`).getUTCDay(); // 0 = domingo
+  return addDias(data, -((dow + 6) % 7));
+}
+
 /** Janela do filtro escolhido. `custom` usa as datas informadas (fim inclusivo na UI). */
 export function calcJanela(opt: PeriodoOpt, custom?: { inicio: string; fim: string }): Janela {
   const hoje = hojeBRT();
   const [y, m] = hoje.split("-").map(Number);
 
   switch (opt) {
+    case "semana": {
+      // segunda-feira desta semana até hoje (acumulado da semana corrente)
+      return { start: segundaDaSemana(hoje), end: addDias(hoje, 1) };
+    }
+    case "semana_passada": {
+      const segAtual = segundaDaSemana(hoje);
+      return { start: addDias(segAtual, -7), end: segAtual };
+    }
     case "ano":
       return { start: iso(y, 1), end: iso(y + 1, 1) };
     case "mes_passado": {
@@ -95,13 +109,12 @@ export function calcJanela(opt: PeriodoOpt, custom?: { inicio: string; fim: stri
       return { start: inicio, end: addDias(fim, 1) };
     }
     case "mes":
-    default: {
-      const nm = m === 12 ? 1 : m + 1;
-      const ny = m === 12 ? y + 1 : y;
-      return { start: iso(y, m), end: iso(ny, nm) };
-    }
+    default:
+      // acumulado do mês: dia 1º até hoje (inclusive)
+      return { start: iso(y, m), end: addDias(hoje, 1) };
   }
 }
+
 
 /**
  * Janela anterior comparável. Trunca no mesmo número de dias já decorridos,
