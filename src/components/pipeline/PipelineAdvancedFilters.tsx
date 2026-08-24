@@ -193,8 +193,9 @@ export function applyFilters(
 
   if (filters.temperaturas.length > 0) {
     result = result.filter(l => {
-      const temp = l.temperatura || getCalcTemp(l);
-      return filters.temperaturas.includes(temp);
+      const raw = (l.temperatura || "").trim();
+      if (filters.temperaturas.includes("nao_definida") && (!raw || raw === "nao_definida")) return true;
+      return filters.temperaturas.includes(getEffectiveTemp(l));
     });
   }
 
