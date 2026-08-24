@@ -47,10 +47,11 @@ const WA_TEMPLATES: Record<string, { lang: string; headerDoc?: { link: string; f
   },
 };
 
-// Envia um template WhatsApp aprovado via 360dialog. {{1}} = primeiro nome. Retorna true só se OK.
-async function enviarTemplate(to: string, tplName: string, nome: string): Promise<boolean> {
+// Envia um template WhatsApp aprovado via 360dialog. {{1}} = primeiro nome.
+// Retorna { ok, err } — err traz o erro do 360dialog pra diagnóstico.
+async function enviarTemplate(to: string, tplName: string, nome: string): Promise<{ ok: boolean; err?: string }> {
   const key = Deno.env.get("D360_API_KEY");
-  if (!key) { console.error("[form-bridge] D360_API_KEY ausente"); return false; }
+  if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const cfg = WA_TEMPLATES[tplName] ?? { lang: "pt_BR" };
   const components: any[] = [];
   if (cfg.headerDoc) components.push({ type: "header", parameters: [{ type: "document", document: { link: cfg.headerDoc.link, filename: cfg.headerDoc.filename } }] });
@@ -64,9 +65,15 @@ async function enviarTemplate(to: string, tplName: string, nome: string): Promis
         template: { name: tplName, language: { code: cfg.lang }, components },
       }),
     });
-    if (!r.ok) { console.error("[form-bridge] template send", r.status, await r.text().catch(() => "")); return false; }
-    return true;
-  } catch (e) { console.error("[form-bridge] envio erro", e); return false; }
+    if (!r.ok) { const t = await r.text().catch(() => ""); console.error("[form-bridge] template send", r.status, t); return { ok: false, err: `${r.status} ${t}`.slice(0, 300) }; }
+    return { ok: true };
+  } catch (e) { return { ok: false, err: String(e).slice(0, 300) }; }
+}
+
+// Log de diagnóstico (não bloqueia o fluxo): registra em ops_events o desfecho de cada lead
+// que casou com um produto da LIA, pra sabermos EXATAMENTE por que desviou ou não.
+async function logPonte(admin: SupabaseClient, motivo: string, ctx: Record<string, unknown>) {
+  try { await admin.from("ops_events").insert({ fn: "lia-form-bridge", level: motivo.includes("falh") || motivo === "erro" ? "warn" : "info", category: "business", message: `bridge_${motivo}`, ctx }); } catch (_e) { /* silencioso */ }
 }
 
 export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBridgeInput): Promise<FormBridgeResult> {
@@ -78,18 +85,20 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
     const camp = String(input.campaign_id);
     const produto = (prods ?? []).find((p: any) => (p.campanha_ids ?? []).map(String).includes(camp));
     if (!produto) return { desviar: false }; // não é campanha da LIA → roleta normal
+    // daqui pra frente o lead CASOU com um produto da LIA — logamos todo desfecho pra diagnóstico.
 
     const l8 = last8(input.telefone);
 
     // 2. Opt-out tem precedência: quem pediu pra sair NÃO é recontatado (e não vira lead novo).
     const { data: sup } = await admin.from("meta_supressao").select("id").eq("telefone_last8", l8).limit(1).maybeSingle();
-    if (sup) return { desviar: true, motivo: "opt_out" }; // não manda nada, e não joga na roleta
+    if (sup) { await logPonte(admin, "opt_out", { slug: produto.slug, camp }); return { desviar: true, motivo: "opt_out" }; }
 
     // 3. DEDUP: se o telefone já tem conversa ATIVA ou encerrada da LIA, NÃO re-mensageia nem
     //    duplica na roleta (ele já é da LIA). Só lead realmente novo recebe o 1º contato.
     const { data: jaExiste } = await admin.from("lia_estado").select("telefone,status")
       .ilike("telefone", `%${l8}`).order("updated_at", { ascending: false }).limit(1).maybeSingle();
     if (jaExiste && ["em_conversa", "qualificado", "opt_out", "descartado"].includes(String(jaExiste.status))) {
+      await logPonte(admin, "ja_em_atendimento_lia", { slug: produto.slug, status: jaExiste.status });
       return { desviar: true, motivo: "ja_em_atendimento_lia" };
     }
 
@@ -97,13 +106,13 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
     //    "procura-se"). SEM ele, a LIA NÃO manda nada e o lead segue pra roleta — jamais um
     //    template errado sai pra um lead que acabou de se cadastrar.
     const tplName = produto.template_primeiro_contato;
-    if (!tplName) return { desviar: false, motivo: "sem_template_primeiro_contato" };
+    if (!tplName) { await logPonte(admin, "sem_template_primeiro_contato", { slug: produto.slug }); return { desviar: false, motivo: "sem_template_primeiro_contato" }; }
 
     const to = telWa(input.telefone);
     // Params do template: por ora {{1}} = primeiro nome. (Se o template pedir mais, ajustar aqui.)
     const primeiroNome = (input.nome || "").trim().split(/\s+/)[0] || "";
-    const enviou = await enviarTemplate(to, tplName, primeiroNome);
-    if (!enviou) return { desviar: false, motivo: "envio_falhou" }; // FALHOU → roleta (rede de segurança)
+    const env = await enviarTemplate(to, tplName, primeiroNome);
+    if (!env.ok) { await logPonte(admin, "envio_falhou", { slug: produto.slug, tpl: tplName, to, err: env.err }); return { desviar: false, motivo: "envio_falhou" }; } // FALHOU → roleta (rede de segurança)
 
     // 4. Pré-cadastra a conversa pra quando o lead responder cair no produto certo.
     const referral = {
@@ -118,6 +127,7 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
       status: "novo", referral, last_msg_em: nowIso, updated_at: nowIso,
     }, { onConflict: "telefone" });
 
+    await logPonte(admin, "template_enviado", { slug: produto.slug, tpl: tplName, to });
     return { desviar: true, motivo: "template_enviado", produto_slug: produto.slug };
   } catch (e) {
     console.error("[form-bridge] erro", e);
