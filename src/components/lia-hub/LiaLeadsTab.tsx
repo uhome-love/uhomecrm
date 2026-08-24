@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -18,7 +17,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 import LiaConversaDrawer from "./LiaConversaDrawer";
 import LiaConversaPane from "./LiaConversaPane";
 import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
-import FiltroImovel from "./FiltroImovel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   NIVEL_META,
@@ -259,54 +257,51 @@ export default function LiaLeadsTab() {
   };
 
   return (
-    <div className="space-y-2.5">
-      <FiltroImovel produtos={produtos} valor={produto} onChange={setProduto} />
-      <Card className="flex flex-col gap-2 p-2 lg:flex-row lg:items-center">
-        <div className="relative lg:w-56 lg:shrink-0">
+    <div className="space-y-3">
+      {/* Barra de filtros única e compacta: busca | imóvel · status · origem | temperatura.
+          Uma linha só no desktop, aproveitando a largura; embrulha com elegância no mobile. */}
+      <Card className="flex flex-wrap items-center gap-2 p-2">
+        <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[180px] sm:max-w-[300px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar…"
-            className="h-9 pl-9 text-base lg:text-sm"
+            placeholder="Buscar nome ou telefone…"
+            className="h-9 pl-9 text-base sm:text-sm"
           />
         </div>
-        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 lg:mx-0 lg:flex-1 lg:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {PILULAS.map((p) => (
-            <Button
-              key={p.valor}
-              size="sm"
-              className="shrink-0"
-              variant={status === p.valor ? "default" : "outline"}
-              onClick={() => setStatus(p.valor)}
-            >
-              {p.rotulo}
-            </Button>
-          ))}
-        </div>
-        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 lg:mx-0 lg:shrink-0 lg:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <Button
-            size="sm"
-            className="shrink-0"
-            variant={nivel === "todos" ? "default" : "outline"}
-            onClick={() => setNivel("todos")}
-          >
-            Todas temperaturas
-          </Button>
-          {(["quente", "morno", "frio"] as const).map((n) => (
-            <Button
-              key={n}
-              size="sm"
-              className={cn("shrink-0", nivel === n && NIVEL_META[n].cls)}
-              variant={nivel === n ? "secondary" : "outline"}
-              onClick={() => setNivel(n)}
-            >
-              {NIVEL_META[n].emoji} {NIVEL_META[n].label}
-            </Button>
-          ))}
-        </div>
+
+        {produtos.length > 1 ? (
+          <Select value={produto} onValueChange={setProduto}>
+            <SelectTrigger className="h-9 w-auto min-w-[128px] gap-1.5 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os imóveis</SelectItem>
+              {produtos.map((slug) => (
+                <SelectItem key={slug} value={slug}>
+                  {produtoLabel(slug)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger className="h-9 w-auto min-w-[116px] gap-1.5 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PILULAS.map((p) => (
+              <SelectItem key={p.valor} value={p.valor}>
+                {p.rotulo}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Select value={origem} onValueChange={setOrigem}>
-          <SelectTrigger className="w-full lg:w-56">
+          <SelectTrigger className="h-9 w-auto min-w-[116px] gap-1.5 text-sm">
             <SelectValue placeholder="Origem" />
           </SelectTrigger>
           <SelectContent>
@@ -318,6 +313,30 @@ export default function LiaLeadsTab() {
             ))}
           </SelectContent>
         </Select>
+
+        {/* Temperatura: segmentado clicável. Clicar de novo no ativo limpa (volta pra todas). */}
+        <div className="ml-auto flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
+          {(["quente", "morno", "frio"] as const).map((n) => {
+            const ativo = nivel === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                title={`Filtrar ${NIVEL_META[n].label}`}
+                onClick={() => setNivel(ativo ? "todos" : n)}
+                className={cn(
+                  "flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-colors",
+                  ativo
+                    ? cn("shadow-sm", NIVEL_META[n].cls)
+                    : "text-muted-foreground hover:bg-background hover:text-foreground"
+                )}
+              >
+                <span>{NIVEL_META[n].emoji}</span>
+                <span className="hidden md:inline">{NIVEL_META[n].label}</span>
+              </button>
+            );
+          })}
+        </div>
       </Card>
 
       <div className="lg:grid lg:grid-cols-[minmax(0,400px)_1fr] lg:items-start lg:gap-4">
