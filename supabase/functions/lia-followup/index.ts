@@ -126,10 +126,15 @@ serve(async (req) => {
       const enviados = await disparar(sb, { soTelefone: String(body.soTelefone), ignorarHorario: body.agora === true });
       return new Response(JSON.stringify({ ok: true, enviados, alvo: body.soTelefone }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
-    const resumos = await backfillResumos(sb);
-    const rascunhados = await detectar(sb);
-    const enviados = await disparar(sb);
-    return new Response(JSON.stringify({ ok: true, resumos, rascunhados, enviados }), { headers: { ...cors, "Content-Type": "application/json" } });
+    // A CADÊNCIA VEM PRIMEIRO e é blindada: o backfill de resumos faz chamadas de IA lentas
+    // (até 10 leads × 2 tentativas × esperas), e se ele estoura o tempo da função o detectar/disparar
+    // NUNCA rodavam (bug: cadência zerada desde 23/08). Agora cada etapa é isolada por try/catch e a
+    // cadência roda antes, então um backfill lento nunca mais bloqueia o follow-up.
+    let rascunhados = 0, enviados = 0, resumos = 0;
+    try { rascunhados = await detectar(sb); } catch (e) { console.error("[lia-followup] detectar falhou", e); }
+    try { enviados = await disparar(sb); } catch (e) { console.error("[lia-followup] disparar falhou", e); }
+    try { resumos = await backfillResumos(sb); } catch (e) { console.error("[lia-followup] backfill falhou", e); }
+    return new Response(JSON.stringify({ ok: true, rascunhados, enviados, resumos }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[lia-followup] erro:", e);
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
