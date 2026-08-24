@@ -130,7 +130,9 @@ const nowISO = () => new Date().toISOString();
 async function resolverProduto(sb: any, telefone: string, est: any, referral: any): Promise<any | null> {
   try {
     if (est?.produto_slug) {
-      const { data } = await sb.from("lia_produtos").select("*").eq("slug", est.produto_slug).eq("ativo", true).maybeSingle();
+      // conversa JÁ existente continua no produto dela mesmo se o produto for desligado pra leads
+      // NOVOS (ativo=false). Desligar um produto para de ENTRAR lead, nunca abandona conversa em curso.
+      const { data } = await sb.from("lia_produtos").select("*").eq("slug", est.produto_slug).maybeSingle();
       if (data) return data;
     }
     // pelo anúncio: source_id / ad_id / campanha do referral vs campanha_ids do produto
