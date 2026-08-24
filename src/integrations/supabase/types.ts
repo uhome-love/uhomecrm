@@ -5800,6 +5800,7 @@ export type Database = {
           id: string
           midias: Json
           nome: string
+          nome_publico: string | null
           perguntar_se_sem_anuncio: boolean
           slug: string
           template_primeiro_contato: string | null
@@ -5816,6 +5817,7 @@ export type Database = {
           id?: string
           midias?: Json
           nome: string
+          nome_publico?: string | null
           perguntar_se_sem_anuncio?: boolean
           slug: string
           template_primeiro_contato?: string | null
@@ -5832,6 +5834,7 @@ export type Database = {
           id?: string
           midias?: Json
           nome?: string
+          nome_publico?: string | null
           perguntar_se_sem_anuncio?: boolean
           slug?: string
           template_primeiro_contato?: string | null
