@@ -594,8 +594,9 @@ function useEstadoDaUrl() {
   return { params, opt, custom, corretor, set };
 }
 
-function ConteudoRaioX({ modoImpressao }: { modoImpressao?: boolean }) {
+function ConteudoRaioX({ modoImpressao, esconderPeriodo }: { modoImpressao?: boolean; esconderPeriodo?: boolean }) {
   const { params, opt, custom, corretor, set } = useEstadoDaUrl();
+
   const { data: corretores } = useCorretoresDoEscopo();
   const { user } = useAuth();
   const { isCorretor, isGestor } = useUserRole();
