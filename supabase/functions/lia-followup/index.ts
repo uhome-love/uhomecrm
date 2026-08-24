@@ -27,7 +27,7 @@ const MEDIA_BASE = "https://uhomesales.com/casatua";
 const FOTO_FACHADA = `${MEDIA_BASE}/casa.jpg`;   // fachada das casas (sobrados ao entardecer)
 const FOTO_INFRA = `${MEDIA_BASE}/club.jpg`;      // infra do condomínio (piscina + club house)
 const FECHO_ABRIU = "E aí, o que você achou? 😊"; // pergunta leve depois das fotos
-const MAX_CUTUCOES = 5;
+const MAX_CUTUCOES = 4;     // = tamanho da CADENCIA (4 toques de template aprovado)
 const STALL_HOURS = 4;     // silêncio mínimo do lead antes do 1º cutucão
 const SPACING_HOURS = 44;  // intervalo entre um cutucão e o próximo (~2 dias, como o material)
 const HORA_INI = 9;        // janela de envio (BRT)
@@ -71,14 +71,29 @@ async function send360Image(to: string, link: string) {
   } catch (e) { console.error("[lia-followup] erro na imagem", e); return false; }
 }
 
-// Templates OFICIAIS do WhatsApp (passam mesmo depois das 24h). key -> nome/idioma/doc do cabeçalho.
+// Templates OFICIAIS do WhatsApp APROVADOS (passam mesmo depois das 24h). key = nome do template
+// no 360dialog. Todos são {{1}} = primeiro nome no corpo. Só o casatuacanoaslia tem cabeçalho (ebook).
 const WA_TEMPLATES: Record<string, { name: string; lang: string; headerDoc?: { link: string; filename: string } }> = {
+  followup_novidade_lia:     { name: "followup_novidade_lia",     lang: "pt_BR" },
+  followup_simulacao_lia:    { name: "followup_simulacao_lia",    lang: "pt_BR" },
+  followup_procurase_lia:    { name: "followup_procurase_lia",    lang: "pt_BR" },
+  followup_encerramento_lia: { name: "followup_encerramento_lia", lang: "pt_BR" },
   followup_casatuacanoaslia: {
     name: "followup_casatuacanoaslia",
     lang: "pt_BR",
     headerDoc: { link: `${MEDIA_BASE}/guia-casa-tua-santos-ferreira.pdf`, filename: "Guia Casa Tua Santos Ferreira.pdf" },
   },
 };
+
+// CADÊNCIA AUTOMÁTICA (os toques, na ordem). Cada item é um template aprovado.
+// "__REATIVACAO__" = o template de reativação do PRODUTO do lead (Canoas = ebook; demais = procura-se).
+// Ajustar a ordem/quantidade aqui muda toda a cadência. Rodada pós-24h: só template aprovado passa.
+const CADENCIA: string[] = [
+  "followup_novidade_lia",     // toque 1 — "lembrei de você"
+  "followup_simulacao_lia",    // toque 2 — "posso te fazer uma simulação"
+  "__REATIVACAO__",            // toque 3 — "procura-se" (do produto)
+  "followup_encerramento_lia", // toque 4 — "encerrando por aqui, porta aberta"
+];
 
 // Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
 async function sendTemplate(to: string, tpl: { name: string; lang: string; headerDoc?: { link: string; filename: string } }, nome: string): Promise<{ ok: boolean; err?: string }> {
@@ -184,20 +199,31 @@ async function backfillResumos(sb: any): Promise<number> {
   return n;
 }
 
-/** Acha leads esfriados e cria cutucões PENDENTES (pro Lucas aprovar). */
+// Texto do toque pro LOG interno (lia_conversas/hub). A mensagem REAL enviada é o template
+// aprovado no WhatsApp; isto é só a referência legível pro time. Aproximação do corpo do template.
+const RESUMO_TOQUE: Record<string, string> = {
+  followup_novidade_lia:     "Oi! Lembrei de você — tenho novidades do imóvel 😊",
+  followup_simulacao_lia:    "Posso te fazer uma simulação rapidinha do imóvel?",
+  followup_procurase_lia:    "🔍 Procura-se! Sumiu — ainda quer ver o imóvel?",
+  followup_encerramento_lia: "Vou encerrar por aqui, mas a porta segue aberta 🙂",
+  followup_casatuacanoaslia: "🔍 Procura-se! Deixei o guia do Casa Tua aqui pra você.",
+};
+
+/** CADÊNCIA AUTOMÁTICA: acha leads que esfriaram (INCLUSIVE quem só recebeu o 1º contato e nunca
+ *  respondeu) e agenda o próximo toque da CADENCIA — já como 'aprovado' (envio AUTOMÁTICO, sem trava
+ *  manual). Multiproduto: o toque de reativação usa o template do PRODUTO do lead. */
 async function detectar(sb: any): Promise<number> {
   const agora = Date.now();
-  const stallCut = new Date(agora - STALL_HOURS * 3600_000).toISOString();
 
-  // candidatos: engajaram (em_conversa/qualificado), não saíram, ainda têm cota de cutucão
+  // candidatos: em conversa OU só receberam o 1º contato; não saíram; ainda têm cota de toque.
+  // qualificado NÃO recebe toque (já é do corretor).
   const { data: cands } = await sb
     .from("lia_estado")
-    .select("telefone, nome, lead_id, status, last_user_at, last_msg_em, followup_count")
-    .in("status", ["novo", "em_conversa"]) // qualificado NÃO recebe cutucão: já é do corretor
+    .select("telefone, nome, lead_id, status, produto_slug, last_user_at, last_msg_em, followup_count")
+    .in("status", ["novo", "em_conversa"])
     .eq("optout", false)
     .lt("followup_count", MAX_CUTUCOES)
-    .lt("last_user_at", stallCut)
-    .limit(200);
+    .limit(300);
   if (!cands?.length) return 0;
 
   // quem já foi REPASSADO (tem corretor no caso) sai do follow-up: o humano assumiu.
@@ -211,68 +237,47 @@ async function detectar(sb: any): Promise<number> {
       if (pl.corretor_id && pl.aceite_status === "aceito") repassados.add(pl.id);
   }
 
-  // templates ativos
-  const { data: tpls } = await sb.from("lia_templates").select("*").eq("ativo", true);
-  const T: Record<string, any> = {};
-  for (const t of tpls ?? []) T[t.key] = t;
+  // template de reativação por produto (Canoas = ebook; demais = procura-se genérico).
+  const { data: prods } = await sb.from("lia_produtos").select("slug, template_reativacao");
+  const reativacaoPorProduto: Record<string, string> = {};
+  for (const p of prods ?? []) if (p.template_reativacao) reativacaoPorProduto[p.slug] = p.template_reativacao;
 
   let criados = 0;
   for (const c of cands) {
-    if (!c.last_user_at) continue;
     if (c.lead_id && repassados.has(c.lead_id)) continue; // já tem corretor: humano assumiu
-    // espaçamento: se já cutucou, espera SPACING_HOURS desde a última mensagem enviada
-    if (c.followup_count > 0 && c.last_msg_em && (agora - new Date(c.last_msg_em).getTime()) < SPACING_HOURS * 3600_000) continue;
 
-    // não empilha: já existe um cutucão pendente/aprovado pra esse telefone?
+    // relógio do silêncio: última fala do LEAD, ou (se nunca falou) a última mensagem que a LIA mandou.
+    const relogio = c.last_user_at ? new Date(c.last_user_at).getTime()
+                   : c.last_msg_em ? new Date(c.last_msg_em).getTime() : 0;
+    if (!relogio) continue;
+    const n = c.followup_count ?? 0; // 0 = ainda não cutucou
+
+    // espera: 1º toque após STALL_HOURS de silêncio; toques seguintes após SPACING_HOURS da última msg.
+    if (n === 0) {
+      if (agora - relogio < STALL_HOURS * 3600_000) continue;
+    } else {
+      if (!c.last_msg_em || (agora - new Date(c.last_msg_em).getTime()) < SPACING_HOURS * 3600_000) continue;
+    }
+
+    // não empilha: já existe toque pendente/aprovado pra esse telefone?
     const { data: aberto } = await sb
       .from("lia_followups").select("id").eq("telefone", c.telefone).in("status", ["pendente", "aprovado"]).limit(1);
     if (aberto && aberto.length) continue;
 
-    const dentro24h = (agora - new Date(c.last_user_at).getTime()) < 24 * 3600_000;
-    // Cadência dos 5 toques (playbook do time). Pós-24h só o TEMPLATE oficial passa;
-    // dentro de 24h, texto livre escalando pelo número do toque (followup_count).
-    const n = c.followup_count ?? 0; // 0 = primeiro toque
-    let key: string;
-    if (!dentro24h) {
-      key = "followup_casatuacanoaslia";       // "Procura-se" + ebook (humor/spoiler, único pós-24h)
-    } else if (n === 0) {
-      key = c.status === "novo" ? "primeiro_retorno" : "sumiu_planta"; // 1º toque: spoiler/foto
-    } else if (n === 1) {
-      key = "novidade_estande";                // 2º toque: novidade (lista do estande)
-    } else if (n === 2) {
-      key = "condicao_pagamento";              // 3º toque: condição de pagamento
-    } else {
-      key = "porta_aberta";                    // 4º+ toque: porta aberta (responde 1/2/3)
-    }
-    const tpl = T[key];
-    if (!tpl) continue;
-
-    // só usa o nome se for um nome de verdade (WhatsApp às vezes manda só um emoji)
-    const bruto = primeiroNome(c.nome);
-    const nome = /\p{L}/u.test(bruto) ? bruto.replace(/[^\p{L}\p{M}'.-]/gu, "").trim() : "";
-    const mensagem = String(tpl.corpo)
-      .replaceAll("Oi {nome}, ", nome ? `Oi ${nome}, ` : "Oi! ")
-      .replaceAll("{nome}", nome)
-      .replace(/\s{2,}/g, " ").trim();
-    const MOTIVOS: Record<string, string> = {
-      followup_casatuacanoaslia: "Sumiu (passou de 24h), reativação",
-      primeiro_retorno: "1º toque: só abriu e sumiu",
-      sumiu_planta: "1º toque: esfriou depois de engajar",
-      novidade_estande: "2º toque: novidade do estande",
-      condicao_pagamento: "3º toque: condição de pagamento",
-      porta_aberta: "4º toque: porta aberta",
-    };
-    const motivo = MOTIVOS[key] ?? "Follow-up";
+    // toque atual da cadência (resolvendo o de reativação pro produto do lead)
+    let key = CADENCIA[n];
+    if (key === "__REATIVACAO__") key = reativacaoPorProduto[c.produto_slug ?? ""] ?? "followup_procurase_lia";
+    if (!WA_TEMPLATES[key]) continue; // template não configurado → pula (segurança)
 
     const { error } = await sb.from("lia_followups").insert({
       telefone: c.telefone,
       lead_id: c.lead_id,
       template_key: key,
-      mensagem,
-      motivo,
-      dentro_24h: dentro24h,
-      tentativa: (c.followup_count ?? 0) + 1,
-      status: "pendente",
+      mensagem: RESUMO_TOQUE[key] ?? `[${key}]`,
+      motivo: `Toque ${n + 1}/${CADENCIA.length} · ${key}`,
+      dentro_24h: false,
+      tentativa: n + 1,
+      status: "aprovado", // AUTO: sem trava manual — dispara na próxima rodada em horário comercial
     });
     if (!error) criados++;
   }
@@ -340,7 +345,13 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
     if (ehTemplate) {
       const res = await sendTemplate(f.telefone, WA_TEMPLATES[f.template_key], nomeLead);
       ok = res.ok;
-      if (!res.ok && res.err) await sb.from("lia_followups").update({ motivo: `ERRO TEMPLATE: ${res.err}`, updated_at: nowISO() }).eq("id", f.id);
+      if (!res.ok) {
+        // Falhou (ex.: cabeçalho faltando). NÃO repete pra sempre: cancela e AVANÇA o lead pro
+        // próximo toque (bumpa followup_count/last_msg_em). No máx MAX_CUTUCOES falhas por lead.
+        await sb.from("lia_followups").update({ status: "cancelado", motivo: `ERRO TEMPLATE: ${res.err ?? ""}`.slice(0, 260), updated_at: nowISO() }).eq("id", f.id);
+        await sb.from("lia_estado").update({ followup_count: (est?.followup_count ?? 0) + 1, last_msg_em: nowISO(), updated_at: nowISO() }).eq("telefone", f.telefone);
+        continue;
+      }
     } else {
       ok = await send360Text(f.telefone, f.mensagem);
     }
