@@ -93,7 +93,7 @@ export default function LiaLeadsTab() {
   const destinoDe = (tel: string) => destinoPorTel.get(String(tel).replace(/\D/g, "").slice(-8));
 
   const [busca, setBusca] = useState("");
-  const [status, setStatus] = useState("ativos");
+  const [status, setStatus] = useState("todos");
   const [origem, setOrigem] = useState("todas");
   const [nivel, setNivel] = useState("todos");
   const [produto, setProduto] = useState("todos");

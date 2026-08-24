@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { formatBRT } from "@/lib/brtTime";
 import {
   MOTIVOS_DESCARTE,
+  NIVEL_META,
   origemDoReferral,
   partirMensagem,
   produtoLabel,
@@ -104,9 +105,13 @@ export default function LiaConversaDrawer({ estado, open, onOpenChange }: Props)
               </Badge>
             ) : null}
             <Badge variant="outline" className={meta.cls}>{meta.label}</Badge>
-            {estado?.nivel ? (
-              <Badge variant="outline" className="border-warning/20 bg-warning/10 text-warning">
-                {estado.nivel === "quente" ? "🔥 Quente" : "Qualificado"}
+            {estado?.nivel && NIVEL_META[String(estado.nivel).toLowerCase()] ? (
+              <Badge
+                variant="outline"
+                className={cn(NIVEL_META[String(estado.nivel).toLowerCase()].cls)}
+              >
+                {NIVEL_META[String(estado.nivel).toLowerCase()].emoji}{" "}
+                {NIVEL_META[String(estado.nivel).toLowerCase()].label}
               </Badge>
             ) : null}
             <Badge variant="secondary">Follow-ups: {followups}</Badge>
