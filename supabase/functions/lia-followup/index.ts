@@ -76,14 +76,15 @@ async function send360Image(to: string, link: string) {
 // vars = nº de variáveis {{n}} no CORPO do template aprovado (os 4 de follow-up são texto genérico,
 // SEM variável = 0; mandar 1 param dava erro #132000 "número de parâmetros não bate").
 const WA_TEMPLATES: Record<string, { name: string; lang: string; vars?: number; headerDoc?: { link: string; filename: string } }> = {
-  followup_novidade_lia:     { name: "followup_novidade_lia",     lang: "pt_BR", vars: 0 },
-  followup_simulacao_lia:    { name: "followup_simulacao_lia",    lang: "pt_BR", vars: 0 },
-  followup_procurase_lia:    { name: "followup_procurase_lia",    lang: "pt_BR", vars: 0 },
-  followup_encerramento_lia: { name: "followup_encerramento_lia", lang: "pt_BR", vars: 0 },
+  // {{1}} = primeiro nome, {{2}} = nome público do imóvel (mesma convenção do primeirocontato_lia).
+  followup_novidade_lia:     { name: "followup_novidade_lia",     lang: "pt_BR", vars: 2 },
+  followup_simulacao_lia:    { name: "followup_simulacao_lia",    lang: "pt_BR", vars: 2 },
+  followup_procurase_lia:    { name: "followup_procurase_lia",    lang: "pt_BR", vars: 2 },
+  followup_encerramento_lia: { name: "followup_encerramento_lia", lang: "pt_BR", vars: 2 },
   followup_casatuacanoaslia: {
     name: "followup_casatuacanoaslia",
     lang: "pt_BR",
-    vars: 0,
+    vars: 1,
     headerDoc: { link: `${MEDIA_BASE}/guia-casa-tua-santos-ferreira.pdf`, filename: "Guia Casa Tua Santos Ferreira.pdf" },
   },
 };
@@ -99,14 +100,19 @@ const CADENCIA: string[] = [
 ];
 
 // Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
-async function sendTemplate(to: string, tpl: { name: string; lang: string; vars?: number; headerDoc?: { link: string; filename: string } }, nome: string): Promise<{ ok: boolean; err?: string }> {
+async function sendTemplate(to: string, tpl: { name: string; lang: string; vars?: number; headerDoc?: { link: string; filename: string } }, bodyParams: string[]): Promise<{ ok: boolean; err?: string }> {
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const components: any[] = [];
   if (tpl.headerDoc) components.push({ type: "header", parameters: [{ type: "document", document: { link: tpl.headerDoc.link, filename: tpl.headerDoc.filename } }] });
-  // só manda parâmetro do corpo se o template TEM variável (vars>=1). Templates genéricos (vars=0)
-  // NÃO levam body params — mandar 1 dava #132000. Default 1 pra compatibilidade com templates antigos.
-  if ((tpl.vars ?? 1) >= 1) components.push({ type: "body", parameters: [{ type: "text", text: (nome || "você").slice(0, 60) }] });
+  // manda EXATAMENTE `vars` parâmetros no corpo (o nº PRECISA bater com as variáveis do template,
+  // senão #132000). Convenção LIA: {{1}}=primeiro nome, {{2}}=nome público do imóvel.
+  const n = tpl.vars ?? 1;
+  if (n >= 1) {
+    const params = [];
+    for (let i = 0; i < n; i++) params.push({ type: "text", text: (bodyParams[i] || "você").slice(0, 60) });
+    components.push({ type: "body", parameters: params });
+  }
   try {
     const r = await fetch(D360_URL, {
       method: "POST",
@@ -301,6 +307,11 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
   const h = horaBRT();
   if (!opts.ignorarHorario && (h < HORA_INI || h >= HORA_FIM)) return 0; // fora da janela: tenta na próxima rodada
 
+  // nome público do imóvel por produto (vira o {{2}} do template). Sem produto → Casa Tua Santos Ferreira.
+  const nomePorProduto: Record<string, string> = {};
+  const { data: prodsNome } = await sb.from("lia_produtos").select("slug, nome_publico, nome, empreendimento");
+  for (const p of prodsNome ?? []) nomePorProduto[p.slug] = p.nome_publico || p.nome || p.empreendimento || "Casa Tua Santos Ferreira";
+
   let q = sb
     .from("lia_followups")
     .select("*")
@@ -314,7 +325,7 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
   let enviados = 0;
   for (const f of aprovados) {
     // revalida o estado do lead (pode ter saído/qualificado no meio-tempo)
-    const { data: estRows } = await sb.from("lia_estado").select("optout, followup_count, last_user_at, nome, status").eq("telefone", f.telefone).limit(1);
+    const { data: estRows } = await sb.from("lia_estado").select("optout, followup_count, last_user_at, nome, status, produto_slug").eq("telefone", f.telefone).limit(1);
     const est = estRows?.[0];
     if (est?.optout || (est?.followup_count ?? 0) >= MAX_CUTUCOES) {
       await sb.from("lia_followups").update({ status: "cancelado", updated_at: nowISO() }).eq("id", f.id);
@@ -353,7 +364,8 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
     const nomeLead = /\p{L}/u.test(bruto) ? bruto.replace(/[^\p{L}\p{M}'.-]/gu, "").trim() : "";
     let ok = false;
     if (ehTemplate) {
-      const res = await sendTemplate(f.telefone, WA_TEMPLATES[f.template_key], nomeLead);
+      const empPublico = nomePorProduto[est?.produto_slug ?? ""] ?? "Casa Tua Santos Ferreira";
+      const res = await sendTemplate(f.telefone, WA_TEMPLATES[f.template_key], [nomeLead, empPublico]);
       ok = res.ok;
       if (!res.ok) {
         // Falhou (ex.: cabeçalho faltando). NÃO repete pra sempre: cancela e AVANÇA o lead pro
