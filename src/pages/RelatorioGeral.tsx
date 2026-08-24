@@ -207,10 +207,11 @@ export default function RelatorioGeral({ janela, periodoLabel }: RelatorioGeralP
           <span style={{ fontSize: 11.5, color: "#93A0B2" }}>uma equipe por vez, troque aqui</span>
         </div>
       )}
-      <RaioXView times={mostrados} totalGeral={data?.totalGeral ?? ({} as RGData["totalGeral"])} filtro={controles} periodoLabel={PERIODO_LABEL[opt]} />
+      <RaioXView times={mostrados} totalGeral={data?.totalGeral ?? ({} as RGData["totalGeral"])} filtro={controles} periodoLabel={label} />
       {mostrados.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <ConversaoView times={mostrados} periodoLabel={PERIODO_LABEL[opt]} />
+          <ConversaoView times={mostrados} periodoLabel={label} />
+
         </div>
       )}
     </div>
