@@ -382,6 +382,9 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     let leadId: string | null = est.lead_id ?? null;
     if (!leadId) {
       leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel, resumo, produto);
+      // REPASSE IMEDIATO: empurra pra roleta DO PRODUTO na hora (sem esperar repasse manual).
+      // Se houver corretor alocado ativo ao empreendimento, distribui já; senão fica na Fila CEO.
+      if (leadId) await empurrarParaRoleta(leadId);
     } else {
       // já estava na fila: atualiza a temperatura E o título do histórico pra bater com a fila
       await sb.from("pipeline_leads").update({
@@ -485,6 +488,24 @@ function lerAgendamento(resumo: string): { agendou: boolean; quando: string | nu
   const val = (m?.[1] ?? "").split("\n")[0].trim();
   if (!val || /n[ãa]o\s+agend|n[ãa]o\s+inform|sem\s+agend|nenhum/i.test(val)) return { agendou: false, quando: null };
   return { agendou: true, quando: val.slice(0, 120) };
+}
+
+// REPASSE PRA ROLETA: chama a função distribute-lead (ação dispatch_fila_ceo) pra distribuir o
+// lead recém-criado usando a roleta EXISTENTE (distribuir_lead_atomico), escopada por produto:
+// só vai pra corretor ALOCADO ativo ao empreendimento; sem alocado, permanece na Fila CEO.
+// Não altera a lógica da roleta — apenas a aciona na hora, pra não perder velocidade.
+async function empurrarParaRoleta(leadId: string) {
+  try {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/distribute-lead`;
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!key || !leadId) return;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, apikey: key },
+      body: JSON.stringify({ action: "dispatch_fila_ceo", pipeline_lead_id: leadId }),
+    });
+    if (!r.ok) console.error("[lia-whatsapp] empurrarParaRoleta status", r.status, await r.text().catch(() => ""));
+  } catch (e) { console.error("[lia-whatsapp] empurrarParaRoleta erro (nao critico)", e); }
 }
 
 // Cria o lead SEM DONO na Fila CEO (mesmo padrão do receive-quiz-lead), origem 'LIA'.
