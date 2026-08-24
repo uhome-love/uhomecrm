@@ -677,9 +677,10 @@ function ConteudoRaioX({ modoImpressao, esconderPeriodo }: { modoImpressao?: boo
   return <RaioXCorretorView data={data} filtros={filtros} periodoLabel={label} />;
 }
 
-export default function RaioXCorretorPage() {
-  return <ConteudoRaioX />;
+export default function RaioXCorretorPage({ esconderPeriodo }: { esconderPeriodo?: boolean } = {}) {
+  return <ConteudoRaioX esconderPeriodo={esconderPeriodo} />;
 }
+
 
 /**
  * Versão de impressão: mesma página, fora do shell do CRM (sem menu lateral nem
