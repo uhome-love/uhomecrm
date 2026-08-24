@@ -28,6 +28,7 @@ import {
   produtosDeEstados,
   statusMetaLead,
   useLiaEstados,
+  useLiaPipelineLeads,
   useLiaUltimasMensagens,
   type LiaEstado,
 } from "./useLiaHub";
@@ -56,22 +57,42 @@ const inicial = (nome?: string | null, tel?: string | null) => {
   return m ? m[0].toUpperCase() : (tel || "?").slice(-2, -1) || "?";
 };
 
-// prioridade da inbox: quem RESPONDEU e está esperando vem primeiro.
-type Grupo = "aguardando" | "conversa" | "followup";
+// prioridade da inbox: quem RESPONDEU e está esperando vem primeiro; qualificados ficam por último
+// (mas visíveis, com o corretor pra quem foram).
+type Grupo = "aguardando" | "conversa" | "followup" | "qualificado";
 const grupoDe = (e: LiaEstado, ultimaRole?: string): Grupo => {
+  if (e.status === "qualificado") return "qualificado"; // já foi pro corretor / Fila CEO
   if (ultimaRole === "user") return "aguardando"; // o lead falou por último = está te esperando
   if ((e.followup_count ?? 0) > 0) return "followup"; // esfriou, entrou na cadência
   return "conversa"; // a LIA falou por último, aguardando o lead
 };
-const GRUPOS: { key: Grupo; label: string; hot?: boolean }[] = [
+const ORDEM_GRUPO: Record<Grupo, number> = { aguardando: 0, conversa: 1, followup: 2, qualificado: 3 };
+const GRUPOS: { key: Grupo; label: string; hot?: boolean; ok?: boolean }[] = [
   { key: "aguardando", label: "Respondeu, aguardando você", hot: true },
   { key: "conversa", label: "Em conversa · a LIA está atendendo" },
   { key: "followup", label: "Em follow-up · esfriaram, a LIA reativa" },
+  { key: "qualificado", label: "Qualificados · foram pro corretor / Fila CEO", ok: true },
 ];
 
 export default function LiaLeadsTab() {
   const { data: estados, isLoading } = useLiaEstados();
   const { data: ultimas } = useLiaUltimasMensagens();
+  const { data: pipeline } = useLiaPipelineLeads();
+
+  // mapa telefone(8 últimos) -> pra onde o lead qualificado foi (corretor que assumiu, ou Fila CEO)
+  const destinoPorTel = useMemo(() => {
+    const m = new Map<string, { corretor: string | null; assumido: boolean }>();
+    const leads = pipeline?.leads ?? [];
+    const corretores = pipeline?.corretores;
+    for (const l of leads) {
+      if (!l.telefone) continue;
+      const l8 = String(l.telefone).replace(/\D/g, "").slice(-8);
+      const corretor = l.corretor_id ? corretores?.get(l.corretor_id) ?? null : null;
+      m.set(l8, { corretor, assumido: l.aceite_status === "aceito" });
+    }
+    return m;
+  }, [pipeline]);
+  const destinoDe = (tel: string) => destinoPorTel.get(String(tel).replace(/\D/g, "").slice(-8));
 
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState("ativos");
@@ -95,7 +116,9 @@ export default function LiaLeadsTab() {
       // "ativos" = só o que a LIA está lidando AGORA (novo + em conversa). Qualificado já foi
       // pro corretor (tem aba própria), descartado/opt-out saem daqui.
       if (status === "ativos") {
-        if (e.status !== "novo" && e.status !== "em_conversa") return false;
+        // "ativos" = o que a LIA está lidando + os qualificados (pra você ver pra onde foram).
+        // Descartado/opt-out saem daqui.
+        if (e.status !== "novo" && e.status !== "em_conversa" && e.status !== "qualificado") return false;
         if (e.optout) return false;
       } else if (status !== "todos" && e.status !== status) return false;
       if (nivel !== "todos" && String(e.nivel ?? "").toLowerCase() !== nivel) return false;
@@ -109,19 +132,18 @@ export default function LiaLeadsTab() {
       const t = ultimas?.get(e.telefone)?.created_at ?? e.last_msg_em ?? e.last_user_at ?? e.qualificado_em ?? null;
       return t ? new Date(t).getTime() : 0;
     };
-    const ordem: Record<Grupo, number> = { aguardando: 0, conversa: 1, followup: 2 };
     return filtrados
       .map((e) => ({ e, grupo: grupoDe(e, ultimas?.get(e.telefone)?.role) }))
       .sort((a, b) => {
         // na visão "ativos", primeiro por prioridade de grupo; sempre por conversa mais recente.
-        if (status === "ativos" && a.grupo !== b.grupo) return ordem[a.grupo] - ordem[b.grupo];
+        if (status === "ativos" && a.grupo !== b.grupo) return ORDEM_GRUPO[a.grupo] - ORDEM_GRUPO[b.grupo];
         return tempo(b.e) - tempo(a.e);
       });
   }, [estados, buscaDeb, status, origem, nivel, produto, ultimas]);
 
   const agrupado = status === "ativos";
   const contagem = useMemo(() => {
-    const c: Record<Grupo, number> = { aguardando: 0, conversa: 0, followup: 0 };
+    const c: Record<Grupo, number> = { aguardando: 0, conversa: 0, followup: 0, qualificado: 0 };
     for (const l of linhas) c[l.grupo]++;
     return c;
   }, [linhas]);
@@ -200,17 +222,36 @@ export default function LiaLeadsTab() {
                 responder
               </span>
             ) : null}
-            {NIVEL_META[nv] ? (
-              <Badge variant="outline" className={cn("text-[10px]", NIVEL_META[nv].cls)}>
-                {NIVEL_META[nv].emoji} {NIVEL_META[nv].label}
-              </Badge>
-            ) : (
-              !agrupado && (
-                <Badge variant="outline" className={cn("text-[10px]", meta.cls)}>
-                  {meta.label}
-                </Badge>
-              )
-            )}
+            {grupo === "qualificado"
+              ? (() => {
+                  const d = destinoDe(e.telefone);
+                  return d?.corretor ? (
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-300 text-[10px] font-semibold text-emerald-700"
+                    >
+                      ✅ {d.corretor}
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 text-[10px] font-semibold text-amber-700"
+                    >
+                      ⏳ Fila CEO
+                    </Badge>
+                  );
+                })()
+              : NIVEL_META[nv] ? (
+                  <Badge variant="outline" className={cn("text-[10px]", NIVEL_META[nv].cls)}>
+                    {NIVEL_META[nv].emoji} {NIVEL_META[nv].label}
+                  </Badge>
+                ) : (
+                  !agrupado && (
+                    <Badge variant="outline" className={cn("text-[10px]", meta.cls)}>
+                      {meta.label}
+                    </Badge>
+                  )
+                )}
           </div>
         </div>
       </div>
@@ -218,19 +259,19 @@ export default function LiaLeadsTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       <FiltroImovel produtos={produtos} valor={produto} onChange={setProduto} />
-      <Card className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
-        <div className="relative flex-1">
+      <Card className="flex flex-col gap-2 p-2 lg:flex-row lg:items-center">
+        <div className="relative lg:w-56 lg:shrink-0">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por nome ou telefone…"
-            className="pl-9 text-base lg:text-sm"
+            placeholder="Buscar…"
+            className="h-9 pl-9 text-base lg:text-sm"
           />
         </div>
-        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 lg:mx-0 lg:flex-1 lg:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PILULAS.map((p) => (
             <Button
               key={p.valor}
@@ -243,7 +284,7 @@ export default function LiaLeadsTab() {
             </Button>
           ))}
         </div>
-        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 lg:mx-0 lg:shrink-0 lg:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Button
             size="sm"
             className="shrink-0"
@@ -304,10 +345,10 @@ export default function LiaLeadsTab() {
                   <span
                     className={cn(
                       "text-[11px] font-extrabold uppercase tracking-wider",
-                      g.hot ? "text-rose-600" : "text-muted-foreground"
+                      g.hot ? "text-rose-600" : g.ok ? "text-emerald-600" : "text-muted-foreground"
                     )}
                   >
-                    {g.hot ? "⚡ " : ""}
+                    {g.hot ? "⚡ " : g.ok ? "✅ " : ""}
                     {g.label}
                   </span>
                   <span className="text-[11px] font-bold text-muted-foreground/60">
@@ -318,7 +359,8 @@ export default function LiaLeadsTab() {
                 <Card
                   className={cn(
                     "divide-y divide-border overflow-hidden",
-                    g.hot && "border-rose-200/70"
+                    g.hot && "border-rose-200/70",
+                    g.ok && "border-emerald-200/70"
                   )}
                 >
                   {itens.map((l) => (

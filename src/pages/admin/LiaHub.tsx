@@ -25,27 +25,25 @@ export default function LiaHub() {
   useLiaRealtime(); // ao vivo via Realtime (sem o refresh interminável de polling)
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:space-y-5 sm:p-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-10 sm:w-10">
-            <Bot className="h-5 w-5" strokeWidth={1.9} />
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold text-foreground sm:text-2xl">LIA · Uhome</h1>
-            <p className="text-xs text-muted-foreground sm:text-sm">
-              Acompanhamento da atendente de IA no WhatsApp.
-            </p>
-          </div>
+    <div className="mx-auto w-full max-w-[1400px] space-y-3 p-3 sm:p-4">
+      <header className="flex items-center gap-2.5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Bot className="h-4.5 w-4.5" strokeWidth={1.9} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base font-bold leading-tight text-foreground sm:text-lg">LIA · Uhome</h1>
+          <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+            Atendente de IA no WhatsApp · ao vivo
+          </p>
         </div>
         <Button
-          variant="outline"
-          size="sm"
-          className="w-full gap-2 sm:w-auto"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0 text-muted-foreground"
+          title="Atualizar"
           onClick={() => qc.invalidateQueries({ queryKey: ["lia-hub"] })}
         >
           <RefreshCw className="h-4 w-4" />
-          Atualizar
         </Button>
       </header>
 
@@ -64,19 +62,19 @@ export default function LiaHub() {
           </TabsList>
         </div>
 
-        <TabsContent value="painel" className="mt-5">
+        <TabsContent value="painel" className="mt-3">
           <LiaPainelTab />
         </TabsContent>
-        <TabsContent value="leads" className="mt-5">
+        <TabsContent value="leads" className="mt-3">
           <LiaLeadsTab />
         </TabsContent>
-        <TabsContent value="kanban" className="mt-5">
+        <TabsContent value="kanban" className="mt-3">
           <LiaKanbanTab />
         </TabsContent>
-        <TabsContent value="followups" className="mt-5">
+        <TabsContent value="followups" className="mt-3">
           <LiaFollowupsTab />
         </TabsContent>
-        <TabsContent value="qualificados" className="mt-5">
+        <TabsContent value="qualificados" className="mt-3">
           <LiaQualificadosTab />
         </TabsContent>
       </Tabs>
