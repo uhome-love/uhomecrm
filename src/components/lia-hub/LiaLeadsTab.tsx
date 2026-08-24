@@ -21,6 +21,7 @@ import FiltroImovel from "./FiltroImovel";
 import {
   NIVEL_META,
   origemDoReferral,
+  previewMensagem,
   produtoLabel,
   produtosDeEstados,
   statusMetaLead,
@@ -127,11 +128,12 @@ export default function LiaLeadsTab() {
     const meta = statusMetaLead(e);
     const ultima = ultimas?.get(e.telefone);
     const nv = String(e.nivel ?? "").toLowerCase();
+    const limpo = previewMensagem(ultima?.conteudo);
     const preview =
-      ultima?.conteudo != null
-        ? ultima.role === "assistant"
-          ? `LIA: ${ultima.conteudo}`
-          : ultima.conteudo
+      limpo
+        ? ultima?.role === "assistant"
+          ? `LIA: ${limpo}`
+          : limpo
         : e.status === "novo"
           ? "1º contato enviado · aguardando resposta 💬"
           : "—";

@@ -29,6 +29,7 @@ import { formatBRT } from "@/lib/brtTime";
 import {
   MOTIVOS_DESCARTE,
   origemDoReferral,
+  partirMensagem,
   produtoLabel,
   statusMetaLead,
   useLiaConversa,
@@ -147,21 +148,30 @@ export default function LiaConversaDrawer({ estado, open, onOpenChange }: Props)
             ) : (
               (mensagens ?? []).map((m, i) => {
                 const isUser = m.role === "user";
+                // cada "|||" foi uma mensagem separada no WhatsApp: mostra como bolhas separadas,
+                // igual o cliente recebeu, e sem os marcadores internos.
+                const partes = partirMensagem(m.conteudo);
+                if (!partes.length) return null;
                 return (
-                  <div key={i} className={cn("flex", isUser ? "justify-start" : "justify-end")}>
-                    <div
-                      className={cn(
-                        "max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm sm:max-w-[80%]",
-                        isUser
-                          ? "rounded-bl-sm bg-muted text-foreground"
-                          : "rounded-br-sm bg-primary/10 text-foreground"
-                      )}
-                    >
-                      <p className="whitespace-pre-wrap break-words">{m.conteudo}</p>
-                      <span className="mt-1 block text-[10px] text-muted-foreground">
-                        {formatBRT(m.created_at, "dd/MM HH:mm")}
-                      </span>
-                    </div>
+                  <div key={i} className={cn("flex flex-col gap-1", isUser ? "items-start" : "items-end")}>
+                    {partes.map((p, j) => (
+                      <div
+                        key={j}
+                        className={cn(
+                          "max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm sm:max-w-[80%]",
+                          isUser
+                            ? "rounded-bl-sm bg-muted text-foreground"
+                            : "rounded-br-sm bg-primary/10 text-foreground"
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap break-words">{p}</p>
+                        {j === partes.length - 1 && (
+                          <span className="mt-1 block text-[10px] text-muted-foreground">
+                            {formatBRT(m.created_at, "dd/MM HH:mm")}
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 );
               })

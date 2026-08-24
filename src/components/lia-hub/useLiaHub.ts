@@ -37,6 +37,27 @@ export function useLiaRealtime() {
 
 export type LiaStatus = "novo" | "em_conversa" | "qualificado" | "descartado" | "opt_out";
 
+// A LIA separa mensagens por "|||" (cada pedaço é uma mensagem no WhatsApp) e usa marcadores
+// internos ([[midia:x]], [[nome:x]], [[sinal]], [[repassar]]) que o cliente NUNCA vê. No hub, isso
+// tudo aparecia cru. Estas funções limpam pra exibição: partem em pedaços e escondem os marcadores.
+export function partirMensagem(txt?: string | null): string[] {
+  if (!txt) return [];
+  return String(txt)
+    .split("|||")
+    .map((p) => p.trim())
+    .map((p) => {
+      const mid = p.match(/^\[\[\s*midia\s*:\s*(\w+)\s*\]\]$/i);
+      if (mid) return `📎 enviou ${mid[1]}`;
+      if (/^\[\[.*\]\]$/.test(p)) return ""; // marcador interno (sinal/nome/repassar): não mostra
+      return p.replace(/\[\[\s*nome\s*:[^\]]*\]\]/gi, "").trim();
+    })
+    .filter(Boolean);
+}
+export function previewMensagem(txt?: string | null): string {
+  const ps = partirMensagem(txt);
+  return ps.length ? ps[ps.length - 1] : "";
+}
+
 export interface LiaEstado {
   telefone: string;
   nome: string | null;
