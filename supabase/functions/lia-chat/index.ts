@@ -271,6 +271,13 @@ A mensagem é na voz do CORRETOR (uma pessoa da equipe), não da LIA, e NUNCA se
 Regras: português do Brasil, SEM TRAVESSÃO, específica ao que o lead falou (nada de mensagem genérica), leva pro próximo passo com sensibilidade (não empurra agenda por cima de uma dúvida ou de um adiamento). Se o lead prefere presencial, foca na casa modelo (abre 1º/09); se topa vídeo, na apresentação. LINHAS VERMELHAS: nunca prometa aprovação de crédito, nunca projete valorização, nunca crave parcela ou taxa; isso é do especialista.
 Responda APENAS com a mensagem sugerida, pronta pra copiar e colar, sem aspas, sem "sugestão:", sem explicação.`;
 
+// Modo REENGAJAR: a LIA proativa. A conversa esfriou há algumas horas, ainda dentro da janela do
+// mesmo dia. A LIA retoma sozinha, pegando o contexto da última fala e AVANÇANDO. Uma mensagem só.
+const REENGAJAR_SYSTEM = `Você é a LIA, e está RETOMANDO por conta própria uma conversa de WhatsApp que esfriou há algumas horas (o lead parou de responder, mas ainda é o mesmo dia). A conversa JÁ está em andamento: você NÃO se apresenta de novo, NÃO recomeça do zero, NÃO repete a última pergunta igualzinha.
+Sua missão: reengajar de forma leve e humana, pegando o CONTEXTO da última fala e dando um passo A MAIS (um detalhe novo que interessa, uma pergunta diferente, uma ponte pro próximo assunto). Se a pessoa tinha uma dúvida ou objeção em aberto na última fala, retome POR ELA.
+Regras: UMA mensagem curta só (1 ou 2 linhas), calorosa, específica ao que a pessoa falou (nada genérico tipo "e aí, ainda tem interesse?"), com um gancho leve pra ela ter pra onde responder. Não pareça cobrança nem robô, não seja repetitiva, não empurre agendamento por cima de uma dúvida ou de um adiamento. Português do Brasil, SEM TRAVESSÃO. LINHAS VERMELHAS: nunca prometa aprovação de crédito, nunca projete valorização, nunca crave parcela ou taxa.
+Responda APENAS com a mensagem pronta pra enviar no WhatsApp, sem aspas, sem "mensagem:", sem explicação. Se de verdade não houver nada de útil pra dizer, responda só com a palavra PULAR.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
@@ -322,6 +329,28 @@ serve(async (req) => {
       const rd = await rr.json();
       const sugestao = String(rd?.choices?.[0]?.message?.content ?? "").trim().replace(/^["']+|["']+$/g, "");
       return new Response(JSON.stringify({ sugestao }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Modo REENGAJAR (LIA proativa): devolve { content } com UMA mensagem pra retomar a conversa
+    // que esfriou, pegando o contexto. Recebe a ficha do produto pra ser específica. "PULAR" = não manda.
+    if ((body as any).mode === "reengajar") {
+      const fichaProduto = typeof (body as any).ficha === "string" ? (body as any).ficha.trim() : "";
+      const sys = fichaProduto
+        ? `${REENGAJAR_SYSTEM}\n\nCONTEXTO DO IMÓVEL (use pra ser específica, mas NÃO despeje tudo):\n${fichaProduto}`
+        : REENGAJAR_SYSTEM;
+      const transcricao = messages
+        .map((m: any) => `${m.role === "user" ? "LEAD" : "LIA"}: ${String(m.content).replace(/\[\[midia:[^\]]*\]\]/g, "(enviou uma mídia)").replace(/\[\[[^\]]*\]\]/g, "").replace(/\|\|\|/g, " ").trim()}`)
+        .join("\n");
+      const rr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: MODEL, messages: [{ role: "system", content: sys }, { role: "user", content: `Conversa até aqui:\n\n${transcricao}\n\nEscreva UMA mensagem curta pra reengajar, pegando o contexto da última fala e avançando (ou PULAR se não fizer sentido).` }], stream: false, temperature: 0.6 }),
+      });
+      if (!rr.ok) { console.error("[lia-chat] reengajar erro", rr.status, await rr.text().catch(() => "")); return new Response(JSON.stringify({ content: "" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
+      const rd = await rr.json();
+      let content = String(rd?.choices?.[0]?.message?.content ?? "").trim().replace(/^["']+|["']+$/g, "");
+      if (/^pular$/i.test(content.trim())) content = ""; // a IA decidiu que não vale reengajar
+      return new Response(JSON.stringify({ content }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // MULTIPRODUTO: se a requisição trouxer uma `ficha` (cérebro do imóvel), a LIA usa

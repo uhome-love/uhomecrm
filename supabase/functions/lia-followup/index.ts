@@ -32,6 +32,13 @@ const STALL_HOURS = 24;    // silêncio mínimo do lead antes do 1º cutucão (r
 const SPACING_HOURS = 24;  // intervalo entre um cutucão e o próximo (régua Lucas: 24/48/72/96h)
 const HORA_INI = 9;        // janela de envio (BRT)
 const HORA_FIM = 20;
+// LIA PROATIVA (cutucão inteligente): retoma uma conversa que ficou muda ainda DENTRO da janela do
+// mesmo dia, com uma mensagem contextual (texto livre, permitido nas 24h desde a última fala do lead).
+// Preenche o buraco antes da cadência de template (que só assume em 24h). Máx 1 por lead.
+const REENG_MIN_H = 3;     // silêncio mínimo antes de cutucar
+const REENG_MAX_H = 20;    // não cutuca depois disso (aí a cadência de template assume)
+const REENG_JANELA_H = 23; // janela free-form do WhatsApp desde a última fala do LEAD
+const REENG_MAX_POR_RODADA = 6; // teto por execução (cada um faz 1 chamada de IA)
 
 const svc = () =>
   createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -141,11 +148,13 @@ serve(async (req) => {
     // (até 10 leads × 2 tentativas × esperas), e se ele estoura o tempo da função o detectar/disparar
     // NUNCA rodavam (bug: cadência zerada desde 23/08). Agora cada etapa é isolada por try/catch e a
     // cadência roda antes, então um backfill lento nunca mais bloqueia o follow-up.
-    let rascunhados = 0, enviados = 0, resumos = 0;
+    let rascunhados = 0, enviados = 0, resumos = 0, reengajados = 0;
     try { rascunhados = await detectar(sb); } catch (e) { console.error("[lia-followup] detectar falhou", e); }
     try { enviados = await disparar(sb); } catch (e) { console.error("[lia-followup] disparar falhou", e); }
+    // LIA proativa: cutucão inteligente dentro da janela do mesmo dia (roda depois da cadência, antes do backfill lento)
+    try { reengajados = await reengajarProativo(sb); } catch (e) { console.error("[lia-followup] reengajar falhou", e); }
     try { resumos = await backfillResumos(sb); } catch (e) { console.error("[lia-followup] backfill falhou", e); }
-    return new Response(JSON.stringify({ ok: true, rascunhados, enviados, resumos }), { headers: { ...cors, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, rascunhados, enviados, reengajados, resumos }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[lia-followup] erro:", e);
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
@@ -300,6 +309,93 @@ async function detectar(sb: any): Promise<number> {
     if (!error) criados++;
   }
   return criados;
+}
+
+/** LIA PROATIVA (cutucão inteligente): retoma, com UMA mensagem contextual, conversas que ficaram
+ * mudas ainda dentro da janela do mesmo dia (antes da cadência de template assumir em 24h). Texto
+ * livre gerado pelo cérebro da LIA (modo reengajar), específico ao que o lead falou. Máx 1 por lead. */
+async function reengajarProativo(sb: any): Promise<number> {
+  const h = horaBRT();
+  if (h < HORA_INI || h >= HORA_FIM) return 0; // só horário comercial
+  const agora = Date.now();
+
+  const { data: cands } = await sb
+    .from("lia_estado")
+    .select("telefone, nome, lead_id, status, produto_slug, last_user_at, last_msg_em, followup_count, reengajado_em, repassado_em")
+    .in("status", ["novo", "em_conversa"])
+    .eq("optout", false)
+    .is("reengajado_em", null)
+    .eq("followup_count", 0)
+    .not("last_user_at", "is", null)
+    .limit(200);
+  if (!cands?.length) return 0;
+
+  // quem já tem corretor (repassado) sai: o humano assumiu
+  const leadIds = [...new Set(cands.map((c: any) => c.lead_id).filter(Boolean))];
+  const repassados = new Set<string>();
+  if (leadIds.length) {
+    const { data: pls } = await sb.from("pipeline_leads").select("id, corretor_id, aceite_status").in("id", leadIds);
+    for (const pl of pls ?? []) if (pl.corretor_id && pl.aceite_status === "aceito") repassados.add(pl.id);
+  }
+
+  // ficha por produto, pra reengajar específico
+  const { data: prods } = await sb.from("lia_produtos").select("slug, ficha");
+  const fichaPorProduto: Record<string, string> = {};
+  for (const p of prods ?? []) if (p.ficha) fichaPorProduto[p.slug] = p.ficha;
+
+  let enviados = 0;
+  for (const c of cands) {
+    if (enviados >= REENG_MAX_POR_RODADA) break;
+    if (c.repassado_em) continue;                         // já passou o bastão: humano assume
+    if (c.lead_id && repassados.has(c.lead_id)) continue; // já tem corretor
+    const lu = c.last_user_at ? new Date(c.last_user_at).getTime() : 0;
+    const lm = c.last_msg_em ? new Date(c.last_msg_em).getTime() : 0;
+    if (!lu || !lm) continue;
+    if (lm <= lu) continue;                               // a LIA precisa ter falado por último (esperando o lead)
+    const silencioH = (agora - lm) / 3600_000;
+    if (silencioH < REENG_MIN_H || silencioH > REENG_MAX_H) continue;
+    if ((agora - lu) / 3600_000 > REENG_JANELA_H) continue; // fora da janela free-form de 24h
+
+    // não cutuca se já existe toque de template pendente/aprovado pra esse número
+    const { data: aberto } = await sb
+      .from("lia_followups").select("id").eq("telefone", c.telefone).in("status", ["pendente", "aprovado"]).limit(1);
+    if (aberto && aberto.length) continue;
+
+    const { data: hist } = await sb
+      .from("lia_conversas").select("role, conteudo").eq("telefone", c.telefone)
+      .order("created_at", { ascending: true }).limit(40);
+    const msgs = (hist ?? []).map((x: any) => ({ role: x.role, content: x.conteudo }));
+    if (!msgs.length) continue;
+
+    // gera a mensagem contextual pelo cérebro da LIA (modo reengajar)
+    let content = "";
+    try {
+      const ficha = fichaPorProduto[c.produto_slug ?? ""] ?? "";
+      const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+        body: JSON.stringify({ mode: "reengajar", messages: msgs, ...(ficha ? { ficha } : {}) }),
+      });
+      const d = await r.json();
+      content = String(d?.content ?? "").trim();
+    } catch (e) {
+      console.error("[lia-followup] reengajar chat erro", e);
+      continue; // erro transitório: tenta na próxima rodada (não queima o reengajado_em)
+    }
+
+    if (!content) { // a IA decidiu que não vale reengajar (PULAR): marca pra não reprocessar
+      await sb.from("lia_estado").update({ reengajado_em: nowISO(), updated_at: nowISO() }).eq("telefone", c.telefone);
+      continue;
+    }
+
+    const ok = await send360Text(c.telefone, content);
+    if (ok) {
+      await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: content });
+      await sb.from("lia_estado").update({ reengajado_em: nowISO(), last_msg_em: nowISO(), updated_at: nowISO() }).eq("telefone", c.telefone);
+      enviados++;
+    }
+  }
+  return enviados;
 }
 
 /** Dispara os cutucões APROVADOS pelo Lucas, em horário comercial.

@@ -266,6 +266,11 @@ serve(async (req) => {
           }).eq("telefone", from);
         }
 
+        // APÓS O REPASSE: a LIA já passou o bastão e avisou o lead que o time humano segue. Daqui pra
+        // frente o HUMANO é dono da conversa: a LIA NÃO responde mais (senão contradiz "o especialista
+        // vai te chamar" e vira duas vozes falando). A mensagem do lead fica registrada pro time assumir.
+        if (est?.repassado_em) continue;
+
         // MULTIPRODUTO: resolve o imóvel desta conversa (null = Canoas, comportamento de hoje)
         const produto = await resolverProduto(sb, from, est, referral);
         const midias = montarMidias(produto);
