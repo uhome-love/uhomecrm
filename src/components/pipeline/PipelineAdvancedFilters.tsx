@@ -269,7 +269,7 @@ export function applyFilters(
 
   if (filters.gerenteFilter === "sem_gerente") result = result.filter(l => !l.gerente_id);
   else if (filters.gerenteFilter === "com_gerente") result = result.filter(l => !!l.gerente_id);
-  else if (filters.gerenteFilter === "criticos") result = result.filter(l => l.complexidade_score >= 40 && !l.gerente_id);
+
 
   return result;
 }
