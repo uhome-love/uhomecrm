@@ -587,7 +587,8 @@ export default function PipelineAdvancedFilters({
               <div className="flex flex-wrap gap-1.5">
                 {[
                   { value: "hoje", label: "Hoje" },
-                  { value: "semana", label: "Esta semana" },
+                  { value: "7d", label: "Últimos 7 dias" },
+                  { value: "30d", label: "Últimos 30 dias" },
                   { value: "mes", label: "Este mês" },
                 ].map(p => (
                   <button
