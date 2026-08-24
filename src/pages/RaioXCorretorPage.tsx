@@ -634,13 +634,15 @@ function ConteudoRaioX({ modoImpressao, esconderPeriodo }: { modoImpressao?: boo
           </select>
         </div>
       )}
-      <div className="f">
-        <label>Período</label>
-        <select value={opt} onChange={(e) => set({ periodo: e.target.value })}>
-          {PERIODO_OPCOES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-      {opt === "custom" && (
+      {!esconderPeriodo && (
+        <div className="f">
+          <label>Período</label>
+          <select value={opt} onChange={(e) => set({ periodo: e.target.value })}>
+            {PERIODO_OPCOES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      )}
+      {!esconderPeriodo && opt === "custom" && (
         <>
           <div className="f">
             <label>De</label>
@@ -654,6 +656,7 @@ function ConteudoRaioX({ modoImpressao, esconderPeriodo }: { modoImpressao?: boo
           </div>
         </>
       )}
+
       <button className="rx-print" onClick={abrirImpressao}>Baixar PDF</button>
     </>
   );
