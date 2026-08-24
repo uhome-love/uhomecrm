@@ -30,12 +30,13 @@ import {
 } from "./useLiaHub";
 
 const PILULAS: { valor: string; rotulo: string }[] = [
-  { valor: "todos", rotulo: "Todos" },
+  { valor: "ativos", rotulo: "Ativos" },
   { valor: "novo", rotulo: "Novos" },
   { valor: "em_conversa", rotulo: "Em conversa" },
   { valor: "qualificado", rotulo: "Qualificados" },
   { valor: "descartado", rotulo: "Descartados" },
   { valor: "opt_out", rotulo: "Opt-out" },
+  { valor: "todos", rotulo: "Todos" },
 ];
 
 export default function LiaLeadsTab() {
@@ -43,7 +44,7 @@ export default function LiaLeadsTab() {
   const { data: ultimas } = useLiaUltimasMensagens();
 
   const [busca, setBusca] = useState("");
-  const [status, setStatus] = useState("todos");
+  const [status, setStatus] = useState("ativos");
   const [origem, setOrigem] = useState("todas");
   const [nivel, setNivel] = useState("todos");
   const [produto, setProduto] = useState("todos");
@@ -60,7 +61,10 @@ export default function LiaLeadsTab() {
     const q = buscaDeb.trim().toLowerCase();
     return (estados ?? []).filter((e) => {
       if (produto !== "todos" && (e.produto_slug ?? "") !== produto) return false;
-      if (status !== "todos" && e.status !== status) return false;
+      // "ativos" = tudo que ainda está em jogo (esconde descartado e opt-out por padrão)
+      if (status === "ativos") {
+        if (e.status === "descartado" || e.status === "opt_out" || e.optout) return false;
+      } else if (status !== "todos" && e.status !== status) return false;
       if (nivel !== "todos" && String(e.nivel ?? "").toLowerCase() !== nivel) return false;
       if (origem !== "todas" && origemDoReferral(e.referral) !== origem) return false;
       if (!q) return true;
