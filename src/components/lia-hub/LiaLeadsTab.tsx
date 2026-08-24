@@ -59,11 +59,13 @@ export default function LiaLeadsTab() {
 
   const linhas = useMemo(() => {
     const q = buscaDeb.trim().toLowerCase();
-    return (estados ?? []).filter((e) => {
+    const filtrados = (estados ?? []).filter((e) => {
       if (produto !== "todos" && (e.produto_slug ?? "") !== produto) return false;
-      // "ativos" = tudo que ainda está em jogo (esconde descartado e opt-out por padrão)
+      // "ativos" = só o que a LIA está lidando AGORA (novo + em conversa). Qualificado já foi
+      // pro corretor (tem aba própria), descartado/opt-out saem daqui.
       if (status === "ativos") {
-        if (e.status === "descartado" || e.status === "opt_out" || e.optout) return false;
+        if (e.status !== "novo" && e.status !== "em_conversa") return false;
+        if (e.optout) return false;
       } else if (status !== "todos" && e.status !== status) return false;
       if (nivel !== "todos" && String(e.nivel ?? "").toLowerCase() !== nivel) return false;
       if (origem !== "todas" && origemDoReferral(e.referral) !== origem) return false;
@@ -72,7 +74,13 @@ export default function LiaLeadsTab() {
         (e.nome ?? "").toLowerCase().includes(q) || (e.telefone ?? "").toLowerCase().includes(q)
       );
     });
-  }, [estados, buscaDeb, status, origem, nivel, produto]);
+    // ordena pela ÚLTIMA MENSAGEM real (WhatsApp-style): conversa mais recente no topo.
+    const tempo = (e: any) => {
+      const t = ultimas?.get(e.telefone)?.created_at ?? e.last_msg_em ?? e.last_user_at ?? e.qualificado_em ?? null;
+      return t ? new Date(t).getTime() : 0;
+    };
+    return filtrados.sort((a, b) => tempo(b) - tempo(a));
+  }, [estados, buscaDeb, status, origem, nivel, produto, ultimas]);
 
   return (
     <div className="space-y-4">

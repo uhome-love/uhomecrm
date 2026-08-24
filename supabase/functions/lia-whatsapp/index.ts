@@ -310,7 +310,10 @@ serve(async (req) => {
 
         // envia a resposta (texto + mídias), ignorando qualquer marcador interno que sobre
         if (reply) {
-          await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: reply });
+          // no LOG do hub, o ||| (separador de bolhas) vira quebra de linha e os marcadores internos
+          // ([[midia:]], [[nome:]], [[sinal]]) somem — o cliente recebe as bolhas separadas e limpas.
+          const replyLog = reply.split(/\s*\|\|\|\s*/).map((p) => p.trim()).filter((p) => p && !/^\[\[.*\]\]$/.test(p)).join("\n");
+          await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: replyLog || reply });
           const parts = reply.split(/\s*\|\|\|\s*/).map((p) => p.trim()).filter(Boolean);
           let media = 0;
           for (const p of parts) {
