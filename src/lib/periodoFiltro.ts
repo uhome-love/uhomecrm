@@ -14,7 +14,16 @@
 //  · 30/60/90 dias → a janela imediatamente anterior, do mesmo tamanho.
 // =============================================================================
 
-export type PeriodoOpt = "mes" | "mes_passado" | "d30" | "d60" | "d90" | "ano" | "custom";
+export type PeriodoOpt =
+  | "semana"
+  | "semana_passada"
+  | "mes"
+  | "mes_passado"
+  | "d30"
+  | "d60"
+  | "d90"
+  | "ano"
+  | "custom";
 
 export interface Janela {
   start: string;
@@ -22,14 +31,17 @@ export interface Janela {
 }
 
 export const PERIODO_OPCOES: { value: PeriodoOpt; label: string }[] = [
-  { value: "mes", label: "Mês atual" },
+  { value: "semana", label: "Semana atual" },
+  { value: "semana_passada", label: "Semana anterior" },
+  { value: "mes", label: "Mês (acumulado)" },
+  { value: "custom", label: "Personalizado" },
   { value: "mes_passado", label: "Mês passado" },
   { value: "d30", label: "Últimos 30 dias" },
   { value: "d60", label: "Últimos 60 dias" },
   { value: "d90", label: "Últimos 90 dias" },
   { value: "ano", label: "Ano inteiro" },
-  { value: "custom", label: "Personalizado" },
 ];
+
 
 /** Hoje em BRT, no formato 'YYYY-MM-DD'. */
 export function hojeBRT(): string {
