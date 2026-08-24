@@ -121,14 +121,6 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
     if (!tplName) { await logPonte(admin, "sem_template_primeiro_contato", { slug: produto.slug }); return { desviar: false, motivo: "sem_template_primeiro_contato" }; }
 
     const to = telWa(input.telefone);
-    // primeirocontato_lia tem 2 variáveis: {{1}} = primeiro nome, {{2}} = nome público do imóvel
-    // (ex.: "Casa Tua Canoas"). O nº de params PRECISA bater com o template, senão o 360dialog rejeita.
-    const primeiroNome = (input.nome || "").trim().split(/\s+/)[0] || "você";
-    const empPublico = produto.nome_publico || produto.nome || produto.empreendimento || "nosso empreendimento";
-    const env = await enviarTemplate(to, tplName, [primeiroNome, empPublico]);
-    if (!env.ok) { await logPonte(admin, "envio_falhou", { slug: produto.slug, tpl: tplName, to, err: env.err }); return { desviar: false, motivo: "envio_falhou" }; } // FALHOU → roleta (rede de segurança)
-
-    // 4. Pré-cadastra a conversa pra quando o lead responder cair no produto certo.
     const referral = {
       source_id: input.ad_id ?? null,
       campaign_id: camp,
@@ -136,10 +128,34 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
       source_type: "form_lead",
     };
     const nowIso = new Date().toISOString();
-    await admin.from("lia_estado").upsert({
-      telefone: to, nome: input.nome ?? null, produto_slug: produto.slug,
-      status: "novo", referral, last_msg_em: nowIso, updated_at: nowIso,
-    }, { onConflict: "telefone" });
+
+    // 5. TRAVA ATÔMICA anti-corrida: telefone é PK. Semeia o estado ANTES de mandar. Se duas
+    //    requisições chegam quase juntas (backfill reprocessando), só a 1ª insere; a 2ª bate no
+    //    conflito (23505) e NÃO reenvia. Assim o lead nunca recebe o 1º contato em duplicidade.
+    const { data: claimed, error: claimErr } = await admin.from("lia_estado")
+      .insert({ telefone: to, nome: input.nome ?? null, produto_slug: produto.slug, status: "novo", referral, last_msg_em: nowIso, updated_at: nowIso })
+      .select("telefone");
+    if (claimErr) {
+      if ((claimErr as { code?: string }).code === "23505") { // já semeado (corrida) → não reenvia
+        await logPonte(admin, "ja_semeado_corrida", { slug: produto.slug, to });
+        return { desviar: true, motivo: "ja_semeado" };
+      }
+      await logPonte(admin, "claim_erro", { slug: produto.slug, err: (claimErr as { message?: string }).message });
+      return { desviar: false, motivo: "claim_erro" }; // erro real → roleta (segurança)
+    }
+    if (!claimed || !claimed.length) return { desviar: true, motivo: "ja_semeado" };
+
+    // 6. Ganhamos o claim → manda o 1º contato. primeirocontato_lia tem 2 variáveis:
+    //    {{1}} = primeiro nome, {{2}} = nome público do imóvel. O nº de params PRECISA bater.
+    const primeiroNome = (input.nome || "").trim().split(/\s+/)[0] || "você";
+    const empPublico = produto.nome_publico || produto.nome || produto.empreendimento || "nosso empreendimento";
+    const env = await enviarTemplate(to, tplName, [primeiroNome, empPublico]);
+    if (!env.ok) {
+      // rollback do claim pra permitir nova tentativa depois (senão fica semeado sem 1º contato)
+      await admin.from("lia_estado").delete().eq("telefone", to);
+      await logPonte(admin, "envio_falhou", { slug: produto.slug, tpl: tplName, to, err: env.err });
+      return { desviar: false, motivo: "envio_falhou" }; // FALHOU → roleta (rede de segurança)
+    }
 
     // registra o 1º contato como mensagem, pra APARECER na conversa do hub (senão fica "Sem mensagens")
     await admin.from("lia_conversas").insert({
