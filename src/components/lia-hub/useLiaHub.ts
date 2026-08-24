@@ -86,12 +86,12 @@ export function inicioDoDiaBRT(): string {
 
 export function origemDoReferral(referral: any): string {
   if (!referral || typeof referral !== "object") return "Direto";
-  return (
-    referral.headline ||
-    referral.source_id ||
-    referral.source_url ||
-    "Direto"
-  );
+  // NUNCA mostrar o id cru da campanha/anúncio (número gigante feio). Rótulo amigável.
+  if (referral.headline) return referral.headline;
+  if (referral.source_type === "form_lead") return "Anúncio (formulário)";
+  if (referral.source_type === "ad" || referral.campaign_id || referral.source_id || referral.ad_id) return "Anúncio";
+  if (referral.source_url) return "Site";
+  return "Direto";
 }
 
 export function useLiaEstados() {
@@ -331,6 +331,15 @@ export const STATUS_META: Record<string, { label: string; cls: string }> = {
   descartado: { label: "Descartado", cls: "bg-muted text-muted-foreground border-border" },
   opt_out: { label: "Opt-out", cls: "bg-destructive/10 text-destructive border-destructive/20" },
 };
+
+/** Meta de status do lead considerando o MOTIVO: quem foi devolvido pro corretor recebe uma flag
+ * própria "🤝 Com corretor" (verde), em vez de "Descartado" genérico. */
+export function statusMetaLead(e: { status?: string | null; motivo?: string | null }): { label: string; cls: string } {
+  if (e.status === "descartado" && (e.motivo ?? "").toLowerCase().includes("corretor")) {
+    return { label: "🤝 Com corretor", cls: "bg-success/10 text-success border-success/20" };
+  }
+  return STATUS_META[e.status ?? ""] ?? { label: e.status ?? "—", cls: "bg-muted text-muted-foreground border-border" };
+}
 
 export const NIVEL_META: Record<string, { emoji: string; label: string; cls: string; dot: string }> = {
   quente: {

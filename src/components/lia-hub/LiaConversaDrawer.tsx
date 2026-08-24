@@ -27,10 +27,10 @@ import { ArrowRight, Trash2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBRT } from "@/lib/brtTime";
 import {
-  STATUS_META,
   MOTIVOS_DESCARTE,
   origemDoReferral,
   produtoLabel,
+  statusMetaLead,
   useLiaConversa,
   useDescartarLead,
   useReativarLead,
@@ -57,10 +57,7 @@ export default function LiaConversaDrawer({ estado, open, onOpenChange }: Props)
   // reseta a escolha de motivo ao trocar de lead
   useEffect(() => setMotivo(""), [estado?.telefone]);
 
-  const meta = STATUS_META[estado?.status ?? ""] ?? {
-    label: estado?.status ?? "—",
-    cls: "bg-muted text-muted-foreground border-border",
-  };
+  const meta = statusMetaLead({ status: estado?.status, motivo: estado?.motivo });
 
   const status = estado?.status ?? "";
   const podeDescartar = !!estado && !["qualificado", "descartado", "opt_out"].includes(status);

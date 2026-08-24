@@ -20,10 +20,10 @@ import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
 import FiltroImovel from "./FiltroImovel";
 import {
   NIVEL_META,
-  STATUS_META,
   origemDoReferral,
   produtoLabel,
   produtosDeEstados,
+  statusMetaLead,
   useLiaEstados,
   useLiaUltimasMensagens,
   type LiaEstado,
@@ -147,10 +147,7 @@ export default function LiaLeadsTab() {
           <>
           <div className="divide-y divide-border lg:hidden">
             {linhas.map((e) => {
-              const meta = STATUS_META[e.status ?? ""] ?? {
-                label: e.status ?? "—",
-                cls: "bg-muted text-muted-foreground border-border",
-              };
+              const meta = statusMetaLead(e);
               const ultima = ultimas?.get(e.telefone);
               return (
                 <div

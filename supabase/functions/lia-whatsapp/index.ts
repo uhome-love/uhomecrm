@@ -231,7 +231,10 @@ serve(async (req) => {
             if (porFinal?.[0]) {
               est = porFinal[0];
               if (est.telefone !== from) {
-                await sb.from("lia_estado").update({ telefone: from, updated_at: nowISO() }).eq("telefone", est.telefone);
+                const antigo = est.telefone;
+                await sb.from("lia_estado").update({ telefone: from, updated_at: nowISO() }).eq("telefone", antigo);
+                // leva as mensagens (ex.: o 1º contato semeado) pro número realinhado, senão somem do hub
+                await sb.from("lia_conversas").update({ telefone: from }).eq("telefone", antigo);
                 est.telefone = from;
               }
             }
