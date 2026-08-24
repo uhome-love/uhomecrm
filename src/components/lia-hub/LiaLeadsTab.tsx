@@ -217,10 +217,7 @@ export default function LiaLeadsTab() {
               </thead>
               <tbody>
                 {linhas.map((e) => {
-                  const meta = STATUS_META[e.status ?? ""] ?? {
-                    label: e.status ?? "—",
-                    cls: "bg-muted text-muted-foreground border-border",
-                  };
+                  const meta = statusMetaLead(e);
                   const ultima = ultimas?.get(e.telefone);
                   return (
                     <tr
