@@ -1,6 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { calcJanela, labelOpcao, type Janela } from "@/lib/periodoFiltro";
 import { useRelatorioGeral, type RaioXCorretor, type RaioXTime, type RelatorioGeral as RGData } from "@/hooks/useRelatorioGeral";
 import { ConversaoView } from "@/pages/RelatorioConversao";
+
 
 /**
  * RelatorioGeral — aba GERAL dos relatórios: o Raio-X do Time. Caminho completo
