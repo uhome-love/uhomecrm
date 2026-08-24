@@ -1,7 +1,39 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { todayBRT } from "@/lib/brtTime";
 import { toast } from "sonner";
+
+/**
+ * AO VIVO SEM POLLING: em vez de ficar refazendo a busca a cada X segundos (aquele
+ * "refresh interminável" que incomoda), assina o Realtime do Supabase e só atualiza
+ * quando ALGO muda de verdade (mensagem nova, status, follow-up). O refresh é em
+ * segundo plano (React Query mantém os dados na tela), então não pisca nem trava.
+ * Uma rajada de eventos vira UM refresh só (debounce). Monte uma vez no LiaHub.
+ */
+export function useLiaRealtime() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (timer) return; // já tem um refresh agendado nessa rajada
+      timer = setTimeout(() => {
+        timer = null;
+        qc.invalidateQueries({ queryKey: ["lia-hub"] });
+      }, 800);
+    };
+    const ch = supabase
+      .channel("lia-hub-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "lia_estado" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "lia_conversas" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "lia_followups" }, bump)
+      .subscribe();
+    return () => {
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(ch);
+    };
+  }, [qc]);
+}
 
 export type LiaStatus = "novo" | "em_conversa" | "qualificado" | "descartado" | "opt_out";
 
@@ -109,7 +141,7 @@ export function useLiaEstados() {
       return (data ?? []) as LiaEstado[];
     },
     staleTime: 30_000,
-    refetchInterval: 45_000, // status ao vivo: reatualiza sozinho a cada 45s
+    // sem polling: o ao vivo vem do Realtime (useLiaRealtime). Refaz só ao voltar pra aba.
     refetchOnWindowFocus: true,
   });
 }

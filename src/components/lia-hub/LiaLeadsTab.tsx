@@ -39,6 +39,33 @@ const PILULAS: { valor: string; rotulo: string }[] = [
   { valor: "todos", rotulo: "Todos" },
 ];
 
+// cor do avatar por imóvel (a inbox fica escaneável: dá pra "ler" o produto pela cor)
+const COR_PRODUTO: Record<string, string> = {
+  "awa-wellness": "#3E4C7A",
+  "casa-tua-canoas": "#4969FF",
+  "casa-tua-porto-alegre": "#2FB0A3",
+  "connect-joao-wallig": "#7A5AF0",
+};
+const corAvatar = (slug?: string | null) => (slug && COR_PRODUTO[slug]) || "#7A8091";
+const inicial = (nome?: string | null, tel?: string | null) => {
+  const s = (nome || "").trim();
+  const m = s.match(/\p{L}/u);
+  return m ? m[0].toUpperCase() : (tel || "?").slice(-2, -1) || "?";
+};
+
+// prioridade da inbox: quem RESPONDEU e está esperando vem primeiro.
+type Grupo = "aguardando" | "conversa" | "followup";
+const grupoDe = (e: LiaEstado, ultimaRole?: string): Grupo => {
+  if (ultimaRole === "user") return "aguardando"; // o lead falou por último = está te esperando
+  if ((e.followup_count ?? 0) > 0) return "followup"; // esfriou, entrou na cadência
+  return "conversa"; // a LIA falou por último, aguardando o lead
+};
+const GRUPOS: { key: Grupo; label: string; hot?: boolean }[] = [
+  { key: "aguardando", label: "Respondeu, aguardando você", hot: true },
+  { key: "conversa", label: "Em conversa · a LIA está atendendo" },
+  { key: "followup", label: "Em follow-up · esfriaram, a LIA reativa" },
+];
+
 export default function LiaLeadsTab() {
   const { data: estados, isLoading } = useLiaEstados();
   const { data: ultimas } = useLiaUltimasMensagens();
@@ -74,13 +101,116 @@ export default function LiaLeadsTab() {
         (e.nome ?? "").toLowerCase().includes(q) || (e.telefone ?? "").toLowerCase().includes(q)
       );
     });
-    // ordena pela ÚLTIMA MENSAGEM real (WhatsApp-style): conversa mais recente no topo.
-    const tempo = (e: any) => {
+    const tempo = (e: LiaEstado) => {
       const t = ultimas?.get(e.telefone)?.created_at ?? e.last_msg_em ?? e.last_user_at ?? e.qualificado_em ?? null;
       return t ? new Date(t).getTime() : 0;
     };
-    return filtrados.sort((a, b) => tempo(b) - tempo(a));
+    const ordem: Record<Grupo, number> = { aguardando: 0, conversa: 1, followup: 2 };
+    return filtrados
+      .map((e) => ({ e, grupo: grupoDe(e, ultimas?.get(e.telefone)?.role) }))
+      .sort((a, b) => {
+        // na visão "ativos", primeiro por prioridade de grupo; sempre por conversa mais recente.
+        if (status === "ativos" && a.grupo !== b.grupo) return ordem[a.grupo] - ordem[b.grupo];
+        return tempo(b.e) - tempo(a.e);
+      });
   }, [estados, buscaDeb, status, origem, nivel, produto, ultimas]);
+
+  const agrupado = status === "ativos";
+  const contagem = useMemo(() => {
+    const c: Record<Grupo, number> = { aguardando: 0, conversa: 0, followup: 0 };
+    for (const l of linhas) c[l.grupo]++;
+    return c;
+  }, [linhas]);
+
+  // --- card de conversa (estilo WhatsApp) ---
+  const Cartao = ({ e, grupo }: { e: LiaEstado; grupo: Grupo }) => {
+    const meta = statusMetaLead(e);
+    const ultima = ultimas?.get(e.telefone);
+    const nv = String(e.nivel ?? "").toLowerCase();
+    const preview =
+      ultima?.conteudo != null
+        ? ultima.role === "assistant"
+          ? `LIA: ${ultima.conteudo}`
+          : ultima.conteudo
+        : e.status === "novo"
+          ? "1º contato enviado · aguardando resposta 💬"
+          : "—";
+    const naoLido = grupo === "aguardando";
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setSelecionado(e)}
+        className={cn(
+          "flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50",
+          naoLido && "bg-primary/[0.03]"
+        )}
+      >
+        <div
+          className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-bold text-white"
+          style={{ background: corAvatar(e.produto_slug) }}
+        >
+          {inicial(e.nome, e.telefone)}
+          {naoLido && (
+            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-card bg-rose-500" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "truncate text-sm text-foreground",
+                naoLido ? "font-bold" : "font-semibold"
+              )}
+            >
+              {e.nome || "Sem nome"}
+            </span>
+            {e.produto_slug ? (
+              <Badge variant="secondary" className="shrink-0 text-[10px]">
+                {produtoLabel(e.produto_slug)}
+              </Badge>
+            ) : null}
+          </div>
+          <p
+            className={cn(
+              "mt-0.5 truncate text-[13px]",
+              naoLido ? "font-medium text-foreground" : "text-muted-foreground"
+            )}
+          >
+            {preview}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] tabular-nums text-muted-foreground">
+              {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
+            </span>
+            <LiaLeadAcoesMenu estado={e} />
+          </div>
+          <div className="flex items-center gap-1">
+            {grupo === "aguardando" ? (
+              <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-600">
+                responder
+              </span>
+            ) : null}
+            {NIVEL_META[nv] ? (
+              <Badge variant="outline" className={cn("text-[10px]", NIVEL_META[nv].cls)}>
+                {NIVEL_META[nv].emoji} {NIVEL_META[nv].label}
+              </Badge>
+            ) : (
+              !agrupado && (
+                <Badge variant="outline" className={cn("text-[10px]", meta.cls)}>
+                  {meta.label}
+                </Badge>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -144,140 +274,61 @@ export default function LiaLeadsTab() {
         </Select>
       </Card>
 
-      <Card className="overflow-hidden">
-        {isLoading ? (
-          <div className="space-y-2 p-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : linhas.length === 0 ? (
+      {isLoading ? (
+        <Card className="space-y-2 p-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </Card>
+      ) : linhas.length === 0 ? (
+        <Card>
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            Nenhum contato com esses filtros.
+            Nenhuma conversa com esses filtros.
           </p>
-        ) : (
-          <>
-          <div className="divide-y divide-border lg:hidden">
-            {linhas.map((e) => {
-              const meta = statusMetaLead(e);
-              const ultima = ultimas?.get(e.telefone);
-              return (
-                <div
-                  key={e.telefone}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelecionado(e)}
-                  className="w-full cursor-pointer px-3 py-3 text-left transition-colors active:bg-muted/50"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="truncate font-medium text-foreground">
-                        {e.nome || "Sem nome"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{e.telefone}</div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <span className="text-[11px] text-muted-foreground">
-                        {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
-                      </span>
-                      <LiaLeadAcoesMenu estado={e} />
-                    </div>
-                  </div>
-                  <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
-                    {ultima?.conteudo ?? (e.status === "novo" ? "1º contato enviado · aguardando resposta 💬" : "—")}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    {e.produto_slug ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        {produtoLabel(e.produto_slug)}
-                      </Badge>
-                    ) : null}
-                    <Badge variant="outline" className={cn("text-[10px]", meta.cls)}>
-                      {meta.label}
-                    </Badge>
-                    <Badge variant="outline" className="text-[10px]">
-                      {origemDoReferral(e.referral)}
-                    </Badge>
-                    {e.status === "qualificado" && NIVEL_META[String(e.nivel ?? "").toLowerCase()] ? (
-                      <Badge
-                        variant="outline"
-                        className={cn("text-[10px]", NIVEL_META[String(e.nivel).toLowerCase()].cls)}
-                      >
-                        {NIVEL_META[String(e.nivel).toLowerCase()].emoji}{" "}
-                        {NIVEL_META[String(e.nivel).toLowerCase()].label}
-                      </Badge>
-                    ) : null}
-                  </div>
+        </Card>
+      ) : agrupado ? (
+        <div className="space-y-4">
+          {GRUPOS.map((g) => {
+            const itens = linhas.filter((l) => l.grupo === g.key);
+            if (!itens.length) return null;
+            return (
+              <div key={g.key}>
+                <div className="mb-1.5 flex items-center gap-2 px-1">
+                  <span
+                    className={cn(
+                      "text-[11px] font-extrabold uppercase tracking-wider",
+                      g.hot ? "text-rose-600" : "text-muted-foreground"
+                    )}
+                  >
+                    {g.hot ? "⚡ " : ""}
+                    {g.label}
+                  </span>
+                  <span className="text-[11px] font-bold text-muted-foreground/60">
+                    {contagem[g.key]}
+                  </span>
+                  <span className="h-px flex-1 bg-border" />
                 </div>
-              );
-            })}
-          </div>
-          <div className="hidden overflow-x-auto lg:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  <th className="px-4 py-2 text-left font-semibold">Contato</th>
-                  <th className="px-4 py-2 text-left font-semibold">Imóvel · Origem</th>
-                  <th className="px-4 py-2 text-left font-semibold">Status</th>
-                  <th className="px-4 py-2 text-left font-semibold">Última mensagem</th>
-                  <th className="px-4 py-2 text-right font-semibold">Quando</th>
-                </tr>
-              </thead>
-              <tbody>
-                {linhas.map((e) => {
-                  const meta = statusMetaLead(e);
-                  const ultima = ultimas?.get(e.telefone);
-                  return (
-                    <tr
-                      key={e.telefone}
-                      onClick={() => setSelecionado(e)}
-                      className="cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-muted/40"
-                    >
-                      <td className="px-4 py-2.5">
-                        <div className="font-medium text-foreground">{e.nome || "Sem nome"}</div>
-                        <div className="text-xs text-muted-foreground">{e.telefone}</div>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        {e.produto_slug ? (
-                          <div className="font-medium text-foreground">{produtoLabel(e.produto_slug)}</div>
-                        ) : null}
-                        <div className="text-xs text-muted-foreground">{origemDoReferral(e.referral)}</div>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <Badge variant="outline" className={cn(meta.cls)}>
-                            {meta.label}
-                          </Badge>
-                          {e.status === "qualificado" && NIVEL_META[String(e.nivel ?? "").toLowerCase()] ? (
-                            <Badge
-                              variant="outline"
-                              className={cn("text-[10px]", NIVEL_META[String(e.nivel).toLowerCase()].cls)}
-                            >
-                              {NIVEL_META[String(e.nivel).toLowerCase()].emoji}{" "}
-                              {NIVEL_META[String(e.nivel).toLowerCase()].label}
-                            </Badge>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="max-w-[320px] truncate px-4 py-2.5 text-muted-foreground">
-                        {ultima?.conteudo ?? (e.status === "novo" ? "1º contato enviado · aguardando resposta 💬" : "—")}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs text-muted-foreground">
-                        <div className="flex items-center justify-end gap-1">
-                          {formatBRT(ultima?.created_at ?? e.last_msg_em, "dd/MM HH:mm")}
-                          <LiaLeadAcoesMenu estado={e} />
-                        </div>
-                      </td>
-
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          </>
-        )}
-      </Card>
+                <Card
+                  className={cn(
+                    "divide-y divide-border overflow-hidden",
+                    g.hot && "border-rose-200/70"
+                  )}
+                >
+                  {itens.map((l) => (
+                    <Cartao key={l.e.telefone} e={l.e} grupo={l.grupo} />
+                  ))}
+                </Card>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <Card className="divide-y divide-border overflow-hidden">
+          {linhas.map((l) => (
+            <Cartao key={l.e.telefone} e={l.e} grupo={l.grupo} />
+          ))}
+        </Card>
+      )}
 
       <LiaConversaDrawer
         estado={selecionado}

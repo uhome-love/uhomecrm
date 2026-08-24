@@ -8,6 +8,7 @@ import LiaLeadsTab from "@/components/lia-hub/LiaLeadsTab";
 import LiaKanbanTab from "@/components/lia-hub/LiaKanbanTab";
 import LiaFollowupsTab from "@/components/lia-hub/LiaFollowupsTab";
 import LiaQualificadosTab from "@/components/lia-hub/LiaQualificadosTab";
+import { useLiaRealtime } from "@/components/lia-hub/useLiaHub";
 
 const ABAS = [
   { valor: "painel", rotulo: "Painel" },
@@ -21,6 +22,7 @@ export default function LiaHub() {
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
   const aba = params.get("aba") ?? "painel";
+  useLiaRealtime(); // ao vivo via Realtime (sem o refresh interminável de polling)
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:space-y-5 sm:p-6">
