@@ -19,7 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Select primitives no longer used here — corretor/gestor selects extraídos.
-import PipelineAdvancedFilters, { type PipelineFilters } from "@/components/pipeline/PipelineAdvancedFilters";
+import PipelineAdvancedFilters, { type PipelineFilters, TEMPERATURA_LABELS, PERIODO_LABELS } from "@/components/pipeline/PipelineAdvancedFilters";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
 import { PipelineSortDropdown } from "@/components/pipeline/PipelineSortDropdown";
 import type { PipelineSortOrder } from "@/lib/pipelineSortOrder";
@@ -303,14 +303,16 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     activeChips.push({ id: "campanha", label: `Campanha: ${camp?.label ?? campaignTagFilter}`, onRemove: () => setCampaignTagFilter("all") });
   }
   // Filtros avançados (Sheet) — cobre o que a faixa antiga do PipelineKanban cobria (fonte única aqui).
-  if (filters.temperaturas?.length) activeChips.push({ id: "temp", label: `${filters.temperaturas.length} temperatura${filters.temperaturas.length > 1 ? "s" : ""}`, onRemove: () => setFilters(f => ({ ...f, temperaturas: [] })) });
-  if (filters.scoreMin > 0) activeChips.push({ id: "score", label: `Score ≥ ${filters.scoreMin}`, onRemove: () => setFilters(f => ({ ...f, scoreMin: 0 })) });
-  if (filters.stages?.length) activeChips.push({ id: "stages", label: `${filters.stages.length} etapas`, onRemove: () => setFilters(f => ({ ...f, stages: [] })) });
-  if (filters.origens?.length) activeChips.push({ id: "origens", label: `${filters.origens.length} origens`, onRemove: () => setFilters(f => ({ ...f, origens: [] })) });
-  if (filters.segmentos?.length) activeChips.push({ id: "segmentos", label: `${filters.segmentos.length} segmentos`, onRemove: () => setFilters(f => ({ ...f, segmentos: [] })) });
+  if (filters.temperaturas?.length) activeChips.push({ id: "temp", label: `Temperatura: ${filters.temperaturas.map(t => TEMPERATURA_LABELS[t] ?? t).join(", ")}`, onRemove: () => setFilters(f => ({ ...f, temperaturas: [] })) });
+  if (filters.stages?.length) activeChips.push({ id: "stages", label: `${filters.stages.length} etapa${filters.stages.length > 1 ? "s" : ""}`, onRemove: () => setFilters(f => ({ ...f, stages: [] })) });
+  if (filters.origens?.length) activeChips.push({ id: "origens", label: `Origem: ${filters.origens.length === 1 ? filters.origens[0] : `${filters.origens.length} origens`}`, onRemove: () => setFilters(f => ({ ...f, origens: [] })) });
+  if (filters.segmentos?.length) activeChips.push({ id: "segmentos", label: `${filters.segmentos.length} segmento${filters.segmentos.length > 1 ? "s" : ""}`, onRemove: () => setFilters(f => ({ ...f, segmentos: [] })) });
+  if (filters.empreendimentos?.length) activeChips.push({ id: "empreendimentos", label: `Empreendimento: ${filters.empreendimentos.length === 1 ? filters.empreendimentos[0] : `${filters.empreendimentos.length} selecionados`}`, onRemove: () => setFilters(f => ({ ...f, empreendimentos: [] })) });
   if (filters.diasSemAcao) activeChips.push({ id: "dias", label: `> ${filters.diasSemAcao}d sem ação`, onRemove: () => setFilters(f => ({ ...f, diasSemAcao: "" })) });
-  if (filters.periodoEntrada) activeChips.push({ id: "periodo", label: "Período", onRemove: () => setFilters(f => ({ ...f, periodoEntrada: "" })) });
-  if (filters.slaStatus) activeChips.push({ id: "sla", label: "SLA", onRemove: () => setFilters(f => ({ ...f, slaStatus: "" })) });
+  if (filters.periodoEntrada) activeChips.push({ id: "periodo", label: `Entrada: ${PERIODO_LABELS[filters.periodoEntrada] ?? filters.periodoEntrada}`, onRemove: () => setFilters(f => ({ ...f, periodoEntrada: "", periodoCustomStart: undefined, periodoCustomEnd: undefined })) });
+  if (filters.statusLead) activeChips.push({ id: "statusLead", label: `Status: ${filters.statusLead === "em_dia" ? "Em dia" : filters.statusLead === "tarefa_atrasada" ? "Atrasado" : "Desatualizado"}`, onRemove: () => setFilters(f => ({ ...f, statusLead: "" })) });
+  if (filters.gerenteFilter && filters.gerenteFilter !== "all") activeChips.push({ id: "gerenteFilter", label: filters.gerenteFilter === "sem_gerente" ? "Sem gerente" : "Com gerente", onRemove: () => setFilters(f => ({ ...f, gerenteFilter: "all" })) });
+
   if (filters.comVisita) activeChips.push({ id: "visita", label: "Com visita", onRemove: () => setFilters(f => ({ ...f, comVisita: "" })) });
   if (riscoFilter && clearRisco) activeChips.push({ id: "risco", label: "Em risco de estagnação", onRemove: clearRisco });
 

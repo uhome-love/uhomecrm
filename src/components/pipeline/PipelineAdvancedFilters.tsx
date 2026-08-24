@@ -10,12 +10,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SlidersHorizontal, X, Save, Star, CalendarIcon, Trash2 } from "lucide-react";
-import { format, differenceInHours, differenceInDays, startOfDay, startOfWeek, startOfMonth, subDays } from "date-fns";
+import { SlidersHorizontal, X, Save, CalendarIcon } from "lucide-react";
+import { subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn, differenceInDaysSafe, differenceInHoursSafe, parseDateTimeSafe } from "@/lib/utils";
-import { getLeadStatusFilter, type ProximaTarefa, type LeadClientStatus } from "@/lib/taskQueryUtils";
+import { cn, differenceInDaysSafe, differenceInHoursSafe } from "@/lib/utils";
+import { type ProximaTarefa } from "@/lib/taskQueryUtils";
 import { leadSaudeClientStatus } from "@/lib/leadSaude";
+import { todayBRT, dateToBRT } from "@/lib/brtTime";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 
 export interface PipelineFilters {
@@ -27,15 +28,12 @@ export interface PipelineFilters {
   segmentos: string[];
   empreendimentos: string[];
   diasSemAcao: string; // "" | "1" | "3" | "7" | "15" | "30"
-  periodoEntrada: string; // "" | "hoje" | "semana" | "mes" | "custom"
+  periodoEntrada: string; // "" | "hoje" | "7d" | "30d" | "mes" | "custom"
   periodoCustomStart?: Date;
   periodoCustomEnd?: Date;
   comVisita: string; // "" | "sim" | "nao"
   statusLead: string; // "" | "em_dia" | "tarefa_atrasada" | "desatualizado"
-  gerenteFilter: string; // "all" | "sem_gerente" | "com_gerente" | "criticos"
-  // Legacy compat — kept so saved filters in localStorage don't crash
-  scoreMin?: number;
-  slaStatus?: string;
+  gerenteFilter: string; // "all" | "sem_gerente" | "com_gerente"
 }
 
 export const EMPTY_FILTERS: PipelineFilters = {
@@ -53,6 +51,42 @@ export const EMPTY_FILTERS: PipelineFilters = {
   gerenteFilter: "all",
 };
 
+/** Normaliza filtros vindos do localStorage (versões antigas tinham outras chaves). */
+export function normalizeFilters(raw: Partial<PipelineFilters> | null | undefined): PipelineFilters {
+  const f = { ...EMPTY_FILTERS, ...(raw || {}) } as PipelineFilters;
+  return {
+    ...f,
+    search: f.search ?? "",
+    stages: Array.isArray(f.stages) ? f.stages : [],
+    corretores: Array.isArray(f.corretores) ? f.corretores : [],
+    temperaturas: Array.isArray(f.temperaturas) ? f.temperaturas.filter(t => TEMPERATURAS_VALIDAS.includes(t)) : [],
+    origens: Array.isArray(f.origens) ? f.origens : [],
+    segmentos: Array.isArray(f.segmentos) ? f.segmentos : [],
+    empreendimentos: Array.isArray(f.empreendimentos) ? f.empreendimentos : [],
+    gerenteFilter: ["all", "sem_gerente", "com_gerente"].includes(f.gerenteFilter) ? f.gerenteFilter : "all",
+    periodoCustomStart: f.periodoCustomStart ? new Date(f.periodoCustomStart) : undefined,
+    periodoCustomEnd: f.periodoCustomEnd ? new Date(f.periodoCustomEnd) : undefined,
+  };
+}
+
+const TEMPERATURAS_VALIDAS = ["muito_quente", "quente", "morno", "frio", "nao_definida"];
+
+export const TEMPERATURA_LABELS: Record<string, string> = {
+  muito_quente: "🔥🔥 Muito quente",
+  quente: "🔥 Quente",
+  morno: "🟡 Morno",
+  frio: "🔵 Frio",
+  nao_definida: "⚪ Sem temperatura",
+};
+
+export const PERIODO_LABELS: Record<string, string> = {
+  hoje: "Hoje",
+  "7d": "Últimos 7 dias",
+  "30d": "Últimos 30 dias",
+  mes: "Este mês",
+  custom: "Personalizado",
+};
+
 interface SavedFilter {
   name: string;
   filters: PipelineFilters;
@@ -64,7 +98,14 @@ const STORAGE_KEY = "pipeline-saved-filters";
 function loadSavedFilters(): SavedFilter[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((sf: SavedFilter) => sf && typeof sf.name === "string")
+          .map((sf: SavedFilter) => ({ ...sf, filters: normalizeFilters(sf.filters) }));
+      }
+    }
   } catch {}
   return [];
 }
@@ -81,7 +122,7 @@ const PRESETS: SavedFilter[] = [
   {
     name: "🔥 Leads quentes hoje",
     isPreset: true,
-    filters: { ...EMPTY_FILTERS, temperaturas: ["quente"], periodoEntrada: "hoje" },
+    filters: { ...EMPTY_FILTERS, temperaturas: ["muito_quente", "quente"], periodoEntrada: "hoje" },
   },
   {
     name: "🔴 Leads atrasados",
@@ -93,18 +134,34 @@ const PRESETS: SavedFilter[] = [
     isPreset: true,
     filters: { ...EMPTY_FILTERS, comVisita: "sim" },
   },
+  {
+    name: "🐢 Parados > 7 dias",
+    isPreset: true,
+    filters: { ...EMPTY_FILTERS, diasSemAcao: "7" },
+  },
 ];
 
-// Calculated temperature (mirrors PipelineCard logic)
-function getCalcTemp(lead: PipelineLead): string {
+// Temperatura efetiva: usa o valor do CRM quando ele é real; senão calcula
+// (a maioria dos leads fica em "nao_definida", que não é uma temperatura de verdade).
+function getEffectiveTemp(lead: PipelineLead): string {
+  const raw = (lead.temperatura || "").trim();
+  if (raw && raw !== "nao_definida") return raw;
   const refDate = lead.updated_at || lead.created_at;
   const hours = differenceInHoursSafe(refDate) ?? Number.POSITIVE_INFINITY;
   const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
   if (hours < 2 || isIndicacao) return "quente";
   if (hours < 24) return "morno";
-  if (hours < 72) return "frio";
-  return "gelado";
+  return "frio";
 }
+
+/** Limites de dia em BRT (-03:00), independentes do fuso do navegador. */
+function brtDayStart(ymd: string): Date {
+  return new Date(`${ymd}T00:00:00-03:00`);
+}
+function brtDayEnd(ymd: string): Date {
+  return new Date(`${ymd}T23:59:59.999-03:00`);
+}
+
 
 export function applyFilters(
   leads: PipelineLead[],
@@ -136,8 +193,9 @@ export function applyFilters(
 
   if (filters.temperaturas.length > 0) {
     result = result.filter(l => {
-      const temp = l.temperatura || getCalcTemp(l);
-      return filters.temperaturas.includes(temp);
+      const raw = (l.temperatura || "").trim();
+      if (filters.temperaturas.includes("nao_definida") && (!raw || raw === "nao_definida")) return true;
+      return filters.temperaturas.includes(getEffectiveTemp(l));
     });
   }
 
@@ -163,15 +221,16 @@ export function applyFilters(
   }
 
   if (filters.periodoEntrada) {
-    const now = new Date();
+    const hoje = todayBRT();
     let start: Date | null = null;
     let end: Date | null = null;
-    if (filters.periodoEntrada === "hoje") start = startOfDay(now);
-    else if (filters.periodoEntrada === "semana") start = startOfWeek(now, { weekStartsOn: 1 });
-    else if (filters.periodoEntrada === "mes") start = startOfMonth(now);
+    if (filters.periodoEntrada === "hoje") start = brtDayStart(hoje);
+    else if (filters.periodoEntrada === "7d") start = brtDayStart(dateToBRT(subDays(new Date(), 6)));
+    else if (filters.periodoEntrada === "30d") start = brtDayStart(dateToBRT(subDays(new Date(), 29)));
+    else if (filters.periodoEntrada === "mes") start = brtDayStart(`${hoje.slice(0, 8)}01`);
     else if (filters.periodoEntrada === "custom") {
-      start = filters.periodoCustomStart || null;
-      end = filters.periodoCustomEnd || null;
+      start = filters.periodoCustomStart ? brtDayStart(dateToBRT(filters.periodoCustomStart)) : null;
+      end = filters.periodoCustomEnd ? brtDayEnd(dateToBRT(filters.periodoCustomEnd)) : null;
     }
     if (start) {
       result = result.filter(l => {
@@ -210,7 +269,7 @@ export function applyFilters(
 
   if (filters.gerenteFilter === "sem_gerente") result = result.filter(l => !l.gerente_id);
   else if (filters.gerenteFilter === "com_gerente") result = result.filter(l => !!l.gerente_id);
-  else if (filters.gerenteFilter === "criticos") result = result.filter(l => l.complexidade_score >= 40 && !l.gerente_id);
+
 
   return result;
 }
@@ -238,13 +297,14 @@ interface Props {
   stages: PipelineStage[];
   segmentos: PipelineSegmento[];
   leads: PipelineLead[];
-  corretorNomes: Record<string, string>;
+  /** @deprecated filtro de corretor vive no cabeçalho do Pipeline */
+  corretorNomes?: Record<string, string>;
   isManager: boolean;
   visitaLeadIds?: Set<string>;
 }
 
 export default function PipelineAdvancedFilters({
-  filters, onChange, stages, segmentos, leads, corretorNomes, isManager, visitaLeadIds,
+  filters, onChange, stages, segmentos, leads, isManager,
 }: Props) {
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>(() => loadSavedFilters());
   const [saveName, setSaveName] = useState("");
@@ -264,10 +324,6 @@ export default function PipelineAdvancedFilters({
     return Array.from(set).sort();
   }, [leads]);
 
-  const corretorList = useMemo(() =>
-    Object.entries(corretorNomes).sort((a, b) => a[1].localeCompare(b[1])),
-    [corretorNomes]
-  );
 
   const update = (partial: Partial<PipelineFilters>) => onChange({ ...filters, ...partial });
 
@@ -371,10 +427,11 @@ export default function PipelineAdvancedFilters({
               <Label className="text-xs font-medium">Temperatura</Label>
               <div className="flex flex-wrap gap-1.5">
                 {[
-                  { value: "quente", label: "🔥 Quente", color: "border-red-400 bg-red-500/10 text-red-700" },
-                  { value: "morno", label: "🟡 Morno", color: "border-amber-400 bg-amber-500/10 text-amber-700" },
-                  { value: "frio", label: "🔵 Frio", color: "border-blue-400 bg-blue-500/10 text-blue-700" },
-                  { value: "gelado", label: "❄️ Gelado", color: "border-muted-foreground/30 bg-muted text-muted-foreground" },
+                  { value: "muito_quente", label: TEMPERATURA_LABELS.muito_quente, color: "border-red-500 bg-red-500/15 text-red-700" },
+                  { value: "quente", label: TEMPERATURA_LABELS.quente, color: "border-red-400 bg-red-500/10 text-red-700" },
+                  { value: "morno", label: TEMPERATURA_LABELS.morno, color: "border-amber-400 bg-amber-500/10 text-amber-700" },
+                  { value: "frio", label: TEMPERATURA_LABELS.frio, color: "border-blue-400 bg-blue-500/10 text-blue-700" },
+                  { value: "nao_definida", label: TEMPERATURA_LABELS.nao_definida, color: "border-muted-foreground/40 bg-muted text-muted-foreground" },
                 ].map(t => (
                   <button
                     key={t.value}
@@ -390,7 +447,9 @@ export default function PipelineAdvancedFilters({
                   </button>
                 ))}
               </div>
+              <p className="text-[10px] text-muted-foreground">Sem temperatura marcada no CRM, o lead é classificado pelo tempo desde a última atualização.</p>
             </div>
+
 
             <Separator />
 
@@ -413,26 +472,8 @@ export default function PipelineAdvancedFilters({
 
             <Separator />
 
-            {/* Corretor */}
-            {isManager && corretorList.length > 0 && (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Corretor responsável</Label>
-                  <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                    {corretorList.map(([id, nome]) => (
-                      <label key={id} className="flex items-center gap-2 cursor-pointer py-0.5">
-                        <Checkbox
-                          checked={filters.corretores.includes(id)}
-                          onCheckedChange={() => update({ corretores: toggleArrayItem(filters.corretores, id) })}
-                        />
-                        <span className="text-xs">{nome}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <Separator />
-              </>
-            )}
+            {/* Corretor: filtro oficial fica no cabeçalho do Pipeline (evita dois controles concorrentes) */}
+
 
             {/* Origem */}
             {origens.length > 0 && (
@@ -464,7 +505,7 @@ export default function PipelineAdvancedFilters({
             {segmentos.length > 0 && (
               <>
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">Segmento</Label>
+                  <Label className="text-xs font-medium">Segmento <span className="font-normal text-muted-foreground">(só leads já segmentados)</span></Label>
                   <div className="flex flex-wrap gap-1.5">
                     {segmentos.map(s => (
                       <button
@@ -543,12 +584,13 @@ export default function PipelineAdvancedFilters({
               <div className="flex flex-wrap gap-1.5">
                 {[
                   { value: "hoje", label: "Hoje" },
-                  { value: "semana", label: "Esta semana" },
+                  { value: "7d", label: "Últimos 7 dias" },
+                  { value: "30d", label: "Últimos 30 dias" },
                   { value: "mes", label: "Este mês" },
                 ].map(p => (
                   <button
                     key={p.value}
-                    onClick={() => update({ periodoEntrada: filters.periodoEntrada === p.value ? "" : p.value })}
+                    onClick={() => update({ periodoEntrada: filters.periodoEntrada === p.value ? "" : p.value, periodoCustomStart: undefined, periodoCustomEnd: undefined })}
                     className={cn(
                       "text-[11px] px-2.5 py-1 rounded-full border transition-all",
                       filters.periodoEntrada === p.value
@@ -660,7 +702,6 @@ export default function PipelineAdvancedFilters({
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="sem_gerente">Sem gerente</SelectItem>
                       <SelectItem value="com_gerente">Com gerente</SelectItem>
-                      <SelectItem value="criticos">⚠️ Críticos (sem gerente)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
