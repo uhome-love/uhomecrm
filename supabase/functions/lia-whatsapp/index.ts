@@ -349,14 +349,20 @@ serve(async (req) => {
         // AGE PELO SINAL DE TRIAGEM
         const jaOptout = OPTOUT_RE.test(texto);
         if (!jaOptout) {
-          if ((sinal === "quente" || sinal === "morno" || sinal === "frio") && est.status !== "descartado") {
+          const acionavel = sinal === "quente" || sinal === "morno" || sinal === "frio";
+          // DURANTE o pré-atendimento: só registra a TEMPERATURA no estado da LIA (o Lucas vê no
+          // inbox), SEM criar lead no pipeline e SEM mandar pra corretor. O lead segue sendo atendido
+          // só pela LIA; ninguém do time entra ainda (senão vira briga de atenção no WhatsApp do cliente).
+          if (acionavel && est.status !== "descartado" && est.status !== "qualificado") {
+            await sb.from("lia_estado").update({ nivel: sinal, updated_at: nowISO() }).eq("telefone", from);
+          }
+          // REPASSE (uma vez, no FIM do pré-atendimento): o cérebro decidiu que é hora do especialista.
+          // Ordem certa: (1) a LIA FECHA a conversa com o cliente (passagem de bastão, avisando que o time
+          // continua), (2) só então cria o lead na FILA CEO com o resumo estruturado. Nesta fase de teste
+          // NÃO distribui automático pela roleta: fica na Fila CEO e o Lucas repassa manualmente.
+          if (repassar && (sinal === "quente" || sinal === "morno") && est.status !== "descartado") {
+            await passagemDeBastao(sb, from, produto);
             await qualificar(sb, from, est, contactName, referral, sinal, produto);
-            // PASSAGEM DE BASTÃO: quando o cérebro conclui o pré-atendimento (repassar),
-            // a LIA avisa o lead que um especialista humano vai seguir. Só pra lead acionável
-            // (morno/quente), uma única vez por conversa (trava: repassado_em).
-            if (repassar && (sinal === "quente" || sinal === "morno")) {
-              await passagemDeBastao(sb, from, produto);
-            }
           } else if (sinal === "descartar" && est.status !== "qualificado" && !est.lead_id) {
             await sb.from("lia_estado").update({
               status: "descartado", descartado_em: nowISO(), motivo: "Descartado pela LIA (não serve)", updated_at: nowISO(),
@@ -401,9 +407,9 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     let leadId: string | null = est.lead_id ?? null;
     if (!leadId) {
       leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel, resumo, produto);
-      // REPASSE IMEDIATO: empurra pra roleta DO PRODUTO na hora (sem esperar repasse manual).
-      // Se houver corretor alocado ativo ao empreendimento, distribui já; senão fica na Fila CEO.
-      if (leadId) await empurrarParaRoleta(leadId);
+      // FILA CEO (fase de teste): NÃO distribui automático pela roleta. O lead nasce sem corretor,
+      // fica na Fila CEO com o resumo estruturado, e o Lucas repassa manualmente pra pegar o
+      // feedback de cada repasse com o time. (Quando amadurecer, é só religar empurrarParaRoleta.)
     } else {
       // já estava na fila: atualiza a temperatura E o título do histórico pra bater com a fila
       await sb.from("pipeline_leads").update({
