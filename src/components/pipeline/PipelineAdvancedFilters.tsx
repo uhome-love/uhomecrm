@@ -505,7 +505,7 @@ export default function PipelineAdvancedFilters({
             {segmentos.length > 0 && (
               <>
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">Segmento</Label>
+                  <Label className="text-xs font-medium">Segmento <span className="font-normal text-muted-foreground">(só leads já segmentados)</span></Label>
                   <div className="flex flex-wrap gap-1.5">
                     {segmentos.map(s => (
                       <button
