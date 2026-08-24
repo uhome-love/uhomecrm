@@ -49,13 +49,15 @@ const WA_TEMPLATES: Record<string, { lang: string; headerDoc?: { link: string; f
 
 // Envia um template WhatsApp aprovado via 360dialog. {{1}} = primeiro nome.
 // Retorna { ok, err } — err traz o erro do 360dialog pra diagnóstico.
-async function enviarTemplate(to: string, tplName: string, nome: string): Promise<{ ok: boolean; err?: string }> {
+async function enviarTemplate(to: string, tplName: string, bodyParams: string[]): Promise<{ ok: boolean; err?: string }> {
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const cfg = WA_TEMPLATES[tplName] ?? { lang: "pt_BR" };
   const components: any[] = [];
   if (cfg.headerDoc) components.push({ type: "header", parameters: [{ type: "document", document: { link: cfg.headerDoc.link, filename: cfg.headerDoc.filename } }] });
-  components.push({ type: "body", parameters: [{ type: "text", text: (nome || "você").slice(0, 60) }] });
+  // O nº de parâmetros PRECISA bater com as variáveis do template ({{1}}, {{2}}, ...), senão o 360dialog rejeita.
+  const params = (bodyParams.length ? bodyParams : ["você"]).map((p) => ({ type: "text", text: (p || "você").slice(0, 60) }));
+  components.push({ type: "body", parameters: params });
   try {
     const r = await fetch(D360_URL, {
       method: "POST",
@@ -109,9 +111,11 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
     if (!tplName) { await logPonte(admin, "sem_template_primeiro_contato", { slug: produto.slug }); return { desviar: false, motivo: "sem_template_primeiro_contato" }; }
 
     const to = telWa(input.telefone);
-    // Params do template: por ora {{1}} = primeiro nome. (Se o template pedir mais, ajustar aqui.)
-    const primeiroNome = (input.nome || "").trim().split(/\s+/)[0] || "";
-    const env = await enviarTemplate(to, tplName, primeiroNome);
+    // primeirocontato_lia tem 2 variáveis: {{1}} = primeiro nome, {{2}} = nome público do imóvel
+    // (ex.: "Casa Tua Canoas"). O nº de params PRECISA bater com o template, senão o 360dialog rejeita.
+    const primeiroNome = (input.nome || "").trim().split(/\s+/)[0] || "você";
+    const empPublico = produto.nome_publico || produto.nome || produto.empreendimento || "nosso empreendimento";
+    const env = await enviarTemplate(to, tplName, [primeiroNome, empPublico]);
     if (!env.ok) { await logPonte(admin, "envio_falhou", { slug: produto.slug, tpl: tplName, to, err: env.err }); return { desviar: false, motivo: "envio_falhou" }; } // FALHOU → roleta (rede de segurança)
 
     // 4. Pré-cadastra a conversa pra quando o lead responder cair no produto certo.
