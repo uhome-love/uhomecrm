@@ -175,7 +175,7 @@ export default function LiaLeadsTab() {
                     </div>
                   </div>
                   <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
-                    {ultima?.conteudo ?? "—"}
+                    {ultima?.conteudo ?? (e.status === "novo" ? "1º contato enviado · aguardando resposta 💬" : "—")}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     {e.produto_slug ? (
@@ -254,7 +254,7 @@ export default function LiaLeadsTab() {
                         </div>
                       </td>
                       <td className="max-w-[320px] truncate px-4 py-2.5 text-muted-foreground">
-                        {ultima?.conteudo ?? "—"}
+                        {ultima?.conteudo ?? (e.status === "novo" ? "1º contato enviado · aguardando resposta 💬" : "—")}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs text-muted-foreground">
                         <div className="flex items-center justify-end gap-1">
