@@ -349,6 +349,8 @@ serve(async (req) => {
       if (!rr.ok) { console.error("[lia-chat] reengajar erro", rr.status, await rr.text().catch(() => "")); return new Response(JSON.stringify({ content: "" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
       const rd = await rr.json();
       let content = String(rd?.choices?.[0]?.message?.content ?? "").trim().replace(/^["']+|["']+$/g, "");
+      // sanitiza: o cutucão vai direto pro cliente (send360Text), então nunca pode vazar marcador nem |||
+      content = content.replace(/\[\[[^\]]*\]\]/g, "").replace(/\s*\|\|\|\s*/g, " ").trim();
       if (/^pular$/i.test(content.trim())) content = ""; // a IA decidiu que não vale reengajar
       return new Response(JSON.stringify({ content }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -356,7 +358,12 @@ serve(async (req) => {
     // MULTIPRODUTO: se a requisição trouxer uma `ficha` (cérebro do imóvel), a LIA usa
     // o esqueleto comum + essa ficha. Sem ficha, usa o LIA_SYSTEM do Casa Tua (intocado).
     const fichaProduto = typeof (body as any).ficha === "string" ? (body as any).ficha.trim() : "";
-    const systemPrompt = fichaProduto ? `${COMMON_SKELETON}\n${fichaProduto}` : LIA_SYSTEM;
+    // CONSCIÊNCIA DE HORÁRIO: a LIA não sabia a hora e desejava "bom dia" à noite. Injeta o horário
+    // de Brasília e o cumprimento certo agora, pra saudação e despedida baterem com o momento.
+    const hBRT = parseInt(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo", hour12: false, hour: "2-digit" }), 10);
+    const saudacao = hBRT < 12 ? "bom dia" : hBRT < 18 ? "boa tarde" : "boa noite";
+    const ctxHora = `\n\nCONTEXTO DE AGORA: são cerca de ${String(hBRT).padStart(2, "0")}h no horário de Brasília, então o cumprimento certo AGORA é "${saudacao}". NUNCA deseje "bom dia" à noite nem "boa noite" de manhã. Ao se despedir, use "${saudacao}" ou algo neutro ("até mais", "qualquer coisa estou por aqui 😊"), nunca um cumprimento do período errado.`;
+    const systemPrompt = (fichaProduto ? `${COMMON_SKELETON}\n${fichaProduto}` : LIA_SYSTEM) + ctxHora;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

@@ -52,17 +52,18 @@ const NIVEL_MAP: Record<string, { temperatura: string; prioridade: string; emoji
 const svc = () =>
   createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-async function send360(to: string, payload: Record<string, unknown>) {
+async function send360(to: string, payload: Record<string, unknown>): Promise<boolean> {
   const key = Deno.env.get("D360_API_KEY");
-  if (!key) { console.error("[lia-whatsapp] D360_API_KEY ausente"); return; }
+  if (!key) { console.error("[lia-whatsapp] D360_API_KEY ausente"); return false; }
   try {
     const r = await fetch(D360_URL, {
       method: "POST",
       headers: { "D360-API-KEY": key, "Content-Type": "application/json" },
       body: JSON.stringify({ messaging_product: "whatsapp", to, ...payload }),
     });
-    if (!r.ok) console.error("[lia-whatsapp] 360dialog send falhou", r.status, await r.text().catch(() => ""));
-  } catch (e) { console.error("[lia-whatsapp] erro no send", e); }
+    if (!r.ok) { console.error("[lia-whatsapp] 360dialog send falhou", r.status, await r.text().catch(() => "")); return false; }
+    return true;
+  } catch (e) { console.error("[lia-whatsapp] erro no send", e); return false; }
 }
 const sendText = (to: string, body: string) => send360(to, { type: "text", text: { body } });
 const sendImage = (to: string, link: string) => send360(to, { type: "image", image: { link } });
@@ -148,6 +149,30 @@ async function resolverProduto(sb: any, telefone: string, est: any, referral: an
         }
       }
     }
+    // (3) pelo TEXTO da conversa: quando não veio referral (lead orgânico) ou o anúncio não casou,
+    // reconhece o imóvel pelo que a pessoa escreveu. O 1º "oi" quase sempre traz o nome do imóvel
+    // ("Casa Tua POA", "AWA"...). Evita o erro de assumir Canoas e dar tipologia/preço errados.
+    const { data: msgs } = await sb.from("lia_conversas")
+      .select("conteudo").eq("telefone", telefone).eq("role", "user")
+      .order("created_at", { ascending: true }).limit(6);
+    const texto = (msgs ?? []).map((m: any) => String(m.conteudo || "")).join(" ").toLowerCase();
+    if (texto) {
+      const REGRAS: { slug: string; re: RegExp }[] = [
+        { slug: "awa-wellness", re: /\bawa\b|wellness|carlos gomes/ },
+        { slug: "connect-joao-wallig", re: /connect|jo[aã]o wallig|wallig/ },
+        { slug: "casa-tua-porto-alegre", re: /porto alegre|\bpoa\b|petr[oó]polis|prot[aá]sio/ },
+        { slug: "casa-tua-canoas", re: /canoas|santos ferreira/ },
+      ];
+      for (const rg of REGRAS) {
+        if (rg.re.test(texto)) {
+          const { data } = await sb.from("lia_produtos").select("*").eq("slug", rg.slug).maybeSingle();
+          if (data) {
+            await sb.from("lia_estado").update({ produto_slug: data.slug, updated_at: nowISO() }).eq("telefone", telefone);
+            return data;
+          }
+        }
+      }
+    }
   } catch (e) { console.error("[lia-whatsapp] resolverProduto erro", e); }
   return null; // desconhecido → Canoas (default)
 }
@@ -164,7 +189,11 @@ function montarMidias(produto: any | null): Record<string, { url: string; doc: b
     }
     return map;
   }
-  // Canoas (default, intocado): imagens do MEDIA + o ebook do DOC
+  // O acervo hardcoded (MEDIA/DOC) é do CANOAS. Só usa como fallback pra Canoas ou quando não há
+  // produto resolvido. Um produto resolvido SEM mídia configurada não deve mandar imagem do Canoas
+  // (imóvel errado): devolve vazio e o marcador [[midia:]] simplesmente não envia nada.
+  const slug = String(produto?.slug ?? "");
+  if (slug && slug !== "casa-tua-canoas") return map;
   for (const [k, url] of Object.entries(MEDIA)) map[k.toLowerCase()] = { url, doc: false };
   for (const [k, d] of Object.entries(DOC)) map[k.toLowerCase()] = { url: d.link, doc: true, filename: d.filename };
   return map;
@@ -269,7 +298,13 @@ serve(async (req) => {
         // APÓS O REPASSE: a LIA já passou o bastão e avisou o lead que o time humano segue. Daqui pra
         // frente o HUMANO é dono da conversa: a LIA NÃO responde mais (senão contradiz "o especialista
         // vai te chamar" e vira duas vozes falando). A mensagem do lead fica registrada pro time assumir.
-        if (est?.repassado_em) continue;
+        // EXCEÇÃO: opt-out é honrado SEMPRE, mesmo após o repasse (LGPD).
+        if (est?.repassado_em) {
+          if (OPTOUT_RE.test(texto)) {
+            await sb.from("lia_estado").update({ optout: true, status: "opt_out", updated_at: nowISO() }).eq("telefone", from);
+          }
+          continue;
+        }
 
         // MULTIPRODUTO: resolve o imóvel desta conversa (null = Canoas, comportamento de hoje)
         const produto = await resolverProduto(sb, from, est, referral);
@@ -321,6 +356,7 @@ serve(async (req) => {
           await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: replyLog || reply });
           const parts = reply.split(/\s*\|\|\|\s*/).map((p) => p.trim()).filter(Boolean);
           let media = 0;
+          let midiaFalhou = false;
           for (const p of parts) {
             const mm = p.match(/^\[\[\s*midia\s*:\s*(\w+)\s*\]\]$/i);
             if (mm) {
@@ -328,8 +364,10 @@ serve(async (req) => {
               const mid = midias[k];
               if (mid && media < 3) {
                 media++;
-                if (mid.doc) await sendDoc(from, mid.url, mid.filename || "Material.pdf");
-                else await sendImage(from, mid.url);
+                // send* agora retornam status: se o 360dialog rejeitar (arquivo pesado/URL fora),
+                // NÃO deixa o cliente achando que recebeu, avisa e o time reenvia (fim do bug do ebook).
+                const ok = mid.doc ? await sendDoc(from, mid.url, mid.filename || "Material.pdf") : await sendImage(from, mid.url);
+                if (!ok) midiaFalhou = true;
               }
             } else if (/^\[\[\s*nome\s*:/i.test(p)) {
               // [[nome:Fulano]] — a LIA capturou o nome REAL que a pessoa disse; salva no CRM
@@ -348,6 +386,9 @@ serve(async (req) => {
               await sendText(from, p);
             }
           }
+          if (midiaFalhou) {
+            await sendText(from, "Ops, tive um probleminha aqui pra te enviar o arquivo 🙈 já te reenvio, tá?");
+          }
           await sb.from("lia_estado").update({ last_msg_em: nowISO() }).eq("telefone", from);
         }
 
@@ -362,12 +403,12 @@ serve(async (req) => {
             await sb.from("lia_estado").update({ nivel: sinal, updated_at: nowISO() }).eq("telefone", from);
           }
           // REPASSE (uma vez, no FIM do pré-atendimento): o cérebro decidiu que é hora do especialista.
-          // Ordem certa: (1) a LIA FECHA a conversa com o cliente (passagem de bastão, avisando que o time
-          // continua), (2) só então cria o lead na FILA CEO com o resumo estruturado. Nesta fase de teste
-          // NÃO distribui automático pela roleta: fica na Fila CEO e o Lucas repassa manualmente.
+          // Ordem certa: (1) CRIA o lead na Fila CEO com o resumo; (2) só se o lead entrou de fato, a LIA
+          // fecha com o cliente (passagem de bastão). Assim nunca promete atendimento humano e deixa o
+          // lead órfão. Nesta fase de teste NÃO distribui pela roleta: fica na Fila CEO e o Lucas repassa.
           if (repassar && (sinal === "quente" || sinal === "morno") && est.status !== "descartado") {
-            await passagemDeBastao(sb, from, produto);
-            await qualificar(sb, from, est, contactName, referral, sinal, produto);
+            const leadId = await qualificar(sb, from, est, contactName, referral, sinal, produto);
+            if (leadId) await passagemDeBastao(sb, from, produto);
           } else if (sinal === "descartar" && est.status !== "qualificado" && !est.lead_id) {
             await sb.from("lia_estado").update({
               status: "descartado", descartado_em: nowISO(), motivo: "Descartado pela LIA (não serve)", updated_at: nowISO(),
@@ -393,7 +434,7 @@ serve(async (req) => {
  * estado, e NOTIFICA o Lucas na hora. Só notifica na transição (primeira vez que
  * qualifica, e de novo se subir pra QUENTE), nunca a cada mensagem.
  */
-async function qualificar(sb: any, from: string, est: any, nome: string | null, referral: any, nivel: string, produto: any | null) {
+async function qualificar(sb: any, from: string, est: any, nome: string | null, referral: any, nivel: string, produto: any | null): Promise<string | null> {
   try {
     const map = NIVEL_MAP[nivel] ?? NIVEL_MAP.morno;
     const jaEra = est.status === "qualificado";
@@ -415,6 +456,9 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
       // FILA CEO (fase de teste): NÃO distribui automático pela roleta. O lead nasce sem corretor,
       // fica na Fila CEO com o resumo estruturado, e o Lucas repassa manualmente pra pegar o
       // feedback de cada repasse com o time. (Quando amadurecer, é só religar empurrarParaRoleta.)
+      // Se NÃO conseguiu criar o lead, aborta: não marca qualificado nem manda a passagem de bastão
+      // (senão o cliente é avisado que um humano vem e o lead fica órfão, sem ninguém na fila).
+      if (!leadId) { console.error("[lia-whatsapp] qualificar: criarLeadFila falhou, abortando repasse"); return null; }
     } else {
       // já estava na fila: atualiza a temperatura E o título do histórico pra bater com a fila
       await sb.from("pipeline_leads").update({
@@ -448,7 +492,8 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
       const corretorId = (dono?.corretor_id && dono?.aceite_status === "aceito") ? dono.corretor_id : null;
       await notificar(sb, leadId, est.nome ?? nome, nivel, produto, corretorId);
     }
-  } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); }
+    return leadId;
+  } catch (e) { console.error("[lia-whatsapp] qualificar erro", e); return null; }
 }
 
 // PASSAGEM DE BASTÃO: avisa o lead, na hora do desfecho, que um especialista humano
