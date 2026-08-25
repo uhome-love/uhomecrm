@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
 
   const L = {
     info: (msg: string, ctx?: Record<string, unknown>) => console.info(JSON.stringify({ fn: "receive-meta-lead", level: "info", msg, traceId, ctx, ts: new Date().toISOString() })),
-    warn: (msg: string, ctx?: Record<string, unknown>) => console.warn(JSON.stringify({ fn: "receive-meta-lead", level: "warn", msg, traceId, ctx, ts: new Date().toISOString() })),
+    warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => console.warn(JSON.stringify({ fn: "receive-meta-lead", level: "warn", msg, traceId, ctx, err: err instanceof Error ? { name: err.name, message: err.message } : err ? { raw: String(err) } : undefined, ts: new Date().toISOString() })),
     error: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => console.error(JSON.stringify({ fn: "receive-meta-lead", level: "error", msg, traceId, ctx, err: err instanceof Error ? { name: err.name, message: err.message } : err ? { raw: String(err) } : undefined, ts: new Date().toISOString() })),
   };
 

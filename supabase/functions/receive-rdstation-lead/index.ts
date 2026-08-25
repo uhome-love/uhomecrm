@@ -163,8 +163,12 @@ Deno.serve(async (req) => {
 async function processLead(
   lead: any, supabase: any, supabaseUrl: string, serviceKey: string,
   traceId: string,
-  L: { info: Function; warn: Function; error: Function },
-  logOps: Function,
+  L: {
+    info: (msg: string, ctx?: Record<string, unknown>) => void;
+    warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => void;
+    error: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => void;
+  },
+  logOps: (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => void,
   clientIpAddress: string | null,
   clientUserAgent: string | null
 ) {
@@ -506,7 +510,7 @@ async function processLead(
     descricao: entryDescriptionParts.length ? entryDescriptionParts.join(" • ") : null,
     status: "concluida",
     created_by: "00000000-0000-0000-0000-000000000000",
-  }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
+  }).then((r: { error?: { message?: string } | null }) => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
 
   // ── Auto-distribute via roleta ──
   const distribution = await distributeLeadDirect(supabaseUrl, serviceKey, insertedLead.id, traceId, L as any);
@@ -522,7 +526,7 @@ async function processLead(
     descricao: `Lead RD Station: ${name} — ${empreendimento}`,
     origem: "webhook",
     request_id: traceId,
-  }).then(r => { if (r.error) L.warn("Audit insert failed", {}, r.error); });
+  }).then((r: { error?: { message?: string } | null }) => { if (r.error) L.warn("Audit insert failed", {}, r.error); });
 
   return { action: "created", lead_id: insertedLead.id, empreendimento, distributed: distribution.success, distribution };
 }
