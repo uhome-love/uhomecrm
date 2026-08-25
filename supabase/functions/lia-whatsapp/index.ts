@@ -630,26 +630,43 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
 
     const resumoTxt = (resumo ?? "").trim();
 
-    // DEDUP FORTE: já existe QUALQUER lead ativo com esse telefone (qualquer origem: ig/fb/LIA/CTWA)?
-    // Se sim, a LIA NUNCA cria outro (evita lead duplicado). Enriquece o existente (temperatura +
-    // nota no histórico) e retorna ele. Casa por últimos-8 dígitos (padrão do projeto, pega o número
-    // com/sem o 9). O corretor que já estiver no lead permanece.
+    // DEDUP FORTE: já existe QUALQUER lead com esse telefone (qualquer origem: ig/fb/LIA/CTWA),
+    // INCLUSIVE arquivado? A LIA NUNCA cria outro (evita duplicata). Casa por últimos-8 dígitos.
+    // - Lead VIVO: enriquece (temperatura + nota) e retorna. O corretor que já estiver nele permanece.
+    // - Lead ARQUIVADO (alvo de reengajamento): RESSUSCITA em vez de duplicar — desarquiva, volta pro
+    //   stage de novo lead, limpa o descarte, manda pra Fila CEO, e MANTÉM histórico + observações
+    //   (onde às vezes está o orçamento do Jetimob). Nunca insere um lead novo.
+    // Se houver um vivo E um arquivado, o vivo tem prioridade (ordena arquivado asc: false vem antes).
     const l8 = telefone.replace(/\D/g, "").slice(-8);
     const { data: exist } = await sb
-      .from("pipeline_leads").select("id, corretor_id")
-      .ilike("telefone", `%${l8}`).eq("arquivado", false)
+      .from("pipeline_leads").select("id, corretor_id, arquivado")
+      .ilike("telefone", `%${l8}`)
+      .order("arquivado", { ascending: true })
       .order("created_at", { ascending: false }).limit(1);
     if (exist && exist.length) {
-      await sb.from("pipeline_leads").update({ temperatura: map.temperatura, prioridade_lead: map.prioridade }).eq("id", exist[0].id);
+      const lead = exist[0];
+      const patch: Record<string, unknown> = { temperatura: map.temperatura, prioridade_lead: map.prioridade };
+      if (lead.arquivado) {
+        patch.arquivado = false;
+        patch.stage_id = stage.id;
+        patch.stage_changed_at = new Date().toISOString();
+        patch.aceite_status = "pendente_distribuicao";
+        patch.corretor_id = null;            // volta pra Fila CEO qualificado
+        patch.motivo_descarte = null;
+        patch.motivo_descarte_code = null;
+        patch.tipo_descarte = null;
+        patch.tags = ["qualificado_lia", `lia_${nivel}`, "reengajado"];
+      }
+      await sb.from("pipeline_leads").update(patch).eq("id", lead.id);
       await sb.from("pipeline_atividades").insert({
-        pipeline_lead_id: exist[0].id,
+        pipeline_lead_id: lead.id,
         tipo: "entrada",
-        titulo: `${map.emoji} Lead ${map.label} · qualificado pela LIA (WhatsApp)`,
+        titulo: `${map.emoji} Lead ${map.label} · ${lead.arquivado ? "RESSUSCITADO e qualificado" : "qualificado"} pela LIA (WhatsApp)`,
         descricao: resumoTxt || "A LIA conversou e qualificou este lead pelo WhatsApp.",
         status: "concluida",
         created_by: "00000000-0000-0000-0000-000000000000",
       }).then(() => {}).catch(() => {});
-      return exist[0].id;
+      return lead.id;
     }
 
     const campanha = (referral?.headline || referral?.source_id) ? `Anúncio: ${referral?.headline ?? referral?.source_id}` : null;
