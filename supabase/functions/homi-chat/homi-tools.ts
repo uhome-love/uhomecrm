@@ -687,7 +687,7 @@ export async function executeHomiTool(
           .limit(40);
         const rows = tarefas || [];
         // resolve lead names
-        const leadIds = [...new Set(rows.map((r: any) => r.pipeline_lead_id).filter(Boolean))];
+        const leadIds = [...new Set(rows.map((r: any) => String(r.pipeline_lead_id)).filter(Boolean))];
         let nameMap = new Map<string, string>();
         if (leadIds.length) {
           const { data: leads } = await userClient.from("pipeline_leads").select("id, nome").in("id", leadIds);

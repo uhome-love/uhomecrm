@@ -36,18 +36,19 @@ serve(async (req) => {
     const anonClient = createClient(SUPABASE_URL_2, SUPABASE_ANON_KEY!);
     const { data: { user: caller } } = await anonClient.auth.getUser(token);
     if (!caller) throw new Error("Não autorizado");
+    const callerUser = caller;
 
     async function logAudit(acao: string, targetId: string | null, antes: any, depois: any) {
       try {
         await supabase.from("audit_log").insert({
-          user_id: caller.id,
+          user_id: callerUser.id,
           modulo: "usuarios",
           acao,
           chave_unica: targetId,
           antes: antes ?? null,
           depois: depois ?? null,
           origem: "central_usuarios",
-          descricao: `${acao} target=${targetId || "-"} by=${caller.email || caller.id}`,
+          descricao: `${acao} target=${targetId || "-"} by=${callerUser.email || callerUser.id}`,
         });
       } catch (_) { /* best-effort */ }
     }
@@ -87,7 +88,7 @@ serve(async (req) => {
     // Helper: can the caller manage this target user?
     async function assertCanManage(userId: string) {
       if (isAdmin) return;
-      if (userId === caller.id) throw new Error("Você não pode executar esta ação sobre si mesmo");
+      if (userId === callerUser.id) throw new Error("Você não pode executar esta ação sobre si mesmo");
       const g = await gerenteOf(userId);
       if (!g || !managedGerentes.includes(g)) {
         throw new Error("Este usuário não pertence à sua equipe");
