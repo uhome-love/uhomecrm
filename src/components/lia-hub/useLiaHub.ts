@@ -67,6 +67,7 @@ export interface LiaEstado {
   descartado_em: string | null;
   motivo: string | null;
   repassado_em: string | null;
+  reengajado_em: string | null;
   last_user_at: string | null;
   last_msg_em: string | null;
   followup_count: number | null;
@@ -154,7 +155,7 @@ export function useLiaEstados() {
       const { data, error } = await supabase
         .from("lia_estado")
         .select(
-          "telefone,nome,status,nivel,qualificado_em,descartado_em,motivo,repassado_em,last_user_at,last_msg_em,followup_count,referral,lead_id,optout,agendou,agendamento,agendou_em,produto_slug"
+          "telefone,nome,status,nivel,qualificado_em,descartado_em,motivo,repassado_em,reengajado_em,last_user_at,last_msg_em,followup_count,referral,lead_id,optout,agendou,agendamento,agendou_em,produto_slug"
         )
         .order("last_msg_em", { ascending: false, nullsFirst: false })
         .limit(1000);

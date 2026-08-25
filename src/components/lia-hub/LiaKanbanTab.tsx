@@ -12,22 +12,26 @@ import LiaConversaDrawer from "./LiaConversaDrawer";
 import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
 import { NIVEL_META, origemDoReferral, produtoLabel, useLiaEstados, type LiaEstado } from "./useLiaHub";
 
+// Kanban pela SITUAÇÃO do lead no pré-atendimento (não por temperatura): reflete onde ele está
+// no fluxo da LIA, do primeiro oi até o repasse. Descartado/Opt-out ficam no fim, fora do fluxo ativo.
 type ColunaId =
   | "novo"
-  | "em_conversa"
-  | "quente"
-  | "morno"
-  | "frio"
+  | "sem_contato"
+  | "atendimento"
+  | "qualificacao"
+  | "followup"
+  | "qualificado"
   | "descartado"
   | "opt_out";
 
 const COLUNAS: { id: ColunaId; titulo: string; cor: string }[] = [
   { id: "novo", titulo: "Novo", cor: "bg-primary" },
-  { id: "em_conversa", titulo: "Em conversa", cor: "bg-warning" },
-  { id: "quente", titulo: `${NIVEL_META.quente.emoji} ${NIVEL_META.quente.label}`, cor: NIVEL_META.quente.dot },
-  { id: "morno", titulo: `${NIVEL_META.morno.emoji} ${NIVEL_META.morno.label}`, cor: NIVEL_META.morno.dot },
-  { id: "frio", titulo: `${NIVEL_META.frio.emoji} ${NIVEL_META.frio.label}`, cor: NIVEL_META.frio.dot },
-  { id: "descartado", titulo: "Descartados", cor: "bg-muted-foreground" },
+  { id: "sem_contato", titulo: "Sem contato", cor: "bg-muted-foreground" },
+  { id: "atendimento", titulo: "Atendimento inicial", cor: "bg-sky-500" },
+  { id: "qualificacao", titulo: "Qualificação", cor: "bg-warning" },
+  { id: "followup", titulo: "Follow-up", cor: "bg-violet-500" },
+  { id: "qualificado", titulo: "Qualificado", cor: "bg-success" },
+  { id: "descartado", titulo: "Descartados", cor: "bg-muted-foreground/50" },
   { id: "opt_out", titulo: "Opt-out", cor: "bg-destructive" },
 ];
 
@@ -70,23 +74,34 @@ export default function LiaKanbanTab() {
   const colunas = useMemo(() => {
     const mapa: Record<ColunaId, LiaEstado[]> = {
       novo: [],
-      em_conversa: [],
-      quente: [],
-      morno: [],
-      frio: [],
+      sem_contato: [],
+      atendimento: [],
+      qualificacao: [],
+      followup: [],
+      qualificado: [],
       descartado: [],
       opt_out: [],
     };
     for (const e of filtrados) {
+      const respondeu = !!e.last_user_at;                  // o lead já mandou alguma mensagem?
+      const emCadencia = (e.followup_count ?? 0) > 0;       // já entrou na cadência de follow-up?
+      const cutucado = !!e.reengajado_em;                   // já levou o cutucão proativo?
+      const temTemperatura = !!String(e.nivel ?? "").toLowerCase();
+
       if (e.status === "opt_out" || e.optout) mapa.opt_out.push(e);
       else if (e.status === "descartado") mapa.descartado.push(e);
-      else if (e.status === "qualificado") {
-        const nivel = String(e.nivel ?? "").toLowerCase();
-        if (nivel === "quente") mapa.quente.push(e);
-        else if (nivel === "morno") mapa.morno.push(e);
-        else mapa.frio.push(e);
-      } else if (e.status === "em_conversa") mapa.em_conversa.push(e);
-      else mapa.novo.push(e);
+      else if (e.status === "qualificado") mapa.qualificado.push(e);
+      else if (!respondeu) {
+        // nunca respondeu: recém-chegado é "Novo"; se já levou toque/cutucão e segue mudo, é "Sem contato"
+        if (emCadencia || cutucado) mapa.sem_contato.push(e);
+        else mapa.novo.push(e);
+      } else {
+        // respondeu (em conversa): esfriou na cadência = Follow-up; com temperatura lida = Qualificação;
+        // senão ainda é Atendimento inicial
+        if (emCadencia) mapa.followup.push(e);
+        else if (temTemperatura) mapa.qualificacao.push(e);
+        else mapa.atendimento.push(e);
+      }
     }
     return mapa;
   }, [filtrados]);
