@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guia Casa Tua Alto Petrópolis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14161A; --ink-soft:#4A4F58; --paper:#FBFAF9; --azul:#4969FF; --azul-ink:#2C3E9E;
+    --line:#E7E5E0; --mist:#F2F4FB;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#54585f}
+  body{font-family:"Inter",system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  .page{position:relative;width:210mm;height:297mm;background:var(--paper);margin:0 auto;overflow:hidden;page-break-after:always}
+  .page:last-child{page-break-after:auto}
+  .pad{padding:19mm 18mm}
+  .eyebrow{font-family:"League Spartan",sans-serif;font-weight:700;font-size:11pt;letter-spacing:.24em;text-transform:uppercase;color:var(--azul);display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--azul);display:inline-block}
+  h2{font-family:"League Spartan",sans-serif;font-weight:800;font-size:30pt;line-height:1.04;letter-spacing:-.01em;color:var(--ink)}
+  p.lead{font-size:13pt;line-height:1.6;color:var(--ink-soft);font-weight:400}
+  .kicker{font-size:11.5pt;line-height:1.6;color:var(--ink-soft)}
+  .num{font-family:"League Spartan",sans-serif;font-variant-numeric:tabular-nums}
+
+  .cover{position:absolute;inset:0}
+  .cover img.bg{width:100%;height:100%;object-fit:cover;object-position:center}
+  .cover .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,12,20,.5) 0%,rgba(10,12,20,.1) 34%,rgba(10,12,20,.35) 64%,rgba(10,14,28,.9) 100%)}
+  .cover .content{position:absolute;inset:0;padding:19mm 18mm;display:flex;flex-direction:column;justify-content:space-between;color:#fff}
+  .cover .logo{height:26px;width:auto;align-self:flex-start;filter:drop-shadow(0 2px 10px rgba(0,0,0,.6))}
+  .cover .eyebrow{color:#fff}.cover .eyebrow::before{background:#fff}
+  .cover h1{font-family:"League Spartan",sans-serif;font-weight:800;font-size:52pt;line-height:1;color:#fff;letter-spacing:-.01em;text-shadow:0 2px 30px rgba(0,0,0,.25)}
+  .cover h1 .thin{display:block;font-weight:500;font-size:26pt;letter-spacing:.01em;margin-top:6px;opacity:.96}
+  .cover .tag{font-size:15pt;line-height:1.5;max-width:150mm;color:rgba(255,255,255,.94);margin-top:16px}
+  .cover .foot{font-family:"League Spartan",sans-serif;font-weight:600;font-size:10.5pt;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.9)}
+
+  .head{display:flex;flex-direction:column;gap:14px;margin-bottom:26px}
+  .row-stats{display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:auto}
+  .row-stats .cell{flex:1;padding:16px 18px;border-right:1px solid var(--line)}
+  .row-stats .cell:last-child{border-right:0}
+  .row-stats .k{font-family:"League Spartan",sans-serif;font-weight:800;font-size:19pt;color:var(--ink);line-height:1}
+  .row-stats .l{font-size:9.5pt;color:var(--ink-soft);margin-top:6px;line-height:1.35}
+  .imgband{width:100%;height:96mm;object-fit:cover;border-radius:16px;display:block}
+  .imgrow{display:flex;gap:12px}
+  .imgrow img{flex:1;height:74mm;object-fit:cover;border-radius:14px}
+
+  .tipos{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .tipo{display:flex;align-items:center;gap:16px;border:1px solid var(--line);border-radius:14px;padding:15px 18px}
+  .tipo .dorm{font-family:"League Spartan",sans-serif;font-weight:800;font-size:15pt;color:var(--ink);flex:0 0 128px}
+  .tipo .area{font-size:11pt;color:var(--ink-soft);flex:1}
+  .tipo .preco{font-family:"League Spartan",sans-serif;font-weight:800;font-size:15pt;color:var(--azul);white-space:nowrap}
+
+  .amen h3{font-family:"League Spartan",sans-serif;font-weight:700;font-size:13pt;letter-spacing:.04em;text-transform:uppercase;color:var(--azul-ink);margin:24px 0 12px}
+  .amen ul{list-style:none;display:flex;flex-wrap:wrap;gap:9px 26px}
+  .amen li{font-size:11.5pt;color:var(--ink);position:relative;padding-left:18px;line-height:1.5;flex:0 0 calc(50% - 13px)}
+  .amen li::before{content:"";position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:2px;background:var(--azul)}
+
+  .price{font-family:"League Spartan",sans-serif;font-weight:900;font-size:38pt;color:var(--ink);line-height:1;letter-spacing:-.01em}
+  .price small{display:block;font-family:"Inter";font-weight:500;font-size:11pt;color:var(--ink-soft);margin-top:6px}
+  .soft-note{font-size:10.5pt;color:var(--ink-soft);line-height:1.55;border-left:3px solid var(--azul);padding-left:14px;font-style:italic}
+  .cta{margin-top:26px;background:var(--azul);border-radius:18px;padding:26px 28px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:20px}
+  .cta .t{font-family:"League Spartan",sans-serif;font-weight:800;font-size:19pt;line-height:1.15}
+  .cta .s{font-size:11pt;opacity:.92;margin-top:6px;line-height:1.45}
+  .cta .logo{height:26px;filter:brightness(0) invert(1);flex:0 0 auto}
+
+  .pfoot{position:absolute;left:18mm;right:18mm;bottom:12mm;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:10px}
+  .pfoot img{height:15px;opacity:.9}
+  .pfoot .pg{font-family:"League Spartan",sans-serif;font-weight:700;font-size:9pt;letter-spacing:.2em;color:var(--ink-soft);text-transform:uppercase}
+  .flexcol{display:flex;flex-direction:column;height:100%}
+  @media print{html,body{background:#fff}.page{margin:0}}
+  @page{size:A4;margin:0}
+</style>
+</head>
+<body>
+
+<!-- CAPA -->
+<section class="page">
+  <div class="cover">
+    <img class="bg" src="fachada.jpg" alt="Casa Tua Alto Petrópolis">
+    <div class="veil"></div>
+    <div class="content">
+      <img class="logo" src="logo-uhome-branco.png" alt="Uhome">
+      <div>
+        <div class="eyebrow">Guia do empreendimento</div>
+        <h1>Casa Tua<span class="thin">Alto Petrópolis</span></h1>
+        <p class="tag">Uma casa de verdade, com pátio, vaga e clube na porta, em condomínio fechado no coração de Porto Alegre.</p>
+      </div>
+      <div class="foot">Porto Alegre · Av. Protásio Alves &nbsp;·&nbsp; Construção ENCORP</div>
+    </div>
+  </div>
+</section>
+
+<!-- O EMPREENDIMENTO -->
+<section class="page">
+  <div class="pad flexcol">
+    <div class="head">
+      <div class="eyebrow">O empreendimento</div>
+      <h2>Sair do apartamento para uma casa com espaço e segurança de clube.</h2>
+    </div>
+    <p class="lead">O Casa Tua Alto Petrópolis é um condomínio fechado de casas, cada uma com pátio privativo e vaga, e uma infraestrutura completa de lazer, na Av. Protásio Alves, em Porto Alegre.</p>
+    <p class="kicker" style="margin-top:16px">Localização prática: a cerca de <b>18 minutos do Shopping Iguatemi</b>, com acesso fácil pela Protásio e pela Manoel Elias. Construção da <b>ENCORP</b>.</p>
+    <img class="imgband" style="margin-top:26px" src="terraco.jpg" alt="Casa com terraço e pátio">
+    <div class="row-stats">
+      <div class="cell"><div class="k num">210</div><div class="l">casas em condomínio fechado</div></div>
+      <div class="cell"><div class="k">Pátio + vaga</div><div class="l">privativos, em todas as casas</div></div>
+      <div class="cell"><div class="k">Clube completo</div><div class="l">lazer e segurança dentro do condomínio</div></div>
+    </div>
+  </div>
+  <div class="pfoot"><img src="logo-uhome.svg" alt="Uhome"><span class="pg">Casa Tua Alto Petrópolis · 02</span></div>
+</section>
+
+<!-- AS CASAS -->
+<section class="page">
+  <div class="pad flexcol">
+    <div class="head">
+      <div class="eyebrow">As casas</div>
+      <h2>Três plantas para o tamanho da sua família.</h2>
+    </div>
+    <p class="lead">Casas em três pavimentos, com pátio privativo no térreo e terraço no topo. Você escolhe pela rotina da família.</p>
+    <div class="tipos">
+      <div class="tipo"><div class="dorm">2 dormitórios</div><div class="area">99 m² de área total, com pátio e vaga</div><div class="preco">a partir de R$ 514 mil</div></div>
+      <div class="tipo"><div class="dorm">3 dormitórios</div><div class="area">127 m² de área total, não geminada</div><div class="preco">a partir de R$ 603 mil</div></div>
+      <div class="tipo"><div class="dorm">3 dorm + terraço</div><div class="area">176 m² de área total, com terraço amplo</div><div class="preco">a partir de R$ 690 mil</div></div>
+    </div>
+    <p class="soft-note" style="margin-top:22px">Valores de tabela vigente, já com o desconto associativo aplicado, sujeitos à disponibilidade. A planta detalhada e a condição exata o especialista te mostra na visita.</p>
+    <img class="imgband" style="margin-top:auto;height:70mm" src="piscina.jpg" alt="Área de lazer do condomínio">
+  </div>
+  <div class="pfoot"><img src="logo-uhome.svg" alt="Uhome"><span class="pg">Casa Tua Alto Petrópolis · 03</span></div>
+</section>
+
+<!-- O CLUBE -->
+<section class="page">
+  <div class="pad flexcol">
+    <div class="head">
+      <div class="eyebrow">Lazer e segurança</div>
+      <h2>Um clube dentro do condomínio.</h2>
+    </div>
+    <div class="imgrow">
+      <img src="clube.jpg" alt="Estrutura de clube">
+      <img src="piscina.jpg" alt="Piscina do condomínio">
+    </div>
+    <div class="amen">
+      <h3>Infraestrutura</h3>
+      <ul>
+        <li>Piscina</li>
+        <li>Quadra de beach tennis</li>
+        <li>Academia</li>
+        <li>Playground</li>
+        <li>Espaço para pets</li>
+        <li>Portaria 24h e condomínio fechado</li>
+      </ul>
+    </div>
+    <p class="kicker" style="margin-top:auto">Tudo dentro do condomínio, do outro lado do portão de casa: as crianças brincam com segurança e a família aproveita o fim de semana sem sair.</p>
+  </div>
+  <div class="pfoot"><img src="logo-uhome.svg" alt="Uhome"><span class="pg">Casa Tua Alto Petrópolis · 04</span></div>
+</section>
+
+<!-- VALORES + CTA -->
+<section class="page">
+  <div class="pad flexcol">
+    <div class="head"><div class="eyebrow">Como conhecer</div></div>
+    <div class="price">A partir de R$ 514 mil<small>Casa de 2 dormitórios, com pátio privativo e vaga.</small></div>
+    <p class="kicker" style="margin-top:24px">O financiamento pode ser feito pela Caixa ou pelo banco da sua preferência, e a entrada durante a obra fica facilitada direto com a construtora. O especialista faz a simulação certinha para o seu perfil.</p>
+    <p class="soft-note" style="margin-top:22px">Temos duas casas decoradas e a maquete abertas para visitação, de segunda a domingo, na Av. Protásio Alves, 10431. Nada como sentir o pátio e o espaço da casa ao vivo.</p>
+    <div class="cta" style="margin-top:auto">
+      <div>
+        <div class="t">Agende sua visita<br>ao decorado</div>
+        <div class="s">Você escolhe o dia e o turno, e a equipe da Uhome confirma tudo pra te receber. Chame no WhatsApp para marcar.</div>
+      </div>
+      <img class="logo" src="logo-uhome-branco.png" alt="Uhome">
+    </div>
+  </div>
+  <div class="pfoot"><img src="logo-uhome.svg" alt="Uhome"><span class="pg">Casa Tua Alto Petrópolis · 05</span></div>
+</section>
+
+</body>
+</html>
