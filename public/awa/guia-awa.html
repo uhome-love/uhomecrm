@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guia AWA Wellness Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14161A;
+    --ink-soft:#4A4F58;
+    --paper:#FBFAF9;
+    --azul:#4969FF;
+    --azul-ink:#2C3E9E;
+    --line:#E7E5E0;
+    --mist:#F2F4FB;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#54585f}
+  body{font-family:"Inter",system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  .page{
+    position:relative;width:210mm;height:297mm;background:var(--paper);
+    margin:0 auto;overflow:hidden;page-break-after:always;
+  }
+  .page:last-child{page-break-after:auto}
+  .pad{padding:19mm 18mm}
+  .eyebrow{
+    font-family:"League Spartan",sans-serif;font-weight:700;font-size:11pt;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--azul);display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--azul);display:inline-block}
+  h1{font-family:"League Spartan",sans-serif;font-weight:800;line-height:1.02;letter-spacing:-.01em}
+  h2{font-family:"League Spartan",sans-serif;font-weight:800;font-size:30pt;line-height:1.04;letter-spacing:-.01em;color:var(--ink)}
+  p.lead{font-size:13pt;line-height:1.6;color:var(--ink-soft);font-weight:400}
+  .kicker{font-size:11.5pt;line-height:1.6;color:var(--ink-soft)}
+  .num{font-family:"League Spartan",sans-serif;font-variant-numeric:tabular-nums}
+
+  /* ---------- CAPA ---------- */
+  .cover{position:absolute;inset:0}
+  .cover img.bg{width:100%;height:100%;object-fit:cover;object-position:center}
+  .cover .veil{position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(10,12,20,.55) 0%,rgba(10,12,20,.12) 34%,rgba(10,12,20,.35) 66%,rgba(10,14,28,.9) 100%);}
+  .cover .content{position:absolute;inset:0;padding:19mm 18mm;display:flex;flex-direction:column;justify-content:space-between;color:#fff}
+  .cover .logo{height:26px;filter:drop-shadow(0 2px 10px rgba(0,0,0,.6));opacity:1}
+  .cover .eyebrow{color:#fff}
+  .cover .eyebrow::before{background:#fff}
+  .cover h1{font-size:66pt;color:#fff;text-shadow:0 2px 30px rgba(0,0,0,.25)}
+  .cover h1 .thin{display:block;font-weight:500;font-size:30pt;letter-spacing:.02em;margin-top:6px;opacity:.96}
+  .cover .tag{font-size:15pt;line-height:1.5;max-width:150mm;color:rgba(255,255,255,.94);font-weight:400;margin-top:16px}
+  .cover .foot{font-family:"League Spartan",sans-serif;font-weight:600;font-size:10.5pt;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.9)}
+
+  /* ---------- blocos ---------- */
+  .head{display:flex;flex-direction:column;gap:14px;margin-bottom:26px}
+  .head h2{margin-top:2px}
+  .row-stats{display:flex;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:auto}
+  .row-stats .cell{flex:1;padding:16px 18px;border-right:1px solid var(--line)}
+  .row-stats .cell:last-child{border-right:0}
+  .row-stats .k{font-family:"League Spartan",sans-serif;font-weight:800;font-size:20pt;color:var(--ink);line-height:1}
+  .row-stats .l{font-size:9.5pt;color:var(--ink-soft);margin-top:6px;line-height:1.35}
+
+  .imgband{width:100%;height:96mm;object-fit:cover;border-radius:16px;display:block}
+  .imgrow{display:flex;gap:12px}
+  .imgrow img{flex:1;height:74mm;object-fit:cover;border-radius:14px}
+
+  .statbig{background:var(--mist);border-radius:16px;padding:22px 24px;display:flex;align-items:center;gap:22px;margin-top:8px}
+  .statbig .big{font-family:"League Spartan",sans-serif;font-weight:900;font-size:44pt;color:var(--azul);line-height:.9}
+  .statbig .txt{font-size:11pt;line-height:1.5;color:var(--ink-soft)}
+  .statbig .txt b{color:var(--ink);font-weight:700}
+
+  .demand{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{font-family:"League Spartan",sans-serif;font-weight:600;font-size:10.5pt;letter-spacing:.02em;
+    background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 15px;color:var(--ink)}
+
+  .soft-note{font-size:10.5pt;color:var(--ink-soft);line-height:1.55;border-left:3px solid var(--azul);padding-left:14px;font-style:italic}
+
+  .amen{display:grid;grid-template-columns:1fr;gap:22px;margin-top:24px}
+  .amen h3{font-family:"League Spartan",sans-serif;font-weight:700;font-size:13pt;letter-spacing:.04em;text-transform:uppercase;color:var(--azul-ink);margin-bottom:12px;display:flex;align-items:baseline;gap:10px}
+  .amen h3 span{font-size:9.5pt;color:var(--ink-soft);letter-spacing:.14em;font-weight:600}
+  .amen ul{list-style:none;display:flex;flex-wrap:wrap;gap:9px 26px}
+  .amen li{font-size:11.5pt;color:var(--ink);position:relative;padding-left:18px;line-height:1.5;flex:0 0 calc(50% - 13px)}
+  .amen li::before{content:"";position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:2px;background:var(--azul)}
+
+  /* ---------- aquisição ---------- */
+  .price{font-family:"League Spartan",sans-serif;font-weight:900;font-size:40pt;color:var(--ink);line-height:1;letter-spacing:-.01em}
+  .price small{display:block;font-family:"Inter";font-weight:500;font-size:11pt;color:var(--ink-soft);letter-spacing:0;margin-top:6px}
+  .model{display:flex;gap:14px;margin-top:26px}
+  .model .box{flex:1;border:1px solid var(--line);border-radius:14px;padding:18px 18px}
+  .model .box .pct{font-family:"League Spartan",sans-serif;font-weight:900;font-size:26pt;color:var(--azul)}
+  .model .box .lab{font-family:"League Spartan",sans-serif;font-weight:700;font-size:11pt;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);margin:6px 0 8px}
+  .model .box .desc{font-size:10pt;line-height:1.5;color:var(--ink-soft)}
+  .cta{margin-top:26px;background:var(--azul);border-radius:18px;padding:26px 28px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:20px}
+  .cta .t{font-family:"League Spartan",sans-serif;font-weight:800;font-size:19pt;line-height:1.15}
+  .cta .s{font-size:11pt;opacity:.92;margin-top:6px;line-height:1.45;font-weight:400}
+  .cta .logo{height:26px;filter:brightness(0) invert(1);flex:0 0 auto}
+
+  .pfoot{position:absolute;left:18mm;right:18mm;bottom:12mm;display:flex;justify-content:space-between;align-items:center;
+    border-top:1px solid var(--line);padding-top:10px}
+  .pfoot img{height:15px;opacity:.9}
+  .pfoot .pg{font-family:"League Spartan",sans-serif;font-weight:700;font-size:9pt;letter-spacing:.2em;color:var(--ink-soft);text-transform:uppercase}
+
+  @media print{
+    html,body{background:#fff}
+    .page{margin:0;box-shadow:none}
+  }
+  @page{size:A4;margin:0}
+  .flexcol{display:flex;flex-direction:column;height:100%}
+</style>
+</head>
+<body>
+
+<!-- ============ CAPA ============ -->
+<section class="page">
+  <div class="cover">
+    <img class="bg" src="fachada.jpg" alt="Fachada AWA Wellness Home">
+    <div class="veil"></div>
+    <div class="content">
+      <img class="logo" src="logo-uhome-branco.png" alt="Uhome">
+      <div>
+        <div class="eyebrow">Guia do investidor</div>
+        <h1 style="margin-top:18px">AWA<span class="thin">Wellness Home</span></h1>
+        <p class="tag">Renda por temporada no coração do eixo Carlos Gomes, um dos endereços que mais recebem gente em Porto Alegre.</p>
+      </div>
+      <div class="foot">Porto Alegre · Petrópolis &nbsp;·&nbsp; Incorporação ABF Developments</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O EMPREENDIMENTO ============ -->
+<section class="page">
+  <div class="pad flexcol">
+    <div class="head">
+      <div class="eyebrow">O empreendimento</div>
+      <h2>O primeiro compacto de alto padrão de Porto Alegre com wellness center completo.</h2>
+    </div>
+    <p class="lead">O AWA são lofts e apartamentos de 1 dormitório pensados para gerar renda por temporada, no eixo Carlos Gomes e Nilo Peçanha, em Petrópolis, uma das regiões mais desejadas e bem conectadas da cidade.</p>
+    <p class="kicker" style="margin-top:16px">Assinatura da <b>ABF Developments</b>, a mesma incorporadora do Átrio, Magno e Alfa Residences. O último lançamento da casa vendeu inteiro em 30 dias.</p>
+    <img class="imgband" style="margin-top:26px" src="studio.jpg" alt="Unidade AWA mobiliada">
+    <div class="row-stats">
+      <div class="cell"><div class="k num">243</div><div class="l">unidades no total, entre lofts e 1 dormitório</div></div>
+      <div class="cell"><div class="k">Lofts + 1 dorm</div><div class="l">tipologias compactas, feitas para render</div></div>
+      <div class="cell"><div class="k num">dez/2029</div><div class="l">entrega prevista do empreendimento</div></div>
+    </div>
+  </div>
+  <div class="pfoot"><img src="logo-uhome.svg" alt="Uhome"><span class="pg">AWA Wellness Home · 02</span></div>
+</section>
+
+<!-- ============ A TESE ============ -->
+<section class="page">
+  <div class="pad flexcol">
+    <div class="head">
+      <div class="eyebrow">Por que gera renda</div>
+      <h2>A parcela nasce com o<br>hóspede pagando ela.</h2>
+    </div>
+    <p class="lead">Você paga só <b style="color:var(--ink)">38% durante a obra</b> e financia os 62% na entrega. Quando as parcelas do financiamento começam, o imóvel já está pronto e rendendo.</p>
+    <p class="kicker" style="margin-top:14px">E o que faz o hóspede escolher o AWA, e não o compacto comum ao lado, é o pacote wellness: spa, rooftop e coworking que nenhum outro prédio do perfil oferece na região.</p>
+
+    <div class="statbig">
+      <div class="big num">68%</div>
+      <div class="txt">de <b>ocupação medida no próprio endereço</b> do AWA, num levantamento do PriceLabs com 39 imóveis do eixo. Porto Alegre praticamente não tem baixa temporada.</div>
+    </div>
+
+    <p class="kicker" style="margin-top:24px;font-weight:600;color:var(--ink)">Seis correntes de demanda o ano inteiro:</p>
+    <div class="demand">
+      <span class="chip">Saúde</span><span class="chip">Negócios</span><span class="chip">Shows</span>
+      <span class="chip">Esporte</span><span class="chip">Feiras e congressos</span><span class="chip">Lazer</span>
+    </div>
+
+    <p class="soft-note" style="margin-top:auto">A prova real, o extrato de um imóvel do mesmo perfil já operando na região, o especialista te mostra na apresentação.</p>
+  </div>
+  <div class="pfoot"><img src="logo-uhome.svg" alt="Uhome"><span class="pg">AWA Wellness Home · 03</span></div>
+</section>
+
+<!-- ============ ESTRUTURA ============ -->
+<section class="page">
+  <div class="pad flexcol">
+    <div class="head">
+      <div class="eyebrow">Estrutura wellness</div>
+      <h2>Um clube de bem-estar<br>dentro de casa.</h2>
+    </div>
+    <div class="imgrow">
+      <img src="spa.jpg" alt="Spa com sauna e crioterapia">
+      <img src="rooftop.jpg" alt="Rooftop com piscina de borda infinita">
+    </div>
+    <div class="amen">
+      <div>
+        <h3>Wellness Club <span>3º andar</span></h3>
+        <ul>
+          <li>Spa com sauna seca e crioterapia</li>
+          <li>Piscina de hidromassagem</li>
+          <li>Fitness interno e externo</li>
+          <li>Coworking e co-kitchen</li>
+          <li>Lounge e lavanderia</li>
+          <li>Market de conveniência</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Rooftop <span>uso de todos</span></h3>
+        <ul>
+          <li>Piscina de borda infinita</li>
+          <li>Deck solarium</li>
+          <li>Espaço gourmet externo</li>
+          <li>Vista aberta da cidade</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="pfoot"><img src="logo-uhome.svg" alt="Uhome"><span class="pg">AWA Wellness Home · 04</span></div>
+</section>
+
+<!-- ============ COMO ENTRAR + CTA ============ -->
+<section class="page">
+  <div class="pad flexcol">
+    <div class="head">
+      <div class="eyebrow">Como entrar</div>
+    </div>
+    <div class="price">A partir de R$ 339 mil<small>Loft, na condição de pré-venda.</small></div>
+
+    <div class="model">
+      <div class="box">
+        <div class="pct num">38%</div>
+        <div class="lab">durante a obra</div>
+        <div class="desc">Ato, entrada, 35 mensais e 3 reforços anuais. No loft, a entrada fica em torno de R$ 34 mil, diluída.</div>
+      </div>
+      <div class="box">
+        <div class="pct num">62%</div>
+        <div class="lab">só na entrega</div>
+        <div class="desc">Financiados apenas quando o imóvel fica pronto, em dezembro de 2029, com o imóvel já rendendo.</div>
+      </div>
+    </div>
+
+    <p class="soft-note" style="margin-top:26px">Valores de pré-venda, sujeitos à disponibilidade. A conta completa, número por número, o especialista te mostra na apresentação.</p>
+
+    <div class="cta" style="margin-top:auto">
+      <div>
+        <div class="t">Agende sua apresentação<br>de 30 minutos</div>
+        <div class="s">A planta, as opções e a conta fechada, com um especialista da Uhome. Chame no WhatsApp para marcar.</div>
+      </div>
+      <img class="logo" src="logo-uhome-branco.png" alt="Uhome">
+    </div>
+  </div>
+  <div class="pfoot"><img src="logo-uhome.svg" alt="Uhome"><span class="pg">AWA Wellness Home · 05</span></div>
+</section>
+
+</body>
+</html>
