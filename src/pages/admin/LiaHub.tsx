@@ -8,6 +8,7 @@ import LiaLeadsTab from "@/components/lia-hub/LiaLeadsTab";
 import LiaKanbanTab from "@/components/lia-hub/LiaKanbanTab";
 import LiaFollowupsTab from "@/components/lia-hub/LiaFollowupsTab";
 import LiaQualificadosTab from "@/components/lia-hub/LiaQualificadosTab";
+import LiaReengajarTab from "@/components/lia-hub/LiaReengajarTab";
 import { useLiaRealtime } from "@/components/lia-hub/useLiaHub";
 
 const ABAS = [
@@ -16,6 +17,7 @@ const ABAS = [
   { valor: "kanban", rotulo: "Kanban" },
   { valor: "followups", rotulo: "Follow-ups" },
   { valor: "qualificados", rotulo: "Qualificados" },
+  { valor: "reengajar", rotulo: "Reengajamento" },
 ];
 
 export default function LiaHub() {
@@ -76,6 +78,9 @@ export default function LiaHub() {
         </TabsContent>
         <TabsContent value="qualificados" className="mt-3">
           <LiaQualificadosTab />
+        </TabsContent>
+        <TabsContent value="reengajar" className="mt-3">
+          <LiaReengajarTab />
         </TabsContent>
       </Tabs>
     </div>
