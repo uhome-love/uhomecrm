@@ -14030,6 +14030,15 @@ export type Database = {
         }
         Relationships: []
       }
+      lia_reengajamento_resumo: {
+        Row: {
+          balde: string | null
+          n: number | null
+          produto_ativo: boolean | null
+          produto_slug: string | null
+        }
+        Relationships: []
+      }
       page_views_daily: {
         Row: {
           dia_brt: string | null
