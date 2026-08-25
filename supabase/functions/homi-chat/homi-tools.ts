@@ -687,7 +687,7 @@ export async function executeHomiTool(
           .limit(40);
         const rows = tarefas || [];
         // resolve lead names
-        const leadIds = [...new Set(rows.map((r: any) => r.pipeline_lead_id).filter(Boolean))];
+        const leadIds = [...new Set<string>((rows as any[]).map((r: any) => String(r.pipeline_lead_id)).filter(Boolean))];
         let nameMap = new Map<string, string>();
         if (leadIds.length) {
           const { data: leads } = await userClient.from("pipeline_leads").select("id, nome").in("id", leadIds);
@@ -1301,7 +1301,7 @@ export async function executeHomiTool(
           .order("vence_em", { ascending: true })
           .limit(40);
         const rows = tarefas || [];
-        const ctx = await leadContextoCurto(userClient, [...new Set(rows.map((r: any) => r.pipeline_lead_id).filter(Boolean))]);
+        const ctx = await leadContextoCurto(userClient, [...new Set<string>((rows as any[]).map((r: any) => String(r.pipeline_lead_id)).filter(Boolean))]);
         const itens = rows.map((t: any) => {
           const l = ctx.get(t.pipeline_lead_id) || {};
           const atrasoDias = t.vence_em ? Math.max(0, Math.floor((new Date(today).getTime() - new Date(t.vence_em).getTime()) / 86400000)) : 0;

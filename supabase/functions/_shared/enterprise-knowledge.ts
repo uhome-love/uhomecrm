@@ -182,7 +182,7 @@ export function createServiceClient() {
  * Falls back gracefully if DB is unavailable.
  */
 export async function loadEnterpriseKnowledge(
-  supabase?: ReturnType<typeof createClient>
+  supabase?: { from: (table: string) => any }
 ): Promise<EnterpriseRecord[]> {
   // Check cache
   if (_cachedKnowledge && Date.now() - _cacheTime < CACHE_TTL_MS) {
@@ -201,12 +201,12 @@ export async function loadEnterpriseKnowledge(
       return _cachedKnowledge || [];
     }
 
-    _cachedKnowledge = (data || []).map(row => ({
+    _cachedKnowledge = (data || []).map((row: any) => ({
       ...row,
       objecoes: Array.isArray(row.objecoes) ? row.objecoes : null,
     }));
     _cacheTime = Date.now();
-    return _cachedKnowledge;
+    return _cachedKnowledge || [];
   } catch (e) {
     console.error("enterprise-knowledge: load exception:", e);
     return _cachedKnowledge || [];

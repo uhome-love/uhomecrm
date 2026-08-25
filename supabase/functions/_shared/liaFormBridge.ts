@@ -161,7 +161,7 @@ export async function pontoDeEntradaFormLia(admin: SupabaseClient, input: FormBr
     await admin.from("lia_conversas").insert({
       telefone: to, role: "assistant",
       conteudo: `Oi, ${primeiroNome}! Aqui é a LIA, da Uhome 🙂 Vi que você se interessou pelo ${empPublico}. Tenho todas as informações, plantas e valores aqui. Posso te enviar por aqui?`,
-    }).then(() => {}).catch(() => {});
+    });
 
     await logPonte(admin, "template_enviado", { slug: produto.slug, tpl: tplName, to });
     return { desviar: true, motivo: "template_enviado", produto_slug: produto.slug };
