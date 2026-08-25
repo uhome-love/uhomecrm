@@ -363,7 +363,12 @@ serve(async (req) => {
     const hBRT = parseInt(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo", hour12: false, hour: "2-digit" }), 10);
     const saudacao = hBRT < 12 ? "bom dia" : hBRT < 18 ? "boa tarde" : "boa noite";
     const ctxHora = `\n\nCONTEXTO DE AGORA: são cerca de ${String(hBRT).padStart(2, "0")}h no horário de Brasília, então o cumprimento certo AGORA é "${saudacao}". NUNCA deseje "bom dia" à noite nem "boa noite" de manhã. Ao se despedir, use "${saudacao}" ou algo neutro ("até mais", "qualquer coisa estou por aqui 😊"), nunca um cumprimento do período errado.`;
-    const systemPrompt = (fichaProduto ? `${COMMON_SKELETON}\n${fichaProduto}` : LIA_SYSTEM) + ctxHora;
+    // JANELA DE GRAÇA pós-repasse: o lead já foi passado pro time, mas escreveu de novo antes do humano
+    // assumir. A LIA responde por cortesia, curto, SEM re-vender nem re-qualificar nem re-agendar.
+    const ctxPosRepasse = (body as any).pos_repasse === true
+      ? `\n\nATENÇÃO (JANELA DE GRAÇA): você JÁ passou este lead pro time humano e já avisou que alguém vai chamar. A pessoa escreveu de novo. Responda APENAS o que ela perguntou agora, curtíssimo e prestativo, e reforce com leveza que o time já vai continuar com ela por aqui. NÃO re-venda, NÃO re-qualifique, NÃO ofereça agendamento de novo, NÃO peça dados, NÃO recomece a apresentação. É só cortesia até o especialista assumir.`
+      : "";
+    const systemPrompt = (fichaProduto ? `${COMMON_SKELETON}\n${fichaProduto}` : LIA_SYSTEM) + ctxHora + ctxPosRepasse;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

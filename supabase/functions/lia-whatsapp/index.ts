@@ -272,8 +272,19 @@ serve(async (req) => {
           }
         }
 
-        // grava a mensagem de entrada
-        await sb.from("lia_conversas").insert({ telefone: from, role: "user", conteudo, wa_message_id: waId });
+        // grava a mensagem de entrada. DEDUP ATÔMICO: índice único parcial em wa_message_id garante
+        // que só UMA execução processa cada mensagem. Se o 360dialog reentregar o mesmo id (retry por
+        // timeout) e duas execuções correrem juntas, a segunda bate no conflito 23505 e ABORTA aqui,
+        // eliminando a resposta dupla (o dedup por SELECT antes era read-then-write, não atômico).
+        if (waId) {
+          const { error: insErr } = await sb.from("lia_conversas").insert({ telefone: from, role: "user", conteudo, wa_message_id: waId });
+          if (insErr) {
+            if ((insErr as any).code === "23505") continue; // já processada por outra execução
+            console.error("[lia-whatsapp] insert msg entrada erro", insErr);
+          }
+        } else {
+          await sb.from("lia_conversas").insert({ telefone: from, role: "user", conteudo, wa_message_id: waId });
+        }
 
         // TRAVA DE OPT-OUT: quem já saiu não recebe mais resposta.
         if (est?.optout) continue;
@@ -295,15 +306,22 @@ serve(async (req) => {
           }).eq("telefone", from);
         }
 
-        // APÓS O REPASSE: a LIA já passou o bastão e avisou o lead que o time humano segue. Daqui pra
-        // frente o HUMANO é dono da conversa: a LIA NÃO responde mais (senão contradiz "o especialista
-        // vai te chamar" e vira duas vozes falando). A mensagem do lead fica registrada pro time assumir.
-        // EXCEÇÃO: opt-out é honrado SEMPRE, mesmo após o repasse (LGPD).
-        if (est?.repassado_em) {
+        // APÓS O REPASSE: o humano é dono. Se um corretor JÁ ACEITOU o lead, a LIA fica 100% quieta
+        // (não atropela o corretor ativo). Enquanto ninguém assumiu (Fila CEO), ela dá uma JANELA DE
+        // GRAÇA: responde perguntas simples, curta e deferente, até o humano assumir, pro lead não ficar
+        // no vácuo (ela NÃO re-qualifica nem re-vende). Opt-out é honrado sempre (LGPD).
+        const posRepasse = !!est?.repassado_em;
+        if (posRepasse) {
           if (OPTOUT_RE.test(texto)) {
             await sb.from("lia_estado").update({ optout: true, status: "opt_out", updated_at: nowISO() }).eq("telefone", from);
+            continue;
           }
-          continue;
+          let humanoAssumiu = false;
+          if (est.lead_id) {
+            const { data: pl } = await sb.from("pipeline_leads").select("corretor_id, aceite_status").eq("id", est.lead_id).limit(1);
+            humanoAssumiu = !!(pl?.[0]?.corretor_id && pl[0].aceite_status === "aceito");
+          }
+          if (humanoAssumiu) continue; // corretor ativo assumiu: silêncio total
         }
 
         // MULTIPRODUTO: resolve o imóvel desta conversa (null = Canoas, comportamento de hoje)
@@ -328,17 +346,21 @@ serve(async (req) => {
         let reply = "";
         let sinal = "seguindo";
         let repassar = false;
+        let erroChat = false;
         try {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
-            body: JSON.stringify({ messages: msgs, ...(produto?.ficha ? { ficha: produto.ficha } : {}) }),
+            body: JSON.stringify({ messages: msgs, ...(produto?.ficha ? { ficha: produto.ficha } : {}), ...(posRepasse ? { pos_repasse: true } : {}) }),
           });
-          const d = await r.json();
-          reply = String(d?.content ?? "").trim();
-          if (typeof d?.sinal === "string") sinal = d.sinal;
-          repassar = d?.repassar === true;
-        } catch (e) { console.error("[lia-whatsapp] lia-chat falhou", e); }
+          if (!r.ok) { erroChat = true; console.error("[lia-whatsapp] lia-chat HTTP", r.status); }
+          else {
+            const d = await r.json();
+            reply = String(d?.content ?? "").trim();
+            if (typeof d?.sinal === "string") sinal = d.sinal;
+            repassar = d?.repassar === true;
+          }
+        } catch (e) { erroChat = true; console.error("[lia-whatsapp] lia-chat falhou", e); }
 
         // reconfere DEPOIS de gerar: se chegou mensagem mais nova do lead durante a geração,
         // NÃO envia esta (a mais nova vai responder com o contexto completo). Evita resposta dupla.
@@ -347,6 +369,14 @@ serve(async (req) => {
           .eq("telefone", from).eq("role", "user")
           .order("created_at", { ascending: false }).limit(1);
         if (ultima2?.[0]?.wa_message_id && ultima2[0].wa_message_id !== waId) continue;
+
+        // RECUPERAÇÃO DE INSTABILIDADE: se o cérebro falhou (429/rede) e não veio resposta, o turno se
+        // perderia calado (o 360dialog não reenvia). Em vez de sumir, a LIA pede pra reenviar (gera um
+        // novo turno) — nunca deixa o cliente no vácuo por uma instabilidade momentânea.
+        if (!reply && erroChat) {
+          await sendText(from, "Opa, tive uma instabilidade rapidinha aqui 🙈 me manda de novo tua última mensagem que já te respondo!");
+          continue;
+        }
 
         // envia a resposta (texto + mídias), ignorando qualquer marcador interno que sobre
         if (reply) {
@@ -392,9 +422,10 @@ serve(async (req) => {
           await sb.from("lia_estado").update({ last_msg_em: nowISO() }).eq("telefone", from);
         }
 
-        // AGE PELO SINAL DE TRIAGEM
+        // AGE PELO SINAL DE TRIAGEM. Na janela de graça (posRepasse) a LIA NÃO re-qualifica nem re-passa:
+        // ela só respondeu por cortesia até o humano assumir.
         const jaOptout = OPTOUT_RE.test(texto);
-        if (!jaOptout) {
+        if (!jaOptout && !posRepasse) {
           const acionavel = sinal === "quente" || sinal === "morno" || sinal === "frio";
           // DURANTE o pré-atendimento: só registra a TEMPERATURA no estado da LIA (o Lucas vê no
           // inbox), SEM criar lead no pipeline e SEM mandar pra corretor. O lead segue sendo atendido
