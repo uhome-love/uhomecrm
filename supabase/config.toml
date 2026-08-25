@@ -178,3 +178,9 @@ verify_jwt = false
 
 [functions.lia-followup]
 verify_jwt = false
+
+[functions.lia-reengajar-dispatch]
+verify_jwt = false
+
+[functions.lia-reengajar-arm]
+verify_jwt = false
