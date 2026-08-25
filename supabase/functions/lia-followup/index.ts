@@ -460,9 +460,15 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
     // nome limpo pro corpo do template (WhatsApp às vezes manda só emoji)
     const bruto = primeiroNome(est?.nome ?? "");
     const nomeLead = /\p{L}/u.test(bruto) ? bruto.replace(/[^\p{L}\p{M}'.-]/gu, "").trim() : "";
+    const empPublico = nomePorProduto[est?.produto_slug ?? ""] ?? "Casa Tua Santos Ferreira";
+    // Texto legível pro LOG/hub (e pro envio livre) com as variáveis PREENCHIDAS: nunca pode
+    // vazar o placeholder cru [nome]/[imóvel] (o template do WhatsApp usa {{1}}/{{2}}, mas o log
+    // guardava o texto de referência com colchetes e aparecia "Olá [nome]" no CRM).
+    const msgLog = String(f.mensagem ?? "")
+      .replace(/\[nome\]/gi, nomeLead || "você")
+      .replace(/\[im[oó]vel\]/gi, empPublico);
     let ok = false;
     if (ehTemplate) {
-      const empPublico = nomePorProduto[est?.produto_slug ?? ""] ?? "Casa Tua Santos Ferreira";
       const res = await sendTemplate(f.telefone, WA_TEMPLATES[f.template_key], [nomeLead, empPublico]);
       ok = res.ok;
       if (!res.ok) {
@@ -473,10 +479,10 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
         continue;
       }
     } else {
-      ok = await send360Text(f.telefone, f.mensagem);
+      ok = await send360Text(f.telefone, msgLog); // livre: envia já preenchido, nunca [nome]/[imóvel]
     }
     if (!ok) continue;
-    await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: f.mensagem });
+    await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: msgLog });
 
     // 1º toque (spoiler da obra): entrega valor com 2 fotos e fecha com uma pergunta leve (nada de
     // cobrança). Vale pra quem "abriu e sumiu" (primeiro_retorno) e pra quem engajou e esfriou (sumiu_planta).
@@ -489,7 +495,7 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
         await sb.from("lia_conversas").insert({ telefone: f.telefone, role: "assistant", conteudo: FECHO_ABRIU });
     }
 
-    await sb.from("lia_followups").update({ status: "enviado", enviado_em: nowISO(), updated_at: nowISO() }).eq("id", f.id);
+    await sb.from("lia_followups").update({ status: "enviado", mensagem: msgLog, enviado_em: nowISO(), updated_at: nowISO() }).eq("id", f.id);
     await sb.from("lia_estado").update({
       followup_count: (est?.followup_count ?? 0) + 1,
       last_msg_em: nowISO(),

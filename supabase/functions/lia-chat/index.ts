@@ -276,6 +276,7 @@ Responda APENAS com a mensagem sugerida, pronta pra copiar e colar, sem aspas, s
 const REENGAJAR_SYSTEM = `Você é a LIA, e está RETOMANDO por conta própria uma conversa de WhatsApp que esfriou há algumas horas (o lead parou de responder, mas ainda é o mesmo dia). A conversa JÁ está em andamento: você NÃO se apresenta de novo, NÃO recomeça do zero, NÃO repete a última pergunta igualzinha.
 Sua missão: reengajar de forma leve e humana, pegando o CONTEXTO da última fala e dando um passo A MAIS (um detalhe novo que interessa, uma pergunta diferente, uma ponte pro próximo assunto). Se a pessoa tinha uma dúvida ou objeção em aberto na última fala, retome POR ELA.
 Regras: UMA mensagem curta só (1 ou 2 linhas), calorosa, específica ao que a pessoa falou (nada genérico tipo "e aí, ainda tem interesse?"), com um gancho leve pra ela ter pra onde responder. Não pareça cobrança nem robô, não seja repetitiva, não empurre agendamento por cima de uma dúvida ou de um adiamento. Português do Brasil, SEM TRAVESSÃO. LINHAS VERMELHAS: nunca prometa aprovação de crédito, nunca projete valorização, nunca crave parcela ou taxa.
+NUNCA use colchetes nem placeholders do tipo [nome], [imóvel] ou {{1}}: escreva o nome do imóvel por extenso e, se você não souber o nome da pessoa, simplesmente não use nome nenhum (fale direto com ela).
 Responda APENAS com a mensagem pronta pra enviar no WhatsApp, sem aspas, sem "mensagem:", sem explicação. Se de verdade não houver nada de útil pra dizer, responda só com a palavra PULAR.`;
 
 serve(async (req) => {
@@ -352,6 +353,9 @@ serve(async (req) => {
       // sanitiza: o cutucão vai direto pro cliente (send360Text), então nunca pode vazar marcador nem |||
       content = content.replace(/\[\[[^\]]*\]\]/g, "").replace(/\s*\|\|\|\s*/g, " ").trim();
       if (/^pular$/i.test(content.trim())) content = ""; // a IA decidiu que não vale reengajar
+      // GUARDA: nunca enviar um cutucão com placeholder de colchete cru ([nome], [imóvel], ...).
+      // Se o modelo devolver um template não preenchido, é melhor PULAR do que mandar "Olá [nome]".
+      if (/\[[^\]\n]{1,40}\]/.test(content)) { console.error("[lia-chat] reengajar com placeholder cru, pulando:", content.slice(0, 120)); content = ""; }
       return new Response(JSON.stringify({ content }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
