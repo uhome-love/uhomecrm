@@ -442,7 +442,7 @@ serve(async (req) => {
       }
 
       const docs = items.map(mapPropertyToDocument);
-      const jsonl = docs.map(d => JSON.stringify(d)).join("\n");
+      const jsonl = docs.map((d: unknown) => JSON.stringify(d)).join("\n");
       
       const resp = await fetch(`https://${TYPESENSE_HOST}/collections/${COLLECTION_NAME}/documents/import?action=upsert`, {
         method: "POST",
@@ -481,7 +481,7 @@ serve(async (req) => {
         });
       }
       const docs = items.map(mapImovelToDocument);
-      const jsonl = docs.map(d => JSON.stringify(d)).join("\n");
+      const jsonl = docs.map((d: unknown) => JSON.stringify(d)).join("\n");
       const resp = await fetch(`https://${TYPESENSE_HOST}/collections/${COLLECTION_NAME}/documents/import?action=upsert`, {
         method: "POST",
         headers: { "X-TYPESENSE-API-KEY": TYPESENSE_ADMIN_API_KEY, "Content-Type": "text/plain" },

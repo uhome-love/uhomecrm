@@ -206,7 +206,7 @@ export async function loadEnterpriseKnowledge(
       objecoes: Array.isArray(row.objecoes) ? row.objecoes : null,
     }));
     _cacheTime = Date.now();
-    return _cachedKnowledge;
+    return _cachedKnowledge || [];
   } catch (e) {
     console.error("enterprise-knowledge: load exception:", e);
     return _cachedKnowledge || [];
