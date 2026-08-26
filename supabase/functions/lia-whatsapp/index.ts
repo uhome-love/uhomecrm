@@ -136,6 +136,39 @@ async function resolverProduto(sb: any, telefone: string, est: any, referral: an
       const { data } = await sb.from("lia_produtos").select("*").eq("slug", est.produto_slug).maybeSingle();
       if (data) return data;
     }
+    // CARDÁPIO (reengajamento): o lead recebeu o template lia_reengajar_cardapio (menu numerado
+    // 1 a 5) e está respondendo AGORA. Reconhece pela fila de reengajamento (últimos-8) e traduz a
+    // escolha: 1=Flow, 2=Casa Tua POA, 3=AWA, 4=Lake Baikal, 5/algo diferente=curadoria. Sem isso,
+    // um "1" solto cairia no Canoas por padrão. Só roda na 1ª resposta (depois produto_slug persiste).
+    const l8card = telBR(telefone).replace(/\D/g, "").slice(-8);
+    const { data: filaCard } = await sb.from("lia_reengajamento_fila")
+      .select("template_key, produto_slug").ilike("telefone", `%${l8card}`)
+      .eq("status", "enviado").order("enviado_em", { ascending: false }).limit(1);
+    const reeng = filaCard?.[0];
+    if (reeng) {
+      let slugAlvo: string | null = null;
+      if (reeng.template_key === "lia_reengajar_cardapio") {
+        const { data: um } = await sb.from("lia_conversas")
+          .select("conteudo").eq("telefone", telefone).eq("role", "user")
+          .order("created_at", { ascending: true }).limit(4);
+        const t = (um ?? []).map((m: any) => String(m.conteudo || "")).join(" ").toLowerCase();
+        if (/\b5\b|personaliz|algo diferente|outra op|outras op|diferente|sele[çc][aã]o/.test(t)) slugAlvo = "curadoria";
+        else if (/\b1\b|flow/.test(t)) slugAlvo = "flow";
+        else if (/\b2\b|alto petr[oó]|prot[aá]sio|casa tua/.test(t)) slugAlvo = "casa-tua-porto-alegre";
+        else if (/\b3\b|\bawa\b|wellness|carlos gomes|nilo/.test(t)) slugAlvo = "awa-wellness";
+        else if (/\b4\b|baikal|golden lake/.test(t)) slugAlvo = "lake-baikal";
+        else slugAlvo = "curadoria"; // respondeu algo que não é número claro → curadoria pergunta o perfil
+      } else if (reeng.produto_slug) {
+        slugAlvo = reeng.produto_slug; // template de PRODUTO já aponta o imóvel
+      }
+      if (slugAlvo) {
+        const { data } = await sb.from("lia_produtos").select("*").eq("slug", slugAlvo).maybeSingle();
+        if (data) {
+          await sb.from("lia_estado").update({ produto_slug: data.slug, updated_at: nowISO() }).eq("telefone", telefone);
+          return data;
+        }
+      }
+    }
     // pelo anúncio: source_id / ad_id / campanha do referral vs campanha_ids do produto
     const cands = [referral?.source_id, referral?.ad_id, referral?.campaign_id]
       .filter(Boolean).map((x: any) => String(x));
