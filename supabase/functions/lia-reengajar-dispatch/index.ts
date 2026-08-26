@@ -39,10 +39,10 @@ const TEMPLATE_HEADER: Record<string, { type: "image" | "document"; link: string
 // O corpo do cardápio tem 5 variáveis: {{1}} nome + {{2}}..{{5}} os 4 imóveis do menu (a opção 5 é
 // texto fixo). Estes textos batem com os exemplos aprovados no Meta. ATUALIZAR se o menu mudar.
 const CARDAPIO_ITENS = [
-  "Flow, junto ao Bourbon Ipiranga, lofts, 1 e 2D a partir de R$ 240 mil",
-  "Casa Tua Alto Petrópolis, Casas em condomínio na Av. Protásio, a partir de R$ 514 mil",
-  "AWA, lofts pra investir (Carlos Gomes com a Nilo), a partir de R$ 339 mil",
-  "Lake Baikal, 197 a 254 m² no Bairro Golden Lake",
+  "Flow - Loft, 1 e 2 Dorms - A partir de 240mil - Junto ao Bourbon Ipiranga",
+  "Casa Tua POA - Casas 2 e 3 Dorms na Zona Norte - A partir de 514mil",
+  "AWA - Lofts Investir na Av Carlos Gomes e Nilo - A partir 339mil",
+  "Lake Baikal - Lançamento no Bairro Golden Lake",
 ];
 function bodyParamsPara(templateKey: string, nome: string, produtoNome: string): string[] {
   if (templateKey === "lia_reengajar_cardapio") return [nome, ...CARDAPIO_ITENS];
@@ -88,6 +88,19 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const sb = svc();
+
+    // TESTE do cardápio (temporário): manda o template pros números informados, sem tocar fila/runs/kill-switch.
+    const body = await req.json().catch(() => ({} as any));
+    if (Array.isArray(body?.testeCardapio) && body.testeCardapio.length) {
+      const res: any[] = [];
+      for (const num of body.testeCardapio.slice(0, 5)) {
+        const nome = primeiroNome(body?.nome ?? null) || "você";
+        const r = await sendTemplate(toWa(String(num)), "lia_reengajar_cardapio", bodyParamsPara("lia_reengajar_cardapio", nome, ""));
+        res.push({ to: toWa(String(num)), ok: r.ok, err: r.err });
+        await sleep(400);
+      }
+      return new Response(JSON.stringify({ ok: true, teste: res }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
 
     // 1) KILL SWITCH
     const { data: flag } = await sb.from("system_flags").select("flag_value").eq("flag_name", "lia_reengajamento_enabled").maybeSingle();
