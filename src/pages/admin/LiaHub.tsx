@@ -9,10 +9,12 @@ import LiaKanbanTab from "@/components/lia-hub/LiaKanbanTab";
 import LiaFollowupsTab from "@/components/lia-hub/LiaFollowupsTab";
 import LiaQualificadosTab from "@/components/lia-hub/LiaQualificadosTab";
 import LiaReengajarTab from "@/components/lia-hub/LiaReengajarTab";
+import LiaTransitoTab from "@/components/lia-hub/LiaTransitoTab";
 import { useLiaRealtime } from "@/components/lia-hub/useLiaHub";
 
 const ABAS = [
   { valor: "painel", rotulo: "Painel" },
+  { valor: "transito", rotulo: "Trânsito" },
   { valor: "leads", rotulo: "Leads e conversas" },
   { valor: "kanban", rotulo: "Kanban" },
   { valor: "followups", rotulo: "Follow-ups" },
@@ -66,6 +68,9 @@ export default function LiaHub() {
 
         <TabsContent value="painel" className="mt-3">
           <LiaPainelTab />
+        </TabsContent>
+        <TabsContent value="transito" className="mt-3">
+          <LiaTransitoTab />
         </TabsContent>
         <TabsContent value="leads" className="mt-3">
           <LiaLeadsTab />
