@@ -14,6 +14,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { handoffEngajado } from "../_shared/liaHandoff.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -174,17 +175,29 @@ serve(async (req) => {
       const enviados = await disparar(sb, { soTelefone: String(body.soTelefone), ignorarHorario: body.agora === true });
       return new Response(JSON.stringify({ ok: true, enviados, alvo: body.soTelefone }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
+    // TESTE CONTROLADO do auto-repasse: roda o handoff do engajado-quieto só num telefone (ou
+    // dry-run pra ver os candidatos sem passar ninguém). Usado pra validar antes de soltar no cron.
+    if (body?.handoffTelefone || body?.handoffDryRun) {
+      const r = await passarEngajadosParaTime(sb, { soTelefone: body?.handoffTelefone ? String(body.handoffTelefone) : undefined, dryRun: body?.handoffDryRun === true, ignorarHorario: body?.agora === true });
+      return new Response(JSON.stringify({ ok: true, ...r }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
     // A CADÊNCIA VEM PRIMEIRO e é blindada: o backfill de resumos faz chamadas de IA lentas
     // (até 10 leads × 2 tentativas × esperas), e se ele estoura o tempo da função o detectar/disparar
     // NUNCA rodavam (bug: cadência zerada desde 23/08). Agora cada etapa é isolada por try/catch e a
     // cadência roda antes, então um backfill lento nunca mais bloqueia o follow-up.
-    let rascunhados = 0, enviados = 0, resumos = 0, reengajados = 0;
+    let rascunhados = 0, enviados = 0, resumos = 0, reengajados = 0, handoffs = 0;
+    // AUTO-REPASSE do engajado-quieto (morno/quente que parou de responder) -> roleta. Roda ANTES da
+    // cadência (marca o lead como qualificado, aí ele sai do caminho do cutucão). GATED por env flag
+    // LIA_AUTO_HANDOFF="on": deploy fica no escuro até o Lucas validar o teste e mandar ligar.
+    if ((Deno.env.get("LIA_AUTO_HANDOFF") ?? "").toLowerCase() === "on") {
+      try { handoffs = (await passarEngajadosParaTime(sb)).passados; } catch (e) { console.error("[lia-followup] handoff falhou", e); }
+    }
     try { rascunhados = await detectar(sb); } catch (e) { console.error("[lia-followup] detectar falhou", e); }
     try { enviados = await disparar(sb); } catch (e) { console.error("[lia-followup] disparar falhou", e); }
     // LIA proativa: cutucão inteligente dentro da janela do mesmo dia (roda depois da cadência, antes do backfill lento)
     try { reengajados = await reengajarProativo(sb); } catch (e) { console.error("[lia-followup] reengajar falhou", e); }
     try { resumos = await backfillResumos(sb); } catch (e) { console.error("[lia-followup] backfill falhou", e); }
-    return new Response(JSON.stringify({ ok: true, rascunhados, enviados, reengajados, resumos }), { headers: { ...cors, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, handoffs, rascunhados, enviados, reengajados, resumos }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[lia-followup] erro:", e);
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
@@ -343,6 +356,96 @@ async function detectar(sb: any): Promise<number> {
     if (!error) criados++;
   }
   return criados;
+}
+
+/** AUTO-REPASSE do engajado-quieto: o lead que o cérebro leu como morno/quente (interagiu de
+ * verdade) e que PAROU de responder vai pro time via ROLETA, com um resumo acionável (onde parou +
+ * próxima ação pra reengajar) e uma mensagem calorosa de passagem de bastão. Regra validada com o
+ * Lucas em 26/ago: temperatura morno/quente = "interagiu mais" = passa; frio/sem-nível = cutuca.
+ * dryRun = só lista os candidatos, não passa ninguém (pra validar antes de ligar no cron). */
+async function passarEngajadosParaTime(
+  sb: any,
+  opts: { soTelefone?: string; dryRun?: boolean; ignorarHorario?: boolean } = {},
+): Promise<{ passados: number; candidatos: any[] }> {
+  const agora = Date.now();
+  if (!opts.dryRun && !opts.ignorarHorario) {
+    const h = horaBRT();
+    if (h < HORA_INI || h >= HORA_FIM) return { passados: 0, candidatos: [] };
+  }
+
+  let q = sb.from("lia_estado")
+    .select("telefone, nome, lead_id, status, produto_slug, nivel, last_user_at, last_msg_em, resumo")
+    .in("status", ["em_conversa", "novo"])
+    .in("nivel", ["morno", "quente"])
+    .eq("optout", false)
+    .is("repassado_em", null)
+    .limit(100);
+  if (opts.soTelefone) q = q.ilike("telefone", `%${opts.soTelefone.replace(/\D/g, "").slice(-8)}`);
+  const { data: cands } = await q;
+  if (!cands?.length) return { passados: 0, candidatos: [] };
+
+  // parou de responder? silêncio >= STALL desde a última fala do LEAD (soTelefone burla, pra teste).
+  const prontos = (cands as any[]).filter((c) => {
+    if (opts.soTelefone) return true;
+    const relogio = c.last_user_at ? new Date(c.last_user_at).getTime()
+                   : c.last_msg_em ? new Date(c.last_msg_em).getTime() : 0;
+    return relogio && (agora - relogio >= STALL_HOURS * 3600_000);
+  });
+  if (!prontos.length) return { passados: 0, candidatos: [] };
+
+  // já tem corretor aceito? (humano assumiu) -> fora
+  const leadIds = [...new Set(prontos.map((c) => c.lead_id).filter(Boolean))];
+  const comCorretor = new Set<string>();
+  if (leadIds.length) {
+    const { data: pls } = await sb.from("pipeline_leads").select("id, corretor_id, aceite_status").in("id", leadIds);
+    for (const pl of pls ?? []) if (pl.corretor_id && pl.aceite_status === "aceito") comCorretor.add(pl.id);
+  }
+  const fila = prontos.filter((c) => !(c.lead_id && comCorretor.has(c.lead_id)));
+
+  if (opts.dryRun) {
+    return { passados: 0, candidatos: fila.map((c) => ({ telefone: c.telefone, nome: c.nome, nivel: c.nivel, produto: c.produto_slug })) };
+  }
+
+  // produtos (empreendimento canônico) pra criar o lead no imóvel certo
+  const { data: prods } = await sb.from("lia_produtos").select("slug, empreendimento, empreendimento_canonico_id");
+  const prodBySlug: Record<string, any> = {};
+  for (const p of prods ?? []) prodBySlug[p.slug] = p;
+
+  let passados = 0;
+  for (const c of fila) {
+    if (passados >= REENG_MAX_POR_RODADA) break; // teto por rodada: não inunda a roleta
+    // resumo acionável (onde parou + próxima ação) — reusa o mode=resumo do cérebro
+    let resumo = (c.resumo ?? "").trim();
+    try {
+      const { data: hist } = await sb.from("lia_conversas").select("role, conteudo")
+        .eq("telefone", c.telefone).order("created_at", { ascending: true }).limit(60);
+      const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
+      if (msgs.length) {
+        const rr = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+          body: JSON.stringify({ messages: msgs, mode: "resumo" }),
+        });
+        if (rr.ok) { const d = await rr.json(); const t = String(d?.resumo ?? "").trim(); if (t) resumo = t; }
+      }
+    } catch (e) { console.error("[lia-followup] resumo p/ handoff falhou", c.telefone, e); }
+
+    const produto = prodBySlug[c.produto_slug ?? ""] ?? null;
+    const leadId = await handoffEngajado(sb, { telefone: c.telefone, nome: c.nome, nivel: c.nivel, produto, resumo });
+    if (!leadId) continue;
+
+    // passagem de bastão calorosa pro lead: reengaja e enquadra o humano como CONTINUAÇÃO da LIA.
+    const nome = primeiroNome(c.nome);
+    await send360Text(c.telefone, `${nome ? `Oi ${nome}! ` : "Oi! "}Vi que a gente parou por aqui 😊 Já pedi pro nosso especialista seguir com você pessoalmente, pra te ajudar no que faltou. Ele te chama já já, tá?`);
+
+    await sb.from("lia_estado").update({
+      status: "qualificado", lead_id: leadId, nivel: c.nivel,
+      repassado_em: nowISO(), qualificado_em: nowISO(), resumo: resumo || null, updated_at: nowISO(),
+    }).eq("telefone", c.telefone);
+    passados++;
+    await sleep(300);
+  }
+  return { passados, candidatos: [] };
 }
 
 /** LIA PROATIVA (cutucão de VALOR): retoma conversas que ficaram mudas ainda dentro da janela
