@@ -31,6 +31,11 @@ const TEMPLATE_VARS: Record<string, number> = {
   lia_reengajar_produto: 2,   // {{1}} nome, {{2}} imóvel
   lia_reengajar_cardapio: 1,  // {{1}} nome
 };
+// Header de MÍDIA por template. O WhatsApp EXIGE a mídia no disparo (a amostra da aprovação
+// serve só pra aprovar, não pro envio). O cardápio tem imagem no cabeçalho.
+const TEMPLATE_HEADER: Record<string, { type: "image" | "document"; link: string; filename?: string }> = {
+  lia_reengajar_cardapio: { type: "image", link: "https://uhomesales.com/lia/cardapio.png" },
+};
 
 const svc = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const nowISO = () => new Date().toISOString();
@@ -45,6 +50,13 @@ async function sendTemplate(to: string, name: string, bodyParams: string[]): Pro
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const components: any[] = [];
+  const hdr = TEMPLATE_HEADER[name];
+  if (hdr) {
+    const param = hdr.type === "image"
+      ? { type: "image", image: { link: hdr.link } }
+      : { type: "document", document: { link: hdr.link, filename: hdr.filename || "material.pdf" } };
+    components.push({ type: "header", parameters: [param] });
+  }
   if (bodyParams.length > 0) {
     components.push({ type: "body", parameters: bodyParams.map((t) => ({ type: "text", text: (t || "você").slice(0, 60) })) });
   }
@@ -63,6 +75,20 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const sb = svc();
+
+    // TESTE do template do cardápio: manda o lia_reengajar_cardapio (com a imagem do header) pros
+    // números informados, SEM tocar na fila, nas runs nem no kill switch. Só pra validar o envio.
+    const body = await req.json().catch(() => ({} as any));
+    if (Array.isArray(body?.testeCardapio) && body.testeCardapio.length) {
+      const res: any[] = [];
+      for (const num of body.testeCardapio.slice(0, 5)) {
+        const nome = primeiroNome(body?.nome ?? null) || "você";
+        const r = await sendTemplate(toWa(String(num)), "lia_reengajar_cardapio", [nome]);
+        res.push({ to: toWa(String(num)), ok: r.ok, err: r.err });
+        await sleep(400);
+      }
+      return new Response(JSON.stringify({ ok: true, teste: res }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
 
     // 1) KILL SWITCH
     const { data: flag } = await sb.from("system_flags").select("flag_value").eq("flag_name", "lia_reengajamento_enabled").maybeSingle();
