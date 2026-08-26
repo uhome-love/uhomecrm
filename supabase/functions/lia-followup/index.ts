@@ -436,7 +436,7 @@ async function passarEngajadosParaTime(
 
     // passagem de bastão calorosa pro lead: reengaja e enquadra o humano como CONTINUAÇÃO da LIA.
     const nome = primeiroNome(c.nome);
-    await send360Text(c.telefone, `${nome ? `Oi ${nome}! ` : "Oi! "}Vi que a gente parou por aqui 😊 Já pedi pro nosso especialista seguir com você pessoalmente, pra te ajudar no que faltou. Ele te chama já já, tá?`);
+    await send360Text(c.telefone, `${nome ? `Oi ${nome}! ` : "Oi! "}Já vou pedir pro nosso especialista seguir com você pessoalmente, pra te ajudar nos próximos passos e no que precisar. Ele te chama já já, tá? 😊`);
 
     await sb.from("lia_estado").update({
       status: "qualificado", lead_id: leadId, nivel: c.nivel,
