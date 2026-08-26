@@ -406,7 +406,29 @@ serve(async (req) => {
     }
 
     const data = await resp.json();
-    const raw = String(data?.choices?.[0]?.message?.content ?? "");
+    let raw = String(data?.choices?.[0]?.message?.content ?? "");
+
+    // GUARDA ANTI-GLITCH: raríssimo, o gateway devolve uma resposta DEGRADADA, fora do personagem
+    // (ex.: um texto genérico embrulhado em ``` de markdown, tipo "informações encaminhadas ao seu
+    // WhatsApp"). A LIA nunca manda markdown/crase. Se detectar, tenta UMA vez de novo com o mesmo
+    // prompt; se ainda vier torto, pelo menos remove as crases pra nunca chegar cru no cliente.
+    const pareceGlitch = (s: string) => { const t = s.trim(); return t.length === 0 || t.startsWith("```") || t.includes("```"); };
+    if (pareceGlitch(raw)) {
+      console.error("[lia-chat] resposta degradada detectada, tentando de novo:", raw.slice(0, 120));
+      try {
+        const resp2 = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: MODEL, messages: [{ role: "system", content: systemPrompt }, ...messages], stream: false, temperature: 0.5 }),
+        });
+        if (resp2.ok) {
+          const d2 = await resp2.json();
+          const r2 = String(d2?.choices?.[0]?.message?.content ?? "");
+          if (r2 && !pareceGlitch(r2)) raw = r2;
+        }
+      } catch (e2) { console.error("[lia-chat] retry anti-glitch falhou", e2); }
+    }
+    raw = raw.replace(/```+/g, "").trim(); // a LIA nunca manda crase de markdown
 
     // Extrai o sinal de triagem interno (o cliente NUNCA vê) e limpa o texto.
     const VALID = new Set(["quente", "morno", "frio", "descartar", "seguindo"]);
