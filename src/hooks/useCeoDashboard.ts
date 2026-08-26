@@ -211,10 +211,11 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           created_at: string;
           origem: string | null;
           corretor_id: string | null;
+          empreendimento_canonico_id: string | null;
         }>((from, to) =>
           supabase
             .from("pipeline_leads")
-            .select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id")
+            .select("id, stage_id, empreendimento, empreendimento_canonico_id, updated_at, created_at, origem, corretor_id")
             // (vendas fechadas são excluídas por TIPO logo abaixo — sem UUID fixo)
             .gte("created_at", startUtc)
             .lt("created_at", endUtc)
@@ -230,10 +231,11 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           origem: string | null;
           corretor_id: string | null;
           reativado_em: string | null;
+          empreendimento_canonico_id: string | null;
         }>((from, to) =>
           supabase
             .from("pipeline_leads")
-            .select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id, reativado_em")
+            .select("id, stage_id, empreendimento, empreendimento_canonico_id, updated_at, created_at, origem, corretor_id, reativado_em")
             .eq("reativado_por_nutricao", true)
             .gte("reativado_em", startUtc)
             .lt("reativado_em", endUtc)
@@ -259,6 +261,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           id: r.id,
           stage_id: r.stage_id,
           empreendimento: r.empreendimento,
+          empreendimento_canonico_id: r.empreendimento_canonico_id,
           updated_at: r.updated_at,
           created_at: r.reativado_em || r.created_at,
           origem: "Reengajamento (Nutrição)",
@@ -276,10 +279,16 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const totalMarketing = mktLeads.length;
       const totalOfertaAtiva = (leads || []).filter(l => isOfertaAtiva(l.origem)).length;
 
+      // "Leads por Empreendimento" agrupa pelo EMPREENDIMENTO CANÔNICO (id -> nome oficial), não pelo
+      // texto livre do lead. O texto varia muito (ex.: AWA / AWA Wellness Home / AWA - Preview v1 / Awa),
+      // o que dividia o mesmo imóvel em várias barras. O link canônico já vem certo em cada lead.
+      const { data: canonRows } = await supabase.from("empreendimentos_canonicos").select("id, nome");
+      const canonMap = new Map<string, string>((canonRows || []).map((c: any) => [c.id, c.nome as string]));
+
       const empMap = new Map<string, { leads: number; avancou: number; parados: number }>();
       const now = new Date();
       for (const l of mktLeads) {
-        const emp = empreendimentoLabel(l.empreendimento);
+        const emp = (l.empreendimento_canonico_id && canonMap.get(l.empreendimento_canonico_id)) || empreendimentoLabel(l.empreendimento);
         const curr = empMap.get(emp) || { leads: 0, avancou: 0, parados: 0 };
         curr.leads++;
         const stageOrdem = stageData.find(s => s.id === l.stage_id)?.ordem || 0;
