@@ -29,13 +29,26 @@ const MAX_POR_EXECUCAO = 12;    // teto por rodada de cron (lote pequeno)
 const TEMPLATE_LANG = "pt_BR";
 const TEMPLATE_VARS: Record<string, number> = {
   lia_reengajar_produto: 2,   // {{1}} nome, {{2}} imóvel
-  lia_reengajar_cardapio: 1,  // {{1}} nome
+  lia_reengajar_cardapio: 5,  // {{1}} nome + {{2}}..{{5}} os 4 imóveis do menu
 };
 // Header de MÍDIA por template. O WhatsApp EXIGE a mídia no disparo (a amostra da aprovação
 // serve só pra aprovar, não pro envio). O cardápio tem imagem no cabeçalho.
 const TEMPLATE_HEADER: Record<string, { type: "image" | "document"; link: string; filename?: string }> = {
   lia_reengajar_cardapio: { type: "image", link: "https://uhomesales.com/lia/cardapio.png" },
 };
+// O corpo do cardápio tem 5 variáveis: {{1}} nome + {{2}}..{{5}} os 4 imóveis do menu (a opção 5 é
+// texto fixo). Estes textos batem com os exemplos aprovados no Meta. ATUALIZAR se o menu mudar.
+const CARDAPIO_ITENS = [
+  "Flow, junto ao Bourbon Ipiranga, lofts, 1 e 2D a partir de R$ 240 mil",
+  "Casa Tua Alto Petrópolis, Casas em condomínio na Av. Protásio, a partir de R$ 514 mil",
+  "AWA, lofts pra investir (Carlos Gomes com a Nilo), a partir de R$ 339 mil",
+  "Lake Baikal, 197 a 254 m² no Bairro Golden Lake",
+];
+function bodyParamsPara(templateKey: string, nome: string, produtoNome: string): string[] {
+  if (templateKey === "lia_reengajar_cardapio") return [nome, ...CARDAPIO_ITENS];
+  if ((TEMPLATE_VARS[templateKey] ?? 1) >= 2) return [nome, produtoNome || "seu imóvel"];
+  return [nome];
+}
 
 const svc = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const nowISO = () => new Date().toISOString();
@@ -58,7 +71,7 @@ async function sendTemplate(to: string, name: string, bodyParams: string[]): Pro
     components.push({ type: "header", parameters: [param] });
   }
   if (bodyParams.length > 0) {
-    components.push({ type: "body", parameters: bodyParams.map((t) => ({ type: "text", text: (t || "você").slice(0, 60) })) });
+    components.push({ type: "body", parameters: bodyParams.map((t) => ({ type: "text", text: (t || "você").replace(/\s*\n\s*/g, " ").slice(0, 300) })) });
   }
   try {
     const r = await fetch(D360_URL, {
@@ -83,7 +96,7 @@ serve(async (req) => {
       const res: any[] = [];
       for (const num of body.testeCardapio.slice(0, 5)) {
         const nome = primeiroNome(body?.nome ?? null) || "você";
-        const r = await sendTemplate(toWa(String(num)), "lia_reengajar_cardapio", [nome]);
+        const r = await sendTemplate(toWa(String(num)), "lia_reengajar_cardapio", bodyParamsPara("lia_reengajar_cardapio", nome, ""));
         res.push({ to: toWa(String(num)), ok: r.ok, err: r.err });
         await sleep(400);
       }
@@ -138,8 +151,7 @@ serve(async (req) => {
         if (vivo && vivo.length) { await sb.from("lia_reengajamento_fila").update({ status: "cancelado", erro: "ja_tem_lead_vivo" }).eq("id", f.id); continue; }
 
         const nome = primeiroNome(f.nome);
-        const vars = TEMPLATE_VARS[f.template_key] ?? 1;
-        const bodyParams = vars >= 2 ? [nome, nomePorProduto[f.produto_slug ?? ""] || "seu imóvel"] : [nome];
+        const bodyParams = bodyParamsPara(f.template_key, nome, nomePorProduto[f.produto_slug ?? ""]);
 
         const res = await sendTemplate(toWa(f.telefone), f.template_key, bodyParams);
         if (res.ok) {
