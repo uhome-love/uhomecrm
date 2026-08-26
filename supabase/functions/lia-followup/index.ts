@@ -39,6 +39,7 @@ const REENG_MIN_H = 3;     // silêncio mínimo antes de cutucar
 const REENG_MAX_H = 20;    // não cutuca depois disso (aí a cadência de template assume)
 const REENG_JANELA_H = 23; // janela free-form do WhatsApp desde a última fala do LEAD
 const REENG_MAX_POR_RODADA = 6; // teto por execução (cada um faz 1 chamada de IA)
+const REENG_WAVE2_GAP_H = 3;    // intervalo entre o 1º e o 2º cutucão (2 toques de valor dentro das 24h)
 
 const svc = () =>
   createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -76,6 +77,32 @@ async function send360Image(to: string, link: string) {
     if (!r.ok) { console.error("[lia-followup] imagem falhou", r.status, await r.text().catch(() => "")); return false; }
     return true;
   } catch (e) { console.error("[lia-followup] erro na imagem", e); return false; }
+}
+
+async function send360Doc(to: string, link: string, filename: string) {
+  const key = Deno.env.get("D360_API_KEY");
+  if (!key) return false;
+  try {
+    const r = await fetch(D360_URL, {
+      method: "POST",
+      headers: { "D360-API-KEY": key, "Content-Type": "application/json" },
+      body: JSON.stringify({ messaging_product: "whatsapp", to, type: "document", document: { link, filename } }),
+    });
+    if (!r.ok) { console.error("[lia-followup] doc falhou", r.status, await r.text().catch(() => "")); return false; }
+    return true;
+  } catch (e) { console.error("[lia-followup] erro no doc", e); return false; }
+}
+
+// Material de VALOR por produto pro cutucão (fachada + infra + ebook). Usa a midia do produto;
+// no Canoas (sem midia no banco) cai no acervo hardcoded do Casa Tua.
+const CANOAS_EBOOK = `${MEDIA_BASE}/guia-casa-tua-santos-ferreira.pdf`;
+function materialReeng(midias: Record<string, string> | null | undefined) {
+  const m = midias ?? {};
+  return {
+    fachada: m.fachada || FOTO_FACHADA,
+    infra: m.clube || m.piscina || m.rooftop || m.infra || FOTO_INFRA,
+    ebook: m.ebook || m.apresentacao || CANOAS_EBOOK,
+  };
 }
 
 // Templates OFICIAIS do WhatsApp APROVADOS (passam mesmo depois das 24h). key = nome do template
@@ -311,23 +338,26 @@ async function detectar(sb: any): Promise<number> {
   return criados;
 }
 
-/** LIA PROATIVA (cutucão inteligente): retoma, com UMA mensagem contextual, conversas que ficaram
- * mudas ainda dentro da janela do mesmo dia (antes da cadência de template assumir em 24h). Texto
- * livre gerado pelo cérebro da LIA (modo reengajar), específico ao que o lead falou. Máx 1 por lead. */
+/** LIA PROATIVA (cutucão de VALOR): retoma conversas que ficaram mudas ainda dentro da janela
+ * free-form de 24h. NÃO cobra retorno: ENTREGA material (o que reengajava no Casa Tua Canoas).
+ * DOIS toques por lead nessa janela: onda 1 = fachada + infraestrutura do imóvel + pergunta
+ * contextual; onda 2 (algumas horas depois, se seguir mudo) = ebook/apresentação + pergunta.
+ * O texto é do cérebro da LIA (modo reengajar), específico ao que o lead falou. */
 async function reengajarProativo(sb: any): Promise<number> {
   const h = horaBRT();
   if (h < HORA_INI || h >= HORA_FIM) return 0; // só horário comercial
   const agora = Date.now();
 
+  // candidatos das 2 ondas: onda 1 (sem reengajado_em) OU onda 2 (com reengajado_em, sem reengajado2_em)
   const { data: cands } = await sb
     .from("lia_estado")
-    .select("telefone, nome, lead_id, status, produto_slug, last_user_at, last_msg_em, followup_count, reengajado_em, repassado_em")
+    .select("telefone, nome, lead_id, status, produto_slug, last_user_at, last_msg_em, followup_count, reengajado_em, reengajado2_em, repassado_em")
     .in("status", ["novo", "em_conversa"])
     .eq("optout", false)
-    .is("reengajado_em", null)
     .eq("followup_count", 0)
+    .is("reengajado2_em", null)  // quem já fez as 2 ondas sai
     .not("last_user_at", "is", null)
-    .limit(200);
+    .limit(300);
   if (!cands?.length) return 0;
 
   // quem já tem corretor (repassado) sai: o humano assumiu
@@ -338,10 +368,11 @@ async function reengajarProativo(sb: any): Promise<number> {
     for (const pl of pls ?? []) if (pl.corretor_id && pl.aceite_status === "aceito") repassados.add(pl.id);
   }
 
-  // ficha por produto, pra reengajar específico
-  const { data: prods } = await sb.from("lia_produtos").select("slug, ficha");
+  // ficha + midias por produto (a midia é o VALOR do cutucão)
+  const { data: prods } = await sb.from("lia_produtos").select("slug, ficha, midias");
   const fichaPorProduto: Record<string, string> = {};
-  for (const p of prods ?? []) if (p.ficha) fichaPorProduto[p.slug] = p.ficha;
+  const midiasPorProduto: Record<string, Record<string, string>> = {};
+  for (const p of prods ?? []) { if (p.ficha) fichaPorProduto[p.slug] = p.ficha; midiasPorProduto[p.slug] = (p.midias ?? {}) as Record<string, string>; }
 
   let enviados = 0;
   for (const c of cands) {
@@ -352,9 +383,15 @@ async function reengajarProativo(sb: any): Promise<number> {
     const lm = c.last_msg_em ? new Date(c.last_msg_em).getTime() : 0;
     if (!lu || !lm) continue;
     if (lm <= lu) continue;                               // a LIA precisa ter falado por último (esperando o lead)
+    if ((agora - lu) / 3600_000 > REENG_JANELA_H) continue; // fora da janela free-form de 24h (medida da última fala do LEAD)
+
+    const onda = c.reengajado_em == null ? 1 : 2;
     const silencioH = (agora - lm) / 3600_000;
-    if (silencioH < REENG_MIN_H || silencioH > REENG_MAX_H) continue;
-    if ((agora - lu) / 3600_000 > REENG_JANELA_H) continue; // fora da janela free-form de 24h
+    if (onda === 1) {
+      if (silencioH < REENG_MIN_H || silencioH > REENG_MAX_H) continue;
+    } else {
+      if (silencioH < REENG_WAVE2_GAP_H) continue;        // espera algumas horas após a onda 1
+    }
 
     // não cutuca se já existe toque de template pendente/aprovado pra esse número
     const { data: aberto } = await sb
@@ -367,7 +404,7 @@ async function reengajarProativo(sb: any): Promise<number> {
     const msgs = (hist ?? []).map((x: any) => ({ role: x.role, content: x.conteudo }));
     if (!msgs.length) continue;
 
-    // gera a mensagem contextual pelo cérebro da LIA (modo reengajar)
+    // pergunta contextual pelo cérebro da LIA (modo reengajar)
     let content = "";
     try {
       const ficha = fichaPorProduto[c.produto_slug ?? ""] ?? "";
@@ -380,18 +417,32 @@ async function reengajarProativo(sb: any): Promise<number> {
       content = String(d?.content ?? "").trim();
     } catch (e) {
       console.error("[lia-followup] reengajar chat erro", e);
-      continue; // erro transitório: tenta na próxima rodada (não queima o reengajado_em)
+      continue; // erro transitório: tenta na próxima rodada (não queima a marca)
     }
 
-    if (!content) { // a IA decidiu que não vale reengajar (PULAR): marca pra não reprocessar
-      await sb.from("lia_estado").update({ reengajado_em: nowISO(), updated_at: nowISO() }).eq("telefone", c.telefone);
+    const marca = onda === 1 ? { reengajado_em: nowISO() } : { reengajado2_em: nowISO() };
+    if (!content) { // a IA decidiu que não vale reengajar (PULAR): marca a onda e não manda
+      await sb.from("lia_estado").update({ ...marca, updated_at: nowISO() }).eq("telefone", c.telefone);
       continue;
     }
 
-    const ok = await send360Text(c.telefone, content);
-    if (ok) {
+    // O CUTUCÃO DÁ VALOR: manda material do produto e DEPOIS a pergunta contextual.
+    const mat = materialReeng(midiasPorProduto[c.produto_slug ?? ""]);
+    let mandouMat = false;
+    if (onda === 1) {
+      if (await send360Image(c.telefone, mat.fachada)) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[foto] Fachada do empreendimento" }); mandouMat = true; }
+      await sleep(1200);
+      if (await send360Image(c.telefone, mat.infra)) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[foto] Infraestrutura/lazer" }); mandouMat = true; }
+      await sleep(1200);
+    } else {
+      if (await send360Doc(c.telefone, mat.ebook, "Material Uhome.pdf")) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[material] Apresentação/ebook" }); mandouMat = true; }
+      await sleep(1200);
+    }
+
+    const okTexto = await send360Text(c.telefone, content);
+    if (okTexto || mandouMat) {
       await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: content });
-      await sb.from("lia_estado").update({ reengajado_em: nowISO(), last_msg_em: nowISO(), updated_at: nowISO() }).eq("telefone", c.telefone);
+      await sb.from("lia_estado").update({ ...marca, last_msg_em: nowISO(), updated_at: nowISO() }).eq("telefone", c.telefone);
       enviados++;
     }
   }
