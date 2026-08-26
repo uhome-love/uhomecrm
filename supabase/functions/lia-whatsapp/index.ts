@@ -155,10 +155,14 @@ async function resolverProduto(sb: any, telefone: string, est: any, referral: an
     const { data: msgs } = await sb.from("lia_conversas")
       .select("conteudo").eq("telefone", telefone).eq("role", "user")
       .order("created_at", { ascending: true }).limit(6);
-    const texto = (msgs ?? []).map((m: any) => String(m.conteudo || "")).join(" ").toLowerCase();
+    // inclui o TEXTO DO ANÚNCIO (referral body/headline) além do que a pessoa escreveu:
+    // o anúncio quase sempre nomeia o imóvel ("Carlos Gomes / Nilo Peçanha", "Protásio", "Canoas"),
+    // então mesmo um anúncio NÃO mapeado em campanha_ids resolve pelo próprio conteúdo dele.
+    const refTxt = [referral?.body, referral?.headline].filter(Boolean).map(String).join(" ");
+    const texto = ((msgs ?? []).map((m: any) => String(m.conteudo || "")).join(" ") + " " + refTxt).toLowerCase();
     if (texto) {
       const REGRAS: { slug: string; re: RegExp }[] = [
-        { slug: "awa-wellness", re: /\bawa\b|wellness|carlos gomes/ },
+        { slug: "awa-wellness", re: /\bawa\b|wellness|carlos gomes|nilo pe[çc]/ },
         { slug: "connect-joao-wallig", re: /connect|jo[aã]o wallig|wallig/ },
         { slug: "casa-tua-porto-alegre", re: /porto alegre|\bpoa\b|petr[oó]polis|prot[aá]sio/ },
         { slug: "casa-tua-canoas", re: /canoas|santos ferreira/ },
