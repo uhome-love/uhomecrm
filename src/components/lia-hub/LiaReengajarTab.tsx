@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Play, Pause, Square, Power, Send, Users, AlertTriangle } from "lucide-react";
+import { Play, Pause, Square, Power, Send, Users, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
@@ -250,8 +250,8 @@ export default function LiaReengajarTab() {
             </div>
           </div>
           {modo === "cardapio" && (
-            <p className="flex items-center gap-1.5 text-[11px] text-amber-700">
-              <AlertTriangle className="h-3.5 w-3.5" /> O cardápio depende do cérebro de curadoria (em construção). Por ora, use o modo Produto no piloto.
+            <p className="flex items-center gap-1.5 text-[11px] text-emerald-700">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Cérebro do cardápio pronto: o lead responde o número do menu (1 Flow, 2 Casa Tua POA, 3 AWA, 4 Lake Baikal, 5 seleção personalizada) e a LIA atende o imóvel certo, ou faz a curadoria e passa pro corretor.
             </p>
           )}
         </CardContent>
