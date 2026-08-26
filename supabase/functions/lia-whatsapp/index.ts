@@ -421,7 +421,18 @@ serve(async (req) => {
             }
           }
           if (midiaFalhou) {
-            await sendText(from, "Ops, tive um probleminha aqui pra te enviar o arquivo 🙈 já te reenvio, tá?");
+            // a mídia que a pessoa PEDIU (planta/ebook) não foi enviada. Reenviar por aqui costuma
+            // falhar de novo (URL/arquivo). Pra lead engajado (morno/quente), em vez de prometer um
+            // reenvio que não vem, passa pro time ENTREGAR certinho (decisão do Lucas, casos Grazieli/Gabi).
+            const engajado = sinal === "quente" || sinal === "morno";
+            const podeRepassar = engajado && !posRepasse && est.status !== "qualificado" && est.status !== "descartado" && !OPTOUT_RE.test(texto);
+            if (podeRepassar) {
+              await sendText(from, "Tive um probleminha pra te enviar o arquivo por aqui 🙈 já vou pedir pro nosso especialista te mandar certinho, tá? 😊");
+              const leadId = await qualificar(sb, from, est, contactName, referral, sinal, produto);
+              if (leadId) { await passagemDeBastao(sb, from, produto); est.status = "qualificado"; est.lead_id = leadId; }
+            } else {
+              await sendText(from, "Ops, tive um probleminha aqui pra te enviar o arquivo 🙈 já te reenvio, tá?");
+            }
           }
           await sb.from("lia_estado").update({ last_msg_em: nowISO() }).eq("telefone", from);
         }
@@ -488,12 +499,14 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     let leadId: string | null = est.lead_id ?? null;
     if (!leadId) {
       leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel, resumo, produto);
-      // FILA CEO (fase de teste): NÃO distribui automático pela roleta. O lead nasce sem corretor,
-      // fica na Fila CEO com o resumo estruturado, e o Lucas repassa manualmente pra pegar o
-      // feedback de cada repasse com o time. (Quando amadurecer, é só religar empurrarParaRoleta.)
       // Se NÃO conseguiu criar o lead, aborta: não marca qualificado nem manda a passagem de bastão
       // (senão o cliente é avisado que um humano vem e o lead fica órfão, sem ninguém na fila).
       if (!leadId) { console.error("[lia-whatsapp] qualificar: criarLeadFila falhou, abortando repasse"); return null; }
+      // ROLETA (decisão do Lucas, 26/ago): distribui pro corretor correto e ATIVO do empreendimento
+      // (distribuir_lead_atomico escopado por empreendimento_canonico + credenciamento do dia). Se não
+      // houver corretor alocado/credenciado ativo, o distribute-lead mantém o lead na Fila CEO. Assim o
+      // lead engajado NÃO fica parado (caso Aline): um humano pega e continua na hora.
+      await empurrarParaRoleta(leadId);
     } else {
       // já estava na fila: atualiza a temperatura E o título do histórico pra bater com a fila
       await sb.from("pipeline_leads").update({
