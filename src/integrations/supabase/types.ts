@@ -5798,6 +5798,7 @@ export type Database = {
           produto_slug: string | null
           qualificado_em: string | null
           reengajado_em: string | null
+          reengajado2_em: string | null
           referral: Json | null
           repassado_em: string | null
           resumo: string | null
@@ -5822,6 +5823,7 @@ export type Database = {
           produto_slug?: string | null
           qualificado_em?: string | null
           reengajado_em?: string | null
+          reengajado2_em?: string | null
           referral?: Json | null
           repassado_em?: string | null
           resumo?: string | null
@@ -5846,6 +5848,7 @@ export type Database = {
           produto_slug?: string | null
           qualificado_em?: string | null
           reengajado_em?: string | null
+          reengajado2_em?: string | null
           referral?: Json | null
           repassado_em?: string | null
           resumo?: string | null
