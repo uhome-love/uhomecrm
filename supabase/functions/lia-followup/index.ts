@@ -126,11 +126,14 @@ const WA_TEMPLATES: Record<string, { name: string; lang: string; vars?: number; 
 // CADÊNCIA AUTOMÁTICA (os toques, na ordem). Cada item é um template aprovado.
 // "__REATIVACAO__" = o template de reativação do PRODUTO do lead (Canoas = ebook; demais = procura-se).
 // Ajustar a ordem/quantidade aqui muda toda a cadência. Rodada pós-24h: só template aprovado passa.
+// Aposentado o toque "novidade" (o Lucas confirmou em cima de conversas reais: não converte
+// ninguém). A cadência do lead POUCO engajado (frio/seguindo) é value-first: reativação com o
+// material do produto (ebook do Canoas / procura-se) e, se seguir mudo, o encerramento com porta
+// aberta. Lead que ENGAJOU (morno/quente) NÃO entra nessa cadência de template (ver detectar):
+// ele vai pro time, não pro tiroteio de follow-up.
 const CADENCIA: string[] = [
-  "followup_novidade_lia",     // toque 1 — "lembrei de você"
-  "followup_simulacao_lia",    // toque 2 — "posso te fazer uma simulação"
-  "__REATIVACAO__",            // toque 3 — "procura-se" (do produto)
-  "followup_encerramento_lia", // toque 4 — "encerrando por aqui, porta aberta"
+  "__REATIVACAO__",            // toque 1 — reativação do produto (Canoas = ebook; demais = procura-se)
+  "followup_encerramento_lia", // toque 2 — "encerrando por aqui, porta aberta"
 ];
 
 // Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
@@ -273,7 +276,7 @@ async function detectar(sb: any): Promise<number> {
   // qualificado NÃO recebe toque (já é do corretor).
   const { data: cands } = await sb
     .from("lia_estado")
-    .select("telefone, nome, lead_id, status, produto_slug, last_user_at, last_msg_em, followup_count")
+    .select("telefone, nome, lead_id, status, produto_slug, last_user_at, last_msg_em, followup_count, nivel")
     .in("status", ["novo", "em_conversa"])
     .eq("optout", false)
     .lt("followup_count", MAX_CUTUCOES)
@@ -299,6 +302,10 @@ async function detectar(sb: any): Promise<number> {
   let criados = 0;
   for (const c of cands) {
     if (c.lead_id && repassados.has(c.lead_id)) continue; // já tem corretor: humano assumiu
+    // ENGAJOU DE VERDADE (morno/quente) NÃO recebe cadência de template (decisão do Lucas em cima de
+    // conversas reais: ficar cutucando quem já interagiu não adianta, vira tiroteio sem retorno).
+    // Esse lead é pra ir pro time; o "cutucão" fica só pra quem interagiu pouco (frio/seguindo/sem nível).
+    if (c.nivel === "morno" || c.nivel === "quente") continue;
 
     // relógio do silêncio: última fala do LEAD, ou (se nunca falou) a última mensagem que a LIA mandou.
     const relogio = c.last_user_at ? new Date(c.last_user_at).getTime()
