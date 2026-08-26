@@ -188,6 +188,25 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  // TRAVA DE GESTÃO: esta função devolve PII de leads (nome/telefone/email) via service_role.
+  // Só admin/gestor/diretor pode consultar o público de disparo (não corretor comum).
+  const jerr = (msg: string, status: number) => new Response(JSON.stringify({ error: msg }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!jwt) return jerr("não autenticado", 401);
+  const { data: userData } = await createClient(
+    Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: `Bearer ${jwt}` } } },
+  ).auth.getUser();
+  const uid = userData?.user?.id;
+  let gestor = false;
+  if (uid) {
+    for (const role of ["admin", "gestor", "diretor"]) {
+      const { data: ok } = await supabase.rpc("has_role", { _user_id: uid, _role: role });
+      if (ok === true) { gestor = true; break; }
+    }
+  }
+  if (!gestor) return jerr("acesso restrito à gestão", 403);
+
   try {
     const body = await req.json().catch(() => ({}));
     const audience: Audience = (body as any)?.audience || {};
