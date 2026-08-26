@@ -24,8 +24,8 @@ const cors = {
 
 const D360_URL = "https://waba-v2.360dialog.io/messages";
 const HORA_INI = 9, HORA_FIM = 20;
-const LOTE_INTERVALO_MS = 8000; // espaçamento entre envios (proteção do número)
-const MAX_POR_EXECUCAO = 12;    // teto por rodada de cron (lote pequeno)
+const LOTE_INTERVALO_MS = 20000; // 20s entre envios (proteção do número, sem rajada)
+const MAX_POR_EXECUCAO = 3;      // poucos por rodada; com o cron de 10 min sai espaçado no dia (decisão do Lucas: nada de rajada)
 const TEMPLATE_LANG = "pt_BR";
 const TEMPLATE_VARS: Record<string, number> = {
   lia_reengajar_produto: 2,   // {{1}} nome, {{2}} imóvel
