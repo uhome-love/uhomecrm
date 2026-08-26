@@ -89,20 +89,6 @@ serve(async (req) => {
   try {
     const sb = svc();
 
-    // TESTE do template do cardápio: manda o lia_reengajar_cardapio (com a imagem do header) pros
-    // números informados, SEM tocar na fila, nas runs nem no kill switch. Só pra validar o envio.
-    const body = await req.json().catch(() => ({} as any));
-    if (Array.isArray(body?.testeCardapio) && body.testeCardapio.length) {
-      const res: any[] = [];
-      for (const num of body.testeCardapio.slice(0, 5)) {
-        const nome = primeiroNome(body?.nome ?? null) || "você";
-        const r = await sendTemplate(toWa(String(num)), "lia_reengajar_cardapio", bodyParamsPara("lia_reengajar_cardapio", nome, ""));
-        res.push({ to: toWa(String(num)), ok: r.ok, err: r.err });
-        await sleep(400);
-      }
-      return new Response(JSON.stringify({ ok: true, teste: res }), { headers: { ...cors, "Content-Type": "application/json" } });
-    }
-
     // 1) KILL SWITCH
     const { data: flag } = await sb.from("system_flags").select("flag_value").eq("flag_name", "lia_reengajamento_enabled").maybeSingle();
     if (!flag?.flag_value) return new Response(JSON.stringify({ ok: true, skip: "desligado" }), { headers: { ...cors, "Content-Type": "application/json" } });
