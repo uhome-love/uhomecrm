@@ -500,26 +500,39 @@ export function useTemplatesOA() {
   });
 }
 
-/** Corretores ativos + equipes (gestores) para o escopo da campanha. */
+/**
+ * Corretores + equipes (gestores) para o escopo da campanha.
+ * Inclui também corretores que NÃO estão em nenhuma equipe — eles nunca
+ * seriam alcançados por um escopo restrito a equipes.
+ */
 export function useEscopoOpcoes() {
   return useQuery({
     queryKey: ["oa-escopo-opcoes"],
     queryFn: async () => {
-      const [{ data: membros }, { data: perfis }] = await Promise.all([
+      const [{ data: membros }, { data: perfis }, { data: roles }] = await Promise.all([
         supabase.from("team_members").select("user_id,gerente_id").eq("status", "ativo"),
         supabase.from("profiles").select("user_id,nome").order("nome"),
+        supabase.from("user_roles").select("user_id,role").eq("role", "corretor"),
       ]);
       const nomePorUser = new Map<string, string>(
         (perfis ?? []).map((p: { user_id: string; nome: string }) => [p.user_id, p.nome] as [string, string]),
       );
 
       const gerentes = Array.from(new Set((membros ?? []).map((m: { gerente_id: string }) => m.gerente_id).filter(Boolean)));
-      const corretores = Array.from(new Set((membros ?? []).map((m: { user_id: string }) => m.user_id).filter(Boolean)));
+      const comEquipe = new Set((membros ?? []).map((m: { user_id: string }) => m.user_id).filter(Boolean) as string[]);
+      const corretoresRole = (roles ?? []).map((r: { user_id: string }) => r.user_id).filter(Boolean) as string[];
+      const semEquipe = corretoresRole.filter((u) => !comEquipe.has(u));
+      const corretores = Array.from(new Set([...comEquipe, ...corretoresRole]));
+
       return {
         equipes: gerentes.map((g) => ({ id: g as string, nome: nomePorUser.get(g as string) ?? "Equipe" })),
         corretores: corretores
-          .map((c) => ({ id: c as string, nome: nomePorUser.get(c as string) ?? "Corretor" }))
+          .map((c) => ({
+            id: c,
+            nome: `${nomePorUser.get(c) ?? "Corretor"}${comEquipe.has(c) ? "" : " (sem equipe)"}`,
+          }))
           .sort((a, b) => a.nome.localeCompare(b.nome)),
+        semEquipeIds: semEquipe,
       };
     },
     staleTime: 10 * 60_000,
