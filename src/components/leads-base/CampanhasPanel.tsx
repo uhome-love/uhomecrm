@@ -33,6 +33,7 @@ export function CampanhasPanel({ escopo = "todas" }: { escopo?: "todas" | "ativa
   const { data, isLoading } = useCampanhasOA();
   const encerrar = useEncerrarCampanhasExpiradas();
   const encerrarUma = useEncerrarCampanha();
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const rows = ((data ?? []) as unknown as Row[])
     .filter((r) => r.status !== "arquivada")
     .filter((r) => {
