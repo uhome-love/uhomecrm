@@ -32,26 +32,19 @@ export function MutiraoPulseBanner() {
   // Sem sessão ao vivo agora → nada aparece.
   if (!live) return null;
 
-  const janela = sessao
-    ? `Hoje das ${formatBRT(sessao.inicio_at, "HH:mm")} às ${formatBRT(sessao.fim_at, "HH:mm")} — entre agora`
-    : "Prepare-se — a fila abre já já";
+  const janela = `Hoje das ${formatBRT(sessao!.inicio_at, "HH:mm")} às ${formatBRT(sessao!.fim_at, "HH:mm")} — entre agora`;
 
   return (
     <button
       onClick={() => nav("/oferta-ativa-ao-vivo")}
-      className={`w-full rounded-2xl px-5 py-4 flex items-center gap-3 text-white text-left transition
-        ${live ? "bg-gradient-to-r from-emerald-600 via-primary to-purple-600 animate-pulse" : "bg-gradient-to-r from-primary to-purple-600"}`}
+      className="w-full rounded-2xl px-5 py-4 flex items-center gap-3 text-white text-left transition bg-gradient-to-r from-emerald-600 via-primary to-purple-600 animate-pulse"
     >
       <div className="p-2 rounded-full bg-white/20">
-        {live ? <Radio className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
+        <Radio className="w-6 h-6" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-lg leading-tight">
-          {live ? "🔴 MUTIRÃO INTELIGENTE AO VIVO" : "⚡ Mutirão Inteligente"}
-        </p>
-        <p className="text-sm text-white/80">
-          {janela}
-        </p>
+        <p className="font-bold text-lg leading-tight">🔴 MUTIRÃO INTELIGENTE AO VIVO</p>
+        <p className="text-sm text-white/80">{janela}</p>
       </div>
       <div className="px-3 py-1.5 rounded-full bg-white/20 text-sm font-semibold">Entrar →</div>
     </button>
