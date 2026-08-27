@@ -84,7 +84,15 @@ export default function CorretorEntrada({ onSair }: Props) {
     );
   }
 
+  // Produto real da campanha (usado pelo script da ligação — não muda).
   const empDestaque = destaque?.empreendimento || destaque?.nome || "";
+
+  // Título = nome da campanha; empreendimento só como apoio quando for produto real.
+  const tituloDestaque = destaque?.nome || destaque?.empreendimento || "";
+  const produtoDestaque =
+    destaque?.empreendimento && !ehRotuloGenerico(destaque.empreendimento) && destaque.empreendimento !== tituloDestaque
+      ? destaque.empreendimento
+      : null;
 
   return (
     <div className="space-y-3">
