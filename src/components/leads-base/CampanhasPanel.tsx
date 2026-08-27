@@ -152,6 +152,8 @@ export function CampanhasPanel({ escopo = "todas" }: { escopo?: "todas" | "ativa
           </tbody>
         </table>
       </div>
+
+      <EditarCampanhaDialog listaId={editandoId} onOpenChange={(v) => !v && setEditandoId(null)} />
     </div>
   );
 }
