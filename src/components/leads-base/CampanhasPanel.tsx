@@ -1,8 +1,10 @@
-import { Timer, RefreshCcw, Square } from "lucide-react";
+import { useState } from "react";
+import { Timer, RefreshCcw, Square, Pencil, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCampanhasOA, useEncerrarCampanhasExpiradas, useEncerrarCampanha } from "@/hooks/useBaseLeads";
 import { formatBRT } from "@/lib/brtTime";
+import { EditarCampanhaDialog } from "./campanha/EditarCampanhaDialog";
 
 interface Row {
   lista_id: string;
