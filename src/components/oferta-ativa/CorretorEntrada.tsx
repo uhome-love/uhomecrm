@@ -29,6 +29,18 @@ function diasRestantes(expiraEm?: string | null) {
   return Math.ceil(ms / 86_400_000);
 }
 
+/** "Base Única" não é produto — é o rótulo de campanhas criadas a partir da base de leads. */
+const ROTULOS_GENERICOS = ["base unica", "base única", "avulso", "avulsos"];
+function ehRotuloGenerico(valor?: string | null) {
+  if (!valor) return true;
+  return ROTULOS_GENERICOS.includes(valor.trim().toLowerCase());
+}
+
+/** Título exibido ao corretor: nome da campanha primeiro. */
+function tituloCampanha(c: { nome?: string | null; empreendimento?: string | null }) {
+  return c.nome || c.empreendimento || "";
+}
+
 interface Props {
   onSair?: () => void;
 }
