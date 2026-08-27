@@ -42,6 +42,79 @@ const DOC: Record<string, { link: string; filename: string }> = {
 };
 const OPTOUT_RE = /n[aã]o quero (mais )?(receber|falar)|me tira|sai(r)? da lista|para de (me )?mandar|me bloqueia|descadastr|remover? da lista|n[aã]o me mand/i;
 
+// AUTORESPOSTA DE EMPRESA (achado da auditoria do 1º lote de reengajamento, 27/08/2026):
+// de 3 "respostas" ao disparo, 2 eram robô institucional — um salão de estética
+// ("Seja muito bem-vinda ✨ ... envie o serviço que deseja realizar") e uma escolinha de
+// futebol ("Seja bem vindo a itaqui soccer Academy ⚽️ Em Breve Retornaremos"). A LIA
+// respondeu aos dois como se fossem clientes, abriu janela de 24h e chegou a mandar
+// material. Isso queima verba, polui a métrica e não vira lead nenhum.
+//
+// A régua é DELIBERADAMENTE conservadora: só marca como robô quem bate em 2+ sinais, ou
+// em 1 sinal num textão (>180 chars). Cliente de verdade escreve curto e não anuncia
+// horário de atendimento. Na dúvida, trata como humano — perder um robô custa pouco,
+// ignorar uma pessoa custa o lead.
+const AUTORESP_SINAIS: RegExp[] = [
+  /em breve (retornaremos|responderemos|entraremos em contato)/i,
+  /(nosso|nossos) hor[áa]rios? de atendimento|atendemos de (segunda|seg)/i,
+  /assim que (finalizar|encerrar|possível|possivel) (o )?atendimento/i,
+  /(obrigad[oa]|agradecemos) pel[oa] (seu )?contato/i,
+  /seja (muito )?bem[- ]vind[oa]/i,
+  /sua mensagem (é|e) (muito )?importante/i,
+  /aguarde (o )?nosso atendimento|no momento estou|estamos em atendimento/i,
+  /por gentileza,? (envie|informe)/i,
+  /esta (é|e) uma (mensagem|resposta) autom[áa]tica/i,
+];
+function ehAutoresposta(texto: string): boolean {
+  const t = String(texto || "").trim();
+  if (t.length < 40) return false;              // resposta curta é gente
+  let sinais = 0;
+  for (const re of AUTORESP_SINAIS) if (re.test(t)) sinais++;
+  return sinais >= 2 || (sinais === 1 && t.length > 180);
+}
+
+// Marca, na fila de reengajamento, que este telefone respondeu ao disparo — e se foi
+// gente ou robô. Sem isso a coluna `respondeu_em` nunca era escrita e o painel mostrava
+// 0 resposta para sempre, mesmo com o lote inteiro respondendo.
+async function marcarRespostaReengajamento(sb: any, from: string, texto: string) {
+  try {
+    const tel8 = String(from).replace(/\D/g, "").slice(-8);
+    if (tel8.length < 8) return;
+    const { data } = await sb.from("lia_reengajamento_fila")
+      .select("id, respondeu_em").eq("tel8", tel8).eq("status", "enviado")
+      .order("enviado_em", { ascending: false }).limit(1);
+    const linha = data?.[0];
+    if (!linha || linha.respondeu_em) return;   // só a PRIMEIRA resposta conta
+    await sb.from("lia_reengajamento_fila").update({
+      respondeu_em: nowISO(),
+      resposta_tipo: ehAutoresposta(texto) ? "autoresposta" : "humano",
+    }).eq("id", linha.id);
+  } catch (e) {
+    console.error("[lia-whatsapp] marcarRespostaReengajamento", e);
+  }
+}
+
+// Eventos de status do 360dialog (entregue / lido / falhou). O webhook antes descartava
+// tudo isso, então com 163 disparos não dava nem pra saber se a mensagem chegou.
+async function registrarStatus(sb: any, statuses: any[]) {
+  for (const st of statuses ?? []) {
+    const id = st?.id ? String(st.id) : null;
+    const estado = String(st?.status || "").toLowerCase();
+    if (!id || !estado) continue;
+    const patch: Record<string, unknown> = {};
+    if (estado === "delivered") patch.entregue_em = nowISO();
+    else if (estado === "read") patch.lido_em = nowISO();
+    else if (estado === "failed") {
+      patch.falhou_em = nowISO();
+      patch.falha_motivo = String(st?.errors?.[0]?.title ?? st?.errors?.[0]?.code ?? "falha sem detalhe").slice(0, 300);
+    } else continue;                            // 'sent' já é registrado no disparo
+    try {
+      await sb.from("lia_reengajamento_fila").update(patch).eq("wa_message_id", id);
+    } catch (e) {
+      console.error("[lia-whatsapp] registrarStatus", e);
+    }
+  }
+}
+
 // Temperatura do lead -> como ele entra na Fila CEO (fonte única: coluna temperatura).
 const NIVEL_MAP: Record<string, { temperatura: string; prioridade: string; emoji: string; label: string; rank: number }> = {
   quente: { temperatura: "quente", prioridade: "alta", emoji: "🔥", label: "Quente", rank: 3 },
@@ -258,6 +331,8 @@ serve(async (req) => {
     for (const ch of changes) {
       const value = ch?.value ?? {};
       const contactName = value?.contacts?.[0]?.profile?.name ?? null;
+      // entregue / lido / falhou dos disparos de reengajamento
+      if (value?.statuses?.length) await registrarStatus(sb, value.statuses);
       const messages = value?.messages ?? [];
       for (const m of messages) {
         if (!m?.from || !m?.id) continue; // ignora status delivered/read etc.
@@ -323,8 +398,20 @@ serve(async (req) => {
           await sb.from("lia_conversas").insert({ telefone: from, role: "user", conteudo, wa_message_id: waId });
         }
 
+        // REENGAJAMENTO: registra que este disparo teve resposta, e se foi gente ou robô.
+        await marcarRespostaReengajamento(sb, from, conteudo);
+
         // TRAVA DE OPT-OUT: quem já saiu não recebe mais resposta.
         if (est?.optout) continue;
+
+        // TRAVA DE AUTORESPOSTA: robô institucional de empresa (horário de atendimento,
+        // "em breve retornaremos") não é cliente. A mensagem fica registrada no histórico,
+        // mas a LIA NÃO responde, NÃO abre conversa e NÃO gasta follow-up nem material.
+        // Só vale enquanto ninguém humano falou ainda: se a conversa já engatou, segue normal.
+        if (!est?.lead_id && est?.status !== "em_conversa" && ehAutoresposta(conteudo)) {
+          console.log("[lia-whatsapp] autoresposta de empresa ignorada:", from);
+          continue; // fica no histórico (já inserido acima) e marcado na fila; a LIA só não responde
+        }
 
         // cria o estado na primeira mensagem (ainda NÃO cria lead na Fila CEO)
         const referral = m.referral ?? null;

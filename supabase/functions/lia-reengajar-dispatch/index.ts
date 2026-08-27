@@ -38,12 +38,27 @@ const TEMPLATE_HEADER: Record<string, { type: "image" | "document"; link: string
 };
 // O corpo do cardápio tem 5 variáveis: {{1}} nome + {{2}}..{{5}} os 4 imóveis do menu (a opção 5 é
 // texto fixo). Estes textos batem com os exemplos aprovados no Meta. ATUALIZAR se o menu mudar.
+// REGRA DO CARDÁPIO: preço em TODO item, sem exceção. O preço é o filtro — é ele que faz
+// quem não tem orçamento sair sozinho na primeira mensagem, antes de consumir hora de
+// corretor. O item do Lake Baikal ia sem valor ("Lançamento no Bairro Golden Lake"), então
+// não filtrava ninguém; agora vai com o "a partir de".
 const CARDAPIO_ITENS = [
   "Flow - Loft, 1 e 2 Dorms - A partir de 240mil - Junto ao Bourbon Ipiranga",
   "Casa Tua POA - Casas 2 e 3 Dorms na Zona Norte - A partir de 514mil",
   "AWA - Lofts Investir na Av Carlos Gomes e Nilo - A partir 339mil",
-  "Lake Baikal - Lançamento no Bairro Golden Lake",
+  "Lake Baikal - Alto padrao no Bairro Golden Lake - A partir de 3,7 milhoes",
 ];
+
+// Texto curto do que foi disparado, pra registrar no histórico da conversa.
+function resumoDoDisparo(templateKey: string, nome: string, produtoNome: string): string {
+  const quem = nome ? `${nome}, ` : "";
+  if (templateKey === "lia_reengajar_cardapio") {
+    return `[disparo · cardápio] ${quem}segue o menu de oportunidades da Uhome:\n` +
+      CARDAPIO_ITENS.map((t, i) => `${i + 1}. ${t}`).join("\n") +
+      `\n5. Quero uma seleção personalizada`;
+  }
+  return `[disparo · ${templateKey}] ${quem}sobre ${produtoNome || "o imóvel"}.`;
+}
 function bodyParamsPara(templateKey: string, nome: string, produtoNome: string): string[] {
   if (templateKey === "lia_reengajar_cardapio") return [nome, ...CARDAPIO_ITENS];
   if ((TEMPLATE_VARS[templateKey] ?? 1) >= 2) return [nome, produtoNome || "seu imóvel"];
@@ -59,7 +74,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // Número no formato do WhatsApp (55 + DDD + número). Não inventa o 9º dígito: usa o que está no cadastro.
 const toWa = (raw: string) => { let d = (raw || "").replace(/\D/g, ""); if (d.startsWith("55")) d = d.slice(2); return "55" + d; };
 
-async function sendTemplate(to: string, name: string, bodyParams: string[]): Promise<{ ok: boolean; err?: string }> {
+async function sendTemplate(to: string, name: string, bodyParams: string[]): Promise<{ ok: boolean; err?: string; waId?: string }> {
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const components: any[] = [];
@@ -80,7 +95,10 @@ async function sendTemplate(to: string, name: string, bodyParams: string[]): Pro
       body: JSON.stringify({ messaging_product: "whatsapp", to, type: "template", template: { name, language: { code: TEMPLATE_LANG }, components } }),
     });
     if (!r.ok) { const t = await r.text().catch(() => ""); return { ok: false, err: `${r.status} ${t}`.slice(0, 240) }; }
-    return { ok: true };
+    // Guarda o id da mensagem: é por ele que o webhook casa os eventos de entregue/lido/falhou.
+    const j = await r.json().catch(() => null);
+    const waId = j?.messages?.[0]?.id ? String(j.messages[0].id) : undefined;
+    return { ok: true, waId };
   } catch (e) { return { ok: false, err: String(e).slice(0, 240) }; }
 }
 
@@ -141,7 +159,18 @@ serve(async (req) => {
 
         const res = await sendTemplate(toWa(f.telefone), f.template_key, bodyParams);
         if (res.ok) {
-          await sb.from("lia_reengajamento_fila").update({ status: "enviado", enviado_em: nowISO() }).eq("id", f.id);
+          await sb.from("lia_reengajamento_fila").update({
+            status: "enviado", enviado_em: nowISO(), wa_message_id: res.waId ?? null,
+          }).eq("id", f.id);
+          // Loga o disparo na conversa. Sem isso o hub abria a thread pela resposta do lead,
+          // sem mostrar o que a LIA tinha mandado — parecia que o cliente falava sozinho.
+          try {
+            await sb.from("lia_conversas").insert({
+              telefone: toWa(f.telefone), role: "assistant",
+              conteudo: resumoDoDisparo(f.template_key, nome, nomePorProduto[f.produto_slug ?? ""]),
+              wa_message_id: res.waId ?? null,
+            });
+          } catch (e) { console.error("[lia-reengajar-dispatch] log conversa", e); }
           enviados++;
           await sleep(LOTE_INTERVALO_MS);
         } else {
