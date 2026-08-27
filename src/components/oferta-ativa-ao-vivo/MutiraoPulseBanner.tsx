@@ -1,13 +1,13 @@
 /**
  * MutiraoPulseBanner — CTA grande no dashboard do corretor.
- * Pulsa na quinta-feira entre 10h e 21h BRT (janela típica do mutirão).
- * Mostra a janela real da sessão ao vivo em BRT quando existir.
+ * Só aparece quando existe uma sessão de Mutirão AO VIVO agora.
+ * Mostra a janela real da sessão em BRT.
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Radio, Sparkles } from "lucide-react";
+import { Radio } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { brtMinutesOfDay, formatBRT } from "@/lib/brtTime";
+import { formatBRT } from "@/lib/brtTime";
 
 export function MutiraoPulseBanner() {
   const nav = useNavigate();
@@ -29,14 +29,8 @@ export function MutiraoPulseBanner() {
 
   const live = !!sessao;
 
-  // Pulsa se sessão ao vivo OU janela típica (quinta 10h-21h BRT)
-  const dow = new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: "America/Sao_Paulo" });
-  const isThursday = dow === "Thursday";
-  const min = brtMinutesOfDay();
-  const inWindow = isThursday && min >= 600 && min <= 1260;
-  const pulse = live || inWindow;
-
-  if (!pulse && !live) return null;
+  // Sem sessão ao vivo agora → nada aparece.
+  if (!live) return null;
 
   const janela = sessao
     ? `Hoje das ${formatBRT(sessao.inicio_at, "HH:mm")} às ${formatBRT(sessao.fim_at, "HH:mm")} — entre agora`
