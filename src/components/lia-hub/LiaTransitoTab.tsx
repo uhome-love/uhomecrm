@@ -60,23 +60,37 @@ export default function LiaTransitoTab() {
   const { data: pipeRaw, isLoading: loadingPipe } = useLiaPipelineLeads();
 
   const [produto, setProduto] = useState("todos");
+  const [periodo, setPeriodo] = useState<"hoje" | "semana" | "30d" | "tudo">("30d");
   const produtos = useMemo(() => produtosDeEstados(estadosRaw), [estadosRaw]);
 
+  const desde = useMemo(() => {
+    const now = Date.now();
+    if (periodo === "hoje") return now - 1 * 86400000;
+    if (periodo === "semana") return now - 7 * 86400000;
+    if (periodo === "30d") return now - 30 * 86400000;
+    return 0;
+  }, [periodo]);
+
+  // recorte: por imóvel + por período (data de entrada do lead na LIA)
   const estados = useMemo(
     () =>
-      produto === "todos"
-        ? estadosRaw ?? []
-        : (estadosRaw ?? []).filter((e) => (e.produto_slug ?? "") === produto),
-    [estadosRaw, produto],
+      (estadosRaw ?? []).filter((e) => {
+        if (produto !== "todos" && (e.produto_slug ?? "") !== produto) return false;
+        const dt = e.created_at ?? e.last_msg_em;
+        if (desde && dt && new Date(dt).getTime() < desde) return false;
+        return true;
+      }),
+    [estadosRaw, produto, desde],
   );
   const idsDoFiltro = useMemo(
     () => new Set((estados ?? []).map((e) => e.lead_id).filter(Boolean) as string[]),
     [estados],
   );
-  const leads = useMemo(() => {
-    const all = pipeRaw?.leads ?? [];
-    return produto === "todos" ? all : all.filter((l: any) => idsDoFiltro.has(l.id));
-  }, [pipeRaw, idsDoFiltro, produto]);
+  // fase corretor: só leads VIVOS (não arquivados) do recorte
+  const leads = useMemo(
+    () => (pipeRaw?.leads ?? []).filter((l: any) => !l.arquivado && idsDoFiltro.has(l.id)),
+    [pipeRaw, idsDoFiltro],
+  );
   const stages = pipeRaw?.stages;
   const corretores = pipeRaw?.corretores;
 
@@ -95,7 +109,9 @@ export default function LiaTransitoTab() {
     const responderam = list.filter((e) => !!e.last_user_at).length;
     const engajaram = list.filter((e) => e.status === "em_conversa" || e.status === "qualificado").length;
     const qualificados = list.filter((e) => e.status === "qualificado").length;
-    const repassados = list.filter((e) => !!e.repassado_em).length;
+    // Passou o bastão = leads que a LIA levou pro pipeline (lead criado). Todo qualificado gera lead,
+    // então é ~= qualificados; usar repassado_em subcontava (só o fluxo novo preenche esse campo).
+    const repassados = list.filter((e) => !!e.lead_id).length;
 
     const comCorretor = leads.filter((l: any) => l.corretor_id);
     const aceitos = comCorretor.filter((l: any) => l.aceite_status === "aceito").length;
@@ -149,10 +165,29 @@ export default function LiaTransitoTab() {
 
   return (
     <div className="space-y-5">
-      {/* filtro */}
-      <div className="flex flex-wrap items-center gap-3">
+      {/* filtros */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+          {([
+            ["hoje", "Hoje"],
+            ["semana", "Semana"],
+            ["30d", "30 dias"],
+            ["tudo", "Tudo"],
+          ] as const).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setPeriodo(v)}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                periodo === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <FiltroImovel produtos={produtos} valor={produto} onChange={setProduto} />
-        <span className="text-xs text-muted-foreground">{funil.falaram} leads no recorte</span>
+        <span className="ml-auto text-xs text-muted-foreground">{funil.falaram} leads no recorte</span>
       </div>
 
       {/* FUNIL DE VIDA INTEIRA */}

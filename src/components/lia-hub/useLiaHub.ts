@@ -78,6 +78,7 @@ export interface LiaEstado {
   agendamento: string | null;
   agendou_em: string | null;
   produto_slug: string | null;
+  created_at: string | null;
 }
 
 /** Rótulo curto e legível de cada produto (imóvel) da LIA. Fallback = o próprio slug. */
@@ -131,6 +132,7 @@ export interface LiaPipelineLead {
   aceite_status: string | null;
   stage_id: string | null;
   created_at: string;
+  arquivado: boolean | null;
 }
 
 /** Início do dia BRT em ISO (com offset -03:00). */
@@ -155,7 +157,7 @@ export function useLiaEstados() {
       const { data, error } = await supabase
         .from("lia_estado")
         .select(
-          "telefone,nome,status,nivel,qualificado_em,descartado_em,motivo,repassado_em,reengajado_em,last_user_at,last_msg_em,followup_count,referral,lead_id,optout,agendou,agendamento,agendou_em,produto_slug"
+          "telefone,nome,status,nivel,qualificado_em,descartado_em,motivo,repassado_em,reengajado_em,last_user_at,last_msg_em,followup_count,referral,lead_id,optout,agendou,agendamento,agendou_em,produto_slug,created_at"
         )
         .order("last_msg_em", { ascending: false, nullsFirst: false })
         .limit(1000);
@@ -278,7 +280,7 @@ export function useLiaPipelineLeads() {
         linkedIds.length
           ? supabase
               .from("pipeline_leads")
-              .select("id,nome,telefone,temperatura,tags,corretor_id,aceite_status,stage_id,created_at")
+              .select("id,nome,telefone,temperatura,tags,corretor_id,aceite_status,stage_id,created_at,arquivado")
               .in("id", linkedIds)
               .limit(1000)
           : Promise.resolve({ data: [] as any[], error: null } as any),
