@@ -6053,54 +6053,79 @@ export type Database = {
           agendado_para: string | null
           balde: string | null
           criado_em: string
+          entregue_em: string | null
           enviado_em: string | null
           erro: string | null
+          falha_motivo: string | null
+          falhou_em: string | null
           id: string
+          lido_em: string | null
           nome: string | null
           pipeline_lead_id: string | null
           produto_slug: string | null
           respondeu_em: string | null
+          resposta_tipo: string | null
           run_id: string
           status: string
           tel8: string | null
           telefone: string
           template_key: string
+          wa_message_id: string | null
         }
         Insert: {
           agendado_para?: string | null
           balde?: string | null
           criado_em?: string
+          entregue_em?: string | null
           enviado_em?: string | null
           erro?: string | null
+          falha_motivo?: string | null
+          falhou_em?: string | null
           id?: string
+          lido_em?: string | null
           nome?: string | null
           pipeline_lead_id?: string | null
           produto_slug?: string | null
           respondeu_em?: string | null
+          resposta_tipo?: string | null
           run_id: string
           status?: string
           tel8?: string | null
           telefone: string
           template_key: string
+          wa_message_id?: string | null
         }
         Update: {
           agendado_para?: string | null
           balde?: string | null
           criado_em?: string
+          entregue_em?: string | null
           enviado_em?: string | null
           erro?: string | null
+          falha_motivo?: string | null
+          falhou_em?: string | null
           id?: string
+          lido_em?: string | null
           nome?: string | null
           pipeline_lead_id?: string | null
           produto_slug?: string | null
           respondeu_em?: string | null
+          resposta_tipo?: string | null
           run_id?: string
           status?: string
           tel8?: string | null
           telefone?: string
           template_key?: string
+          wa_message_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lia_reengajamento_fila_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "lia_reengajamento_resultados"
+            referencedColumns: ["run_id"]
+          },
           {
             foreignKeyName: "lia_reengajamento_fila_run_id_fkey"
             columns: ["run_id"]
@@ -14102,6 +14127,34 @@ export type Database = {
           stage_changed_at: string | null
           tel8: string | null
           telefone: string | null
+        }
+        Relationships: []
+      }
+      lia_reengajamento_resultados: {
+        Row: {
+          autorespostas: number | null
+          balde: string | null
+          cap_dia: number | null
+          criado_em: string | null
+          entregues: number | null
+          enviados: number | null
+          falhas: number | null
+          geraram_visita: number | null
+          iniciado_em: string | null
+          lidos: number | null
+          lote_total: number | null
+          modo: string | null
+          na_fila: number | null
+          nome: string | null
+          optouts: number | null
+          pendentes: number | null
+          produto_slug: string | null
+          qualificados: number | null
+          repassados: number | null
+          responderam: number | null
+          responderam_humano: number | null
+          run_id: string | null
+          run_status: string | null
         }
         Relationships: []
       }
