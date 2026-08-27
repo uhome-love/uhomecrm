@@ -47,7 +47,7 @@ export default function OfertaAtiva() {
   const [criarOpen, setCriarOpen] = useState(false);
 
   if (isCorretor && !isGestor && !isAdmin) {
-    return <Navigate to="/corretor" replace />;
+    return <Navigate to="/corretor/call" replace />;
   }
 
   const tabs = isAdmin || isGestor ? TABS : TABS.filter((t) => t.value !== "config");
