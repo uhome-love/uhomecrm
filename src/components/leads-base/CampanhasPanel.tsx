@@ -98,9 +98,16 @@ export function CampanhasPanel({ escopo = "todas" }: { escopo?: "todas" | "ativa
                   <div className="text-[11px] text-muted-foreground">{r.empreendimento ?? "—"}</div>
                 </td>
                 <td className="px-3 py-2">
-                  <Badge variant={STATUS_VARIANT[r.status ?? ""] ?? "outline"} className="text-[10px]">
-                    {r.status ?? "—"}
-                  </Badge>
+                  <div className="flex flex-col items-start gap-1">
+                    <Badge variant={STATUS_VARIANT[r.status ?? ""] ?? "outline"} className="text-[10px]">
+                      {r.status ?? "—"}
+                    </Badge>
+                    {r.status === "liberada" && r.expira_em && new Date(r.expira_em).getTime() <= Date.now() && (
+                      <span className="flex items-center gap-1 text-[10px] font-medium text-destructive">
+                        <AlertTriangle size={11} /> Vencida — ninguém está vendo
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-2 text-[11px] text-muted-foreground">
                   <div className="flex items-center gap-1">
@@ -119,15 +126,25 @@ export function CampanhasPanel({ escopo = "todas" }: { escopo?: "todas" | "ativa
                 <td className="px-3 py-2 text-right tabular-nums">{Number(r.conversao_pct ?? 0).toFixed(1)}%</td>
                 <td className="px-3 py-2 text-right">
                   {r.status === "liberada" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 text-xs"
-                      disabled={encerrarUma.isPending}
-                      onClick={() => encerrarUma.mutate(r.lista_id)}
-                    >
-                      <Square size={12} /> Encerrar
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1 text-xs"
+                        onClick={() => setEditandoId(r.lista_id)}
+                      >
+                        <Pencil size={12} /> Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1 text-xs"
+                        disabled={encerrarUma.isPending}
+                        onClick={() => encerrarUma.mutate(r.lista_id)}
+                      >
+                        <Square size={12} /> Encerrar
+                      </Button>
+                    </div>
                   )}
                 </td>
               </tr>
