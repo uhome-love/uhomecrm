@@ -317,6 +317,79 @@ export function useLiaPipelineLeads() {
   });
 }
 
+/**
+ * Camada fina do Trânsito: a VERDADE da agenda e da mesa de negócios (não o estágio do pipeline).
+ * Puxa visitas_unicas (agendada × realizada × no-show) e negocios (em negociação × ganho) dos leads
+ * que a LIA levou pro pipeline, indexado por pipeline_lead_id, pra cruzar com o recorte da aba.
+ */
+export interface LiaVisitaInfo {
+  agendada: boolean; // tem ao menos uma visita registrada (marcada/reagendada/realizada/no_show)
+  realizada: boolean; // ao menos uma com status "realizada"
+  noShow: boolean; // teve no-show e nenhuma realizada
+  primeiraData: string | null; // data da 1ª visita (data_visita), pra medir tempo
+}
+export interface LiaNegocioInfo {
+  aberto: boolean; // tem negócio em negociação/contrato
+  ganho: boolean; // fase "ganho" = venda de verdade
+  primeiroEm: string | null; // created_at do 1º negócio
+  assinaturaEm: string | null; // data_assinatura, se ganho
+}
+
+export function useLiaConversao() {
+  return useQuery({
+    queryKey: ["lia-hub", "conversao"],
+    queryFn: async () => {
+      const { data: links } = await supabase.from("lia_estado").select("lead_id").not("lead_id", "is", null);
+      const ids = Array.from(new Set((links ?? []).map((r: any) => r.lead_id).filter(Boolean))) as string[];
+      const vazio = { visitas: new Map<string, LiaVisitaInfo>(), negocios: new Map<string, LiaNegocioInfo>() };
+      if (!ids.length) return vazio;
+
+      const [visRes, negRes] = await Promise.all([
+        supabase
+          .from("visitas_unicas")
+          .select("pipeline_lead_id,status,data_visita")
+          .in("pipeline_lead_id", ids)
+          .limit(3000),
+        supabase
+          .from("negocios")
+          .select("pipeline_lead_id,fase,status,created_at,data_assinatura")
+          .in("pipeline_lead_id", ids)
+          .limit(2000),
+      ]);
+      if (visRes.error) throw visRes.error;
+      if (negRes.error) throw negRes.error;
+
+      const visitas = new Map<string, LiaVisitaInfo>();
+      for (const v of (visRes.data ?? []) as any[]) {
+        const k = v.pipeline_lead_id as string;
+        if (!k) continue;
+        const cur = visitas.get(k) ?? { agendada: false, realizada: false, noShow: false, primeiraData: null };
+        cur.agendada = true;
+        if (v.status === "realizada") cur.realizada = true;
+        if (v.status === "no_show") cur.noShow = true;
+        if (v.data_visita && (!cur.primeiraData || v.data_visita < cur.primeiraData)) cur.primeiraData = v.data_visita;
+        visitas.set(k, cur);
+      }
+      // no-show só conta se NÃO teve nenhuma realizada depois (a realizada vence)
+      for (const info of visitas.values()) if (info.realizada) info.noShow = false;
+
+      const negocios = new Map<string, LiaNegocioInfo>();
+      for (const n of (negRes.data ?? []) as any[]) {
+        const k = n.pipeline_lead_id as string;
+        if (!k) continue;
+        const cur = negocios.get(k) ?? { aberto: false, ganho: false, primeiroEm: null, assinaturaEm: null };
+        cur.aberto = true;
+        if (n.fase === "ganho") cur.ganho = true;
+        if (n.created_at && (!cur.primeiroEm || n.created_at < cur.primeiroEm)) cur.primeiroEm = n.created_at;
+        if (n.data_assinatura) cur.assinaturaEm = n.data_assinatura;
+        negocios.set(k, cur);
+      }
+      return { visitas, negocios };
+    },
+    staleTime: 60_000,
+  });
+}
+
 export interface LiaCusto {
   ok: boolean;
   investimento: number;

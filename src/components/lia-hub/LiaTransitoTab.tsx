@@ -1,14 +1,28 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Handshake } from "lucide-react";
+import { AlertTriangle, Handshake, CalendarCheck, Clock } from "lucide-react";
 import FiltroImovel from "./FiltroImovel";
 import {
   useLiaEstados,
   useLiaPipelineLeads,
+  useLiaConversao,
   produtosDeEstados,
   type LiaEstado,
 } from "./useLiaHub";
+
+/** Mediana de uma lista de números (dias). Retorna null se vazia. */
+function mediana(xs: number[]): number | null {
+  if (!xs.length) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+}
+const diasEntre = (a?: string | null, b?: string | null): number | null => {
+  if (!a || !b) return null;
+  const d = (new Date(b).getTime() - new Date(a).getTime()) / 86400000;
+  return d >= 0 ? d : null;
+};
 
 /** Uma linha do funil: rótulo, valor, % sobre o topo, barra colorida por fase. */
 function FunilLinha({
@@ -58,6 +72,7 @@ function FaseLabel({ tone, children }: { tone: "lia" | "corretor"; children: Rea
 export default function LiaTransitoTab() {
   const { data: estadosRaw, isLoading } = useLiaEstados();
   const { data: pipeRaw, isLoading: loadingPipe } = useLiaPipelineLeads();
+  const { data: conv } = useLiaConversao();
 
   const [produto, setProduto] = useState("todos");
   const [periodo, setPeriodo] = useState<"hoje" | "semana" | "30d" | "tudo">("30d");
@@ -93,14 +108,16 @@ export default function LiaTransitoTab() {
   );
   const stages = pipeRaw?.stages;
   const corretores = pipeRaw?.corretores;
+  const visMap = conv?.visitas;
+  const negMap = conv?.negocios;
 
   const stageDe = (l: any) => (l.stage_id && stages ? stages.get(l.stage_id) : undefined);
   const andou = (l: any) => (stageDe(l)?.ordem ?? 0) > 1;
-  const chegouVisita = (l: any) => {
-    const s = stageDe(l);
-    return !!s && s.ordem >= 4 && s.ordem <= 9;
-  };
-  const vendeu = (l: any) => stageDe(l)?.tipo === "venda";
+  // Verdade da agenda e da mesa (não o estágio): visita e venda vêm de visitas_unicas / negocios.
+  const vis = (l: any) => visMap?.get(l.id);
+  const neg = (l: any) => negMap?.get(l.id);
+  const visitaRealizada = (l: any) => !!vis(l)?.realizada;
+  const vendeu = (l: any) => !!neg(l)?.ganho;
 
   // ── Funil de vida inteira ──
   const funil = useMemo(() => {
@@ -116,11 +133,46 @@ export default function LiaTransitoTab() {
     const comCorretor = leads.filter((l: any) => l.corretor_id);
     const aceitos = comCorretor.filter((l: any) => l.aceite_status === "aceito").length;
     const andaram = comCorretor.filter((l: any) => l.aceite_status === "aceito" && andou(l)).length;
-    const visitas = comCorretor.filter((l: any) => chegouVisita(l)).length;
-    const vendas = comCorretor.filter((l: any) => vendeu(l)).length;
+    // camada fina: verdade da agenda + da mesa de negócios
+    const agendou = leads.filter((l: any) => vis(l)?.agendada).length;
+    const realizou = leads.filter((l: any) => vis(l)?.realizada).length;
+    const noShow = leads.filter((l: any) => vis(l)?.noShow).length;
+    const negocioAberto = leads.filter((l: any) => neg(l)?.aberto).length;
+    const vendas = leads.filter((l: any) => neg(l)?.ganho).length;
 
-    return { falaram, responderam, engajaram, qualificados, repassados, aceitos, andaram, visitas, vendas };
-  }, [estados, leads, stages]);
+    return { falaram, responderam, engajaram, qualificados, repassados, aceitos, andaram, agendou, realizou, noShow, negocioAberto, vendas };
+  }, [estados, leads, stages, visMap, negMap]);
+
+  // ── Tempos médios entre as mãos (mediana em dias) ──
+  const tempos = useMemo(() => {
+    const leadById = new Map<string, any>((leads as any[]).map((l) => [l.id, l]));
+    const tHandoff: number[] = []; // LIA falou → passou o bastão
+    const tVisita: number[] = []; // bastão → visita realizada
+    const tVenda: number[] = []; // visita realizada → venda (assinatura)
+    for (const e of estados ?? []) {
+      if (!e.lead_id) continue;
+      const l = leadById.get(e.lead_id);
+      if (!l) continue;
+      const bastaoEm = e.repassado_em ?? l.created_at;
+      const dH = diasEntre(e.created_at, bastaoEm);
+      if (dH != null) tHandoff.push(dH);
+      const v = visMap?.get(l.id);
+      if (v?.realizada && v.primeiraData) {
+        const dV = diasEntre(bastaoEm, v.primeiraData);
+        if (dV != null) tVisita.push(dV);
+        const n = negMap?.get(l.id);
+        if (n?.ganho && n.assinaturaEm) {
+          const dVd = diasEntre(v.primeiraData, n.assinaturaEm);
+          if (dVd != null) tVenda.push(dVd);
+        }
+      }
+    }
+    return {
+      handoff: { med: mediana(tHandoff), n: tHandoff.length },
+      visita: { med: mediana(tVisita), n: tVisita.length },
+      venda: { med: mediana(tVenda), n: tVenda.length },
+    };
+  }, [estados, leads, visMap, negMap]);
 
   // ── Por corretor ──
   const porCorretor = useMemo(() => {
@@ -133,7 +185,7 @@ export default function LiaTransitoTab() {
       cur.recebidos++;
       if (l.aceite_status === "aceito") cur.aceitos++;
       if (l.aceite_status === "aceito" && andou(l)) cur.andaram++;
-      if (chegouVisita(l)) cur.visitas++;
+      if (visitaRealizada(l)) cur.visitas++;
       if (vendeu(l)) cur.vendas++;
       const idade = l.created_at ? (agora - new Date(l.created_at).getTime()) / 86400000 : 0;
       if (!andou(l) && idade > 3) cur.parados++;
@@ -142,7 +194,7 @@ export default function LiaTransitoTab() {
     return Array.from(map.entries())
       .map(([id, v]) => ({ nome: corretores?.get(id) ?? "(sem nome)", ...v }))
       .sort((a, b) => b.recebidos - a.recebidos);
-  }, [leads, corretores, stages]);
+  }, [leads, corretores, stages, visMap, negMap]);
 
   // ── Parados (lista de cobrança) ──
   const parados = useMemo(() => {
@@ -224,8 +276,10 @@ export default function LiaTransitoTab() {
               <div className="space-y-3">
                 <FunilLinha label="Corretor aceitou" value={funil.aceitos} max={topo} tone="corretor" />
                 <FunilLinha label="Andou no pipeline" value={funil.andaram} max={topo} tone="corretor" />
-                <FunilLinha label="Chegou na visita" value={funil.visitas} max={topo} tone="corretor" />
-                <FunilLinha label="Venda" value={funil.vendas} max={topo} tone="corretor" />
+                <FunilLinha label="Visita agendada" value={funil.agendou} max={topo} tone="corretor" />
+                <FunilLinha label="Visita realizada" value={funil.realizou} max={topo} tone="corretor" />
+                <FunilLinha label="Em negociação" value={funil.negocioAberto} max={topo} tone="corretor" />
+                <FunilLinha label="Venda (ganho)" value={funil.vendas} max={topo} tone="corretor" />
               </div>
 
               {funil.aceitos - funil.andaram > 0 && (
@@ -236,6 +290,79 @@ export default function LiaTransitoTab() {
                   </p>
                 </div>
               )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* CAMADA FINA · agenda + mesa de negócios */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarCheck className="h-4 w-4 text-primary" /> Visita e negócio de verdade
+          </CardTitle>
+          <CardDescription>
+            Da agenda e da mesa de negócios, não do estágio do pipeline. É o que separa "marcou" de "apareceu".
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {carregando ? (
+            <Skeleton className="h-28 w-full" />
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                {[
+                  { rot: "Agendou visita", val: funil.agendou, sub: "marcou na agenda" },
+                  { rot: "Realizou", val: funil.realizou, sub: "cliente compareceu" },
+                  { rot: "No-show", val: funil.noShow, sub: "marcou e não veio", alerta: funil.noShow > 0 },
+                  { rot: "Em negociação", val: funil.negocioAberto, sub: "abriu negócio" },
+                  { rot: "Venda", val: funil.vendas, sub: "negócio ganho", ok: funil.vendas > 0 },
+                ].map((t) => (
+                  <div key={t.rot} className="rounded-lg border border-border bg-card p-3">
+                    <div className={`text-2xl font-bold tabular-nums ${t.alerta ? "text-red-600" : t.ok ? "text-emerald-600" : "text-foreground"}`}>
+                      {t.val}
+                    </div>
+                    <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t.rot}</div>
+                    <div className="text-[11px] text-muted-foreground">{t.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {funil.agendou > 0 && (
+                <p className="text-[13px] text-muted-foreground">
+                  Comparecimento:{" "}
+                  <strong className="text-foreground">
+                    {Math.round((funil.realizou / funil.agendou) * 100)}%
+                  </strong>{" "}
+                  das visitas agendadas de leads da LIA foram realizadas
+                  {funil.noShow > 0 ? ` · ${funil.noShow} no-show` : ""}.
+                </p>
+              )}
+
+              {/* TEMPOS entre as mãos */}
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" /> Tempo entre as mãos (mediana)
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {[
+                    { rot: "LIA → passou o bastão", t: tempos.handoff },
+                    { rot: "Bastão → visita realizada", t: tempos.visita },
+                    { rot: "Visita → venda", t: tempos.venda },
+                  ].map((x) => (
+                    <div key={x.rot} className="rounded-lg border border-border bg-muted/30 p-3">
+                      <div className="text-[11px] text-muted-foreground">{x.rot}</div>
+                      {x.t.n < 2 ? (
+                        <div className="mt-0.5 text-sm font-medium text-muted-foreground">coletando ({x.t.n})</div>
+                      ) : (
+                        <div className="mt-0.5 text-lg font-bold tabular-nums text-foreground">
+                          {x.t.med} <span className="text-xs font-normal text-muted-foreground">dias · n={x.t.n}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </>
           )}
         </CardContent>
@@ -336,7 +463,7 @@ export default function LiaTransitoTab() {
       </Card>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Visita e venda saem da etapa atual do lead no pipeline. A camada fina (visita agendada × realizada, negócio, e os tempos entre etapas) entra cruzando <code>visitas_unicas</code> e <code>negocios</code> na próxima passada. Filtro por imóvel recalcula tudo.
+        Visita e venda agora saem da verdade: <code>visitas_unicas</code> (agendada × realizada × no-show) e <code>negocios</code> (em negociação × ganho), não do estágio do pipeline. "Andou" ainda usa o estágio. Os tempos entre as mãos aparecem quando há dado suficiente (n≥2). Filtro por período e imóvel recalcula tudo.
       </p>
     </div>
   );
