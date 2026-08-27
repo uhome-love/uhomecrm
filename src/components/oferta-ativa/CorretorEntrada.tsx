@@ -29,6 +29,18 @@ function diasRestantes(expiraEm?: string | null) {
   return Math.ceil(ms / 86_400_000);
 }
 
+/** "Base Única" não é produto — é o rótulo de campanhas criadas a partir da base de leads. */
+const ROTULOS_GENERICOS = ["base unica", "base única", "avulso", "avulsos"];
+function ehRotuloGenerico(valor?: string | null) {
+  if (!valor) return true;
+  return ROTULOS_GENERICOS.includes(valor.trim().toLowerCase());
+}
+
+/** Título exibido ao corretor: nome da campanha primeiro. */
+function tituloCampanha(c: { nome?: string | null; empreendimento?: string | null }) {
+  return c.nome || c.empreendimento || "";
+}
+
 interface Props {
   onSair?: () => void;
 }
@@ -84,7 +96,15 @@ export default function CorretorEntrada({ onSair }: Props) {
     );
   }
 
+  // Produto real da campanha (usado pelo script da ligação — não muda).
   const empDestaque = destaque?.empreendimento || destaque?.nome || "";
+
+  // Título = nome da campanha; empreendimento só como apoio quando for produto real.
+  const tituloDestaque = destaque?.nome || destaque?.empreendimento || "";
+  const produtoDestaque =
+    destaque?.empreendimento && !ehRotuloGenerico(destaque.empreendimento) && destaque.empreendimento !== tituloDestaque
+      ? destaque.empreendimento
+      : null;
 
   return (
     <div className="space-y-3">
@@ -131,7 +151,10 @@ export default function CorretorEntrada({ onSair }: Props) {
               <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-primary">
                 <Rocket className="h-3.5 w-3.5" /> Campanha do dia
               </p>
-              <h2 className="mt-1 truncate text-xl font-bold text-foreground">{empDestaque}</h2>
+              <h2 className="mt-1 truncate text-xl font-bold text-foreground">{tituloDestaque}</h2>
+              {produtoDestaque && (
+                <p className="mt-0.5 truncate text-sm font-medium text-muted-foreground">{produtoDestaque}</p>
+              )}
               {destaque.observacao && (
                 <p className="mt-1 text-sm italic text-muted-foreground">🎯 {destaque.observacao}</p>
               )}
@@ -193,8 +216,11 @@ export default function CorretorEntrada({ onSair }: Props) {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{c.empreendimento || c.nome}</p>
+                <p className="truncate text-sm font-semibold text-foreground">{tituloCampanha(c)}</p>
                 <p className="text-xs text-muted-foreground">
+                  {c.empreendimento && !ehRotuloGenerico(c.empreendimento) && c.empreendimento !== tituloCampanha(c)
+                    ? `${c.empreendimento} · `
+                    : ""}
                   {statsMap[c.id]?.naFila ?? 0} na fila · {statsMap[c.id]?.aproveitados ?? 0} aproveitados
                 </p>
               </div>
