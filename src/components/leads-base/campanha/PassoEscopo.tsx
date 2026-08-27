@@ -13,12 +13,20 @@ export function PassoEscopo({
   state,
   set,
   opcoes,
+  esconderLiberar,
 }: {
   state: EscopoState;
   set: (p: Partial<EscopoState>) => void;
-  opcoes?: { equipes: { id: string; nome: string }[]; corretores: { id: string; nome: string }[] };
+  opcoes?: {
+    equipes: { id: string; nome: string }[];
+    corretores: { id: string; nome: string }[];
+    semEquipeIds?: string[];
+  };
+  /** Na edição de campanha já liberada não faz sentido perguntar de novo. */
+  esconderLiberar?: boolean;
 }) {
   const restrito = state.equipes.length > 0 || state.corretores.length > 0;
+  const semEquipeForaDoEscopo = (opcoes?.semEquipeIds ?? []).filter((id) => !state.corretores.includes(id)).length;
 
   return (
     <div className="space-y-3">
