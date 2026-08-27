@@ -151,7 +151,10 @@ export default function CorretorEntrada({ onSair }: Props) {
               <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-primary">
                 <Rocket className="h-3.5 w-3.5" /> Campanha do dia
               </p>
-              <h2 className="mt-1 truncate text-xl font-bold text-foreground">{empDestaque}</h2>
+              <h2 className="mt-1 truncate text-xl font-bold text-foreground">{tituloDestaque}</h2>
+              {produtoDestaque && (
+                <p className="mt-0.5 truncate text-sm font-medium text-muted-foreground">{produtoDestaque}</p>
+              )}
               {destaque.observacao && (
                 <p className="mt-1 text-sm italic text-muted-foreground">🎯 {destaque.observacao}</p>
               )}
