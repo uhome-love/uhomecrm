@@ -5753,6 +5753,78 @@ export type Database = {
         }
         Relationships: []
       }
+      lia_acervo: {
+        Row: {
+          ativo: boolean | null
+          bairro: string | null
+          cidade: string | null
+          com_campanha: boolean | null
+          construtora: string | null
+          created_at: string | null
+          diferencial: string | null
+          dorms: number[] | null
+          entrega: string | null
+          id: string
+          nome: string
+          observacao: string | null
+          perfil: string | null
+          preco_max: number | null
+          preco_min: number | null
+          pronto: boolean | null
+          slug: string | null
+          status: string | null
+          tipo: string | null
+          updated_at: string | null
+          zona: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          bairro?: string | null
+          cidade?: string | null
+          com_campanha?: boolean | null
+          construtora?: string | null
+          created_at?: string | null
+          diferencial?: string | null
+          dorms?: number[] | null
+          entrega?: string | null
+          id?: string
+          nome: string
+          observacao?: string | null
+          perfil?: string | null
+          preco_max?: number | null
+          preco_min?: number | null
+          pronto?: boolean | null
+          slug?: string | null
+          status?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+          zona?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          bairro?: string | null
+          cidade?: string | null
+          com_campanha?: boolean | null
+          construtora?: string | null
+          created_at?: string | null
+          diferencial?: string | null
+          dorms?: number[] | null
+          entrega?: string | null
+          id?: string
+          nome?: string
+          observacao?: string | null
+          perfil?: string | null
+          preco_max?: number | null
+          preco_min?: number | null
+          pronto?: boolean | null
+          slug?: string | null
+          status?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+          zona?: string | null
+        }
+        Relationships: []
+      }
       lia_conversas: {
         Row: {
           conteudo: string | null
