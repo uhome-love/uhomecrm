@@ -216,8 +216,11 @@ export default function CorretorEntrada({ onSair }: Props) {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{c.empreendimento || c.nome}</p>
+                <p className="truncate text-sm font-semibold text-foreground">{tituloCampanha(c)}</p>
                 <p className="text-xs text-muted-foreground">
+                  {c.empreendimento && !ehRotuloGenerico(c.empreendimento) && c.empreendimento !== tituloCampanha(c)
+                    ? `${c.empreendimento} · `
+                    : ""}
                   {statsMap[c.id]?.naFila ?? 0} na fila · {statsMap[c.id]?.aproveitados ?? 0} aproveitados
                 </p>
               </div>
