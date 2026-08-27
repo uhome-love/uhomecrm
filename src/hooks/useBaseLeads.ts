@@ -232,6 +232,61 @@ export function useEncerrarCampanha() {
   });
 }
 
+/** Escopo + prazo atuais de uma campanha (para edição). */
+export function useCampanhaEscopo(listaId: string | null) {
+  return useQuery({
+    queryKey: ["oa-campanha-escopo", listaId],
+    enabled: !!listaId,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("oferta_ativa_listas")
+        .select("id, nome, expira_em, escopo")
+        .eq("id", listaId!)
+        .maybeSingle();
+      if (error) throw error;
+      const esc = (data?.escopo ?? {}) as { equipes?: string[]; corretores?: string[] };
+      return {
+        id: data?.id as string,
+        nome: (data?.nome as string) ?? "",
+        expira_em: (data?.expira_em as string) ?? null,
+        equipes: esc.equipes ?? [],
+        corretores: esc.corretores ?? [],
+      };
+    },
+  });
+}
+
+/** Atualiza quem enxerga a campanha (escopo) e o prazo de expiração. */
+export function useEditarCampanha() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      listaId: string;
+      equipes: string[];
+      corretores: string[];
+      expira_em: string | null;
+    }) => {
+      const { error } = await supabase
+        .from("oferta_ativa_listas")
+        .update({
+          escopo: { equipes: input.equipes, corretores: input.corretores },
+          expira_em: input.expira_em,
+        })
+        .eq("id", input.listaId);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success("Campanha atualizada");
+      qc.invalidateQueries({ queryKey: ["oa-campanhas"] });
+      qc.invalidateQueries({ queryKey: ["oa-listas"] });
+      qc.invalidateQueries({ queryKey: ["oa-campanha-escopo", v.listaId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+
 /** Formulários pendentes de revisão de produto. */
 export function useFormMap(pendentes: boolean) {
   return useQuery({
@@ -445,26 +500,39 @@ export function useTemplatesOA() {
   });
 }
 
-/** Corretores ativos + equipes (gestores) para o escopo da campanha. */
+/**
+ * Corretores + equipes (gestores) para o escopo da campanha.
+ * Inclui também corretores que NÃO estão em nenhuma equipe — eles nunca
+ * seriam alcançados por um escopo restrito a equipes.
+ */
 export function useEscopoOpcoes() {
   return useQuery({
     queryKey: ["oa-escopo-opcoes"],
     queryFn: async () => {
-      const [{ data: membros }, { data: perfis }] = await Promise.all([
+      const [{ data: membros }, { data: perfis }, { data: roles }] = await Promise.all([
         supabase.from("team_members").select("user_id,gerente_id").eq("status", "ativo"),
         supabase.from("profiles").select("user_id,nome").order("nome"),
+        supabase.from("user_roles").select("user_id,role").eq("role", "corretor"),
       ]);
       const nomePorUser = new Map<string, string>(
         (perfis ?? []).map((p: { user_id: string; nome: string }) => [p.user_id, p.nome] as [string, string]),
       );
 
       const gerentes = Array.from(new Set((membros ?? []).map((m: { gerente_id: string }) => m.gerente_id).filter(Boolean)));
-      const corretores = Array.from(new Set((membros ?? []).map((m: { user_id: string }) => m.user_id).filter(Boolean)));
+      const comEquipe = new Set((membros ?? []).map((m: { user_id: string }) => m.user_id).filter(Boolean) as string[]);
+      const corretoresRole = (roles ?? []).map((r: { user_id: string }) => r.user_id).filter(Boolean) as string[];
+      const semEquipe = corretoresRole.filter((u) => !comEquipe.has(u));
+      const corretores = Array.from(new Set([...comEquipe, ...corretoresRole]));
+
       return {
         equipes: gerentes.map((g) => ({ id: g as string, nome: nomePorUser.get(g as string) ?? "Equipe" })),
         corretores: corretores
-          .map((c) => ({ id: c as string, nome: nomePorUser.get(c as string) ?? "Corretor" }))
+          .map((c) => ({
+            id: c,
+            nome: `${nomePorUser.get(c) ?? "Corretor"}${comEquipe.has(c) ? "" : " (sem equipe)"}`,
+          }))
           .sort((a, b) => a.nome.localeCompare(b.nome)),
+        semEquipeIds: semEquipe,
       };
     },
     staleTime: 10 * 60_000,
