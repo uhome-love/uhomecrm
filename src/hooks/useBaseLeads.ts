@@ -232,6 +232,61 @@ export function useEncerrarCampanha() {
   });
 }
 
+/** Escopo + prazo atuais de uma campanha (para edição). */
+export function useCampanhaEscopo(listaId: string | null) {
+  return useQuery({
+    queryKey: ["oa-campanha-escopo", listaId],
+    enabled: !!listaId,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("oferta_ativa_listas")
+        .select("id, nome, expira_em, escopo")
+        .eq("id", listaId!)
+        .maybeSingle();
+      if (error) throw error;
+      const esc = (data?.escopo ?? {}) as { equipes?: string[]; corretores?: string[] };
+      return {
+        id: data?.id as string,
+        nome: (data?.nome as string) ?? "",
+        expira_em: (data?.expira_em as string) ?? null,
+        equipes: esc.equipes ?? [],
+        corretores: esc.corretores ?? [],
+      };
+    },
+  });
+}
+
+/** Atualiza quem enxerga a campanha (escopo) e o prazo de expiração. */
+export function useEditarCampanha() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      listaId: string;
+      equipes: string[];
+      corretores: string[];
+      expira_em: string | null;
+    }) => {
+      const { error } = await supabase
+        .from("oferta_ativa_listas")
+        .update({
+          escopo: { equipes: input.equipes, corretores: input.corretores },
+          expira_em: input.expira_em,
+        })
+        .eq("id", input.listaId);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success("Campanha atualizada");
+      qc.invalidateQueries({ queryKey: ["oa-campanhas"] });
+      qc.invalidateQueries({ queryKey: ["oa-listas"] });
+      qc.invalidateQueries({ queryKey: ["oa-campanha-escopo", v.listaId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+
 /** Formulários pendentes de revisão de produto. */
 export function useFormMap(pendentes: boolean) {
   return useQuery({
