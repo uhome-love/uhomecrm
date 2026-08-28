@@ -191,7 +191,13 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
         const passo = STAGE_TIPO_PASSO[relTipo(l.pipeline_stages)];
         const neg = l.negocio_id ? negById.get(String(l.negocio_id)) : null;
         const vgv = neg ? ((neg.vgv_estimado as number) ?? null) : null;
-        const dias = diasDe((l.stage_changed_at as string) ?? (l.updated_at as string));
+        // "última atividade" = último toque real do lead (não a data da troca de etapa).
+        const dias = diasDe(
+          (l.ultimo_toque_at as string) ??
+            (l.distribuido_em as string) ??
+            (l.aceito_em as string) ??
+            (l.created_at as string),
+        );
         const fase: NegFase = passo === "contrato" ? "contrato" : "em_negociacao";
         return {
           id: (l.negocio_id as string) ?? String(l.id),
@@ -218,6 +224,10 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
       });
 
       // Cards de GANHO — fonte: negocios fase=ganho (vendas reais, os 96).
+      const toqueByLeadId = new Map<string, string>();
+      for (const l of leads) {
+        if (l.ultimo_toque_at) toqueByLeadId.set(String(l.id), String(l.ultimo_toque_at));
+      }
       for (const n of ganhos) {
         const vgvFinal = (n.vgv_final as number) ?? null;
         const vgv = (n.vgv_estimado as number) ?? null;
@@ -236,7 +246,10 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
           detalhe: "",
           vgv: vgvFinal ?? vgv,
           vgvFinal,
-          dias: diasDe(n.updated_at as string),
+          dias: diasDe(
+            (n.pipeline_lead_id && toqueByLeadId.get(String(n.pipeline_lead_id))) ||
+              (n.updated_at as string),
+          ),
           tone: "",
           saude: "terminal", // ganho = venda concluída
           ceo: !!n.requer_aprovacao_ceo,
