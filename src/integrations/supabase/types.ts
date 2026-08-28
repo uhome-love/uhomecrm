@@ -16531,6 +16531,17 @@ export type Database = {
         }
         Returns: string
       }
+      roleta_bloqueados_descarte: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          corretor_id: string
+          descartes_mes: number
+          ja_desbloqueado: boolean
+          limite: number
+          nome: string
+        }[]
+      }
       roleta_corretor_sair: { Args: { p_turno: string }; Returns: undefined }
       roleta_expand_turnos: { Args: { p_turnos: string[] }; Returns: string[] }
       roleta_fechar_dia: { Args: { p_data?: string }; Returns: number }
