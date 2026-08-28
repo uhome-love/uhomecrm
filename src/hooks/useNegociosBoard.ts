@@ -224,6 +224,10 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
       });
 
       // Cards de GANHO — fonte: negocios fase=ganho (vendas reais, os 96).
+      const toqueByLeadId = new Map<string, string>();
+      for (const l of leads) {
+        if (l.ultimo_toque_at) toqueByLeadId.set(String(l.id), String(l.ultimo_toque_at));
+      }
       for (const n of ganhos) {
         const vgvFinal = (n.vgv_final as number) ?? null;
         const vgv = (n.vgv_estimado as number) ?? null;
