@@ -191,7 +191,13 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
         const passo = STAGE_TIPO_PASSO[relTipo(l.pipeline_stages)];
         const neg = l.negocio_id ? negById.get(String(l.negocio_id)) : null;
         const vgv = neg ? ((neg.vgv_estimado as number) ?? null) : null;
-        const dias = diasDe((l.stage_changed_at as string) ?? (l.updated_at as string));
+        // "última atividade" = último toque real do lead (não a data da troca de etapa).
+        const dias = diasDe(
+          (l.ultimo_toque_at as string) ??
+            (l.distribuido_em as string) ??
+            (l.aceito_em as string) ??
+            (l.created_at as string),
+        );
         const fase: NegFase = passo === "contrato" ? "contrato" : "em_negociacao";
         return {
           id: (l.negocio_id as string) ?? String(l.id),
