@@ -83,8 +83,24 @@ export default function CorretoresBloqueadosPanel({ teamUserIds }: Props) {
     onError: () => toast.error("Erro ao restaurar bloqueio"),
   });
 
-  // Don't render if no blocked brokers
-  if (isLoading || bloqueados.length === 0) return null;
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Carregando bloqueios...
+      </div>
+    );
+  }
+
+  if (bloqueados.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          Nenhum corretor bloqueado por descartes este mês.
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   const stillBlocked = bloqueados.filter((b) => !b.ja_desbloqueado);
   const alreadyUnblocked = bloqueados.filter((b) => b.ja_desbloqueado);
