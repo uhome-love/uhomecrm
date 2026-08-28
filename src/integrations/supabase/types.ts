@@ -493,6 +493,90 @@ export type Database = {
           },
         ]
       }
+      acervo_mercado: {
+        Row: {
+          area_max: number | null
+          area_min: number | null
+          ativo: boolean | null
+          atualizado_em: string | null
+          bairro: string | null
+          cidade: string | null
+          comissao_corretor_pct: number | null
+          created_at: string | null
+          diferenciais: string | null
+          dorm_max: number | null
+          dorm_min: number | null
+          entrega: string | null
+          estoque: number | null
+          incorporadora: string | null
+          link_orulo: string | null
+          nome: string
+          orulo_id: string
+          preco_min: number | null
+          pronto: boolean | null
+          segmento: string | null
+          status: string | null
+          suites_max: number | null
+          tipo: string | null
+          vagas_max: number | null
+          zona: string | null
+        }
+        Insert: {
+          area_max?: number | null
+          area_min?: number | null
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          bairro?: string | null
+          cidade?: string | null
+          comissao_corretor_pct?: number | null
+          created_at?: string | null
+          diferenciais?: string | null
+          dorm_max?: number | null
+          dorm_min?: number | null
+          entrega?: string | null
+          estoque?: number | null
+          incorporadora?: string | null
+          link_orulo?: string | null
+          nome: string
+          orulo_id: string
+          preco_min?: number | null
+          pronto?: boolean | null
+          segmento?: string | null
+          status?: string | null
+          suites_max?: number | null
+          tipo?: string | null
+          vagas_max?: number | null
+          zona?: string | null
+        }
+        Update: {
+          area_max?: number | null
+          area_min?: number | null
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          bairro?: string | null
+          cidade?: string | null
+          comissao_corretor_pct?: number | null
+          created_at?: string | null
+          diferenciais?: string | null
+          dorm_max?: number | null
+          dorm_min?: number | null
+          entrega?: string | null
+          estoque?: number | null
+          incorporadora?: string | null
+          link_orulo?: string | null
+          nome?: string
+          orulo_id?: string
+          preco_min?: number | null
+          pronto?: boolean | null
+          segmento?: string | null
+          status?: string | null
+          suites_max?: number | null
+          tipo?: string | null
+          vagas_max?: number | null
+          zona?: string | null
+        }
+        Relationships: []
+      }
       ai_call_sessions: {
         Row: {
           created_at: string | null
