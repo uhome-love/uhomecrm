@@ -30,67 +30,23 @@ export default function CorretoresBloqueadosPanel({ teamUserIds }: Props) {
   const { data: bloqueados = [], isLoading } = useQuery({
     queryKey: ["corretores-bloqueados-descarte", teamUserIds, mesAtual],
     queryFn: async () => {
-      // Get discard limit
-      const { data: configData } = await supabase
-        .from("roleta_config")
-        .select("valor")
-        .eq("chave", "limite_descartes_mes")
-        .single();
-      const limite = configData?.valor ? parseInt(configData.valor) : 50;
+      // Fonte única: mesma contagem usada por roleta_motivo_bloqueio (sem cap de 1000 linhas).
+      const { data, error } = await supabase.rpc("roleta_bloqueados_descarte" as any);
+      if (error) throw error;
 
-      // Get discard stage
-      const stageDescarte = "1dd66c25-3848-4053-9f66-82e902989b4d";
-      const monthStart = format(new Date(), "yyyy-MM-01");
-
-      // Get all corretores with discards this month
-      const { data: leads } = await supabase
-        .from("pipeline_leads")
-        .select("corretor_id")
-        .eq("stage_id", stageDescarte)
-        .gte("stage_changed_at", monthStart);
-
-      if (!leads?.length) return [];
-
-      // Count per corretor
-      const countMap: Record<string, number> = {};
-      for (const l of leads) {
-        if (!l.corretor_id) continue;
-        if (teamUserIds && !teamUserIds.includes(l.corretor_id)) continue;
-        countMap[l.corretor_id] = (countMap[l.corretor_id] || 0) + 1;
-      }
-
-      // Filter only blocked ones
-      const blockedIds = Object.entries(countMap)
-        .filter(([, count]) => count >= limite)
-        .map(([id]) => id);
-
-      if (!blockedIds.length) return [];
-
-      // Get profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, nome, avatar_url")
-        .in("user_id", blockedIds);
-
-      // Check existing overrides
-      const { data: overrides } = await supabase
-        .from("roleta_desbloqueios" as any)
-        .select("corretor_id")
-        .eq("mes", mesAtual)
-        .in("corretor_id", blockedIds);
-
-      const overrideSet = new Set((overrides || []).map((o: any) => o.corretor_id));
-
-      return (profiles || []).map((p) => ({
-        corretor_id: p.user_id,
-        nome: p.nome || "Corretor",
-        avatar_url: p.avatar_url,
-        descartes_mes: countMap[p.user_id] || 0,
-        ja_desbloqueado: overrideSet.has(p.user_id),
-      })) as BloqueadoInfo[];
+      return ((data || []) as any[])
+        .filter((r) => !teamUserIds || teamUserIds.includes(r.corretor_id))
+        .map((r) => ({
+          corretor_id: r.corretor_id,
+          nome: r.nome || "Corretor",
+          avatar_url: r.avatar_url,
+          descartes_mes: r.descartes_mes ?? 0,
+          ja_desbloqueado: !!r.ja_desbloqueado,
+        })) as BloqueadoInfo[];
     },
     refetchInterval: 60_000,
   });
+
 
   const unblockMutation = useMutation({
     mutationFn: async (corretorId: string) => {
@@ -127,8 +83,24 @@ export default function CorretoresBloqueadosPanel({ teamUserIds }: Props) {
     onError: () => toast.error("Erro ao restaurar bloqueio"),
   });
 
-  // Don't render if no blocked brokers
-  if (isLoading || bloqueados.length === 0) return null;
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Carregando bloqueios...
+      </div>
+    );
+  }
+
+  if (bloqueados.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          Nenhum corretor bloqueado por descartes este mês.
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   const stillBlocked = bloqueados.filter((b) => !b.ja_desbloqueado);
   const alreadyUnblocked = bloqueados.filter((b) => b.ja_desbloqueado);
