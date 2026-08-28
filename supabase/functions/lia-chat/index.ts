@@ -495,6 +495,9 @@ serve(async (req) => {
       } catch (e2) { console.error("[lia-chat] retry anti-glitch falhou", e2); }
     }
     raw = raw.replace(/```+/g, "").trim(); // a LIA nunca manda crase de markdown
+    // ACERVO AO VIVO: se o cerebro emitiu [[acervo:filtro]], troca pelo resultado real das 420
+    const _ac = await resolverAcervo(raw);
+    raw = _ac.raw;
 
     // Extrai o sinal de triagem interno (o cliente NUNCA vê) e limpa o texto.
     const VALID = new Set(["quente", "morno", "frio", "descartar", "seguindo"]);
@@ -503,13 +506,14 @@ serve(async (req) => {
     const sm = raw.match(/\[\[\s*sinal\s*:\s*(\w+)\s*\]\]/i);
     if (sm && VALID.has(sm[1].toLowerCase())) sinal = sm[1].toLowerCase();
     // passagem de bastão: o cérebro pede pro sistema avisar o lead que um humano vai seguir
-    const repassar = /\[\[\s*repassar\s*\]\]/i.test(raw);
+    const repassar = /\[\[\s*repassar\s*\]\]/i.test(raw) || _ac.repassar;
     // remove QUALQUER marcador interno do texto (sinal e repassar), esteja onde estiver, e limpa as bolhas
     const kept: string[] = [];
     for (const p of raw.split(/\s*\|\|\|\s*/)) {
       const clean = p
         .replace(/\[\[\s*sinal\s*:\s*\w+\s*\]\]/ig, "")
         .replace(/\[\[\s*repassar\s*\]\]/ig, "")
+        .replace(/\[\[\s*acervo\s*:[^\]]*\]\]/ig, "")
         .trim();
       if (clean) kept.push(clean);
     }
