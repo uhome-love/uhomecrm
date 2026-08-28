@@ -246,7 +246,10 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
           detalhe: "",
           vgv: vgvFinal ?? vgv,
           vgvFinal,
-          dias: diasDe(n.updated_at as string),
+          dias: diasDe(
+            (n.pipeline_lead_id && toqueByLeadId.get(String(n.pipeline_lead_id))) ||
+              (n.updated_at as string),
+          ),
           tone: "",
           saude: "terminal", // ganho = venda concluída
           ceo: !!n.requer_aprovacao_ceo,
