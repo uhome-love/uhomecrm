@@ -334,7 +334,7 @@ async function resolverAcervo(raw: string): Promise<{ raw: string; repassar: boo
     if (Number.isFinite(min) && min > 0) q = q.gte("preco_min", min);
     if (params.pronto === "1" || params.pronto === "true") q = q.eq("pronto", true);
     else if (params.pronto === "0" || params.pronto === "false") q = q.eq("pronto", false);
-    const { data, error } = await q.order("preco_min", { ascending: true }).limit(3);
+    const { data, error } = await q.order("destaque", { ascending: false }).order("preco_min", { ascending: true }).limit(3);
     if (error) throw error;
     if (!data || data.length === 0) {
       const msg = "Olha, no acervo eu nao achei uma opcao que bata certinho com esse perfil agora, mas o especialista faz a curadoria completa e te traz as melhores, pode ser? Me diz que ajusto a busca tambem 😊";

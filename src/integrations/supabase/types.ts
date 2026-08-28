@@ -503,6 +503,7 @@ export type Database = {
           cidade: string | null
           comissao_corretor_pct: number | null
           created_at: string | null
+          destaque: boolean | null
           diferenciais: string | null
           dorm_max: number | null
           dorm_min: number | null
@@ -530,6 +531,7 @@ export type Database = {
           cidade?: string | null
           comissao_corretor_pct?: number | null
           created_at?: string | null
+          destaque?: boolean | null
           diferenciais?: string | null
           dorm_max?: number | null
           dorm_min?: number | null
@@ -557,6 +559,7 @@ export type Database = {
           cidade?: string | null
           comissao_corretor_pct?: number | null
           created_at?: string | null
+          destaque?: boolean | null
           diferenciais?: string | null
           dorm_max?: number | null
           dorm_min?: number | null
