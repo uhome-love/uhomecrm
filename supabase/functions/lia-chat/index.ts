@@ -9,6 +9,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MODEL = "google/gemini-3.6-flash";
 
@@ -307,6 +308,48 @@ Regras: UMA mensagem curta só (1 ou 2 linhas), calorosa, específica ao que a p
 NUNCA use colchetes nem placeholders do tipo [nome], [imóvel] ou {{1}}: escreva o nome do imóvel por extenso e, se você não souber o nome da pessoa, simplesmente não use nome nenhum (fale direto com ela).
 Responda APENAS com a mensagem pronta pra enviar no WhatsApp, sem aspas, sem "mensagem:", sem explicação. Se de verdade não houver nada de útil pra dizer, responda só com a palavra PULAR.`;
 
+// ACERVO AO VIVO: resolve o marcador [[acervo:zona=..;dorm=..;max=..;min=..;pronto=..;cidade=..]]
+// consultando a tabela acervo_mercado (imoveis Orulo) e trocando o marcador pelas 2-3 opcoes reais
+// (nome + a partir de + link). Tolerante a falha: sem marcador e no-op; qualquer erro remove o
+// marcador e segue, nunca quebra a conversa.
+async function resolverAcervo(raw: string): Promise<{ raw: string; repassar: boolean }> {
+  const m = raw.match(/\[\[\s*acervo\s*:\s*([^\]]*)\]\]/i);
+  if (!m) return { raw, repassar: false };
+  try {
+    const params: Record<string, string> = {};
+    for (const kv of m[1].split(/[;,]/)) {
+      const i = kv.indexOf("=");
+      if (i > 0) params[kv.slice(0, i).trim().toLowerCase()] = kv.slice(i + 1).trim().toLowerCase();
+    }
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    let q = sb.from("acervo_mercado").select("nome,incorporadora,bairro,zona,preco_min,pronto,link_orulo").eq("ativo", true).not("preco_min", "is", null);
+    const cid = /canoas/.test(params.cidade || "") ? "Canoas" : /(poa|porto)/.test(params.cidade || "") ? "Porto Alegre" : "";
+    if (cid) q = q.eq("cidade", cid);
+    if (["norte", "sul", "leste", "centro", "canoas"].includes(params.zona)) q = q.eq("zona", params.zona);
+    const dorm = parseInt(String(params.dorm || params.dorms || "").replace(/\D/g, ""), 10);
+    if (Number.isFinite(dorm) && dorm > 0) q = q.lte("dorm_min", dorm).gte("dorm_max", dorm);
+    const max = parseInt(String(params.max || "").replace(/\D/g, ""), 10);
+    if (Number.isFinite(max) && max > 0) q = q.lte("preco_min", max);
+    const min = parseInt(String(params.min || "").replace(/\D/g, ""), 10);
+    if (Number.isFinite(min) && min > 0) q = q.gte("preco_min", min);
+    if (params.pronto === "1" || params.pronto === "true") q = q.eq("pronto", true);
+    else if (params.pronto === "0" || params.pronto === "false") q = q.eq("pronto", false);
+    const { data, error } = await q.order("preco_min", { ascending: true }).limit(3);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      const msg = "Olha, no acervo eu nao achei uma opcao que bata certinho com esse perfil agora, mas o especialista faz a curadoria completa e te traz as melhores, pode ser? Me diz que ajusto a busca tambem 😊";
+      return { raw: raw.replace(m[0], msg), repassar: true };
+    }
+    const fmt = (n: number) => n >= 1000000 ? "R$ " + (n / 1000000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi" : "R$ " + Math.round(n / 1000) + " mil";
+    const bolhas = data.map((r: any) => `${r.nome} (${r.incorporadora}), ${r.bairro}${r.pronto ? ", pronto pra morar" : ""}, a partir de ${fmt(Number(r.preco_min))}: ${r.link_orulo}`);
+    const fecho = "Da uma olhada nesses links 😊 Se algum te interessar eu ja te conecto com o especialista, ou me diz que ajusto a busca!";
+    return { raw: raw.replace(m[0], bolhas.join("\n|||\n") + "\n|||\n" + fecho), repassar: false };
+  } catch (e) {
+    console.error("[lia-chat] resolverAcervo erro", e);
+    return { raw: raw.replace(m[0], "").trim(), repassar: false };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
@@ -452,6 +495,9 @@ serve(async (req) => {
       } catch (e2) { console.error("[lia-chat] retry anti-glitch falhou", e2); }
     }
     raw = raw.replace(/```+/g, "").trim(); // a LIA nunca manda crase de markdown
+    // ACERVO AO VIVO: se o cerebro emitiu [[acervo:filtro]], troca pelo resultado real das 420
+    const _ac = await resolverAcervo(raw);
+    raw = _ac.raw;
 
     // Extrai o sinal de triagem interno (o cliente NUNCA vê) e limpa o texto.
     const VALID = new Set(["quente", "morno", "frio", "descartar", "seguindo"]);
@@ -460,13 +506,14 @@ serve(async (req) => {
     const sm = raw.match(/\[\[\s*sinal\s*:\s*(\w+)\s*\]\]/i);
     if (sm && VALID.has(sm[1].toLowerCase())) sinal = sm[1].toLowerCase();
     // passagem de bastão: o cérebro pede pro sistema avisar o lead que um humano vai seguir
-    const repassar = /\[\[\s*repassar\s*\]\]/i.test(raw);
+    const repassar = /\[\[\s*repassar\s*\]\]/i.test(raw) || _ac.repassar;
     // remove QUALQUER marcador interno do texto (sinal e repassar), esteja onde estiver, e limpa as bolhas
     const kept: string[] = [];
     for (const p of raw.split(/\s*\|\|\|\s*/)) {
       const clean = p
         .replace(/\[\[\s*sinal\s*:\s*\w+\s*\]\]/ig, "")
         .replace(/\[\[\s*repassar\s*\]\]/ig, "")
+        .replace(/\[\[\s*acervo\s*:[^\]]*\]\]/ig, "")
         .trim();
       if (clean) kept.push(clean);
     }
