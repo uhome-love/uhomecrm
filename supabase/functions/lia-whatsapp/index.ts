@@ -318,6 +318,39 @@ function telBR(from: string): string {
   return "+55" + d;
 }
 
+// FORMULÁRIO DO ANÚNCIO (WhatsApp Flow / nfm_reply): no click-to-WhatsApp com formulário,
+// quando o cliente preenche (nome, telefone, preferência), a resposta NÃO chega como texto:
+// vem como interactive.nfm_reply, com um response_json (campos definidos no Flow). Sem ler isso,
+// a LIA recebia mensagem vazia. Aqui a gente lê os campos e entrega como contexto, pra ela abrir
+// já sabendo o perfil. Genérico: funciona com qualquer nome de campo do Flow.
+function parseFlowReply(interactive: any): string {
+  try {
+    const nfm = interactive?.nfm_reply;
+    if (!nfm) return "";
+    // guarda o cru no log pra afinar os rótulos com o primeiro preenchimento real
+    if (nfm.response_json) console.log("[lia-whatsapp] nfm_reply cru:", nfm.response_json);
+    let data: any = {};
+    try { data = JSON.parse(nfm.response_json ?? "{}"); } catch { data = {}; }
+    if (!data || typeof data !== "object") return "";
+    const IGN = /^(flow[_ ]?token|token|screen_\d+_token)$/i;
+    const pares: string[] = [];
+    for (const [k, v] of Object.entries(data)) {
+      if (v === null || v === undefined || v === "") continue;
+      if (IGN.test(String(k))) continue;
+      const label = String(k)
+        .replace(/^screen_\d+_/i, "")   // tira prefixo screen_0_
+        .replace(/_\d+$/, "")           // tira sufixo _0
+        .replace(/[_-]+/g, " ")
+        .trim();
+      const val = Array.isArray(v) ? v.join(", ") : String(v);
+      pares.push(`${label}: ${val}`.trim());
+    }
+    if (!pares.length) return "";
+    return `📋 (Formulário do anúncio) O cliente já preencheu: ${pares.join(" · ")}`;
+  } catch (e) { console.error("[lia-whatsapp] parseFlowReply erro", e); return ""; }
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method === "GET") return new Response("ok", { headers: cors });
@@ -342,7 +375,11 @@ serve(async (req) => {
         let texto =
           m.type === "text" ? (m.text?.body ?? "") :
           m.type === "button" ? (m.button?.text ?? "") :
-          m.type === "interactive" ? (m.interactive?.button_reply?.title ?? m.interactive?.list_reply?.title ?? "") :
+          m.type === "interactive" ? (
+            m.interactive?.nfm_reply
+              ? parseFlowReply(m.interactive)
+              : (m.interactive?.button_reply?.title ?? m.interactive?.list_reply?.title ?? "")
+          ) :
           "";
 
         // idempotência: já processado?
