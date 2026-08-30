@@ -27,7 +27,7 @@ export default function CorretoresBloqueadosPanel({ teamUserIds }: Props) {
   const queryClient = useQueryClient();
   const mesAtual = format(new Date(), "yyyy-MM");
 
-  const { data: bloqueados = [], isLoading } = useQuery({
+  const { data: bloqueados = [], isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["corretores-bloqueados-descarte", teamUserIds, mesAtual],
     queryFn: async () => {
       // Fonte única: mesma contagem usada por roleta_motivo_bloqueio (sem cap de 1000 linhas).
@@ -88,6 +88,26 @@ export default function CorretoresBloqueadosPanel({ teamUserIds }: Props) {
       <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Carregando bloqueios...
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="border-destructive/30 bg-destructive/5">
+        <CardContent className="py-6 space-y-3 text-center">
+          <p className="text-sm font-medium flex items-center justify-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-destructive" />
+            Não foi possível carregar a lista de bloqueados
+          </p>
+          <p className="text-xs text-muted-foreground break-words">
+            {(error as any)?.message || "Erro desconhecido"}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            {isFetching ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+            Tentar de novo
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
