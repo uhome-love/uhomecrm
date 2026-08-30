@@ -27,7 +27,7 @@ export default function CorretoresBloqueadosPanel({ teamUserIds }: Props) {
   const queryClient = useQueryClient();
   const mesAtual = format(new Date(), "yyyy-MM");
 
-  const { data: bloqueados = [], isLoading } = useQuery({
+  const { data: bloqueados = [], isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["corretores-bloqueados-descarte", teamUserIds, mesAtual],
     queryFn: async () => {
       // Fonte única: mesma contagem usada por roleta_motivo_bloqueio (sem cap de 1000 linhas).
