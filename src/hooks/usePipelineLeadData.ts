@@ -74,20 +74,29 @@ export function usePipelineLeadData(leadId: string | null) {
     enabled: !!leadId && !!user,
     staleTime: 20_000,
     queryFn: async () => {
-      const [atRes, anRes, taRes, hiRes] = await Promise.all([
+      // Uma onda só: tudo que a aba História precisa vai junto (antes, visita_eventos
+      // e lia_estado eram useEffect separados, criando uma 3ª onda de requisições).
+      const [atRes, anRes, taRes, hiRes, veRes, liaRes] = await Promise.all([
         supabase.from("pipeline_atividades").select("*").eq("pipeline_lead_id", leadId!).order("data", { ascending: false }),
         supabase.from("pipeline_anotacoes").select("*").eq("pipeline_lead_id", leadId!).order("fixada", { ascending: false }).order("created_at", { ascending: false }),
         supabase.from("pipeline_tarefas").select("*").eq("pipeline_lead_id", leadId!).order("created_at", { ascending: false }),
         supabase.from("pipeline_historico").select("*").eq("pipeline_lead_id", leadId!).order("created_at", { ascending: false }),
+        supabase.from("visita_eventos" as any)
+          .select("id, tipo, status_anterior, status_novo, data_anterior, data_nova, ator_id, created_at")
+          .eq("pipeline_lead_id", leadId!).order("created_at", { ascending: false }),
+        supabase.from("lia_estado").select("telefone").eq("lead_id", leadId!).maybeSingle(),
       ]);
       return {
         atividades: (atRes.data || []) as PipelineAtividade[],
         anotacoes: (anRes.data || []) as PipelineAnotacao[],
         tarefas: (taRes.data || []) as PipelineTarefa[],
         historico: (hiRes.data || []) as PipelineHistorico[],
+        visitaEventos: (veRes.data || []) as any[],
+        temLiaConversa: !!(liaRes.data as any)?.telefone,
       };
     },
   });
+
 
   const atividades = query.data?.atividades ?? (EMPTY as PipelineAtividade[]);
   const anotacoes = query.data?.anotacoes ?? (EMPTY as PipelineAnotacao[]);
