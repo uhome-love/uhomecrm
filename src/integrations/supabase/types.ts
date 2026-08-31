@@ -9799,6 +9799,7 @@ export type Database = {
           corretor_id: string | null
           created_at: string
           created_by: string | null
+          ctwa_clid: string | null
           dados_site: Json | null
           data_proxima_acao: string | null
           dedup_grupo_id: string | null
@@ -9915,6 +9916,7 @@ export type Database = {
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
+          ctwa_clid?: string | null
           dados_site?: Json | null
           data_proxima_acao?: string | null
           dedup_grupo_id?: string | null
@@ -10031,6 +10033,7 @@ export type Database = {
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
+          ctwa_clid?: string | null
           dados_site?: Json | null
           data_proxima_acao?: string | null
           dedup_grupo_id?: string | null
