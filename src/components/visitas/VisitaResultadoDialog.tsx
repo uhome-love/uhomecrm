@@ -22,7 +22,6 @@ export const RESULTADO_OPTIONS: { value: ResultadoVisita; label: string; emoji: 
   { value: "gostou_vai_pensar", label: "Vai pensar", emoji: "🤔", desc: "→ Pós-Visita" },
   { value: "nao_gostou", label: "Não gostou", emoji: "👎", desc: "→ Pós-Visita (descarte sugerido)" },
   { value: "reagendar", label: "Reagendar", emoji: "🔄", desc: "→ Visita marcada" },
-  { value: "nao_compareceu", label: "Não compareceu", emoji: "👻", desc: "→ Aquecimento" },
 ];
 
 export const RESULTADO_LABELS: Record<string, string> = Object.fromEntries(
@@ -188,20 +187,23 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
             </div>
           )}
 
-          {/* Observações */}
+          {/* Observações — obrigatória (alimenta a história do lead) */}
           <div>
-            <Label className="text-xs">Observações (opcional)</Label>
+            <Label className="text-xs">Observações <span className="text-destructive">*</span></Label>
             <Textarea
               value={obs}
               onChange={e => setObs(e.target.value)}
-              placeholder="Detalhes sobre a visita..."
+              placeholder="O que rolou na visita? Ex: gostou da vista, achou o valor ok, vai decidir com a esposa"
               rows={2}
             />
+            {selected && !obs.trim() && (
+              <p className="mt-1 text-[11.5px] font-medium text-destructive">Escreva o que aconteceu na visita para registrar.</p>
+            )}
           </div>
 
           <Button
             className="w-full gap-2"
-            disabled={!selected || submitting}
+            disabled={!selected || !obs.trim() || submitting}
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
