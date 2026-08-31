@@ -159,8 +159,14 @@ async function baixarAudio(mediaId: string): Promise<{ b64: string; fmt: string 
     const url: string | undefined = md?.url;
     const mime: string = md?.mime_type || "audio/ogg";
     if (!url) return null;
-    const bin = await fetch(url, { headers: { "D360-API-KEY": key } });
+    // A URL que o 360dialog devolve aponta pro lookaside da Meta, que NÃO aceita a
+    // D360-API-KEY e responde 401 (era esse o bug: áudio nunca baixava, transcrição vazia).
+    // O download tem que passar pelo proxy do 360dialog, trocando o host.
+    const proxied = url.replace("https://lookaside.fbsbx.com", D360_BASE.replace(/\/+$/, ""));
+    let bin = await fetch(proxied, { headers: { "D360-API-KEY": key } });
+    if (!bin.ok && proxied !== url) bin = await fetch(url, { headers: { "D360-API-KEY": key } });
     if (!bin.ok) { console.error("[audio] download", bin.status); return null; }
+
     const buf = new Uint8Array(await bin.arrayBuffer());
     const fmt = /mp3|mpeg/.test(mime) ? "mp3" : /wav/.test(mime) ? "wav" : /m4a|mp4|aac/.test(mime) ? "m4a" : "ogg";
     return { b64: bytesToB64(buf), fmt };
