@@ -475,7 +475,7 @@ function marcoMeta(item: TimelineItem): { emoji: string; ring: string; accent: s
   return { emoji: "•", ring: "bg-zinc-100 text-zinc-500", accent: "border-l-zinc-300" };
 }
 
-export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction }: Props) {
+export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, visitaEventos = [], temLiaConversa = false, loading = false, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("ligacao");
   const [resultado, setResultado] = useState("neutro");
