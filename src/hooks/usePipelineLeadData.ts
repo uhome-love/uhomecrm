@@ -234,7 +234,7 @@ export function usePipelineLeadData(leadId: string | null) {
   }, [loadAll, queryClient, leadId]);
 
   return {
-    atividades, anotacoes, tarefas, historico, loading,
+    atividades, anotacoes, tarefas, historico, visitaEventos, temLiaConversa, loading,
     addAtividade, updateAtividade,
     addAnotacao, toggleFixarAnotacao,
     addTarefa, toggleTarefa, deleteTarefa,
