@@ -275,6 +275,10 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
     const rawDesc = a.descricao && !/^resultado:/i.test(a.descricao.trim()) ? a.descricao : null;
     const desc = limparTexto(rawDesc, lead.nome, res?.key) || undefined;
 
+    // "WhatsApp enviado" sem observação = só o corretor copiou um template
+    // (traço, não conversa). Vai pro andaime (Sistema), não polui a Narrativa.
+    const ehWhatsappAuto = a.tipo === "whatsapp" && (a.titulo || "").trim() === "WhatsApp enviado" && !desc;
+
     items.push({
       title,
       description: desc,
@@ -283,7 +287,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       color: info?.color || (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"),
       autor: nome(a.created_by),
       badge: res?.meta,
-      sourceType: "atividade",
+      sourceType: ehWhatsappAuto ? "system" : "atividade",
       sourceId: a.id,
     });
   }
