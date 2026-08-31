@@ -28,6 +28,8 @@ import TaskCompletionDialog from "./TaskCompletionDialog";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
 import TemperaturaChip from "./TemperaturaChip";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
+import { prefetchLeadDetailData } from "@/hooks/usePipelineLeadData";
+import { useAuth } from "@/hooks/useAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { completeLeadTask } from "@/lib/completeLeadTask";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
