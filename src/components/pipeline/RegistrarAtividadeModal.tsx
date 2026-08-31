@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Phone, MessageCircle, MapPin, StickyNote, Check, CalendarClock, X, Zap, ArrowRight, type LucideIcon } from "lucide-react";
+import { Phone, MessageCircle, MapPin, StickyNote, Check, CalendarClock, X, Zap, ArrowRight, Undo2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TERMINAIS = new Set(["descarte", "convertido", "venda", "caiu"]);
@@ -60,12 +60,20 @@ interface Props {
    *  concluído, e o botão "Pular" vira "Só concluir" (fecha o lembrete sem
    *  carimbar toque). Sem isso, é só o registro avulso. */
   concluirTarefaId?: string | null;
+  /** Modo PÓS-MOVE obrigatório: a observação vira obrigatória e o botão "Pular"
+   *  some, dando lugar a "Desfazer" (que reverte a etapa). Também esconde a
+   *  seção "Avançar etapa" (o move já aconteceu). A história nunca nasce vazia. */
+  exigirObservacao?: boolean;
+  /** Esconde a seção "Avançar etapa" (redundante no pós-move). */
+  esconderAvancar?: boolean;
+  /** Chamado quando o usuário desiste no modo obrigatório — reverte o move. */
+  onDesfazer?: () => void;
   onClose: () => void;
   /** chamado após salvar com sucesso (para refetch da lista, etc). */
   onSaved?: () => void;
 }
 
-export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTarefaId, onClose, onSaved }: Props) {
+export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTarefaId, exigirObservacao = false, esconderAvancar = false, onDesfazer, onClose, onSaved }: Props) {
   const { user } = useAuth();
   const [ativSel, setAtivSel] = useState<AtDef | null>(null);
   const [obs, setObs] = useState("");
@@ -135,8 +143,10 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
 
   // Observação é OBRIGATÓRIA quando se registra uma atividade — é o que alimenta
   // o histórico do lead. Só agendar lembrete (sem atividade) não exige.
-  const obsFaltando = !!ativSel && !obs.trim();
+  const obsFaltando = (!!ativSel || exigirObservacao) && !obs.trim();
   const modoConclusao = !!concluirTarefaId;
+  // No modo obrigatório, fechar/clicar fora = Desfazer (reverte o move).
+  const aoFechar = () => { if (exigirObservacao && onDesfazer) { onDesfazer(); } fechar(); };
 
   // Marca o lembrete em conclusão como concluído (sem tocar no toque).
   const marcarConcluido = async () => {
@@ -252,7 +262,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
   };
 
   return (
-    <Dialog open={!!lead} onOpenChange={(o) => !o && fechar()}>
+    <Dialog open={!!lead} onOpenChange={(o) => !o && aoFechar()}>
       <DialogContent className="sm:max-w-sm gap-0 p-0 overflow-hidden">
         <div className="border-b border-border px-5 py-3.5">
           <div className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
@@ -428,8 +438,9 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
           )}
         </div>
 
-        {/* Avançar etapa — registrar + mover num toque só. Escolhe a etapa à frente. */}
-        {etapasFrente.length > 0 && (
+        {/* Avançar etapa — registrar + mover num toque só. Escolhe a etapa à frente.
+            Escondido no pós-move (o move já aconteceu, seria redundante). */}
+        {!esconderAvancar && etapasFrente.length > 0 && (
           <div className="px-5 pb-4">
             <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
               <ArrowRight className="h-3.5 w-3.5" /> Avançar etapa <span className="font-medium normal-case tracking-normal text-muted-foreground/70">(opcional)</span>
@@ -462,6 +473,10 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
           {modoConclusao ? (
             <button type="button" onClick={soConcluir} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
               <Check className="h-4 w-4" /> Só concluir
+            </button>
+          ) : exigirObservacao ? (
+            <button type="button" onClick={() => { if (onDesfazer) onDesfazer(); fechar(); }} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
+              <Undo2 className="h-4 w-4" /> Desfazer
             </button>
           ) : (
             <button type="button" onClick={fechar} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">

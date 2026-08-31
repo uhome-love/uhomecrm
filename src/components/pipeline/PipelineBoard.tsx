@@ -246,7 +246,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   // Nova Gestão: popup leve pós-move (⚡ registrar atividade + agendar próximo passo).
-  const [posMoveLead, setPosMoveLead] = useState<{ id: string; nome: string; etapa: string } | null>(null);
+  const [posMoveLead, setPosMoveLead] = useState<{ id: string; nome: string; etapa: string; stageAnteriorId: string } | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
   const [arrivedLeadId, setArrivedLeadId] = useState<string | null>(null);
   const dragLeadId = useRef<string | null>(null);
@@ -607,8 +607,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       return;
     }
 
+    const stageAnteriorId = lead.stage_id;
     completeTransition(lid, stageId);
-    setPosMoveLead({ id: lead.id, nome: lead.nome, etapa: targetStage.nome });
+    setPosMoveLead({ id: lead.id, nome: lead.nome, etapa: targetStage.nome, stageAnteriorId });
   };
 
   const handleTransitionConfirm = useCallback(async (result: TransitionResult) => {
@@ -1137,8 +1138,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                         setTransitionPopup({ lead, targetStage });
                         return;
                       }
+                      const stageAnteriorId = lead?.stage_id ?? "";
                       completeTransition(leadId, stageId);
-                      if (lead && targetStage) setPosMoveLead({ id: lead.id, nome: lead.nome, etapa: targetStage.nome });
+                      if (lead && targetStage) setPosMoveLead({ id: lead.id, nome: lead.nome, etapa: targetStage.nome, stageAnteriorId });
                     }}
                     onTransferred={onTransferred}
                     stageIndexMap={stageIndexMap}
@@ -1171,6 +1173,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       <AtividadePosMovePopup
         lead={posMoveLead}
         etapaNome={posMoveLead?.etapa}
+        onDesfazer={posMoveLead ? () => { completeTransition(posMoveLead.id, posMoveLead.stageAnteriorId); } : undefined}
         onClose={() => setPosMoveLead(null)}
       />
 
