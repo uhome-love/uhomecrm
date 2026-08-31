@@ -708,8 +708,22 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
       {/* Timeline agrupada por dia (Drawer Wide v4) */}
       {histView === "lia" ? (
         <DrawerLiaConversaTab leadId={leadId} />
+      ) : loading && shownItems.length === 0 ? (
+        <div className="px-7 pt-4 space-y-3" aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex gap-3">
+              <div className="h-8 w-8 rounded-full bg-zinc-100 animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 w-1/3 rounded bg-zinc-100 animate-pulse" />
+                <div className="h-12 w-full rounded-lg bg-zinc-100 animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
       <div className="px-7 pt-4">
+
+
 
         <DrawerTimelineGroup
           items={shownItems.slice(0, 40).map((item, i) => {
