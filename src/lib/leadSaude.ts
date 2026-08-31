@@ -54,6 +54,20 @@ function diasSem(base: string): number {
   return (Date.now() - t) / 86_400_000;
 }
 
+/**
+ * Relógio da saúde. Regra: o toque só conta se aconteceu DEPOIS que o lead
+ * chegou ao corretor atual. Lead reciclado/redistribuído carrega
+ * `ultimo_toque_at` do ciclo anterior — sem isso ele nascia "estagnado" na mão
+ * do novo corretor e sumia do board (bug Joyce Brazil, 31/08/2026).
+ */
+function relogioBase(input: LeadSaudeInput): string | null {
+  const ref = input.distribuido_em || input.aceito_em || input.created_at || null;
+  const toque = input.ultimo_toque_at || null;
+  if (!toque) return ref;
+  if (!ref) return toque;
+  return new Date(toque).getTime() >= new Date(ref).getTime() ? toque : ref;
+}
+
 /** Data de hoje em BRT no formato ISO (YYYY-MM-DD) — para comparar com a carência. */
 function hojeBRT(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -64,10 +78,11 @@ export function leadSaude(input: LeadSaudeInput): LeadSaude {
   const tipo = input.stage_tipo ?? "";
   if (TERMINAIS.has(tipo)) return "terminal";
 
-  const base = input.ultimo_toque_at || input.distribuido_em || input.aceito_em || input.created_at;
+  const base = relogioBase(input);
   if (!base) return "vermelho"; // sem qualquer referência = desatualizado
 
   const dias = diasSem(base);
+
   const limiteEstagna = ESTAGNA_POR_ETAPA[tipo];
   if (limiteEstagna != null && dias > limiteEstagna) {
     // Carência de transição: com prazo concedido não estagna — vira atenção (amarelo).
