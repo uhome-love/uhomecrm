@@ -489,43 +489,10 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const [deleting, setDeleting] = useState(false);
 
   const { data: imovelEvents } = useLeadImoveisEvents(leadId);
-  const [nomesPorId, setNomesPorId] = useState<Record<string, string>>({});
+  // Mapa de nomes vem do cache global (carregado 1x por sessão) — sem onda 2 por lead.
+  const nomesPorId = useProfileNames();
 
-  useEffect(() => {
-    const ids = new Set<string>();
-    atividades.forEach(a => { if (a.created_by) ids.add(a.created_by); });
-    tarefas.forEach(t => { if (t.created_by) ids.add(t.created_by); });
-    historico.forEach(h => { if (h.movido_por) ids.add(h.movido_por); });
-    const lc: any = lead;
-    if (lc.corretor_id) ids.add(lc.corretor_id);
-    if (lc.corretor_anterior_id) ids.add(lc.corretor_anterior_id);
-    const lista = Array.from(ids);
-    if (lista.length === 0) { setNomesPorId({}); return; }
-    let cancel = false;
-    (async () => {
-      const { data } = await supabase.from("profiles").select("user_id, nome").in("user_id", lista);
-      if (cancel || !data) return;
-      const map: Record<string, string> = {};
-      for (const p of data as any[]) { if (p.user_id && p.nome) map[p.user_id] = p.nome; }
-      setNomesPorId(map);
-    })();
-    return () => { cancel = true; };
-  }, [atividades, tarefas, historico, lead]);
 
-  // ── Injeção de visita_eventos (histórico automático de visitas) ──
-  const [visitaEventos, setVisitaEventos] = useState<Array<any>>([]);
-  useEffect(() => {
-    let cancel = false;
-    (async () => {
-      const { data } = await supabase
-        .from("visita_eventos" as any)
-        .select("id, tipo, status_anterior, status_novo, data_anterior, data_nova, ator_id, created_at")
-        .eq("pipeline_lead_id", leadId)
-        .order("created_at", { ascending: false });
-      if (!cancel) setVisitaEventos((data as any[]) ?? []);
-    })();
-    return () => { cancel = true; };
-  }, [leadId]);
 
   const VISITA_EVENT_META: Record<string, { title: string; icon: any; color: string; tone?: "success" | "danger" | "neutral" | "warning" }> = {
     criada: { title: "Visita agendada", icon: MapPin, color: "text-primary", tone: "neutral" },
