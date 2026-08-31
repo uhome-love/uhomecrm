@@ -62,6 +62,12 @@ interface Props {
   anotacoes: PipelineAnotacao[];
   tarefas: PipelineTarefa[];
   historico: PipelineHistorico[];
+  /** Eventos de visita — vêm no mesmo lote de usePipelineLeadData (sem onda extra). */
+  visitaEventos?: any[];
+  /** Existe conversa da LIA linkada — idem, vem do lote único. */
+  temLiaConversa?: boolean;
+  /** Carregando o lote do lead: mostra esqueleto em vez de vazio. */
+  loading?: boolean;
   onAddAtividade: (data: Partial<PipelineAtividade>) => Promise<void>;
   onAddAnotacao: (conteudo: string) => Promise<void>;
   onToggleFixar: (id: string, fixada: boolean) => Promise<void>;
