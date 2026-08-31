@@ -837,6 +837,7 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
         patch.tipo_descarte = null;
         patch.tags = ["qualificado_lia", `lia_${nivel}`, "reengajado"];
       }
+      if (referral?.ctwa_clid) patch.ctwa_clid = referral.ctwa_clid;
       await sb.from("pipeline_leads").update(patch).eq("id", lead.id);
       await sb.from("pipeline_atividades").insert({
         pipeline_lead_id: lead.id,
