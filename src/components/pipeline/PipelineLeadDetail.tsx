@@ -70,6 +70,7 @@ import StageCoachBar from "./StageCoachBar";
 import LeadFlagControls from "./LeadFlagControls";
 import { CallFocusOverlay } from "./CallFocusOverlay";
 import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
+import PipelineStageTransitionPopup, { needsTransitionPopup } from "./PipelineStageTransitionPopup";
 // RadarImoveisTab e LeadWhatsAppTab removidos (Pipeline v2 Fase 4)
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -177,6 +178,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   });
 
   const [moveObs, setMoveObs] = useState("");
+  const [transitionTarget, setTransitionTarget] = useState<PipelineStage | null>(null);
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
@@ -266,7 +268,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     } finally { setSaving(false); }
   };
 
+  // Troca de etapa pelo modal (dropdown, atalho, sugestão). Nova Gestão v2:
+  // se a etapa pede observação, abre o MESMO popup do quadro (obrigatório),
+  // pra a história nunca nascer vazia. Senão, move direto.
   const handleMoveStage = async (stageId: string) => {
+    if (stageId === lead.stage_id) return;
+    const alvo = stages.find((s) => s.id === stageId);
+    if (alvo && needsTransitionPopup(alvo.nome, alvo.tipo, lead)) {
+      setTransitionTarget(alvo);
+      return;
+    }
     await onMove(lead.id, stageId, moveObs || undefined);
     setMoveObs("");
   };
@@ -1107,6 +1118,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         stageTipo={currentStage?.tipo}
         onRefresh={leadData.reload}
       />
+      {transitionTarget && (
+        <PipelineStageTransitionPopup
+          open={!!transitionTarget}
+          onOpenChange={(v) => { if (!v) setTransitionTarget(null); }}
+          lead={lead}
+          targetStage={transitionTarget}
+          onCancel={() => setTransitionTarget(null)}
+          onConfirm={async (r) => {
+            await onMove(lead.id, r.targetStageId, r.observacao || undefined);
+            setMoveObs("");
+            setTransitionTarget(null);
+          }}
+        />
+      )}
       <VisitaForm
         open={scheduleVisitOpen}
         onClose={() => { setScheduleVisitOpen(false); leadData.reload(); }}

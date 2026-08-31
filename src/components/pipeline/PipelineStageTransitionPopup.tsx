@@ -151,6 +151,80 @@ function ContatoInicialForm({ lead, onConfirm, targetStageId }: { lead: Pipeline
   );
 }
 
+// ─── Nota rápida obrigatória (Nova Gestão v2) ───
+// Passagem de etapa pra frente sem dado crítico: pede UMA linha do que aconteceu.
+// Leve (não é o formulário pesado antigo), mas obrigatória — a história nunca
+// mais nasce vazia. O dado estruturado (orçamento/interesse) fica no Resumo.
+const NOTA_CHIPS: Record<string, string[]> = {
+  sem_contato:          ["Não atendeu", "Caixa postal", "Mandei WhatsApp", "Número errado"],
+  qualificacao:         ["Atendeu, com interesse", "Confirmou orçamento", "Pediu material", "Quer visitar"],
+  busca:                ["Confirmou orçamento", "Alinhou perfil", "Enviei opções", "Quer visitar"],
+  aquecimento:          ["Vai pensar", "Sem retorno agora", "Retomar mais pra frente", "Ainda tem interesse"],
+  possibilidade_visita: ["Demonstrou interesse em visitar", "Vai confirmar a data", "Pediu mais opções"],
+  proposta:             ["Enviei a proposta", "Negociando valor", "Aguardando o cliente"],
+  documentacao:         ["Enviou documentos", "Falta documento", "Em análise"],
+  contrato_gerado:      ["Contrato enviado", "Aguardando assinatura", "Assinado"],
+};
+const NOTA_CHIPS_DEFAULT = ["Atendeu, com interesse", "Sem retorno", "Pediu retorno depois"];
+
+function NotaRapidaForm({ lead, targetStage, onConfirm }: { lead: PipelineLead; targetStage: PipelineStage; onConfirm: (r: TransitionResult) => void }) {
+  const [obs, setObs] = useState("");
+  const chips = NOTA_CHIPS[targetStage.tipo] ?? NOTA_CHIPS_DEFAULT;
+  const addChip = (c: string) => setObs(prev => prev.trim() ? `${prev.trim()} · ${c}` : c);
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-base flex items-center gap-2">
+          <span aria-hidden>⇅</span> Movendo para {targetStage.nome}
+        </DialogTitle>
+      </DialogHeader>
+      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs mb-1 block">O que aconteceu? <span className="text-destructive">*</span></Label>
+          <Textarea
+            autoFocus
+            value={obs}
+            onChange={e => setObs(e.target.value)}
+            className="text-xs h-20"
+            placeholder="ex.: atendeu, confirmou orçamento até 750k, quer visitar o Casa Tua"
+          />
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {chips.map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => addChip(c)}
+                className="text-[11px] font-medium rounded-full border border-border bg-background px-2.5 py-1 text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.05] hover:text-foreground transition-colors"
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button
+          size="sm"
+          className="text-xs gap-1"
+          disabled={!obs.trim()}
+          onClick={() => onConfirm({
+            leadId: lead.id,
+            targetStageId: targetStage.id,
+            observacao: obs.trim(),
+            extraData: { observacao: obs.trim() },
+          })}
+        >
+          Mover e registrar →
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
 const SectionTitle = ({ n, children }: { n: number; children: React.ReactNode }) => (
   <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
     <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[9px] font-bold">{n}</span>
@@ -1240,29 +1314,24 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     if (stageType === "contato_inicial" || stageName.includes("contato inic") || stageName.includes("contato iniciado")) {
       return <ContatoInicialForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageType === "busca" || stageType === "qualificacao" || stageName.includes("qualifica") || stageName.includes("busca")) {
-      return <QualificacaoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
-    }
-    if (stageType === "aquecimento" || stageName.includes("aquecimento") || stageName.includes("nutri")) {
-      return <AquecimentoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
-    }
-    if (stageType === "possibilidade_visita" || (stageName.includes("poss") && stageName.includes("visita"))) {
-      return <PossivelVisitaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
-    }
+    // Visita → agendamento (dado crítico). Pós-visita → resultado + temperatura (dado crítico).
     if (stageType === "visita" || stageType === "visita_marcada" || stageName === "visita" || stageName.includes("visita marcada")) {
       return <VisitaMarcadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
     if (stageType === "pos_visita" || stageType === "visita_realizada" || stageName.includes("pós-visita") || stageName.includes("visita realizada")) {
       return <VisitaRealizadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageType === "proposta" || stageName.includes("proposta")) {
-      return <PropostaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
-    }
-    if (stageType === "documentacao" || stageName.includes("aprova") || stageName.includes("documenta")) {
-      return <AprovacaoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
-    }
-    if (stageType === "contrato_gerado" || stageName.includes("contrato")) {
-      return <ContratoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    // Qualificação, Aquecimento, Possível visita, Proposta, Documentação, Contrato →
+    // nota rápida obrigatória (leve). Dado estruturado fica editável no Resumo.
+    if (
+      stageType === "busca" || stageType === "qualificacao" || stageName.includes("qualifica") || stageName.includes("busca") ||
+      stageType === "aquecimento" || stageName.includes("aquecimento") || stageName.includes("nutri") ||
+      stageType === "possibilidade_visita" || (stageName.includes("poss") && stageName.includes("visita")) ||
+      stageType === "proposta" || stageName.includes("proposta") ||
+      stageType === "documentacao" || stageName.includes("aprova") || stageName.includes("documenta") ||
+      stageType === "contrato_gerado" || stageName.includes("contrato")
+    ) {
+      return <NotaRapidaForm lead={lead} targetStage={targetStage} onConfirm={onConfirm} />;
     }
     if (stageType === "venda" || stageName.includes("ganho") || stageName === "venda") {
       return <VendaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
@@ -1276,7 +1345,8 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     if (stageType === "descarte" || stageName.includes("descarte")) {
       return <DescarteForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    return null;
+    // Qualquer outra etapa → nota rápida obrigatória (nunca abre popup vazio).
+    return <NotaRapidaForm lead={lead} targetStage={targetStage} onConfirm={onConfirm} />;
   };
 
   return (
@@ -1292,16 +1362,11 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
 export function needsTransitionPopup(stageName: string, stageType: string, lead?: PipelineLead): boolean {
   const name = stageName.toLowerCase();
 
-  // ── Nova Gestão · fricção-zero ──
-  // Só as etapas com DADO CRÍTICO abrem formulário obrigatório ao mover.
-  // Todo o resto (sem contato, qualificação, aquecimento, possível visita,
-  // pós-visita, proposta, documentação, contrato, negócio criado) move
-  // INSTANTÂNEO — registrar é opcional depois (⚡ atividade).
-
-  // Venda / Caiu / Descarte → sempre pedem (VGV/data/unidade · motivo).
-  if (stageType === "venda" || name.includes("ganho") || name === "venda") return true;
-  if (stageType === "caiu" || name.includes("caiu")) return true;
-  if (stageType === "descarte" || name.includes("descarte")) return true;
+  // ── Nova Gestão v2 · observação obrigatória ──
+  // Toda passagem manual pra frente pede registro: dado crítico onde existe
+  // (venda/caiu/descarte/visita/pós-visita) e uma NOTA RÁPIDA obrigatória no
+  // resto. A história nunca mais nasce vazia. Moves automáticos/repasse não
+  // passam por aqui (são update direto), então seguem instantâneos.
 
   // Visita → pede agendamento, exceto se o lead já tem visita marcada.
   if (stageType === "visita" || name === "visita" || stageType === "visita_marcada" || name.includes("visita marcada")) {
@@ -1313,6 +1378,6 @@ export function needsTransitionPopup(stageName: string, stageType: string, lead?
     return true;
   }
 
-  // Etapas de processo → movimento instantâneo.
-  return false;
+  // Todas as demais etapas → pedem observação (crítica ou nota rápida).
+  return true;
 }
