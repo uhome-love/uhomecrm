@@ -495,6 +495,13 @@ serve(async (req) => {
         const produto = await resolverProduto(sb, from, est, referral);
         const midias = montarMidias(produto);
 
+        // MÍDIAS DISPONÍVEIS por produto (só o que existe de verdade). Injetado na ficha pra
+        // a LIA só prometer/enviar o que tem, e com a chave certa (fim do "mandar de mentira").
+        const _chavesMidia = Object.keys(midias);
+        const _blocoMidias = _chavesMidia.length
+          ? `\n\n## MÍDIAS QUE VOCÊ PODE ENVIAR (as ÚNICAS; a chave é o texto de [[midia:CHAVE]])\nChaves disponíveis: ${_chavesMidia.join(", ")}.\nAs chaves são autoexplicativas (ex.: planta3/planta_3d = planta de 3 dorm, planta_2d = 2 dorm, mapa = implantação/mapa do condomínio, fachada, clube/clubhouse/piscina = lazer, ebook/apresentacao = material em PDF).\nREGRA DURA: só diga que vai enviar (ou que está enviando) uma planta/foto/vídeo/material se ela corresponder a UMA dessas chaves, e emita o marcador [[midia:CHAVE]] na MESMA resposta. Se o cliente pedir algo que NÃO está nesta lista (ex.: implantação sem chave, vídeo, uma planta que não temos), você NÃO promete e NÃO diz que vai mandar: ofereça a mídia mais próxima que EXISTE na lista, ou diga que esse detalhe o especialista envia. Nunca escreva "segue a planta", "vou te mandar o vídeo" etc sem uma chave desta lista.`
+          : `\n\n## MÍDIAS: você NÃO tem nenhuma mídia deste imóvel pra enviar. NUNCA diga que vai mandar planta, foto, vídeo, implantação ou material. Se pedirem, diga com naturalidade que o especialista envia esses detalhes.`;
+
         // ANTI-TRAVAMENTO (junta a rajada): espera um instante; se chegou uma mensagem
         // mais nova do lead, deixa ELA responder (com o contexto completo) e para esta.
         await new Promise((r) => setTimeout(r, 6000));
@@ -518,7 +525,7 @@ serve(async (req) => {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
-            body: JSON.stringify({ messages: msgs, nome: (est?.nome ?? contactName) || null, ...(produto?.ficha ? { ficha: produto.ficha } : {}), ...(posRepasse ? { pos_repasse: true } : {}) }),
+            body: JSON.stringify({ messages: msgs, nome: (est?.nome ?? contactName) || null, ...(produto?.ficha ? { ficha: produto.ficha + _blocoMidias } : {}), ...(posRepasse ? { pos_repasse: true } : {}) }),
           });
           if (!r.ok) { erroChat = true; console.error("[lia-whatsapp] lia-chat HTTP", r.status); }
           else {
