@@ -63,6 +63,44 @@ export interface PipelineHistorico {
   created_at: string;
 }
 
+/** Lote ÚNICO com tudo que o modal do lead precisa. Reutilizado pelo prefetch. */
+export async function fetchLeadDetailData(leadId: string) {
+  // Uma onda só: tudo que a aba História precisa vai junto (antes, visita_eventos
+  // e lia_estado eram useEffect separados, criando uma 3ª onda de requisições).
+  const [atRes, anRes, taRes, hiRes, veRes, liaRes] = await Promise.all([
+    supabase.from("pipeline_atividades").select("*").eq("pipeline_lead_id", leadId).order("data", { ascending: false }),
+    supabase.from("pipeline_anotacoes").select("*").eq("pipeline_lead_id", leadId).order("fixada", { ascending: false }).order("created_at", { ascending: false }),
+    supabase.from("pipeline_tarefas").select("*").eq("pipeline_lead_id", leadId).order("created_at", { ascending: false }),
+    supabase.from("pipeline_historico").select("*").eq("pipeline_lead_id", leadId).order("created_at", { ascending: false }),
+    supabase.from("visita_eventos" as any)
+      .select("id, tipo, status_anterior, status_novo, data_anterior, data_nova, ator_id, created_at")
+      .eq("pipeline_lead_id", leadId).order("created_at", { ascending: false }),
+    supabase.from("lia_estado").select("telefone").eq("lead_id", leadId).maybeSingle(),
+  ]);
+  return {
+    atividades: (atRes.data || []) as PipelineAtividade[],
+    anotacoes: (anRes.data || []) as PipelineAnotacao[],
+    tarefas: (taRes.data || []) as PipelineTarefa[],
+    historico: (hiRes.data || []) as PipelineHistorico[],
+    visitaEventos: (veRes.data || []) as any[],
+    temLiaConversa: !!(liaRes.data as any)?.telefone,
+  };
+}
+
+/** Pré-carrega o lote no cache (chamado no hover/clique do card do pipeline). */
+export function prefetchLeadDetailData(
+  queryClient: ReturnType<typeof useQueryClient>,
+  leadId: string,
+  userId: string | undefined,
+) {
+  if (!leadId || !userId) return;
+  void queryClient.prefetchQuery({
+    queryKey: ["lead-detail-data", leadId, userId],
+    queryFn: () => fetchLeadDetailData(leadId),
+    staleTime: 20_000,
+  });
+}
+
 export function usePipelineLeadData(leadId: string | null) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -73,28 +111,7 @@ export function usePipelineLeadData(leadId: string | null) {
     queryKey: ["lead-detail-data", leadId, user?.id],
     enabled: !!leadId && !!user,
     staleTime: 20_000,
-    queryFn: async () => {
-      // Uma onda só: tudo que a aba História precisa vai junto (antes, visita_eventos
-      // e lia_estado eram useEffect separados, criando uma 3ª onda de requisições).
-      const [atRes, anRes, taRes, hiRes, veRes, liaRes] = await Promise.all([
-        supabase.from("pipeline_atividades").select("*").eq("pipeline_lead_id", leadId!).order("data", { ascending: false }),
-        supabase.from("pipeline_anotacoes").select("*").eq("pipeline_lead_id", leadId!).order("fixada", { ascending: false }).order("created_at", { ascending: false }),
-        supabase.from("pipeline_tarefas").select("*").eq("pipeline_lead_id", leadId!).order("created_at", { ascending: false }),
-        supabase.from("pipeline_historico").select("*").eq("pipeline_lead_id", leadId!).order("created_at", { ascending: false }),
-        supabase.from("visita_eventos" as any)
-          .select("id, tipo, status_anterior, status_novo, data_anterior, data_nova, ator_id, created_at")
-          .eq("pipeline_lead_id", leadId!).order("created_at", { ascending: false }),
-        supabase.from("lia_estado").select("telefone").eq("lead_id", leadId!).maybeSingle(),
-      ]);
-      return {
-        atividades: (atRes.data || []) as PipelineAtividade[],
-        anotacoes: (anRes.data || []) as PipelineAnotacao[],
-        tarefas: (taRes.data || []) as PipelineTarefa[],
-        historico: (hiRes.data || []) as PipelineHistorico[],
-        visitaEventos: (veRes.data || []) as any[],
-        temLiaConversa: !!(liaRes.data as any)?.telefone,
-      };
-    },
+    queryFn: () => fetchLeadDetailData(leadId!),
   });
 
 
