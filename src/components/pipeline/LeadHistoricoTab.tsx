@@ -31,7 +31,7 @@ import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { formatBRT } from "@/lib/brtTime";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useProfileNames } from "@/hooks/useProfileNames";
 import { toast } from "sonner";
 import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHistorico } from "@/hooks/usePipelineLeadData";
 import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
