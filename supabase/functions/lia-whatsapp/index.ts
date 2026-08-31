@@ -867,6 +867,7 @@ async function criarLeadFila(sb: any, from: string, nome: string | null, referra
       tags: ["qualificado_lia", `lia_${nivel}`],
       observacoes: `Resumo da LIA (${map.label}):\n${resumoTxt || "A LIA validou interesse e enviou pra Fila CEO."}${referral ? `\n\nVeio de anúncio (Click-to-WhatsApp). ${referral?.source_url ?? ""}` : ""}`,
       event_source_url: referral?.source_url ?? null,
+      ctwa_clid: referral?.ctwa_clid ?? null,
     }).select("id").single();
     if (error || !ins) { console.error("[lia-whatsapp] insert lead falhou", error); return null; }
 
