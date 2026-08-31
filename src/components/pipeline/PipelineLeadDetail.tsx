@@ -71,7 +71,6 @@ import LeadFlagControls from "./LeadFlagControls";
 import { CallFocusOverlay } from "./CallFocusOverlay";
 import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
 import PipelineStageTransitionPopup, { needsTransitionPopup } from "./PipelineStageTransitionPopup";
-import AtividadePosMovePopup from "./AtividadePosMovePopup";
 // RadarImoveisTab e LeadWhatsAppTab removidos (Pipeline v2 Fase 4)
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -180,7 +179,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const [moveObs, setMoveObs] = useState("");
   const [transitionTarget, setTransitionTarget] = useState<PipelineStage | null>(null);
-  const [posMove, setPosMove] = useState<{ etapa: string; stageAnteriorId: string } | null>(null);
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
@@ -273,20 +271,17 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   // Troca de etapa pelo modal (dropdown, atalho, sugestão). Nova Gestão v2:
   // se a etapa pede observação, abre o MESMO popup do quadro (obrigatório),
   // pra a história nunca nascer vazia. Senão, move direto.
+  // Troca de etapa pelo modal (dropdown, atalho, sugestão): abre o MESMO popup
+  // obrigatório do quadro (rico p/ etapa crítica, nota rápida p/ processo).
   const handleMoveStage = async (stageId: string) => {
     if (stageId === lead.stage_id) return;
     const alvo = stages.find((s) => s.id === stageId);
-    if (!alvo) return;
-    // Etapa com dado crítico → formulário rico (venda/caiu/descarte/visita).
-    if (needsTransitionPopup(alvo.nome, alvo.tipo, lead)) {
+    if (alvo && needsTransitionPopup(alvo.nome, alvo.tipo, lead)) {
       setTransitionTarget(alvo);
       return;
     }
-    // Etapa de processo → move e abre o registro obrigatório (com Desfazer).
-    const stageAnteriorId = lead.stage_id;
     await onMove(lead.id, stageId, moveObs || undefined);
     setMoveObs("");
-    setPosMove({ etapa: alvo.nome, stageAnteriorId });
   };
 
   const handleInativar = useCallback(async () => {
@@ -1137,14 +1132,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             setMoveObs("");
             setTransitionTarget(null);
           }}
-        />
-      )}
-      {posMove && (
-        <AtividadePosMovePopup
-          lead={{ id: lead.id, nome: lead.nome }}
-          etapaNome={posMove.etapa}
-          onDesfazer={() => { onMove(lead.id, posMove.stageAnteriorId); }}
-          onClose={() => setPosMove(null)}
         />
       )}
       <VisitaForm
