@@ -98,10 +98,11 @@ export function leadSaude(input: LeadSaudeInput): LeadSaude {
 
 /** Dias inteiros desde o último toque (para tooltip/label). */
 export function diasSemToque(input: LeadSaudeInput): number | null {
-  const base = input.ultimo_toque_at || input.distribuido_em || input.aceito_em || input.created_at;
+  const base = relogioBase(input);
   if (!base) return null;
   return Math.floor(diasSem(base));
 }
+
 
 export interface SaudeVisual {
   cor: LeadSaude;
