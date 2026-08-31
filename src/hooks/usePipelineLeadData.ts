@@ -102,6 +102,8 @@ export function usePipelineLeadData(leadId: string | null) {
   const anotacoes = query.data?.anotacoes ?? (EMPTY as PipelineAnotacao[]);
   const tarefas = query.data?.tarefas ?? (EMPTY as PipelineTarefa[]);
   const historico = query.data?.historico ?? (EMPTY as PipelineHistorico[]);
+  const visitaEventos = query.data?.visitaEventos ?? (EMPTY as any[]);
+  const temLiaConversa = query.data?.temLiaConversa ?? false;
   const loading = query.isLoading;
 
   // "reload" mantém o nome antigo (usado pelas mutações e exposto na API): agora invalida o cache.
