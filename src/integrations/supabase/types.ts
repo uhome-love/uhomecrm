@@ -14204,6 +14204,77 @@ export type Database = {
       }
     }
     Views: {
+      homi_equipe: {
+        Row: {
+          corretor_ativo: boolean | null
+          corretor_auth_id: string | null
+          equipe: string | null
+          gerente_auth_id: string | null
+        }
+        Relationships: []
+      }
+      homi_leads_etapa: {
+        Row: {
+          auth_user_id: string | null
+          data: string | null
+          pipeline_lead_id: string | null
+          pontos: number | null
+          stage_nome: string | null
+          stage_ordem: number | null
+        }
+        Relationships: []
+      }
+      homi_negocios: {
+        Row: {
+          auth_user_id: string | null
+          conta_perdido: number | null
+          conta_proposta: number | null
+          conta_venda: number | null
+          data_assinatura: string | null
+          data_criacao: string | null
+          empreendimento: string | null
+          equipe_gerente_auth_id: string | null
+          fase: string | null
+          id: string | null
+          is_parceria: boolean | null
+          vgv_efetivo: number | null
+          vgv_estimado: number | null
+          vgv_final: number | null
+        }
+        Relationships: []
+      }
+      homi_vendas: {
+        Row: {
+          conta_como_venda: boolean | null
+          corretor_ativo: boolean | null
+          corretor_nome: string | null
+          data_assinatura: string | null
+          em_parceria: boolean | null
+          empreendimento: string | null
+          equipe: string | null
+          mes_ref: string | null
+          negocio_id: string | null
+          valor_negocio: number | null
+          vgv_rateado: number | null
+        }
+        Relationships: []
+      }
+      homi_visitas: {
+        Row: {
+          auth_user_id: string | null
+          cliente_key: string | null
+          conta_marcada: number | null
+          conta_no_show: number | null
+          conta_realizada: number | null
+          data_criacao: string | null
+          data_visita: string | null
+          empreendimento: string | null
+          origem: string | null
+          status: string | null
+          visita_principal_dia: boolean | null
+        }
+        Relationships: []
+      }
       lia_reengajamento_elegiveis: {
         Row: {
           balde: string | null
@@ -16167,6 +16238,42 @@ export type Database = {
           p_motivo?: string
         }
         Returns: Json
+      }
+      homi_f_equipe: {
+        Args: never
+        Returns: {
+          corretor_ativo: boolean
+          corretor_auth_id: string
+          equipe: string
+          gerente_auth_id: string
+        }[]
+      }
+      homi_f_leads_etapa: {
+        Args: never
+        Returns: {
+          auth_user_id: string
+          data: string
+          pipeline_lead_id: string
+          pontos: number
+          stage_nome: string
+          stage_ordem: number
+        }[]
+      }
+      homi_f_vendas: {
+        Args: never
+        Returns: {
+          conta_como_venda: boolean
+          corretor_ativo: boolean
+          corretor_nome: string
+          data_assinatura: string
+          em_parceria: boolean
+          empreendimento: string
+          equipe: string
+          mes_ref: string
+          negocio_id: string
+          valor_negocio: number
+          vgv_rateado: number
+        }[]
       }
       increment_comunicacao_usage: {
         Args: { p_template_id: string }
