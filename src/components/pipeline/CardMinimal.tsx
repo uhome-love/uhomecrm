@@ -376,6 +376,7 @@ const CardMinimal = memo(function CardMinimal({
     // Protects against React event bubbling from the Radix dialog portal into the card's onClick,
     // which was causing accidental stage moves when interacting with the completion popup.
     if (completingOpen || registrarOpen) return;
+    prefetchLead();
     trackPipelineEvent("pipeline_card_clicked", {
       lead_id: lead.id,
       stage_id: lead.stage_id,
@@ -394,6 +395,7 @@ const CardMinimal = memo(function CardMinimal({
       aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
       onDragStart={() => { setIsDragging(true); onDragStart(); }}
       onDragEnd={() => setIsDragging(false)}
+      onMouseEnter={prefetchLead}
       onClick={handleOpen}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget) return;
