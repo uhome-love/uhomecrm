@@ -206,6 +206,9 @@ const CardMinimal = memo(function CardMinimal({
 }: CardMinimalProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
+  // Pré-carrega o lote do lead antes do drawer abrir (hover no desktop, clique sempre).
+  const prefetchLead = () => prefetchLeadDetailData(queryClient, lead.id, authUser?.id);
   const [completingOpen, setCompletingOpen] = useState(false);
   const [completingBusy, setCompletingBusy] = useState(false);
   const [registrarOpen, setRegistrarOpen] = useState(false);
