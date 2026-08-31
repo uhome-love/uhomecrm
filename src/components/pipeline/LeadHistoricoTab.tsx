@@ -548,15 +548,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   // Narrativa (história) × Sistema (andaime). Começa na Narrativa.
   const [histView, setHistView] = useState<"narrativa" | "sistema" | "lia">("narrativa");
   // A aba "Conversa Lia" aparece quando a origem é LIA OU quando existe uma conversa da LIA
-  // linkada a este lead (ex.: lead que já era do corretor, veio do Instagram, e a LIA atendeu depois).
-  const { data: temLiaConversa } = useQuery({
-    queryKey: ["lead-tem-lia-conversa", leadId],
-    queryFn: async () => {
-      const { data } = await supabase.from("lia_estado").select("telefone").eq("lead_id", leadId).maybeSingle();
-      return !!data?.telefone;
-    },
-    staleTime: 60_000,
-  });
+  // linkada a este lead (checagem vem no lote único do lead).
   const isLia = String(lead.origem ?? "").toUpperCase() === "LIA" || !!temLiaConversa;
 
   const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
