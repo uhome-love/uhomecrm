@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -31,7 +31,7 @@ import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { formatBRT } from "@/lib/brtTime";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useProfileNames } from "@/hooks/useProfileNames";
 import { toast } from "sonner";
 import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHistorico } from "@/hooks/usePipelineLeadData";
 import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
@@ -62,6 +62,12 @@ interface Props {
   anotacoes: PipelineAnotacao[];
   tarefas: PipelineTarefa[];
   historico: PipelineHistorico[];
+  /** Eventos de visita — vêm no mesmo lote de usePipelineLeadData (sem onda extra). */
+  visitaEventos?: any[];
+  /** Existe conversa da LIA linkada — idem, vem do lote único. */
+  temLiaConversa?: boolean;
+  /** Carregando o lote do lead: mostra esqueleto em vez de vazio. */
+  loading?: boolean;
   onAddAtividade: (data: Partial<PipelineAtividade>) => Promise<void>;
   onAddAnotacao: (conteudo: string) => Promise<void>;
   onToggleFixar: (id: string, fixada: boolean) => Promise<void>;
@@ -469,7 +475,7 @@ function marcoMeta(item: TimelineItem): { emoji: string; ring: string; accent: s
   return { emoji: "•", ring: "bg-zinc-100 text-zinc-500", accent: "border-l-zinc-300" };
 }
 
-export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction }: Props) {
+export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, visitaEventos = [], temLiaConversa = false, loading = false, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("ligacao");
   const [resultado, setResultado] = useState("neutro");
@@ -483,43 +489,10 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const [deleting, setDeleting] = useState(false);
 
   const { data: imovelEvents } = useLeadImoveisEvents(leadId);
-  const [nomesPorId, setNomesPorId] = useState<Record<string, string>>({});
+  // Mapa de nomes vem do cache global (carregado 1x por sessão) — sem onda 2 por lead.
+  const nomesPorId = useProfileNames();
 
-  useEffect(() => {
-    const ids = new Set<string>();
-    atividades.forEach(a => { if (a.created_by) ids.add(a.created_by); });
-    tarefas.forEach(t => { if (t.created_by) ids.add(t.created_by); });
-    historico.forEach(h => { if (h.movido_por) ids.add(h.movido_por); });
-    const lc: any = lead;
-    if (lc.corretor_id) ids.add(lc.corretor_id);
-    if (lc.corretor_anterior_id) ids.add(lc.corretor_anterior_id);
-    const lista = Array.from(ids);
-    if (lista.length === 0) { setNomesPorId({}); return; }
-    let cancel = false;
-    (async () => {
-      const { data } = await supabase.from("profiles").select("user_id, nome").in("user_id", lista);
-      if (cancel || !data) return;
-      const map: Record<string, string> = {};
-      for (const p of data as any[]) { if (p.user_id && p.nome) map[p.user_id] = p.nome; }
-      setNomesPorId(map);
-    })();
-    return () => { cancel = true; };
-  }, [atividades, tarefas, historico, lead]);
 
-  // ── Injeção de visita_eventos (histórico automático de visitas) ──
-  const [visitaEventos, setVisitaEventos] = useState<Array<any>>([]);
-  useEffect(() => {
-    let cancel = false;
-    (async () => {
-      const { data } = await supabase
-        .from("visita_eventos" as any)
-        .select("id, tipo, status_anterior, status_novo, data_anterior, data_nova, ator_id, created_at")
-        .eq("pipeline_lead_id", leadId)
-        .order("created_at", { ascending: false });
-      if (!cancel) setVisitaEventos((data as any[]) ?? []);
-    })();
-    return () => { cancel = true; };
-  }, [leadId]);
 
   const VISITA_EVENT_META: Record<string, { title: string; icon: any; color: string; tone?: "success" | "danger" | "neutral" | "warning" }> = {
     criada: { title: "Visita agendada", icon: MapPin, color: "text-primary", tone: "neutral" },
@@ -575,15 +548,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   // Narrativa (história) × Sistema (andaime). Começa na Narrativa.
   const [histView, setHistView] = useState<"narrativa" | "sistema" | "lia">("narrativa");
   // A aba "Conversa Lia" aparece quando a origem é LIA OU quando existe uma conversa da LIA
-  // linkada a este lead (ex.: lead que já era do corretor, veio do Instagram, e a LIA atendeu depois).
-  const { data: temLiaConversa } = useQuery({
-    queryKey: ["lead-tem-lia-conversa", leadId],
-    queryFn: async () => {
-      const { data } = await supabase.from("lia_estado").select("telefone").eq("lead_id", leadId).maybeSingle();
-      return !!data?.telefone;
-    },
-    staleTime: 60_000,
-  });
+  // linkada a este lead (checagem vem no lote único do lead).
   const isLia = String(lead.origem ?? "").toUpperCase() === "LIA" || !!temLiaConversa;
 
   const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
@@ -743,8 +708,22 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
       {/* Timeline agrupada por dia (Drawer Wide v4) */}
       {histView === "lia" ? (
         <DrawerLiaConversaTab leadId={leadId} />
+      ) : loading && shownItems.length === 0 ? (
+        <div className="px-7 pt-4 space-y-3" aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex gap-3">
+              <div className="h-8 w-8 rounded-full bg-zinc-100 animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 w-1/3 rounded bg-zinc-100 animate-pulse" />
+                <div className="h-12 w-full rounded-lg bg-zinc-100 animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
       <div className="px-7 pt-4">
+
+
 
         <DrawerTimelineGroup
           items={shownItems.slice(0, 40).map((item, i) => {

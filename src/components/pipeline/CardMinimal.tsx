@@ -28,6 +28,7 @@ import TaskCompletionDialog from "./TaskCompletionDialog";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
 import TemperaturaChip from "./TemperaturaChip";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
+import { prefetchLeadDetailData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
 import { completeLeadTask } from "@/lib/completeLeadTask";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
@@ -204,6 +205,8 @@ const CardMinimal = memo(function CardMinimal({
 }: CardMinimalProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  // Pré-carrega o lote do lead antes do drawer abrir (hover no desktop, clique sempre).
+  const prefetchLead = () => prefetchLeadDetailData(queryClient, lead.id, user?.id);
   const [completingOpen, setCompletingOpen] = useState(false);
   const [completingBusy, setCompletingBusy] = useState(false);
   const [registrarOpen, setRegistrarOpen] = useState(false);
@@ -371,6 +374,7 @@ const CardMinimal = memo(function CardMinimal({
     // Protects against React event bubbling from the Radix dialog portal into the card's onClick,
     // which was causing accidental stage moves when interacting with the completion popup.
     if (completingOpen || registrarOpen) return;
+    prefetchLead();
     trackPipelineEvent("pipeline_card_clicked", {
       lead_id: lead.id,
       stage_id: lead.stage_id,
@@ -389,6 +393,7 @@ const CardMinimal = memo(function CardMinimal({
       aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
       onDragStart={() => { setIsDragging(true); onDragStart(); }}
       onDragEnd={() => setIsDragging(false)}
+      onMouseEnter={prefetchLead}
       onClick={handleOpen}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget) return;

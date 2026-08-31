@@ -888,6 +888,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 anotacoes={leadData.anotacoes}
                 tarefas={leadData.tarefas}
                 historico={leadData.historico}
+                visitaEventos={leadData.visitaEventos}
+                temLiaConversa={leadData.temLiaConversa}
+                loading={leadData.loading}
                 onAddAtividade={leadData.addAtividade}
                 onAddAnotacao={async (conteudo: string) => {
                   const result = await leadData.addAnotacao(conteudo);
