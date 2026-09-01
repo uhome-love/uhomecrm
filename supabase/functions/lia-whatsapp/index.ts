@@ -572,6 +572,13 @@ serve(async (req) => {
                 // NÃO deixa o cliente achando que recebeu, avisa e o time reenvia (fim do bug do ebook).
                 const ok = mid.doc ? await sendDoc(from, mid.url, mid.filename || "Material.pdf") : await sendImage(from, mid.url);
                 if (!ok) midiaFalhou = true;
+                // OBSERVABILIDADE: registra o envio da midia da conversa (antes era invisivel no log)
+                await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: ok ? `[midia] ${k} enviada` : `[midia] ${k} FALHOU no envio` }).then(() => {}).catch(() => {});
+              } else if (!mid) {
+                // a chave que o cerebro emitiu NAO existe no catalogo do produto (falha silenciosa: a LIA
+                // disse que ia mandar e nada saiu). Registra pra a gente adicionar a chave. NAO forca repasse.
+                console.error("[lia-whatsapp] midia sem chave no catalogo:", k, produto?.slug);
+                await sb.from("ops_events").insert({ fn: "lia-whatsapp", level: "warn", category: "lia_midia_sem_chave", message: `Midia sem chave no catalogo: ${k}`, ctx: { telefone: from, chave: k, produto: produto?.slug ?? null } }).then(() => {}).catch(() => {});
               }
             } else if (/^\[\[\s*nome\s*:/i.test(p)) {
               // [[nome:Fulano]] — a LIA capturou o nome REAL que a pessoa disse; salva no CRM

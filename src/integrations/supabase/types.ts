@@ -16239,6 +16239,40 @@ export type Database = {
         }
         Returns: Json
       }
+      homi_briefing_corretor: {
+        Args: { p_chave: string; p_momento?: string; p_telefone: string }
+        Returns: Json
+      }
+      homi_buscar_imovel: {
+        Args: {
+          p_bairro?: string
+          p_chave: string
+          p_cidade?: string
+          p_dorm_min?: number
+          p_limite?: number
+          p_preco_max?: number
+          p_pronto?: boolean
+          p_vagas_min?: number
+        }
+        Returns: Json
+      }
+      homi_buscar_lead: {
+        Args: { p_chave: string; p_telefone: string; p_termo: string }
+        Returns: Json
+      }
+      homi_consulta: { Args: { p_chave: string; p_sql: string }; Returns: Json }
+      homi_criar_lembrete: {
+        Args: {
+          p_chave: string
+          p_data: string
+          p_descricao?: string
+          p_hora: string
+          p_lead_id: string
+          p_telefone: string
+          p_titulo: string
+        }
+        Returns: Json
+      }
       homi_f_equipe: {
         Args: never
         Returns: {
@@ -16274,6 +16308,36 @@ export type Database = {
           valor_negocio: number
           vgv_rateado: number
         }[]
+      }
+      homi_historia_lead: {
+        Args: { p_chave: string; p_lead_id: string; p_telefone: string }
+        Returns: Json
+      }
+      homi_id_corretor: { Args: { p_telefone: string }; Returns: string }
+      homi_meus_leads: {
+        Args: {
+          p_chave: string
+          p_filtro?: string
+          p_limite?: number
+          p_telefone: string
+        }
+        Returns: Json
+      }
+      homi_quem_e: {
+        Args: { p_chave: string; p_telefone: string }
+        Returns: Json
+      }
+      homi_registrar_atividade: {
+        Args: {
+          p_chave: string
+          p_descricao?: string
+          p_lead_id: string
+          p_resultado?: string
+          p_telefone: string
+          p_tipo: string
+          p_titulo: string
+        }
+        Returns: Json
       }
       increment_comunicacao_usage: {
         Args: { p_template_id: string }
