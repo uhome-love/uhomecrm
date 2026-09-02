@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useImoveisSearch } from "@/hooks/useImoveisSearch";
-import { mapTypesenseDoc } from "@/lib/typesenseMapping";
+import { mapImovelDoc } from "@/lib/imovelDocMapping";
 
 export interface AISearchTag {
   key: string;
@@ -203,7 +203,7 @@ export function useAISearch() {
       if (result && result.data.length > 0) {
         // Map and score results
         const scored = result.data.map((doc: any) => ({
-          item: mapTypesenseDoc(doc),
+          item: mapImovelDoc(doc),
           score: calculateScore(doc, aiData.filters),
         }));
 
@@ -232,7 +232,7 @@ export function useAISearch() {
 
         if (relaxedResult && relaxedResult.data.length > 0) {
           const scored = relaxedResult.data.map((doc: any) => ({
-            item: mapTypesenseDoc(doc),
+            item: mapImovelDoc(doc),
             score: calculateScore(doc, aiData.filters),
           }));
           scored.sort((a: AIPropertyResult, b: AIPropertyResult) => b.score - a.score);

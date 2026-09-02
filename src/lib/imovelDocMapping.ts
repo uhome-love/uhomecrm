@@ -1,5 +1,5 @@
 /**
- * Shared mapping utility: Typesense document → UI card format.
+ * Shared mapping utility: documento do catálogo → formato de card da UI.
  * Single source of truth for ImoveisPage, useAISearch, and any future consumer.
  */
 
@@ -30,10 +30,10 @@ export interface MappedProperty {
 }
 
 /**
- * Maps a raw Typesense document to the card-compatible format
+ * Maps a documento do catálogo to the card-compatible format
  * used throughout the Imóveis UI.
  */
-export function mapTypesenseDoc(doc: any): MappedProperty {
+export function mapImovelDoc(doc: any): MappedProperty {
   const fotos: string[] = doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [];
   const fotosFull: string[] = doc.fotos_full?.length ? doc.fotos_full : fotos;
 
@@ -67,8 +67,8 @@ export function mapTypesenseDoc(doc: any): MappedProperty {
 }
 
 /**
- * Maps an array of Typesense documents.
+ * Maps an lista de documentos do catálogo.
  */
-export function mapTypesenseDocs(docs: any[]): MappedProperty[] {
-  return docs.map(mapTypesenseDoc);
+export function mapImovelDocs(docs: any[]): MappedProperty[] {
+  return docs.map(mapImovelDoc);
 }
