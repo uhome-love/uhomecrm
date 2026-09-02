@@ -244,20 +244,6 @@ export default function AdminPanel() {
 
 
 
-      {/* Ferramentas do Sistema */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 shadow-card space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-            <Wrench className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-display font-semibold text-foreground">Ferramentas do Sistema</h3>
-            <p className="text-xs text-muted-foreground">Ações administrativas e manutenção</p>
-          </div>
-        </div>
-
-      </motion.div>
-
       {/* Users Section */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between mb-1">
