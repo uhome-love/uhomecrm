@@ -290,7 +290,7 @@ Use a ferramenta parse_property_search para extrair os filtros. Sempre chame a f
     // Determine contrato
     const contrato = parsed.contrato || "venda";
 
-    // Build Typesense-compatible filter_by
+    // Monta a expressão filter_by consumida pelo hook de busca do catálogo
     const filterParts: string[] = [];
 
     // Contrato-based value filter
