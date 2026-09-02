@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTypesenseSearch } from "@/hooks/useTypesenseSearch";
+import { useImoveisSearch } from "@/hooks/useImoveisSearch";
 import { mapTypesenseDoc } from "@/lib/typesenseMapping";
 
 export interface AISearchTag {
@@ -31,7 +31,7 @@ export function useAISearch() {
   const [aiProperties, setAiProperties] = useState<AIPropertyResult[]>([]);
   const [aiTotal, setAiTotal] = useState(0);
   const [aiSearchTime, setAiSearchTime] = useState<number | null>(null);
-  const { search: typesenseSearch } = useTypesenseSearch();
+  const { search: typesenseSearch } = useImoveisSearch();
 
   const abortRef = useRef<AbortController | null>(null);
 

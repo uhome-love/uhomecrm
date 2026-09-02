@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import { useCreateVitrine } from "@/hooks/useCreateVitrine";
-import { useTypesenseSearch } from "@/hooks/useTypesenseSearch";
+import { useImoveisSearch } from "@/hooks/useImoveisSearch";
 import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadPropertySearch } from "@/hooks/useLeadPropertySearch";
 import { useLeadImoveisEvents } from "@/hooks/useLeadImoveisEvents";
@@ -388,7 +388,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const navigate = useNavigate();
   const { user } = useAuth();
   const slugRef = useBrokerSlug();
-  const { search: typesenseSearch } = useTypesenseSearch();
+  const { search: typesenseSearch } = useImoveisSearch();
   const { mutateAsync: criarVitrineAsync } = useCreateVitrine();
   const [creatingVitrine, setCreatingVitrine] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
