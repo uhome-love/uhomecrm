@@ -50,18 +50,6 @@ export default function AdminPanel() {
 
 
 
-  // Typesense reindex
-  const [reindexing, setReindexing] = useState(false);
-  const [reindexResult, setReindexResult] = useState<any>(null);
-  const [syncProgress, setSyncProgress] = useState<{
-    status: string;
-    next_page: number;
-    total_pages: number | null;
-    total_indexed: number;
-    total_errors: number;
-    started_at: string | null;
-    finished_at: string | null;
-  } | null>(null);
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     const { data: profiles } = await supabase.rpc("list_profiles_admin_with_jetimob");
