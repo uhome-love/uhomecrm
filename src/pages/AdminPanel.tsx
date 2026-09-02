@@ -84,23 +84,8 @@ export default function AdminPanel() {
     }
   }, []);
 
-  // Poll sync progress
-  const pollProgress = useCallback(async () => {
-    const { data } = await supabase.functions.invoke("typesense-admin", {
-      body: { action: "progress" },
-    });
-    if (data) setSyncProgress(data);
-    return data;
-  }, []);
+  useEffect(() => { fetchUsers(); fetchGestores(); }, [fetchUsers, fetchGestores]);
 
-  useEffect(() => { fetchUsers(); fetchGestores(); pollProgress(); }, [fetchUsers, fetchGestores, pollProgress]);
-
-  // Auto-poll while running
-  useEffect(() => {
-    if (syncProgress?.status !== "running") return;
-    const interval = setInterval(pollProgress, 5000);
-    return () => clearInterval(interval);
-  }, [syncProgress?.status, pollProgress]);
 
   const addRole = useCallback(async (userId: string, role: AppRole) => {
     setAddingRole(userId);
