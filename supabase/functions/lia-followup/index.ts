@@ -662,6 +662,17 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
       last_msg_em: nowISO(),
       updated_at: nowISO(),
     }).eq("telefone", f.telefone);
+
+    // ENCERRAMENTO ("vou parar de te chamar"): fim da cadencia sem engajamento. Reflete no status do
+    // hub (antes ficava preso em "novo"). O .eq("status","novo") garante que so mexe em quem NUNCA
+    // engajou (nao toca em em_conversa/qualificado).
+    if (f.template_key === "followup_encerramento_lia") {
+      await sb.from("lia_estado").update({
+        status: "descartado", descartado_em: nowISO(),
+        motivo: "Encerrado pela LIA (nao respondeu a cadencia)", updated_at: nowISO(),
+      }).eq("telefone", f.telefone).eq("status", "novo");
+    }
+
     enviados++;
   }
   return enviados;
