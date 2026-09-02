@@ -685,6 +685,13 @@ export type Database = {
             foreignKeyName: "ai_calls_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "ai_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -1381,6 +1388,13 @@ export type Database = {
           utm_source?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "campaign_clicks_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "campaign_clicks_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -2477,6 +2491,13 @@ export type Database = {
             foreignKeyName: "distribuicao_historico_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "distribuicao_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -2575,6 +2596,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "email_campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaign_recipients_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "email_campaign_recipients_lead_id_fkey"
@@ -2743,6 +2771,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "email_campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "email_events_lead_id_fkey"
@@ -3751,6 +3786,13 @@ export type Database = {
             foreignKeyName: "ia_call_results_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "ia_call_results_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -4347,6 +4389,13 @@ export type Database = {
             foreignKeyName: "imoveis_interesse_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "imoveis_interesse_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -4656,6 +4705,13 @@ export type Database = {
             foreignKeyName: "lead_cadencia_sem_contato_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: true
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "lead_cadencia_sem_contato_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -4715,6 +4771,13 @@ export type Database = {
           observacao?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_imoveis_indicados_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "lead_imoveis_indicados_lead_id_fkey"
             columns: ["lead_id"]
@@ -4787,6 +4850,13 @@ export type Database = {
           vitrine_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_imovel_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "lead_imovel_events_lead_id_fkey"
             columns: ["lead_id"]
@@ -4911,6 +4981,13 @@ export type Database = {
             foreignKeyName: "lead_nurturing_sequences_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "lead_nurturing_sequences_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -4997,6 +5074,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_nurturing_state_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "lead_nurturing_state_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -5185,6 +5269,13 @@ export type Database = {
             foreignKeyName: "lead_property_interactions_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "lead_property_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -5253,6 +5344,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_property_matches_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "lead_property_matches_lead_id_fkey"
             columns: ["lead_id"]
@@ -5387,6 +5485,13 @@ export type Database = {
             foreignKeyName: "lead_property_profiles_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: true
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "lead_property_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -5455,6 +5560,13 @@ export type Database = {
           total_results?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_property_searches_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "lead_property_searches_lead_id_fkey"
             columns: ["lead_id"]
@@ -5611,6 +5723,13 @@ export type Database = {
           utm_source?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "leads_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -7277,6 +7396,13 @@ export type Database = {
             foreignKeyName: "fk_negocios_lead_id_proposto"
             columns: ["lead_id_proposto"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "fk_negocios_lead_id_proposto"
+            columns: ["lead_id_proposto"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -7852,6 +7978,13 @@ export type Database = {
             foreignKeyName: "oferta_ativa_fila_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -8086,6 +8219,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_checkpoint_daily"
             referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_ligacoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "oferta_ativa_ligacoes_pipeline_lead_id_fkey"
@@ -8445,6 +8585,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_oa_lista_potencial"
             referencedColumns: ["lista_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_reservados_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "oferta_ativa_reservados_pipeline_lead_id_fkey"
@@ -9078,6 +9225,13 @@ export type Database = {
             foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -9316,6 +9470,13 @@ export type Database = {
             foreignKeyName: "perfil_interesse_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "perfil_interesse_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -9378,6 +9539,13 @@ export type Database = {
           pipeline_lead_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_anotacoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "pipeline_anotacoes_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -9472,6 +9640,13 @@ export type Database = {
             foreignKeyName: "pipeline_atividades_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_atividades_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -9537,6 +9712,13 @@ export type Database = {
           valor_comissao?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_comissoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "pipeline_comissoes_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -9645,6 +9827,13 @@ export type Database = {
             foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -9730,6 +9919,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_lead_sequencias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "pipeline_lead_sequencias_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -10271,6 +10467,13 @@ export type Database = {
             foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -10654,6 +10857,13 @@ export type Database = {
           vence_em?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_tarefas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "pipeline_tarefas_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -12605,6 +12815,13 @@ export type Database = {
             foreignKeyName: "site_events_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "site_events_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -13022,6 +13239,13 @@ export type Database = {
             foreignKeyName: "visita_amanha_disparos_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: true
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "visita_amanha_disparos_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -13096,6 +13320,13 @@ export type Database = {
           visita_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "visita_eventos_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "visita_eventos_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -13361,6 +13592,13 @@ export type Database = {
             foreignKeyName: "visitas_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -13560,6 +13798,13 @@ export type Database = {
             foreignKeyName: "voice_call_logs_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "voice_call_logs_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -13689,6 +13934,13 @@ export type Database = {
             foreignKeyName: "waba_send_guards_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "waba_send_guards_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -13769,6 +14021,13 @@ export type Database = {
           tipo_mensagem?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "whatsapp_ai_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "whatsapp_ai_log_lead_id_fkey"
             columns: ["lead_id"]
@@ -13987,6 +14246,13 @@ export type Database = {
             foreignKeyName: "whatsapp_campaign_sends_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "whatsapp_campaign_sends_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -14130,6 +14396,13 @@ export type Database = {
             foreignKeyName: "whatsapp_mensagens_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "whatsapp_mensagens_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -14204,6 +14477,27 @@ export type Database = {
       }
     }
     Views: {
+      homi_corretores: {
+        Row: {
+          ativo: boolean | null
+          auth_user_id: string | null
+          cargo: string | null
+          nome: string | null
+        }
+        Insert: {
+          ativo?: never
+          auth_user_id?: string | null
+          cargo?: string | null
+          nome?: string | null
+        }
+        Update: {
+          ativo?: never
+          auth_user_id?: string | null
+          cargo?: string | null
+          nome?: string | null
+        }
+        Relationships: []
+      }
       homi_equipe: {
         Row: {
           corretor_ativo: boolean | null
@@ -14240,6 +14534,21 @@ export type Database = {
           vgv_efetivo: number | null
           vgv_estimado: number | null
           vgv_final: number | null
+        }
+        Relationships: []
+      }
+      homi_saude_leads: {
+        Row: {
+          auth_user_id: string | null
+          dias_sem_toque: number | null
+          estagnado: boolean | null
+          etapa: string | null
+          etapa_tipo: string | null
+          lead_nome: string | null
+          pipeline_lead_id: string | null
+          saude: string | null
+          temperatura: string | null
+          ultimo_toque_at: string | null
         }
         Relationships: []
       }
@@ -14665,6 +14974,13 @@ export type Database = {
             foreignKeyName: "visitas_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -14743,6 +15059,13 @@ export type Database = {
           stage_ordem: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -15021,6 +15344,13 @@ export type Database = {
             foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "lia_reengajamento_elegiveis"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -15081,6 +15411,13 @@ export type Database = {
           pipeline_lead_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
+          },
           {
             foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
@@ -15222,6 +15559,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["negocio_id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "homi_saude_leads"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "visitas_pipeline_lead_id_fkey"
@@ -17035,12 +17379,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -17064,11 +17408,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -17089,11 +17433,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -17114,11 +17458,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -17131,11 +17475,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
