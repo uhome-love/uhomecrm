@@ -11,7 +11,9 @@
     "ELEVENLABS_API_KEY": "Idem.",
     "ELEVENLABS_CONVAI_KEY": "Idem.",
     "ELEVENLABS_PHONE_NUMBER_ID": "Idem.",
-    "MAILGUN_API_KEY": "Mailgun cancelado em 19/07/2026 — código removido."
+    "MAILGUN_API_KEY": "Mailgun cancelado em 19/07/2026 — código removido.",
+    "TYPESENSE_ADMIN_API_KEY": "Typesense aposentado em 02/09/2026 — busca de imóveis passou a ler o catálogo vivo do site.",
+    "TYPESENSE_SEARCH_API_KEY": "Idem."
   },
   "secrets": [
     "EVOLUTION_API_KEY",
@@ -26,8 +28,6 @@
     "OPENAI_API_KEY",
     "RDSTATION_PRIVATE_TOKEN",
     "SYNC_SECRET",
-    "TYPESENSE_ADMIN_API_KEY",
-    "TYPESENSE_SEARCH_API_KEY",
     "UHOMESITE_SERVICE_KEY",
     "UHOME_AI_SECRET",
     "VAPID_PRIVATE_KEY",
