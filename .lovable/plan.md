@@ -1,27 +1,38 @@
-# Novos agendamentos: deixar claro que o número é "visitas marcadas no dia"
+# Aposentar o Typesense do CRM
 
-## O que os dados mostram
+## Situação verificada agora
 
-Conferi as visitas criadas em 01/09 (o período do print): **15 visitas criadas**, exatamente o número do KPI. Dessas 15, 11 seguem `marcada` e 4 já tiveram desfecho no mesmo dia (2 `realizada`, 2 `no_show`) — todas eram visitas marcadas para 01/09 e aconteceram (ou o cliente faltou) no próprio dia.
+- **Site Uhome (projeto separado): zero uso.** Nenhuma referência a Typesense em 327 arquivos. A busca do site roda pela edge function própria `ai-search` + consulta direta ao banco.
+- **CRM: existe código, mas o uso real é residual.** O índice ainda responde (testei a busca e ela retorna imóveis), porém os dados dele estão congelados em **28/03/2026** — o controle de sincronização (`typesense_sync_state`) também parou em 29/03/2026, com `total_indexed = 0`.
+- **Rastros de uso humano do Radar estão mortos:** perfis de busca do lead (último em 23/05), interações com imóveis (último em 30/03) e imóveis indicados (zero registros).
+- Os 100 "matches" recentes vêm do motor de match no banco, que não passa pelo Typesense.
 
-Ou seja: o KPI **já conta exatamente o que você quer** — toda visita que o time marcou naquele dia, contada pelo dia em que foi marcada (`created_at` em BRT), sem contar canceladas nem backfill. Nenhuma visita antiga entra no número por ter sido realizada no período.
+Conclusão: o Typesense está sendo pago para servir um índice desatualizado há ~5 meses, consumido apenas por duas telas de baixa utilização no CRM.
 
-O que confunde é a lista do detalhamento: ela mostra o **status atual** de cada visita, então aparecem etiquetas "realizada" e "no_show" ao lado de agendamentos que sim nasceram naquele dia. Parece que o número está somando realizadas/no-show, mas não está.
+## O que fazer
 
-## Proposta (só apresentação, zero mudança de cálculo)
+### Fase 1 — Trocar a fonte de busca (antes de cancelar)
+Dois pontos consomem o Typesense hoje:
 
-1. No card do Dashboard CEO, abaixo de "Novos agendamentos no período", uma linha fina explicando a regra: "visitas marcadas no período (contadas pelo dia da marcação)".
-2. No diálogo de detalhamento:
-   - subtítulo passa a ser "15 visita(s) marcada(s) no período · o status mostra a situação atual da visita";
-   - as etiquetas de status ganham cor discreta (cinza para marcada/confirmada, verde para realizada, âmbar para no_show) para ficar claro que é situação atual, não critério de contagem;
-   - resumo no topo do diálogo: "11 em aberto · 2 realizadas · 2 no show" — o total continua sendo 15.
+1. **Radar de Imóveis** (aba dentro do modal do lead) — já tem um caminho alternativo de busca direta no banco, usado hoje só como fallback quando o Typesense volta vazio. Passa a ser o caminho único.
+2. **Busca por IA da página de Imóveis** (`ai-search-imoveis`) — passa a consultar o catálogo direto no banco, com os mesmos filtros (bairro, faixa de preço, dormitórios, vagas, situação).
+
+Ganho colateral: as duas telas passam a ler o catálogo **atual**, não um índice de março.
+
+### Fase 2 — Validação no preview
+Abrir o Radar em um lead real (sem alterar nada) e a busca da página de Imóveis, comparando resultados com o catálogo. Só depois disso o Typesense é considerado dispensável.
+
+### Fase 3 — Desligamento
+- Remover as 3 edge functions do Typesense (`typesense-search`, `typesense-sync`, `typesense-admin`) e o botão "Reindexar Typesense" do Painel Admin.
+- Remover os segredos `TYPESENSE_HOST` e `TYPESENSE_SEARCH_API_KEY` (e ajustar o `secrets-tripwire`, que hoje espera esses nomes).
+- Só então cancelar a assinatura.
 
 ## Detalhes técnicos
 
-- `src/pages/CeoDashboard.tsx`: uma linha de legenda no card KPI.
-- `src/components/ceo/VisitasPorEquipeList.tsx` + `src/components/ceo/KpiDetailDialog.tsx`: subtítulo, resumo por status e cor das badges.
-- Nenhuma migration. A RPC `get_visitas_kpis` (campo `agendadas`) fica intacta.
+- Arquivos tocados: `src/components/pipeline/RadarImoveisTab.tsx`, `src/hooks/useTypesenseSearch.ts`, `src/hooks/useAISearch.ts`, `src/lib/typesenseMapping.ts`, `src/pages/AdminPanel.tsx`, `supabase/functions/ai-search-imoveis/index.ts`, `supabase/functions/secrets-tripwire/expected.json`.
+- Sem migration: a busca alternativa lê `properties`/`imoveis_catalog`, que já são as tabelas de origem do próprio índice.
+- `typesense_sync_state` fica para trás como tabela órfã; pode ser removida numa faxina posterior.
 
-## Se a regra desejada for outra
+## Ordem
 
-Se, apesar disso, você quiser que uma visita que já foi realizada ou deu no-show **saia** do número de novos agendamentos (01/09 cairia de 15 para 11), é só dizer — nesse caso a mudança vira uma alteração da RPC, e eu ajusto o plano.
+Fase 1 e 2 primeiro, com sua validação no preview. O cancelamento (Fase 3) só depois que as duas telas estiverem rodando sem o Typesense.
