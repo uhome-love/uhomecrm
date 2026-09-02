@@ -780,7 +780,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
     }
   }, [leadNome, leadData, siteInsights]);
 
-  // ── Typesense search with broadening fallback ──
+  // ── Busca no catálogo com fallback de ampliação ──
   const buildCatalogoFilters = useCallback((broaden = false): string => {
     const filterParts: string[] = ["valor_venda:>0"];
     if (profileForm.bairros.length === 1) filterParts.push(`bairro:=\`${profileForm.bairros[0]}\``);
@@ -826,7 +826,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
       justificativas: [],
     }));
 
-  // ── Supabase direct fallback when Typesense is empty ──
+  // ── Fallback direto no catálogo quando a busca volta vazia ──
   const searchSupabaseFallback = useCallback(async (): Promise<ImovelResult[]> => {
     try {
       console.log("[Match] Catálogo sem resultado — usando fallback direto");
@@ -921,7 +921,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
       const broadNew = items.filter(i => !allCodes.has(i.codigo));
       return [...strictItems, ...broadNew];
     } catch (err) {
-      console.error("Typesense radar search error:", err);
+      console.error("Erro na busca do Radar:", err);
       return [];
     }
   }, [imoveisSearch, buildCatalogoFilters, profileForm.bairros, profileForm.valor_max, leadData?.empreendimento]);
