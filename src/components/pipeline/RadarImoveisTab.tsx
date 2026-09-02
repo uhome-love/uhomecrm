@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import { useCreateVitrine } from "@/hooks/useCreateVitrine";
-import { useTypesenseSearch } from "@/hooks/useTypesenseSearch";
+import { useImoveisSearch } from "@/hooks/useImoveisSearch";
 import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadPropertySearch } from "@/hooks/useLeadPropertySearch";
 import { useLeadImoveisEvents } from "@/hooks/useLeadImoveisEvents";
@@ -59,7 +59,7 @@ interface ImovelResult {
   imagem?: string;
   tipo?: string;
   score: number;
-  source: "typesense" | "meday" | "campanha";
+  source: "catalogo" | "meday" | "campanha";
   justificativas: string[];
 }
 
@@ -388,7 +388,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const navigate = useNavigate();
   const { user } = useAuth();
   const slugRef = useBrokerSlug();
-  const { search: typesenseSearch } = useTypesenseSearch();
+  const { search: imoveisSearch } = useImoveisSearch();
   const { mutateAsync: criarVitrineAsync } = useCreateVitrine();
   const [creatingVitrine, setCreatingVitrine] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
@@ -506,7 +506,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const [showAllResults, setShowAllResults] = useState(false);
   const [aiExpanding, setAiExpanding] = useState(false);
   const [useMeDay, setUseMeDay] = useState(false);
-  const [useTypesense, setUseTypesense] = useState(true);
+  const [useCatalogo, setUseCatalogo] = useState(true);
   const [activeObjecoes, setActiveObjecoes] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showObjecoes, setShowObjecoes] = useState(false);
@@ -780,8 +780,8 @@ Responda SOMENTE com o JSON, sem markdown.`;
     }
   }, [leadNome, leadData, siteInsights]);
 
-  // ── Typesense search with broadening fallback ──
-  const buildTypesenseFilters = useCallback((broaden = false): string => {
+  // ── Busca no catálogo com fallback de ampliação ──
+  const buildCatalogoFilters = useCallback((broaden = false): string => {
     const filterParts: string[] = ["valor_venda:>0"];
     if (profileForm.bairros.length === 1) filterParts.push(`bairro:=\`${profileForm.bairros[0]}\``);
     else if (profileForm.bairros.length > 1) filterParts.push(`bairro:[\`${profileForm.bairros.join("`,`")}\`]`);
@@ -806,7 +806,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
     return filterParts.join(" && ");
   }, [profileForm]);
 
-  const parseTypesenseResults = (data: any[]): ImovelResult[] =>
+  const parseCatalogoResults = (data: any[]): ImovelResult[] =>
     data.map((doc: any) => ({
       id: doc.codigo || doc.id,
       codigo: doc.codigo || String(doc.id),
@@ -822,14 +822,14 @@ Responda SOMENTE com o JSON, sem markdown.`;
       imagem: doc.fotos?.[0] || doc.foto_principal || "",
       tipo: doc.tipo || "",
       score: 0,
-      source: "typesense" as const,
+      source: "catalogo" as const,
       justificativas: [],
     }));
 
-  // ── Supabase direct fallback when Typesense is empty ──
+  // ── Fallback direto no catálogo quando a busca volta vazia ──
   const searchSupabaseFallback = useCallback(async (): Promise<ImovelResult[]> => {
     try {
-      console.log("[Match] Typesense vazio — usando fallback supabaseSite (imoveis)");
+      console.log("[Match] Catálogo sem resultado — usando fallback direto");
       let query = supabaseSite
         .from("imoveis")
         .select("id, jetimob_id, titulo, tipo, bairro, preco, quartos, suites, vagas, area_total, condominio_nome, fotos, foto_principal, slug")
@@ -879,7 +879,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
           imagem: firstImage,
           tipo: doc.tipo || "",
           score: 0,
-          source: "typesense" as const,
+          source: "catalogo" as const,
           justificativas: [],
         };
       });
@@ -889,7 +889,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
     }
   }, [profileForm, leadData]);
 
-  const searchTypesense = useCallback(async (): Promise<ImovelResult[]> => {
+  const searchCatalogo = useCallback(async (): Promise<ImovelResult[]> => {
     try {
       // Use empreendimento name as q for relevance when available, otherwise "*"
       const smartQ = leadData?.empreendimento && !profileForm.bairros.length && !profileForm.valor_max
@@ -897,34 +897,34 @@ Responda SOMENTE com o JSON, sem markdown.`;
         : "*";
 
       // 1. Strict search
-      const strictFilter = buildTypesenseFilters(false);
-      const result = await typesenseSearch({ q: smartQ, page: 1, per_page: 48, filter_by: strictFilter, sort_by: smartQ !== "*" ? "_text_match:desc,data_atualizacao:desc" : "data_atualizacao:desc" });
-      if (result && result.data.length >= 3) return parseTypesenseResults(result.data);
+      const strictFilter = buildCatalogoFilters(false);
+      const result = await imoveisSearch({ q: smartQ, page: 1, per_page: 48, filter_by: strictFilter, sort_by: smartQ !== "*" ? "_text_match:desc,data_atualizacao:desc" : "data_atualizacao:desc" });
+      if (result && result.data.length >= 3) return parseCatalogoResults(result.data);
 
       // 2. Broadened search (relax price, remove dorms/status/area)
-      const broadFilter = buildTypesenseFilters(true);
-      const broadResult = await typesenseSearch({ q: smartQ, page: 1, per_page: 48, filter_by: broadFilter, sort_by: smartQ !== "*" ? "_text_match:desc,data_atualizacao:desc" : "data_atualizacao:desc" });
-      const items = parseTypesenseResults(broadResult?.data || []);
+      const broadFilter = buildCatalogoFilters(true);
+      const broadResult = await imoveisSearch({ q: smartQ, page: 1, per_page: 48, filter_by: broadFilter, sort_by: smartQ !== "*" ? "_text_match:desc,data_atualizacao:desc" : "data_atualizacao:desc" });
+      const items = parseCatalogoResults(broadResult?.data || []);
 
       // 3. If still empty AND we have bairro, search just by bairro + price
       if (items.length === 0 && profileForm.bairros.length > 0) {
         const minimalParts = ["valor_venda:>0"];
         if (profileForm.bairros.length === 1) minimalParts.push(`bairro:=\`${profileForm.bairros[0]}\``);
         else minimalParts.push(`bairro:[\`${profileForm.bairros.join("`,`")}\`]`);
-        const minResult = await typesenseSearch({ q: "*", page: 1, per_page: 48, filter_by: minimalParts.join(" && "), sort_by: "data_atualizacao:desc" });
-        return parseTypesenseResults(minResult?.data || []);
+        const minResult = await imoveisSearch({ q: "*", page: 1, per_page: 48, filter_by: minimalParts.join(" && "), sort_by: "data_atualizacao:desc" });
+        return parseCatalogoResults(minResult?.data || []);
       }
 
       // Merge strict + broad (strict first)
-      const strictItems = result?.data?.length ? parseTypesenseResults(result.data) : [];
+      const strictItems = result?.data?.length ? parseCatalogoResults(result.data) : [];
       const allCodes = new Set(strictItems.map(i => i.codigo));
       const broadNew = items.filter(i => !allCodes.has(i.codigo));
       return [...strictItems, ...broadNew];
     } catch (err) {
-      console.error("Typesense radar search error:", err);
+      console.error("Erro na busca do Radar:", err);
       return [];
     }
-  }, [typesenseSearch, buildTypesenseFilters, profileForm.bairros, profileForm.valor_max, leadData?.empreendimento]);
+  }, [imoveisSearch, buildCatalogoFilters, profileForm.bairros, profileForm.valor_max, leadData?.empreendimento]);
 
   // ── Main search ──
   const handleSearch = useCallback(async (silent = false) => {
@@ -937,8 +937,8 @@ Responda SOMENTE com o JSON, sem markdown.`;
     const incluirMeDay = useMeDay && (!profileForm.tipos.length || profileForm.tipos.includes("apartamento"));
     if (incluirMeDay) allResults.push(...MEDAY_CATALOG.map(item => ({ ...item, justificativas: [] })));
 
-    if (useTypesense) {
-      const tsResults = await searchTypesense();
+    if (useCatalogo) {
+      const tsResults = await searchCatalogo();
       if (tsResults.length > 0) {
         allResults.push(...tsResults);
       } else {
@@ -990,7 +990,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
       } catch {}
       toast.success(`${deduped.length} imóveis analisados!`);
     }
-  }, [useMeDay, useTypesense, scoringProfile, activeObjecoes, searchTypesense, handleSaveProfile, leadData?.empreendimento, discardedCodes, saveSearch, siteInsights]);
+  }, [useMeDay, useCatalogo, scoringProfile, activeObjecoes, searchCatalogo, handleSaveProfile, leadData?.empreendimento, discardedCodes, saveSearch, siteInsights]);
 
   // AI expand
   const handleAIExpand = useCallback(async () => {
@@ -1008,7 +1008,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
         },
       });
       if (error || data?.error) { toast.error(data?.error || "Erro na busca com IA"); return; }
-      const aiResult = await typesenseSearch({ q: data.text_query || "*", page: 1, per_page: 20, filter_by: data.filter_by || undefined });
+      const aiResult = await imoveisSearch({ q: data.text_query || "*", page: 1, per_page: 20, filter_by: data.filter_by || undefined });
       if (aiResult && aiResult.data.length > 0) {
         const newItems: ImovelResult[] = aiResult.data.map((doc: any) => {
           const item: ImovelResult = {
@@ -1018,7 +1018,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
             dorms: Number(doc.dormitorios || 0), vagas: Number(doc.vagas || 0), suites: Number(doc.suites || 0),
             preco: Number(doc.valor_venda || 0), status: doc.situacao || "",
             imagem: doc.fotos?.[0] || doc.foto_principal || "", tipo: doc.tipo || "",
-            score: 0, source: "typesense", justificativas: ["🤖 Sugestão IA"],
+            score: 0, source: "catalogo", justificativas: ["🤖 Sugestão IA"],
           };
           const { score, justificativas } = scoreProperty(scoringProfile, item, activeObjecoes, leadData?.empreendimento || "", discardedCodes as Set<string>);
           return { ...item, score, justificativas: [...item.justificativas, ...justificativas] };
@@ -1030,7 +1030,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
       } else toast.info("A IA não encontrou resultados adicionais");
     } catch { toast.error("Erro ao expandir com IA"); }
     finally { setAiExpanding(false); }
-  }, [leadData, scoringProfile, activeObjecoes, typesenseSearch, results, discardedCodes]);
+  }, [leadData, scoringProfile, activeObjecoes, imoveisSearch, results, discardedCodes]);
 
   // Auto-search
   useEffect(() => {

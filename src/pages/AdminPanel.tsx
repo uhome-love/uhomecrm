@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Shield, Trash2, Loader2, UserPlus, MessageSquare, CheckCircle, XCircle, Settings, UserX, Pencil, Database, RefreshCw, Wrench } from "lucide-react";
+import { Shield, Trash2, Loader2, UserPlus, MessageSquare, CheckCircle, XCircle, Settings, UserX, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { formatBRT } from "@/lib/brtTime";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/hooks/useUserRole";
 
@@ -50,18 +49,6 @@ export default function AdminPanel() {
 
 
 
-  // Typesense reindex
-  const [reindexing, setReindexing] = useState(false);
-  const [reindexResult, setReindexResult] = useState<any>(null);
-  const [syncProgress, setSyncProgress] = useState<{
-    status: string;
-    next_page: number;
-    total_pages: number | null;
-    total_indexed: number;
-    total_errors: number;
-    started_at: string | null;
-    finished_at: string | null;
-  } | null>(null);
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     const { data: profiles } = await supabase.rpc("list_profiles_admin_with_jetimob");
@@ -96,23 +83,8 @@ export default function AdminPanel() {
     }
   }, []);
 
-  // Poll sync progress
-  const pollProgress = useCallback(async () => {
-    const { data } = await supabase.functions.invoke("typesense-admin", {
-      body: { action: "progress" },
-    });
-    if (data) setSyncProgress(data);
-    return data;
-  }, []);
+  useEffect(() => { fetchUsers(); fetchGestores(); }, [fetchUsers, fetchGestores]);
 
-  useEffect(() => { fetchUsers(); fetchGestores(); pollProgress(); }, [fetchUsers, fetchGestores, pollProgress]);
-
-  // Auto-poll while running
-  useEffect(() => {
-    if (syncProgress?.status !== "running") return;
-    const interval = setInterval(pollProgress, 5000);
-    return () => clearInterval(interval);
-  }, [syncProgress?.status, pollProgress]);
 
   const addRole = useCallback(async (userId: string, role: AppRole) => {
     setAddingRole(userId);
@@ -255,93 +227,6 @@ export default function AdminPanel() {
     <div className="space-y-8 max-w-3xl mx-auto">
 
 
-
-      {/* Ferramentas do Sistema */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 shadow-card space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-            <Wrench className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-display font-semibold text-foreground">Ferramentas do Sistema</h3>
-            <p className="text-xs text-muted-foreground">Ações administrativas e manutenção</p>
-          </div>
-        </div>
-
-        <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
-          <div className="flex items-center gap-3">
-            <Database className="h-5 w-5 text-muted-foreground shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">Reindexar Typesense</p>
-              <p className="text-xs text-muted-foreground">Sincroniza todos os imóveis do Jetimob com o índice de busca em lotes de 500.</p>
-            </div>
-            <Button
-              onClick={async () => {
-                setReindexing(true);
-                setReindexResult(null);
-                try {
-                  const { data, error } = await supabase.functions.invoke("typesense-admin", {
-                    body: { action: "start_reindex" },
-                  });
-                  if (error) throw error;
-                  if (data?.error) throw new Error(data.error);
-                  toast.success(`Reindex iniciado! ${data?.total_pages ?? "?"} páginas para processar.`);
-                  setSyncProgress({ status: "running", next_page: 1, total_pages: data?.total_pages, total_indexed: 0, total_errors: 0, started_at: new Date().toISOString(), finished_at: null });
-                } catch (err: any) {
-                  toast.error(err?.message || "Erro ao iniciar reindex.");
-                  setReindexResult({ error: err?.message });
-                } finally {
-                  setReindexing(false);
-                }
-              }}
-              disabled={reindexing || syncProgress?.status === "running"}
-              variant="outline"
-              className="gap-1.5 shrink-0"
-            >
-              {reindexing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              {syncProgress?.status === "running" ? "Em andamento..." : reindexing ? "Iniciando..." : "Reindexar"}
-            </Button>
-          </div>
-
-          {/* Progress bar */}
-          {syncProgress?.status === "running" && syncProgress.total_pages && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Página {syncProgress.next_page} de {syncProgress.total_pages}</span>
-                <span>{syncProgress.total_indexed} docs indexados</span>
-              </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, ((syncProgress.next_page - 1) / syncProgress.total_pages) * 100)}%` }}
-                />
-              </div>
-              {syncProgress.total_errors > 0 && (
-                <p className="text-xs text-destructive">{syncProgress.total_errors} erros</p>
-              )}
-            </div>
-          )}
-
-          {/* Completed state */}
-          {syncProgress?.status === "complete" && (
-            <div className="p-2 rounded-lg bg-success/10 border border-success/20 text-sm space-y-1">
-              <p className="font-medium text-success">✅ Reindex concluído</p>
-              <p className="text-muted-foreground text-xs">
-                {syncProgress.total_indexed} documentos indexados
-                {syncProgress.total_errors > 0 && <span className="text-destructive"> · {syncProgress.total_errors} erros</span>}
-                {syncProgress.finished_at && <span> · Finalizado em {formatBRT(syncProgress.finished_at, "dd/MM/yyyy HH:mm")}</span>}
-              </p>
-            </div>
-          )}
-
-          {reindexResult?.error && (
-            <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
-              <p className="font-medium text-destructive">❌ Erro no reindex</p>
-              <p className="text-muted-foreground font-mono text-xs mt-1">{reindexResult.error}</p>
-            </div>
-          )}
-        </div>
-      </motion.div>
 
       {/* Users Section */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
