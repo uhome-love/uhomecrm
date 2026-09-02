@@ -388,7 +388,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const navigate = useNavigate();
   const { user } = useAuth();
   const slugRef = useBrokerSlug();
-  const { search: typesenseSearch } = useImoveisSearch();
+  const { search: imoveisSearch } = useImoveisSearch();
   const { mutateAsync: criarVitrineAsync } = useCreateVitrine();
   const [creatingVitrine, setCreatingVitrine] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
@@ -898,12 +898,12 @@ Responda SOMENTE com o JSON, sem markdown.`;
 
       // 1. Strict search
       const strictFilter = buildTypesenseFilters(false);
-      const result = await typesenseSearch({ q: smartQ, page: 1, per_page: 48, filter_by: strictFilter, sort_by: smartQ !== "*" ? "_text_match:desc,data_atualizacao:desc" : "data_atualizacao:desc" });
+      const result = await imoveisSearch({ q: smartQ, page: 1, per_page: 48, filter_by: strictFilter, sort_by: smartQ !== "*" ? "_text_match:desc,data_atualizacao:desc" : "data_atualizacao:desc" });
       if (result && result.data.length >= 3) return parseTypesenseResults(result.data);
 
       // 2. Broadened search (relax price, remove dorms/status/area)
       const broadFilter = buildTypesenseFilters(true);
-      const broadResult = await typesenseSearch({ q: smartQ, page: 1, per_page: 48, filter_by: broadFilter, sort_by: smartQ !== "*" ? "_text_match:desc,data_atualizacao:desc" : "data_atualizacao:desc" });
+      const broadResult = await imoveisSearch({ q: smartQ, page: 1, per_page: 48, filter_by: broadFilter, sort_by: smartQ !== "*" ? "_text_match:desc,data_atualizacao:desc" : "data_atualizacao:desc" });
       const items = parseTypesenseResults(broadResult?.data || []);
 
       // 3. If still empty AND we have bairro, search just by bairro + price
@@ -911,7 +911,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
         const minimalParts = ["valor_venda:>0"];
         if (profileForm.bairros.length === 1) minimalParts.push(`bairro:=\`${profileForm.bairros[0]}\``);
         else minimalParts.push(`bairro:[\`${profileForm.bairros.join("`,`")}\`]`);
-        const minResult = await typesenseSearch({ q: "*", page: 1, per_page: 48, filter_by: minimalParts.join(" && "), sort_by: "data_atualizacao:desc" });
+        const minResult = await imoveisSearch({ q: "*", page: 1, per_page: 48, filter_by: minimalParts.join(" && "), sort_by: "data_atualizacao:desc" });
         return parseTypesenseResults(minResult?.data || []);
       }
 
@@ -924,7 +924,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
       console.error("Typesense radar search error:", err);
       return [];
     }
-  }, [typesenseSearch, buildTypesenseFilters, profileForm.bairros, profileForm.valor_max, leadData?.empreendimento]);
+  }, [imoveisSearch, buildTypesenseFilters, profileForm.bairros, profileForm.valor_max, leadData?.empreendimento]);
 
   // ── Main search ──
   const handleSearch = useCallback(async (silent = false) => {
@@ -1008,7 +1008,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
         },
       });
       if (error || data?.error) { toast.error(data?.error || "Erro na busca com IA"); return; }
-      const aiResult = await typesenseSearch({ q: data.text_query || "*", page: 1, per_page: 20, filter_by: data.filter_by || undefined });
+      const aiResult = await imoveisSearch({ q: data.text_query || "*", page: 1, per_page: 20, filter_by: data.filter_by || undefined });
       if (aiResult && aiResult.data.length > 0) {
         const newItems: ImovelResult[] = aiResult.data.map((doc: any) => {
           const item: ImovelResult = {
@@ -1030,7 +1030,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
       } else toast.info("A IA não encontrou resultados adicionais");
     } catch { toast.error("Erro ao expandir com IA"); }
     finally { setAiExpanding(false); }
-  }, [leadData, scoringProfile, activeObjecoes, typesenseSearch, results, discardedCodes]);
+  }, [leadData, scoringProfile, activeObjecoes, imoveisSearch, results, discardedCodes]);
 
   // Auto-search
   useEffect(() => {

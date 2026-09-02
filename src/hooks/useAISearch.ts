@@ -31,7 +31,7 @@ export function useAISearch() {
   const [aiProperties, setAiProperties] = useState<AIPropertyResult[]>([]);
   const [aiTotal, setAiTotal] = useState(0);
   const [aiSearchTime, setAiSearchTime] = useState<number | null>(null);
-  const { search: typesenseSearch } = useImoveisSearch();
+  const { search: imoveisSearch } = useImoveisSearch();
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -188,7 +188,7 @@ export function useAISearch() {
       setAiResult(aiData);
 
       // Step 2: Search Typesense with AI-generated filters
-      const result = await typesenseSearch({
+      const result = await imoveisSearch({
         q: aiData.text_query || "*",
         page: 1,
         per_page: 48,
@@ -223,7 +223,7 @@ export function useAISearch() {
         if (aiData.filters?.valor_max) relaxedParts.push(`valor_venda:<=${aiData.filters.valor_max}`);
         if (aiData.filters?.valor_min) relaxedParts.push(`valor_venda:>=${aiData.filters.valor_min}`);
 
-        const relaxedResult = await typesenseSearch({
+        const relaxedResult = await imoveisSearch({
           q: aiData.text_query || query.trim(),
           page: 1,
           per_page: 24,
@@ -254,7 +254,7 @@ export function useAISearch() {
     } finally {
       if (!controller.signal.aborted) setAiLoading(false);
     }
-  }, [typesenseSearch, calculateScore]);
+  }, [imoveisSearch, calculateScore]);
 
   const clearAISearch = useCallback(() => {
     if (abortRef.current) abortRef.current.abort();
