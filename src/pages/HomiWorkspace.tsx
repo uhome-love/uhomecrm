@@ -15,6 +15,7 @@ import ThreadSidebar from "@/components/homi/workspace/ThreadSidebar";
 import PainelVivo from "@/components/homi/workspace/PainelVivo";
 import MessageList from "@/components/homi/workspace/MessageList";
 import Composer from "@/components/homi/workspace/Composer";
+import HomiBaseStatusBadge from "@/components/homi/HomiBaseStatusBadge";
 
 /** Sentinela do seletor: "nenhum produto em foco" (Select não aceita value=""). */
 const NENHUM_FOCO = "__nenhum__";
@@ -181,6 +182,9 @@ export default function HomiWorkspace() {
           <h1 className="min-w-0 flex-1 truncate text-sm font-medium">
             {threads.find(t => t.id === threadId)?.titulo || "HOMI"}
           </h1>
+
+          <HomiBaseStatusBadge />
+
 
           {/* Produto em foco — seleção explícita e opcional, só nesta sessão */}
           <Select
