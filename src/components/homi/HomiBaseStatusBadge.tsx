@@ -67,7 +67,7 @@ export default function HomiBaseStatusBadge() {
         <p className="mb-1 font-medium">
           Base de conhecimento — {totalDocs} conteúdos
         </p>
-        <p className="mb-1 text-xs">Atualizada em {formatBRT(ultima)}</p>
+        <p className="mb-1 text-xs">Atualizada em {formatBRT(ultima, "dd/MM/yyyy HH:mm")}</p>
         <ul className="space-y-0.5 text-xs">
           {data.map((l) => (
             <li key={l.source_type}>
