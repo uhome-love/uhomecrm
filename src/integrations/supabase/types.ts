@@ -16583,6 +16583,15 @@ export type Database = {
         }
         Returns: Json
       }
+      homi_base_status: {
+        Args: never
+        Returns: {
+          chunks: number
+          docs: number
+          source_type: string
+          ultima_atualizacao: string
+        }[]
+      }
       homi_briefing_corretor: {
         Args: { p_chave: string; p_momento?: string; p_telefone: string }
         Returns: Json
