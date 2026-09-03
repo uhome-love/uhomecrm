@@ -182,6 +182,9 @@ export default function HomiWorkspace() {
             {threads.find(t => t.id === threadId)?.titulo || "HOMI"}
           </h1>
 
+          <HomiBaseStatusBadge />
+
+
           {/* Produto em foco — seleção explícita e opcional, só nesta sessão */}
           <Select
             value={empreendimentoFoco ?? NENHUM_FOCO}
