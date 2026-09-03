@@ -15,6 +15,7 @@ import ThreadSidebar from "@/components/homi/workspace/ThreadSidebar";
 import PainelVivo from "@/components/homi/workspace/PainelVivo";
 import MessageList from "@/components/homi/workspace/MessageList";
 import Composer from "@/components/homi/workspace/Composer";
+import HomiBaseStatusBadge from "@/components/homi/HomiBaseStatusBadge";
 
 /** Sentinela do seletor: "nenhum produto em foco" (Select não aceita value=""). */
 const NENHUM_FOCO = "__nenhum__";
