@@ -12,7 +12,8 @@ function empreendimentoFromTemplate(templateName?: string | null): string | null
   const t = (templateName ?? "").toString().trim().toLowerCase();
   if (!t) return null;
   if (t.includes("lakebaical") || t.includes("lake baical") || t.includes("lakebaikal")) return "Lake Baikal";
-  if (t.includes("casatua") || t.includes("casa tua") || t.includes("casa_tua")) return "Casa Tua";
+  if (t.includes("canoas")) return "Casa Tua Canoas";
+  if (t.includes("casatua") || t.includes("casa tua") || t.includes("casa_tua")) return "Casa Tua Porto Alegre";
   if (t.includes("vivid")) return "Vivid Terrace";
   if (t.includes("atrio") || t.includes("átrio")) return "Átrio";
   return null;
