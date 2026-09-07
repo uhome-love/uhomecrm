@@ -13146,6 +13146,42 @@ export type Database = {
           },
         ]
       }
+      vendas_atribuicao: {
+        Row: {
+          atualizado_em: string | null
+          categoria_macro: string | null
+          criado: string | null
+          criativo: string | null
+          empreendimento: string | null
+          metodo: string | null
+          nome: string | null
+          pipeline_lead_id: string
+          subcategoria: string | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          categoria_macro?: string | null
+          criado?: string | null
+          criativo?: string | null
+          empreendimento?: string | null
+          metodo?: string | null
+          nome?: string | null
+          pipeline_lead_id: string
+          subcategoria?: string | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          categoria_macro?: string | null
+          criado?: string | null
+          criativo?: string | null
+          empreendimento?: string | null
+          metodo?: string | null
+          nome?: string | null
+          pipeline_lead_id?: string
+          subcategoria?: string | null
+        }
+        Relationships: []
+      }
       visita_amanha_config: {
         Row: {
           daily_limit: number
