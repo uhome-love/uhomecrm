@@ -28,7 +28,10 @@ const MEDIA_BASE = "https://uhomesales.com/casatua";
 const FOTO_FACHADA = `${MEDIA_BASE}/casa.jpg`;   // fachada das casas (sobrados ao entardecer)
 const FOTO_INFRA = `${MEDIA_BASE}/club.jpg`;      // infra do condomínio (piscina + club house)
 const FECHO_ABRIU = "E aí, o que você achou? 😊"; // pergunta leve depois das fotos
-const MAX_CUTUCOES = 4;     // = tamanho da CADENCIA (4 toques de template aprovado)
+// MAX_CUTUCOES sai da propria CADENCIA. Antes era 4 fixo com a CADENCIA tendo 2 itens:
+// CADENCIA[2] e CADENCIA[3] davam undefined, o codigo pulava em silencio, e o lead ficava
+// preso pra sempre no toque 2 (83 leads nesse estado), reconsultado a cada rodada do cron
+// sem nunca sair nem ser marcado como esgotado. O numero agora nao mente.
 const STALL_HOURS = 24;    // silêncio mínimo do lead antes do 1º cutucão (régua Lucas: 24h)
 const SPACING_HOURS = 24;  // intervalo entre um cutucão e o próximo (régua Lucas: 24/48/72/96h)
 const HORA_INI = 9;        // janela de envio (BRT)
@@ -136,6 +139,7 @@ const CADENCIA: string[] = [
   "__REATIVACAO__",            // toque 1 — reativação do produto (Canoas = ebook; demais = procura-se)
   "followup_encerramento_lia", // toque 2 — "encerrando por aqui, porta aberta"
 ];
+const MAX_CUTUCOES = CADENCIA.length;   // esgotou a cadência = recebeu todos os toques dela
 
 // Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
 async function sendTemplate(to: string, tpl: { name: string; lang: string; vars?: number; headerDoc?: { link: string; filename: string } }, bodyParams: string[]): Promise<{ ok: boolean; err?: string }> {

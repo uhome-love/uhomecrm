@@ -567,7 +567,14 @@ serve(async (req) => {
           const replyLog = reply.split(/\s*\|\|\|\s*/).map(semMarcador).filter(Boolean).join("\n");
           await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: replyLog || semMarcador(reply) });
           const parts = reply.split(/\s*\|\|\|\s*/).map((p) => p.trim()).filter(Boolean);
-          let media = 0;
+          // TETO DE MIDIA POR CONVERSA, nao por turno. Antes o contador nascia zerado a cada
+          // mensagem recebida, entao o "maximo 3 por conversa" que o prompt promete virava
+          // "3 por turno": 7 conversas passaram do teto, uma chegou a 5. Agora conta o que ja
+          // foi enviado na conversa inteira.
+          const { count: midiasJaEnviadas } = await sb
+            .from("lia_conversas").select("id", { count: "exact", head: true })
+            .eq("telefone", from).eq("role", "assistant").like("conteudo", "[midia]%");
+          let media = midiasJaEnviadas ?? 0;
           let midiaFalhou = false;
           for (const p of parts) {
             const achados = [...p.matchAll(RE_MARCADOR)].map((m) => ({ tipo: m[1].toLowerCase(), valor: (m[2] ?? "").trim() }));
