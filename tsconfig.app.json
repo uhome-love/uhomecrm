@@ -33,6 +33,7 @@
     "src"
   ],
   "exclude": [
+    "src/_legacy/**",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.spec.ts",
