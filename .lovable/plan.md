@@ -1,117 +1,215 @@
-# Auditoria pré-limpeza — somente leitura
+# Auditoria técnica completa — Uhome Sales CRM (08/09/2026)
 
-Nenhum arquivo foi alterado, nenhuma migration rodada.
+Somente leitura. Nenhum arquivo, migration ou configuração foi alterado. Base: repositório atual (121 pastas em `supabase/functions`, 956 arquivos `.ts/.tsx` em `src`, 979 migrations) e leitura direta do banco (240 tabelas, 608 policies, 482 funções, 54 crons).
 
-## 1. Baseline
+---
 
-| Item | Valor |
-|---|---|
-| SHA atual | `a2edc8a4afc68ec498e964d2ec9f284b92efddd4` |
-| Data do commit | 2026-09-07T23:29:09Z ("Update plan") |
-| Edge functions no repo | 120 (+ `_shared`), `supabase/functions/` |
-| Cron jobs ativos | 49; inativos: 6 (`cron.job`) |
+## 1. Arquitetura e stack
 
-## 2. Inventário das edge functions
+- Front: React 18 + Vite 5 + TypeScript + Tailwind + shadcn/Radix. Estado servidor em TanStack Query v5 com persistência em IndexedDB (`src/lib/queryPersist.ts`, `PersistQueryClientProvider` em `src/App.tsx`).
+- Backend: Supabase (Lovable Cloud) — Postgres + RLS + Edge Functions Deno + Storage + Auth.
+- Cliente único e "direto" para o host Supabase (`src/integrations/supabase/client.ts` + `src/lib/edgeBaseUrl.ts`), decisão pós-incidente de Wi-Fi (proibido reintroduzir wrappers de fetch).
+- PWA com service worker manual (`public/sw.js`), kill switch (`src/lib/swKillSwitch.ts`) e polling de versão (`public/version.json`).
+- Roteamento: rotas públicas declaradas em `src/App.tsx`; rotas protegidas centralizadas em `src/config/pageRegistry.ts` (chave, label, ícone, `roles`), servidas dentro de `AppLayout` com shell de abas (`src/contexts/TabContext.tsx`).
+- Bibliotecas pesadas embarcadas: `mapbox-gl` + `leaflet` + `react-leaflet-cluster` (dois mapas), `jspdf` + `html2pdf.js` + `html2canvas` (dois caminhos de PDF), `@google/model-viewer`, `emoji-mart`.
 
-Evidências coletadas: (a) `rg 'functions.invoke("x")' src` → 59 nomes; (b) `pg_proc` com `functions/v1/` → 3 funções; (c) `cron.job` → 30 nomes distintos; (d) `rg 'functions/v1/' supabase/functions` → 14 nomes.
+## 2. Mapa de módulos e rotas
 
-### 2.1 COM CONSUMIDOR (a)
-`admin-ingestao-stats, ai-search-imoveis, calendar-create-event, calendar-disconnect, create-broker-user, cron-nurturing-sequencer, distribute-lead, extract-doc-data (src/components/pagadorias/CompradorDocUpload.tsx:124), generate-corretor-report, generate-script, gerar-intermediacao, google-oauth-callback, google-oauth-start, homi-ana, homi-assistant, homi-focus-suggestion, homi-follow-up-message, homi-personalizar-mensagem, homi-suggest-empreendimento-match, jetimob-proxy, lead-property-match, lia-brain, lia-chat, lia-custo, lia-instance-connect, lia-reengajar-arm, materiais-ingest, materiais-search, materiais-signed-read, meta-ads-sync, meta-audience-sync, meta-number-quality, meta-templates-list, nutricao-instance-connect, oa-session-coaching, oferta-ativa-cutucar, oferta-ativa-historico-reaproveitar, oferta-ativa-participantes, oferta-ativa-popular-fila, oferta-ativa-registrar-resultado, oferta-ativa-reservar, parse-marketing-report, processar-documento, reengajamento-audience-preview, reengajamento-descartados-enqueue, reengajamento-retry-falhas, resolve-meta-forms, rh-vaga-lead, send-push, site-events, sweep-descartados, sync-status-to-site, vapid-public-key, verificar-taxas-financiamento, visita-public, vitrine-bridge, vitrine-public, whatsapp-campaign-dispatch, whatsapp-notificacao`
+Registradas ~90 rotas protegidas em `pageRegistry.ts`. Blocos:
 
-### 2.2 COM CONSUMIDOR (b) trigger / (c) cron / (d) outra function
-| Função | Consumidor |
-|---|---|
-| send-push | (b) `distribuir_lead_roleta`, `trigger_push_on_notification`; (d) 8 refs |
-| sync-status-to-site | (b) `trigger_sync_status_to_site` |
-| capi-health-alert, edge-health-alert, generate-monthly-report, homi-reindex, lead-escalation, lia-followup, lia-cron, lia-reengajar-dispatch, meta-capi-dispatch, meta-leads-backfill, meta-audience-sync, meta-ads-sync, oferta-ativa-devolucao-automatica, reengajamento-worker-tick, roleta-shift-cleanup (3 jobs), secrets-tripwire, stalled-deals-notify, sweep-descartados, auto-one-on-one, lead-property-match | (c) cron ativo |
-| lia-chat, lia-webhook, lia-brain, whatsapp-ai-reply, evolution-webhook, nurturing-orchestrator, distribute-lead, whatsapp-notificacao, reengajamento-descartados-enqueue, receive-meta-lead | (d) chamadas entre functions |
-
-### 2.3 SEM CONSUMIDOR EM (a)(b)(c)(d) — todas classificadas INCERTO
-Nenhuma delas é candidata: quase todas são endpoints públicos/externos declarados em `supabase/config.toml` com `verify_jwt=false`, ou seja, o consumidor está fora do repositório (Meta, 360dialog, Jetimob, RD Station, site).
-
-| Função | Sinal | Classificação |
+| Bloco | Rotas representativas | Papéis |
 |---|---|---|
-| whatsapp-webhook, lia-whatsapp, crm-webhook, site-proxy, referral-public, visita-public, imovel-og, vitrine-og, receive-meta-lead, receive-landing-lead, receive-quiz-lead, receive-rdstation-lead, receive-imovelweb-lead, rh-vaga-candidato, rh-vaga-disponibilidade | `config.toml` verify_jwt=false → chamador externo | INCERTO |
-| homi-chat, homi-ceo, homi-gerencial, homi-briefing, ceo-advisor, checkpoint-coach, funnel-coach, generate-sequence, recovery-agent, notify, uhome-ia-core, generate-vapid | `config.toml` verify_jwt=false; `uhome-ia-core` é falso positivo conhecido | INCERTO |
-| bootstrap-vault, meta-capi-bootstrap, meta-capi-ping, log-auth-event, cron-health-monitor, roleta-fechamento-dia, jetimob-sync-corretores, lead-intelligence-insights, homi-next-task-suggestion, oferta-ativa-dossie, oferta-ativa-onboarding-counts, oferta-ativa-proximo-lead, oferta-ativa-ranking, materiais-upload-sign, test-bridge-connection, test-reengajamento-wave2 | nenhum consumidor encontrado em a/b/c/d | INCERTO |
+| Operação corretor | `/pipeline`, `/corretor`, `/agenda`, `/visitas`, `/aceite-leads`, `/corretor/call` | corretor, gestor, admin |
+| Oferta Ativa | `/oferta-ativa`, `/oferta-ativa-ao-vivo`, `/placar-tv`, `/placar-do-dia` | corretor, admin |
+| Gestão | `/gerente/cockpit`, `/leads-estagnados`, `/roleta/presenca`, `/foco-corretores`, `/meu-time` | gestor, diretor, admin |
+| Direção/CEO | `/ceo`, `/diretora`, `/central-relatorios`, `/dados-anuncios`, `/relatorio-geral`, `/raio-x-corretor` | admin, diretor |
+| Crescimento | `/central-nutricao`, `/base-leads`, `/disparador-whatsapp`, `/admin/lia-hub` | admin |
+| Conteúdo | `/materiais`, `/academia`, `/imoveis`, `/scripts` | todos |
+| RH/recrutamento | `/rh`, `/rh/recrutamento`, `/gerente/candidatos`, `/vaga` (público) | rh, admin |
+| Admin/infra | `/admin`, `/auditoria`, `/integracao`, `/diagnostico-rede`, `/ceo/telemetria-rede`, `/admin/ingestao`, `/admin/lia` | admin |
+| Públicas | `/auth`, `/visita/:token`, `/vitrine/:id`, `/imovel/:codigo`, `/indica/:codigo`, `/casatua`, `/casatuacanoas-quiz`, `/privacidade` | anônimo |
 
-Observação: `oferta-ativa-proximo-lead` e `oferta-ativa-ranking` não aparecem em `src/`, mas o Mutirão usa RPC (`oferta_ativa_lock_next_lead`); pode ser resíduo real — precisa de log antes de decidir.
+Auditoria de uso anterior (45 dias, `page_views`, 48.044 acessos / 38 usuários / 62 rotas com acesso): 5 telas concentram ~70% do uso (Pipeline, Minha Rotina, Agenda, Visitas, Aceite). Nove rotas vivas no menu tiveram zero acesso (Auditoria, Central do Gerente, Disparador WhatsApp, Import Brevo, Integração, Marketplace, Performance legado, Relatório Semanal, Relatórios 1:1).
 
-### 2.4 Achado grave — 13 crons ATIVOS apontando para função inexistente no repo
-`typesense-sync` (*/5), `typesense-admin` (*/10), `execute-automations` (*/5), `mailgun-batch-cron` (*/5), `jetimob-sync-catalog` (diário; só resta `config.toml:147`), `homi-alerts-engine` (*/30). Inativos apontando p/ inexistentes: `cron-smart-nurturing`, `reactivate-cold-leads`, `visita-amanha-enqueue`.
-Ou a função está publicada sem estar versionada, ou o cron chama 404 várias vezes por minuto. Prioritário confirmar antes de qualquer limpeza.
+## 3. Modelo de dados
 
-## 3. Instrumentação (ops_events)
+240 tabelas em `public`. Núcleo por volume (linhas vivas):
 
-23 pastas de function citam `ops_events`. Padrão dominante (`supabase/functions/_shared/liaFormBridge.ts:78`):
-```ts
-try { await admin.from("ops_events").insert({ fn, level, category, message, ctx }); } catch (_e) {}
+`page_views` 119.733 · `oa_events` 90.308 · `reengajamento_eventos` 67.154 · `reengajamento_dispatch_queue` 63.965 · `pipeline_atividades` 61.951 · `notifications` 59.640 · `ops_events` 59.048 · `pipeline_tarefas` 53.458 · `pipeline_historico` 38.418 · `base_leads` 37.137 · `oferta_ativa_leads` 28.160 · `pipeline_leads` 11.149.
+
+- Entidade central: `pipeline_leads` (115 colunas) com satélites `pipeline_tarefas`, `pipeline_atividades`, `pipeline_historico`, `pipeline_stages`, `visitas`, `negocios`.
+- Identidade: `profiles.id ≠ auth.users.id`; o mapa por tabela está documentado em memória e encapsulado em `src/hooks/useCorretorIds.ts`. É a maior fonte estrutural de bug silencioso do sistema.
+- Papéis em tabela separada `user_roles` + enum `app_role` (admin, gestor, corretor, backoffice, rh, diretor) e `public.has_role()` security definer — padrão correto.
+- Camada canônica de métricas: views `v_kpi_*`, `v_fato_venda`, RPCs `rpc_metricas`, `rpc_perf_funil`, `get_dashboard_gerente_v4_kpis`, `get_visitas_kpis`.
+- RLS: 608 policies; apenas **1 tabela pública sem RLS** (`vendas_atribuicao`) e 5 policies concedendo a `anon` (`properties`, `vitrine_interacoes`, `auth_telemetry`, `referral_leads`, `leads_legado` — as duas últimas merecem revisão).
+- 36 views + 1 matview; 482 funções em `public` — número muito alto, com sobreposição (ex.: várias RPCs de reativação de reengajamento com a mesma regra de produto).
+
+## 4. Integrações e Edge Functions
+
+121 funções. Famílias: `lia-*` (11), `homi-*` (11), `oferta-ativa-*` (11), `meta-*` (8), `reengajamento-*` (4), `receive-*` (5 ingestões), `materiais-*` (4), `whatsapp-*` (4), `rh-vaga-*` (3), `vitrine-*`/`site-*` (5), `google-oauth-*`/`calendar-*` (4).
+
+Integrações externas: Meta (Lead Ads, CAPI, templates, audiences, number quality), 360dialog (WhatsApp oficial da LIA), Evolution API (WhatsApp por corretor), Jetimob, RD Station, ImovelWeb, site Uhome (`src/lib/supabaseSite.ts`), Google Calendar/OAuth, Lovable AI Gateway (Gemini) e OpenAI (embeddings/áudio), Web Push (VAPID).
+
+Aposentados mas com resíduo: Typesense (funções removidas, crons ainda ativos), Mailgun, ElevenLabs, Brevo, Marketplace.
+
+## 5. Autenticação e perfis
+
+- `src/hooks/useAuth.tsx` + `ProtectedRoute.tsx` (sessão) + `RoleProtectedRoute.tsx` (papéis) + `RoleHomeRedirect.tsx`/`HomeDashboard.tsx` (destino por papel).
+- Backend: `requireAuth` compartilhado; funções com `verify_jwt=false` validando claims manualmente (padrão adotado por causa de 401 em preview) — funciona, mas concentra risco no código de cada função.
+- Telemetria de login em `auth_telemetry` e `log-auth-event`.
+
+## 6. Fluxos críticos
+
+1. **Entrada de lead**: `receive-meta-lead`, `receive-landing-lead`, `receive-quiz-lead`, `receive-rdstation-lead`, `receive-imovelweb-lead`, `crm-webhook` e ponte site→CRM (`leads` + trigger `trg_sync_site_lead_to_pipeline`). Rede de segurança: cron `meta-leads-backfill` (o webhook direto nunca foi 100% confiável).
+2. **Roleta**: `distribuir_lead_atomico` / `distribuir_lead_roleta`, credenciamento por janela e produto, gates (10 leads vermelhos, 100 descartes/mês), fallback manual "Fila CEO", limpeza de turno (`roleta-shift-cleanup`), log em `distribuicao_historico`.
+3. **Pipeline**: 7 etapas + substatus em `flag_status`, regras centralizadas em `src/lib/leadHelpers.ts`, motor de tarefas (`taskGenerator.ts`, `qualificacaoTaskEngine.ts`, `completeLeadTask.ts`) e toque humano (`registrarToque.ts`, `ultimo_toque_at`).
+4. **Visitas**: SSOT documentada; agenda inline no lead, confirmação pública por token (`/visita/:token`, `visita-public`), KPIs por criação/realização.
+5. **PDN/Vendas**: `negocios` + `v_fato_venda`; VGV com rateio 50/50 e `data_assinatura` obrigatório no ganho. `/pdn` hoje redireciona para `/pipeline-negocios`.
+6. **Oferta Ativa / Reengajamento**: fila fria com lock (`oferta_ativa_lock_next_lead`), mutirão ao vivo com placar, e um segundo motor de reengajamento (`reengajamento-*`, `lia-reengajar-*`) sobre `base_leads`.
+7. **HOMI/LIA**: HOMI é copiloto interno com RAG (`homi_chunks`, `materiais_chunks`, cron `homi-reindex-daily`); LIA é a agente de WhatsApp da Casa Tua em caixa isolada `ia_*`/`lia_*`. LIA está viva (3.464 conversas), HOMI é uso ocasional.
+8. **Marketing/CAPI**: `meta-capi-dispatch` + fila `meta_capi_queue` + guardas (`capi-health-alert`, exigência de `meta_lead_id`, `ctwa_clid` para WhatsApp).
+9. **Academia/Dashboards**: trilhas/aulas/quiz com signed URLs; dashboards por papel (`CeoDashboard.tsx` 1.152 linhas, cockpit do gerente v4).
+
+## 7. Pontos fortes
+
+- Papéis em tabela separada com `has_role()` security definer — sem escalonamento por perfil.
+- RLS praticamente universal (239/240 tabelas) e superfície `anon` muito pequena.
+- Camada canônica de métricas (views/RPCs) em vez de cálculo espalhado no front.
+- Concorrência de fila resolvida no banco (lock atômico) em vez de no cliente.
+- Observabilidade própria real: `ops_events`, `audit_log`, `page_views`, `cron_health`, `secrets-tripwire`, `edge-health-alert`.
+- Regras de negócio difíceis (VGV, BRT, equipe histórica, visitas) escritas e respeitadas.
+
+## 8. Dívida técnica e riscos (com severidade)
+
+| # | Item | Sev. | Evidência |
+|---|---|---|---|
+| 1 | Crons ativos apontando para funções inexistentes (`typesense-sync`, `typesense-admin`, `execute-automations`, `mailgun-batch-cron`, `auto-one-on-one`, `generate-monthly-report`, `homi-alerts-engine`, `jetimob-sync-catalog`) — ~1.000 chamadas/dia falhando em silêncio | Alta | `cron.job` × `supabase/functions/` |
+| 2 | `vendas_atribuicao` sem RLS | Alta | `pg_tables.rowsecurity=false` |
+| 3 | Dualidade `profiles.id` × `auth.users.id` sem tipo que force a distinção | Alta | `src/hooks/useCorretorIds.ts` |
+| 4 | Três filas frias sobre a mesma população (`base_leads`, `oferta_ativa_leads`, `reengajamento_dispatch_queue`) com higienes diferentes → risco de falar 2× com a mesma pessoa | Alta | contagens de tabela |
+| 5 | `base_leads` congelada desde 01/08 sendo declarada "fonte-mãe" | Alta | `base_leads` |
+| 6 | Tipagem desligada: `src/types/supabase-client-override.d.ts` e `supabase-compat.d.ts` fazem `from()` retornar `any` | Média-alta | os dois `.d.ts` |
+| 7 | 482 funções e 979 migrations sem inventário — nenhuma pessoa consegue afirmar o que está vivo | Média-alta | banco/repo |
+| 8 | Arquivos gigantes: `PipelineStageTransitionPopup.tsx` 1.397, `DialingModeWithScript.tsx` 1.366, `ImoveisPage.tsx` 1.334, `CompletionForm.tsx` 1.311, `receive-meta-lead` 1.301, `whatsapp-webhook` 1.417, `reengajamento-descartados-enqueue` 1.969 | Média | `wc -l` |
+| 9 | `verify_jwt=false` generalizado com validação manual por função | Média | `supabase/config.toml` |
+| 10 | Tabelas de log sem retenção agressiva (`page_views` 119k, `oa_events` 90k, `notifications` 59k) | Média | `pg_stat_user_tables` |
+| 11 | Policies `anon` em `referral_leads` e `leads_legado` | Média | `pg_policies` |
+| 12 | Dependências duplicadas: mapbox+leaflet, jspdf+html2pdf+html2canvas | Baixa-média | `package.json` |
+| 13 | 563 achados do linter Supabase pendentes (search_path mutável, security definer views) | Média | linter |
+
+## 9. Duplicações, legado e código morto
+
+- **Tarefas**: `pipeline_tarefas` (real) × `lead_tasks` × `negocios_tarefas`.
+- **Atividades**: `pipeline_atividades` × `negocios_atividades` (origem do bug "negócio sem atividade").
+- **Cadências**: `nurturing_cadencias`, `cadencia_sem_contato_passos`, `pipeline_sequencias`, `pipeline_playbooks` — três praticamente vazios.
+- **Relatórios**: sete portas para o mesmo assunto (Central de Relatórios, Raio-X do Time, Raio-X do Corretor, Relatório Semanal, Performance legado, Central de Marketing, Relatórios 1:1).
+- **Assistentes**: HOMI (11 funções) × LIA (11) × `uhome-ia-core` × `recovery-agent` × `ceo-advisor` × `funnel-coach` × `checkpoint-coach`.
+- **Legado com resíduo**: `automations`/`automation_logs`, `pos_vendas`, `oportunidades`, `distribuicao_escala`, `whatsapp_instancias`, `campanha_atrio`, `melnick`, Typesense, Mailgun, ElevenLabs, Marketplace, Checkpoint.
+- **Regra de classificação**: só ~14 das 121 funções gravam em `ops_events`; ausência de evento **não** prova ausência de uso. Nada aqui deve ser removido sem checar consumidor em (a) `functions.invoke` no `src`, (b) trigger, (c) `pg_cron`, (d) chamada entre funções.
+
+## 10. Segurança, observabilidade e performance
+
+- Segurança: modelo de papéis correto; RLS quase completa; pontos abertos = `vendas_atribuicao`, dois `anon` discutíveis, `verify_jwt=false` difundido, `search_path` mutável em muitas funções, segredos legados ainda cadastrados.
+- Observabilidade: boa para o que está instrumentado (`ops_events`, `cron_health`, `edge-health-alert`, `capi-health-alert`, `secrets-tripwire`, telemetria de rede), cega para ~107 funções sem log padronizado.
+- Performance: cache persistente + prefetch no hover do card do pipeline; gargalos remanescentes são bundle (mapas + PDF + model-viewer), telas de 1.000+ linhas e tabelas de log crescendo sem poda.
+
+## 11. Cobertura de testes
+
+10 arquivos de teste para 956 de código (~1%): `financiamento`, `segurosFinanciamento`, `fmtMoney`, `leadOutcome`, `taskPresets`, `routePatterns`, `lia-prompt`, `id-mapping-regression`, `ReengajamentoTables`, `example`. Não há teste de RLS, de RPC, de Edge Function nem E2E. Regras de maior risco (VGV, roleta, visitas, higiene de fila) não têm rede.
+
+## 12. O que preservar numa migração
+
+`pipeline_leads` e satélites com histórico integral; `user_roles` + `has_role`; camada canônica de métricas (`v_fato_venda`, `v_kpi_*`, `rpc_metricas`, `rpc_perf_funil`); roleta (`distribuir_lead_atomico`, credenciamento, gates); lock de fila da Oferta Ativa; regras BRT e equipe histórica; ingestões `receive-*` e o backfill do Meta; a caixa `lia_*` inteira; base RAG do HOMI; `ops_events`/`audit_log`.
+
+## 13. O que refatorar
+
+- Um tipo distinto para `ProfileId` e `AuthUserId` (remove uma classe inteira de bug).
+- Quebrar os 8 arquivos acima de 1.000 linhas em módulos por responsabilidade.
+- Remover os dois `.d.ts` que anulam a tipagem do Supabase e voltar aos tipos gerados.
+- Consolidar tarefas e atividades em fonte única, com leitura de compatibilidade.
+- Uma porta única de Performance; as outras seis redirecionam.
+- Padronizar log (`ops_events`) e `requireAuth` em helper único do `_shared`.
+- Retenção/partição para `page_views`, `oa_events`, `notifications`, `reengajamento_eventos`.
+
+## 14. O que reconstruir do zero
+
+- **Motor de fila fria** (Oferta Ativa + Reengajamento + Base Única): uma fila, uma higiene, um cooldown, um log.
+- **Camada de cadências/automações**: hoje quatro mecanismos, nenhum oficial.
+- **Hub de relatórios**: uma tela com definições de métrica visíveis.
+- **Assistentes**: escolher LIA como agente e HOMI como copiloto, com um runtime só.
+- **Dashboard CEO**: reconstruir por blocos com semântica explícita.
+- Módulos a aposentar em vez de migrar: Checkpoint, Relatórios 1:1, Marketplace, chamadas por voz, e-mail marketing, coaching/conquistas, pós-venda/financeiro (praticamente sem dados).
+
+## 15. Arquitetura proposta — UhomeSales 2.0 no Replit
+
+```text
+ Web (React 18 + Vite, PWA)      Replit Deployments (Autoscale)
+        |                                  |
+        +---- API tRPC/REST (Node + Fastify, TypeScript) ----+
+                     |                |                |
+             Domínio (pacotes)   Workers/Jobs      Webhooks
+             leads | roleta      pg-boss/BullMQ    meta | 360dialog
+             pipeline | visitas  (Reserved VM)     jetimob | site
+             fila-fria | vgv
+                     |
+              Postgres gerenciado (Neon/Supabase) + Drizzle
+                     |
+              Storage S3-compat + Redis (locks/rate-limit)
 ```
-Variações: `_shared/liaAlert.ts:26-56` (com dedup), `_shared/webhook-signature.ts:47` (falha de assinatura).
 
-Menor mudança possível (não implementar agora): criar `_shared/opsLog.ts` exportando `logOps(admin, fn, message, ctx?, level?)` com o mesmo insert try/catch, e adicionar **uma** chamada no início e uma no fim de cada handler. Custo por função: 1 import + 2 linhas. Isso transforma "sem evento" em prova real de não-uso em ~30 dias.
+Princípios: monorepo (`apps/web`, `apps/api`, `apps/worker`, `packages/domain`, `packages/db`); regra de negócio em TypeScript testável, não em 482 funções SQL; autorização em uma camada de serviço única (RLS mantida como segunda barreira); todo job em um worker com fila durável e observável, não em 54 crons soltos; um logger estruturado obrigatório em toda rota.
 
-## 4. Rotas × dados
+## 16. Migração incremental sem parar a operação
 
-`src/config/pageRegistry.ts` (240 linhas) + `src/App.tsx` (202). O frontend referencia 149 tabelas via `.from("...")`.
+1. **Fase 0 — congelar e inventariar**: desligar crons órfãos, marcar módulos aposentados, fechar o inventário de funções por consumidor.
+2. **Fase 1 — banco compartilhado**: API nova no Replit apontando para o **mesmo** Postgres. Zero migração de dados.
+3. **Fase 2 — strangler por webhook**: mover primeiro as ingestões `receive-*` (idempotentes, sem UI) e rodar em sombra comparando resultados.
+4. **Fase 3 — workers**: migrar crons para fila durável, um por vez, com kill switch.
+5. **Fase 4 — front por rota**: as 5 telas de alto uso por último; primeiro as de baixo risco (Materiais, Academia, Relatórios).
+6. **Fase 5 — auth**: manter Supabase Auth como IdP enquanto durar a coexistência; trocar só no fim, com sessões válidas nos dois lados.
+7. **Fase 6 — corte**: desativar Edge Functions substituídas depois de 2 semanas de tráfego zero comprovado.
 
-(i) **Páginas que leem tabela vazia (0 linhas)** — 45 tabelas lidas pelo frontend estão zeradas:
-`academia_trilhas, academia_quiz, academia_quiz_perguntas, academia_certificados` (Academia inteira sem conteúdo), `pulse_desafios, pulse_desafio_contribuicoes, pulse_reactions`, `referrals, referral_leads, referral_rewards, referral_config`, `pipeline_sequencias/_passos/_segmentos/_comissoes/_playbooks`, `intermediacoes, venda_comissoes, comunicacao_templates/_historico, corretor_reports, corretor_conquistas, corretor_metas_mensais, ceo_metas_mensais, empresa_metas_mensais, feriados, funnel_entries, roleta_config, roleta_segmentos, saved_scripts, team_scripts, system_flags, marketing_reports, oferta_ativa_sessoes/_templates/_reservados, integration_settings, integracao_field_mappings, lia_templates, blocked_templates, alertas_busca, checkpoint_diario, empreendimento_overrides, empreendimentos_favoritos, nurturing_cadencias, homi_memoria_usuario`.
-`corretor_motivations` é falso positivo conhecido (lido em `useCorretorDailyStats.ts`).
-Alerta: `roleta_config` e `feriados` vazias, mas a Core memory diz que regras de roleta e SLA dependem delas — provável fallback em código; verificar antes de mexer.
+Regra durante toda a transição: nenhuma escrita duplicada nos dois mundos; a fonte de verdade é sempre o Postgres único.
 
-(ii) **Tabelas sem página que as leia**: `_pilot_backfill_2026_07_26`, `_rollback_andressa_2026_08_12`, `_rollback_leo_2026_08_12`, `_rollback_pos_visita_2026_08_12`, `leads_backup` (2101), `leads_legado` (2100), `pdn_entries_legado`, `melnick_campaign_analytics` (351), `melnick_metas_diarias`, `voice_call_logs`, `voice_campaigns`, `sala_reuniao_reservas`, `relatorios_1_1`, `segmento_campanhas`, `cron_health`.
+## 17. Backlog priorizado
 
-## 5. 360dialog — todos os pontos
+**P0**
+1. Desativar os 8 crons apontando para funções inexistentes.
+2. Habilitar RLS + policies em `vendas_atribuicao`.
+3. Revisar as policies `anon` de `referral_leads` e `leads_legado`.
+4. Atualizar ou desmarcar `base_leads` como fonte-mãe do reengajamento.
 
-| Arquivo | Situação |
-|---|---|
-| `supabase/functions/lia-whatsapp/index.ts` | vivo (envio/recebimento LIA) |
-| `supabase/functions/lia-chat/index.ts` | vivo |
-| `supabase/functions/lia-followup/index.ts` | vivo |
-| `supabase/functions/lia-reengajar-dispatch/index.ts` | vivo |
-| `supabase/functions/meta-templates-list/index.ts` | vivo (lista templates) |
-| `supabase/functions/_shared/liaFormBridge.ts` | vivo |
-| `src/integrations/supabase/types.ts` | órfão (tipo gerado) |
-| `supabase/config.toml` (`[functions.whatsapp-360dialog]`) | **órfão** — a pasta `whatsapp-360dialog` não existe |
+**P1**
+5. Higiene única entre as três filas frias (anti-duplo-contato).
+6. Padronizar `ops_events` + `requireAuth` no `_shared`.
+7. Esconder do menu as 9 rotas com zero acesso.
+8. Testes de regressão para VGV, roleta, visitas e higiene de fila.
 
-**AdminPanel: não encontrado** — nenhuma referência a 360dialog em `src/` além de `types.ts`.
+**P2**
+9. Tipos `ProfileId`/`AuthUserId` e remoção dos `.d.ts` que matam a tipagem.
+10. Quebra dos arquivos >1.000 linhas.
+11. Unificação de tarefas/atividades e da porta de Performance.
+12. Retenção/partição das tabelas de log.
 
-## 6. visita-whatsapp-confirm
+**P3**
+13. Remover dependências duplicadas (um mapa, um PDF).
+14. Aposentar Checkpoint, 1:1, Marketplace, e-mail marketing, voz, pós-venda.
+15. Consolidar HOMI/LIA em um runtime.
 
-**Não encontrado** no repositório, em `cron.job`, em `pg_proc`, em `config.toml` ou em qualquer arquivo de `src/`. Não existe cron disparando esse nome hoje, então não há falha recorrente por ela. O caso análogo real é `visita-amanha-enqueue`: removida do código e o cron foi desligado por migration (`supabase/migrations/20260719185322_*.sql:2`); hoje o job `visita-amanha-auto-2min` está `active=false`. O item prioritário de verdade é o da seção 2.4 (13 crons ativos apontando para função ausente).
+## 18. Riscos específicos de sair de Lovable/Supabase para Replit
 
-## 7. Resíduos de limpezas anteriores
-
-| Termo | Onde ainda aparece | Vivo/órfão |
+| Risco | Impacto | Mitigação |
 |---|---|---|
-| automations / execute-automations | `src/components/audit/OpsEventsPanel.tsx:38` (lista de filtro) + cron ativo `execute-automations-every-5min` | cron **vivo** apontando p/ função ausente |
-| automation_logs | `src/components/audit/CriticalErrorsPanel.tsx`, `AuditStatsBar.tsx` | órfão (tabela não existe) |
-| pos_vendas | `src/hooks/usePipeline.ts`, `src/test/id-mapping-regression.test.ts`, migrations | referência de etapa legada — verificar |
-| oportunidades | `src/hooks/useElegibilidadeRoleta.ts`, `src/pages/PrivacidadePage.tsx`, `supabase/functions/homi-ceo`, `_shared/nurturing-email-templates.ts` | maioria é texto/label, não tabela |
-| distribuicao_escala | só migrations antigas | órfão |
-| whatsapp_instancias | `supabase/functions/evolution-webhook/index.ts`, `types.ts` | função sem cron/invoke → INCERTO |
-| campanha_atrio | `supabase/functions/whatsapp-webhook/index.ts:472` chama `campanha-atrio-processar-resposta`, **que não existe no repo** | **quebrado em runtime** |
-| whatsapp-send | nenhuma referência | limpo |
-| whatsapp-360dialog | `supabase/config.toml` | órfão |
-| melnick | `WhatsAppCampaignDispatcher.tsx`, `AceiteLeads.tsx`, `IntegracaoJetimob.tsx`, `lib/empreendimentos.ts`, `homi-chat`, `vitrine-public`, `vitrine-og`, `jetimob-proxy` + tabelas `melnick_*` | parcialmente vivo (nome de empreendimento), tabelas órfãs |
+| Perder RLS como rede de segurança ao mover regra para a API | Vazamento de dados entre corretores | Manter RLS ligada e rodar a API com usuário não-superuser |
+| Reescrever 482 funções SQL | Divergência silenciosa de métrica (VGV, visitas) | Manter as funções canônicas no banco; migrar só orquestração |
+| Auth: sessões, refresh e políticas dependem do JWT do Supabase | Logout em massa | Coexistência com Supabase Auth como IdP até o fim |
+| Realtime e Storage (materiais, vídeos da Academia, signed URLs) | Quebra de Academia/Materiais | Manter Storage do Supabase mesmo com API no Replit |
+| Cold start / limites do Autoscale em webhooks do Meta e 360dialog | Perda de lead e de mensagem da LIA | Webhooks em Reserved VM sempre quente + fila + backfill mantido |
+| 54 crons virando jobs | Duplicidade de disparo de WhatsApp | Fila com idempotência por chave e trava global de envio |
+| Perda do fluxo de deploy/preview atual | Queda de velocidade operacional | Só migrar após CI + preview equivalentes funcionando |
+| Custo: hoje um provedor, depois dois durante meses | Gasto dobrado na transição | Cronograma de corte por fase com data de desligamento |
 
-## 8. Riscos
+---
 
-Nenhuma função foi classificada como candidata a remoção nesta rodada — tudo que não tem consumidor é INCERTO. Riscos das únicas remoções plausíveis num futuro próximo:
-
-| Alvo | O que quebra |
-|---|---|
-| Entradas órfãs em `config.toml` (`whatsapp-360dialog`, `jetimob-sync-catalog`) | nada em runtime; só reduz ruído. Mas se `jetimob-sync-catalog` estiver publicada e não versionada, remover a entrada pode alterar `verify_jwt` no próximo deploy |
-| Crons da seção 2.4 | se a função existir publicada, desligar o cron para a sincronização de imóveis/emails. Não desligar sem antes olhar os logs de cada uma |
-| `campanha-atrio-processar-resposta` (chamada em `whatsapp-webhook:472`) | já falha hoje; o `fetch` não trata erro visível — respostas de campanha Atrio se perdem silenciosamente |
-
-## 9. Primeira mudança proposta (uma só)
-
-**Criar o helper de log `logOps` e ligá-lo em UMA função ainda não instrumentada** — sugestão: `supabase/functions/oferta-ativa-proximo-lead/index.ts`, justamente uma das INCERTO que precisamos provar.
-
-Arquivos tocados (2):
-- `supabase/functions/_shared/opsLog.ts` (novo, ~15 linhas)
-- `supabase/functions/oferta-ativa-proximo-lead/index.ts` (1 import + 1 chamada no início do handler)
-
-Reversível: apagar o arquivo novo e a linha. Zero efeito de negócio, e em poucos dias temos prova real de uso ou não-uso — pré-requisito para qualquer remoção.
+### Nota
+Relatório diagnóstico. Números de tabela, policies, crons e funções vêm de leitura direta do banco em 08/09/2026; contagens de arquivo vêm do repositório atual. Onde não houve evidência direta, o texto aponta o que precisa ser verificado antes de qualquer remoção. Aprovar este documento significa apenas aceitar o diagnóstico — nenhuma execução está incluída.
