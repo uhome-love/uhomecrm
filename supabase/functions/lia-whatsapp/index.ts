@@ -554,47 +554,56 @@ serve(async (req) => {
 
         // envia a resposta (texto + mídias), ignorando qualquer marcador interno que sobre
         if (reply) {
+          // MARCADOR PODE VIR COLADO NUMA FRASE, não só como bolha inteira. Enquanto só a bolha
+          // 100% marcador era tratada, um marcador grudado no texto era enviado LITERALMENTE pro
+          // cliente ("[[midia:planta_3d]]" na tela) e a mídia não saía: 35 casos em 2.277 mensagens.
+          // Agora o marcador é reconhecido em qualquer posição da bolha.
+          const RE_MARCADOR = /\[\[\s*(midia|nome)\s*:\s*([^\]]*?)\s*\]\]/gi;
+          const semMarcador = (t: string) =>
+            t.replace(RE_MARCADOR, " ").replace(/\[\[[^\]]*\]\]/g, " ").replace(/[ \t]{2,}/g, " ").trim();
+
           // no LOG do hub, o ||| (separador de bolhas) vira quebra de linha e os marcadores internos
           // ([[midia:]], [[nome:]], [[sinal]]) somem — o cliente recebe as bolhas separadas e limpas.
-          const replyLog = reply.split(/\s*\|\|\|\s*/).map((p) => p.trim()).filter((p) => p && !/^\[\[.*\]\]$/.test(p)).join("\n");
-          await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: replyLog || reply });
+          const replyLog = reply.split(/\s*\|\|\|\s*/).map(semMarcador).filter(Boolean).join("\n");
+          await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: replyLog || semMarcador(reply) });
           const parts = reply.split(/\s*\|\|\|\s*/).map((p) => p.trim()).filter(Boolean);
           let media = 0;
           let midiaFalhou = false;
           for (const p of parts) {
-            const mm = p.match(/^\[\[\s*midia\s*:\s*(\w+)\s*\]\]$/i);
-            if (mm) {
-              const k = mm[1].toLowerCase();
+            const achados = [...p.matchAll(RE_MARCADOR)].map((m) => ({ tipo: m[1].toLowerCase(), valor: (m[2] ?? "").trim() }));
+            // o texto limpo vai primeiro; a mídia da mesma bolha logo depois (ordem natural da conversa)
+            const limpo = semMarcador(p);
+            if (limpo) await sendText(from, limpo);
+            for (const a of achados) {
+              if (a.tipo === "nome") {
+                // [[nome:Fulano]] — a LIA capturou o nome REAL que a pessoa disse; salva no CRM
+                // (o WhatsApp costuma trazer apelido/nome de perfil que não presta). Nunca envia ao cliente.
+                const novoNome = a.valor.slice(0, 80);
+                if (novoNome) {
+                  await sb.from("lia_estado").update({ nome: novoNome, updated_at: nowISO() }).eq("telefone", from);
+                  est.nome = novoNome;
+                  const l8 = telBR(from).replace(/\D/g, "").slice(-8);
+                  await sb.from("pipeline_leads").update({ nome: novoNome }).ilike("telefone", `%${l8}`).eq("arquivado", false);
+                }
+                continue;
+              }
+              const k = a.valor.toLowerCase().replace(/[^a-z0-9_]/g, "");
               const mid = midias[k];
-              if (mid && media < 3) {
-                media++;
-                // send* agora retornam status: se o 360dialog rejeitar (arquivo pesado/URL fora),
-                // NÃO deixa o cliente achando que recebeu, avisa e o time reenvia (fim do bug do ebook).
-                const ok = mid.doc ? await sendDoc(from, mid.url, mid.filename || "Material.pdf") : await sendImage(from, mid.url);
-                if (!ok) midiaFalhou = true;
-                // OBSERVABILIDADE: registra o envio da midia da conversa (antes era invisivel no log)
-                await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: ok ? `[midia] ${k} enviada` : `[midia] ${k} FALHOU no envio` }).then(() => {}).catch(() => {});
-              } else if (!mid) {
+              if (!mid) {
                 // a chave que o cerebro emitiu NAO existe no catalogo do produto (falha silenciosa: a LIA
                 // disse que ia mandar e nada saiu). Registra pra a gente adicionar a chave. NAO forca repasse.
                 console.error("[lia-whatsapp] midia sem chave no catalogo:", k, produto?.slug);
                 await sb.from("ops_events").insert({ fn: "lia-whatsapp", level: "warn", category: "lia_midia_sem_chave", message: `Midia sem chave no catalogo: ${k}`, ctx: { telefone: from, chave: k, produto: produto?.slug ?? null } }).then(() => {}).catch(() => {});
+                continue;
               }
-            } else if (/^\[\[\s*nome\s*:/i.test(p)) {
-              // [[nome:Fulano]] — a LIA capturou o nome REAL que a pessoa disse; salva no CRM
-              // (o WhatsApp costuma trazer apelido/nome de perfil que não presta). Nunca envia ao cliente.
-              const nm = p.match(/^\[\[\s*nome\s*:\s*(.+?)\s*\]\]$/i);
-              const novoNome = nm?.[1]?.trim().slice(0, 80);
-              if (novoNome) {
-                await sb.from("lia_estado").update({ nome: novoNome, updated_at: nowISO() }).eq("telefone", from);
-                est.nome = novoNome;
-                const l8 = telBR(from).replace(/\D/g, "").slice(-8);
-                await sb.from("pipeline_leads").update({ nome: novoNome }).ilike("telefone", `%${l8}`).eq("arquivado", false);
-              }
-            } else if (/^\[\[.*\]\]$/.test(p)) {
-              continue; // marcador interno (ex.: sinal) que por acaso vazou: nunca envia
-            } else {
-              await sendText(from, p);
+              if (media >= 3) continue;
+              media++;
+              // send* agora retornam status: se o 360dialog rejeitar (arquivo pesado/URL fora),
+              // NÃO deixa o cliente achando que recebeu, avisa e o time reenvia (fim do bug do ebook).
+              const ok = mid.doc ? await sendDoc(from, mid.url, mid.filename || "Material.pdf") : await sendImage(from, mid.url);
+              if (!ok) midiaFalhou = true;
+              // OBSERVABILIDADE: registra o envio da midia da conversa (antes era invisivel no log)
+              await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: ok ? `[midia] ${k} enviada` : `[midia] ${k} FALHOU no envio` }).then(() => {}).catch(() => {});
             }
           }
           if (midiaFalhou) {

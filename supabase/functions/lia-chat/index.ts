@@ -500,6 +500,64 @@ serve(async (req) => {
       } catch (e2) { console.error("[lia-chat] retry anti-glitch falhou", e2); }
     }
     raw = raw.replace(/```+/g, "").trim(); // a LIA nunca manda crase de markdown
+
+    // ── GUARDA DE CONVITE ────────────────────────────────────────────────────
+    // Medido em 239 conversas reais da LIA: em 65% delas ela NUNCA propôs um próximo passo,
+    // e essas agendaram 0,6%; as que tiveram 2+ convites agendaram 44%. Escrever a regra no
+    // esqueleto dá ~27% de convite, escrever também na ficha dobra para ~51%, e conferir aqui
+    // em código leva a 100%. Comportamento que decide receita não pode viver só em prosa.
+    //
+    // NÃO dispara (cada exceção veio de um caso real do teste):
+    //   · janela de graça pós-repasse
+    //   · objeção ainda aberta na última fala do lead
+    //   · quando a resposta já convida ou já repassa
+    //   · CURADORIA: quando o imóvel não serve (sinal frio/descartar, ou a LIA está capturando
+    //     o perfil). Sem isso a guarda forçava convite em quem acabou de recusar o imóvel.
+    const RE_CONVITE_OK = /(conhecer|visita|visitar|estande|decorad|videochamada|chamada de v[íi]deo|apresenta[çc][ãa]o)[\s\S]{0,220}?\?/i;
+    const RE_DIA_OK = /(fim de semana|s[áa]bado|domingo|segunda|ter[çc]a|quarta|quinta|sexta|durante a semana|manh[ãa]|tarde|noite|amanh[ãa]|hoje|essa semana|que dia|qual dia|melhor dia)/i;
+    const RE_OBJECAO_VIVA = /(caro|car[íi]ssimo|acima do que|fora do (meu|nosso) or[çc]amento|alagou|enchente|inunda|longe|dist[âa]nte|muito tempo|pronto pra morar|n[ãa]o quero (mais )?(receber|falar)|para de (me )?mandar)/i;
+    const RE_CURADORIA = /(\[\[\s*acervo\s*:|orulo\.com\.br|qu(al|e) (regi[ãa]o|zona|bairro)|regi[ãa]o (voc[êe]s? |tu )?prefere|faixa de (valor|investimento)|at[ée] quanto|quantos dormit|o que n[ãa]o pode faltar|te trago as op[çc][õo]es|op[çc][õo]es ideais)/i;
+    const naoServe = /\[\[\s*sinal\s*:\s*(frio|descartar)\s*\]\]/i.test(raw);
+
+    const falasDoLead = (messages as any[])
+      .filter((m) => m?.role === "user" && String(m?.content ?? "").trim().length > 2).length;
+    const ultimaDoLead = String([...(messages as any[])].reverse().find((m) => m?.role === "user")?.content ?? "");
+    const jaConvidou = RE_CONVITE_OK.test(raw) && RE_DIA_OK.test(raw);
+    const vaiRepassar = /\[\[\s*repassar\s*\]\]/i.test(raw);
+    const ehCuradoria = naoServe || RE_CURADORIA.test(raw);
+    const podeCutucar = falasDoLead >= 2 && !jaConvidou && !vaiRepassar && !ehCuradoria
+      && !(body as any).pos_repasse && !RE_OBJECAO_VIVA.test(ultimaDoLead);
+
+    if (podeCutucar) {
+      const NUDGE = "\n\nATENÇÃO NESTE TURNO: esta conversa já tem duas ou mais falas do lead e você "
+        + "ainda NÃO propôs um próximo passo concreto. Reescreva a sua resposta mantendo tudo que ela "
+        + "entrega de bom, mas trocando a ÚLTIMA bolha por um convite ao desfecho que a ficha define, "
+        + "com uma justificativa curta e uma pergunta fechada de DIA ou TURNO. Não escreva horário "
+        + "exato. Mantenha o marcador de sinal na última bolha.";
+      try {
+        const respG = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: (typeof (body as any).model === "string" && (body as any).model) || MODEL,
+            messages: [{ role: "system", content: systemPrompt + NUDGE }, ...messages],
+            stream: false,
+            temperature: 0.5,
+          }),
+        });
+        if (respG.ok) {
+          const dG = await respG.json();
+          const rG = String(dG?.choices?.[0]?.message?.content ?? "").replace(/```+/g, "").trim();
+          // só aceita a 2a passada se ela REALMENTE convidou e não degradou
+          if (rG && !pareceGlitch(rG) && RE_CONVITE_OK.test(rG) && RE_DIA_OK.test(rG)) {
+            console.log("[lia-chat] guarda de convite: 2a passada aceita");
+            raw = rG;
+          }
+        } else {
+          console.error("[lia-chat] guarda de convite: gateway", respG.status);
+        }
+      } catch (eG) { console.error("[lia-chat] guarda de convite falhou (nao critico)", eG); }
+    }
     // ACERVO AO VIVO: se o cerebro emitiu [[acervo:filtro]], troca pelo resultado real das 420
     const _ac = await resolverAcervo(raw);
     raw = _ac.raw;
