@@ -445,3 +445,111 @@ select cron.schedule(
 create index if not exists idx_pipeline_leads_created_at on public.pipeline_leads (created_at);
 create index if not exists idx_visitas_pipeline_lead_id  on public.visitas (pipeline_lead_id);
 create index if not exists idx_lia_estado_lead_id        on public.lia_estado (lead_id);
+
+-- ------------------------------------------------------------
+-- 10. Cache da jornada (a API do Supabase corta consulta em 8 s;
+--     a view ao vivo leva ~0,5 s a cada 7 dias de leads).
+--     Tabela materializada à mão, refresh de hora em hora.
+-- ------------------------------------------------------------
+create table if not exists public.midia_lead_jornada as
+select *, now() as refreshed_at from public.v_midia_lead_jornada where false;
+alter table public.midia_lead_jornada add primary key (lead_id);
+create index if not exists idx_midia_jornada_created       on public.midia_lead_jornada (created_at);
+create index if not exists idx_midia_jornada_canal_created on public.midia_lead_jornada (canal, created_at);
+create index if not exists idx_midia_jornada_campaign      on public.midia_lead_jornada (campaign_id);
+create index if not exists idx_midia_jornada_ad            on public.midia_lead_jornada (ad_id);
+create index if not exists idx_midia_jornada_empreend      on public.midia_lead_jornada (empreendimento);
+alter table public.midia_lead_jornada enable row level security;
+drop policy if exists midia_admin_all on public.midia_lead_jornada;
+create policy midia_admin_all on public.midia_lead_jornada for select to authenticated using (public.has_role(auth.uid(), 'admin'));
+comment on table public.midia_lead_jornada is 'Uhome Mídia: cache da v_midia_lead_jornada (últimos 400 dias), atualizado de hora em hora pelo cron midia-jornada-refresh. Leitura rápida pro Funil, Mesa de leads e Briefing.';
+
+create or replace function public.midia_refresh_jornada(p_dias integer default 400)
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare v_cutoff timestamptz := now() - make_interval(days => p_dias); v_n integer;
+begin
+  delete from public.midia_lead_jornada where created_at >= v_cutoff;
+  insert into public.midia_lead_jornada
+  select j.*, now() from public.v_midia_lead_jornada j where j.created_at >= v_cutoff;
+  get diagnostics v_n = row_count;
+  return v_n;
+end $$;
+revoke all on function public.midia_refresh_jornada(integer) from public, anon, authenticated;
+
+select cron.unschedule(jobid) from cron.job where jobname = 'midia-jornada-refresh';
+select cron.schedule('midia-jornada-refresh', '10 * * * *', $cron$ select public.midia_refresh_jornada(400); $cron$);
+
+-- midia_funil passa a ler do cache (mesma assinatura, mesmo resultado)
+-- (definição idêntica à da seção 6, trocando v_midia_lead_jornada por midia_lead_jornada no CTE j)
+create or replace function public.midia_funil(
+  p_since date, p_until date, p_nivel text default 'campaign', p_janela_dias integer default 14, p_canal text default 'meta'
+)
+returns table (
+  chave text, nome text, campaign_id text, adset_id text, ad_id text,
+  leads bigint, contatados bigint, sem_contato bigint, qualificados bigint,
+  visitas_marcadas bigint, visitas_realizadas bigint, no_shows bigint,
+  negocios bigint, vendas bigint, descartados bigint, vgv numeric,
+  spend numeric, impressions bigint, cpl numeric, custo_por_visita numeric,
+  custo_por_venda numeric, taxa_visita numeric
+)
+language sql stable security invoker set search_path = public as $$
+with j as (
+  select * from public.midia_lead_jornada
+  where created_at >= (p_since::timestamp at time zone 'America/Sao_Paulo')
+    and created_at <  ((p_until + 1)::timestamp at time zone 'America/Sao_Paulo')
+    and created_at <= now() - make_interval(days => p_janela_dias)
+    and canal = p_canal
+),
+leads as (
+  select
+    case p_nivel
+      when 'campaign' then coalesce(campaign_id, campanha, 'sem campanha')
+      when 'adset'    then coalesce(conjunto_anuncio, 'sem conjunto')
+      when 'ad'       then coalesce(ad_id, anuncio, 'sem anúncio')
+      when 'empreendimento' then coalesce(empreendimento, 'sem empreendimento')
+      when 'form'     then coalesce(form_id, formulario, 'sem formulário')
+      else coalesce(campaign_id, campanha, 'sem campanha') end as chave,
+    case p_nivel
+      when 'campaign' then max(campanha)
+      when 'adset'    then max(conjunto_anuncio)
+      when 'ad'       then max(anuncio)
+      when 'empreendimento' then max(empreendimento)
+      when 'form'     then max(coalesce(form_name, formulario))
+      else max(campanha) end as nome,
+    max(campaign_id) as campaign_id,
+    null::text as adset_id,
+    max(ad_id) as ad_id,
+    count(*) as leads,
+    count(*) filter (where primeiro_contato_em is not null and primeiro_contato_em <= created_at + make_interval(days => p_janela_dias)) as contatados,
+    count(*) filter (where sem_contato) as sem_contato,
+    count(*) filter (where qualificado_em is not null and qualificado_em <= created_at + make_interval(days => p_janela_dias)) as qualificados,
+    count(*) filter (where visita_marcada_em is not null and visita_marcada_em <= created_at + make_interval(days => p_janela_dias)) as visitas_marcadas,
+    count(*) filter (where visita_realizada_em is not null and visita_realizada_em <= (created_at + make_interval(days => p_janela_dias))::date) as visitas_realizadas,
+    count(*) filter (where teve_no_show) as no_shows,
+    count(*) filter (where negocio_em is not null and negocio_em <= created_at + make_interval(days => p_janela_dias)) as negocios,
+    count(*) filter (where venda_em is not null) as vendas,
+    count(*) filter (where descartado) as descartados,
+    coalesce(sum(vgv_rateado), 0) as vgv
+  from j group by 1
+),
+gasto as (
+  select
+    case p_nivel when 'campaign' then campaign_id when 'adset' then adset_name when 'ad' then ad_id else null end as chave,
+    sum(spend) as spend, sum(impressions) as impressions
+  from public.midia_snapshot_diario
+  where canal = p_canal and dia between p_since and p_until and p_nivel in ('campaign','adset','ad')
+  group by 1
+)
+select
+  l.chave, l.nome, l.campaign_id, l.adset_id, l.ad_id,
+  l.leads, l.contatados, l.sem_contato, l.qualificados, l.visitas_marcadas, l.visitas_realizadas,
+  l.no_shows, l.negocios, l.vendas, l.descartados, l.vgv,
+  g.spend, g.impressions,
+  case when l.leads > 0 then round(g.spend / l.leads, 2) end as cpl,
+  case when l.visitas_realizadas > 0 then round(g.spend / l.visitas_realizadas, 2) end as custo_por_visita,
+  case when l.vendas > 0 then round(g.spend / l.vendas, 2) end as custo_por_venda,
+  case when l.leads > 0 then round(100.0 * l.visitas_realizadas / l.leads, 1) end as taxa_visita
+from leads l left join gasto g on g.chave = l.chave
+order by l.leads desc;
+$$;
