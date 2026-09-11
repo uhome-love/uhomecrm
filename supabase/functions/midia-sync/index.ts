@@ -186,14 +186,6 @@ async function syncInsights(
   return { rows: total, chunks };
 }
 
-// asset_feed_spec fica de fora de propósito: é pesado e derruba a chamada
-// ("Please reduce the amount of data"). object_story_spec já traz o essencial.
-const AD_FIELDS =
-  "id,name,status,effective_status,adset_id,campaign_id,created_time,updated_time," +
-  "adset{name},campaign{name}," +
-  "creative{id,object_type,thumbnail_url,image_url,image_hash,video_id,title,body," +
-  "call_to_action_type,object_story_spec,effective_object_story_id}";
-
 function tipoCriativo(c: Record<string, any> | undefined): string {
   if (!c) return "outro";
   const ot = String(c.object_type || "").toUpperCase();
@@ -214,15 +206,43 @@ function extractForm(c: Record<string, any> | undefined): string | null {
   return lead ? String(lead) : null;
 }
 
+// Campos leves da lista de anúncios; o criativo vem numa segunda etapa, em lotes
+// de 50 IDs, porque a Graph API derruba a lista quando o creative vem aninhado.
+const AD_LIST_FIELDS =
+  "id,name,status,effective_status,adset_id,campaign_id,created_time,updated_time,adset{name},campaign{name},creative{id}";
+const CREATIVE_FIELDS =
+  "id,object_type,thumbnail_url,image_url,image_hash,video_id,title,body,call_to_action_type,object_story_spec,effective_object_story_id";
+
+async function fetchCreativesById(token: string, ids: string[]): Promise<Record<string, any>> {
+  const out: Record<string, any> = {};
+  for (let i = 0; i < ids.length; i += 50) {
+    const lote = ids.slice(i, i + 50);
+    const params = new URLSearchParams({ ids: lote.join(","), fields: CREATIVE_FIELDS, access_token: token });
+    const res = await fetch(`${META_BASE}/?${params}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      // Um lote ruim não derruba o sync inteiro: registra e segue.
+      console.error("creatives lote erro:", JSON.stringify(data.error || data));
+      continue;
+    }
+    Object.assign(out, data);
+  }
+  return out;
+}
+
 async function syncCreatives(
   admin: ReturnType<typeof createClient>,
   token: string,
   account: string,
-): Promise<{ rows: number }> {
-  const params = new URLSearchParams({ fields: AD_FIELDS, limit: "50", access_token: token });
+): Promise<{ rows: number; sem_criativo: number }> {
+  const params = new URLSearchParams({ fields: AD_LIST_FIELDS, limit: "100", access_token: token });
   const ads = (await graphGetAll(`${META_BASE}/${account}/ads?${params}`, 200)) as Record<string, any>[];
+  const creativeIds = Array.from(new Set(ads.map((a) => a.creative?.id).filter(Boolean).map(String)));
+  const creatives = await fetchCreativesById(token, creativeIds);
+  let semCriativo = 0;
   const payload = ads.map((a) => {
-    const c = a.creative || {};
+    const c = (a.creative?.id && creatives[String(a.creative.id)]) || {};
+    if (!c.id) semCriativo++;
     const spec = c.object_story_spec || {};
     const link = spec.link_data?.link || spec.video_data?.call_to_action?.value?.link || null;
     return {
@@ -262,7 +282,7 @@ async function syncCreatives(
     if (error) throw new Error(`upsert criativos: ${error.message}`);
     total += batch.length;
   }
-  return { rows: total };
+  return { rows: total, sem_criativo: semCriativo };
 }
 
 Deno.serve(async (req) => {
