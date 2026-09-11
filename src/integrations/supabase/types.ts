@@ -720,6 +720,13 @@ export type Database = {
             foreignKeyName: "ai_calls_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "ai_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -1421,6 +1428,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "campaign_clicks_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -2526,6 +2540,13 @@ export type Database = {
             foreignKeyName: "distribuicao_historico_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "distribuicao_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -2630,6 +2651,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "email_campaign_recipients_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -2805,6 +2833,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "email_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -3821,6 +3856,13 @@ export type Database = {
             foreignKeyName: "ia_call_results_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "ia_call_results_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -4424,6 +4466,13 @@ export type Database = {
             foreignKeyName: "imoveis_interesse_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "imoveis_interesse_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -4740,6 +4789,13 @@ export type Database = {
             foreignKeyName: "lead_cadencia_sem_contato_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: true
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_cadencia_sem_contato_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -4804,6 +4860,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_imoveis_indicados_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -4883,6 +4946,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_imovel_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -5016,6 +5086,13 @@ export type Database = {
             foreignKeyName: "lead_nurturing_sequences_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_nurturing_sequences_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -5107,6 +5184,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: true
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_nurturing_state_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -5304,6 +5388,13 @@ export type Database = {
             foreignKeyName: "lead_property_interactions_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_property_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -5377,6 +5468,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_property_matches_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -5520,6 +5618,13 @@ export type Database = {
             foreignKeyName: "lead_property_profiles_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: true
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_property_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -5593,6 +5698,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_property_searches_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -5756,6 +5868,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "leads_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -7270,6 +7389,383 @@ export type Database = {
         }
         Relationships: []
       }
+      midia_criativos: {
+        Row: {
+          ad_id: string
+          ad_name: string | null
+          ad_status: string | null
+          adset_id: string | null
+          adset_name: string | null
+          atualizado_em: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          canal: string
+          classificado_em: string | null
+          classificado_por: string | null
+          corpo: string | null
+          creative_id: string | null
+          criado_em: string | null
+          cta: string | null
+          effective_status: string | null
+          familia: string | null
+          form_id: string | null
+          formato: string | null
+          gancho: string | null
+          image_hash: string | null
+          image_url: string | null
+          link_url: string | null
+          raw: Json | null
+          sincronizado_em: string
+          tags: string[]
+          thumbnail_url: string | null
+          tipo: string | null
+          titulo: string | null
+          video_id: string | null
+        }
+        Insert: {
+          ad_id: string
+          ad_name?: string | null
+          ad_status?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          atualizado_em?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          canal?: string
+          classificado_em?: string | null
+          classificado_por?: string | null
+          corpo?: string | null
+          creative_id?: string | null
+          criado_em?: string | null
+          cta?: string | null
+          effective_status?: string | null
+          familia?: string | null
+          form_id?: string | null
+          formato?: string | null
+          gancho?: string | null
+          image_hash?: string | null
+          image_url?: string | null
+          link_url?: string | null
+          raw?: Json | null
+          sincronizado_em?: string
+          tags?: string[]
+          thumbnail_url?: string | null
+          tipo?: string | null
+          titulo?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          ad_id?: string
+          ad_name?: string | null
+          ad_status?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          atualizado_em?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          canal?: string
+          classificado_em?: string | null
+          classificado_por?: string | null
+          corpo?: string | null
+          creative_id?: string | null
+          criado_em?: string | null
+          cta?: string | null
+          effective_status?: string | null
+          familia?: string | null
+          form_id?: string | null
+          formato?: string | null
+          gancho?: string | null
+          image_hash?: string | null
+          image_url?: string | null
+          link_url?: string | null
+          raw?: Json | null
+          sincronizado_em?: string
+          tags?: string[]
+          thumbnail_url?: string | null
+          tipo?: string | null
+          titulo?: string | null
+          video_id?: string | null
+        }
+        Relationships: []
+      }
+      midia_decisoes: {
+        Row: {
+          acao: string
+          antes: Json | null
+          canal: string
+          created_by: string | null
+          depois: Json | null
+          efeito_14d: Json | null
+          efeito_7d: Json | null
+          entidade_id: string | null
+          entidade_nome: string | null
+          entidade_tipo: string | null
+          id: string
+          motivo: string | null
+          origem: string
+          quando: string
+          recomendacao_id: string | null
+        }
+        Insert: {
+          acao: string
+          antes?: Json | null
+          canal?: string
+          created_by?: string | null
+          depois?: Json | null
+          efeito_14d?: Json | null
+          efeito_7d?: Json | null
+          entidade_id?: string | null
+          entidade_nome?: string | null
+          entidade_tipo?: string | null
+          id?: string
+          motivo?: string | null
+          origem: string
+          quando?: string
+          recomendacao_id?: string | null
+        }
+        Update: {
+          acao?: string
+          antes?: Json | null
+          canal?: string
+          created_by?: string | null
+          depois?: Json | null
+          efeito_14d?: Json | null
+          efeito_7d?: Json | null
+          entidade_id?: string | null
+          entidade_nome?: string | null
+          entidade_tipo?: string | null
+          id?: string
+          motivo?: string | null
+          origem?: string
+          quando?: string
+          recomendacao_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "midia_decisoes_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "midia_recomendacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      midia_recomendacoes: {
+        Row: {
+          acao: Json | null
+          canal: string
+          created_at: string
+          decidido_em: string | null
+          decidido_via: string | null
+          dia: string
+          entidade_id: string | null
+          entidade_nome: string | null
+          entidade_tipo: string | null
+          evidencia: Json | null
+          executado_em: string | null
+          id: string
+          motivo_rejeicao: string | null
+          prioridade: number
+          resultado: Json | null
+          resumo: string | null
+          status: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          acao?: Json | null
+          canal?: string
+          created_at?: string
+          decidido_em?: string | null
+          decidido_via?: string | null
+          dia?: string
+          entidade_id?: string | null
+          entidade_nome?: string | null
+          entidade_tipo?: string | null
+          evidencia?: Json | null
+          executado_em?: string | null
+          id?: string
+          motivo_rejeicao?: string | null
+          prioridade?: number
+          resultado?: Json | null
+          resumo?: string | null
+          status?: string
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          acao?: Json | null
+          canal?: string
+          created_at?: string
+          decidido_em?: string | null
+          decidido_via?: string | null
+          dia?: string
+          entidade_id?: string | null
+          entidade_nome?: string | null
+          entidade_tipo?: string | null
+          evidencia?: Json | null
+          executado_em?: string | null
+          id?: string
+          motivo_rejeicao?: string | null
+          prioridade?: number
+          resultado?: Json | null
+          resumo?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      midia_snapshot_diario: {
+        Row: {
+          actions: Json | null
+          ad_id: string
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          canal: string
+          clicks: number
+          cost_per_action: Json | null
+          cpc: number | null
+          cpm: number | null
+          ctr: number | null
+          dia: string
+          frequency: number | null
+          impressions: number
+          lead_qualificado_meta: number
+          leads_meta: number
+          link_clicks: number
+          objective: string | null
+          optimization_goal: string | null
+          reach: number
+          sincronizado_em: string
+          spend: number
+          thruplays: number
+          video_3s: number
+          video_avg_time: number | null
+          video_p100: number
+          video_p25: number
+          video_p50: number
+          video_p75: number
+          video_plays: number
+          visita_marcada_meta: number
+        }
+        Insert: {
+          actions?: Json | null
+          ad_id: string
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          canal?: string
+          clicks?: number
+          cost_per_action?: Json | null
+          cpc?: number | null
+          cpm?: number | null
+          ctr?: number | null
+          dia: string
+          frequency?: number | null
+          impressions?: number
+          lead_qualificado_meta?: number
+          leads_meta?: number
+          link_clicks?: number
+          objective?: string | null
+          optimization_goal?: string | null
+          reach?: number
+          sincronizado_em?: string
+          spend?: number
+          thruplays?: number
+          video_3s?: number
+          video_avg_time?: number | null
+          video_p100?: number
+          video_p25?: number
+          video_p50?: number
+          video_p75?: number
+          video_plays?: number
+          visita_marcada_meta?: number
+        }
+        Update: {
+          actions?: Json | null
+          ad_id?: string
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          canal?: string
+          clicks?: number
+          cost_per_action?: Json | null
+          cpc?: number | null
+          cpm?: number | null
+          ctr?: number | null
+          dia?: string
+          frequency?: number | null
+          impressions?: number
+          lead_qualificado_meta?: number
+          leads_meta?: number
+          link_clicks?: number
+          objective?: string | null
+          optimization_goal?: string | null
+          reach?: number
+          sincronizado_em?: string
+          spend?: number
+          thruplays?: number
+          video_3s?: number
+          video_avg_time?: number | null
+          video_p100?: number
+          video_p25?: number
+          video_p50?: number
+          video_p75?: number
+          video_plays?: number
+          visita_marcada_meta?: number
+        }
+        Relationships: []
+      }
+      midia_sync_runs: {
+        Row: {
+          detalhe: Json | null
+          erro: string | null
+          funcao: string
+          id: number
+          iniciado_em: string
+          linhas: number | null
+          modo: string | null
+          ok: boolean | null
+          since: string | null
+          terminado_em: string | null
+          until: string | null
+        }
+        Insert: {
+          detalhe?: Json | null
+          erro?: string | null
+          funcao: string
+          id?: never
+          iniciado_em?: string
+          linhas?: number | null
+          modo?: string | null
+          ok?: boolean | null
+          since?: string | null
+          terminado_em?: string | null
+          until?: string | null
+        }
+        Update: {
+          detalhe?: Json | null
+          erro?: string | null
+          funcao?: string
+          id?: never
+          iniciado_em?: string
+          linhas?: number | null
+          modo?: string | null
+          ok?: boolean | null
+          since?: string | null
+          terminado_em?: string | null
+          until?: string | null
+        }
+        Relationships: []
+      }
       negocios: {
         Row: {
           auth_user_id: string | null
@@ -7425,6 +7921,13 @@ export type Database = {
             columns: ["lead_id_proposto"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "fk_negocios_lead_id_proposto"
+            columns: ["lead_id_proposto"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -8013,6 +8516,13 @@ export type Database = {
             foreignKeyName: "oferta_ativa_fila_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -8253,6 +8763,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_ligacoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -8619,6 +9136,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_reservados_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -9260,6 +9784,13 @@ export type Database = {
             foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -9505,6 +10036,13 @@ export type Database = {
             foreignKeyName: "perfil_interesse_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "perfil_interesse_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -9572,6 +10110,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_anotacoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -9675,6 +10220,13 @@ export type Database = {
             foreignKeyName: "pipeline_atividades_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_atividades_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -9745,6 +10297,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_comissoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -9862,6 +10421,13 @@ export type Database = {
             foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -9952,6 +10518,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_lead_sequencias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -10502,6 +11075,13 @@ export type Database = {
             foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -10890,6 +11470,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_tarefas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -12850,6 +13437,13 @@ export type Database = {
             foreignKeyName: "site_events_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "site_events_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -13310,6 +13904,13 @@ export type Database = {
             foreignKeyName: "visita_amanha_disparos_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: true
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "visita_amanha_disparos_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -13389,6 +13990,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "visita_eventos_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -13663,6 +14271,13 @@ export type Database = {
             foreignKeyName: "visitas_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -13869,6 +14484,13 @@ export type Database = {
             foreignKeyName: "voice_call_logs_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "voice_call_logs_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -14005,6 +14627,13 @@ export type Database = {
             foreignKeyName: "waba_send_guards_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "waba_send_guards_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -14090,6 +14719,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "whatsapp_ai_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -14317,6 +14953,13 @@ export type Database = {
             foreignKeyName: "whatsapp_campaign_sends_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "whatsapp_campaign_sends_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -14461,6 +15104,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "whatsapp_mensagens_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -15045,6 +15695,13 @@ export type Database = {
             foreignKeyName: "visitas_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -15128,6 +15785,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -15270,6 +15934,86 @@ export type Database = {
           visitas_realizadas: number | null
         }
         Relationships: []
+      }
+      v_midia_lead_jornada: {
+        Row: {
+          ad_id: string | null
+          anuncio: string | null
+          arquivado: boolean | null
+          campaign_id: string | null
+          campanha: string | null
+          canal: string | null
+          capi_enviados: string[] | null
+          capi_falhas: number | null
+          conjunto_anuncio: string | null
+          corretor_ativo: boolean | null
+          corretor_id: string | null
+          corretor_nome: string | null
+          created_at: string | null
+          ctwa_clid: string | null
+          descartado: boolean | null
+          descartado_em: string | null
+          dia: string | null
+          empreendimento: string | null
+          empreendimento_canonico_id: string | null
+          form_id: string | null
+          form_name: string | null
+          formulario: string | null
+          lead_id: string | null
+          lead_score: number | null
+          lead_temperatura: string | null
+          lia_agendou: boolean | null
+          lia_descartado_em: string | null
+          lia_motivo: string | null
+          lia_nivel: string | null
+          lia_qualificado_em: string | null
+          lia_repassado_em: string | null
+          lia_status: string | null
+          meta_lead_id: string | null
+          minutos_ate_contato: number | null
+          motivo_descarte: string | null
+          motivo_descarte_code: string | null
+          negocio_em: string | null
+          origem: string | null
+          origem_detalhe: string | null
+          plataforma: string | null
+          primeiro_contato_em: string | null
+          qualificado_em: string | null
+          resultado_visita: string | null
+          saude: string | null
+          sem_contato: boolean | null
+          stage_changed_at: string | null
+          stage_id: string | null
+          stage_nome: string | null
+          stage_tipo: string | null
+          temperatura: string | null
+          teve_no_show: boolean | null
+          teve_visita_realizada: boolean | null
+          tipo_descarte: string | null
+          toques: number | null
+          ultimo_toque_em: string | null
+          venda_em: string | null
+          vgv_rateado: number | null
+          visita_marcada_em: string | null
+          visita_realizada_em: string | null
+          visitas_qtd: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_leads_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_leads_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_oa_campanha_resultado: {
         Row: {
@@ -15415,6 +16159,13 @@ export type Database = {
             foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_pdn_linhas"
             referencedColumns: ["pipeline_lead_id"]
           },
@@ -15480,6 +16231,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -15629,6 +16387,13 @@ export type Database = {
             columns: ["pipeline_lead_id"]
             isOneToOne: false
             referencedRelation: "v_fato_lead"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_midia_lead_jornada"
             referencedColumns: ["lead_id"]
           },
           {
@@ -16881,6 +17646,39 @@ export type Database = {
           content: string
           material_id: string
           similarity: number
+        }[]
+      }
+      midia_funil: {
+        Args: {
+          p_canal?: string
+          p_janela_dias?: number
+          p_nivel?: string
+          p_since: string
+          p_until: string
+        }
+        Returns: {
+          ad_id: string
+          adset_id: string
+          campaign_id: string
+          chave: string
+          contatados: number
+          cpl: number
+          custo_por_venda: number
+          custo_por_visita: number
+          descartados: number
+          impressions: number
+          leads: number
+          negocios: number
+          no_shows: number
+          nome: string
+          qualificados: number
+          sem_contato: number
+          spend: number
+          taxa_visita: number
+          vendas: number
+          vgv: number
+          visitas_marcadas: number
+          visitas_realizadas: number
         }[]
       }
       monitor_primeiro_contato_v1_coverage: { Args: never; Returns: undefined }
