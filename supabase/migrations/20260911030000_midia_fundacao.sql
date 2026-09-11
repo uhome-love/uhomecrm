@@ -438,3 +438,10 @@ select cron.schedule(
   );
   $cron$
 );
+
+-- ------------------------------------------------------------
+-- 9. Índices que faltavam pro cruzamento por lead ser rápido
+-- ------------------------------------------------------------
+create index if not exists idx_pipeline_leads_created_at on public.pipeline_leads (created_at);
+create index if not exists idx_visitas_pipeline_lead_id  on public.visitas (pipeline_lead_id);
+create index if not exists idx_lia_estado_lead_id        on public.lia_estado (lead_id);

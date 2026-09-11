@@ -71,15 +71,31 @@ function firstValue(list: Action[] | undefined): number {
   return list && list.length ? num(list[0].value) : 0;
 }
 
-async function graphGetAll(url: string, maxPages = 60): Promise<unknown[]> {
+// Pagina a Graph API. Se o Meta responder "reduce the amount of data"
+// (code 1) ou "too much data" (code 17/613 são rate limit), reduz o
+// `limit` pela metade e tenta de novo a partir da mesma página.
+async function graphGetAll(baseUrl: string, maxPages = 80): Promise<unknown[]> {
   const out: unknown[] = [];
-  let next: string | null = url;
+  const u = new URL(baseUrl);
+  let limit = Number(u.searchParams.get("limit") || "100");
+  let next: string | null = baseUrl;
   let pages = 0;
   while (next && pages < maxPages) {
     pages++;
     const res = await fetch(next);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      const code = data?.error?.code;
+      const msg = String(data?.error?.message || "");
+      const reduzir = code === 1 || /reduce the amount of data/i.test(msg);
+      if (reduzir && limit > 10) {
+        limit = Math.max(10, Math.floor(limit / 2));
+        const nu = new URL(next);
+        nu.searchParams.set("limit", String(limit));
+        next = nu.toString();
+        pages--; // não conta tentativa
+        continue;
+      }
       throw new Error(`Graph ${res.status}: ${JSON.stringify(data.error || data)}`);
     }
     for (const row of data.data || []) out.push(row);
@@ -118,7 +134,7 @@ async function syncInsights(
       level: "ad",
       time_increment: "1",
       time_range: JSON.stringify({ since: cursor, until: end }),
-      limit: "500",
+      limit: "200",
       access_token: token,
     });
     const rows = (await graphGetAll(`${META_BASE}/${account}/insights?${params}`)) as Row[];
@@ -170,11 +186,13 @@ async function syncInsights(
   return { rows: total, chunks };
 }
 
+// asset_feed_spec fica de fora de propósito: é pesado e derruba a chamada
+// ("Please reduce the amount of data"). object_story_spec já traz o essencial.
 const AD_FIELDS =
   "id,name,status,effective_status,adset_id,campaign_id,created_time,updated_time," +
   "adset{name},campaign{name}," +
   "creative{id,object_type,thumbnail_url,image_url,image_hash,video_id,title,body," +
-  "call_to_action_type,object_story_spec,asset_feed_spec,effective_object_story_id}";
+  "call_to_action_type,object_story_spec,effective_object_story_id}";
 
 function tipoCriativo(c: Record<string, any> | undefined): string {
   if (!c) return "outro";
@@ -201,8 +219,8 @@ async function syncCreatives(
   token: string,
   account: string,
 ): Promise<{ rows: number }> {
-  const params = new URLSearchParams({ fields: AD_FIELDS, limit: "200", access_token: token });
-  const ads = (await graphGetAll(`${META_BASE}/${account}/ads?${params}`, 80)) as Record<string, any>[];
+  const params = new URLSearchParams({ fields: AD_FIELDS, limit: "50", access_token: token });
+  const ads = (await graphGetAll(`${META_BASE}/${account}/ads?${params}`, 200)) as Record<string, any>[];
   const payload = ads.map((a) => {
     const c = a.creative || {};
     const spec = c.object_story_spec || {};
