@@ -181,66 +181,8 @@ end $$;
 -- ------------------------------------------------------------
 create or replace view public.v_midia_lead_jornada
 with (security_invoker = true) as
-with st as (
-  select id, tipo, nome from public.pipeline_stages
-),
-hist as (
-  select h.pipeline_lead_id,
-         min(h.created_at) filter (where s.tipo in ('qualificacao','aquecimento','visita','pos_visita','documentacao','proposta','contrato_gerado','venda')) as qualificado_em,
-         min(h.created_at) filter (where s.tipo in ('documentacao','proposta','contrato_gerado','venda')) as negocio_em,
-         min(h.created_at) filter (where s.tipo = 'descarte') as descartado_em,
-         min(h.created_at) filter (where s.tipo = 'sem_contato') as sem_contato_em
-  from public.pipeline_historico h
-  join st s on s.id = h.stage_novo_id
-  group by h.pipeline_lead_id
-),
-ativ as (
-  select a.pipeline_lead_id,
-         count(*) filter (where a.tipo in ('whatsapp','ligacao','contato','presencial','visita','nota','outro')) as toques,
-         min(a.created_at) filter (where a.tipo in ('whatsapp','ligacao','contato','presencial')) as primeiro_toque_em,
-         max(a.created_at) filter (where a.tipo in ('whatsapp','ligacao','contato','presencial','visita','nota','outro')) as ultimo_toque_em
-  from public.pipeline_atividades a
-  group by a.pipeline_lead_id
-),
-vis as (
-  select v.pipeline_lead_id,
-         count(*) as visitas_qtd,
-         min(v.created_at) as visita_marcada_em,
-         min(v.data_visita) filter (where v.status = 'realizada') as visita_realizada_em,
-         bool_or(v.status = 'no_show') as teve_no_show,
-         bool_or(v.status = 'realizada') as teve_visita_realizada,
-         max(v.resultado_visita) as resultado_visita
-  from public.visitas v
-  group by v.pipeline_lead_id
-),
-vend as (
-  select f.pipeline_lead_id,
-         min(f.data_assinatura) as venda_em,
-         sum(f.vgv_rateado) as vgv_rateado
-  from public.v_fato_venda f
-  where f.conta_como_venda
-  group by f.pipeline_lead_id
-),
-capi as (
-  select q.lead_id,
-         array_agg(distinct q.event_name) filter (where q.status = 'sent') as capi_enviados,
-         count(*) filter (where q.status = 'failed') as capi_falhas
-  from public.meta_capi_queue q
-  group by q.lead_id
-),
-lia as (
-  select l.lead_id,
-         max(l.status) as lia_status,
-         max(l.nivel) as lia_nivel,
-         max(l.qualificado_em) as lia_qualificado_em,
-         bool_or(coalesce(l.agendou,false)) as lia_agendou,
-         max(l.repassado_em) as lia_repassado_em,
-         max(l.descartado_em) as lia_descartado_em,
-         max(l.motivo) as lia_motivo
-  from public.lia_estado l
-  where l.lead_id is not null
-  group by l.lead_id
-)
+-- Subconsultas LATERAL (correlacionadas) para o filtro por created_at empurrar
+-- pro índice da pipeline_leads. Nunca agregar as tabelas inteiras em CTE.
 select
   pl.id                                   as lead_id,
   pl.created_at,
@@ -253,77 +195,90 @@ select
     when lower(coalesce(pl.origem,'')) like '%google%' then 'google'
     else 'outro'
   end                                     as canal,
-  pl.plataforma,
-  pl.origem,
-  pl.origem_detalhe,
-  pl.campanha_id                          as campaign_id,
-  pl.campanha,
-  pl.conjunto_anuncio,
-  pl.ad_id,
-  pl.anuncio,
-  pl.form_id,
-  pl.form_name,
-  pl.formulario,
-  pl.meta_lead_id,
-  pl.ctwa_clid,
-  pl.empreendimento,
-  pl.empreendimento_canonico_id,
-  pl.corretor_id,
-  pr.nome                                 as corretor_nome,
-  pl.stage_id,
-  s.tipo                                  as stage_tipo,
-  s.nome                                  as stage_nome,
-  pl.stage_changed_at,
-  pl.temperatura,
-  pl.lead_temperatura,
-  pl.lead_score,
-  -- contato
+  pl.plataforma, pl.origem, pl.origem_detalhe,
+  pl.campanha_id as campaign_id, pl.campanha, pl.conjunto_anuncio, pl.ad_id, pl.anuncio,
+  pl.form_id, pl.form_name, pl.formulario, pl.meta_lead_id, pl.ctwa_clid,
+  pl.empreendimento, pl.empreendimento_canonico_id,
+  pl.corretor_id, pr.nome as corretor_nome,
+  pl.stage_id, s.tipo as stage_tipo, s.nome as stage_nome, pl.stage_changed_at,
+  pl.temperatura, pl.lead_temperatura, pl.lead_score,
   coalesce(pl.primeiro_contato_em, ativ.primeiro_toque_em) as primeiro_contato_em,
   case when coalesce(pl.primeiro_contato_em, ativ.primeiro_toque_em) is not null
-       then round(extract(epoch from (coalesce(pl.primeiro_contato_em, ativ.primeiro_toque_em) - pl.created_at)) / 60)::integer end
-                                          as minutos_ate_contato,
-  coalesce(ativ.toques, 0)                as toques,
+       then round(extract(epoch from (coalesce(pl.primeiro_contato_em, ativ.primeiro_toque_em) - pl.created_at)) / 60)::integer end as minutos_ate_contato,
+  coalesce(ativ.toques, 0) as toques,
   ativ.ultimo_toque_em,
-  -- funil
   coalesce(hist.qualificado_em,
-           case when s.tipo in ('qualificacao','aquecimento','visita','pos_visita','documentacao','proposta','contrato_gerado','venda') then pl.stage_changed_at end)
-                                          as qualificado_em,
-  vis.visita_marcada_em,
-  vis.visita_realizada_em,
-  coalesce(vis.visitas_qtd, 0)            as visitas_qtd,
-  coalesce(vis.teve_no_show, false)       as teve_no_show,
+           case when s.tipo in ('qualificacao','aquecimento','visita','pos_visita','documentacao','proposta','contrato_gerado','venda') then pl.stage_changed_at end) as qualificado_em,
+  vis.visita_marcada_em, vis.visita_realizada_em,
+  coalesce(vis.visitas_qtd, 0) as visitas_qtd,
+  coalesce(vis.teve_no_show, false) as teve_no_show,
   coalesce(vis.teve_visita_realizada, false) as teve_visita_realizada,
   vis.resultado_visita,
   coalesce(hist.negocio_em,
-           case when s.tipo in ('documentacao','proposta','contrato_gerado','venda') then pl.stage_changed_at end)
-                                          as negocio_em,
-  vend.venda_em,
-  vend.vgv_rateado,
-  -- saídas
+           case when s.tipo in ('documentacao','proposta','contrato_gerado','venda') then pl.stage_changed_at end) as negocio_em,
+  vend.venda_em, vend.vgv_rateado,
   (pl.motivo_descarte is not null or s.tipo = 'descarte') as descartado,
   coalesce(hist.descartado_em, case when s.tipo = 'descarte' then pl.stage_changed_at end) as descartado_em,
-  pl.motivo_descarte,
-  pl.motivo_descarte_code,
-  pl.tipo_descarte,
-  (s.tipo = 'sem_contato')                as sem_contato,
-  coalesce(pl.arquivado, false)           as arquivado,
-  coalesce(pr.ativo, true)                as corretor_ativo,
+  pl.motivo_descarte, pl.motivo_descarte_code, pl.tipo_descarte,
+  (s.tipo = 'sem_contato') as sem_contato,
+  coalesce(pl.arquivado, false) as arquivado,
+  coalesce(pr.ativo, true) as corretor_ativo,
   public.lead_saude_status(ativ.ultimo_toque_em, now(), s.tipo) as saude,
-  -- LIA
   lia.lia_status, lia.lia_nivel, lia.lia_qualificado_em, coalesce(lia.lia_agendou,false) as lia_agendou,
   lia.lia_repassado_em, lia.lia_descartado_em, lia.lia_motivo,
-  -- CAPI
-  coalesce(capi.capi_enviados, '{}')      as capi_enviados,
-  coalesce(capi.capi_falhas, 0)           as capi_falhas
+  coalesce(capi.capi_enviados, '{}') as capi_enviados,
+  coalesce(capi.capi_falhas, 0) as capi_falhas
 from public.pipeline_leads pl
-left join st   s    on s.id = pl.stage_id
+left join public.pipeline_stages s on s.id = pl.stage_id
 left join public.profiles pr on pr.user_id = pl.corretor_id
-left join hist      on hist.pipeline_lead_id = pl.id
-left join ativ      on ativ.pipeline_lead_id = pl.id
-left join vis       on vis.pipeline_lead_id = pl.id
-left join vend      on vend.pipeline_lead_id = pl.id
-left join capi      on capi.lead_id = pl.id
-left join lia       on lia.lead_id = pl.id;
+left join lateral (
+  select
+    min(h.created_at) filter (where st.tipo in ('qualificacao','aquecimento','visita','pos_visita','documentacao','proposta','contrato_gerado','venda')) as qualificado_em,
+    min(h.created_at) filter (where st.tipo in ('documentacao','proposta','contrato_gerado','venda')) as negocio_em,
+    min(h.created_at) filter (where st.tipo = 'descarte') as descartado_em
+  from public.pipeline_historico h
+  join public.pipeline_stages st on st.id = h.stage_novo_id
+  where h.pipeline_lead_id = pl.id
+) hist on true
+left join lateral (
+  select
+    count(*) filter (where a.tipo in ('whatsapp','ligacao','contato','presencial','visita','nota','outro')) as toques,
+    min(a.created_at) filter (where a.tipo in ('whatsapp','ligacao','contato','presencial')) as primeiro_toque_em,
+    max(a.created_at) filter (where a.tipo in ('whatsapp','ligacao','contato','presencial','visita','nota','outro')) as ultimo_toque_em
+  from public.pipeline_atividades a
+  where a.pipeline_lead_id = pl.id
+) ativ on true
+left join lateral (
+  select
+    count(*) as visitas_qtd,
+    min(v.created_at) as visita_marcada_em,
+    min(v.data_visita) filter (where v.status = 'realizada') as visita_realizada_em,
+    bool_or(v.status = 'no_show') as teve_no_show,
+    bool_or(v.status = 'realizada') as teve_visita_realizada,
+    max(v.resultado_visita) as resultado_visita
+  from public.visitas v
+  where v.pipeline_lead_id = pl.id
+) vis on true
+left join lateral (
+  select min(f.data_assinatura) as venda_em, sum(f.vgv_rateado) as vgv_rateado
+  from public.v_fato_venda f
+  where f.pipeline_lead_id = pl.id and f.conta_como_venda
+) vend on true
+left join lateral (
+  select
+    array_agg(distinct q.event_name) filter (where q.status = 'sent') as capi_enviados,
+    count(*) filter (where q.status = 'failed') as capi_falhas
+  from public.meta_capi_queue q
+  where q.lead_id = pl.id
+) capi on true
+left join lateral (
+  select
+    max(l.status) as lia_status, max(l.nivel) as lia_nivel, max(l.qualificado_em) as lia_qualificado_em,
+    bool_or(coalesce(l.agendou,false)) as lia_agendou, max(l.repassado_em) as lia_repassado_em,
+    max(l.descartado_em) as lia_descartado_em, max(l.motivo) as lia_motivo
+  from public.lia_estado l
+  where l.lead_id = pl.id
+) lia on true;
 
 comment on view public.v_midia_lead_jornada is 'Uhome Mídia: jornada ponta a ponta de cada lead (clique → contato → LIA → qualificação → visita → negócio → venda | descarte | arquivo | CAPI). Uma linha por lead. Filtrar por created_at no app.';
 
@@ -372,9 +327,10 @@ as $$
 with j as (
   select *
   from public.v_midia_lead_jornada
-  where canal = p_canal
-    and dia between p_since and p_until
+  where created_at >= (p_since::timestamp at time zone 'America/Sao_Paulo')
+    and created_at <  ((p_until + 1)::timestamp at time zone 'America/Sao_Paulo')
     and created_at <= now() - make_interval(days => p_janela_dias)
+    and canal = p_canal
 ),
 leads as (
   select
