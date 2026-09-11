@@ -7550,6 +7550,198 @@ export type Database = {
           },
         ]
       }
+      midia_lead_jornada: {
+        Row: {
+          ad_id: string | null
+          anuncio: string | null
+          arquivado: boolean | null
+          campaign_id: string | null
+          campanha: string | null
+          canal: string | null
+          capi_enviados: string[] | null
+          capi_falhas: number | null
+          conjunto_anuncio: string | null
+          corretor_ativo: boolean | null
+          corretor_id: string | null
+          corretor_nome: string | null
+          created_at: string | null
+          ctwa_clid: string | null
+          descartado: boolean | null
+          descartado_em: string | null
+          dia: string | null
+          empreendimento: string | null
+          empreendimento_canonico_id: string | null
+          form_id: string | null
+          form_name: string | null
+          formulario: string | null
+          lead_id: string
+          lead_score: number | null
+          lead_temperatura: string | null
+          lia_agendou: boolean | null
+          lia_descartado_em: string | null
+          lia_motivo: string | null
+          lia_nivel: string | null
+          lia_qualificado_em: string | null
+          lia_repassado_em: string | null
+          lia_status: string | null
+          meta_lead_id: string | null
+          minutos_ate_contato: number | null
+          motivo_descarte: string | null
+          motivo_descarte_code: string | null
+          negocio_em: string | null
+          origem: string | null
+          origem_detalhe: string | null
+          plataforma: string | null
+          primeiro_contato_em: string | null
+          qualificado_em: string | null
+          refreshed_at: string | null
+          resultado_visita: string | null
+          saude: string | null
+          sem_contato: boolean | null
+          stage_changed_at: string | null
+          stage_id: string | null
+          stage_nome: string | null
+          stage_tipo: string | null
+          temperatura: string | null
+          teve_no_show: boolean | null
+          teve_visita_realizada: boolean | null
+          tipo_descarte: string | null
+          toques: number | null
+          ultimo_toque_em: string | null
+          venda_em: string | null
+          vgv_rateado: number | null
+          visita_marcada_em: string | null
+          visita_realizada_em: string | null
+          visitas_qtd: number | null
+        }
+        Insert: {
+          ad_id?: string | null
+          anuncio?: string | null
+          arquivado?: boolean | null
+          campaign_id?: string | null
+          campanha?: string | null
+          canal?: string | null
+          capi_enviados?: string[] | null
+          capi_falhas?: number | null
+          conjunto_anuncio?: string | null
+          corretor_ativo?: boolean | null
+          corretor_id?: string | null
+          corretor_nome?: string | null
+          created_at?: string | null
+          ctwa_clid?: string | null
+          descartado?: boolean | null
+          descartado_em?: string | null
+          dia?: string | null
+          empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
+          form_id?: string | null
+          form_name?: string | null
+          formulario?: string | null
+          lead_id: string
+          lead_score?: number | null
+          lead_temperatura?: string | null
+          lia_agendou?: boolean | null
+          lia_descartado_em?: string | null
+          lia_motivo?: string | null
+          lia_nivel?: string | null
+          lia_qualificado_em?: string | null
+          lia_repassado_em?: string | null
+          lia_status?: string | null
+          meta_lead_id?: string | null
+          minutos_ate_contato?: number | null
+          motivo_descarte?: string | null
+          motivo_descarte_code?: string | null
+          negocio_em?: string | null
+          origem?: string | null
+          origem_detalhe?: string | null
+          plataforma?: string | null
+          primeiro_contato_em?: string | null
+          qualificado_em?: string | null
+          refreshed_at?: string | null
+          resultado_visita?: string | null
+          saude?: string | null
+          sem_contato?: boolean | null
+          stage_changed_at?: string | null
+          stage_id?: string | null
+          stage_nome?: string | null
+          stage_tipo?: string | null
+          temperatura?: string | null
+          teve_no_show?: boolean | null
+          teve_visita_realizada?: boolean | null
+          tipo_descarte?: string | null
+          toques?: number | null
+          ultimo_toque_em?: string | null
+          venda_em?: string | null
+          vgv_rateado?: number | null
+          visita_marcada_em?: string | null
+          visita_realizada_em?: string | null
+          visitas_qtd?: number | null
+        }
+        Update: {
+          ad_id?: string | null
+          anuncio?: string | null
+          arquivado?: boolean | null
+          campaign_id?: string | null
+          campanha?: string | null
+          canal?: string | null
+          capi_enviados?: string[] | null
+          capi_falhas?: number | null
+          conjunto_anuncio?: string | null
+          corretor_ativo?: boolean | null
+          corretor_id?: string | null
+          corretor_nome?: string | null
+          created_at?: string | null
+          ctwa_clid?: string | null
+          descartado?: boolean | null
+          descartado_em?: string | null
+          dia?: string | null
+          empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
+          form_id?: string | null
+          form_name?: string | null
+          formulario?: string | null
+          lead_id?: string
+          lead_score?: number | null
+          lead_temperatura?: string | null
+          lia_agendou?: boolean | null
+          lia_descartado_em?: string | null
+          lia_motivo?: string | null
+          lia_nivel?: string | null
+          lia_qualificado_em?: string | null
+          lia_repassado_em?: string | null
+          lia_status?: string | null
+          meta_lead_id?: string | null
+          minutos_ate_contato?: number | null
+          motivo_descarte?: string | null
+          motivo_descarte_code?: string | null
+          negocio_em?: string | null
+          origem?: string | null
+          origem_detalhe?: string | null
+          plataforma?: string | null
+          primeiro_contato_em?: string | null
+          qualificado_em?: string | null
+          refreshed_at?: string | null
+          resultado_visita?: string | null
+          saude?: string | null
+          sem_contato?: boolean | null
+          stage_changed_at?: string | null
+          stage_id?: string | null
+          stage_nome?: string | null
+          stage_tipo?: string | null
+          temperatura?: string | null
+          teve_no_show?: boolean | null
+          teve_visita_realizada?: boolean | null
+          tipo_descarte?: string | null
+          toques?: number | null
+          ultimo_toque_em?: string | null
+          venda_em?: string | null
+          vgv_rateado?: number | null
+          visita_marcada_em?: string | null
+          visita_realizada_em?: string | null
+          visitas_qtd?: number | null
+        }
+        Relationships: []
+      }
       midia_recomendacoes: {
         Row: {
           acao: Json | null
@@ -17681,6 +17873,7 @@ export type Database = {
           visitas_realizadas: number
         }[]
       }
+      midia_refresh_jornada: { Args: { p_dias?: number }; Returns: number }
       monitor_primeiro_contato_v1_coverage: { Args: never; Returns: undefined }
       norm_empreendimento: { Args: { s: string }; Returns: string }
       normalizar_bairro: { Args: { _txt: string }; Returns: string }
