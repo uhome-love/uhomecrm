@@ -1025,7 +1025,7 @@ Deno.serve(async (req) => {
                     pipeline_lead_id: metaDispatch.lead_id,
                     tipo: "whatsapp",
                     titulo: `🔥 Interesse confirmado — Disparo: ${tplName}`,
-                    descricao: `Lead respondeu SIM ao template "${tplName}" enviado para o Pipeline Ativo. Manter atribuição atual e entrar em contato imediato.`,
+                    descricao: `Lead respondeu com interesse ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao template "${tplName}" enviado para o Pipeline Ativo. Manter atribuição atual e entrar em contato imediato.`,
                     data: new Date().toISOString().slice(0, 10),
                     status: "concluida",
                     responsavel_id: currentLead?.corretor_id || null,
@@ -1035,7 +1035,7 @@ Deno.serve(async (req) => {
                     await supabase.from("notifications").insert({
                       user_id: currentLead.corretor_id,
                       titulo: `🔥 ${leadNome} demonstrou interesse no disparo`,
-                      mensagem: `Respondeu SIM ao template "${tplName}". Lead permanece com você no pipeline ativo. Entre em contato agora!`,
+                      mensagem: `Respondeu "${(buttonId ? buttonTitle : mensagemTexto).slice(0, 80)}" ao disparo "${tplName}". O lead continua com você — entre em contato agora!`,
                       tipo: "lead_reengajado",
                       categoria: "leads",
                       dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
