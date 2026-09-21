@@ -943,54 +943,101 @@ Deno.serve(async (req) => {
                   }
 
 
-                  // Caso o lead já estivesse ATIVO no pipeline: a RPC já registrou a atividade
-                  // e manteve o corretor. Apenas notifica o corretor atual e segue.
-                  if (alreadyActive) {
-                    if (activeCorretorId) {
-                      await supabase.from("notifications").insert({
-                        user_id: activeCorretorId,
-                        titulo: `🔥 Lead respondeu SIM ao disparo (já é seu)`,
-                        mensagem: `Lead respondeu SIM ao template "${tplName}". Já está ativo no seu pipeline — entre em contato agora!`,
+                  // Descobre o DONO ATUAL do lead efetivo — independentemente do caminho
+                  // que a RPC tomou (já ativo, reativado ou criado). Se houver corretor,
+                  // ele SEMPRE é avisado: nunca perde a resposta do cliente.
+                  let ownerId: string | null = activeCorretorId;
+                  let ownerLeadNome: string = currentLead?.nome || "Lead";
+                  try {
+                    const { data: effLead } = await supabase
+                      .from("pipeline_leads")
+                      .select("corretor_id, nome")
+                      .eq("id", effectiveLeadId)
+                      .maybeSingle();
+                    if (effLead) {
+                      ownerId = effLead.corretor_id ?? ownerId;
+                      ownerLeadNome = effLead.nome || ownerLeadNome;
+                    }
+                  } catch (e) {
+                    console.error("lookup dono do lead efetivo error:", e);
+                  }
+
+                  if (ownerId) {
+                    try {
+                      const { error: notifErr } = await supabase.from("notifications").insert({
+                        user_id: ownerId,
+                        titulo: `🔥 ${ownerLeadNome} respondeu SIM ao disparo`,
+                        mensagem: `Respondeu "${(buttonId ? buttonTitle : mensagemTexto).slice(0, 80)}" ao disparo "${tplName}". O lead continua com você — entre em contato agora!`,
                         tipo: "lead_reengajado",
                         categoria: "leads",
                         dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
                       });
+                      if (notifErr) throw notifErr;
+                      console.log(`🔔 Corretor ${ownerId} notificado — lead ${effectiveLeadId} respondeu SIM (origem=${audSrc})`);
+                    } catch (e) {
+                      console.error("notify corretor dono (SIM) error:", e);
+                      try {
+                        await supabase.from("ops_events").insert({
+                          fn: "whatsapp-webhook",
+                          level: "error",
+                          category: "notificacao",
+                          message: "notificacao_reengajamento_falhou",
+                          ctx: { pipeline_lead_id: effectiveLeadId, corretor_id: ownerId, audience_source: audSrc },
+                          error_detail: String((e as Error)?.message || e).slice(0, 300),
+                        });
+                      } catch (_) { /* ops_events é best-effort */ }
                     }
-                    continue;
                   }
+
+                  if (alreadyActive) continue;
 
                   // Atividade na timeline registrando o reengajamento
                   await supabase.from("pipeline_atividades").insert({
                     pipeline_lead_id: effectiveLeadId,
                     tipo: "whatsapp",
-                    titulo: `🔥 Lead reengajado pelo template "${tplName}" → Fila do CEO`,
-                    descricao: `Lead respondeu SIM ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao disparo do template "${tplName}". Reativado e enviado para a Fila do CEO para distribuição manual.`,
+                    titulo: `🔥 Lead reengajado pelo template "${tplName}"${ownerId ? " — mantido com o corretor" : " → Fila do CEO"}`,
+                    descricao: `Lead respondeu SIM ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao disparo do template "${tplName}". ${ownerId ? "Corretor atual notificado — atribuição mantida." : "Reativado e enviado para a Fila do CEO para distribuição manual."}`,
                     data: new Date().toISOString().slice(0, 10),
                     status: "concluida",
                   });
 
 
-                  // Notifica admins/CEO sobre novo lead reengajado na fila
-                  try {
-                    const { data: admins } = await supabase
-                      .from("user_roles")
-                      .select("user_id")
-                      .in("role", ["admin", "ceo", "gestor"]);
-                    const leadNome = currentLead?.nome || "Lead";
-                    for (const a of admins || []) {
-                      await supabase.from("notifications").insert({
-                        user_id: a.user_id,
-                        titulo: `🔥 Lead reengajado na Fila do CEO: ${leadNome}`,
-                        mensagem: `${leadNome} respondeu SIM ao template "${tplName}" e está na Fila do CEO aguardando distribuição manual.`,
-                        tipo: "lead_reengajado",
-                        categoria: "leads",
-                        dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "fila_ceo" },
-                      });
+                  // Notifica admins/gestores/diretoria sobre lead reengajado na fila.
+                  // ATENÇÃO: "ceo" NÃO existe no enum app_role — usar apenas valores válidos,
+                  // senão a query inteira falha e ninguém é notificado.
+                  if (!ownerId) {
+                    try {
+                      const { data: admins, error: rolesErr } = await supabase
+                        .from("user_roles")
+                        .select("user_id")
+                        .in("role", ["admin", "gestor", "diretor"]);
+                      if (rolesErr) throw rolesErr;
+                      for (const a of admins || []) {
+                        await supabase.from("notifications").insert({
+                          user_id: a.user_id,
+                          titulo: `🔥 Lead reengajado na Fila do CEO: ${ownerLeadNome}`,
+                          mensagem: `${ownerLeadNome} respondeu SIM ao template "${tplName}" e está na Fila do CEO aguardando distribuição manual.`,
+                          tipo: "lead_reengajado",
+                          categoria: "leads",
+                          dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "fila_ceo" },
+                        });
+                      }
+                    } catch (e) {
+                      console.error("notify CEO fila error:", e);
+                      try {
+                        await supabase.from("ops_events").insert({
+                          fn: "whatsapp-webhook",
+                          level: "error",
+                          category: "notificacao",
+                          message: "notificacao_fila_ceo_falhou",
+                          ctx: { pipeline_lead_id: effectiveLeadId, audience_source: audSrc },
+                          error_detail: String((e as Error)?.message || e).slice(0, 300),
+                        });
+                      } catch (_) { /* best-effort */ }
                     }
-                  } catch (e) {
-                    console.error("notify CEO fila error:", e);
                   }
                   continue;
+
 
                 } else if (justNotifyCorretor && buttonResp === "nao") {
                   // Pipeline ativo / visita amanhã: NÃO inativa, NÃO arquiva, NÃO troca corretor.
