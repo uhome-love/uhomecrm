@@ -978,9 +978,12 @@ Deno.serve(async (req) => {
                       console.error("notify corretor dono (SIM) error:", e);
                       try {
                         await supabase.from("ops_events").insert({
-                          tipo: "notificacao_reengajamento_falhou",
-                          origem: "whatsapp-webhook",
-                          detalhe: `lead=${effectiveLeadId} corretor=${ownerId} erro=${String((e as Error)?.message || e).slice(0, 300)}`,
+                          fn: "whatsapp-webhook",
+                          level: "error",
+                          category: "notificacao",
+                          message: "notificacao_reengajamento_falhou",
+                          ctx: { pipeline_lead_id: effectiveLeadId, corretor_id: ownerId, audience_source: audSrc },
+                          error_detail: String((e as Error)?.message || e).slice(0, 300),
                         });
                       } catch (_) { /* ops_events é best-effort */ }
                     }
@@ -1023,9 +1026,12 @@ Deno.serve(async (req) => {
                       console.error("notify CEO fila error:", e);
                       try {
                         await supabase.from("ops_events").insert({
-                          tipo: "notificacao_fila_ceo_falhou",
-                          origem: "whatsapp-webhook",
-                          detalhe: `lead=${effectiveLeadId} erro=${String((e as Error)?.message || e).slice(0, 300)}`,
+                          fn: "whatsapp-webhook",
+                          level: "error",
+                          category: "notificacao",
+                          message: "notificacao_fila_ceo_falhou",
+                          ctx: { pipeline_lead_id: effectiveLeadId, audience_source: audSrc },
+                          error_detail: String((e as Error)?.message || e).slice(0, 300),
                         });
                       } catch (_) { /* best-effort */ }
                     }
