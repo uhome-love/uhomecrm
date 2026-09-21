@@ -992,7 +992,28 @@ Deno.serve(async (req) => {
                   }
                   continue;
 
-                } else if (buttonResp === "sim" && justNotifyCorretor) {
+                } else if (justNotifyCorretor && buttonResp === "nao") {
+                  // Pipeline ativo / visita amanhã: NÃO inativa, NÃO arquiva, NÃO troca corretor.
+                  // Só registra e avisa o corretor dono para ele decidir o que fazer.
+                  const tplName = metaDispatch.template_name || "reengajamento";
+                  const leadNome = currentLead?.nome || "Lead";
+                  await supabase.from("pipeline_leads").update({
+                    reengajamento_status: statusNao,
+                  }).eq("id", metaDispatch.lead_id);
+
+                  await supabase.from("pipeline_atividades").insert({
+                    pipeline_lead_id: metaDispatch.lead_id,
+                    tipo: "whatsapp",
+                    titulo: `🚫 Respondeu NÃO ao disparo: ${tplName}`,
+                    descricao: `Lead do Pipeline Ativo respondeu NÃO ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao template "${tplName}". Lead mantido com o corretor atual, na mesma etapa — sem descarte automático.`,
+                    data: new Date().toISOString().slice(0, 10),
+                    status: "concluida",
+                    responsavel_id: currentLead?.corretor_id || null,
+                  });
+
+                  console.log(`🚫 Lead ${metaDispatch.lead_id} (origem=${audSrc}) respondeu NÃO — mantido com o corretor, sem descarte`);
+                  continue;
+                } else if (justNotifyCorretor && (buttonResp === "sim" || (!buttonResp && isPositiveIntent(mensagemTexto)))) {
                   // Pipeline ativo / visita amanhã — não move stage, não chama roleta. Só marca interesse + notifica corretor atual.
                   await supabase.from("pipeline_leads").update({
                     reengajamento_status: isWave2 ? "respondeu_sim_wave2" : "respondeu_sim",
@@ -1004,7 +1025,7 @@ Deno.serve(async (req) => {
                     pipeline_lead_id: metaDispatch.lead_id,
                     tipo: "whatsapp",
                     titulo: `🔥 Interesse confirmado — Disparo: ${tplName}`,
-                    descricao: `Lead respondeu SIM ao template "${tplName}" enviado para o Pipeline Ativo. Manter atribuição atual e entrar em contato imediato.`,
+                    descricao: `Lead respondeu com interesse ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao template "${tplName}" enviado para o Pipeline Ativo. Manter atribuição atual e entrar em contato imediato.`,
                     data: new Date().toISOString().slice(0, 10),
                     status: "concluida",
                     responsavel_id: currentLead?.corretor_id || null,
@@ -1014,7 +1035,7 @@ Deno.serve(async (req) => {
                     await supabase.from("notifications").insert({
                       user_id: currentLead.corretor_id,
                       titulo: `🔥 ${leadNome} demonstrou interesse no disparo`,
-                      mensagem: `Respondeu SIM ao template "${tplName}". Lead permanece com você no pipeline ativo. Entre em contato agora!`,
+                      mensagem: `Respondeu "${(buttonId ? buttonTitle : mensagemTexto).slice(0, 80)}" ao disparo "${tplName}". O lead continua com você — entre em contato agora!`,
                       tipo: "lead_reengajado",
                       categoria: "leads",
                       dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
@@ -1241,6 +1262,40 @@ async function handleUnknownReply(
       status: "concluida",
       responsavel_id: lead.corretor_id || null,
     });
+
+    // Resposta "solta" (sem casar com o wamid do disparo): se este lead recebeu um disparo
+    // de PIPELINE ATIVO nas últimas 72h e a resposta indica interesse, avisa o corretor dono.
+    // Nunca troca de corretor, nunca muda etapa, nunca chama roleta.
+    try {
+      if (lead.corretor_id && isPositiveIntent(msgText)) {
+        const desde = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+        const { data: dispPA } = await supabase
+          .from("reengajamento_meta_disparos")
+          .select("id, template_name, sent_at")
+          .eq("lead_id", lead.id)
+          .eq("audience_source", "pipeline_ativo")
+          .gte("sent_at", desde)
+          .order("sent_at", { ascending: false })
+          .limit(1);
+        const disparo = dispPA?.[0];
+        if (disparo) {
+          const tplName = disparo.template_name || "reengajamento";
+          await supabase.from("notifications").insert({
+            user_id: lead.corretor_id,
+            titulo: `🔥 ${lead.nome || "Lead"} demonstrou interesse no disparo`,
+            mensagem: `Respondeu "${msgText.slice(0, 80)}" ao disparo "${tplName}". O lead continua com você — entre em contato agora!`,
+            tipo: "lead_reengajado",
+            categoria: "leads",
+            dados: { pipeline_lead_id: lead.id, template: tplName, audience_source: "pipeline_ativo", route: "pipeline_ativo_keep" },
+          });
+          console.log(`🔔 Resposta solta de ${lead.id} casada com disparo pipeline_ativo — corretor notificado`);
+        }
+      }
+    } catch (e) {
+      console.error("notify corretor (resposta solta pipeline_ativo) error:", e);
+    }
+
+
 
     // Log + AI reply for existing lead without campaign send
     await logWhatsAppEntry(supabase, {
