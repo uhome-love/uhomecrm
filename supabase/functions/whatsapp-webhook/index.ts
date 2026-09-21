@@ -992,7 +992,28 @@ Deno.serve(async (req) => {
                   }
                   continue;
 
-                } else if (buttonResp === "sim" && justNotifyCorretor) {
+                } else if (justNotifyCorretor && buttonResp === "nao") {
+                  // Pipeline ativo / visita amanhã: NÃO inativa, NÃO arquiva, NÃO troca corretor.
+                  // Só registra e avisa o corretor dono para ele decidir o que fazer.
+                  const tplName = metaDispatch.template_name || "reengajamento";
+                  const leadNome = currentLead?.nome || "Lead";
+                  await supabase.from("pipeline_leads").update({
+                    reengajamento_status: statusNao,
+                  }).eq("id", metaDispatch.lead_id);
+
+                  await supabase.from("pipeline_atividades").insert({
+                    pipeline_lead_id: metaDispatch.lead_id,
+                    tipo: "whatsapp",
+                    titulo: `🚫 Respondeu NÃO ao disparo: ${tplName}`,
+                    descricao: `Lead do Pipeline Ativo respondeu NÃO ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao template "${tplName}". Lead mantido com o corretor atual, na mesma etapa — sem descarte automático.`,
+                    data: new Date().toISOString().slice(0, 10),
+                    status: "concluida",
+                    responsavel_id: currentLead?.corretor_id || null,
+                  });
+
+                  console.log(`🚫 Lead ${metaDispatch.lead_id} (origem=${audSrc}) respondeu NÃO — mantido com o corretor, sem descarte`);
+                  continue;
+                } else if (justNotifyCorretor && (buttonResp === "sim" || (!buttonResp && isPositiveIntent(mensagemTexto)))) {
                   // Pipeline ativo / visita amanhã — não move stage, não chama roleta. Só marca interesse + notifica corretor atual.
                   await supabase.from("pipeline_leads").update({
                     reengajamento_status: isWave2 ? "respondeu_sim_wave2" : "respondeu_sim",
