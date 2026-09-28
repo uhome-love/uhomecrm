@@ -2,7 +2,7 @@
 // Regras: sem preço, tabela ou planta; nunca usar o termo "área privativa".
 
 export const LANDING_SLUG = "casa-tua-canoas";
-export const YOUTUBE_ID = "PovnF-uY58k";
+export const YOUTUBE_ID = "PovnF-uY58k"; // filme institucional (não usado na página; vídeo atual = tour vertical)
 
 /** Lista ÚNICA de fotos da galeria (renders oficiais servidos em /casatua/).
  *  `src` vazio = card placeholder com legenda. Nunca incluir plantas. */
@@ -14,7 +14,7 @@ export const GALERIA: { legenda: string; src?: string }[] = [
   { legenda: "Academia", src: "/casatua/academia.jpg" },
 ];
 
-export const CHIPS = ["3 e 4 dormitórios", "2 suítes", "Pátio com churrasqueira", "Espaço p/ piscina", "2 vagas"];
+export const CHIPS = ["3 e 4 dormitórios", "Suíte", "Terraço", "Espaço p/ piscina", "2 vagas", "157 a 170 m²"];
 
 export const LAZER = [
   "Piscinas adulto e infantil",

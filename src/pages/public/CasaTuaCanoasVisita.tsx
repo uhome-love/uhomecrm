@@ -11,7 +11,7 @@ import VideoLite from "@/components/landing-casatua-canoas/VideoLite";
 import GaleriaSnap from "@/components/landing-casatua-canoas/GaleriaSnap";
 import QuizToques from "@/components/landing-casatua-canoas/QuizToques";
 import ReservaVisita from "@/components/landing-casatua-canoas/ReservaVisita";
-import { CHIPS, LAZER, LANDING_SLUG, PROXIMIDADES, YOUTUBE_ID, type QuizKey } from "@/config/landingCasaTuaCanoas";
+import { CHIPS, LAZER, LANDING_SLUG, PROXIMIDADES, type QuizKey } from "@/config/landingCasaTuaCanoas";
 
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
@@ -76,7 +76,7 @@ export default function CasaTuaCanoasVisita() {
         </div>
         <h1 className="px-[18px] pb-2 pt-5 text-[26px] font-extrabold leading-[1.15]">Dá uma volta pela casa que pode ser sua</h1>
         <p className="px-[18px] pb-4 text-sm text-[hsl(var(--lp-muted))]">Casas em condomínio no Marechal Rondon, com pátio próprio e clube completo.</p>
-        <VideoLite id={YOUTUBE_ID} />
+        <VideoLite />
         <div className="flex flex-wrap gap-2 px-[18px] py-4">
           {CHIPS.map((c) => (
             <span key={c} className="rounded-full bg-[hsl(var(--lp-blue-soft))] px-3 py-1.5 text-xs font-semibold text-[hsl(var(--lp-blue-ink))]">{c}</span>
