@@ -16,6 +16,7 @@ export const PUBLIC_ROUTES: string[] = [
   "/vitrine/:id",
   "/placar-tv",
   "/imovel/:codigo",
+  "/v/casa-tua-canoas",
 ];
 
 // Dinâmicas registradas em pageRegistry.DYNAMIC_PATTERNS + rotas extras no App.tsx

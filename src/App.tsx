@@ -62,6 +62,7 @@ const VagaPage = lazyRetry(() => import("./pages/VagaPage"));
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const CasaTuaCanoasQuiz = lazyRetry(() => import("./pages/CasaTuaCanoasQuiz"));
+const CasaTuaCanoasVisita = lazyRetry(() => import("./pages/public/CasaTuaCanoasVisita"));
 const LiaTeste = lazyRetry(() => import("./pages/LiaTeste"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
 const PreviewRelatorioGeral = lazyRetry(() => import("./pages/PreviewRelatorioGeral"));
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/vaga" element={<Suspense fallback={<PageLoader />}><VagaPage /></Suspense>} />
               <Route path="/casatua" element={<Suspense fallback={<PageLoader />}><CasaTuaLanding /></Suspense>} />
               <Route path="/casatuacanoas-quiz" element={<Suspense fallback={<PageLoader />}><CasaTuaCanoasQuiz /></Suspense>} />
+              <Route path="/v/casa-tua-canoas" element={<Suspense fallback={<PageLoader />}><CasaTuaCanoasVisita /></Suspense>} />
               <Route path="/lia-teste" element={<Suspense fallback={<PageLoader />}><LiaTeste /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
               <Route path="/preview-relatorio-geral" element={<Suspense fallback={<PageLoader />}><PreviewRelatorioGeral /></Suspense>} />

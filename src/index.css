@@ -931,3 +931,28 @@ body.arena-mode .sidebar-container,
 body.arena-mode [data-sidebar] {
   display: none !important;
 }
+
+/* Página pública Casa Tua Canoas (/v/casa-tua-canoas) — tokens escopados */
+.lp-casatua {
+  --lp-bg: 225 22% 96%;
+  --lp-white: 0 0% 100%;
+  --lp-ink: 229 32% 12%;
+  --lp-muted: 230 10% 38%;
+  --lp-line: 230 25% 93%;
+  --lp-line-2: 226 32% 90%;
+  --lp-soft: 228 33% 98%;
+  --lp-blue: 229 100% 64%;
+  --lp-blue-ink: 229 63% 48%;
+  --lp-blue-soft: 229 100% 97%;
+  --lp-green-bg: 145 52% 94%;
+  --lp-green-ink: 146 70% 25%;
+  --lp-navy: 232 70% 16%;
+  --lp-navy-2: 224 64% 33%;
+  --lp-ph-1: 219 30% 90%;
+  --lp-ph-2: 219 26% 79%;
+  --lp-placeholder: 222 12% 75%;
+  font-family: "Montserrat", sans-serif;
+}
+.lp-casatua button, .lp-casatua input { font-family: inherit; }
+.lp-noscroll { scrollbar-width: none; }
+.lp-noscroll::-webkit-scrollbar { display: none; }
