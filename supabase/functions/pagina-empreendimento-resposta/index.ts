@@ -1,9 +1,10 @@
 // pagina-empreendimento-resposta — endpoint PÚBLICO da página pós-formulário
 // (/v/casa-tua-canoas). Só grava em pagina_empreendimento_respostas.
-// Nunca lê nem devolve dados de leads. Fase 1: sem vínculo com pipeline.
+// Nunca devolve dados de leads. Fase 2: tenta vincular ao lead e avisar o corretor (best-effort).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3";
 import { corsHeaders } from "../_shared/cors.ts";
+import { vincularSeguro } from "../_shared/vincularRespostaPagina.ts";
 
 const MAX_BYTES = 4096;
 const SLUGS = ["casa-tua-canoas"] as const;
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
     ]);
     if ((ipCount ?? 0) >= 5 || (telCount ?? 0) >= 3) return json({ error: "rate_limited" }, 429);
 
-    const { error } = await supabase.from("pagina_empreendimento_respostas").insert({
+    const { data: row, error } = await supabase.from("pagina_empreendimento_respostas").insert({
       empreendimento_slug: b.slug,
       form_ref: b.f ?? null,
       telefone_digitado: digits,
@@ -81,8 +82,10 @@ Deno.serve(async (req) => {
       utm: b.utm,
       user_agent: (req.headers.get("user-agent") ?? "").slice(0, 300),
       ip_hash: ipHash,
-    });
+    }).select("id, status, lead_id, telefone_normalizado, telefone_digitado, respostas, periodo_visita").single();
     if (error) throw error;
+    // Vínculo best-effort: nunca falha a resposta ao visitante, nunca devolve dados do lead.
+    await vincularSeguro(supabase, row, "pagina-empreendimento-resposta");
     return json({ ok: true });
   } catch (e) {
     console.error("pagina-empreendimento-resposta error:", (e as Error)?.message);
