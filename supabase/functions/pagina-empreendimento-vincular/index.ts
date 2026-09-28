@@ -6,8 +6,13 @@ import { requireCronAuth } from "../_shared/cron-auth.ts";
 import { vincularSeguro } from "../_shared/vincularRespostaPagina.ts";
 
 Deno.serve(async (req) => {
-  const denied = requireCronAuth(req);
-  if (denied) return denied;
+  // Mesmo padrão do capi-health-alert: segredo do vault (CAPI_CRON_SECRET) ou cron padrão.
+  const capiSecret = Deno.env.get("CAPI_CRON_SECRET");
+  const enviado = req.headers.get("x-cron-secret");
+  if (!(capiSecret && enviado && enviado === capiSecret)) {
+    const denied = requireCronAuth(req);
+    if (denied) return denied;
+  }
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const limite = new Date(Date.now() - 24 * 3600_000).toISOString();
 
