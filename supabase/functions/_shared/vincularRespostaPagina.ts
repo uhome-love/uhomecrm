@@ -42,13 +42,6 @@ export async function vincularResposta(sb: SB, r: RespostaRow): Promise<string> 
     lead = cands.find((c: any) => c.empreendimento_canonico_id === CANOAS_CANONICO) ?? cands[0];
     leadId = lead!.id;
 
-    const q = r.respostas ?? {};
-    const partes = [lbl(q.quem), lbl(q.quando), lbl(q.peso)].filter(Boolean).join(" · ");
-    const texto = `🏠 Preencheu a página do Casa Tua Canoas${partes ? `: ${partes}` : ""}` +
-      `${r.periodo_visita ? ` · Quer visitar: ${lbl(r.periodo_visita)}` : ""}`;
-    await sb.from("pipeline_anotacoes").insert({
-      pipeline_lead_id: leadId, conteudo: texto, autor_nome: "Página Casa Tua", fixada: true,
-    });
   } else {
     const { data } = await sb.from("pipeline_leads").select("id, nome, corretor_id").eq("id", leadId).maybeSingle();
     lead = data;
@@ -58,6 +51,16 @@ export async function vincularResposta(sb: SB, r: RespostaRow): Promise<string> 
     await sb.from("pagina_empreendimento_respostas").update({ lead_id: leadId, status: "aguardando_corretor" }).eq("id", r.id);
     return "aguardando_corretor";
   }
+
+  // Anotação no lead (autor = corretor dono, campo obrigatório) — só quando há corretor.
+  const q = r.respostas ?? {};
+  const partes = [lbl(q.quem), lbl(q.quando), lbl(q.peso)].filter(Boolean).join(" · ");
+  const texto = `🏠 Preencheu a página do Casa Tua Canoas${partes ? `: ${partes}` : ""}` +
+    `${r.periodo_visita ? ` · Quer visitar: ${lbl(r.periodo_visita)}` : ""}`;
+  const { error: aErr } = await sb.from("pipeline_anotacoes").insert({
+    pipeline_lead_id: leadId, conteudo: texto, autor_id: lead.corretor_id, autor_nome: "Página Casa Tua", fixada: true,
+  });
+  if (aErr) throw aErr;
 
   const periodo = lbl(r.periodo_visita);
   const { error: nErr } = await sb.from("notifications").insert({
