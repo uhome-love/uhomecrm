@@ -3,6 +3,12 @@
 ## Ponto de atenção antes de aprovar
 Já existe uma página pública `/casatuacanoas-quiz` (arquivo `CasaTuaCanoasQuiz`). Proposta: criar a nova página separada e **não mexer** na antiga. Se preferir substituir a antiga, me avise. Sem código antes do mockup: o primeiro passo do build é um mockup em HTML para você aprovar.
 
+## Referência visual: site da Encorp (casa-tua-condominio-casas-canoas)
+- **Vídeo:** o mesmo filme do site (YouTube PovnF-uY58k).
+- **Fotos:** uso as fotos oficiais da galeria de lançamento do site (cerca de 30 disponíveis). Escolho 8 (fachada, pátio, sala, cozinha, suíte, piscina, clube, fogueira), converto para JPG leve (cerca de 1080 px, menos de 200 KB cada) e guardo no armazenamento de imagens do próprio CRM. Não vou apontar direto para o site da Encorp, para a página não depender dele. Se o seu kit trouxer fotos diferentes, é só trocar na lista única.
+- **Estrutura e estilo:** mesma sequência de seções (hero com vídeo, diferenciais da casa, lazer, localização), fotos grandes, bastante respiro e detalhes de folhagem como no site. As cores e o logo continuam da Uhome (Montserrat, #4969FF).
+- **Fica de fora de propósito:** as plantas e os preços que aparecem no site da Encorp, como você pediu.
+
 ## O que o lead vê (nesta ordem)
 Logo Uhome + "Casa Tua · Canoas" → faixa verde de confirmação → título e subtítulo → vídeo (miniatura + play; o vídeo do YouTube só carrega ao tocar) → chips → galeria horizontal (6–8 espaços com placeholder neutro, lidos de uma lista única) → "Vida de condomínio, espaço de casa" → "Perto de tudo em Canoas" → quiz de 3 toques com barra de progresso → bloco de visita (4 horários + WhatsApp com máscara; botão só habilita com horário e telefone válidos) → tela "Combinado!" → rodapé.
 Sem preço, tabela ou planta. Sem o termo "área privativa". Montserrat, azul #4969FF, fundo branco/cinza claro, mobile-first.
