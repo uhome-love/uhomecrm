@@ -70,7 +70,7 @@ export default function CasaTuaCanoasVisita() {
           Recebemos seu contato! Um corretor da Uhome vai te chamar no WhatsApp em instantes.
         </div>
         <h1 className="px-[18px] pb-2 pt-5 text-[26px] font-extrabold leading-[1.15]">Dá uma volta pela casa que pode ser sua</h1>
-        <p className="px-[18px] pb-4 text-sm text-[hsl(var(--lp-muted))]">Casas em condomínio no Marechal Rondon, com pátio próprio e clube completo.</p>
+        <p className="px-[18px] pb-4 text-sm text-[hsl(var(--lp-muted))]">Casas em condomínio 5 min do Park Shopping Canoas, com pátio próprio e clube completo.</p>
         <VideoLite />
         <div className="flex flex-wrap gap-2 px-[18px] py-4">
           {CHIPS.map((c) => (
