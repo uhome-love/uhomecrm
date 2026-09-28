@@ -1,2 +1,2 @@
 # AGENTS
-- Páginas públicas de empreendimento (/v/*) gravam só via edge function `pagina-empreendimento-resposta` (service role, rate limit); nunca acesso anon direto à tabela — por segurança/antispam.
+- Páginas públicas de empreendimento (/v/*) gravam só via edge function `pagina-empreendimento-resposta` (service role, rate limit) e vinculam ao lead só adicionando anotação+notificação (`_shared/vincularRespostaPagina.ts`, cron 5min `pagina-empreendimento-vincular` para lead que chega depois); nunca acesso anon direto nem alteração de etapa/corretor — segurança/antispam e não interferir na distribuição.
