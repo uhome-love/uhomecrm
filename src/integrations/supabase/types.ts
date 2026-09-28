@@ -9860,6 +9860,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pagina_empreendimento_respostas: {
+        Row: {
+          created_at: string
+          empreendimento_slug: string
+          form_ref: string | null
+          id: string
+          ip_hash: string | null
+          lead_id: string | null
+          periodo_visita: string
+          respostas: Json
+          status: string
+          telefone_digitado: string
+          telefone_normalizado: string | null
+          updated_at: string
+          user_agent: string | null
+          utm: Json
+        }
+        Insert: {
+          created_at?: string
+          empreendimento_slug: string
+          form_ref?: string | null
+          id?: string
+          ip_hash?: string | null
+          lead_id?: string | null
+          periodo_visita: string
+          respostas?: Json
+          status?: string
+          telefone_digitado: string
+          telefone_normalizado?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm?: Json
+        }
+        Update: {
+          created_at?: string
+          empreendimento_slug?: string
+          form_ref?: string | null
+          id?: string
+          ip_hash?: string | null
+          lead_id?: string | null
+          periodo_visita?: string
+          respostas?: Json
+          status?: string
+          telefone_digitado?: string
+          telefone_normalizado?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm?: Json
+        }
+        Relationships: []
+      }
       pdn_entries: {
         Row: {
           corretor_avisado_em: string | null
