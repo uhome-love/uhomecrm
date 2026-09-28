@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import logoUhome from "@/assets/uhome-logo-azul.svg";
 import VideoLite from "@/components/landing-casatua-canoas/VideoLite";
 import GaleriaSnap from "@/components/landing-casatua-canoas/GaleriaSnap";
 import QuizToques from "@/components/landing-casatua-canoas/QuizToques";
@@ -16,13 +17,7 @@ import { CHIPS, LAZER, LANDING_SLUG, PROXIMIDADES, type QuizKey } from "@/config
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
 function Logo() {
-  return (
-    <svg height="28" viewBox="0 0 180 40" fill="none" aria-label="Uhome">
-      <circle cx="20" cy="20" r="18" stroke="#4E6BFF" strokeWidth="2.5" fill="none" />
-      <text x="12" y="27" fontFamily="Montserrat, sans-serif" fontSize="20" fontWeight="700" fill="#4E6BFF">U</text>
-      <text x="44" y="28" fontFamily="Montserrat, sans-serif" fontSize="22" fontWeight="700" fill="#1F2A44">Home.</text>
-    </svg>
-  );
+  return <img src={logoUhome} alt="Uhome" className="h-7 w-auto" />;
 }
 
 function Grid({ titulo, itens }: { titulo: string; itens: string[] }) {
