@@ -4,14 +4,14 @@
 export const LANDING_SLUG = "casa-tua-canoas";
 export const YOUTUBE_ID = "PovnF-uY58k";
 
-/** Lista ÚNICA de fotos da galeria. `src` vazio = card placeholder com legenda. */
+/** Lista ÚNICA de fotos da galeria (renders oficiais servidos em /casatua/).
+ *  `src` vazio = card placeholder com legenda. Nunca incluir plantas. */
 export const GALERIA: { legenda: string; src?: string }[] = [
-  { legenda: "Pátio privativo" },
-  { legenda: "Living" },
-  { legenda: "Club House" },
-  { legenda: "Piscinas" },
-  { legenda: "Academia" },
-  { legenda: "Fachada" },
+  { legenda: "Fachada", src: "/casatua/casa.jpg" },
+  { legenda: "Piscinas", src: "/casatua/club.jpg" },
+  { legenda: "Club House", src: "/casatua/invest.jpg" },
+  { legenda: "Salão de festas", src: "/casatua/salao.jpg" },
+  { legenda: "Academia", src: "/casatua/academia.jpg" },
 ];
 
 export const CHIPS = ["3 e 4 dormitórios", "2 suítes", "Pátio com churrasqueira", "Espaço p/ piscina", "2 vagas"];
