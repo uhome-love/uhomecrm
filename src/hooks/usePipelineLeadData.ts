@@ -1,6 +1,8 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { corteReengajamento } from "@/lib/reengajamentoCorte";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -115,11 +117,30 @@ export function usePipelineLeadData(leadId: string | null) {
   });
 
 
-  const atividades = query.data?.atividades ?? (EMPTY as PipelineAtividade[]);
-  const anotacoes = query.data?.anotacoes ?? (EMPTY as PipelineAnotacao[]);
-  const tarefas = query.data?.tarefas ?? (EMPTY as PipelineTarefa[]);
-  const historico = query.data?.historico ?? (EMPTY as PipelineHistorico[]);
-  const visitaEventos = query.data?.visitaEventos ?? (EMPTY as any[]);
+  const { isGestor, loading: rolesLoading } = useUserRole();
+  const filtered = useMemo(() => {
+    const d = query.data;
+    if (!d) return null;
+    // Lead reengajado: corretor vê só a partir da mensagem do disparo respondida com SIM.
+    // Gestão (gestor/diretor/admin) continua vendo tudo. Nada é apagado.
+    const corte = isGestor || rolesLoading ? null : corteReengajamento(d.atividades);
+    if (!corte) return d;
+    const after = (x: { created_at?: string | null }) => !x.created_at || x.created_at >= corte;
+    return {
+      ...d,
+      atividades: d.atividades.filter(after),
+      anotacoes: d.anotacoes.filter(after),
+      tarefas: d.tarefas.filter((t) => t.status === "pendente" || t.status === "em_andamento" || after(t)),
+      historico: d.historico.filter(after),
+      visitaEventos: d.visitaEventos.filter(after),
+    };
+  }, [query.data, isGestor, rolesLoading]);
+
+  const atividades = filtered?.atividades ?? (EMPTY as PipelineAtividade[]);
+  const anotacoes = filtered?.anotacoes ?? (EMPTY as PipelineAnotacao[]);
+  const tarefas = filtered?.tarefas ?? (EMPTY as PipelineTarefa[]);
+  const historico = filtered?.historico ?? (EMPTY as PipelineHistorico[]);
+  const visitaEventos = filtered?.visitaEventos ?? (EMPTY as any[]);
   const temLiaConversa = query.data?.temLiaConversa ?? false;
   const loading = query.isLoading;
 
