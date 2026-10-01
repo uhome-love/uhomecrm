@@ -16,6 +16,7 @@ interface TemplateRule {
 }
 
 const RULES: TemplateRule[] = [
+  { match: (t) => t.includes("openbosque") || t.includes("open_bosque") || t.includes("open bosque"), empreendimento: "Open Bosque" },
   { match: (t) => t.includes("lakebaical") || t.includes("lake baical") || t.includes("lakebaikal"), empreendimento: "Lake Baikal" },
   // Canoas precisa vir ANTES da regra genérica de Casa Tua (POA)
   { match: (t) => t.includes("canoas"), empreendimento: "Casa Tua Canoas" },

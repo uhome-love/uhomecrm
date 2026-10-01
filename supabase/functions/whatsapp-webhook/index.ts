@@ -11,12 +11,56 @@ const corsHeaders = {
 function empreendimentoFromTemplate(templateName?: string | null): string | null {
   const t = (templateName ?? "").toString().trim().toLowerCase();
   if (!t) return null;
+  if (t.includes("openbosque") || t.includes("open_bosque") || t.includes("open bosque")) return "Open Bosque";
   if (t.includes("lakebaical") || t.includes("lake baical") || t.includes("lakebaikal")) return "Lake Baikal";
   if (t.includes("canoas")) return "Casa Tua Canoas";
   if (t.includes("casatua") || t.includes("casa tua") || t.includes("casa_tua")) return "Casa Tua Porto Alegre";
   if (t.includes("vivid")) return "Vivid Terrace";
   if (t.includes("atrio") || t.includes("átrio")) return "Átrio";
   return null;
+}
+
+// ── Corpo do template enviado (para a linha do tempo do lead) ──
+const tplBodyCache = new Map<string, string | null>();
+async function fetchTemplateBody(templateName: string): Promise<string | null> {
+  if (tplBodyCache.has(templateName)) return tplBodyCache.get(templateName) ?? null;
+  let body: string | null = null;
+  try {
+    const waba = Deno.env.get("WHATSAPP_BUSINESS_ACCOUNT_ID") || "";
+    const token = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
+    if (waba && token) {
+      const r = await fetch(`https://graph.facebook.com/v21.0/${waba}/message_templates?name=${encodeURIComponent(templateName)}&fields=name,components&limit=5`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const j = await r.json().catch(() => ({}));
+      const tpl = (j?.data || []).find((t: any) => t.name === templateName) || j?.data?.[0];
+      const comp = (tpl?.components || []).find((c: any) => c.type === "BODY");
+      body = comp?.text || null;
+    }
+  } catch (_e) { /* best-effort */ }
+  tplBodyCache.set(templateName, body);
+  return body;
+}
+
+async function registrarMensagemEnviadaNaTimeline(
+  supabase: any, leadId: string | null, tplName: string, resposta: string, nome: string | null,
+) {
+  if (!leadId) return;
+  try {
+    const raw = await fetchTemplateBody(tplName);
+    const primeiro = (nome || "").trim().split(/\s+/)[0] || "";
+    const texto = raw ? raw.replace(/\{\{\s*1\s*\}\}/g, primeiro || "{{1}}") : null;
+    await supabase.from("pipeline_atividades").insert({
+      pipeline_lead_id: leadId,
+      tipo: "whatsapp",
+      titulo: `📩 Mensagem do disparo "${tplName}" — cliente respondeu SIM`,
+      descricao: `${texto ? `Mensagem enviada:\n${texto.slice(0, 1500)}\n\n` : `Template enviado: "${tplName}".\n\n`}Cliente respondeu: "${resposta.slice(0, 120)}"`,
+      data: new Date().toISOString().slice(0, 10),
+      status: "concluida",
+    });
+  } catch (e) {
+    console.error("timeline mensagem enviada error:", e);
+  }
 }
 
 // ── Descobre o empreendimento pelo disparo de reengajamento que o lead respondeu ──
@@ -989,6 +1033,11 @@ Deno.serve(async (req) => {
                     }
                   }
 
+                  await registrarMensagemEnviadaNaTimeline(
+                    supabase, effectiveLeadId, tplName,
+                    buttonId ? buttonTitle : mensagemTexto, ownerLeadNome,
+                  );
+
                   if (alreadyActive) continue;
 
                   // Atividade na timeline registrando o reengajamento
@@ -1065,6 +1114,10 @@ Deno.serve(async (req) => {
                   await supabase.from("pipeline_leads").update({
                     reengajamento_status: isWave2 ? "respondeu_sim_wave2" : "respondeu_sim",
                   }).eq("id", metaDispatch.lead_id);
+                  await registrarMensagemEnviadaNaTimeline(
+                    supabase, metaDispatch.lead_id, metaDispatch.template_name || "reengajamento",
+                    buttonId ? buttonTitle : mensagemTexto, currentLead?.nome || null,
+                  );
 
                   const leadNome = currentLead?.nome || "Lead";
                   const tplName = metaDispatch.template_name || "reengajamento";
