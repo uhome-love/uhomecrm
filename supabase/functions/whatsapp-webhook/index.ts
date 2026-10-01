@@ -50,16 +50,26 @@ async function registrarMensagemEnviadaNaTimeline(
     const raw = await fetchTemplateBody(tplName);
     const primeiro = (nome || "").trim().split(/\s+/)[0] || "";
     const texto = raw ? raw.replace(/\{\{\s*1\s*\}\}/g, primeiro || "{{1}}") : null;
-    await supabase.from("pipeline_atividades").insert({
+    const { error } = await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: leadId,
       tipo: "whatsapp",
       titulo: `📩 Mensagem do disparo "${tplName}" — cliente respondeu SIM`,
       descricao: `${texto ? `Mensagem enviada:\n${texto.slice(0, 1500)}\n\n` : `Template enviado: "${tplName}".\n\n`}Cliente respondeu: "${resposta.slice(0, 120)}"`,
       data: new Date().toISOString().slice(0, 10),
       status: "concluida",
+      created_by: "00000000-0000-0000-0000-000000000000",
     });
+    if (error) throw error;
   } catch (e) {
     console.error("timeline mensagem enviada error:", e);
+    try {
+      await supabase.from("ops_events").insert({
+        fn: "whatsapp-webhook", level: "error", category: "timeline",
+        message: "timeline_mensagem_disparo_falhou",
+        ctx: { pipeline_lead_id: leadId, template: tplName },
+        error_detail: String((e as any)?.message || e).slice(0, 300),
+      });
+    } catch (_) { /* best-effort */ }
   }
 }
 
