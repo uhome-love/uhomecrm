@@ -11,6 +11,8 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
+import { corteReengajamento } from "@/lib/reengajamentoCorte";
 
 export type TimelineEventKind =
   | "atividade"
@@ -44,6 +46,7 @@ export function useTimelineEvents(leadId: string | null | undefined): UseTimelin
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [tick, setTick] = useState(0);
+  const { isGestor } = useUserRole();
 
   useEffect(() => {
     if (!leadId) {
@@ -135,7 +138,9 @@ export function useTimelineEvents(leadId: string | null | undefined): UseTimelin
       }
 
       merged.sort((a, b) => (a.at < b.at ? 1 : -1));
-      setEvents(merged);
+      // Lead reengajado: corretor vê só a partir do SIM ao disparo (gestão vê tudo).
+      const corte = isGestor ? null : corteReengajamento(atRes.data as any);
+      setEvents(corte ? merged.filter((e) => e.kind === "tarefa_pendente" || e.at >= corte) : merged);
       setLoading(false);
     })();
 
