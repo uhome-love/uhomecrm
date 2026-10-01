@@ -147,7 +147,7 @@ export function useTimelineEvents(leadId: string | null | undefined): UseTimelin
     return () => {
       cancelled = true;
     };
-  }, [leadId, tick]);
+  }, [leadId, tick, isGestor]);
 
   return { events, loading, reload: () => setTick((n) => n + 1) };
 }
