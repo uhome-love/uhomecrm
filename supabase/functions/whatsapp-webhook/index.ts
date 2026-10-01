@@ -1114,6 +1114,10 @@ Deno.serve(async (req) => {
                   await supabase.from("pipeline_leads").update({
                     reengajamento_status: isWave2 ? "respondeu_sim_wave2" : "respondeu_sim",
                   }).eq("id", metaDispatch.lead_id);
+                  await registrarMensagemEnviadaNaTimeline(
+                    supabase, metaDispatch.lead_id, metaDispatch.template_name || "reengajamento",
+                    buttonId ? buttonTitle : mensagemTexto, currentLead?.nome || null,
+                  );
 
                   const leadNome = currentLead?.nome || "Lead";
                   const tplName = metaDispatch.template_name || "reengajamento";
