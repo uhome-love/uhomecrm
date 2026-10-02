@@ -244,40 +244,26 @@ Deno.serve(async (req) => {
         .single();
 
       if (lead?.corretor_id) {
-        let aiSuggestion: string | null = null;
-        if (newScore >= SCORE_MORNO) {
-          aiSuggestion = await generateAISuggestion(lead, newScore, event_type);
-        }
-
-        const campanha = (metadata as any)?.campanha || null;
-        const campanhaSuffix = campanha ? ` — campanha "${campanha}"` : "";
-
-        const title = action === "notify_corretor_hot"
-          ? `🔥 Lead QUENTE: ${lead.nome || "Lead"} (score ${newScore})${campanhaSuffix}`
-          : `💬 ${lead.nome || "Lead"} respondeu via ${canal || "automação"}${campanhaSuffix}`;
-
-        const descParts = [`Evento: ${event_type}.${campanha ? ` Campanha: ${campanha}.` : ""} Score atual: ${newScore}. Contato humano recomendado.`];
-        if (aiSuggestion) descParts.push(`\n🤖 Sugestão IA: ${aiSuggestion}`);
-
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id,
-          tipo: "nurturing_sequencia",
-          titulo: title,
-          descricao: descParts.join(""),
-          data: new Date().toLocaleDateString("en-CA"),
-          prioridade: newScore >= SCORE_QUENTE ? "alta" : "media",
-          status: "pendente",
-          created_by: lead.corretor_id,
-        });
-
-        if (aiSuggestion) {
+        // Histórico enxuto: no máx. 1 registro por lead a cada 6h (sem score/sugestão IA).
+        const seisH = new Date(Date.now() - 6 * 3600 * 1000).toISOString();
+        const { data: recente } = await supabase
+          .from("pipeline_atividades")
+          .select("id")
+          .eq("pipeline_lead_id", pipeline_lead_id)
+          .eq("tipo", "nurturing_sequencia")
+          .gte("created_at", seisH)
+          .limit(1);
+        if (!recente || recente.length === 0) {
+          const campanha = (metadata as any)?.campanha || null;
           await supabase.from("pipeline_atividades").insert({
             pipeline_lead_id,
             tipo: "nurturing_sequencia",
-            titulo: `🤖 Sugestão IA para abordagem${campanhaSuffix}`,
-            descricao: aiSuggestion,
+            titulo: action === "notify_corretor_hot"
+              ? "🔥 Cliente respondeu no WhatsApp (lead quente)"
+              : "💬 Cliente respondeu no WhatsApp",
+            descricao: campanha ? `Campanha: ${campanha}` : null,
             data: new Date().toLocaleDateString("en-CA"),
-            prioridade: "baixa",
+            prioridade: newScore >= SCORE_QUENTE ? "alta" : "media",
             status: "concluida",
             created_by: "00000000-0000-0000-0000-000000000000",
           });
@@ -287,19 +273,6 @@ Deno.serve(async (req) => {
 
     // 7. Update state
     await supabase.from("lead_nurturing_state").update(updates).eq("id", state.id);
-
-    // 8. Log in timeline
-    const campanhaLog = (metadata as any)?.campanha || null;
-    await supabase.from("pipeline_atividades").insert({
-      pipeline_lead_id,
-      tipo: "nurturing_sequencia",
-      titulo: campanhaLog ? `🤖 Evento: ${event_type} — ${campanhaLog}` : `🤖 Evento: ${event_type}`,
-      descricao: `Score: ${state.lead_score || 0} → ${newScore} (${scoreChange >= 0 ? "+" : ""}${scoreChange}). Canal: ${canal || "sistema"}${campanhaLog ? `. Campanha: ${campanhaLog}` : ""}`,
-      data: new Date().toLocaleDateString("en-CA"),
-      prioridade: "baixa",
-      status: "concluida",
-      created_by: "00000000-0000-0000-0000-000000000000",
-    });
 
     console.log(`Orchestrator: lead=${pipeline_lead_id} event=${event_type} score=${state.lead_score}→${newScore} action=${action}`);
 
