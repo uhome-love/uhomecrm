@@ -1024,9 +1024,10 @@ Deno.serve(async (req) => {
                         mensagem: `Respondeu "${(buttonId ? buttonTitle : mensagemTexto).slice(0, 80)}" ao disparo "${tplName}". O lead continua com você — entre em contato agora!`,
                         tipo: "lead_reengajado",
                         categoria: "leads",
-                        dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
+                        dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep", url: `/pipeline-leads?lead=${effectiveLeadId}` },
                       });
                       if (notifErr) throw notifErr;
+                      await pushReengajado(supabase, ownerId, ownerLeadNome, tplName, effectiveLeadId);
                       console.log(`🔔 Corretor ${ownerId} notificado — lead ${effectiveLeadId} respondeu SIM (origem=${audSrc})`);
                     } catch (e) {
                       console.error("notify corretor dono (SIM) error:", e);
@@ -1148,8 +1149,9 @@ Deno.serve(async (req) => {
                       mensagem: `Respondeu "${(buttonId ? buttonTitle : mensagemTexto).slice(0, 80)}" ao disparo "${tplName}". O lead continua com você — entre em contato agora!`,
                       tipo: "lead_reengajado",
                       categoria: "leads",
-                      dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
+                      dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep", url: `/pipeline-leads?lead=${metaDispatch.lead_id}` },
                     });
+                    await pushReengajado(supabase, currentLead.corretor_id, leadNome, tplName, metaDispatch.lead_id);
                   }
                   console.log(`🔥 Lead ${metaDispatch.lead_id} (origem=${audSrc}) respondeu SIM — mantido com corretor atual, sem roleta`);
                   continue;
