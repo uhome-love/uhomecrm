@@ -456,6 +456,8 @@ function categoriaDe(item: TimelineItem): "narrativa" | "sistema" {
   if (item.sourceType === "system") return "sistema";
   if (item.badge?.label === "🤖 Automação") return "sistema";
   if (item.sourceType === "historico" && /cad[êe]ncia/i.test(item.title)) return "sistema";
+  // Registros automáticos do robô de pontuação (WhatsApp) não são marco da jornada.
+  if (/nurturing_sequencia|Evento: whatsapp_respondeu|Sugestão IA para abordagem|respondeu via whatsapp|Cliente respondeu no WhatsApp/i.test(`${item.title || ""}`)) return "sistema";
   return "narrativa";
 }
 
