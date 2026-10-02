@@ -18381,6 +18381,10 @@ export type Database = {
         }
         Returns: Json
       }
+      sync_base_leads_do_pipeline: {
+        Args: { p_desde?: string }
+        Returns: number
+      }
       unaccent: { Args: { "": string }; Returns: string }
       unaccent_immutable: { Args: { _txt: string }; Returns: string }
       upsert_roleta_fila: {
