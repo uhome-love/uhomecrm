@@ -182,3 +182,6 @@ verify_jwt = false
 
 [functions.pagina-empreendimento-vincular]
 verify_jwt = false
+
+[functions.roleta-lembrete-credenciamento]
+verify_jwt = false
