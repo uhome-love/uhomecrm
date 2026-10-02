@@ -571,9 +571,20 @@ Deno.serve(async (req) => {
             // Casa resposta do lead ↔ visita futura pendente OU no-show <7d.
             // Ordem de match: button_reply.id → button_reply.title → texto livre.
             // ─────────────────────────────────────────────────────────────
+            // Resposta a um disparo de reengajamento NÃO é resposta de visita
+            // (senão o "Sim" do disparo vira confirmação de visita e o corretor não é avisado).
+            let isReplyToReengajamento = false;
+            if (repliedToWamid) {
+              const { data: reDisp } = await supabase
+                .from("reengajamento_meta_disparos")
+                .select("id")
+                .eq("wamid", repliedToWamid)
+                .maybeSingle();
+              isReplyToReengajamento = !!reDisp;
+            }
             try {
               const last8cv = (from || "").replace(/\D/g, "").slice(-8);
-              if (last8cv.length === 8) {
+              if (last8cv.length === 8 && !isReplyToReengajamento) {
                 // 1) Resolver pipeline_lead_id pelo telefone (últimos 8 dígitos)
                 const { data: leadMatch } = await supabase
                   .from("pipeline_leads")

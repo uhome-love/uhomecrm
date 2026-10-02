@@ -8,6 +8,13 @@
       "when": 1790971447240,
       "tag": "0000_sync_base_leads_do_pipeline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790976120984,
+      "tag": "0001_migration",
+      "breakpoints": true
     }
   ]
 }
