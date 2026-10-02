@@ -86,7 +86,7 @@ export function useNotifications() {
       badge: "/icons/icon-192x192.png",
       tag: `notif-${notification.id}`,
       renotify: true,
-      requireInteraction: ["novo_lead", "lead_novo", "lead_urgente", "lead_ultimo_alerta"].includes(notification.categoria),
+      requireInteraction: notification.tipo === "lead_reengajado" || ["novo_lead", "lead_novo", "lead_urgente", "lead_ultimo_alerta"].includes(notification.categoria),
       data: { url: getNotificationUrl(notification) },
     };
 
@@ -164,11 +164,13 @@ export function useNotifications() {
             void showDesktopNotification(notification).catch(() => undefined);
           }
 
+          const fixo = notification.tipo === "lead_reengajado";
           toast(notification.titulo, {
             description: notification.mensagem,
             id: `notif-${notification.id}`,
+            duration: fixo ? Infinity : undefined,
             action: {
-              label: "Abrir",
+              label: fixo ? "Abrir lead" : "Abrir",
               onClick: () => window.location.assign(getNotificationUrl(notification)),
             },
           });

@@ -42,6 +42,32 @@ async function fetchTemplateBody(templateName: string): Promise<string | null> {
   return body;
 }
 
+// Push no celular do corretor dono quando o lead dele responde SIM ao disparo (best-effort).
+async function pushReengajado(supabase: any, userId: string, nome: string, tplName: string, leadId: string) {
+  try {
+    const emp = empreendimentoFromTemplate(tplName);
+    const { error } = await supabase.functions.invoke("send-push", {
+      body: {
+        user_id: userId,
+        title: `🔥 ${nome} respondeu SIM ao disparo`,
+        body: emp ? `Interesse em ${emp}. O lead é seu — entre em contato agora!` : "O lead é seu — entre em contato agora!",
+        url: `/pipeline-leads?lead=${leadId}`,
+      },
+    });
+    if (error) throw error;
+  } catch (e) {
+    console.error("send-push lead_reengajado error:", e);
+    try {
+      await supabase.from("ops_events").insert({
+        fn: "whatsapp-webhook", level: "warn", category: "notificacao",
+        message: "push_reengajamento_falhou",
+        ctx: { pipeline_lead_id: leadId, corretor_id: userId },
+        error_detail: String((e as Error)?.message || e).slice(0, 300),
+      });
+    } catch (_) { /* best-effort */ }
+  }
+}
+
 async function registrarMensagemEnviadaNaTimeline(
   supabase: any, leadId: string | null, tplName: string, resposta: string, nome: string | null,
 ) {
@@ -1024,9 +1050,10 @@ Deno.serve(async (req) => {
                         mensagem: `Respondeu "${(buttonId ? buttonTitle : mensagemTexto).slice(0, 80)}" ao disparo "${tplName}". O lead continua com você — entre em contato agora!`,
                         tipo: "lead_reengajado",
                         categoria: "leads",
-                        dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
+                        dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep", url: `/pipeline-leads?lead=${effectiveLeadId}` },
                       });
                       if (notifErr) throw notifErr;
+                      await pushReengajado(supabase, ownerId, ownerLeadNome, tplName, effectiveLeadId);
                       console.log(`🔔 Corretor ${ownerId} notificado — lead ${effectiveLeadId} respondeu SIM (origem=${audSrc})`);
                     } catch (e) {
                       console.error("notify corretor dono (SIM) error:", e);
@@ -1148,8 +1175,9 @@ Deno.serve(async (req) => {
                       mensagem: `Respondeu "${(buttonId ? buttonTitle : mensagemTexto).slice(0, 80)}" ao disparo "${tplName}". O lead continua com você — entre em contato agora!`,
                       tipo: "lead_reengajado",
                       categoria: "leads",
-                      dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
+                      dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep", url: `/pipeline-leads?lead=${metaDispatch.lead_id}` },
                     });
+                    await pushReengajado(supabase, currentLead.corretor_id, leadNome, tplName, metaDispatch.lead_id);
                   }
                   console.log(`🔥 Lead ${metaDispatch.lead_id} (origem=${audSrc}) respondeu SIM — mantido com corretor atual, sem roleta`);
                   continue;
