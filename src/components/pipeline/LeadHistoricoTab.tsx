@@ -294,7 +294,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       color: info?.color || (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"),
       autor: nome(a.created_by),
       badge: res?.meta,
-      sourceType: ehWhatsappAuto ? "system" : "atividade",
+      sourceType: ehWhatsappAuto || a.tipo === "nurturing_sequencia" ? "system" : "atividade",
       sourceId: a.id,
     });
   }
