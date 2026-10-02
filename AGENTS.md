@@ -1,2 +1,3 @@
 # AGENTS
 - Páginas públicas de empreendimento (/v/*) gravam só via edge function `pagina-empreendimento-resposta` (service role, rate limit) e vinculam ao lead só adicionando anotação+notificação (`_shared/vincularRespostaPagina.ts`, cron 5min `pagina-empreendimento-vincular` para lead que chega depois); nunca acesso anon direto nem alteração de etapa/corretor — segurança/antispam e não interferir na distribuição.
+- Lembrete de credenciamento da roleta só avisa (sino+push) via edge `roleta-lembrete-credenciamento` (cron 09/13/21h BRT, dedup por agrupamento_key dia+turno); nunca credencia nem mexe na distribuição — corretor decide se está na empresa.
