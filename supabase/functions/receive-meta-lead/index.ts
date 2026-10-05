@@ -397,6 +397,8 @@ Deno.serve(async (req) => {
       "966583865699014": "Orygem (Vídeo Lucas)",
       "1253040266458947": "Casa Tua",
       // Mapeamento por NOME de formulário (Meta envia form_name) → empreendimento limpo
+      "Uhome - Open Bosque- Video Lucas - 2 perguntas": "Open Bosque (Video Lucas - 2 perguntas)",
+      "Uhome - Open Bosque - Video Lucas - 2 perguntas": "Open Bosque (Video Lucas - 2 perguntas)",
       "Uhome - Ápice - Bairro Las Casas": "Ápice Las Casas",
       "Uhome - Lake Baycal": "Lake Baikal",
       "Uhome - Lake Baikal": "Lake Baikal",
