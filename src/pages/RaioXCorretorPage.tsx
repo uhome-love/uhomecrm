@@ -667,7 +667,9 @@ function ConteudoRaioX({ modoImpressao, esconderPeriodo }: { modoImpressao?: boo
         <style>{RX_STYLE}</style>
         {filtros && <div className="rx-bar rx-noprint">{filtros}</div>}
         <div className="rx-load">
-          {error ? "Não consegui carregar o raio-x desse corretor." : "Montando a vida completa do corretor…"}
+          {error
+            ? `Não consegui carregar o raio-x desse corretor. Motivo: ${(error as { message?: string })?.message ?? "erro desconhecido"}`
+            : "Montando a vida completa do corretor…"}
         </div>
       </div>
     );
