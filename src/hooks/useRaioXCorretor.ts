@@ -190,7 +190,7 @@ export interface RaioXCorretorFull extends Fatia {
  * idas em fila passa a ~3 rodadas. Mesma semântica de resultado do sequencial.
  */
 const LOTE = 6;
-async function fetchAll<T>(builder: (from: number, to: number) => any, lote: number = LOTE): Promise<T[]> {
+async function fetchAll<T>(builder: (from: number, to: number) => any, paralelo: number = LOTE): Promise<T[]> {
   const size = 1000;
   const first = await builder(0, size - 1);
   if (first.error) throw first.error;
@@ -201,7 +201,7 @@ async function fetchAll<T>(builder: (from: number, to: number) => any, lote: num
   let from = size;
   for (;;) {
     const lote = await Promise.all(
-      Array.from({ length: lote }, (_, i) => builder(from + i * size, from + (i + 1) * size - 1)),
+      Array.from({ length: paralelo }, (_, i) => builder(from + i * size, from + (i + 1) * size - 1)),
     );
     let curto = false;
     for (const r of lote) {
@@ -211,7 +211,7 @@ async function fetchAll<T>(builder: (from: number, to: number) => any, lote: num
       if (rows.length < size) curto = true;
     }
     if (curto) break;
-    from += lote * size;
+    from += paralelo * size;
   }
   return out;
 }
