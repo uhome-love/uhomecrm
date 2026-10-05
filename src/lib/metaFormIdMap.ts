@@ -35,6 +35,8 @@ export const META_FORM_ID_MAP: Record<string, string> = {
   "1575975843886888": "Alto Lindóia",
   "4369342313310610": "Lake Eyre",
   // Mapeamento por NOME de formulário (Meta envia form_name) → empreendimento limpo
+  "Uhome - Open Bosque- Video Lucas - 2 perguntas": "Open Bosque (Video Lucas - 2 perguntas)",
+  "Uhome - Open Bosque - Video Lucas - 2 perguntas": "Open Bosque (Video Lucas - 2 perguntas)",
   "Uhome - Ápice - Bairro Las Casas": "Ápice Las Casas",
   "Uhome - Lake Baycal": "Lake Baikal",
   "Uhome - Lake Baikal": "Lake Baikal",
