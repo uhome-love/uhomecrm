@@ -190,7 +190,7 @@ export interface RaioXCorretorFull extends Fatia {
  * idas em fila passa a ~3 rodadas. Mesma semântica de resultado do sequencial.
  */
 const LOTE = 6;
-async function fetchAll<T>(builder: (from: number, to: number) => any): Promise<T[]> {
+async function fetchAll<T>(builder: (from: number, to: number) => any, lote: number = LOTE): Promise<T[]> {
   const size = 1000;
   const first = await builder(0, size - 1);
   if (first.error) throw first.error;
@@ -201,7 +201,7 @@ async function fetchAll<T>(builder: (from: number, to: number) => any): Promise<
   let from = size;
   for (;;) {
     const lote = await Promise.all(
-      Array.from({ length: LOTE }, (_, i) => builder(from + i * size, from + (i + 1) * size - 1)),
+      Array.from({ length: lote }, (_, i) => builder(from + i * size, from + (i + 1) * size - 1)),
     );
     let curto = false;
     for (const r of lote) {
@@ -211,7 +211,7 @@ async function fetchAll<T>(builder: (from: number, to: number) => any): Promise<
       if (rows.length < size) curto = true;
     }
     if (curto) break;
-    from += LOTE * size;
+    from += lote * size;
   }
   return out;
 }
@@ -524,10 +524,10 @@ export function useRaioXCorretor(
           .gte("data_assinatura", de).lt("data_assinatura", ate).range(f, t)),
         fetchAll<AtividadeRow>((f, t) => supabase.from("pipeline_atividades")
           .select("created_at, pipeline_lead_id")
-          .eq("created_by", uid).gte("created_at", de).lt("created_at", ate).range(f, t)),
+          .eq("created_by", uid).gte("created_at", de).lt("created_at", ate).range(f, t), 1),
         fetchAll<TarefaRow>((f, t) => supabase.from("pipeline_tarefas")
           .select("created_at, concluida_em, vence_em, status, adiamentos_count")
-          .eq("responsavel_id", uid).gte("created_at", de).range(f, t)),
+          .eq("responsavel_id", uid).gte("created_at", de).range(f, t), 1),
         fetchAll<SpendRow>((f, t) => supabase.from("marketing_entries_ad")
           .select("date_start, spend, leads")
           .gte("date_start", spendDe).lt("date_start", spendAte).range(f, t)),
