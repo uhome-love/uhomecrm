@@ -708,6 +708,8 @@ Deno.serve(async (req) => {
       const interestLabel = novoInteresse.interesseLabel;
       const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
       if (formRespostasJson) updatePayload.form_respostas = formRespostasJson;
+      if (adName) updatePayload.anuncio = adName;
+      if (formName) updatePayload.formulario = formName;
 
       // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
       if (externalLeadId && !existing.meta_lead_id) {
@@ -1045,6 +1047,8 @@ Deno.serve(async (req) => {
           const interestLabel = novoInteresseDup.interesseLabel;
           const updatePayload: Record<string, unknown> = { ...novoInteresseDup.payload };
           if (formRespostasJson) updatePayload.form_respostas = formRespostasJson;
+          if (adName) updatePayload.anuncio = adName;
+          if (formName) updatePayload.formulario = formName;
 
           // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
           if (externalLeadId && !dup.meta_lead_id) {
