@@ -423,6 +423,21 @@ Deno.serve(async (req) => {
     const formRespostasJson = formRespostas.length ? formRespostas : null;
     const formRespostasTexto = formatFormRespostas(formRespostas);
 
+    // Descrição do "Novo interesse" com campanha, anúncio clicado e respostas do formulário
+    const buildNovoInteresseDescricao = (interestLabel: string): string => {
+      const parts: string[] = [];
+      addTimelineDetail(parts, "Campanha", campaignName, [interestLabel]);
+      const generic = ["lead gerado do formulario", "lead gerado do anuncio", "lead gerado"];
+      const msgNorm = normalizeTimelineText(message);
+      const msgIsGeneric = !msgNorm || generic.some((g) => msgNorm.startsWith(g));
+      addTimelineDetail(parts, "Anúncio", msgIsGeneric ? adName : message, [interestLabel, campaignName, formName]);
+      return [
+        `Lead demonstrou novo interesse em ${interestLabel} (Meta Ads).`,
+        parts.length ? parts.join(" • ") : null,
+        formRespostasTexto ? `Respostas do formulário:\n${formRespostasTexto}` : null,
+      ].filter(Boolean).join("\n");
+    };
+
     const telefone = normalizePhone(phone);
     const isTestLead = isLikelyTestLead(name, email, message);
 
@@ -693,6 +708,8 @@ Deno.serve(async (req) => {
       const interestLabel = novoInteresse.interesseLabel;
       const updatePayload: Record<string, unknown> = { ...novoInteresse.payload };
       if (formRespostasJson) updatePayload.form_respostas = formRespostasJson;
+      if (adName) updatePayload.anuncio = adName;
+      if (formName) updatePayload.formulario = formName;
 
       // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
       if (externalLeadId && !existing.meta_lead_id) {
@@ -761,7 +778,7 @@ Deno.serve(async (req) => {
           pipeline_lead_id: existing.id,
           tipo: "entrada",
           titulo: `🔄 Novo interesse via Meta Ads`,
-          descricao: `Lead demonstrou novo interesse em ${interestLabel} (Meta Ads).${message ? `\nMensagem: "${message}"` : ""}`,
+          descricao: buildNovoInteresseDescricao(interestLabel),
           data: todayStamp,
           prioridade: "alta",
           status: "completed",
@@ -1030,6 +1047,8 @@ Deno.serve(async (req) => {
           const interestLabel = novoInteresseDup.interesseLabel;
           const updatePayload: Record<string, unknown> = { ...novoInteresseDup.payload };
           if (formRespostasJson) updatePayload.form_respostas = formRespostasJson;
+          if (adName) updatePayload.anuncio = adName;
+          if (formName) updatePayload.formulario = formName;
 
           // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
           if (externalLeadId && !dup.meta_lead_id) {
@@ -1097,7 +1116,7 @@ Deno.serve(async (req) => {
               pipeline_lead_id: dup.id,
               tipo: "entrada",
               titulo: `🔄 Novo interesse via Meta Ads`,
-              descricao: `Lead demonstrou novo interesse em ${interestLabel} (Meta Ads).${message ? `\nMensagem: "${message}"` : ""}`,
+              descricao: buildNovoInteresseDescricao(interestLabel),
               data: todayStamp,
               prioridade: "alta",
               status: "completed",
