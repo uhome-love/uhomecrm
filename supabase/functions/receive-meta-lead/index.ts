@@ -423,6 +423,21 @@ Deno.serve(async (req) => {
     const formRespostasJson = formRespostas.length ? formRespostas : null;
     const formRespostasTexto = formatFormRespostas(formRespostas);
 
+    // Descrição do "Novo interesse" com campanha, anúncio clicado e respostas do formulário
+    const buildNovoInteresseDescricao = (interestLabel: string): string => {
+      const parts: string[] = [];
+      addTimelineDetail(parts, "Campanha", campaignName, [interestLabel]);
+      const generic = ["lead gerado do formulario", "lead gerado do anuncio", "lead gerado"];
+      const msgNorm = normalizeTimelineText(message);
+      const msgIsGeneric = !msgNorm || generic.some((g) => msgNorm.startsWith(g));
+      addTimelineDetail(parts, "Anúncio", msgIsGeneric ? adName : message, [interestLabel, campaignName, formName]);
+      return [
+        `Lead demonstrou novo interesse em ${interestLabel} (Meta Ads).`,
+        parts.length ? parts.join(" • ") : null,
+        formRespostasTexto ? `Respostas do formulário:\n${formRespostasTexto}` : null,
+      ].filter(Boolean).join("\n");
+    };
+
     const telefone = normalizePhone(phone);
     const isTestLead = isLikelyTestLead(name, email, message);
 
