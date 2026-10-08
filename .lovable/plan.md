@@ -16,7 +16,7 @@
 - Conferir o formulário ligado ao CRM e testar com lead de teste da Meta: entra como Skyglass, vai para corretor alocado (ou Fila do CEO), mostra anúncio e respostas. Apago o teste depois.
 
 ## Preciso de você
-- Confirmar grupo S2 - Investimento.
+- Grupo confirmado: S2 - Investimento.
 - Nome do formulário do anúncio na Meta (quando estiver criado) e quais corretores atendem.
 
 ## Detalhes técnicos
