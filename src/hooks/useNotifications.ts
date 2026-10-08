@@ -169,6 +169,7 @@ export function useNotifications() {
             description: notification.mensagem,
             id: `notif-${notification.id}`,
             duration: fixo ? Infinity : undefined,
+            closeButton: true,
             action: {
               label: fixo ? "Abrir lead" : "Abrir",
               onClick: () => window.location.assign(getNotificationUrl(notification)),
