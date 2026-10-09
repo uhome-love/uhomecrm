@@ -1,46 +1,20 @@
-# Levantamento — visitas x vendas por gerente (últimos 60 dias, 09/08 a 08/10/2026)
+# Modelo convitesabado_openoutlet0910 (Open Bosque): validar e deixar pronto
 
-Somente leitura, nenhum dado alterado. Regras usadas: visita conta pela data da visita (canceladas fora); venda = negócio ganho com data de assinatura no período; parceria conta 0,5 para cada corretor; equipe = equipe do corretor na época do fato.
+## O que conferi
+- Pelo seu print, a Meta ainda mostra o modelo **"Em análise"**. Enquanto não for aprovado, ele não aparece no Disparo manual.
+- Os 3 botões são reconhecidos: "Sim, quero ir de manhã" e "Sim, quero ir de tarde" contam como **Sim**; "Não tenho interesse" conta como **Não**.
+- **Problema encontrado:** o nome do modelo tem "openoutlet", não "openbosque". Hoje o sistema não reconheceria o produto: quem responder "Sim" entraria **sem Open Bosque** na Fila do CEO e a roleta não mandaria para os corretores do Open.
+- A arte ainda não está ligada ao modelo (a foto viria vazia).
 
-## Resumo por gerente
+## O que vou fazer
+1. Fazer o sistema reconhecer "openoutlet" como **Open Bosque** (no recebimento da resposta e na Fila do CEO).
+2. Salvar a arte (menos de 300 KB) junto das outras artes e ligar ao modelo, para a foto aparecer sozinha no Disparo manual. **Preciso que você me mande o arquivo "Conheça os Decorados Outlet.png"** — o print não serve como arte.
+3. O botão escolhido (manhã ou tarde) aparece na linha do tempo do lead ("Cliente respondeu: Sim, quero ir de manhã"), para o corretor saber o turno da visita.
+4. Conferir com a Meta status, idioma e botões e abrir a Central para ver modelo e foto, **sem enviar nada**.
 
-| Equipe | Visitas totais | Realizadas | Vendas | Conversão |
-|---|---|---|---|---|
-| Bruno | 205 | 110 | 7 | 1 venda a cada 16 realizadas |
-| Gabriel | 156 | 67 | 4,5 | 1 a cada 15 |
-| Junior | 104 | 56 | 2 | 1 a cada 28 |
+Regras mantidas: quem já tem corretor continua com ele e recebe o aviso; quem não tem vai para a Fila do CEO como Open Bosque.
 
-## Por produto (total / realizadas / vendas)
-
-**Bruno**
-- Casa Tua Canoas: 66 / 40 / 0
-- Casa Tua Porto Alegre: 26 / 11 / 0
-- Connect JW: 17 / 11 / 1 (1 para 11)
-- AWA: 13 / 5 / 1 (1 para 5)
-- The Arch: 6 / 4 / 1 (1 para 4)
-- Alto Lindóia: 2 / 2 / 1 (1 para 2)
-- Shift 5/2/0 · Lake Baikal 4/2/0 · Orygem 4/1/0 · Open Bosque 2/1/0 · Lake Eyre 4/0/0
-- Outros/imóveis avulsos: 55 / 31 / 3 (inclui Vista Praia de Belas e Montenegro)
-
-**Gabriel**
-- Casa Tua Porto Alegre: 43 / 23 / 2 (1 para 11,5)
-- Casa Tua Canoas: 46 / 14 / 0
-- AWA: 9 / 2 / 0
-- Lake Eyre 4/4/0 · Lake Baikal 5/2/0 · Open Bosque 3/2/0
-- Terrace: 3 / 1 / 0,5 (parceria)
-- Mood 0/0/1 e Shift 0/0/1 (venda sem visita registrada no período)
-- Outros/imóveis avulsos: 37 / 18 / 0
-
-**Junior**
-- Casa Tua Canoas: 52 / 22 / 0
-- Casa Tua Porto Alegre: 27 / 14 / 1 (1 para 14)
-- Mood: 1 / 1 / 1
-- Open Bosque 4/3/0 · Flow 3/2/0 · Terrace 2/2/0 · Orygem 2/2/0
-- Outros/imóveis avulsos: 11 / 8 / 0
-
-## Pontos de atenção
-- Casa Tua Canoas: 76 visitas realizadas nas 3 equipes e nenhuma venda assinada no período.
-- Algumas vendas não têm visita no mesmo período (visita antes de 09/08 ou não registrada).
-
-## Próximo passo opcional
-Se aprovar, gero este levantamento em PDF/planilha para enviar aos gerentes.
+## Detalhes técnicos
+- `supabase/functions/whatsapp-webhook/index.ts` (linha 14) e `src/lib/reengajamentoEmpreendimento.ts`: incluir `openoutlet` na regra Open Bosque. Deploy do `whatsapp-webhook`.
+- Upload: `campaign-images/reengajamento/convitesabado-openoutlet0910.jpg`; nova entrada em `TEMPLATE_HEADER_IMAGES` (`DisparoCustomizadoCard.tsx`).
+- Sem migration.
