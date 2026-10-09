@@ -31,7 +31,7 @@ function roleToCargo(roles: string[]): string {
 
 export function useNotifications() {
   const { user } = useAuth();
-  const { roles } = useUserRole();
+  const { roles, isGestor } = useUserRole();
   const queryClient = useQueryClient();
   const cargo = roleToCargo(roles);
 
@@ -158,6 +158,8 @@ export function useNotifications() {
           if (!popupEnabled) return;
 
           const notification = n as Notification;
+          // Gestão (CEO/gerentes/gestores) vê lead reengajado só no sininho, sem pop-up
+          if (notification.tipo === "lead_reengajado" && isGestor) return;
           const shouldShowDesktop = document.visibilityState !== "visible";
 
           if (shouldShowDesktop) {
@@ -182,7 +184,7 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient, popupEnabled]);
+  }, [user, queryClient, popupEnabled, isGestor]);
 
   useEffect(() => {
     if (!user || !popupEnabled) return;
