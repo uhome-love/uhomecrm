@@ -114,7 +114,8 @@ async function resolveReengEmpreendimento(
       const emp = empreendimentoFromTemplate(data?.template_name);
       if (emp) return emp;
     }
-    const tail = (from || "").replace(/\D/g, "").slice(-10);
+    // últimos 8 dígitos: cobre número com e sem o 9 (WhatsApp às vezes devolve sem)
+    const tail = (from || "").replace(/\D/g, "").slice(-8);
     if (tail) {
       const { data } = await supabase
         .from("reengajamento_meta_disparos")
@@ -1611,6 +1612,33 @@ async function handleUnknownReply(
     .single();
 
   if (!createErr && newLead) {
+    // Resposta "solta" a um disparo recente (7 dias, casada pelos 8 últimos dígitos):
+    // amarra produto e grava a mensagem enviada + resposta na história.
+    try {
+      const desde7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: disps } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("id, template_name, responded_at")
+        .ilike("phone", `%${last8}%`)
+        .gte("sent_at", desde7)
+        .order("sent_at", { ascending: false })
+        .limit(1);
+      const disp = disps?.[0];
+      if (disp?.template_name) {
+        const emp = empreendimentoFromTemplate(disp.template_name);
+        if (emp) {
+          await supabase.from("pipeline_leads").update({ campanha: emp, empreendimento: emp }).eq("id", newLead.id);
+        }
+        if (!disp.responded_at) {
+          await supabase.from("reengajamento_meta_disparos")
+            .update({ responded_at: nowIso, response_text: msgText.slice(0, 500) }).eq("id", disp.id);
+        }
+        await registrarMensagemEnviadaNaTimeline(supabase, newLead.id, disp.template_name, msgText, contactName);
+      }
+    } catch (e) {
+      console.error("vincular resposta solta ao disparo error:", e);
+    }
+
     await distributeViroleta(supabaseUrl, serviceKey, newLead.id);
 
     // AI reply for new lead
