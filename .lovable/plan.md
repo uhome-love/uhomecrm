@@ -9,7 +9,7 @@
 - Resposta que volta sem o 9 já é ligada ao disparo (correção da Ana Maria).
 
 ## O que falta
-- **A arte deste modelo ainda não está ligada.** Só a do outlet antigo está. Sem a foto a Meta pode recusar o envio. Preciso do arquivo **"Conheça os Decorados Outlet.png"** (o print não serve).
+- **Ligar a arte recebida ("Conheça os Decorados Outlet")** a este modelo, otimizada para menos de 300 KB, para a foto aparecer sozinha no Disparo manual. Conferir que o link abre.
 
 ## Validação (sem enviar nada)
 1. Rodar uma conferência nos dados com 2 leads de teste: um com corretor ativo e um descartado. Confirmar que o primeiro fica com o corretor e gera aviso e linha do tempo, e que o segundo cai na Fila do CEO como Open Bosque. Apagar os testes no fim.
