@@ -410,7 +410,38 @@ Deno.serve(async (req) => {
 
     const compradoresBody = listaCompradores(body);
     const nomeRef = compradoresBody.map(nomeComprador).filter((n) => n.trim()).join(" e ");
-    const filename = `intermediacao_${slug(nomeParaArquivo(compradoresBody[0].tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
+    // Gerente do corretor principal (best-effort).
+    let gerenteNome = "";
+    try {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const c0 = body.corretores[0];
+      let corrUserId: string | null = null;
+      if (c0.email.trim()) {
+        const { data } = await admin.from("profiles").select("user_id").ilike("email", c0.email.trim()).limit(1).maybeSingle();
+        corrUserId = data?.user_id ?? null;
+      }
+      if (!corrUserId) {
+        const { data } = await admin.from("profiles").select("user_id").ilike("nome", c0.nome.trim()).limit(1).maybeSingle();
+        corrUserId = data?.user_id ?? null;
+      }
+      if (corrUserId) {
+        const { data: tm } = await admin.from("team_members").select("gerente_id").eq("user_id", corrUserId).eq("status", "ativo").limit(1).maybeSingle();
+        if (tm?.gerente_id) {
+          const { data: g } = await admin.from("profiles").select("nome").eq("user_id", tm.gerente_id).limit(1).maybeSingle();
+          gerenteNome = (g?.nome ?? "").trim();
+        }
+      }
+    } catch (e) { console.warn("gerente lookup falhou", e); }
+
+    const limpa = (s: string) => s.replace(/[\/\\:*?"<>|\r\n\t]+/g, " ").replace(/\s+/g, " ").trim();
+    const clienteNome = limpa(nomeRef) || "Cliente";
+    const unidadeTxt = /^unidade/i.test(body.imovel.unidade.trim()) ? body.imovel.unidade.trim() : `Unidade ${body.imovel.unidade.trim()}`;
+    const corrNomes = body.corretores.map((c) => c.nome.trim()).filter(Boolean);
+    const corrTxt = `${corrNomes.length > 1 ? "Corretores" : "Corretor"} ${corrNomes.join(" e ")}`;
+    let base = limpa(`Intermediação - ${clienteNome}, ${unidadeTxt}, ${body.imovel.empreendimento.trim()} - ${corrTxt}${gerenteNome ? ` e Gerente ${gerenteNome}` : ""}`);
+    if (base.length > 180) base = base.slice(0, 180).trim();
+    const filename = `${base}.docx`;
+    const filenameStorage = `intermediacao_${slug(nomeParaArquivo(compradoresBody[0].tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
 
     // Histórico (best-effort): grava arquivo no Storage e metadados na tabela.
     // Qualquer falha aqui NÃO bloqueia a geração/download do documento.
@@ -419,7 +450,7 @@ Deno.serve(async (req) => {
       const ano = new Date().getFullYear();
       // Path único usando o id da intermediação como prefixo curto (upsert:false evita sobrescrita).
       // O filename "bonito" é preservado no metadado para o download.
-      const storageName = `${intermediacaoId.slice(0, 8)}_${filename}`;
+      const storageName = `${intermediacaoId.slice(0, 8)}_${filenameStorage}`;
       const arquivoPath = `${ano}/${storageName}`;
 
       const compradorNome = compradoresBody.map(nomeComprador).filter((n) => n.trim()).join(" e ");
