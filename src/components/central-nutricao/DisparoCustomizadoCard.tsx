@@ -103,6 +103,7 @@ const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
   casatuacanoas_espaco: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatuacanoas-espaco.jpg",
   outlet_openbosque: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/outlet-openbosque.jpg",
   convitesabado_casatuacanoas: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/convitesabado-casatuacanoas.jpg",
+  convitesabado_openoutlet0910: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/convitesabado-openoutlet0910.jpg",
 };
 
 const RECENCIA_LABELS: Record<Recencia, string> = {
