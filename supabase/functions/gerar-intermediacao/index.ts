@@ -450,7 +450,7 @@ Deno.serve(async (req) => {
       const ano = new Date().getFullYear();
       // Path único usando o id da intermediação como prefixo curto (upsert:false evita sobrescrita).
       // O filename "bonito" é preservado no metadado para o download.
-      const storageName = `${intermediacaoId.slice(0, 8)}_${filename}`;
+      const storageName = `${intermediacaoId.slice(0, 8)}_${filenameStorage}`;
       const arquivoPath = `${ano}/${storageName}`;
 
       const compradorNome = compradoresBody.map(nomeComprador).filter((n) => n.trim()).join(" e ");
