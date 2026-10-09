@@ -1,7 +1,7 @@
 # Modelo convitesabado_openoutlet0910 (Open Bosque): validar e deixar pronto
 
 ## O que conferi
-- Pelo seu print, a Meta ainda mostra o modelo **"Em análise"**. Enquanto não for aprovado, ele não aparece no Disparo manual.
+- Pelo seu último print, a Meta já **aprovou** o modelo (Ativo).
 - Os 3 botões são reconhecidos: "Sim, quero ir de manhã" e "Sim, quero ir de tarde" contam como **Sim**; "Não tenho interesse" conta como **Não**.
 - **Problema encontrado:** o nome do modelo tem "openoutlet", não "openbosque". Hoje o sistema não reconheceria o produto: quem responder "Sim" entraria **sem Open Bosque** na Fila do CEO e a roleta não mandaria para os corretores do Open.
 - A arte ainda não está ligada ao modelo (a foto viria vazia).
