@@ -29,14 +29,16 @@ Regra oficial da direção:
 
 | Visitas válidas na semana | Situação |
 |---|---|
-| 3 ou mais | Apto à Roleta (se CRM ≥ 80% e demais regras) |
-| 1 ou 2 | Fora da Roleta — trabalha carteira, Oferta Ativa e indicações |
-| 0 | Fora da Roleta + one-on-one obrigatório com um sócio na segunda |
+| 2 ou mais — **Meta conquistada** | Apto à Roleta (se CRM ≥ 80% e demais regras) |
+| 1 — **Em evolução** | Fora da Roleta — trabalha carteira, Oferta Ativa e indicações; volta ao fazer a 2ª visita |
+| 0 — **Plano de retomada** | Fora da Roleta + one-on-one obrigatório com um sócio na segunda; gerente acompanha |
+
+**Meta inicial: 2 visitas por semana** (decisão da direção). Fica na Central de regras (`meta_visitas_semanais = 2`); só Lucas ou Gabrielle podem mudar (futuramente para 3), com registro. Sem aumento automático. Mudar a meta não altera semanas já fechadas — cada semana guarda a meta que valia nela.
 
 - Estados: **Em integração**, **Credenciado**, **Em recuperação** (visitas) e **Bloqueado por CRM**, com **todos** os motivos.
 - **Visita válida:** ligada a um cliente que já existia no CRM antes da visita; cliente não excluído; status realizada; feedback preenchido; 1 por cliente por dia. Não contam: sem cliente, cancelada, reagendada, no show. Indicação, prospecção própria e Oferta Ativa contam se o cliente foi cadastrado antes. Checagem no sistema, não só na tela.
-- **Datas (regra definitiva):** a primeira apuração é a **semana atual, 12/10 a 18/10/2026**. Na **segunda 19/10** o resultado dela já decide quem entra na Roleta. A partir daí, quem está fora volta **na hora** em que completar a 3ª visita válida da semana (com CRM ≥ 80%). Quem fez 3+ numa semana começa a seguinte apto.
-- **Integração de 30 dias para corretor novo** (desde a data oficial de ingresso): fora da Roleta mesmo com várias visitas; usa Oferta Ativa e prospecção; CRM em dia desde o primeiro dia. Ao terminar, só entra com CRM ≥ 80% + 3 visitas válidas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
+- **Datas:** a primeira apuração é a **semana atual, 12/10 a 18/10/2026**. Na **segunda 19/10** (após testes e aprovação) o resultado dela decide: 2+ começa apto, 1 em recuperação, 0 em plano de retomada com one-on-one. A partir daí, quem está fora volta **na hora** em que completar a 2ª visita válida da semana (com CRM ≥ 80%). Quem fez 2+ numa semana fica apto por visitas durante a seguinte.
+- **Integração de 30 dias para corretor novo** (desde a data oficial de ingresso): fora da Roleta mesmo com várias visitas; usa Oferta Ativa e prospecção; CRM em dia desde o primeiro dia. Ao terminar, só entra com CRM ≥ 80% + meta de visitas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
 - Outras exceções (férias, afastamento, aprovação da direção) com motivo, responsável, início e fim.
 - **Na entrega de cada lead** a Roleta confere tudo de novo — não só quando o corretor se credencia. Irregular para de receber na hora, sem perder seus clientes e negócios.
 - Chave liga/desliga para emergência. Nada é publicado sem teste e aprovação explícita da direção.
