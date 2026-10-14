@@ -83,7 +83,7 @@ function isHolidayBRT(): boolean {
 }
 
 // Janelas de credenciamento com horários de abertura e fechamento
-function getJanelasConfig(): JanelaConfig[] {
+export function getJanelasConfig(): JanelaConfig[] {
   const saturdayMorning = isSaturdayBRT();
   const sunday = isSundayBRTLocal();
   const holiday = isHolidayBRT();
@@ -103,7 +103,7 @@ function getJanelasConfig(): JanelaConfig[] {
 
 // NOTE: JANELAS_CONFIG is now computed inside the component to handle day changes
 
-function formatHora(h: number): string {
+export function formatHora(h: number): string {
   const hh = Math.floor(h);
   const mm = Math.round((h - hh) * 60);
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
@@ -120,7 +120,7 @@ function isJanelaAberta(j: JanelaConfig): boolean {
   return h >= j.credAberto.inicio && h < j.credAberto.fim;
 }
 
-function getJanelaStatus(j: JanelaConfig): "aberto" | "encerrado" | "futuro" {
+export function getJanelaStatus(j: JanelaConfig): "aberto" | "encerrado" | "futuro" {
   const h = getHoraDecimal();
   if (h < j.credAberto.inicio) return "futuro";
   if (h >= j.credAberto.fim) return "encerrado";
