@@ -18,10 +18,28 @@ Roleta atual (sem reescrever), regra de visitas válidas, tarefas e "sem próxim
 
 ## 3. Fases
 
-**Fase 0 — Urgente: CRM mínimo de 80% na Roleta noturna de hoje (14/10)**
-- Na hora de entregar cada lead da noite, o sistema confere a saúde do CRM do corretor (mesma régua da "Saúde da carteira"). Abaixo de 80%: não recebe e o lead vai para o próximo. Não mexe nos clientes que ele já tem.
-- O corretor vê na Minha rotina o % e o aviso "abaixo de 80% — atualize seus clientes para voltar a receber".
-- Só liga depois de testar e de você aprovar. Antes de ligar, te mostro quantos corretores ficariam abaixo de 80% agora, para não esvaziar a noite sem aviso.
+**Fase 0 — Base das chaves + CRM 80% na Roleta (execução detalhada)**
+
+**Dado atual (hoje, 15h):** dos 29 corretores ativos com carteira, **13 estão com CRM ≥ 80% e 15 estão abaixo** (1 sem cálculo). Se ligarmos hoje à noite, cerca de metade do time deixa de receber leads da Roleta. Antes de ligar, entrego a lista nominal com o % de cada um para Lucas e Gabrielle decidirem o momento (hoje à noite, ou dar 1–2 dias de aviso para regularizarem).
+
+Passo a passo:
+1. **Chaves independentes** na configuração da Roleta: `crm_gate_ativo` e `visitas_gate_ativo`, ambas **desligadas**, e `crm_minimo_pct = 80`, `meta_visitas_semanais = 2`. Só CEO/diretoria mudam, com registro (quem, quando, antes, depois, motivo).
+2. **Cálculo da saúde por corretor** usando exatamente a régua atual (mesmo resultado da "Saúde da carteira", estagnados fora da conta). Nada muda na tela de hoje.
+3. **Conferência na entrega de cada lead** (todos os turnos, inclusive domingo e leads de integrações): se `crm_gate_ativo` estiver ligada e o corretor estiver abaixo de 80%, ele é pulado e o lead vai ao próximo apto da mesma regra de produto/turno/equipe; se ninguém estiver apto, vai para a Fila CEO como hoje. Quem perde a condição para de receber na hora, mesmo já credenciado; nunca perde os leads que já tem.
+4. **Troca das regras antigas** (só quando a chave do CRM for ligada): sai o limite de 10 leads vermelhos; sai a exigência de 4 presenças (inclusive no domingo); continua o limite de 100 descartes no mês.
+5. **Registro** de cada vez que um corretor foi pulado (corretor, lead, motivo, % no momento) e de cada mudança de situação (bloqueou / liberou).
+6. **Tela do corretor (mínima nesta fase):** na Minha rotina, o card de saúde mostra "Meta Uhome: 80%" e, se estiver abaixo, "Atualize seus clientes para recuperar sua elegibilidade" com botão para o Pipeline filtrado. O card completo "Minha evolução" vem na Fase 2.
+7. **Campo de data de ingresso** do corretor criado vazio + lista dos corretores que entraram nos últimos 30 dias (hoje: 1) para Lucas e Gabrielle confirmarem as datas. A carência só bloqueia depois dessa confirmação.
+
+Testes antes de pedir para ligar (com corretor e lead de teste, apagando tudo no fim):
+- Chave desligada: Roleta entrega exatamente como hoje.
+- Chave ligada: corretor com 79,99% é pulado; com 80%, 85%, 90% e 100% recebe.
+- Corretor regulariza e volta a 80%: recebe no próximo lead, sem precisar se credenciar de novo.
+- Ligar o CRM não ativa a regra de visitas.
+- 100 descartes continua barrando; 10 vermelhos e 4 presenças não barram mais.
+- Leads já recebidos continuam com o corretor.
+
+**Ligação real:** só depois dos testes, da lista nominal e da sua aprovação explícita. A chave pode ser desligada a qualquer momento, voltando tudo ao normal.
 
 **Fase 1 — Regra de credenciamento por visitas**
 
