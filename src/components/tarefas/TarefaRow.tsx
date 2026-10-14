@@ -40,10 +40,10 @@ export default function TarefaRow({ t, corretorNome, somenteLeitura, onAbrir, on
       </div>
       {t.lead?.telefone && (
         <>
-          <a href={waLink(t.lead.telefone)} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
+          <a href={waLink(t.lead.telefone) ?? undefined} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
             <MessageCircle className="h-4 w-4" />
           </a>
-          <a href={telLink(t.lead.telefone)} aria-label="Ligar" className="hidden rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground sm:block">
+          <a href={telLink(t.lead.telefone) ?? undefined} aria-label="Ligar" className="hidden rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground sm:block">
             <Phone className="h-4 w-4" />
           </a>
         </>
