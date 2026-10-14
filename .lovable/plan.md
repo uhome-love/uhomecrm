@@ -127,10 +127,11 @@ Ordem dos cards (computador em grade, celular um embaixo do outro):
 | Semana anterior: 4 ✓ apto    |  | [Atualizar meus clientes]    |
 +------------------------------+  +------------------------------+
 +---------------------------------------------------------------+
-| MINHA ROLETA — VOCÊ ESTÁ PERTO DA SUA ROLETA!                 |
-| [✓] CRM acima de 80%   [ ] 2 visitas na semana (falta 1)      |
-| Novos leads da Roleta temporariamente indisponíveis.          |
-| [Buscar oportunidades na Oferta Ativa]                        |
+| MINHA ROLETA — ROLETA CONQUISTADA!                            |
+| [✓] CRM 84% (mín. 80%)                                        |
+| [✓] Produtividade: 4 visitas na semana anterior — apto        |
+|     até domingo. Esta semana: 1 de 2 (garante a próxima).     |
+| Você está apto a receber novas oportunidades.                 |
 +---------------------------------------------------------------+
 +---------------------------------------------------------------+
 | O QUE POSSO FAZER AGORA?                                      |
@@ -214,7 +215,7 @@ Toda mudança de situação grava: quando, motivo, o que causou (visita, pendên
 - **Barrar a Roleta por engano:** o prazo é curto (CRM 80% hoje à noite, visitas em 19/10). Antes de cada ligação mostro a lista de quem ficaria fora, e só ligo com aprovação.
 - **Muitos corretores bloqueados no primeiro dia:** a Fila CEO pode encher. Vamos medir na observação antes de ligar.
 - **Data de ingresso:** hoje o CRM não tem um campo "data oficial de ingresso" do corretor, só a data em que o acesso foi criado (que pode ser diferente). Precisamos criar esse campo e a direção/RH preencher para quem entrou nos últimos 30 dias.
-- **Carência atual de 14 dias:** não encontrei uma regra de 14 dias funcionando hoje na Roleta. A nova carência de 30 dias será criada do zero, e só passa a barrar quando a política for ligada.
+- **Carência atual de 14 dias:** não encontrei uma regra de 14 dias funcionando hoje na Roleta. A nova carência de 30 dias será criada do zero, e só passa a barrar depois que as datas de ingresso forem confirmadas e a regra for aprovada.
 - **Visitas sem cliente:** nos últimos 60 dias, todas as 240 visitas realizadas estão ligadas a um cliente — o impacto prático é pequeno. A regra protege o futuro.
 - **"Cliente cadastrado antes da visita":** vamos comparar a data de cadastro do cliente com a data em que a visita foi registrada. Um cliente cadastrado na mesma hora só para lançar a visita não conta.
 - **Feedback:** a visita já pede feedback na tela de visita vencida; a regra passa a conferir isso também no sistema.
@@ -232,7 +233,7 @@ Os 15 cenários do documento original e os 12 novos serão testados com corretor
 5. Cancelada ou no show não conta.
 6. Visitas antes de 12/10/2026 não contam; as de 12 a 18/10 decidem quem entra em 19/10.
 7. Nenhum bloqueio por visitas antes de 19/10 (só o de CRM 80%, se aprovado para hoje à noite).
-8. Corretor com menos de 30 dias não recebe lead da Roleta (com a política ligada).
+8. Corretor com menos de 30 dias não recebe lead da Roleta (depois de aprovada a carência).
 9. Corretor novo usa Oferta Ativa e cadastra seus próprios clientes.
 10. Corretor novo vê pendências de CRM desde o primeiro dia.
 11. Corretor com 30 dias completos sem a meta de visitas continua fora da Roleta.
@@ -262,13 +263,9 @@ Pendente:
 
 - Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Saúde do CRM = mesmo cálculo de `rpc_carteira_saude` / `lead_saude_status` (extrair o miolo para uma função interna por corretor, chamada pelas duas, sem mudar o resultado atual) comparado com `crm_minimo_pct = 80`. Chamada dentro de `distribuir_lead_atomico` a cada entrega. Configuração: `data_inicio_apuracao = 2026-10-12`, `data_inicio_exigencia_visitas = 2026-10-19`, `crm_gate_ativo` (Fase 0) e `visitas_gate_ativo` separados. Tabelas novas: situação, histórico, exceções, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração — todas com permissões por perfil.
 - Visita válida: `pipeline_lead_id` não nulo, lead existente e não arquivado/excluído, `status = 'realizada'`, `resultado_visita`/`observacoes` preenchidos, `data_visita >= data_inicio_apuracao`, 1 por `cliente_key` + dia via `v_fato_visita`. Sinais antifraude gravados em tabela de revisão (não removem da contagem sem decisão humana); gatilho de auditoria em `visitas` para criação/alteração.
-- A chave antiga genérica (se existir alguma `politica_ativa`) não é usada; só `crm_gate_ativo` e `visitas_gate_ativo`, lidas por uma única função consultada em `credenciar_na_roleta`, `get_elegibilidade_roleta` e `distribuir_lead_atomico`.
+- Ativação só por `crm_gate_ativo` e `visitas_gate_ativo` (independentes), lidas por uma única função consultada em `credenciar_na_roleta`, `get_elegibilidade_roleta` e `distribuir_lead_atomico`.
 - Estados do CRM: `calculado | sem_carteira | dados_insuficientes | erro` — só `calculado` abaixo de 80% bloqueia.
-- Fase 0 entra em 1 migração (função de saúde por corretor + filtro na distribuição com chave), fora do horário de pico, antes das 18h30.
-- Novo campo `profiles.data_ingresso` (nulo por padrão; sem ele, usa `created_at` só como sugestão para conferência). Carência tem prioridade sobre visitas.
-- Roleta: filtro extra dentro de `distribuir_lead_atomico` (que hoje não chama nenhuma checagem), só quando `politica_ativa = true`. `credenciar_na_roleta` e `get_elegibilidade_roleta` passam a ler a mesma fonte.
-- Reaproveitar `one_on_one_reports`, `notifications`/`criar_notificacao`, push existente e a regra de VGV com `fn_equipe_na_data`.
-- Rotinas: virada de domingo 23:59 BRT, auditoria diária do CRM e checagem diária de dias sem venda.
+- Rotinas: fechamento semanal segunda 00h05 BRT (após o fim do domingo), checagem diária de dias sem venda.
 - Página Performance e relatório leem a mesma função de credenciamento e a mesma visita válida — nenhuma segunda regra de contagem.
 - Fotos semanais: tabela `performance_fechamento_semanal` (semana, data da consolidação, versão das regras, totais) + linhas por equipe e por corretor (situação no fechamento, alertas). Correção = nova versão com motivo e autor; a anterior fica guardada. Reprocessar não muda a situação atual do corretor.
 - Envio: tabela de envios (destinatário, canal, data, status, erro), chave única semana+destinatário+canal para não duplicar; reenvio manual pela direção.
