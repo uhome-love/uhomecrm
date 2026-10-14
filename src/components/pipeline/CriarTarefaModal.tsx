@@ -136,7 +136,7 @@ export default function CriarTarefaModal({ open, lead, permitirNota = false, onC
           <div className="mt-0.5 text-xs text-muted-foreground">
             {isNota
               ? "uma tarefa só sua, sem precisar de cliente (reunião, recado, meta)"
-              : "um alarme pra você não esquecer — não conta ponto, só ⚡ Registrar conta"}
+              : "para você não esquecer — ao concluir com observação, o lead é atualizado"}
           </div>
         </div>
 
