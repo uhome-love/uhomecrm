@@ -49,6 +49,8 @@ export default function TarefasCorretor() {
   const semPasso = useSemProximoPasso(visao === "me" ? user?.id ?? null : null, data?.pendentes);
 
   const [aba, setAba] = useState<AbaTarefa>(() => "hoje");
+  const [semPassoAba, setSemPassoAba] = useState(false);
+  useEffect(() => { if (visao !== "me") setSemPassoAba(false); }, [visao]);
   const [busca, setBusca] = useState("");
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -100,28 +102,43 @@ export default function TarefasCorretor() {
       <div className="flex flex-wrap gap-2">
         {ABAS.map((a) => {
           const n = abas[a.key].length;
-          const on = aba === a.key;
-          return (
-            <button key={a.key} type="button" onClick={() => setAba(a.key)} className={cn(
+          const on = !semPassoAba && aba === a.key;
+          const btn = (
+            <button key={a.key} type="button" onClick={() => { setSemPassoAba(false); setAba(a.key); }} className={cn(
               "rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors",
               on ? "bg-primary text-primary-foreground" : cn("bg-muted hover:bg-muted/70", n > 0 && a.tom),
             )}>
               {a.label} {a.key !== "concluidas" || n > 0 ? n : ""}
             </button>
           );
+          if (a.key !== "concluidas" || visao !== "me") return btn;
+          const nSem = semPasso.data?.length ?? 0;
+          return [
+            <button key="sem_passo" type="button" onClick={() => setSemPassoAba(true)} className={cn(
+              "rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors",
+              semPassoAba ? "bg-primary text-primary-foreground" : cn("bg-muted hover:bg-muted/70", nSem > 0 && "text-warning"),
+            )}>
+              Sem próximo passo {nSem}
+            </button>,
+            btn,
+          ];
         })}
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar cliente ou tarefa..." className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-[13px]" />
-      </div>
-
-      {visao === "me" && semPasso.data && (
-        <SemProximoPasso leads={semPasso.data} onAbrir={drawer.openLead} onCriar={(lead) => setCriar({ open: true, lead })} />
+      {!semPassoAba && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar cliente ou tarefa..." className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-[13px]" />
+        </div>
       )}
 
-      {isLoading ? (
+      {semPassoAba && visao === "me" ? (
+        semPasso.isLoading ? (
+          <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+        ) : (
+          <SemProximoPasso leads={semPasso.data ?? []} onAbrir={drawer.openLead} onCriar={(lead) => setCriar({ open: true, lead })} />
+        )
+      ) : isLoading ? (
         <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
       ) : lista.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-8 text-center text-[13px] text-muted-foreground">
