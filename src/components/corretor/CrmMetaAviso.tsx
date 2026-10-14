@@ -76,7 +76,7 @@ export default function CrmMetaAviso() {
         <span className="font-semibold text-foreground">{fmt(min)}%</span>.{" "}
         {crm.a_atualizar ? `${crm.a_atualizar} clientes precisam de atualização. ` : ""}
         {gate
-          ? "Atualize seus clientes e você volta automaticamente à Roleta ao chegar ao mínimo."
+          ? `Atualize sua carteira até atingir ${fmt(min)}% para recuperar o acesso ao credenciamento.`
           : "Atualize seus clientes para conquistar o padrão Uhome."}
       </p>
       <Button size="sm" onClick={goClientes}>Atualizar meus clientes</Button>
