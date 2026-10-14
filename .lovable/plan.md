@@ -18,10 +18,28 @@ Roleta atual (sem reescrever), regra de visitas válidas, tarefas e "sem próxim
 
 ## 3. Fases
 
-**Fase 0 — Urgente: CRM mínimo de 80% na Roleta noturna de hoje (14/10)**
-- Na hora de entregar cada lead da noite, o sistema confere a saúde do CRM do corretor (mesma régua da "Saúde da carteira"). Abaixo de 80%: não recebe e o lead vai para o próximo. Não mexe nos clientes que ele já tem.
-- O corretor vê na Minha rotina o % e o aviso "abaixo de 80% — atualize seus clientes para voltar a receber".
-- Só liga depois de testar e de você aprovar. Antes de ligar, te mostro quantos corretores ficariam abaixo de 80% agora, para não esvaziar a noite sem aviso.
+**Fase 0 — Base das chaves + CRM 80% na Roleta (execução detalhada)**
+
+**Dado atual (hoje, 15h):** dos 29 corretores ativos com carteira, **13 estão com CRM ≥ 80% e 15 estão abaixo** (1 sem cálculo). Se ligarmos hoje à noite, cerca de metade do time deixa de receber leads da Roleta. Antes de ligar, entrego a lista nominal com o % de cada um para Lucas e Gabrielle decidirem o momento (hoje à noite, ou dar 1–2 dias de aviso para regularizarem).
+
+Passo a passo:
+1. **Chaves independentes** na configuração da Roleta: `crm_gate_ativo` e `visitas_gate_ativo`, ambas **desligadas**, e `crm_minimo_pct = 80`, `meta_visitas_semanais = 2`. Só CEO/diretoria mudam, com registro (quem, quando, antes, depois, motivo).
+2. **Cálculo da saúde por corretor** usando exatamente a régua atual (mesmo resultado da "Saúde da carteira", estagnados fora da conta). Nada muda na tela de hoje.
+3. **Conferência na entrega de cada lead** (todos os turnos, inclusive domingo e leads de integrações): se `crm_gate_ativo` estiver ligada e o corretor estiver abaixo de 80%, ele é pulado e o lead vai ao próximo apto da mesma regra de produto/turno/equipe; se ninguém estiver apto, vai para a Fila CEO como hoje. Quem perde a condição para de receber na hora, mesmo já credenciado; nunca perde os leads que já tem.
+4. **Troca das regras antigas** (só quando a chave do CRM for ligada): sai o limite de 10 leads vermelhos; sai a exigência de 4 presenças (inclusive no domingo); continua o limite de 100 descartes no mês.
+5. **Registro** de cada vez que um corretor foi pulado (corretor, lead, motivo, % no momento) e de cada mudança de situação (bloqueou / liberou).
+6. **Tela do corretor (mínima nesta fase):** na Minha rotina, o card de saúde mostra "Meta Uhome: 80%" e, se estiver abaixo, "Atualize seus clientes para recuperar sua elegibilidade" com botão para o Pipeline filtrado. O card completo "Minha evolução" vem na Fase 2.
+7. **Campo de data de ingresso** do corretor criado vazio + lista dos corretores que entraram nos últimos 30 dias (hoje: 1) para Lucas e Gabrielle confirmarem as datas. A carência só bloqueia depois dessa confirmação.
+
+Testes antes de pedir para ligar (com corretor e lead de teste, apagando tudo no fim):
+- Chave desligada: Roleta entrega exatamente como hoje.
+- Chave ligada: corretor com 79,99% é pulado; com 80%, 85%, 90% e 100% recebe.
+- Corretor regulariza e volta a 80%: recebe no próximo lead, sem precisar se credenciar de novo.
+- Ligar o CRM não ativa a regra de visitas.
+- 100 descartes continua barrando; 10 vermelhos e 4 presenças não barram mais.
+- Leads já recebidos continuam com o corretor.
+
+**Ligação real:** só depois dos testes, da lista nominal e da sua aprovação explícita. A chave pode ser desligada a qualquer momento, voltando tudo ao normal.
 
 **Fase 1 — Regra de credenciamento por visitas**
 
@@ -172,17 +190,23 @@ Os 15 cenários do documento original e os 12 novos serão testados com corretor
 Testes da meta de 2 visitas: 0 ou 1 visita sem semana anterior = fora; 2 visitas + CRM ≥ 80% = apto; 3 = meta superada; 2 visitas + CRM abaixo de 80% = bloqueado por CRM; bateu na semana anterior = começa apto; em recuperação faz a 2ª = libera na hora; semana zerada = 1 one-on-one só; integração = não recebe; mudar a meta de 2 para 3 não muda semanas fechadas; demais regras da Roleta mantidas.
 12. Corretor com carência encerrada, CRM em dia e meta cumprida entra na Roleta.
 
-## 8. Decisões que a direção ainda precisa tomar
+## 8. Decisões
 
-Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, carência de 30 dias.
+Já decididas pela direção:
+- Meta inicial de **2 visitas** por semana; CRM mínimo **80%** (régua atual, estagnados fora da conta, sem novas obrigações de tarefa).
+- Primeira apuração 12 a 18/10; exigência de visitas a partir de 19/10, após testes e aprovação.
+- Duas chaves independentes: CRM pode ser ligado sem visitas.
+- **Domingo unificado** com os outros dias: meta de visitas + CRM ≥ 80%, mantendo produto, turno e equipe.
+- Quem perde a condição **para de receber na hora**, mesmo já credenciado; não perde leads já recebidos.
+- Mantém 100 descartes no mês; saem 10 leads vermelhos e 4 presenças.
+- Carência de 30 dias com campo oficial de ingresso; Lucas e Gabrielle confirmam as datas antes de bloquear.
+- Meta de **R$ 1,5 milhão por gerente, inclusive Junior**; revisões e decisões gerenciais com **Lucas e Gabrielle**.
+- Página Uhome Performance **reformula a atual** (sem duplicar).
+- Relatórios de segunda 07h30 depois de validar o envio.
 
-1. **Domingo:** hoje o domingo exige 2 visitas + 4 presenças na semana. Com as presenças fora, o domingo passa a seguir a mesma regra da semana (meta de 2 visitas + CRM ≥ 80%)?
-2. **CRM 80% hoje à noite:** confirma ligar na Roleta noturna de hoje (14/10), depois de ver a lista de quem ficaria fora?
-3. **Corretor que fica bloqueado no meio do turno:** sai da fila na hora, ou termina o turno?
-4. **Estagnados na conta do CRM:** hoje os clientes estagnados ficam fora do % (régua atual). Mantemos assim, conforme a orientação de não mudar a régua?
-5. **Meta do gerente Junior** (equipe menor): também R$ 1,5 milhão?
-6. **Diretoria responsável** pelas revisões gerenciais: Gabrielle continua nessa função?
-7. **Data de ingresso:** quem preenche (RH, gerente ou direção)?
+Pendente:
+1. **Quando ligar o CRM 80%:** hoje 15 de 29 corretores estão abaixo. Ligar hoje à noite ou avisar o time e ligar em 1–2 dias? (decide depois de ver a lista nominal)
+2. **Domínio de e-mail** para o relatório (ex.: avisos@uhomesales.com).
 
 ## Detalhes técnicos
 
