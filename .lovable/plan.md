@@ -37,44 +37,45 @@ Quadro obrigatório no topo da Minha rotina, compacto, na cor #4969FF:
 | MINHA META DE VISITAS        2/3     [#########-----] 67%    |
 | Falta 1 visita                         Agenda de visitas >   |
 |--------------------------------------------------------------|
-| MEU CRM ATUALIZADO           88%     [###########---] amarelo|
-| 5 de 42 clientes com pendência                               |
+| SAÚDE DO MEU CRM             94%     [############--] mín 90%|
+| Dentro da meta · 3 clientes para atualizar   Ver clientes >  |
 |--------------------------------------------------------------|
-| ROLETA: Bloqueada por múltiplos motivos                      |
-| Falta 1 visita realizada e existem 3 pendências no CRM.      |
+| ROLETA: Bloqueada por falta de visitas                       |
+| Falta 1 visita realizada. Seu CRM está dentro da meta.       |
 |--------------------------------------------------------------|
-| [Minhas visitas] [Resolver pendências] [Oferta Ativa]        |
+| [Minhas visitas] [Atualizar clientes] [Oferta Ativa]         |
 | [Meu credenciamento]                                         |
 +--------------------------------------------------------------+
 ```
 
 - **Meta de visitas:** visitas válidas da semana / 3, barra, quantas faltam, link para a Agenda. Com 4 ou mais mostra o número real (ex.: 5/3).
-- **CRM atualizado (%):** fórmula abaixo. Cores: 100% verde "CRM em dia"; 80–99% amarelo; abaixo de 80% vermelho. Sem clientes ativos: "Sem carteira ativa" (não mostra 100%).
-- **Situação da Roleta:** Roleta liberada / Bloqueada por falta de visitas / Bloqueada por CRM / Bloqueada por múltiplos motivos / Em integração — X dias restantes. Sempre diz exatamente o que falta. Ex.: "Parabéns! Você atingiu a meta de visitas e seu CRM está atualizado. Sua Roleta está liberada."
-- **A cor do CRM não libera sozinha:** com 99% e 1 pendência bloqueante, a Roleta continua bloqueada.
-- **Botões** levam para páginas que já existem: Agenda de visitas, Tarefas (aba de pendências), Oferta Ativa e uma tela "Meu credenciamento" com todos os motivos.
-- **Atualiza sozinho** depois de: registrar visita, corrigir cliente, concluir tarefa vencida, criar próximo passo, auditoria diária, virada da semana e exceção da direção. Os números vêm da mesma regra da Roleta — nada calculado duas vezes.
-- Em modo observação o quadro mostra a situação com o aviso "Prévia — ainda não afeta sua Roleta".
-
-**Fórmula do CRM atualizado**
-
-```text
-CRM atualizado % = clientes ativos SEM nenhuma pendência obrigatória
-                   ÷ total de clientes ativos  × 100
-```
-- Cliente ativo = no Pipeline, não descartado, não ganho/arquivado.
-- Pendências que contam: primeiro atendimento fora do prazo, sem próxima ação, tarefa vencida, visita realizada sem feedback, outras críticas que a direção marcar.
-- Cliente com 3 pendências conta **1 vez** no total e 1 vez como irregular, mas as 3 aparecem para corrigir.
-- Na página Uhome Performance: % de cada corretor e média da equipe **ponderada pelo número de clientes** (soma dos clientes em dia ÷ soma dos clientes ativos), sem esconder quem está bloqueado.
+- **Saúde do meu CRM:** exatamente o mesmo % que já aparece hoje em "Saúde da carteira" na Minha rotina. Barra com marca no mínimo de 90%, "Dentro da meta" ou "Abaixo da meta", quantos clientes precisam de atualização (Atenção + Desatualizado, que a régua atual já informa) e link para o Pipeline já filtrado nesses clientes. Sem clientes ativos: "Sem carteira ativa".
+- **Situação da Roleta:** Roleta liberada / Bloqueada por falta de visitas / Bloqueada por CRM (abaixo de 90%) / Bloqueada por múltiplos motivos / Em integração — X dias restantes. Sempre diz exatamente o que falta. Ex.: "Parabéns! Você atingiu a meta de visitas e seu CRM está atualizado. Sua Roleta está liberada."
+- **Botões** levam para páginas que já existem: Agenda de visitas, Pipeline filtrado nos clientes a atualizar, Oferta Ativa e uma tela "Meu credenciamento" com todos os motivos.
+- **Atualiza sozinho** depois de registrar visita, registrar atividade/contato com cliente, virada da semana e exceção da direção. Os números vêm da mesma regra da Roleta — nada calculado duas vezes.
+- Em modo observação o quadro mostra o aviso "Prévia — ainda não afeta sua Roleta".
 
 - Roleta: na hora de entregar cada lead, confere a regra. Se o corretor estiver bloqueado, o lead vai para o próximo da fila (ou Fila CEO). Todas as outras regras atuais continuam.
 - Bloqueado continua com seus leads, Pipeline, Agenda e Oferta Ativa.
-- **Dependências:** precisa da Fase 1 (visita válida + credenciamento) e da Fase 3 (lista de pendências). Para não atrasar, a parte do CRM % entra junto com a Fase 3 se ela não estiver pronta.
+- **Dependência:** só precisa da Fase 1.
 
-**Fase 3 — Saúde do CRM**
-- Pendências: lead novo sem primeiro atendimento no prazo, lead ativo sem próxima ação, tarefa vencida, visita realizada sem resultado.
-- Cada pendência mostra cliente, prazo vencido, o que fazer e link para corrigir. Resolveu tudo → libera na hora.
-- Direção escolhe quais pendências bloqueiam e quais são só aviso.
+**Fase 3 — Saúde do CRM: reaproveitar a régua atual (sem criar outra)**
+
+Decisão da direção: **não** existe régua nova. O Uhome Performance só lê o % que o CRM já calcula e aplica o mínimo de **90%**.
+
+O que já existe hoje (conferido):
+1. **Quem calcula:** a "Saúde da carteira" da Minha rotina, que usa a régua oficial de saúde do lead do sistema.
+2. **Critério:** saúde pelo **último contato real** registrado com o cliente (atividade, ligação, WhatsApp etc.) — não depende de ter tarefa marcada. Prazos de "em dia" por etapa: Novo Lead 1 dia, Sem Contato 2, Qualificação 7, Aquecimento 15, Visita 2, Proposta/Contrato 7. Passou do prazo = Atenção; passou do dobro = Desatualizado; Qualificação/Aquecimento parados mais de 21 dias e Sem Contato mais de 15 = Estagnado. Carência de transição já existente é respeitada.
+3. **Lead atualizado:** está "Em dia" (verde). Clientes ganhos, descartados, caídos e arquivados não entram.
+4. **Indicador reutilizado:** "% em dia" = clientes em dia ÷ clientes ativos (os estagnados ficam fora da conta, como já é hoje).
+5. **Ligação com a Roleta:** a regra de credenciamento chama esse mesmo cálculo para o corretor e compara com 90%. Nenhuma fórmula duplicada.
+6. **Atualização automática:** o % muda assim que o corretor registra um contato (o sistema já atualiza o "último contato" do cliente). O painel recarrega depois de registrar atividade, concluir tarefa ou visita.
+
+Regras:
+- 90% a 100%: critério atendido. Abaixo de 90%: bloqueado por CRM. Voltou a 90%: libera na hora (se as visitas também estiverem ok).
+- **Não** bloqueia por falta de tarefa, tarefa vencida ou outra pendência fora da régua atual.
+- Exemplos: 3 visitas + 94% = atende; 3 visitas + 87% = bloqueado por CRM; 1 visita + 100% = depende das visitas (ou da semana anterior).
+- Página Performance: % de cada corretor e da equipe com a mesma régua (soma de em dia ÷ soma de ativos da equipe), sem esconder bloqueios individuais.
 
 **Fase 4 — One-on-one, Botão Vermelho e gerentes**
 - Semana com zero visitas → na segunda cria "One-on-one obrigatório" para gerente e direção, sem repetir.
@@ -150,14 +151,14 @@ Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, 
 1. **Regras atuais da Roleta** (descartes, leads vermelhos, presença, domingo): continuam junto com as novas, ou as novas substituem?
 2. **Quando ligar o bloqueio de verdade?** Proposta: observação de 19/10 a 01/11, depois a direção decide.
 3. **Corretor que fica bloqueado no meio do turno:** sai da fila na hora, ou termina o turno?
-4. **Prazos do CRM:** quanto tempo para o primeiro atendimento e para registrar a visita?
+4. **Estagnados na conta do CRM:** hoje os clientes estagnados ficam fora do % (régua atual). Mantemos assim, conforme a orientação de não mudar a régua?
 5. **Meta do gerente Junior** (equipe menor): também R$ 1,5 milhão?
 6. **Diretoria responsável** pelas revisões gerenciais: Gabrielle continua nessa função?
 7. **Data de ingresso:** quem preenche (RH, gerente ou direção)?
 
 ## Detalhes técnicos
 
-- Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Recalculada por gatilho em `visitas`, `pipeline_tarefas` e `pipeline_leads`, e por rotina na virada da semana. Tabelas novas: situação, histórico, exceções, pendências, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração (com `data_inicio_politica = 2026-10-19` e `politica_ativa = false`) — todas com permissões por perfil.
+- Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Saúde do CRM = mesmo cálculo de `rpc_carteira_saude` / `lead_saude_status` (extrair o miolo para uma função interna por corretor, chamada pelas duas, sem mudar o resultado atual) comparado com `crm_minimo_pct = 90`. Recalculada ao entregar lead (na hora), por gatilho em `visitas` e na mudança de `pipeline_leads.ultimo_toque_at`, e na virada da semana. Tabelas novas: situação, histórico, exceções, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração (com `data_inicio_politica = 2026-10-19` e `politica_ativa = false`) — todas com permissões por perfil.
 - Visita válida: `pipeline_lead_id` não nulo, lead existente e não arquivado/excluído, `pipeline_leads.created_at < visitas.created_at` (com margem a definir), `status = 'realizada'`, `resultado_visita`/`observacoes` preenchidos, `data_visita >= data_inicio_politica`, 1 por `cliente_key` + dia via `v_fato_visita`.
 - Novo campo `profiles.data_ingresso` (nulo por padrão; sem ele, usa `created_at` só como sugestão para conferência). Carência tem prioridade sobre visitas.
 - Roleta: filtro extra dentro de `distribuir_lead_atomico` (que hoje não chama nenhuma checagem), só quando `politica_ativa = true`. `credenciar_na_roleta` e `get_elegibilidade_roleta` passam a ler a mesma fonte.
