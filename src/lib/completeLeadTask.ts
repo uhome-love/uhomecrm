@@ -70,7 +70,7 @@ export async function completeLeadTask({
 
   // Regra de ouro: LEMBRETE é post-it — concluir NÃO carimba toque nem gera
   // atividade de contato. Só tarefas de contato (o resto) contam como toque.
-  const ehLembrete = tarefaTipo === "lembrete";
+  const ehLembrete = false; // Tarefas (ex-lembretes) concluídas viram atividade + toque
 
   if (!ehLembrete) {
     // Toque humano do corretor (aditivo — não substitui ultima_acao_at)
