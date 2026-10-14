@@ -22,6 +22,7 @@ export type PipelineEvent =
   | "pipeline_card_menu_opened"
   | "pipeline_card_menu_action"
   | "pipeline_sort_changed"
+  | "pipeline_stage_view_changed"
   | "pipeline_filtro_clicked"
   | "drawer_action_clicked"
   | "drawer_anotar_saved"

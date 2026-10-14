@@ -18,6 +18,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import PipelineStageTransitionPopup, { needsTransitionPopup, type TransitionResult } from "./PipelineStageTransitionPopup";
 import AtividadePosMovePopup from "./AtividadePosMovePopup";
 import { sortLeads, type PipelineSortOrder } from "@/lib/pipelineSortOrder";
+import { loadStageView, saveStageView, applyStageView, substatusDaEtapa, type StageView } from "@/lib/stageViewPrefs";
+import { StageSortFilterMenu } from "./StageSortFilterMenu";
 import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
@@ -245,6 +247,18 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
 export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, showGanhos = false }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [stageViews, setStageViews] = useState<Record<string, StageView>>({});
+  const stageTotalsRef = useRef<Map<string, number>>(new Map());
+  useEffect(() => {
+    const next: Record<string, StageView> = {};
+    for (const s of stages) next[s.id] = loadStageView(s.id);
+    setStageViews(next);
+  }, [stages]);
+  const updateStageView = useCallback((stageId: string, v: StageView) => {
+    saveStageView(stageId, v);
+    setStageViews((prev) => ({ ...prev, [stageId]: v }));
+    trackPipelineEvent("pipeline_stage_view_changed", { stageId, sort: v.sort, sub: v.sub.length });
+  }, []);
   // Nova Gestão: popup leve pós-move (⚡ registrar atividade + agendar próximo passo).
   const [posMoveLead, setPosMoveLead] = useState<{ id: string; nome: string; etapa: string; stageAnteriorId: string } | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
@@ -457,14 +471,24 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       if (arr) arr.push(lead);
     }
     // Ordenação despachada pelo dropdown (default: Activity-Based).
-    // Fallback gracioso: se tarefasMap ainda não carregou e order=atividade,
-    // todos caem em "sem tarefa" e ficam created_at DESC — mesma UX do legado.
+    // Depois aplica a ordenação/filtro própria da etapa (se houver).
+    const totals = new Map<string, number>();
     for (const [stageId, arr] of map) {
-      const stageTipo = visibleStages.find((s) => s.id === stageId)?.tipo ?? null;
-      map.set(stageId, sortLeads(arr, sortOrder, tarefasMap, stageTipo));
+      const st = visibleStages.find((s) => s.id === stageId);
+      const stageTipo = st?.tipo ?? null;
+      totals.set(stageId, arr.length);
+      const sorted = sortLeads(arr, sortOrder, tarefasMap, stageTipo);
+      const view = stageViews[stageId];
+      if (view && (view.sort !== "padrao" || view.sub.length)) {
+        const campo = substatusDaEtapa(stageTipo, st?.nome)?.campo ?? null;
+        map.set(stageId, applyStageView(sorted, view, campo, tarefasMap));
+      } else {
+        map.set(stageId, sorted);
+      }
     }
+    stageTotalsRef.current = totals;
     return map;
-  }, [visibleStages, leads, tarefasMap, sortOrder]);
+  }, [visibleStages, leads, tarefasMap, sortOrder, stageViews]);
 
   const stageIndexMap = useMemo(() => {
     const m = new Map<string, number>();
@@ -1056,8 +1080,19 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                       padding: isDragOver ? "0 6px" : undefined,
                       transition: "all 0.2s ease",
                     }}>
-                      {stageLeads.length}
+                      {(() => {
+                        const total = stageTotalsRef.current.get(stage.id) ?? stageLeads.length;
+                        return total !== stageLeads.length ? `${stageLeads.length} de ${total}` : stageLeads.length;
+                      })()}
                     </span>
+                    {stage.tipo !== "descarte" && stage.tipo !== "convertido" && (
+                      <StageSortFilterMenu
+                        stageNome={stage.nome}
+                        view={stageViews[stage.id] ?? { sort: "padrao", sub: [] }}
+                        opcoes={substatusDaEtapa(stage.tipo, stage.nome)?.opcoes ?? null}
+                        onChange={(v) => updateStageView(stage.id, v)}
+                      />
+                    )}
                     {stage.tipo === "descarte" && stageLeads.length > 0 && (isGestor || isAdmin) && (
                       <button
                         onClick={() => setSweepConfirmOpen(true)}
