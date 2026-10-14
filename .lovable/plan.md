@@ -151,14 +151,14 @@ Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, 
 1. **Regras atuais da Roleta** (descartes, leads vermelhos, presença, domingo): continuam junto com as novas, ou as novas substituem?
 2. **Quando ligar o bloqueio de verdade?** Proposta: observação de 19/10 a 01/11, depois a direção decide.
 3. **Corretor que fica bloqueado no meio do turno:** sai da fila na hora, ou termina o turno?
-4. **Prazos do CRM:** quanto tempo para o primeiro atendimento e para registrar a visita?
+4. **Estagnados na conta do CRM:** hoje os clientes estagnados ficam fora do % (régua atual). Mantemos assim, conforme a orientação de não mudar a régua?
 5. **Meta do gerente Junior** (equipe menor): também R$ 1,5 milhão?
 6. **Diretoria responsável** pelas revisões gerenciais: Gabrielle continua nessa função?
 7. **Data de ingresso:** quem preenche (RH, gerente ou direção)?
 
 ## Detalhes técnicos
 
-- Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Recalculada por gatilho em `visitas`, `pipeline_tarefas` e `pipeline_leads`, e por rotina na virada da semana. Tabelas novas: situação, histórico, exceções, pendências, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração (com `data_inicio_politica = 2026-10-19` e `politica_ativa = false`) — todas com permissões por perfil.
+- Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Saúde do CRM = mesmo cálculo de `rpc_carteira_saude` / `lead_saude_status` (extrair o miolo para uma função interna por corretor, chamada pelas duas, sem mudar o resultado atual) comparado com `crm_minimo_pct = 90`. Recalculada ao entregar lead (na hora), por gatilho em `visitas` e na mudança de `pipeline_leads.ultimo_toque_at`, e na virada da semana. Tabelas novas: situação, histórico, exceções, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração (com `data_inicio_politica = 2026-10-19` e `politica_ativa = false`) — todas com permissões por perfil.
 - Visita válida: `pipeline_lead_id` não nulo, lead existente e não arquivado/excluído, `pipeline_leads.created_at < visitas.created_at` (com margem a definir), `status = 'realizada'`, `resultado_visita`/`observacoes` preenchidos, `data_visita >= data_inicio_politica`, 1 por `cliente_key` + dia via `v_fato_visita`.
 - Novo campo `profiles.data_ingresso` (nulo por padrão; sem ele, usa `created_at` só como sugestão para conferência). Carência tem prioridade sobre visitas.
 - Roleta: filtro extra dentro de `distribuir_lead_atomico` (que hoje não chama nenhuma checagem), só quando `politica_ativa = true`. `credenciar_na_roleta` e `get_elegibilidade_roleta` passam a ler a mesma fonte.
