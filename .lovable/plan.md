@@ -125,3 +125,19 @@ Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, 
 - Roleta: filtro extra dentro de `distribuir_lead_atomico` (que hoje não chama nenhuma checagem), só quando `politica_ativa = true`. `credenciar_na_roleta` e `get_elegibilidade_roleta` passam a ler a mesma fonte.
 - Reaproveitar `one_on_one_reports`, `notifications`/`criar_notificacao`, push existente e a regra de VGV com `fn_equipe_na_data`.
 - Rotinas: virada de domingo 23:59 BRT, auditoria diária do CRM e checagem diária de dias sem venda.
+- Página Performance e relatório leem a mesma função de credenciamento e a mesma visita válida — nenhuma segunda regra de contagem.
+- Fotos semanais: tabela `performance_fechamento_semanal` (semana, data da consolidação, versão das regras, totais) + linhas por equipe e por corretor (situação no fechamento, alertas). Correção = nova versão com motivo e autor; a anterior fica guardada. Reprocessar não muda a situação atual do corretor.
+- Envio: tabela de envios (destinatário, canal, data, status, erro), chave única semana+destinatário+canal para não duplicar; reenvio manual pela direção.
+- PDF: gerado a partir da foto da semana (mesmo padrão dos PDFs de relatório já usados), guardado em armazenamento privado com link temporário.
+- E-mail: e-mail transacional do Lovable Cloud, depois de configurar domínio de envio; o e-mail só traz resumo e link para a página com login.
+- Rotina de segunda 07h30 BRT (10h30 UTC) via cron + função de backend.
+- Permissões: gerente só a própria equipe (via `team_members` e equipe histórica); CEO/diretoria tudo; corretor só o próprio.
+
+## Testes do adendo (relatório e página)
+
+Período semanal correto; visitas da semana anterior certas; visitas inválidas fora; soma dos corretores = equipe; soma das equipes = empresa (respeitando parceria 50/50); gerente só vê a sua equipe; CEO e diretoria veem tudo; corretores zerados identificados; one-on-one sem duplicar; bloqueios com motivos certos; relatório enviado uma vez por pessoa; falha registrada e reenvio possível; fotos antigas disponíveis; PDF fiel; números iguais aos do painel do corretor e do gerente.
+
+## Decisões extras do adendo
+
+- **Domínio de e-mail:** podemos usar um endereço como avisos@uhomesales.com? (precisa configurar uma vez no domínio).
+- **Página atual de Performance:** a nova "Uhome Performance" substitui a atual (recomendado) ou fica ao lado?
