@@ -101,9 +101,12 @@ export default function DrawerProximaAcao({
     if (!hora) return base; // sem hora: mantém o comportamento atual (meio-dia)
     const [h, m] = hora.split(":").map(Number);
     if (Number.isNaN(h)) return base;
-    const withTime = new Date(base);
-    withTime.setHours(h, Number.isNaN(m) ? 0 : m, 0, 0);
-    return withTime;
+    // Monta o horário SEMPRE em BRT (-03:00), independente do fuso do aparelho.
+    const dia = String(nextTask.vence_em ?? "").slice(0, 10);
+    const hh = String(h).padStart(2, "0");
+    const mm = String(Number.isNaN(m) ? 0 : m).padStart(2, "0");
+    const withTime = new Date(`${dia}T${hh}:${mm}:00-03:00`);
+    return Number.isNaN(withTime.getTime()) ? base : withTime;
   })();
   const now = new Date();
   const overdue = !!dueDate && dueDate.getTime() < now.getTime();

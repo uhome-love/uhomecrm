@@ -230,16 +230,22 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
           .lt("vence_em", dataBRT(0));
       }
       if (lembreteSel && user) {
+        const nomeCliente = (lead as { nome?: string | null }).nome?.trim();
+        const tituloProx = nomeCliente ? `Próximo contato: ${nomeCliente}` : "Próximo contato";
         const { error } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: lead.id,
           tipo: "lembrete",
-          titulo: "Próximo contato",
+          titulo: tituloProx,
+          descricao: textoObs ? `Último contato: ${textoObs}` : null,
           vence_em: lembreteSel.data,
           hora_vencimento: lembreteSel.hora,
           responsavel_id: user.id,
           created_by: user.id,
         });
         if (error) throw error;
+        await supabase.from("pipeline_leads")
+          .update({ proxima_acao: tituloProx, data_proxima_acao: lembreteSel.data } as never)
+          .eq("id", lead.id);
       }
       if (etapaAlvo) {
         const nowIso = new Date().toISOString();

@@ -117,6 +117,11 @@ export default function CriarTarefaModal({ open, lead, permitirNota = false, onC
       created_by: user.id,
       origem: isNota ? "nota" : "manual",
     } as never);
+    if (!error && !isNota && leadSel) {
+      await supabase.from("pipeline_leads")
+        .update({ proxima_acao: titulo, data_proxima_acao: data } as never)
+        .eq("id", leadSel.id);
+    }
     setBusy(false);
     if (error) { toast.error(isNota ? "Não foi possível criar a anotação." : "Não foi possível criar a tarefa."); return; }
     const dataBr = new Date(data + "T00:00:00").toLocaleDateString("pt-BR");
