@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     .eq("tipo", "tarefa_horario").in("agrupamento_key", keys);
   const jaSet = new Set((ja ?? []).map((n) => n.agrupamento_key));
 
-  let enviados = 0;
+  let enviados = 0; let pushEnviados = 0; let pushFalhas = 0;
   for (const t of naHora) {
     const ak = `tarefa_hora_${t.id}`;
     if (jaSet.has(ak)) continue;
@@ -55,8 +55,9 @@ Deno.serve(async (req) => {
       titulo, mensagem, agrupamento_key: ak,
       dados: { tarefa_id: t.id, lead_id: t.pipeline_lead_id, url: "/tarefas" },
     });
+    let pushOk = false; let detalhe = "";
     try {
-      await fetch(`${url}/functions/v1/send-push`, {
+      const r = await fetch(`${url}/functions/v1/send-push`, {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -64,7 +65,17 @@ Deno.serve(async (req) => {
           data: { tag: ak, url: "/tarefas" },
         }),
       });
-    } catch (e) { console.warn("push falhou", (e as Error)?.message); }
+      detalhe = (await r.text()).slice(0, 300);
+      pushOk = r.ok;
+    } catch (e) { detalhe = String((e as Error)?.message || e).slice(0, 300); }
+    if (pushOk) pushEnviados++; else pushFalhas++;
+    try {
+      await sb.from("ops_events").insert({
+        fn: "tarefa-aviso-horario", level: pushOk ? "info" : "warn", category: "tarefa_push",
+        message: pushOk ? "push_ok" : "push_falhou",
+        ctx: { tarefa_id: t.id, user_id: t.responsavel_id, resposta: detalhe },
+      });
+    } catch (_) { /* best-effort */ }
   }
-  return json({ ok: true, na_hora: naHora.length, enviados, dry_run: !!body.dry_run });
+  return json({ ok: true, na_hora: naHora.length, enviados, push_ok: pushEnviados, push_falhas: pushFalhas, dry_run: !!body.dry_run });
 });
