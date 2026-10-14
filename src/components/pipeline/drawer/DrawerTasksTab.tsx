@@ -17,7 +17,7 @@ import { groupTasksByDeadline, formatTaskDeadline } from "@/lib/taskGrouping";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import type { TipoProximaTarefa } from "../task-completion/types";
 import RegistrarAtividadeModal from "../RegistrarAtividadeModal";
-import CriarLembreteModal from "../CriarLembreteModal";
+import CriarTarefaModal from "../CriarTarefaModal";
 
 interface Props {
   tarefas: PipelineTarefa[];
@@ -342,7 +342,7 @@ export default function DrawerTasksTab({
         />
       )}
 
-      <CriarLembreteModal
+      <CriarTarefaModal
         open={criarOpen}
         lead={{ id: leadId, nome: leadNome }}
         onClose={() => setCriarOpen(false)}

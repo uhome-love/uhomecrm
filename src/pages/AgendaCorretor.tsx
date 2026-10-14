@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilaDoDia, lembreteAutomatico, type LeadFila, type MotivoFila, type Compromisso, type LembretesAgrupados } from "@/hooks/useFilaDoDia";
 import RegistrarAtividadeModal from "@/components/pipeline/RegistrarAtividadeModal";
-import CriarLembreteModal from "@/components/pipeline/CriarLembreteModal";
+import CriarTarefaModal from "@/components/pipeline/CriarTarefaModal";
 import CardOverflowMenu from "@/components/pipeline/CardOverflowMenu";
 import HomiSugestaoMensagem from "@/components/pipeline/HomiSugestaoMensagem";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
@@ -932,7 +932,7 @@ export default function AgendaCorretor() {
         />
       )}
 
-      <CriarLembreteModal
+      <CriarTarefaModal
         open={criarLembrete}
         lead={null}
         permitirNota
@@ -941,7 +941,7 @@ export default function AgendaCorretor() {
       />
 
       {/* Lembrete criado a partir de um negócio do time (lead já fixado). */}
-      <CriarLembreteModal
+      <CriarTarefaModal
         open={!!lembreteNegocio}
         lead={lembreteNegocio}
         onClose={() => setLembreteNegocio(null)}

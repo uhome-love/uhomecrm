@@ -35,7 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import DiscardLeadDialog from "./DiscardLeadDialog";
-import CriarLembreteModal from "./CriarLembreteModal";
+import CriarTarefaModal from "./CriarTarefaModal";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 interface CardOverflowMenuProps {
@@ -225,7 +225,7 @@ export default function CardOverflowMenu({
 
       {/* Dialogs — isolados de propagation do card */}
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
-        <CriarLembreteModal
+        <CriarTarefaModal
           open={lembreteOpen}
           lead={{ id: lead.id, nome: lead.nome }}
           onClose={() => setLembreteOpen(false)}

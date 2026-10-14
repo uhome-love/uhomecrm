@@ -7,7 +7,7 @@ import { Bell, Phone, MessageCircle, RefreshCw, Home, Search, X, type LucideIcon
 import { cn } from "@/lib/utils";
 
 /**
- * CriarLembreteModal — o PADRÃO ÚNICO de criar lembrete (Nova Gestão).
+ * CriarTarefaModal — o PADRÃO ÚNICO de criar lembrete (Nova Gestão).
  * O MESMO formulário é usado no ⋮ do card, no modal do lead e na Agenda.
  * Regra: lembrete é um alarme (não conta ponto — só ⚡ Registrar conta) e SEMPRE
  * tem data E hora. Quando aberto sem lead, o corretor busca o cliente aqui.
@@ -49,7 +49,7 @@ interface Props {
   onSaved?: () => void;
 }
 
-export default function CriarLembreteModal({ open, lead, permitirNota = false, onClose, onSaved }: Props) {
+export default function CriarTarefaModal({ open, lead, permitirNota = false, onClose, onSaved }: Props) {
   const { user } = useAuth();
   const [modo, setModo] = useState<"cliente" | "nota">("cliente");
   const [leadSel, setLeadSel] = useState<LeadRef | null>(lead ?? null);
