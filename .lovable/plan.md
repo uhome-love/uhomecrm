@@ -18,15 +18,28 @@ Roleta atual (sem reescrever), regra de visitas válidas, tarefas e "sem próxim
 
 ## 3. Fases
 
-**Fase 1 — Regra de credenciamento (sem mudar nada na Roleta ainda)**
-- Uma única regra no sistema que responde: o corretor está **Em integração**, **Credenciado**, **Em recuperação** ou **Bloqueado por CRM**, com **todos** os motivos.
-- Meta: 3 visitas válidas na semana (segunda a domingo, horário de Brasília).
-- **Visita válida** (regra da direção): ligada a um cliente que já existia no CRM antes da visita ser registrada; cliente não excluído; status realizada; feedback preenchido; 1 por cliente por dia. Não contam: sem cliente, cancelada, reagendada, no show. Visitas de indicação, prospecção própria e Oferta Ativa contam se o cliente foi cadastrado antes. Essa checagem fica no sistema, não só na tela.
-- Libera na hora da 3ª visita; quem bateu a meta começa a semana seguinte credenciado.
-- **Início:** só conta visitas a partir de **segunda 19/10/2026 00h** (primeira semana: 19/10 a 25/10). A semana de 12/10 a 18/10 segue 100% com as regras antigas. Nada retroativo.
-- **Integração de 30 dias para corretor novo** (a partir da data oficial de ingresso): status "Em integração — X dias restantes", fora da Roleta mesmo com 3, 5 ou 10 visitas. Usa Oferta Ativa, prospecção e registra visitas; CRM em dia desde o primeiro dia. Ao terminar os 30 dias **não libera sozinho**: precisa CRM em dia + 3 visitas válidas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
+**Fase 0 — Urgente: CRM mínimo de 90% na Roleta noturna de hoje (14/10)**
+- Na hora de entregar cada lead da noite, o sistema confere a saúde do CRM do corretor (mesma régua da "Saúde da carteira"). Abaixo de 90%: não recebe e o lead vai para o próximo. Não mexe nos clientes que ele já tem.
+- O corretor vê na Minha rotina o % e o aviso "abaixo de 90% — atualize seus clientes para voltar a receber".
+- Só liga depois de testar e de você aprovar. Antes de ligar, te mostro quantos corretores ficariam abaixo de 90% agora, para não esvaziar a noite sem aviso.
+
+**Fase 1 — Regra de credenciamento por visitas**
+
+Regra oficial da direção:
+
+| Visitas válidas na semana | Situação |
+|---|---|
+| 3 ou mais | Apto à Roleta (se CRM ≥ 90% e demais regras) |
+| 1 ou 2 | Fora da Roleta — trabalha carteira, Oferta Ativa e indicações |
+| 0 | Fora da Roleta + one-on-one obrigatório com um sócio na segunda |
+
+- Estados: **Em integração**, **Credenciado**, **Em recuperação** (visitas) e **Bloqueado por CRM**, com **todos** os motivos.
+- **Visita válida:** ligada a um cliente que já existia no CRM antes da visita; cliente não excluído; status realizada; feedback preenchido; 1 por cliente por dia. Não contam: sem cliente, cancelada, reagendada, no show. Indicação, prospecção própria e Oferta Ativa contam se o cliente foi cadastrado antes. Checagem no sistema, não só na tela.
+- **Datas (regra definitiva):** a primeira apuração é a **semana atual, 12/10 a 18/10/2026**. Na **segunda 19/10** o resultado dela já decide quem entra na Roleta. A partir daí, quem está fora volta **na hora** em que completar a 3ª visita válida da semana (com CRM ≥ 90%). Quem fez 3+ numa semana começa a seguinte apto.
+- **Integração de 30 dias para corretor novo** (desde a data oficial de ingresso): fora da Roleta mesmo com várias visitas; usa Oferta Ativa e prospecção; CRM em dia desde o primeiro dia. Ao terminar, só entra com CRM ≥ 90% + 3 visitas válidas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
 - Outras exceções (férias, afastamento, aprovação da direção) com motivo, responsável, início e fim.
-- Chave liga/desliga. Começa **desligada (modo observação)**: calcula e mostra, mas não mexe em nenhuma entrega de lead. As regras atuais da Roleta continuam valendo até a direção autorizar a ligação oficial.
+- **Na entrega de cada lead** a Roleta confere tudo de novo — não só quando o corretor se credencia. Irregular para de receber na hora, sem perder seus clientes e negócios.
+- Chave liga/desliga para emergência. Nada é publicado sem teste e aprovação explícita da direção.
 
 **Fase 2 — Painel do corretor na Minha rotina + ligação com a Roleta**
 
