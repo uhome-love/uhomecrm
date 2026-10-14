@@ -150,7 +150,7 @@ Toda mudança de situação grava: quando, motivo, o que causou (visita, pendên
 - **Visitas sem cliente:** nos últimos 60 dias, todas as 240 visitas realizadas estão ligadas a um cliente — o impacto prático é pequeno. A regra protege o futuro.
 - **"Cliente cadastrado antes da visita":** vamos comparar a data de cadastro do cliente com a data em que a visita foi registrada. Um cliente cadastrado na mesma hora só para lançar a visita não conta.
 - **Feedback:** a visita já pede feedback na tela de visita vencida; a regra passa a conferir isso também no sistema.
-- **Regras atuais da Roleta** (descartes, leads vermelhos, presença, domingo) continuam até a direção decidir.
+- **Regras atuais da Roleta (decidido):** limite de **100 descartes no mês continua**; os **10 leads vermelhos saem** e no lugar entra o **CRM ≥ 80%** (que vale para todos os turnos, não só a noite); a exigência de **4 presenças sai** (inclusive para o domingo). Turno, produto e equipe continuam iguais. Essas trocas entram junto com a Fase 0 (CRM 80%), com aprovação antes de ligar.
 - Limite de 2 alterações de banco por dia no horário comercial: as fases mais pesadas ficam fora do expediente.
 
 ## 7. Testes (critérios de aceite)
@@ -176,7 +176,7 @@ Testes da meta de 2 visitas: 0 ou 1 visita sem semana anterior = fora; 2 visitas
 
 Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, carência de 30 dias.
 
-1. **Regras atuais da Roleta** (descartes, leads vermelhos, presença, domingo): continuam junto com as novas, ou as novas substituem?
+1. **Domingo:** hoje o domingo exige 2 visitas + 4 presenças na semana. Com as presenças fora, o domingo passa a seguir a mesma regra da semana (meta de 2 visitas + CRM ≥ 80%)?
 2. **CRM 80% hoje à noite:** confirma ligar na Roleta noturna de hoje (14/10), depois de ver a lista de quem ficaria fora?
 3. **Corretor que fica bloqueado no meio do turno:** sai da fila na hora, ou termina o turno?
 4. **Estagnados na conta do CRM:** hoje os clientes estagnados ficam fora do % (régua atual). Mantemos assim, conforme a orientação de não mudar a régua?
