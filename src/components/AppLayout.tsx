@@ -24,6 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
 import VisitaPendenteBloqueio from "@/components/visitas/VisitaPendenteBloqueio";
+import ComunicadoTarefas from "@/components/comunicados/ComunicadoTarefas";
 import { useVendaRealtimeNotification } from "@/hooks/useVendaRealtimeNotification";
 import { useWhatsAppNotifications } from "@/hooks/useWhatsAppNotifications";
 
@@ -344,6 +345,7 @@ export default function AppLayout() {
           onResult={refreshPending}
         />
         {isCorretor && !isAdmin && !isDiretor && !isGestor && <VisitaPendenteBloqueio />}
+        {isCorretor && !isAdmin && !isDiretor && !isGestor && <ComunicadoTarefas />}
         <NewLeadBanner />
         <GlobalSearch />
         <BackendHealthBanner />
