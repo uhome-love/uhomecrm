@@ -91,7 +91,7 @@ export default function AgendaResumoWidget() {
         <span className="flex-1 text-[12px] text-foreground">
           {atrasados > 0 && <span className="font-semibold text-red-600">{atrasados} atrasado{atrasados !== 1 ? "s" : ""}</span>}
           {atrasados > 0 && " · "}
-          <span className="font-medium">{hoje} lembrete{hoje !== 1 ? "s" : ""} hoje</span>
+          <span className="font-medium">{hoje} tarefa{hoje !== 1 ? "s" : ""} hoje</span>
         </span>
       </button>
 

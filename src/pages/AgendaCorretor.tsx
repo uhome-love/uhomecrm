@@ -43,9 +43,9 @@ const MOTIVO_PORQUE: Record<MotivoFila, string> = {
   pos_visita:       "visitou e falta o retorno — esfria em horas",
   novo_lead:        "chegou hoje e nunca foi contatado — regra dos 5 minutos",
   no_show:          "marcou visita e o cliente não veio — resgatar",
-  retorno_hoje:     "você marcou um lembrete que venceu — é promessa",
+  retorno_hoje:     "você marcou uma tarefa que venceu — é promessa",
   quente_esfriando: "marcado quente e sem você falar há dias",
-  sem_proximo_passo: "piorando, sem lembrete marcado — retome antes de perder",
+  sem_proximo_passo: "piorando, sem tarefa marcada — retome antes de perder",
 };
 
 /** Caixinha "Como funciona" — explica a ordem da fila. */

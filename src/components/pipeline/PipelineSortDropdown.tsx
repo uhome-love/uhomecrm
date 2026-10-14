@@ -29,7 +29,7 @@ export type SortOrder =
 
 const SORT_OPTIONS: { value: SortOrder; label: string; icon: string; desc: string }[] = [
   { value: "prioridade",       label: "Prioridade",       icon: "🔥", desc: "Quem atender agora (por etapa)" },
-  { value: "atividade",        label: "Compromisso",      icon: "📅", desc: "Lembrete vencido → hoje → futuro" },
+  { value: "atividade",        label: "Compromisso",      icon: "📅", desc: "Tarefa vencida → hoje → futuro" },
   { value: "ultima_atividade", label: "Última atividade", icon: "⏳", desc: "Mais tempo sem falar no topo" },
   { value: "mais_recente",     label: "Mais recente",     icon: "🆕", desc: "Lead que chegou por último" },
   { value: "mais_antigo",      label: "Mais antigo",      icon: "📆", desc: "Lead que chegou primeiro" },

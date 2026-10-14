@@ -426,7 +426,7 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
             <span className="mr-2">⚡</span>Registrar atividade
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setLembrete(true)} className="text-sm">
-            <span className="mr-2">📌</span>Criar lembrete
+            <span className="mr-2">📌</span>Criar tarefa
           </DropdownMenuItem>
 
           {onMoveLead && flowStages.length > 0 && (

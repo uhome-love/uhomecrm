@@ -173,7 +173,7 @@ export default function CardOverflowMenu({
             }}
             className="text-sm"
           >
-            <span className="mr-2">📌</span>Criar lembrete
+            <span className="mr-2">📌</span>Criar tarefa
           </DropdownMenuItem>
 
 
