@@ -61,7 +61,33 @@ Testes antes de pedir para ligar (com corretor e lead de teste, apagando tudo no
 
 Testes extras pedidos pela direção: conferir o cálculo dos 80% com os dados reais (comparando com a "Saúde da carteira" de cada um), ver o impacto na Fila CEO (quantos leads iriam para lá com o time atual) e testar o desligamento imediato da chave (rollback).
 
-**Ligação real:** apresento o resultado dos testes + lista nominal hoje; com sua autorização final, ligo `crm_gate_ativo` para valer a partir da primeira Roleta de 15/10. A chave pode ser desligada a qualquer momento, voltando tudo ao normal.
+**Status: construção e testes da Fase 0 autorizados; ligar o bloqueio em produção NÃO autorizado.** As duas chaves são construídas desligadas. Não existe nenhuma chave geral que ligue as duas regras juntas. A mesma checagem (fonte única) é usada no credenciamento e na entrega de cada lead.
+
+**CRM sem cálculo — tratamento separado (nunca vira bloqueio silencioso):**
+- **Percentual calculado:** compara com 80%.
+- **Sem carteira ativa** (nenhum cliente ativo): não bloqueia por CRM; mostra "Sem carteira ativa".
+- **Dados insuficientes** (só clientes estagnados, que ficam fora da conta): hoje é o caso de **Junior Padilha** (10 clientes, todos estagnados). Proposta: não bloqueia; mostra "Seus clientes estão parados — atualize para gerar seu percentual".
+- **Erro técnico** no cálculo: não bloqueia, entrega normalmente e registra alerta para a equipe técnica.
+
+**Segurança da distribuição (antes de pedir para ligar):**
+- Simulação por turno, equipe e empreendimento: quantos corretores ficam aptos e quantos leads iriam para a Fila CEO, usando os leads reais dos últimos 7 dias.
+- Nenhum apto: o lead vai para a Fila CEO como hoje — nunca se perde, nunca é entregue duas vezes (a trava atual contra entrega dupla continua).
+- **Alerta operacional** no sininho do CEO/diretoria quando a Fila CEO acumular leads (ex.: 5 ou mais aguardando há 15 min).
+- Testar volta imediata ao chegar a 80% e desligar a chave sem perder nenhum lead.
+
+**Aviso de bloqueio:** aparece na tentativa de credenciamento, na Minha rotina e na área de credenciamento. Sempre com motivo, dado atual, meta, instrução, botão e todos os motivos juntos. Explica separado CRM, visitas, integração, descartes e demais. Só promete "volta automaticamente" quando depende do corretor (CRM, visitas); para integração, descartes ou aprovação da direção mostra a data ou quem decide.
+
+**Entrega para aprovação final (antes de ligar):**
+1. Funções e tabelas alteradas.
+2. Resultado dos testes.
+3. Lista dos corretores abaixo de 80%.
+4. Casos sem percentual calculável.
+5. Simulação de impacto na Roleta e na Fila CEO.
+6. Demonstração do aviso de bloqueio e da volta.
+7. Plano de rollback (desligar a chave = volta ao comportamento atual na hora).
+8. Confirmação de que a regra de visitas segue desligada até a autorização de 19/10.
+
+Só depois disso peço a aprovação final para ligar o CRM 80% na primeira Roleta de 15/10.
 
 **Fase 1 — Regra de credenciamento por visitas**
 
@@ -76,7 +102,9 @@ Regra oficial da direção:
 **Meta inicial: 2 visitas por semana** (decisão da direção). Fica na Central de regras (`meta_visitas_semanais = 2`); só Lucas ou Gabrielle podem mudar (futuramente para 3), com registro. Sem aumento automático. Mudar a meta não altera semanas já fechadas — cada semana guarda a meta que valia nela.
 
 - Estados: **Em integração**, **Credenciado**, **Em recuperação** (visitas) e **Bloqueado por CRM**, com **todos** os motivos.
-- **Visita válida:** ligada a um cliente que já existia no CRM antes da visita; cliente não excluído; status realizada; feedback preenchido; 1 por cliente por dia. Não contam: sem cliente, cancelada, reagendada, no show. Indicação, prospecção própria e Oferta Ativa contam se o cliente foi cadastrado antes. Checagem no sistema, não só na tela.
+- **Visita válida:** ligada a um cliente real do CRM; cliente não excluído; status realizada; feedback preenchido; 1 por cliente por dia. Não contam: sem cliente, cancelada, reagendada, no show. Indicação, prospecção própria e Oferta Ativa contam. Checagem no sistema, não só na tela.
+- **Antifraude (proposta para aprovação):** uma visita legítima **não** é invalidada só porque o cliente foi cadastrado pouco antes. Em vez disso, o sistema marca para revisão do gerente (sem tirar da conta automaticamente) quando: cliente criado menos de 2h antes da visita **e** sem nenhum contato registrado antes; visita lançada ou alterada como realizada mais de 3 dias depois da data; data da visita mudada para trás depois de registrada; mesmo telefone em visitas de corretores diferentes na mesma semana; mais de 3 visitas realizadas no mesmo dia com clientes criados no mesmo dia. O gerente/direção pode confirmar ou invalidar, com registro de quem e por quê. Toda criação e alteração de visita fica registrada (data efetiva, criação, mudanças, vínculo e feedback).
+- **Fechamento semanal:** roda só depois do fim real do domingo (segunda 00h05, horário de Brasília), apurando segunda 00h a domingo 23h59. A foto da semana não é sobrescrita; one-on-one nunca duplica (1 por corretor por semana).
 - **Datas:** a primeira apuração é a **semana atual, 12/10 a 18/10/2026**. Na **segunda 19/10** (após testes e aprovação) o resultado dela decide: 2+ começa apto, 1 em recuperação, 0 em plano de retomada com one-on-one. A partir daí, quem está fora volta **na hora** em que completar a 2ª visita válida da semana (com CRM ≥ 80%). Quem fez 2+ numa semana fica apto por visitas durante a seguinte.
 - **Integração de 30 dias para corretor novo** (desde a data oficial de ingresso): fora da Roleta mesmo com várias visitas; usa Oferta Ativa e prospecção; CRM em dia desde o primeiro dia. Ao terminar, só entra com CRM ≥ 80% + meta de visitas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
 - Outras exceções (férias, afastamento, aprovação da direção) com motivo, responsável, início e fim.
@@ -233,7 +261,9 @@ Pendente:
 ## Detalhes técnicos
 
 - Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Saúde do CRM = mesmo cálculo de `rpc_carteira_saude` / `lead_saude_status` (extrair o miolo para uma função interna por corretor, chamada pelas duas, sem mudar o resultado atual) comparado com `crm_minimo_pct = 80`. Chamada dentro de `distribuir_lead_atomico` a cada entrega. Configuração: `data_inicio_apuracao = 2026-10-12`, `data_inicio_exigencia_visitas = 2026-10-19`, `crm_gate_ativo` (Fase 0) e `visitas_gate_ativo` separados. Tabelas novas: situação, histórico, exceções, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração — todas com permissões por perfil.
-- Visita válida: `pipeline_lead_id` não nulo, lead existente e não arquivado/excluído, `pipeline_leads.created_at < visitas.created_at`, `status = 'realizada'`, `resultado_visita`/`observacoes` preenchidos, `data_visita >= data_inicio_apuracao`, 1 por `cliente_key` + dia via `v_fato_visita`.
+- Visita válida: `pipeline_lead_id` não nulo, lead existente e não arquivado/excluído, `status = 'realizada'`, `resultado_visita`/`observacoes` preenchidos, `data_visita >= data_inicio_apuracao`, 1 por `cliente_key` + dia via `v_fato_visita`. Sinais antifraude gravados em tabela de revisão (não removem da contagem sem decisão humana); gatilho de auditoria em `visitas` para criação/alteração.
+- A chave antiga genérica (se existir alguma `politica_ativa`) não é usada; só `crm_gate_ativo` e `visitas_gate_ativo`, lidas por uma única função consultada em `credenciar_na_roleta`, `get_elegibilidade_roleta` e `distribuir_lead_atomico`.
+- Estados do CRM: `calculado | sem_carteira | dados_insuficientes | erro` — só `calculado` abaixo de 80% bloqueia.
 - Fase 0 entra em 1 migração (função de saúde por corretor + filtro na distribuição com chave), fora do horário de pico, antes das 18h30.
 - Novo campo `profiles.data_ingresso` (nulo por padrão; sem ele, usa `created_at` só como sugestão para conferência). Carência tem prioridade sobre visitas.
 - Roleta: filtro extra dentro de `distribuir_lead_atomico` (que hoje não chama nenhuma checagem), só quando `politica_ativa = true`. `credenciar_na_roleta` e `get_elegibilidade_roleta` passam a ler a mesma fonte.
