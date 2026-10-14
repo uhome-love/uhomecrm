@@ -4,6 +4,24 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { requireCronAuth } from "../_shared/cron-auth.ts";
 
+const POR_TIPO: Record<string, string> = {
+  ligacao: "Ligar para o cliente", ligar: "Ligar para o cliente",
+  whatsapp: "Mandar WhatsApp", follow_up: "Fazer follow-up",
+};
+// Igual a src/lib/tarefaAcao.ts
+function acaoDaTarefa(tipo: string | null, titulo: string | null, nomeLead?: string | null): string {
+  if (tipo && POR_TIPO[tipo]) return POR_TIPO[tipo];
+  let t = (titulo || "").split(" — ")[0].trim();
+  t = t.replace(/^pr[oó]ximo contato\s*:?\s*/i, "").trim();
+  if (nomeLead) {
+    const n = nomeLead.trim().toLowerCase();
+    const partes = t.split(":").map((p) => p.trim());
+    if (partes.length > 1 && n.startsWith(partes[partes.length - 1].toLowerCase())) t = partes.slice(0, -1).join(": ");
+    if (t.toLowerCase() === n || (t && n.startsWith(t.toLowerCase()))) t = "";
+  }
+  return t || "Fazer contato com o cliente";
+}
+
 const JANELA_MIN = 60; // só avisa tarefas que venceram há no máximo 1h (sem avalanche de antigas)
 
 Deno.serve(async (req) => {
@@ -24,7 +42,7 @@ Deno.serve(async (req) => {
   const hojeBRT = new Date(agora - 3 * 3600_000).toISOString().slice(0, 10);
 
   const { data: tarefas, error } = await sb.from("pipeline_tarefas")
-    .select("id, titulo, tipo, responsavel_id, vence_em, hora_vencimento, pipeline_lead_id, lead:pipeline_leads(nome)")
+    .select("id, titulo, descricao, tipo, responsavel_id, vence_em, hora_vencimento, pipeline_lead_id, lead:pipeline_leads(nome, empreendimento)")
     .eq("status", "pendente").eq("vence_em", hojeBRT).not("hora_vencimento", "is", null)
     .not("responsavel_id", "is", null).limit(2000);
   if (error) return json({ ok: false, error: error.message });
@@ -47,9 +65,13 @@ Deno.serve(async (req) => {
     if (jaSet.has(ak)) continue;
     enviados++;
     if (body.dry_run) continue;
-    const nome = (t.lead as { nome?: string } | null)?.nome;
-    const titulo = `⏰ Tarefa agora${nome ? `: ${nome}` : ""}`;
-    const mensagem = `${(t.titulo || "Tarefa").split(" — ")[0]} · ${String(t.hora_vencimento).slice(0, 5)}`;
+    const lead = t.lead as { nome?: string; empreendimento?: string | null } | null;
+    const nome = lead?.nome;
+    const hora = String(t.hora_vencimento).slice(0, 5);
+    const titulo = `⏰ ${hora} · ${nome || "Tarefa"}`;
+    const acao = nome ? acaoDaTarefa(t.tipo, t.titulo, nome) : (t.titulo || "Tarefa").split(" — ")[0];
+    const nota = ((t as { descricao?: string | null }).descricao || "").trim().slice(0, 120);
+    const mensagem = `${acao}${lead?.empreendimento ? ` — ${lead.empreendimento}` : ""}${nota ? `\n"${nota}"` : ""}`;
     await sb.from("notifications").insert({
       user_id: t.responsavel_id, tipo: "tarefa_horario", categoria: "tarefas",
       titulo, mensagem, agrupamento_key: ak,
