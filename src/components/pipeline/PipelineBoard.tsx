@@ -1080,8 +1080,19 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                       padding: isDragOver ? "0 6px" : undefined,
                       transition: "all 0.2s ease",
                     }}>
-                      {stageLeads.length}
+                      {(() => {
+                        const total = stageTotalsRef.current.get(stage.id) ?? stageLeads.length;
+                        return total !== stageLeads.length ? `${stageLeads.length} de ${total}` : stageLeads.length;
+                      })()}
                     </span>
+                    {stage.tipo !== "descarte" && stage.tipo !== "convertido" && (
+                      <StageSortFilterMenu
+                        stageNome={stage.nome}
+                        view={stageViews[stage.id] ?? { sort: "padrao", sub: [] }}
+                        opcoes={substatusDaEtapa(stage.tipo, stage.nome)?.opcoes ?? null}
+                        onChange={(v) => updateStageView(stage.id, v)}
+                      />
+                    )}
                     {stage.tipo === "descarte" && stageLeads.length > 0 && (isGestor || isAdmin) && (
                       <button
                         onClick={() => setSweepConfirmOpen(true)}
