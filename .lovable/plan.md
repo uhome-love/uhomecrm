@@ -18,15 +18,28 @@ Roleta atual (sem reescrever), regra de visitas válidas, tarefas e "sem próxim
 
 ## 3. Fases
 
-**Fase 1 — Regra de credenciamento (sem mudar nada na Roleta ainda)**
-- Uma única regra no sistema que responde: o corretor está **Em integração**, **Credenciado**, **Em recuperação** ou **Bloqueado por CRM**, com **todos** os motivos.
-- Meta: 3 visitas válidas na semana (segunda a domingo, horário de Brasília).
-- **Visita válida** (regra da direção): ligada a um cliente que já existia no CRM antes da visita ser registrada; cliente não excluído; status realizada; feedback preenchido; 1 por cliente por dia. Não contam: sem cliente, cancelada, reagendada, no show. Visitas de indicação, prospecção própria e Oferta Ativa contam se o cliente foi cadastrado antes. Essa checagem fica no sistema, não só na tela.
-- Libera na hora da 3ª visita; quem bateu a meta começa a semana seguinte credenciado.
-- **Início:** só conta visitas a partir de **segunda 19/10/2026 00h** (primeira semana: 19/10 a 25/10). A semana de 12/10 a 18/10 segue 100% com as regras antigas. Nada retroativo.
-- **Integração de 30 dias para corretor novo** (a partir da data oficial de ingresso): status "Em integração — X dias restantes", fora da Roleta mesmo com 3, 5 ou 10 visitas. Usa Oferta Ativa, prospecção e registra visitas; CRM em dia desde o primeiro dia. Ao terminar os 30 dias **não libera sozinho**: precisa CRM em dia + 3 visitas válidas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
+**Fase 0 — Urgente: CRM mínimo de 90% na Roleta noturna de hoje (14/10)**
+- Na hora de entregar cada lead da noite, o sistema confere a saúde do CRM do corretor (mesma régua da "Saúde da carteira"). Abaixo de 90%: não recebe e o lead vai para o próximo. Não mexe nos clientes que ele já tem.
+- O corretor vê na Minha rotina o % e o aviso "abaixo de 90% — atualize seus clientes para voltar a receber".
+- Só liga depois de testar e de você aprovar. Antes de ligar, te mostro quantos corretores ficariam abaixo de 90% agora, para não esvaziar a noite sem aviso.
+
+**Fase 1 — Regra de credenciamento por visitas**
+
+Regra oficial da direção:
+
+| Visitas válidas na semana | Situação |
+|---|---|
+| 3 ou mais | Apto à Roleta (se CRM ≥ 90% e demais regras) |
+| 1 ou 2 | Fora da Roleta — trabalha carteira, Oferta Ativa e indicações |
+| 0 | Fora da Roleta + one-on-one obrigatório com um sócio na segunda |
+
+- Estados: **Em integração**, **Credenciado**, **Em recuperação** (visitas) e **Bloqueado por CRM**, com **todos** os motivos.
+- **Visita válida:** ligada a um cliente que já existia no CRM antes da visita; cliente não excluído; status realizada; feedback preenchido; 1 por cliente por dia. Não contam: sem cliente, cancelada, reagendada, no show. Indicação, prospecção própria e Oferta Ativa contam se o cliente foi cadastrado antes. Checagem no sistema, não só na tela.
+- **Datas (regra definitiva):** a primeira apuração é a **semana atual, 12/10 a 18/10/2026**. Na **segunda 19/10** o resultado dela já decide quem entra na Roleta. A partir daí, quem está fora volta **na hora** em que completar a 3ª visita válida da semana (com CRM ≥ 90%). Quem fez 3+ numa semana começa a seguinte apto.
+- **Integração de 30 dias para corretor novo** (desde a data oficial de ingresso): fora da Roleta mesmo com várias visitas; usa Oferta Ativa e prospecção; CRM em dia desde o primeiro dia. Ao terminar, só entra com CRM ≥ 90% + 3 visitas válidas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
 - Outras exceções (férias, afastamento, aprovação da direção) com motivo, responsável, início e fim.
-- Chave liga/desliga. Começa **desligada (modo observação)**: calcula e mostra, mas não mexe em nenhuma entrega de lead. As regras atuais da Roleta continuam valendo até a direção autorizar a ligação oficial.
+- **Na entrega de cada lead** a Roleta confere tudo de novo — não só quando o corretor se credencia. Irregular para de receber na hora, sem perder seus clientes e negócios.
+- Chave liga/desliga para emergência. Nada é publicado sem teste e aprovação explícita da direção.
 
 **Fase 2 — Painel do corretor na Minha rotina + ligação com a Roleta**
 
@@ -83,7 +96,7 @@ Regras:
 - Gerentes: meta mensal configurável (padrão R$ 1,5 milhão). 1 mês abaixo → revisão com a diretora; 2 meses seguidos → Botão Vermelho gerencial. Não bloqueia os corretores da equipe.
 
 **Fase 1B (antecipada) — Página "Uhome Performance" só leitura**
-- Junto com o modo observação a partir de 19/10, uma primeira versão só de leitura da página, para a direção acompanhar os números antes de qualquer bloqueio valer.
+- Uma primeira versão só de leitura já nesta semana, para a direção acompanhar a apuração de 12 a 18/10 antes de valer na segunda 19/10.
 
 **Fase 5 — Página Uhome Performance completa, relatório semanal, central de regras e avisos**
 - **Página "Uhome Performance" no menu** (substitui/organiza o hub de Performance atual, sem criar um segundo). Filtros: semana atual e anteriores, mês, período, equipe, gerente, corretor, empreendimento.
@@ -117,7 +130,7 @@ Toda mudança de situação grava: quando, motivo, o que causou (visita, pendên
 
 ## 6. Riscos e conflitos com o que existe hoje
 
-- **Barrar a Roleta por engano:** começa em modo observação a partir de 19/10; bloqueio real só com aprovação explícita da direção.
+- **Barrar a Roleta por engano:** o prazo é curto (CRM 90% hoje à noite, visitas em 19/10). Antes de cada ligação mostro a lista de quem ficaria fora, e só ligo com aprovação.
 - **Muitos corretores bloqueados no primeiro dia:** a Fila CEO pode encher. Vamos medir na observação antes de ligar.
 - **Data de ingresso:** hoje o CRM não tem um campo "data oficial de ingresso" do corretor, só a data em que o acesso foi criado (que pode ser diferente). Precisamos criar esse campo e a direção/RH preencher para quem entrou nos últimos 30 dias.
 - **Carência atual de 14 dias:** não encontrei uma regra de 14 dias funcionando hoje na Roleta. A nova carência de 30 dias será criada do zero, e só passa a barrar quando a política for ligada.
@@ -136,8 +149,8 @@ Os 15 cenários do documento original e os 12 novos serão testados com corretor
 3. Visita com cliente real, realizada e com feedback conta.
 4. Visita de prospecção própria conta se o cliente foi cadastrado antes.
 5. Cancelada ou no show não conta.
-6. Visitas antes de 19/10/2026 não contam.
-7. Nenhum bloqueio novo na semana de 12 a 18/10.
+6. Visitas antes de 12/10/2026 não contam; as de 12 a 18/10 decidem quem entra em 19/10.
+7. Nenhum bloqueio por visitas antes de 19/10 (só o de CRM 90%, se aprovado para hoje à noite).
 8. Corretor com menos de 30 dias não recebe lead da Roleta (com a política ligada).
 9. Corretor novo usa Oferta Ativa e cadastra seus próprios clientes.
 10. Corretor novo vê pendências de CRM desde o primeiro dia.
@@ -149,7 +162,7 @@ Os 15 cenários do documento original e os 12 novos serão testados com corretor
 Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, carência de 30 dias.
 
 1. **Regras atuais da Roleta** (descartes, leads vermelhos, presença, domingo): continuam junto com as novas, ou as novas substituem?
-2. **Quando ligar o bloqueio de verdade?** Proposta: observação de 19/10 a 01/11, depois a direção decide.
+2. **CRM 90% hoje à noite:** confirma ligar na Roleta noturna de hoje (14/10), depois de ver a lista de quem ficaria fora?
 3. **Corretor que fica bloqueado no meio do turno:** sai da fila na hora, ou termina o turno?
 4. **Estagnados na conta do CRM:** hoje os clientes estagnados ficam fora do % (régua atual). Mantemos assim, conforme a orientação de não mudar a régua?
 5. **Meta do gerente Junior** (equipe menor): também R$ 1,5 milhão?
@@ -158,8 +171,9 @@ Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, 
 
 ## Detalhes técnicos
 
-- Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Saúde do CRM = mesmo cálculo de `rpc_carteira_saude` / `lead_saude_status` (extrair o miolo para uma função interna por corretor, chamada pelas duas, sem mudar o resultado atual) comparado com `crm_minimo_pct = 90`. Recalculada ao entregar lead (na hora), por gatilho em `visitas` e na mudança de `pipeline_leads.ultimo_toque_at`, e na virada da semana. Tabelas novas: situação, histórico, exceções, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração (com `data_inicio_politica = 2026-10-19` e `politica_ativa = false`) — todas com permissões por perfil.
-- Visita válida: `pipeline_lead_id` não nulo, lead existente e não arquivado/excluído, `pipeline_leads.created_at < visitas.created_at` (com margem a definir), `status = 'realizada'`, `resultado_visita`/`observacoes` preenchidos, `data_visita >= data_inicio_politica`, 1 por `cliente_key` + dia via `v_fato_visita`.
+- Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Saúde do CRM = mesmo cálculo de `rpc_carteira_saude` / `lead_saude_status` (extrair o miolo para uma função interna por corretor, chamada pelas duas, sem mudar o resultado atual) comparado com `crm_minimo_pct = 90`. Chamada dentro de `distribuir_lead_atomico` a cada entrega. Configuração: `data_inicio_apuracao = 2026-10-12`, `data_inicio_exigencia_visitas = 2026-10-19`, `crm_gate_ativo` (Fase 0) e `visitas_gate_ativo` separados. Tabelas novas: situação, histórico, exceções, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração — todas com permissões por perfil.
+- Visita válida: `pipeline_lead_id` não nulo, lead existente e não arquivado/excluído, `pipeline_leads.created_at < visitas.created_at`, `status = 'realizada'`, `resultado_visita`/`observacoes` preenchidos, `data_visita >= data_inicio_apuracao`, 1 por `cliente_key` + dia via `v_fato_visita`.
+- Fase 0 entra em 1 migração (função de saúde por corretor + filtro na distribuição com chave), fora do horário de pico, antes das 18h30.
 - Novo campo `profiles.data_ingresso` (nulo por padrão; sem ele, usa `created_at` só como sugestão para conferência). Carência tem prioridade sobre visitas.
 - Roleta: filtro extra dentro de `distribuir_lead_atomico` (que hoje não chama nenhuma checagem), só quando `politica_ativa = true`. `credenciar_na_roleta` e `get_elegibilidade_roleta` passam a ler a mesma fonte.
 - Reaproveitar `one_on_one_reports`, `notifications`/`criar_notificacao`, push existente e a regra de VGV com `fn_equipe_na_data`.
