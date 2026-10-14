@@ -70,8 +70,8 @@ Deno.serve(async (req) => {
     const hora = String(t.hora_vencimento).slice(0, 5);
     const titulo = `⏰ ${hora} · ${nome || "Tarefa"}`;
     const acao = nome ? acaoDaTarefa(t.tipo, t.titulo, nome) : (t.titulo || "Tarefa").split(" — ")[0];
-    const detalhe = ((t as { descricao?: string | null }).descricao || "").trim().slice(0, 120);
-    const mensagem = `${acao}${lead?.empreendimento ? ` — ${lead.empreendimento}` : ""}${detalhe ? `\n"${detalhe}"` : ""}`;
+    const nota = ((t as { descricao?: string | null }).descricao || "").trim().slice(0, 120);
+    const mensagem = `${acao}${lead?.empreendimento ? ` — ${lead.empreendimento}` : ""}${nota ? `\n"${nota}"` : ""}`;
     await sb.from("notifications").insert({
       user_id: t.responsavel_id, tipo: "tarefa_horario", categoria: "tarefas",
       titulo, mensagem, agrupamento_key: ak,
