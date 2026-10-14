@@ -31,7 +31,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
-import CriarLembreteModal from "./CriarLembreteModal";
+import CriarTarefaModal from "./CriarTarefaModal";
 
 /**
  * NegociosBoardInline — o board de Negócios DENTRO do pipeline (aba "Negócios").
@@ -426,7 +426,7 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
             <span className="mr-2">⚡</span>Registrar atividade
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setLembrete(true)} className="text-sm">
-            <span className="mr-2">📌</span>Criar lembrete
+            <span className="mr-2">📌</span>Criar tarefa
           </DropdownMenuItem>
 
           {onMoveLead && flowStages.length > 0 && (
@@ -466,7 +466,7 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
         </DropdownMenuContent>
       </DropdownMenu>
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
-        <CriarLembreteModal open={lembrete} lead={{ id: leadId, nome }} onClose={() => setLembrete(false)} />
+        <CriarTarefaModal open={lembrete} lead={{ id: leadId, nome }} onClose={() => setLembrete(false)} />
         {registrar && (
           <RegistrarAtividadeModal lead={{ id: leadId, nome }} onClose={() => setRegistrar(false)} onSaved={() => invalidateTaskQueries(queryClient, leadId)} />
         )}

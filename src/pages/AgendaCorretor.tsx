@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilaDoDia, lembreteAutomatico, type LeadFila, type MotivoFila, type Compromisso, type LembretesAgrupados } from "@/hooks/useFilaDoDia";
 import RegistrarAtividadeModal from "@/components/pipeline/RegistrarAtividadeModal";
-import CriarLembreteModal from "@/components/pipeline/CriarLembreteModal";
+import CriarTarefaModal from "@/components/pipeline/CriarTarefaModal";
 import CardOverflowMenu from "@/components/pipeline/CardOverflowMenu";
 import HomiSugestaoMensagem from "@/components/pipeline/HomiSugestaoMensagem";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
@@ -43,9 +43,9 @@ const MOTIVO_PORQUE: Record<MotivoFila, string> = {
   pos_visita:       "visitou e falta o retorno — esfria em horas",
   novo_lead:        "chegou hoje e nunca foi contatado — regra dos 5 minutos",
   no_show:          "marcou visita e o cliente não veio — resgatar",
-  retorno_hoje:     "você marcou um lembrete que venceu — é promessa",
+  retorno_hoje:     "você marcou uma tarefa que venceu — é promessa",
   quente_esfriando: "marcado quente e sem você falar há dias",
-  sem_proximo_passo: "piorando, sem lembrete marcado — retome antes de perder",
+  sem_proximo_passo: "piorando, sem tarefa marcada — retome antes de perder",
 };
 
 /** Caixinha "Como funciona" — explica a ordem da fila. */
@@ -110,7 +110,7 @@ const COMP_ICON: Record<Compromisso["icon"], { icon: LucideIcon; label: string }
   phone:    { icon: Phone,         label: "Ligação" },
   whatsapp: { icon: MessageCircle, label: "WhatsApp" },
   home:     { icon: Home,          label: "Visita" },
-  bell:     { icon: Bell,          label: "Lembrete" },
+  bell:     { icon: Bell,          label: "Tarefa" },
 };
 
 function diasLabel(d: number | null, temAtividade: boolean): string {
@@ -434,7 +434,7 @@ function CardLembrete({
       )}
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2.5">
         {isNota
-          ? <span className="text-[11px] font-medium text-muted-foreground/70">lembrete pessoal</span>
+          ? <span className="text-[11px] font-medium text-muted-foreground/70">anotação pessoal</span>
           : <AcoesContato telefone={c.telefone} />}
         <div className="flex items-center gap-1.5">
           <button
@@ -562,7 +562,7 @@ function NegociosTimeView({
                     onClick={(e) => { e.stopPropagation(); onLembrete(n); }}
                     className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-foreground hover:bg-muted"
                   >
-                    <Bell className="h-3.5 w-3.5" /> Lembrete
+                    <Bell className="h-3.5 w-3.5" /> Tarefa
                   </button>
                   <button
                     type="button"
@@ -696,7 +696,7 @@ export default function AgendaCorretor() {
       .update({ status: "concluida", concluida_em: new Date().toISOString() } as never)
       .eq("id", c.id);
     if (error) { toast.error("Não foi possível dispensar."); return; }
-    toast.success("Lembrete dispensado");
+    toast.success("Tarefa dispensada");
     invalidar();
   };
 
@@ -743,7 +743,7 @@ export default function AgendaCorretor() {
 
       <div className="mb-4 inline-flex rounded-xl border border-border bg-card p-1">
         <TabBtn id="prioridades" label="Prioridades" badge={totalFila} />
-        <TabBtn id="lembretes" label="Lembretes" badge={data?.totalLembretes} />
+        <TabBtn id="lembretes" label="Tarefas" badge={data?.totalLembretes} />
         {isGestor && <TabBtn id="negocios" label="Negócios do time" badge={negociosTime.length} />}
       </div>
 
@@ -844,14 +844,15 @@ export default function AgendaCorretor() {
         <>
           <div className="mb-2 flex items-center gap-2">
             <Bell className="h-4 w-4 text-primary" />
-            <span className="text-[13.5px] font-semibold text-foreground">Seus lembretes</span>
+            <span className="text-[13.5px] font-semibold text-foreground">Suas tarefas</span>
+            <button type="button" onClick={() => navigate("/tarefas")} className="text-[12px] font-semibold text-primary hover:underline">Ver todas as tarefas →</button>
             <span className="text-[11.5px] text-muted-foreground">· sua organização</span>
             <button
               type="button"
               onClick={() => setCriarLembrete(true)}
               className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
             >
-              <Plus className="h-3.5 w-3.5" /> Lembrete ou anotação
+              <Plus className="h-3.5 w-3.5" /> Tarefa ou anotação
             </button>
           </div>
 
@@ -882,9 +883,9 @@ export default function AgendaCorretor() {
             <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : gruposLembrete[grupoLembrete].length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-card px-4 py-8 text-center text-[13px] text-muted-foreground">
-              {grupoLembrete === "atrasados" ? "Nenhum lembrete atrasado 🎉"
-                : grupoLembrete === "hoje" ? "Nenhum lembrete para hoje."
-                : "Nenhum lembrete futuro agendado."}
+              {grupoLembrete === "atrasados" ? "Nenhuma tarefa atrasada 🎉"
+                : grupoLembrete === "hoje" ? "Nenhuma tarefa para hoje."
+                : "Nenhuma tarefa futura agendada."}
             </div>
           ) : (() => {
             const lista = gruposLembrete[grupoLembrete];
@@ -932,7 +933,7 @@ export default function AgendaCorretor() {
         />
       )}
 
-      <CriarLembreteModal
+      <CriarTarefaModal
         open={criarLembrete}
         lead={null}
         permitirNota
@@ -941,7 +942,7 @@ export default function AgendaCorretor() {
       />
 
       {/* Lembrete criado a partir de um negócio do time (lead já fixado). */}
-      <CriarLembreteModal
+      <CriarTarefaModal
         open={!!lembreteNegocio}
         lead={lembreteNegocio}
         onClose={() => setLembreteNegocio(null)}

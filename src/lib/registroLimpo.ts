@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────
 // limparRegistro — deixa o "último registro" apresentável no card.
 //  1) Dump de formulário (Anúncio + Respostas...) → "Anúncio: X · Casa 3 dorms · 130m²"
-//  2) Vocabulário: "Tarefa" → "Lembrete" (nunca "tarefa" na UI do corretor).
+//  2) Vocabulário: textos antigos "Lembrete" → "Tarefa".
 // Textos curtos/normais passam quase intactos.
 // ─────────────────────────────────────────────────────────────────
 
@@ -38,8 +38,8 @@ export function limparRegistro(texto?: string | null): string {
     return partes.join(" · ") || "Lead de formulário";
   }
 
-  // 2) Vocabulário: "Tarefa/tarefa" → "Lembrete/lembrete".
-  return t.replace(/\btarefas?\b/gi, (m) =>
-    m.charAt(0) === "T" ? "Lembrete" : "lembrete"
+  // 2) Vocabulário: textos antigos com "Lembrete" passam a mostrar "Tarefa".
+  return t.replace(/\blembretes?\b/gi, (m) =>
+    (m.charAt(0) === "L" ? "Tarefa" : "tarefa") + (m.toLowerCase().endsWith("s") ? "s" : "")
   );
 }

@@ -17,7 +17,7 @@ import { groupTasksByDeadline, formatTaskDeadline } from "@/lib/taskGrouping";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import type { TipoProximaTarefa } from "../task-completion/types";
 import RegistrarAtividadeModal from "../RegistrarAtividadeModal";
-import CriarLembreteModal from "../CriarLembreteModal";
+import CriarTarefaModal from "../CriarTarefaModal";
 
 interface Props {
   tarefas: PipelineTarefa[];
@@ -67,7 +67,7 @@ const TIPO_LABEL: Record<TipoCanon, string> = {
   msg: "WhatsApp",
   followup: "Follow-up",
   visit: "Visita",
-  outro: "Lembrete",
+  outro: "Tarefa",
 };
 
 const TIPO_EMOJI: Record<TipoCanon, string> = {
@@ -167,7 +167,7 @@ export default function DrawerTasksTab({
       .update({ status: "concluida", concluida_em: new Date().toISOString() } as never)
       .eq("id", t.id);
     if (error) { toast.error("Não foi possível dispensar."); return; }
-    toast.success("Lembrete dispensado");
+    toast.success("Tarefa dispensada");
     onReload();
     invalidateTaskQueries(queryClient, leadId);
   }
@@ -177,7 +177,7 @@ export default function DrawerTasksTab({
       {/* Header */}
       <div className="px-7 pt-6 pb-4 flex justify-between items-end border-b border-zinc-100">
         <div>
-          <div className="text-lg font-bold text-zinc-900 tracking-tight">Lembretes</div>
+          <div className="text-lg font-bold text-zinc-900 tracking-tight">Tarefas</div>
           <div className="text-xs text-muted-foreground mt-0.5">
             {countAtrasadas > 0 && <>{countAtrasadas} atrasada{countAtrasadas !== 1 ? "s" : ""} · </>}
             {countHoje > 0 && <>{countHoje} hoje · </>}
@@ -188,7 +188,7 @@ export default function DrawerTasksTab({
           onClick={() => setCriarOpen(true)}
           className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
         >
-          <Plus className="h-3.5 w-3.5" /> Novo lembrete
+          <Plus className="h-3.5 w-3.5" /> Nova tarefa
         </button>
       </div>
 
@@ -221,14 +221,14 @@ export default function DrawerTasksTab({
           </div>
           <div className="text-xs text-muted-foreground max-w-xs mx-auto mb-5 leading-relaxed">
             {isVisitaStage
-              ? "Etapa Visita: os lembretes de confirmação, remarcação e feedback são criados automaticamente pela Agenda. Se precisar, agende um contato/follow-up manual."
-              : "Este lead está em dia. Crie um lembrete de follow-up pra manter o ritmo de contato."}
+              ? "Etapa Visita: as tarefas de confirmação, remarcação e feedback são criados automaticamente pela Agenda. Se precisar, agende um contato/follow-up manual."
+              : "Este lead está em dia. Crie uma tarefa de follow-up pra manter o ritmo de contato."}
           </div>
           <button
             onClick={() => setCriarOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
           >
-            <Plus className="h-3.5 w-3.5" /> Criar lembrete
+            <Plus className="h-3.5 w-3.5" /> Criar tarefa
           </button>
         </div>
 
@@ -342,7 +342,7 @@ export default function DrawerTasksTab({
         />
       )}
 
-      <CriarLembreteModal
+      <CriarTarefaModal
         open={criarOpen}
         lead={{ id: leadId, nome: leadNome }}
         onClose={() => setCriarOpen(false)}
@@ -433,10 +433,10 @@ function TaskCard({
         </button>
         <button
           onClick={() => {
-            if (confirm("Excluir este lembrete?")) onDelete();
+            if (confirm("Excluir esta tarefa?")) onDelete();
           }}
           className="bg-card border border-red-200/50 hover:bg-danger-500/10 rounded-md px-2.5 py-1 text-[11px] font-medium text-red-600 flex items-center gap-1"
-          aria-label="Excluir lembrete"
+          aria-label="Excluir tarefa"
         >
           <Trash2 className="h-3 w-3" />
         </button>
@@ -470,7 +470,7 @@ function EditTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; 
       .eq("id", tarefa.id);
     setSaving(false);
     if (error) { toast.error("Erro ao salvar: " + error.message); return; }
-    toast.success("Lembrete atualizado.");
+    toast.success("Tarefa atualizada.");
     onSaved();
   }
 
@@ -479,7 +479,7 @@ function EditTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; 
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
-            <Pencil className="h-4 w-4" /> Editar lembrete
+            <Pencil className="h-4 w-4" /> Editar tarefa
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">

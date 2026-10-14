@@ -534,12 +534,12 @@ export function RaioXCorretorView({
                 atual={crm.atividades} anterior={anterior.crm.atividades} />
           <Card label="Leads tocados" valor={n0(crm.leads_tocados)} hint={`${d1(crm.atividades_por_lead)} atividades por lead`}
                 atual={crm.leads_tocados} anterior={anterior.crm.leads_tocados} />
-          <Card label="Lembretes criados" valor={n0(crm.lembretes_criados)}
+          <Card label="Tarefas criadas" valor={n0(crm.lembretes_criados)}
                 atual={crm.lembretes_criados} anterior={anterior.crm.lembretes_criados} />
-          <Card label="Lembretes cumpridos" valor={n0(crm.lembretes_concluidos)}
+          <Card label="Tarefas cumpridas" valor={n0(crm.lembretes_concluidos)}
                 hint={`${p1(crm.pct_lembretes_cumpridos)} dos criados`} tom={crm.pct_lembretes_cumpridos >= 70 ? "bom" : "alerta"}
                 atual={crm.lembretes_concluidos} anterior={anterior.crm.lembretes_concluidos} />
-          <Card label="Lembretes atrasados" valor={n0(crm.lembretes_atrasados)} hint={`${p1(crm.pct_atrasados)} dos pendentes`}
+          <Card label="Tarefas atrasadas" valor={n0(crm.lembretes_atrasados)} hint={`${p1(crm.pct_atrasados)} dos pendentes`}
                 tom={crm.lembretes_atrasados > 0 ? "ruim" : "bom"} />
           <Card label="Adiamentos" valor={n0(crm.adiamentos)} tom={crm.adiamentos > 0 ? "alerta" : "neutro"}
                 atual={crm.adiamentos} anterior={anterior.crm.adiamentos} inverso />
@@ -549,7 +549,7 @@ export function RaioXCorretorView({
                 tom={crm.leads_sem_atividade > 0 ? "ruim" : "bom"} hint="ativos, sem atividade lançada" />
         </Grade>
         <p className="rx-nota">
-          Lembretes atrasados, pipeline estagnado e leads sem registro são a foto de hoje: mostram a dívida que
+          Tarefas atrasadas, pipeline estagnado e leads sem registro são a foto de hoje: mostram a dívida que
           está aberta agora, não o que aconteceu dentro do período.
         </p>
       </Bloco>

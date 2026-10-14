@@ -84,7 +84,7 @@ export default function DrawerProximaAcao({
             onClick={onCreateTask}
           >
             <Plus className="h-3.5 w-3.5" />
-            Criar lembrete
+            Criar tarefa
           </Button>
         )}
       </div>
@@ -128,7 +128,7 @@ export default function DrawerProximaAcao({
         </div>
         {multiplePending && (
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
-            {pendingCount} lembretes
+            {pendingCount} tarefa{pendingCount !== 1 ? "s" : ""}
           </span>
         )}
       </div>

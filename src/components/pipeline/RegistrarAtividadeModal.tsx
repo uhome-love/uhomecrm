@@ -36,9 +36,10 @@ const ATIVIDADES: AtDef[] = [
   { tipo: "nota", label: "Nota", icon: StickyNote, toque: false },
 ];
 
-const LEMBRETES: { label: string; dias: number }[] = [
+const LEMBRETES: { label: string; dias: number; hora?: string }[] = [
+  { label: "Hoje 18h", dias: 0, hora: "18:00" },
   { label: "Amanhã", dias: 1 },
-  { label: "Em 2 dias", dias: 2 },
+  { label: "Em 3 dias", dias: 3 },
   { label: "Semana que vem", dias: 7 },
 ];
 
@@ -143,8 +144,13 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
 
   // Observação é OBRIGATÓRIA quando se registra uma atividade — é o que alimenta
   // o histórico do lead. Só agendar lembrete (sem atividade) não exige.
-  const obsFaltando = (!!ativSel || exigirObservacao) && !obs.trim();
   const modoConclusao = !!concluirTarefaId;
+  // Concluir TAREFA sempre exige como foi o contato + observação (mín. 10 letras):
+  // a conclusão vira atividade no histórico do lead.
+  const obsFaltando = modoConclusao
+    ? obs.trim().length < 10
+    : (!!ativSel || exigirObservacao) && !obs.trim();
+  const tipoFaltando = modoConclusao && !ativSel;
   // No modo obrigatório, fechar/clicar fora = Desfazer (reverte o move).
   const aoFechar = () => { if (exigirObservacao && onDesfazer) { onDesfazer(); } fechar(); };
 
@@ -164,7 +170,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
     try { await marcarConcluido(); }
     catch { setBusy(false); toast.error("Não foi possível concluir."); return; }
     setBusy(false);
-    toast.success("Lembrete concluído ✅");
+    toast.success("Tarefa concluída ✅");
     window.dispatchEvent(new CustomEvent("pipeline-reload"));
     onSaved?.();
     fechar();
@@ -179,6 +185,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
     // Observação escrita SEM tipo: antes virava Nota silenciosa (não conta como
     // contato → lead seguia vermelho/atrasado e o corretor achava que era bug).
     // Agora pedimos o tipo explicitamente; "Só anotar" força a nota.
+    if (tipoFaltando) { setPedindoTipo(true); return; }
     if (!ativSel && textoObs && !forcarNota) {
       setPedindoTipo(true);
       return;
@@ -252,7 +259,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
     const avancouMsg = etapaAlvo ? ` → ${etapaAlvo.nome}` : "";
     if (ativ && lembreteSel) toast.success(`⚡ ${ativ.label} · 📅 ${lembreteSel.label}${avancouMsg}`);
     else if (ativ) toast.success(ativ.toque ? `⚡ ${ativ.label} registrado${avancouMsg}` : `Anotação salva — lead segue pendente de contato${avancouMsg}`);
-    else if (lembreteSel) toast.success(`📅 Lembrete: ${lembreteSel.label}${avancouMsg}`);
+    else if (lembreteSel) toast.success(`📅 Tarefa: ${lembreteSel.label}${avancouMsg}`);
     else if (etapaAlvo) toast.success(`Movido para ${etapaAlvo.nome} ✅`);
     // Recarrega o board para a cor do card refletir o toque na hora (o trigger
     // do banco já carimbou ultimo_toque_at). Mesmo mecanismo usado pós-move.
@@ -270,7 +277,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground">
             {subtitulo ?? (modoConclusao
-              ? "concluir lembrete · registre o contato se você falou com o lead"
+              ? "concluir tarefa · conte como foi — vai para o histórico do lead"
               : "registre o contato e agende o próximo passo (opcional)")}
           </div>
         </div>
@@ -331,7 +338,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
           {/* Observação — obrigatória ao registrar atividade (alimenta o histórico) */}
           <div className="mt-2.5">
             <div className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-              Observação{ativSel && <span className="text-destructive">*</span>}
+              Observação{(ativSel || modoConclusao) && <span className="text-destructive">*</span>}{modoConclusao && <span className="font-medium normal-case tracking-normal text-muted-foreground/70"> (mín. 10 letras)</span>}
             </div>
             <textarea
               value={obs}
@@ -348,7 +355,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
             />
             {obsFaltando && (
               <div className="mt-1 text-[11.5px] font-medium text-destructive">
-                Escreva o que aconteceu para registrar.
+                {modoConclusao ? "Escreva pelo menos 10 letras sobre o que aconteceu." : "Escreva o que aconteceu para registrar."}
               </div>
             )}
           </div>
@@ -357,7 +364,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
         {/* Agendar próximo passo */}
         <div className="px-5 pb-4 pt-3">
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            <CalendarClock className="h-3.5 w-3.5" /> Próximo passo
+            <CalendarClock className="h-3.5 w-3.5" /> {modoConclusao ? "Criar próxima tarefa (opcional)" : "Próxima tarefa"}
           </div>
           <div className="flex flex-wrap gap-2">
             {LEMBRETES.map((l) => {
@@ -369,7 +376,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
                   disabled={busy}
                   onClick={() => {
                     setCustomOpen(false);
-                    setLembreteSel(on ? null : { label: l.label, data: dataBRT(l.dias), hora: HORA_PADRAO });
+                    setLembreteSel(on ? null : { label: l.label, data: dataBRT(l.dias), hora: l.hora ?? HORA_PADRAO });
                   }}
                   className={cn(
                     "rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
@@ -417,7 +424,7 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
               <input
                 type="time"
                 value={customHora}
-                title="Hora do lembrete (opcional)"
+                title="Hora da tarefa"
                 onChange={(e) => {
                   const h = e.target.value || HORA_PADRAO;
                   setCustomHora(h);
@@ -471,8 +478,8 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
 
         <div className="flex items-center justify-between border-t border-border px-5 py-3">
           {modoConclusao ? (
-            <button type="button" onClick={soConcluir} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
-              <Check className="h-4 w-4" /> Só concluir
+            <button type="button" onClick={fechar} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
+              <X className="h-4 w-4" /> Cancelar
             </button>
           ) : exigirObservacao ? (
             <button type="button" onClick={() => { if (onDesfazer) onDesfazer(); fechar(); }} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50">
@@ -483,8 +490,8 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
               <X className="h-4 w-4" /> Pular
             </button>
           )}
-          <button type="button" onClick={() => concluir()} disabled={busy || obsFaltando} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {busy ? "Salvando…" : (modoConclusao ? "Registrar e concluir" : "Concluir")}
+          <button type="button" onClick={() => concluir()} disabled={busy || obsFaltando || tipoFaltando} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+            {busy ? "Salvando…" : (modoConclusao ? "Concluir e atualizar lead" : "Concluir")}
           </button>
         </div>
       </DialogContent>

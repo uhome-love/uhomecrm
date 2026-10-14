@@ -10,7 +10,7 @@ import {
   Users, UsersRound, Video, ChevronRight,
   Sun, Moon, ShieldCheck, ClipboardList, Wrench,
   Trophy, GraduationCap, Lightbulb, Layers,
-  Building2, Wallet, ListTodo, Database,
+  Building2, Wallet, ListTodo, CheckSquare, Database,
   BarChart2, GitBranch, Award, BellRing,
   UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock, Calculator, CalendarCheck, Radio,
 } from "lucide-react";
@@ -52,6 +52,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
         { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+        { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
         { label: "Relatórios",         path: "/raio-x",            icon: <BarChart3    size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -107,6 +108,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
         { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+        { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -175,6 +177,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Dashboard",          path: "/gerente/cockpit", icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
         { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+        { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -237,6 +240,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Notificações",       path: "/notificacoes",      icon: <BellRing     size={15} strokeWidth={1.5} /> },
         { label: "Agenda", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+        { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/corretor/call",     icon: <Phone        size={15} strokeWidth={1.5} /> },
@@ -335,6 +339,7 @@ const MODO_CORRETOR_GROUP: NavGroup = {
   items: [
     { label: "Minha rotina",       path: "/corretor",          icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
     { label: "Agenda", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
+    { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
     { label: "Aceite de leads",    path: "/aceite",            icon: <UserCheck    size={15} strokeWidth={1.5} /> },
     { label: "Oferta ativa (corretor)", path: "/corretor/call", icon: <Phone      size={15} strokeWidth={1.5} /> },
   ],
