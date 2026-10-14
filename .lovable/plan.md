@@ -28,10 +28,48 @@ Roleta atual (sem reescrever), regra de visitas válidas, tarefas e "sem próxim
 - Outras exceções (férias, afastamento, aprovação da direção) com motivo, responsável, início e fim.
 - Chave liga/desliga. Começa **desligada (modo observação)**: calcula e mostra, mas não mexe em nenhuma entrega de lead. As regras atuais da Roleta continuam valendo até a direção autorizar a ligação oficial.
 
-**Fase 2 — Painel do corretor + ligação com a Roleta**
-- Quadro compacto "Minha performance da semana" na Minha rotina: visitas 2/3 com barra, situação da Roleta, pendências do CRM, próxima ação e botões (Oferta Ativa, Atualizar CRM, Minhas visitas, Meu credenciamento).
+**Fase 2 — Painel do corretor na Minha rotina + ligação com a Roleta**
+
+Quadro obrigatório no topo da Minha rotina, compacto, na cor #4969FF:
+
+```text
++--------------------------------------------------------------+
+| MINHA META DE VISITAS        2/3     [#########-----] 67%    |
+| Falta 1 visita                         Agenda de visitas >   |
+|--------------------------------------------------------------|
+| MEU CRM ATUALIZADO           88%     [###########---] amarelo|
+| 5 de 42 clientes com pendência                               |
+|--------------------------------------------------------------|
+| ROLETA: Bloqueada por múltiplos motivos                      |
+| Falta 1 visita realizada e existem 3 pendências no CRM.      |
+|--------------------------------------------------------------|
+| [Minhas visitas] [Resolver pendências] [Oferta Ativa]        |
+| [Meu credenciamento]                                         |
++--------------------------------------------------------------+
+```
+
+- **Meta de visitas:** visitas válidas da semana / 3, barra, quantas faltam, link para a Agenda. Com 4 ou mais mostra o número real (ex.: 5/3).
+- **CRM atualizado (%):** fórmula abaixo. Cores: 100% verde "CRM em dia"; 80–99% amarelo; abaixo de 80% vermelho. Sem clientes ativos: "Sem carteira ativa" (não mostra 100%).
+- **Situação da Roleta:** Roleta liberada / Bloqueada por falta de visitas / Bloqueada por CRM / Bloqueada por múltiplos motivos / Em integração — X dias restantes. Sempre diz exatamente o que falta. Ex.: "Parabéns! Você atingiu a meta de visitas e seu CRM está atualizado. Sua Roleta está liberada."
+- **A cor do CRM não libera sozinha:** com 99% e 1 pendência bloqueante, a Roleta continua bloqueada.
+- **Botões** levam para páginas que já existem: Agenda de visitas, Tarefas (aba de pendências), Oferta Ativa e uma tela "Meu credenciamento" com todos os motivos.
+- **Atualiza sozinho** depois de: registrar visita, corrigir cliente, concluir tarefa vencida, criar próximo passo, auditoria diária, virada da semana e exceção da direção. Os números vêm da mesma regra da Roleta — nada calculado duas vezes.
+- Em modo observação o quadro mostra a situação com o aviso "Prévia — ainda não afeta sua Roleta".
+
+**Fórmula do CRM atualizado**
+
+```text
+CRM atualizado % = clientes ativos SEM nenhuma pendência obrigatória
+                   ÷ total de clientes ativos  × 100
+```
+- Cliente ativo = no Pipeline, não descartado, não ganho/arquivado.
+- Pendências que contam: primeiro atendimento fora do prazo, sem próxima ação, tarefa vencida, visita realizada sem feedback, outras críticas que a direção marcar.
+- Cliente com 3 pendências conta **1 vez** no total e 1 vez como irregular, mas as 3 aparecem para corrigir.
+- Na página Uhome Performance: % de cada corretor e média da equipe **ponderada pelo número de clientes** (soma dos clientes em dia ÷ soma dos clientes ativos), sem esconder quem está bloqueado.
+
 - Roleta: na hora de entregar cada lead, confere a regra. Se o corretor estiver bloqueado, o lead vai para o próximo da fila (ou Fila CEO). Todas as outras regras atuais continuam.
 - Bloqueado continua com seus leads, Pipeline, Agenda e Oferta Ativa.
+- **Dependências:** precisa da Fase 1 (visita válida + credenciamento) e da Fase 3 (lista de pendências). Para não atrasar, a parte do CRM % entra junto com a Fase 3 se ela não estiver pronta.
 
 **Fase 3 — Saúde do CRM**
 - Pendências: lead novo sem primeiro atendimento no prazo, lead ativo sem próxima ação, tarefa vencida, visita realizada sem resultado.
