@@ -52,15 +52,15 @@ Ordem dos cards (computador em grade, celular um embaixo do outro):
 ```text
 +------------------------------+  +------------------------------+
 | MINHA META DE VISITAS        |  | SAÚDE DO MEU CRM             |
-| 2 de 3 visitas realizadas    |  | 83% — Meta Uhome 80%: ok!    |
-| (o)----(o)----( )     67%    |  | [##########|##]  mín. 80%    |
+| 1 de 2 visitas realizadas    |  | 84% — Meta Uhome 80%: ok!    |
+| (o)--------( )        50%    |  | [##########|##]  mín. 80%    |
 | "Você está muito perto!      |  | "Sua carteira está dentro do |
 |  Falta apenas 1 visita."     |  |  padrão Uhome..."            |
 | Semana anterior: 4 ✓ apto    |  | [Atualizar meus clientes]    |
 +------------------------------+  +------------------------------+
 +---------------------------------------------------------------+
 | MINHA ROLETA — VOCÊ ESTÁ PERTO DA SUA ROLETA!                 |
-| [✓] CRM acima de 80%   [ ] 3 visitas na semana (falta 1)      |
+| [✓] CRM acima de 80%   [ ] 2 visitas na semana (falta 1)      |
 | Novos leads da Roleta temporariamente indisponíveis.          |
 | [Buscar oportunidades na Oferta Ativa]                        |
 +---------------------------------------------------------------+
@@ -72,12 +72,12 @@ Ordem dos cards (computador em grade, celular um embaixo do outro):
 +---------------------------------------------------------------+
 ```
 
-1. **Minha meta de visitas:** "X de 3 visitas realizadas", 3 etapas que se completam a cada visita válida, %. Mensagens: 0 "Uma nova semana de oportunidades!..."; 1 "Você já deu o primeiro passo!..."; 2 "Você está muito perto!..."; 3 "Parabéns! Você conquistou sua meta semanal!"; 4+ "Excelente! Você superou sua meta...". Mostra **separado** o resultado da semana anterior ("Semana anterior: 4 visitas — você começou a semana apto"), para nunca mostrar bloqueio errado na segunda com 0/3.
+1. **Minha meta semanal:** "X de 2 visitas realizadas", 2 etapas (acompanham a meta configurada), %, número real mesmo acima da meta. Mensagens: 0/2 "Uma nova semana de oportunidades! Vamos conquistar sua primeira visita?"; 1/2 "Você já está na metade do caminho! Falta apenas 1 visita para conquistar sua meta."; 2/2 "Parabéns! Você conquistou sua meta semanal!"; 3+ "Excelente! Você superou sua meta e está construindo uma semana de alta performance!". Mostra **separado** o resultado da semana anterior ("Semana anterior: 3 visitas — você começou a semana apto"), para nunca mostrar bloqueio errado na segunda com 0/2.
 2. **Saúde do meu CRM:** o mesmo % da régua atual, barra com marca nos 80%, "Meta Uhome: 80% — Conquistada!" e quantos clientes precisam de atualização. 80% ou mais: "Parabéns! Sua carteira está dentro do padrão Uhome. Continue valorizando suas oportunidades!". Abaixo de 80%: "Seu CRM está em 76%. Atualize seus clientes para conquistar o padrão Uhome de 80% e recuperar sua elegibilidade." Não mostra nenhuma meta futura (85% ou 90%). Botão "Atualizar meus clientes" → Pipeline com o filtro que já existe.
-3. **Minha Roleta**, 5 cenários: **Roleta conquistada!**; **Você está perto da sua Roleta!** (faltam visitas, botão Oferta Ativa); **Sua Roleta está a uma atualização de distância** (CRM abaixo de 80%; se forem vários clientes, o texto fala em "atualizar seus clientes"); **Vamos conquistar sua Roleta** (checklist com check verde no que já cumpriu e o que falta no resto); **Sua jornada Uhome começou!** ("Integração: X de 30 dias"). Semana com menos de 3: selo **Em evolução**; semana zerada: **Plano de retomada**, com o one-on-one da segunda (data e plano, se permitido).
+3. **Minha Roleta**, 5 cenários: **Roleta conquistada!**; **Em evolução — falta 1 visita** (botão Oferta Ativa); **Atualização do CRM necessária** (abaixo de 80%; se forem vários clientes, o texto fala em "atualizar seus clientes"); **Vamos conquistar sua Roleta** (checklist com check verde no que já cumpriu e o que falta no resto); **Sua jornada Uhome começou!** ("Integração: X de 30 dias"). Semana encerrada com 1 visita: selo **Em evolução**; zerada: **Plano de retomada**, com o one-on-one da segunda (construtivo, não público).
 4. **O que posso fazer agora?** Só com dados reais que já existem: clientes que precisam de contato, visitas para confirmar, negociações em andamento, Oferta Ativa disponível. Cada linha com botão para a tela certa. Nada inventado, nada duplicado.
 
-- **Reconhecimento discreto** (um aviso pequeno, uma vez por evento): 1ª visita da semana, meta de 3 conquistada, CRM voltou a 80%, Roleta recuperada, meta superada. Se o CRM ainda estiver abaixo de 80%, não diz que a Roleta foi liberada — mostra o que falta. Sem prêmios.
+- **Reconhecimento discreto** (um aviso pequeno, uma vez por evento): 1ª visita da semana, 2ª visita (meta conquistada), 3ª visita (meta superada), CRM voltou a 80%, Roleta recuperada, consistência semanal. Se o CRM ainda estiver abaixo de 80%, não diz que a Roleta foi liberada — mostra o que falta. Sem prêmios e sem ranking negativo.
 - **Atualiza sozinho** depois de registrar visita, registrar contato, virada da semana e exceção da direção. Os números vêm da mesma regra da Roleta.
 - Roleta: na hora de entregar cada lead, confere a regra. Bloqueado continua com seus leads, Pipeline, Agenda e Oferta Ativa.
 - Antes de construir: **mockup** desta tela no visual do CRM (computador e celular) para sua aprovação.
@@ -98,7 +98,7 @@ O que já existe hoje (conferido):
 Regras:
 - **Mínimo oficial: 80%** (decisão da direção). 80% a 100%: critério atendido. Abaixo de 80%: bloqueado por CRM. Voltou a 80%: libera na hora (se as visitas também estiverem ok). Sem aumento automático para 85% ou 90% — só a direção muda, na Central de regras, com data, responsável, valor anterior, novo valor e justificativa.
 - **Não** bloqueia por falta de tarefa, tarefa vencida ou outra pendência fora da régua atual.
-- Exemplos: 3 visitas + 83% = atende; 3 visitas + 76% = bloqueado por CRM; 1 visita + 100% = depende das visitas (ou da semana anterior).
+- Exemplos: 2 visitas + 84% = atende; 2 visitas + 76% = bloqueado por CRM; 1 visita + 100% = depende das visitas (ou da semana anterior).
 - Página Uhome Performance e relatórios: saúde média da empresa, por equipe e por corretor; % de corretores acima de 80%; quem está abaixo; evolução semanal da média; quantos recuperaram o credenciamento.
 - Testes do limite: 79,99% abaixo; 80%, 85%, 90% e 100% atendem.
 - Página Performance: % de cada corretor e da equipe com a mesma régua (soma de em dia ÷ soma de ativos da equipe), sem esconder bloqueios individuais.
@@ -113,7 +113,7 @@ Regras:
 
 **Fase 5 — Página Uhome Performance completa, relatório semanal, central de regras e avisos**
 - **Página "Uhome Performance" no menu** (substitui/organiza o hub de Performance atual, sem criar um segundo). Filtros: semana atual e anteriores, mês, período, equipe, gerente, corretor, empreendimento.
-- **Visão CEO/diretoria:** leads recebidos e trabalhados, visitas agendadas e válidas, meta e % da meta, negócios, propostas, vendas, VGV, conversões lead→visita e visita→venda, credenciados / em recuperação / bloqueados por CRM, corretores com 0, 1–2 e 3+ visitas, one-on-ones pendentes, alertas 30/45/60, gerentes abaixo da meta, comparação com a semana anterior.
+- **Visão CEO/diretoria:** meta semanal vigente, leads recebidos e trabalhados, visitas agendadas e válidas, % de corretores que bateram a meta, negócios, propostas, vendas, VGV, conversões lead→visita e visita→venda, credenciados / em recuperação / bloqueados por CRM, corretores com 0, 1 e 2+ visitas, one-on-ones pendentes, alertas 30/45/60, gerentes abaixo da meta, comparação com a semana anterior. Histórico guarda a meta que valia em cada semana.
 - **Tabela por equipe** (clica e abre os corretores) e **tabela por corretor** ordenável por qualquer coluna; clicar no corretor abre o histórico semanal, alertas e pendências.
 - **Pontos de Atenção:** semana zerada, abaixo da meta, bloqueados, perdeu/recuperou credenciamento, 30/45/60 dias sem venda, one-on-one não feito, queda de conversão de equipe, gerente abaixo do VGV (1 e 2 meses). Separados em informativo, operacional e "exige intervenção", cada um com link para o registro.
 - **Minha Equipe — Performance (gerente):** só a própria equipe — meta semanal da equipe, visitas feitas e quanto falta, credenciados, em recuperação, com pendências, negócios em andamento, VGV do mês x meta, one-on-ones e alertas, com atalho para a carteira de cada corretor.
@@ -167,7 +167,9 @@ Os 15 cenários do documento original e os 12 novos serão testados com corretor
 8. Corretor com menos de 30 dias não recebe lead da Roleta (com a política ligada).
 9. Corretor novo usa Oferta Ativa e cadastra seus próprios clientes.
 10. Corretor novo vê pendências de CRM desde o primeiro dia.
-11. Corretor com 30 dias completos sem 3 visitas continua fora da Roleta.
+11. Corretor com 30 dias completos sem a meta de visitas continua fora da Roleta.
+
+Testes da meta de 2 visitas: 0 ou 1 visita sem semana anterior = fora; 2 visitas + CRM ≥ 80% = apto; 3 = meta superada; 2 visitas + CRM abaixo de 80% = bloqueado por CRM; bateu na semana anterior = começa apto; em recuperação faz a 2ª = libera na hora; semana zerada = 1 one-on-one só; integração = não recebe; mudar a meta de 2 para 3 não muda semanas fechadas; demais regras da Roleta mantidas.
 12. Corretor com carência encerrada, CRM em dia e meta cumprida entra na Roleta.
 
 ## 8. Decisões que a direção ainda precisa tomar
