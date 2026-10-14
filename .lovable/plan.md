@@ -43,13 +43,24 @@ Roleta atual (sem reescrever), regra de visitas válidas, tarefas e "sem próxim
 - Corretor sem venda: aviso aos 30 e 45 dias; aos 60 dias "Botão Vermelho — revisão de parceria" para a direção registrar a decisão. Nada automático contra o corretor.
 - Gerentes: meta mensal configurável (padrão R$ 1,5 milhão). 1 mês abaixo → revisão com a diretora; 2 meses seguidos → Botão Vermelho gerencial. Não bloqueia os corretores da equipe.
 
-**Fase 5 — Painel da diretoria, central de regras e avisos**
-- Visão da empresa: credenciados, em recuperação, bloqueados, semana zerada, one-on-ones pendentes, alertas 30/45/60, gerentes abaixo da meta, histórico semanal, com filtros.
-- Central de regras: a direção muda metas e prazos sem programador, tudo registrado.
+**Fase 1B (antecipada) — Página "Uhome Performance" só leitura**
+- Junto com o modo observação a partir de 19/10, uma primeira versão só de leitura da página, para a direção acompanhar os números antes de qualquer bloqueio valer.
+
+**Fase 5 — Página Uhome Performance completa, relatório semanal, central de regras e avisos**
+- **Página "Uhome Performance" no menu** (substitui/organiza o hub de Performance atual, sem criar um segundo). Filtros: semana atual e anteriores, mês, período, equipe, gerente, corretor, empreendimento.
+- **Visão CEO/diretoria:** leads recebidos e trabalhados, visitas agendadas e válidas, meta e % da meta, negócios, propostas, vendas, VGV, conversões lead→visita e visita→venda, credenciados / em recuperação / bloqueados por CRM, corretores com 0, 1–2 e 3+ visitas, one-on-ones pendentes, alertas 30/45/60, gerentes abaixo da meta, comparação com a semana anterior.
+- **Tabela por equipe** (clica e abre os corretores) e **tabela por corretor** ordenável por qualquer coluna; clicar no corretor abre o histórico semanal, alertas e pendências.
+- **Pontos de Atenção:** semana zerada, abaixo da meta, bloqueados, perdeu/recuperou credenciamento, 30/45/60 dias sem venda, one-on-one não feito, queda de conversão de equipe, gerente abaixo do VGV (1 e 2 meses). Separados em informativo, operacional e "exige intervenção", cada um com link para o registro.
+- **Minha Equipe — Performance (gerente):** só a própria equipe — meta semanal da equipe, visitas feitas e quanto falta, credenciados, em recuperação, com pendências, negócios em andamento, VGV do mês x meta, one-on-ones e alertas, com atalho para a carteira de cada corretor.
+- **Relatório Executivo Semanal:** toda segunda às 07h30 (Brasília), sobre a semana anterior (seg 00h a dom 23h59). Fecha a semana e guarda uma "foto" fixa. CEO e Gabrielle recebem a empresa toda; cada gerente só a sua equipe. 5 partes: resumo, equipes, corretores, alertas e intervenções, evolução. Sem inventar causas — só números e comparações.
+- **Entrega:** fica arquivado na página (consulta e PDF) + aviso no sininho/push. **E-mail:** hoje o CRM não tem envio de e-mail automático pronto para isso (existe só a parte de e-mail marketing). Antes de construir apresento a opção de e-mail do próprio Lovable Cloud, que precisa de um domínio de envio (ex.: avisos@uhomesales.com). O e-mail leva só o resumo + link seguro que exige login. Registro de envio, sem duplicar, com botão de reenviar.
+- **Central de regras:** a direção muda metas, prazos, destinatários e canais sem programador, tudo registrado.
 - Avisos no sininho (e push) sem repetir o mesmo evento.
 
 **Fase 6 — Preparação para WhatsApp**
-- Só deixar os eventos prontos para futuros modelos aprovados na Meta. Nenhum disparo.
+- Só deixar os eventos prontos (inclusive o do relatório semanal) para futuros modelos aprovados na Meta. Nenhum disparo.
+
+**Estimativa (cada fase com desenho → plano → construção → teste):** Fase 1 + 1B: ~1 semana (pronta para 19/10 em observação). Fase 2: 3–4 dias. Fase 3: ~1 semana. Fase 4: ~1 semana. Fase 5: 1,5–2 semanas. Fase 6: 1–2 dias.
 
 ## 4. Quem vê o quê
 
@@ -114,3 +125,19 @@ Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, 
 - Roleta: filtro extra dentro de `distribuir_lead_atomico` (que hoje não chama nenhuma checagem), só quando `politica_ativa = true`. `credenciar_na_roleta` e `get_elegibilidade_roleta` passam a ler a mesma fonte.
 - Reaproveitar `one_on_one_reports`, `notifications`/`criar_notificacao`, push existente e a regra de VGV com `fn_equipe_na_data`.
 - Rotinas: virada de domingo 23:59 BRT, auditoria diária do CRM e checagem diária de dias sem venda.
+- Página Performance e relatório leem a mesma função de credenciamento e a mesma visita válida — nenhuma segunda regra de contagem.
+- Fotos semanais: tabela `performance_fechamento_semanal` (semana, data da consolidação, versão das regras, totais) + linhas por equipe e por corretor (situação no fechamento, alertas). Correção = nova versão com motivo e autor; a anterior fica guardada. Reprocessar não muda a situação atual do corretor.
+- Envio: tabela de envios (destinatário, canal, data, status, erro), chave única semana+destinatário+canal para não duplicar; reenvio manual pela direção.
+- PDF: gerado a partir da foto da semana (mesmo padrão dos PDFs de relatório já usados), guardado em armazenamento privado com link temporário.
+- E-mail: e-mail transacional do Lovable Cloud, depois de configurar domínio de envio; o e-mail só traz resumo e link para a página com login.
+- Rotina de segunda 07h30 BRT (10h30 UTC) via cron + função de backend.
+- Permissões: gerente só a própria equipe (via `team_members` e equipe histórica); CEO/diretoria tudo; corretor só o próprio.
+
+## Testes do adendo (relatório e página)
+
+Período semanal correto; visitas da semana anterior certas; visitas inválidas fora; soma dos corretores = equipe; soma das equipes = empresa (respeitando parceria 50/50); gerente só vê a sua equipe; CEO e diretoria veem tudo; corretores zerados identificados; one-on-one sem duplicar; bloqueios com motivos certos; relatório enviado uma vez por pessoa; falha registrada e reenvio possível; fotos antigas disponíveis; PDF fiel; números iguais aos do painel do corretor e do gerente.
+
+## Decisões extras do adendo
+
+- **Domínio de e-mail:** podemos usar um endereço como avisos@uhomesales.com? (precisa configurar uma vez no domínio).
+- **Página atual de Performance:** a nova "Uhome Performance" substitui a atual (recomendado) ou fica ao lado?
