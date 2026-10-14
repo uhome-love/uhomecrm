@@ -7,6 +7,7 @@ import RegistrarAtividadeModal from "@/components/pipeline/RegistrarAtividadeMod
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { acaoDaTarefa } from "@/lib/tarefaAcao";
 
 /** Faixa compacta de Tarefas dentro do quadro "Sua fila de hoje" (Minha rotina). */
 export default function MinhasTarefasHojeCard() {
@@ -60,7 +61,7 @@ export default function MinhasTarefasHojeCard() {
       {proxima && (
         <div className="mt-2 flex items-center gap-2 text-[12px]">
           <b className={atrasada ? "text-destructive" : "text-foreground"}>{hora || "--"}</b>
-          <span className="min-w-0 flex-1 truncate text-foreground">{(proxima.titulo || "Tarefa").split(" — ")[0]}</span>
+          <span className="min-w-0 flex-1 truncate text-foreground">{proxima.lead ? `${proxima.lead.nome} · ${acaoDaTarefa(proxima.tipo, proxima.titulo, proxima.lead.nome)}` : (proxima.titulo || "Anotação").split(" — ")[0]}</span>
           <button type="button" onClick={() => concluir(proxima)} className="text-[11px] font-semibold text-primary hover:underline">Concluir</button>
         </div>
       )}
