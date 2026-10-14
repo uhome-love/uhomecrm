@@ -36,6 +36,13 @@
       "when": 1792011063043,
       "tag": "0004_roleta_noturna_regra_80",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792015815445,
+      "tag": "0005_roleta_entrega_confia_no_credenciamento",
+      "breakpoints": true
     }
   ]
 }
