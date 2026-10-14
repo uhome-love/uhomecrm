@@ -139,7 +139,7 @@ export default function PresencaDoCorretorPill({ profileId, authUserId }: Props)
           icon={<XCircle className="h-3.5 w-3.5" />}
           label="Não elegível · domingo"
           tone="warning"
-          hint={`Precisa ≥4 presenças (${eleg.presencas_semana}) e ≥2 visitas (${eleg.visitas_semana}) na semana anterior`}
+          hint={`Precisa ≥2 visitas realizadas de segunda a sábado (${eleg.visitas_semana})`}
         />
       );
     }

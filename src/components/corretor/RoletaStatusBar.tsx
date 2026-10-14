@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
 import { useMinhaAlocacao } from "@/hooks/useFocoCorretores";
 import PresencaDoCorretorPill from "@/components/corretor/PresencaDoCorretorPill";
+import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
 
 // Segmento shape
 
@@ -237,6 +238,9 @@ function useNightRequirements(
 export default function RoletaStatusBar() {
   const JANELAS_CONFIG = getJanelasConfig();
   const { user } = useAuth();
+  // Uhome Performance: com a chave do CRM ligada, a noite não exige mais visita do dia.
+  const { data: perfStatus } = useRoletaPerformanceStatus();
+  const noturnaSemRequisitos = !!perfStatus?.crm_gate_ativo;
   const [credModalOpen, setCredModalOpen] = useState(false);
   const [segmentos, setSegmentos] = useState<Segmento[]>([]);
   const [credStatus, setCredStatus] = useState<string>("");
@@ -440,7 +444,7 @@ export default function RoletaStatusBar() {
                 const isAprovado = credJanelaStatus === "aprovado" && credenciamentoAtivoAgora;
                 const isPendente = credJanelaStatus === "pendente" && credenciamentoAtivoAgora;
                 // Desbloqueia com visita marcada OU realizada (+ sistema atualizado)
-                const nightBlocked = j.temRequisitos && !((nightReqs.visitaMarcada || nightReqs.visitaRealizada) && nightReqs.sistemaAtualizado);
+                const nightBlocked = j.temRequisitos && !noturnaSemRequisitos && !((nightReqs.visitaMarcada || nightReqs.visitaRealizada) && nightReqs.sistemaAtualizado);
                 const isDisabled = jStatus !== "aberto" || jaCredenciado || (j.temRequisitos && nightBlocked);
                 const Icon = j.icon;
 
@@ -513,7 +517,7 @@ export default function RoletaStatusBar() {
                     </div>
 
                     {/* Night requirements */}
-                    {j.temRequisitos && jStatus === "aberto" && !jaCredenciado && (
+                    {j.temRequisitos && !noturnaSemRequisitos && jStatus === "aberto" && !jaCredenciado && (
                       <div className="mt-3 pt-3 border-t border-border space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground">Para desbloquear, complete hoje:</p>
                         {nightReqs.loading ? (
