@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────
 // limparRegistro — deixa o "último registro" apresentável no card.
 //  1) Dump de formulário (Anúncio + Respostas...) → "Anúncio: X · Casa 3 dorms · 130m²"
-//  2) Vocabulário: "Tarefa" → "Lembrete" (nunca "tarefa" na UI do corretor).
+//  2) Vocabulário: textos antigos "Lembrete" → "Tarefa".
 // Textos curtos/normais passam quase intactos.
 // ─────────────────────────────────────────────────────────────────
 
