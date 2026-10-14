@@ -50,7 +50,7 @@ Ordem dos cards (computador em grade, celular um embaixo do outro):
 ```text
 +------------------------------+  +------------------------------+
 | MINHA META DE VISITAS        |  | SAÚDE DO MEU CRM             |
-| 2 de 3 visitas realizadas    |  | 94% — Dentro da meta Uhome   |
+| 2 de 3 visitas realizadas    |  | 83% — Meta Uhome 80%: ok!    |
 | (o)----(o)----( )     67%    |  | [##########|##]  mín. 80%    |
 | "Você está muito perto!      |  | "Sua carteira está dentro do |
 |  Falta apenas 1 visita."     |  |  padrão Uhome..."            |
@@ -71,7 +71,7 @@ Ordem dos cards (computador em grade, celular um embaixo do outro):
 ```
 
 1. **Minha meta de visitas:** "X de 3 visitas realizadas", 3 etapas que se completam a cada visita válida, %. Mensagens: 0 "Uma nova semana de oportunidades!..."; 1 "Você já deu o primeiro passo!..."; 2 "Você está muito perto!..."; 3 "Parabéns! Você conquistou sua meta semanal!"; 4+ "Excelente! Você superou sua meta...". Mostra **separado** o resultado da semana anterior ("Semana anterior: 4 visitas — você começou a semana apto"), para nunca mostrar bloqueio errado na segunda com 0/3.
-2. **Saúde do meu CRM:** o mesmo % da régua atual, barra com marca nos 80%. 90–100% "Sua carteira está dentro do padrão Uhome..."; abaixo de 80% "Você está perto de recuperar o padrão!..."; abaixo de 80% "Vamos organizar sua carteira?...". Botão "Atualizar meus clientes" → Pipeline com o filtro que já existe.
+2. **Saúde do meu CRM:** o mesmo % da régua atual, barra com marca nos 80%, "Meta Uhome: 80% — Conquistada!" e quantos clientes precisam de atualização. 80% ou mais: "Parabéns! Sua carteira está dentro do padrão Uhome. Continue valorizando suas oportunidades!". Abaixo de 80%: "Seu CRM está em 76%. Atualize seus clientes para conquistar o padrão Uhome de 80% e recuperar sua elegibilidade." Não mostra nenhuma meta futura (85% ou 90%). Botão "Atualizar meus clientes" → Pipeline com o filtro que já existe.
 3. **Minha Roleta**, 5 cenários: **Roleta conquistada!**; **Você está perto da sua Roleta!** (faltam visitas, botão Oferta Ativa); **Sua Roleta está a uma atualização de distância** (CRM abaixo de 80%; se forem vários clientes, o texto fala em "atualizar seus clientes"); **Vamos conquistar sua Roleta** (checklist com check verde no que já cumpriu e o que falta no resto); **Sua jornada Uhome começou!** ("Integração: X de 30 dias"). Semana com menos de 3: selo **Em evolução**; semana zerada: **Plano de retomada**, com o one-on-one da segunda (data e plano, se permitido).
 4. **O que posso fazer agora?** Só com dados reais que já existem: clientes que precisam de contato, visitas para confirmar, negociações em andamento, Oferta Ativa disponível. Cada linha com botão para a tela certa. Nada inventado, nada duplicado.
 
@@ -94,9 +94,11 @@ O que já existe hoje (conferido):
 6. **Atualização automática:** o % muda assim que o corretor registra um contato (o sistema já atualiza o "último contato" do cliente). O painel recarrega depois de registrar atividade, concluir tarefa ou visita.
 
 Regras:
-- 80% a 100%: critério atendido. Abaixo de 80%: bloqueado por CRM. Voltou a 80%: libera na hora (se as visitas também estiverem ok).
+- **Mínimo oficial: 80%** (decisão da direção). 80% a 100%: critério atendido. Abaixo de 80%: bloqueado por CRM. Voltou a 80%: libera na hora (se as visitas também estiverem ok). Sem aumento automático para 85% ou 90% — só a direção muda, na Central de regras, com data, responsável, valor anterior, novo valor e justificativa.
 - **Não** bloqueia por falta de tarefa, tarefa vencida ou outra pendência fora da régua atual.
-- Exemplos: 3 visitas + 94% = atende; 3 visitas + 87% = bloqueado por CRM; 1 visita + 100% = depende das visitas (ou da semana anterior).
+- Exemplos: 3 visitas + 83% = atende; 3 visitas + 76% = bloqueado por CRM; 1 visita + 100% = depende das visitas (ou da semana anterior).
+- Página Uhome Performance e relatórios: saúde média da empresa, por equipe e por corretor; % de corretores acima de 80%; quem está abaixo; evolução semanal da média; quantos recuperaram o credenciamento.
+- Testes do limite: 79,99% abaixo; 80%, 85%, 90% e 100% atendem.
 - Página Performance: % de cada corretor e da equipe com a mesma régua (soma de em dia ÷ soma de ativos da equipe), sem esconder bloqueios individuais.
 
 **Fase 4 — One-on-one, Botão Vermelho e gerentes**
