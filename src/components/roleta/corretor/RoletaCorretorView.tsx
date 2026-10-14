@@ -7,6 +7,7 @@ import {
 } from "@/hooks/useRoleta";
 import { compareRoletaSegmentos } from "@/hooks/useRoletaSegmentos";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
+import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
 import { useMinhaAlocacao } from "@/hooks/useFocoCorretores";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +53,9 @@ function CountdownTimer({ target }: { target: Date }) {
 
 export function RoletaCorretorView() {
   const { user } = useAuth();
+  // Uhome Performance: com a chave do CRM ligada, a noite segue a regra dos outros turnos.
+  const { data: perfStatus } = useRoletaPerformanceStatus();
+  const noturnaSemRequisitos = !!perfStatus?.crm_gate_ativo;
   const { segmentos, meuCredenciamento, fila, loading, submitting, sairDaRoleta } =
     useRoleta();
   const { elegibilidade, carregando: carregandoElegibilidade } = useElegibilidadeRoleta();
@@ -487,7 +491,7 @@ export function RoletaCorretorView() {
           )}
 
           {/* Noturna validation feedback */}
-          {selectedJanela === "noturna" && (
+          {selectedJanela === "noturna" && !noturnaSemRequisitos && (
             <>
               {checkingNoturna && (
                 <div className="flex items-center gap-2 p-3 rounded-md bg-muted border">
@@ -530,7 +534,7 @@ export function RoletaCorretorView() {
               submitting ||
 
               submitting ||
-              (selectedJanela === "noturna" &&
+              (selectedJanela === "noturna" && !noturnaSemRequisitos &&
                 (checkingNoturna || noturnaEligible === false)) ||
               (isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo) ||
               carregandoElegibilidade
