@@ -22,12 +22,17 @@ function quando(t: TarefaItem): string {
 
 export default function TarefaRow({ t, corretorNome, somenteLeitura, onAbrir, onConcluir }: Props) {
   const vencida = t.status === "pendente" && !!t.vence_em && t.vence_em < hojeBRT();
+  // Tarefa de HOJE cujo horário já passou (horário sempre em BRT -03:00).
+  const atrasadaHoje =
+    t.status === "pendente" && t.vence_em === hojeBRT() && !!t.hora_vencimento &&
+    new Date(`${t.vence_em}T${t.hora_vencimento.slice(0, 5)}:00-03:00`).getTime() < Date.now();
   const concluida = t.status === "concluida";
   const titulo = (t.titulo || "Tarefa").split(" — ")[0];
   return (
-    <div className={cn("flex items-center gap-3 rounded-xl border border-border bg-card p-3", concluida && "opacity-70")}>
-      <div className={cn("w-[68px] shrink-0 text-[13px] font-bold tabular-nums", vencida ? "text-destructive" : "text-foreground")}>
+    <div className={cn("flex items-center gap-3 rounded-xl border bg-card p-3", atrasadaHoje ? "border-destructive/40" : "border-border", concluida && "opacity-70")}>
+      <div className={cn("w-[68px] shrink-0 text-[13px] font-bold tabular-nums", vencida || atrasadaHoje ? "text-destructive" : "text-foreground")}>
         {quando(t)}
+        {atrasadaHoje && <div className="text-[10px] font-semibold uppercase">atrasada</div>}
       </div>
       <div className="min-w-0 flex-1">
         <div className={cn("truncate text-[14px] font-semibold text-foreground", concluida && "line-through")}>{titulo}</div>
