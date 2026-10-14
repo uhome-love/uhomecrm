@@ -22,6 +22,7 @@ Quando a coluna está com ordenação ou filtro diferente do padrão, o ícone f
 1. Mockup do topo da coluna com o menu aberto, para sua aprovação.
 2. Build, só depois do mockup aprovado.
 3. Teste no preview com um corretor de teste: ordenar e filtrar Qualificação e Aquecimento, conferir que as outras colunas não mudam, que o arrastar entre colunas continua funcionando e que a escolha fica salva ao recarregar. Nenhum lead real é alterado (só visualização).
+4. Só depois do teste aprovado, te dou o ok para publicar o CRM.
 
 ## Detalhes técnicos
 - Novo componente `StageSortFilterMenu` no cabeçalho da coluna do board (PipelineKanban / coluna).
