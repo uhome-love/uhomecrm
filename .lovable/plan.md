@@ -20,7 +20,12 @@ Roleta atual (sem reescrever), regra de visitas válidas, tarefas e "sem próxim
 
 **Fase 0 — Base das chaves + CRM 80% na Roleta (execução detalhada)**
 
-**Dado atual (hoje, 15h):** dos 29 corretores ativos com carteira, **13 estão com CRM ≥ 80% e 15 estão abaixo** (1 sem cálculo). Se ligarmos hoje à noite, cerca de metade do time deixa de receber leads da Roleta. Antes de ligar, entrego a lista nominal com o % de cada um para Lucas e Gabrielle decidirem o momento (hoje à noite, ou dar 1–2 dias de aviso para regularizarem).
+**Cronograma oficial da direção:**
+- **Quinta 15/10/2026, a partir da primeira Roleta (manhã):** CRM ≥ 80% passa a valer em todos os turnos (manhã, tarde, noite e domingo). `crm_gate_ativo = true`.
+- **Segunda 19/10/2026:** meta de 2 visitas passa a valer. Até lá `visitas_gate_ativo = false`. Nunca ligar as visitas antes.
+- Horário sempre de Brasília. Tudo condicionado aos testes e à autorização final.
+
+**Dado atual (14/10, 15h):** dos 29 corretores ativos com carteira, **13 estão com CRM ≥ 80% e 15 estão abaixo** (1 sem cálculo). Se nada mudar até amanhã, cerca de metade do time ficaria fora da primeira Roleta. Junto com o resultado dos testes entrego a lista nominal com o % de cada um, para os gerentes avisarem o time hoje e a Fila CEO ser acompanhada amanhã.
 
 Passo a passo:
 1. **Chaves independentes** na configuração da Roleta: `crm_gate_ativo` e `visitas_gate_ativo`, ambas **desligadas**, e `crm_minimo_pct = 80`, `meta_visitas_semanais = 2`. Só CEO/diretoria mudam, com registro (quem, quando, antes, depois, motivo).
@@ -28,7 +33,22 @@ Passo a passo:
 3. **Conferência na entrega de cada lead** (todos os turnos, inclusive domingo e leads de integrações): se `crm_gate_ativo` estiver ligada e o corretor estiver abaixo de 80%, ele é pulado e o lead vai ao próximo apto da mesma regra de produto/turno/equipe; se ninguém estiver apto, vai para a Fila CEO como hoje. Quem perde a condição para de receber na hora, mesmo já credenciado; nunca perde os leads que já tem.
 4. **Troca das regras antigas** (só quando a chave do CRM for ligada): sai o limite de 10 leads vermelhos; sai a exigência de 4 presenças (inclusive no domingo); continua o limite de 100 descartes no mês.
 5. **Registro** de cada vez que um corretor foi pulado (corretor, lead, motivo, % no momento) e de cada mudança de situação (bloqueou / liberou).
-6. **Tela do corretor (mínima nesta fase):** na Minha rotina, o card de saúde mostra "Meta Uhome: 80%" e, se estiver abaixo, "Atualize seus clientes para recuperar sua elegibilidade" com botão para o Pipeline filtrado. O card completo "Minha evolução" vem na Fase 2.
+6. **Aviso claro de bloqueio (regra obrigatória)** — na tela de credenciamento da Roleta, na Minha rotina e no aviso do sininho. Nunca "Bloqueado" sozinho. Sempre: **situação + motivo exato + como resolver + botão**. Exemplo desta fase:
+
+```text
++--------------------------------------------------------------+
+| Sua Roleta está temporariamente bloqueada                    |
+| Seu CRM está em 76% e o mínimo exigido é 80%.                |
+| Atualize sua carteira para recuperar seu credenciamento.     |
+|                                                              |
+| [Atualizar meus clientes]   [Entender meu credenciamento]    |
+| Assim que chegar a 80%, você volta automaticamente.          |
++--------------------------------------------------------------+
+```
+   - Na Minha rotina, o card de saúde mostra "Meta Uhome: 80%", o % atual e o mesmo aviso quando estiver abaixo. O card completo "Minha evolução" vem na Fase 2.
+   - Com mais de um motivo (a partir de 19/10), mostra todos em lista com checklist (✓ no que já cumpriu) e "Resolva os pontos acima e seu credenciamento será reavaliado automaticamente." Exemplos por motivo: CRM (76% de 80%), visitas ("1 de 2 — falta 1 visita válida", botão Ver minhas visitas / Oferta Ativa), integração ("12 de 30 dias", botão Minha Oferta Ativa), 100 descartes (quantos tem e quando zera).
+   - Tom claro, respeitoso e motivador; destaque elegante, sem vermelho agressivo. Reavalia sozinho ao corrigir.
+   - Antes de construir, mostro o fluxo visual (mockup) para aprovação.
 7. **Campo de data de ingresso** do corretor criado vazio + lista dos corretores que entraram nos últimos 30 dias (hoje: 1) para Lucas e Gabrielle confirmarem as datas. A carência só bloqueia depois dessa confirmação.
 
 Testes antes de pedir para ligar (com corretor e lead de teste, apagando tudo no fim):
@@ -39,7 +59,9 @@ Testes antes de pedir para ligar (com corretor e lead de teste, apagando tudo no
 - 100 descartes continua barrando; 10 vermelhos e 4 presenças não barram mais.
 - Leads já recebidos continuam com o corretor.
 
-**Ligação real:** só depois dos testes, da lista nominal e da sua aprovação explícita. A chave pode ser desligada a qualquer momento, voltando tudo ao normal.
+Testes extras pedidos pela direção: conferir o cálculo dos 80% com os dados reais (comparando com a "Saúde da carteira" de cada um), ver o impacto na Fila CEO (quantos leads iriam para lá com o time atual) e testar o desligamento imediato da chave (rollback).
+
+**Ligação real:** apresento o resultado dos testes + lista nominal hoje; com sua autorização final, ligo `crm_gate_ativo` para valer a partir da primeira Roleta de 15/10. A chave pode ser desligada a qualquer momento, voltando tudo ao normal.
 
 **Fase 1 — Regra de credenciamento por visitas**
 
@@ -205,7 +227,7 @@ Já decididas pela direção:
 - Relatórios de segunda 07h30 depois de validar o envio.
 
 Pendente:
-1. **Quando ligar o CRM 80%:** hoje 15 de 29 corretores estão abaixo. Ligar hoje à noite ou avisar o time e ligar em 1–2 dias? (decide depois de ver a lista nominal)
+1. **Autorização final do CRM 80% para 15/10:** depois de ver os testes e a lista nominal (hoje 15 de 29 abaixo).
 2. **Domínio de e-mail** para o relatório (ex.: avisos@uhomesales.com).
 
 ## Detalhes técnicos
