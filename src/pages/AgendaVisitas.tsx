@@ -20,7 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { bucketVisitasCanonico, type VisitaKpiRow } from "@/lib/visitaKpis";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaResultadoDialog, { type ResultadoVisita, RESULTADO_LABELS } from "@/components/visitas/VisitaResultadoDialog";
-import { routeLeadAfterVisita } from "@/lib/visitaResultadoRouting";
+import { registrarResultadoVisita } from "@/lib/registrarResultadoVisita";
 import VisitasCobrancaDialog from "@/components/visitas/VisitasCobrancaDialog";
 import { toast } from "sonner";
 
@@ -652,12 +652,18 @@ export default function AgendaVisitas() {
   }, [editingVisita, updateVisita]);
 
   const handleMarkRealizada = useCallback((visita: Visita) => {
+    setResultadoInicial(null);
     setResultadoVisita(visita);
   }, []);
 
+  // No Show exige feedback: abre o diálogo já com "Não compareceu" selecionado.
+  const [resultadoInicial, setResultadoInicial] = useState<ResultadoVisita | null>(null);
   const handleMarkNoShow = useCallback((id: string) => {
-    updateStatus(id, "no_show");
-  }, [updateStatus]);
+    const v = rawVisitas.find(x => x.id === id);
+    if (!v) return;
+    setResultadoInicial("nao_compareceu");
+    setResultadoVisita(v);
+  }, [rawVisitas]);
 
   const handleReabrir = useCallback(async (id: string) => {
     // Limpa resultado anterior e volta status para "marcada" para permitir reclassificação
@@ -667,57 +673,7 @@ export default function AgendaVisitas() {
 
   const handleResultadoSubmit = useCallback(async (resultado: ResultadoVisita, observacoes?: string, feedback?: { objecao?: string; temperatura?: string; proxima_acao?: string }) => {
     if (!resultadoVisita) return;
-    const updates: any = { resultado_visita: resultado };
-    if (observacoes) {
-      updates.observacoes = [resultadoVisita.observacoes, observacoes].filter(Boolean).join(" | ");
-    }
-    await updateVisita(resultadoVisita.id, updates, true);
-
-    // Status da visita conforme o resultado (integrado ao pipeline via updateStatus):
-    // não compareceu → no_show; reagendar → volta para marcada; demais → realizada.
-    const statusVisita: VisitaStatus =
-      resultado === "nao_compareceu" ? "no_show" : resultado === "reagendar" ? "marcada" : "realizada";
-    // Feedback padronizado para o Histórico do lead.
-    const temperaturaLabel: Record<string, string> = {
-      muito_quente: "🔥 Muito quente", quente: "⚡ Quente", morno: "🌡️ Morno", frio: "🧊 Frio",
-    };
-    const feedbackHist = [
-      `Resultado: ${RESULTADO_LABELS[resultado] || resultado}`,
-      feedback?.temperatura ? `Temperatura: ${temperaturaLabel[feedback.temperatura] || feedback.temperatura}` : null,
-      feedback?.objecao ? `Objeção: ${feedback.objecao}` : null,
-      observacoes || null,
-    ].filter(Boolean).join(" · ");
-    await updateStatus(resultadoVisita.id, statusVisita, feedbackHist, user?.id);
-
-    if (resultadoVisita.pipeline_lead_id) {
-      // Roteia o lead no pipeline de acordo com o resultado (fluxo único).
-      await routeLeadAfterVisita({
-        pipelineLeadId: resultadoVisita.pipeline_lead_id,
-        resultado,
-        userId: user?.id || resultadoVisita.corretor_id,
-        corretorId: resultadoVisita.corretor_id,
-        gerenteId: resultadoVisita.gerente_id,
-        nome: resultadoVisita.nome_cliente,
-        empreendimento: resultadoVisita.empreendimento,
-        telefone: resultadoVisita.telefone,
-        observacoes: feedback?.objecao || observacoes,
-      });
-
-      if (feedback) {
-        const leadUpdates: any = {};
-        if (feedback.temperatura) leadUpdates.temperatura = feedback.temperatura;
-        if (feedback.proxima_acao) leadUpdates.proxima_acao = feedback.proxima_acao;
-        if (feedback.objecao) {
-          leadUpdates.observacoes = [resultadoVisita.observacoes, `Objeção: ${feedback.objecao}`].filter(Boolean).join(" | ");
-        }
-        if (Object.keys(leadUpdates).length > 0) {
-          await supabase.from("pipeline_leads").update({
-            ...leadUpdates,
-            ultima_acao_at: new Date().toISOString(),
-          } as any).eq("id", resultadoVisita.pipeline_lead_id);
-        }
-      }
-    }
+    await registrarResultadoVisita(resultadoVisita, resultado, observacoes, feedback, { updateVisita, updateStatus, userId: user?.id });
     setResultadoVisita(null);
   }, [resultadoVisita, updateVisita, updateStatus, user]);
 
@@ -1085,7 +1041,7 @@ export default function AgendaVisitas() {
       )}
 
       {resultadoVisita && (
-        <VisitaResultadoDialog open={!!resultadoVisita} onClose={() => setResultadoVisita(null)} onSubmit={handleResultadoSubmit} nomeCliente={resultadoVisita.nome_cliente} />
+        <VisitaResultadoDialog open={!!resultadoVisita} onClose={() => setResultadoVisita(null)} onSubmit={handleResultadoSubmit} defaultResultado={resultadoInicial} nomeCliente={resultadoVisita.nome_cliente} />
       )}
 
       <VisitasCobrancaDialog

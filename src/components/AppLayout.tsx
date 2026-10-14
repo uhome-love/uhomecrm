@@ -23,6 +23,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
+import VisitaPendenteBloqueio from "@/components/visitas/VisitaPendenteBloqueio";
 import { useVendaRealtimeNotification } from "@/hooks/useVendaRealtimeNotification";
 import { useWhatsAppNotifications } from "@/hooks/useWhatsAppNotifications";
 
@@ -70,7 +71,7 @@ type SidebarRole = "admin" | "diretor" | "gestor" | "corretor" | "backoffice" | 
 
 export default function AppLayout() {
   const { user, signOut } = useAuth();
-  const { isAdmin, isDiretor, isGestor, isBackoffice, isRh, rolesUnavailable } = useUserRole();
+  const { isAdmin, isDiretor, isGestor, isBackoffice, isRh, isCorretor, rolesUnavailable } = useUserRole();
   const { theme, toggle: onThemeToggle } = useTheme();
   useVendaRealtimeNotification();
   useWhatsAppNotifications();
@@ -342,6 +343,7 @@ export default function AppLayout() {
           onClose={closeDialog}
           onResult={refreshPending}
         />
+        {isCorretor && !isAdmin && !isDiretor && !isGestor && <VisitaPendenteBloqueio />}
         <NewLeadBanner />
         <GlobalSearch />
         <BackendHealthBanner />

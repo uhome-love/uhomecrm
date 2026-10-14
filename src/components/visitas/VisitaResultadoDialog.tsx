@@ -22,6 +22,7 @@ export const RESULTADO_OPTIONS: { value: ResultadoVisita; label: string; emoji: 
   { value: "gostou_vai_pensar", label: "Vai pensar", emoji: "🤔", desc: "→ Pós-Visita" },
   { value: "nao_gostou", label: "Não gostou", emoji: "👎", desc: "→ Pós-Visita (descarte sugerido)" },
   { value: "reagendar", label: "Reagendar", emoji: "🔄", desc: "→ Visita marcada" },
+  { value: "nao_compareceu", label: "Não compareceu (No Show)", emoji: "🚫", desc: "→ Aquecimento + follow-up" },
 ];
 
 export const RESULTADO_LABELS: Record<string, string> = Object.fromEntries(
@@ -59,9 +60,17 @@ interface Props {
   onClose: () => void;
   onSubmit: (resultado: ResultadoVisita, observacoes?: string, feedback?: Omit<FeedbackCompleto, "resultado" | "observacoes">) => Promise<void>;
   nomeCliente: string;
+  /** Resultado já selecionado ao abrir (ex.: No Show). */
+  defaultResultado?: ResultadoVisita | null;
+  /** Modo bloqueio: não fecha por X, Esc ou clique fora. */
+  blocking?: boolean;
+  /** Texto extra no topo (ex.: "Visita de hoje 15:00 · 1 de 3"). */
+  subtitulo?: string;
 }
 
-export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCliente }: Props) {
+const MIN_OBS = 10;
+
+export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCliente, defaultResultado, blocking, subtitulo }: Props) {
   const [selected, setSelected] = useState<ResultadoVisita | null>(null);
   const [obs, setObs] = useState("");
   const [objecao, setObjecao] = useState("");
@@ -71,14 +80,14 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
 
   useEffect(() => {
     if (open) {
-      setSelected(null);
+      setSelected(defaultResultado ?? null);
       setObs("");
       setObjecao("");
       setTemperatura("");
       setProximaAcao("");
       setSubmitting(false);
     }
-  }, [open]);
+  }, [open, defaultResultado]);
 
   const handleSubmit = async () => {
     if (!selected) return;
@@ -97,13 +106,19 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(o) => { if (!o && !blocking) onClose(); }}>
+      <DialogContent
+        className={`sm:max-w-lg max-h-[90vh] overflow-y-auto ${blocking ? "[&>button:last-child]:hidden" : ""}`}
+        onEscapeKeyDown={(e) => { if (blocking) e.preventDefault(); }}
+        onPointerDownOutside={(e) => { if (blocking) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (blocking) e.preventDefault(); }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ClipboardCheck className="h-5 w-5 text-primary" />
-            Resultado da Visita
+            {blocking ? "Visita sem resultado registrado" : "Resultado da Visita"}
           </DialogTitle>
+          {subtitulo && <p className="text-xs font-semibold text-destructive">{subtitulo}</p>}
           <DialogDescription className="text-xs">
             Registre o resultado da visita de <strong>{nomeCliente}</strong> para mover a oportunidade automaticamente.
           </DialogDescription>
@@ -196,14 +211,18 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
               placeholder="O que rolou na visita? Ex: gostou da vista, achou o valor ok, vai decidir com a esposa"
               rows={2}
             />
-            {selected && !obs.trim() && (
-              <p className="mt-1 text-[11.5px] font-medium text-destructive">Escreva o que aconteceu na visita para registrar.</p>
+            {selected && obs.trim().length < MIN_OBS && (
+              <p className="mt-1 text-[11.5px] font-medium text-destructive">
+                {selected === "nao_compareceu"
+                  ? "Conte o que aconteceu no No Show (ex.: cliente não atendeu, desmarcou em cima da hora)."
+                  : "Escreva o que aconteceu na visita para registrar."}
+              </p>
             )}
           </div>
 
           <Button
             className="w-full gap-2"
-            disabled={!selected || !obs.trim() || submitting}
+            disabled={!selected || obs.trim().length < MIN_OBS || submitting}
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
