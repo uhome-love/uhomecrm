@@ -18,10 +18,10 @@ Roleta atual (sem reescrever), regra de visitas válidas, tarefas e "sem próxim
 
 ## 3. Fases
 
-**Fase 0 — Urgente: CRM mínimo de 90% na Roleta noturna de hoje (14/10)**
-- Na hora de entregar cada lead da noite, o sistema confere a saúde do CRM do corretor (mesma régua da "Saúde da carteira"). Abaixo de 90%: não recebe e o lead vai para o próximo. Não mexe nos clientes que ele já tem.
-- O corretor vê na Minha rotina o % e o aviso "abaixo de 90% — atualize seus clientes para voltar a receber".
-- Só liga depois de testar e de você aprovar. Antes de ligar, te mostro quantos corretores ficariam abaixo de 90% agora, para não esvaziar a noite sem aviso.
+**Fase 0 — Urgente: CRM mínimo de 80% na Roleta noturna de hoje (14/10)**
+- Na hora de entregar cada lead da noite, o sistema confere a saúde do CRM do corretor (mesma régua da "Saúde da carteira"). Abaixo de 80%: não recebe e o lead vai para o próximo. Não mexe nos clientes que ele já tem.
+- O corretor vê na Minha rotina o % e o aviso "abaixo de 80% — atualize seus clientes para voltar a receber".
+- Só liga depois de testar e de você aprovar. Antes de ligar, te mostro quantos corretores ficariam abaixo de 80% agora, para não esvaziar a noite sem aviso.
 
 **Fase 1 — Regra de credenciamento por visitas**
 
@@ -29,14 +29,14 @@ Regra oficial da direção:
 
 | Visitas válidas na semana | Situação |
 |---|---|
-| 3 ou mais | Apto à Roleta (se CRM ≥ 90% e demais regras) |
+| 3 ou mais | Apto à Roleta (se CRM ≥ 80% e demais regras) |
 | 1 ou 2 | Fora da Roleta — trabalha carteira, Oferta Ativa e indicações |
 | 0 | Fora da Roleta + one-on-one obrigatório com um sócio na segunda |
 
 - Estados: **Em integração**, **Credenciado**, **Em recuperação** (visitas) e **Bloqueado por CRM**, com **todos** os motivos.
 - **Visita válida:** ligada a um cliente que já existia no CRM antes da visita; cliente não excluído; status realizada; feedback preenchido; 1 por cliente por dia. Não contam: sem cliente, cancelada, reagendada, no show. Indicação, prospecção própria e Oferta Ativa contam se o cliente foi cadastrado antes. Checagem no sistema, não só na tela.
-- **Datas (regra definitiva):** a primeira apuração é a **semana atual, 12/10 a 18/10/2026**. Na **segunda 19/10** o resultado dela já decide quem entra na Roleta. A partir daí, quem está fora volta **na hora** em que completar a 3ª visita válida da semana (com CRM ≥ 90%). Quem fez 3+ numa semana começa a seguinte apto.
-- **Integração de 30 dias para corretor novo** (desde a data oficial de ingresso): fora da Roleta mesmo com várias visitas; usa Oferta Ativa e prospecção; CRM em dia desde o primeiro dia. Ao terminar, só entra com CRM ≥ 90% + 3 visitas válidas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
+- **Datas (regra definitiva):** a primeira apuração é a **semana atual, 12/10 a 18/10/2026**. Na **segunda 19/10** o resultado dela já decide quem entra na Roleta. A partir daí, quem está fora volta **na hora** em que completar a 3ª visita válida da semana (com CRM ≥ 80%). Quem fez 3+ numa semana começa a seguinte apto.
+- **Integração de 30 dias para corretor novo** (desde a data oficial de ingresso): fora da Roleta mesmo com várias visitas; usa Oferta Ativa e prospecção; CRM em dia desde o primeiro dia. Ao terminar, só entra com CRM ≥ 80% + 3 visitas válidas na semana atual ou na anterior. Exceção só pela direção, com motivo, prazo e registro.
 - Outras exceções (férias, afastamento, aprovação da direção) com motivo, responsável, início e fim.
 - **Na entrega de cada lead** a Roleta confere tudo de novo — não só quando o corretor se credencia. Irregular para de receber na hora, sem perder seus clientes e negócios.
 - Chave liga/desliga para emergência. Nada é publicado sem teste e aprovação explícita da direção.
@@ -51,14 +51,14 @@ Ordem dos cards (computador em grade, celular um embaixo do outro):
 +------------------------------+  +------------------------------+
 | MINHA META DE VISITAS        |  | SAÚDE DO MEU CRM             |
 | 2 de 3 visitas realizadas    |  | 94% — Dentro da meta Uhome   |
-| (o)----(o)----( )     67%    |  | [##########|##]  mín. 90%    |
+| (o)----(o)----( )     67%    |  | [##########|##]  mín. 80%    |
 | "Você está muito perto!      |  | "Sua carteira está dentro do |
 |  Falta apenas 1 visita."     |  |  padrão Uhome..."            |
 | Semana anterior: 4 ✓ apto    |  | [Atualizar meus clientes]    |
 +------------------------------+  +------------------------------+
 +---------------------------------------------------------------+
 | MINHA ROLETA — VOCÊ ESTÁ PERTO DA SUA ROLETA!                 |
-| [✓] CRM acima de 90%   [ ] 3 visitas na semana (falta 1)      |
+| [✓] CRM acima de 80%   [ ] 3 visitas na semana (falta 1)      |
 | Novos leads da Roleta temporariamente indisponíveis.          |
 | [Buscar oportunidades na Oferta Ativa]                        |
 +---------------------------------------------------------------+
@@ -71,11 +71,11 @@ Ordem dos cards (computador em grade, celular um embaixo do outro):
 ```
 
 1. **Minha meta de visitas:** "X de 3 visitas realizadas", 3 etapas que se completam a cada visita válida, %. Mensagens: 0 "Uma nova semana de oportunidades!..."; 1 "Você já deu o primeiro passo!..."; 2 "Você está muito perto!..."; 3 "Parabéns! Você conquistou sua meta semanal!"; 4+ "Excelente! Você superou sua meta...". Mostra **separado** o resultado da semana anterior ("Semana anterior: 4 visitas — você começou a semana apto"), para nunca mostrar bloqueio errado na segunda com 0/3.
-2. **Saúde do meu CRM:** o mesmo % da régua atual, barra com marca nos 90%. 90–100% "Sua carteira está dentro do padrão Uhome..."; 80–89% "Você está perto de recuperar o padrão!..."; abaixo de 80% "Vamos organizar sua carteira?...". Botão "Atualizar meus clientes" → Pipeline com o filtro que já existe.
-3. **Minha Roleta**, 5 cenários: **Roleta conquistada!**; **Você está perto da sua Roleta!** (faltam visitas, botão Oferta Ativa); **Sua Roleta está a uma atualização de distância** (CRM abaixo de 90%; se forem vários clientes, o texto fala em "atualizar seus clientes"); **Vamos conquistar sua Roleta** (checklist com check verde no que já cumpriu e o que falta no resto); **Sua jornada Uhome começou!** ("Integração: X de 30 dias"). Semana com menos de 3: selo **Em evolução**; semana zerada: **Plano de retomada**, com o one-on-one da segunda (data e plano, se permitido).
+2. **Saúde do meu CRM:** o mesmo % da régua atual, barra com marca nos 80%. 90–100% "Sua carteira está dentro do padrão Uhome..."; abaixo de 80% "Você está perto de recuperar o padrão!..."; abaixo de 80% "Vamos organizar sua carteira?...". Botão "Atualizar meus clientes" → Pipeline com o filtro que já existe.
+3. **Minha Roleta**, 5 cenários: **Roleta conquistada!**; **Você está perto da sua Roleta!** (faltam visitas, botão Oferta Ativa); **Sua Roleta está a uma atualização de distância** (CRM abaixo de 80%; se forem vários clientes, o texto fala em "atualizar seus clientes"); **Vamos conquistar sua Roleta** (checklist com check verde no que já cumpriu e o que falta no resto); **Sua jornada Uhome começou!** ("Integração: X de 30 dias"). Semana com menos de 3: selo **Em evolução**; semana zerada: **Plano de retomada**, com o one-on-one da segunda (data e plano, se permitido).
 4. **O que posso fazer agora?** Só com dados reais que já existem: clientes que precisam de contato, visitas para confirmar, negociações em andamento, Oferta Ativa disponível. Cada linha com botão para a tela certa. Nada inventado, nada duplicado.
 
-- **Reconhecimento discreto** (um aviso pequeno, uma vez por evento): 1ª visita da semana, meta de 3 conquistada, CRM voltou a 90%, Roleta recuperada, meta superada. Se o CRM ainda estiver abaixo de 90%, não diz que a Roleta foi liberada — mostra o que falta. Sem prêmios.
+- **Reconhecimento discreto** (um aviso pequeno, uma vez por evento): 1ª visita da semana, meta de 3 conquistada, CRM voltou a 80%, Roleta recuperada, meta superada. Se o CRM ainda estiver abaixo de 80%, não diz que a Roleta foi liberada — mostra o que falta. Sem prêmios.
 - **Atualiza sozinho** depois de registrar visita, registrar contato, virada da semana e exceção da direção. Os números vêm da mesma regra da Roleta.
 - Roleta: na hora de entregar cada lead, confere a regra. Bloqueado continua com seus leads, Pipeline, Agenda e Oferta Ativa.
 - Antes de construir: **mockup** desta tela no visual do CRM (computador e celular) para sua aprovação.
@@ -83,18 +83,18 @@ Ordem dos cards (computador em grade, celular um embaixo do outro):
 
 **Fase 3 — Saúde do CRM: reaproveitar a régua atual (sem criar outra)**
 
-Decisão da direção: **não** existe régua nova. O Uhome Performance só lê o % que o CRM já calcula e aplica o mínimo de **90%**.
+Decisão da direção: **não** existe régua nova. O Uhome Performance só lê o % que o CRM já calcula e aplica o mínimo de **80%**.
 
 O que já existe hoje (conferido):
 1. **Quem calcula:** a "Saúde da carteira" da Minha rotina, que usa a régua oficial de saúde do lead do sistema.
 2. **Critério:** saúde pelo **último contato real** registrado com o cliente (atividade, ligação, WhatsApp etc.) — não depende de ter tarefa marcada. Prazos de "em dia" por etapa: Novo Lead 1 dia, Sem Contato 2, Qualificação 7, Aquecimento 15, Visita 2, Proposta/Contrato 7. Passou do prazo = Atenção; passou do dobro = Desatualizado; Qualificação/Aquecimento parados mais de 21 dias e Sem Contato mais de 15 = Estagnado. Carência de transição já existente é respeitada.
 3. **Lead atualizado:** está "Em dia" (verde). Clientes ganhos, descartados, caídos e arquivados não entram.
 4. **Indicador reutilizado:** "% em dia" = clientes em dia ÷ clientes ativos (os estagnados ficam fora da conta, como já é hoje).
-5. **Ligação com a Roleta:** a regra de credenciamento chama esse mesmo cálculo para o corretor e compara com 90%. Nenhuma fórmula duplicada.
+5. **Ligação com a Roleta:** a regra de credenciamento chama esse mesmo cálculo para o corretor e compara com 80%. Nenhuma fórmula duplicada.
 6. **Atualização automática:** o % muda assim que o corretor registra um contato (o sistema já atualiza o "último contato" do cliente). O painel recarrega depois de registrar atividade, concluir tarefa ou visita.
 
 Regras:
-- 90% a 100%: critério atendido. Abaixo de 90%: bloqueado por CRM. Voltou a 90%: libera na hora (se as visitas também estiverem ok).
+- 80% a 100%: critério atendido. Abaixo de 80%: bloqueado por CRM. Voltou a 80%: libera na hora (se as visitas também estiverem ok).
 - **Não** bloqueia por falta de tarefa, tarefa vencida ou outra pendência fora da régua atual.
 - Exemplos: 3 visitas + 94% = atende; 3 visitas + 87% = bloqueado por CRM; 1 visita + 100% = depende das visitas (ou da semana anterior).
 - Página Performance: % de cada corretor e da equipe com a mesma régua (soma de em dia ÷ soma de ativos da equipe), sem esconder bloqueios individuais.
@@ -139,7 +139,7 @@ Toda mudança de situação grava: quando, motivo, o que causou (visita, pendên
 
 ## 6. Riscos e conflitos com o que existe hoje
 
-- **Barrar a Roleta por engano:** o prazo é curto (CRM 90% hoje à noite, visitas em 19/10). Antes de cada ligação mostro a lista de quem ficaria fora, e só ligo com aprovação.
+- **Barrar a Roleta por engano:** o prazo é curto (CRM 80% hoje à noite, visitas em 19/10). Antes de cada ligação mostro a lista de quem ficaria fora, e só ligo com aprovação.
 - **Muitos corretores bloqueados no primeiro dia:** a Fila CEO pode encher. Vamos medir na observação antes de ligar.
 - **Data de ingresso:** hoje o CRM não tem um campo "data oficial de ingresso" do corretor, só a data em que o acesso foi criado (que pode ser diferente). Precisamos criar esse campo e a direção/RH preencher para quem entrou nos últimos 30 dias.
 - **Carência atual de 14 dias:** não encontrei uma regra de 14 dias funcionando hoje na Roleta. A nova carência de 30 dias será criada do zero, e só passa a barrar quando a política for ligada.
@@ -159,7 +159,7 @@ Os 15 cenários do documento original e os 12 novos serão testados com corretor
 4. Visita de prospecção própria conta se o cliente foi cadastrado antes.
 5. Cancelada ou no show não conta.
 6. Visitas antes de 12/10/2026 não contam; as de 12 a 18/10 decidem quem entra em 19/10.
-7. Nenhum bloqueio por visitas antes de 19/10 (só o de CRM 90%, se aprovado para hoje à noite).
+7. Nenhum bloqueio por visitas antes de 19/10 (só o de CRM 80%, se aprovado para hoje à noite).
 8. Corretor com menos de 30 dias não recebe lead da Roleta (com a política ligada).
 9. Corretor novo usa Oferta Ativa e cadastra seus próprios clientes.
 10. Corretor novo vê pendências de CRM desde o primeiro dia.
@@ -171,7 +171,7 @@ Os 15 cenários do documento original e os 12 novos serão testados com corretor
 Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, carência de 30 dias.
 
 1. **Regras atuais da Roleta** (descartes, leads vermelhos, presença, domingo): continuam junto com as novas, ou as novas substituem?
-2. **CRM 90% hoje à noite:** confirma ligar na Roleta noturna de hoje (14/10), depois de ver a lista de quem ficaria fora?
+2. **CRM 80% hoje à noite:** confirma ligar na Roleta noturna de hoje (14/10), depois de ver a lista de quem ficaria fora?
 3. **Corretor que fica bloqueado no meio do turno:** sai da fila na hora, ou termina o turno?
 4. **Estagnados na conta do CRM:** hoje os clientes estagnados ficam fora do % (régua atual). Mantemos assim, conforme a orientação de não mudar a régua?
 5. **Meta do gerente Junior** (equipe menor): também R$ 1,5 milhão?
@@ -180,7 +180,7 @@ Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, 
 
 ## Detalhes técnicos
 
-- Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Saúde do CRM = mesmo cálculo de `rpc_carteira_saude` / `lead_saude_status` (extrair o miolo para uma função interna por corretor, chamada pelas duas, sem mudar o resultado atual) comparado com `crm_minimo_pct = 90`. Chamada dentro de `distribuir_lead_atomico` a cada entrega. Configuração: `data_inicio_apuracao = 2026-10-12`, `data_inicio_exigencia_visitas = 2026-10-19`, `crm_gate_ativo` (Fase 0) e `visitas_gate_ativo` separados. Tabelas novas: situação, histórico, exceções, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração — todas com permissões por perfil.
+- Nova função única no banco (ex.: `fn_credenciamento_corretor`) com estados `integracao | credenciado | recuperacao | bloqueado_crm` e lista de motivos. Saúde do CRM = mesmo cálculo de `rpc_carteira_saude` / `lead_saude_status` (extrair o miolo para uma função interna por corretor, chamada pelas duas, sem mudar o resultado atual) comparado com `crm_minimo_pct = 80`. Chamada dentro de `distribuir_lead_atomico` a cada entrega. Configuração: `data_inicio_apuracao = 2026-10-12`, `data_inicio_exigencia_visitas = 2026-10-19`, `crm_gate_ativo` (Fase 0) e `visitas_gate_ativo` separados. Tabelas novas: situação, histórico, exceções, ocorrências (one-on-one/Botão Vermelho), metas de gerente e configuração — todas com permissões por perfil.
 - Visita válida: `pipeline_lead_id` não nulo, lead existente e não arquivado/excluído, `pipeline_leads.created_at < visitas.created_at`, `status = 'realizada'`, `resultado_visita`/`observacoes` preenchidos, `data_visita >= data_inicio_apuracao`, 1 por `cliente_key` + dia via `v_fato_visita`.
 - Fase 0 entra em 1 migração (função de saúde por corretor + filtro na distribuição com chave), fora do horário de pico, antes das 18h30.
 - Novo campo `profiles.data_ingresso` (nulo por padrão; sem ele, usa `created_at` só como sugestão para conferência). Carência tem prioridade sobre visitas.
