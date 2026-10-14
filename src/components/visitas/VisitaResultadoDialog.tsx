@@ -53,6 +53,8 @@ export interface FeedbackCompleto {
   objecao?: string;
   temperatura?: string;
   proxima_acao?: string;
+  nova_data?: string;
+  nova_hora?: string;
 }
 
 interface Props {
@@ -77,6 +79,10 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
   const [temperatura, setTemperatura] = useState("");
   const [proximaAcao, setProximaAcao] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [novaData, setNovaData] = useState("");
+  const [novaHora, setNovaHora] = useState("");
+  const hojeBRT = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+  const faltaReagenda = selected === "reagendar" && (!novaData || !novaHora);
 
   useEffect(() => {
     if (open) {
@@ -85,6 +91,8 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
       setObjecao("");
       setTemperatura("");
       setProximaAcao("");
+      setNovaData("");
+      setNovaHora("");
       setSubmitting(false);
     }
   }, [open, defaultResultado]);
@@ -97,6 +105,8 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
         objecao: objecao || undefined,
         temperatura: temperatura || undefined,
         proxima_acao: proximaAcao || undefined,
+        nova_data: selected === "reagendar" ? novaData : undefined,
+        nova_hora: selected === "reagendar" ? novaHora : undefined,
       };
       await onSubmit(selected, obs || undefined, feedbackExtra);
       onClose();
@@ -202,6 +212,22 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
             </div>
           )}
 
+          {selected === "reagendar" && (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Nova data <span className="text-destructive">*</span></Label>
+                <input type="date" min={hojeBRT} value={novaData} onChange={e => setNovaData(e.target.value)}
+                  className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Novo horário <span className="text-destructive">*</span></Label>
+                <input type="time" value={novaHora} onChange={e => setNovaHora(e.target.value)}
+                  className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm" />
+              </div>
+              {faltaReagenda && <p className="col-span-2 text-[11.5px] font-medium text-destructive">Informe a nova data e horário da visita.</p>}
+            </div>
+          )}
+
           {/* Observações — obrigatória (alimenta a história do lead) */}
           <div>
             <Label className="text-xs">Observações <span className="text-destructive">*</span></Label>
@@ -222,7 +248,7 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
 
           <Button
             className="w-full gap-2"
-            disabled={!selected || obs.trim().length < MIN_OBS || submitting}
+            disabled={!selected || obs.trim().length < MIN_OBS || faltaReagenda || submitting}
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
