@@ -38,8 +38,8 @@ export function limparRegistro(texto?: string | null): string {
     return partes.join(" · ") || "Lead de formulário";
   }
 
-  // 2) Vocabulário: "Tarefa/tarefa" → "Lembrete/lembrete".
-  return t.replace(/\btarefas?\b/gi, (m) =>
-    m.charAt(0) === "T" ? "Lembrete" : "lembrete"
+  // 2) Vocabulário: textos antigos com "Lembrete" passam a mostrar "Tarefa".
+  return t.replace(/\blembretes?\b/gi, (m) =>
+    (m.charAt(0) === "L" ? "Tarefa" : "tarefa") + (m.toLowerCase().endsWith("s") ? "s" : "")
   );
 }
