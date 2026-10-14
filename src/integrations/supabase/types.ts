@@ -18170,6 +18170,10 @@ export type Database = {
         }
         Returns: string
       }
+      roleta_apto_janela: {
+        Args: { p_auth_user_id: string; p_janela: string }
+        Returns: boolean
+      }
       roleta_bloqueados_descarte: {
         Args: never
         Returns: {
@@ -18257,6 +18261,16 @@ export type Database = {
       roleta_performance_status: {
         Args: { p_auth_user_id?: string }
         Returns: Json
+      }
+      roleta_tem_visita_hoje: {
+        Args: { p_auth_user_id: string }
+        Returns: boolean
+      }
+      roleta_visitas_gate_ativo: { Args: never; Returns: boolean }
+      roleta_visitas_meta: { Args: never; Returns: number }
+      roleta_visitas_realizadas_periodo: {
+        Args: { p_auth_user_id: string; p_fim: string; p_inicio: string }
+        Returns: number
       }
       rpc_carteira_saude: {
         Args: { p_gerente_id?: string; p_user_id?: string }
