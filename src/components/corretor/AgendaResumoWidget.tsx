@@ -2,7 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useFilaDoDia, type MotivoFila } from "@/hooks/useFilaDoDia";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Target, Bell, ArrowRight, Zap, Layers } from "lucide-react";
+import { Target, ArrowRight, Zap, Layers } from "lucide-react";
+import MinhasTarefasHojeCard from "@/components/corretor/MinhasTarefasHojeCard";
 
 /**
  * AgendaResumoWidget — resumo da nova Agenda dentro da Minha Rotina.
@@ -33,8 +34,6 @@ export default function AgendaResumoWidget() {
   const prioridades = data?.prioridades ?? [];
   const cadencia = data?.cadencia?.total ?? 0;
   const totalFila = prioridades.length + cadencia;
-  const atrasados = data?.lembretes.atrasados.length ?? 0;
-  const hoje = data?.lembretes.hoje.length ?? 0;
   const topo = prioridades.slice(0, 3);
 
   const abrir = (extra = "") => navigate(`/minhas-tarefas${extra}`);
@@ -81,19 +80,7 @@ export default function AgendaResumoWidget() {
         )}
       </div>
 
-      {/* Lembretes resumo */}
-      <button
-        type="button"
-        onClick={() => abrir()}
-        className="mt-3 flex w-full items-center gap-2 rounded-lg bg-muted/40 px-3 py-2 text-left hover:bg-muted/60"
-      >
-        <Bell className="h-4 w-4 shrink-0 text-amber-500" />
-        <span className="flex-1 text-[12px] text-foreground">
-          {atrasados > 0 && <span className="font-semibold text-red-600">{atrasados} atrasado{atrasados !== 1 ? "s" : ""}</span>}
-          {atrasados > 0 && " · "}
-          <span className="font-medium">{hoje} tarefa{hoje !== 1 ? "s" : ""} hoje</span>
-        </span>
-      </button>
+      <MinhasTarefasHojeCard />
 
       <button
         type="button"
