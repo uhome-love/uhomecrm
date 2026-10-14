@@ -32,7 +32,7 @@ interface Segmento {
 type JanelaKey = "manha" | "tarde" | "noite" | "dia_todo";
 type JanelaDb = "manha" | "tarde" | "noturna" | "dia_todo";
 
-interface JanelaConfig {
+export interface JanelaConfig {
   key: JanelaKey;
   label: string;
   emoji: string;
