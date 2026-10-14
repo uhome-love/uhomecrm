@@ -236,7 +236,6 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
           pipeline_lead_id: lead.id,
           tipo: "lembrete",
           titulo: tituloProx,
-          descricao: textoObs ? `Último contato: ${textoObs}` : null,
           vence_em: lembreteSel.data,
           hora_vencimento: lembreteSel.hora,
           responsavel_id: user.id,
