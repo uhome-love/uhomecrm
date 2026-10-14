@@ -13132,6 +13132,36 @@ export type Database = {
         }
         Relationships: []
       }
+      roleta_config_auditoria: {
+        Row: {
+          alterado_por: string | null
+          chave: string
+          created_at: string
+          id: string
+          justificativa: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          alterado_por?: string | null
+          chave: string
+          created_at?: string
+          id?: string
+          justificativa?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          alterado_por?: string | null
+          chave?: string
+          created_at?: string
+          id?: string
+          justificativa?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: []
+      }
       roleta_credenciamentos: {
         Row: {
           aprovado_em: string | null
@@ -16943,6 +16973,7 @@ export type Database = {
         }
         Returns: string
       }
+      crm_saude_corretor: { Args: { p_auth_user_id: string }; Returns: Json }
       decidir_lead_estagnado: {
         Args: {
           p_acao: string
@@ -18151,6 +18182,9 @@ export type Database = {
         }[]
       }
       roleta_corretor_sair: { Args: { p_turno: string }; Returns: undefined }
+      roleta_crm_apto: { Args: { p_auth_user_id: string }; Returns: boolean }
+      roleta_crm_gate_ativo: { Args: never; Returns: boolean }
+      roleta_crm_minimo_pct: { Args: never; Returns: number }
       roleta_expand_turnos: { Args: { p_turnos: string[] }; Returns: string[] }
       roleta_fechar_dia: { Args: { p_data?: string }; Returns: number }
       roleta_marcar_presenca:
@@ -18218,6 +18252,10 @@ export type Database = {
           }
       roleta_motivo_bloqueio: {
         Args: { p_auth_user_id: string; p_janela?: string }
+        Returns: Json
+      }
+      roleta_performance_status: {
+        Args: { p_auth_user_id?: string }
         Returns: Json
       }
       rpc_carteira_saude: {

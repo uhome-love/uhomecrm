@@ -15,6 +15,13 @@
       "when": 1790976120984,
       "tag": "0001_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792002594237,
+      "tag": "0002_uhome_performance_fase0_crm_gate",
+      "breakpoints": true
     }
   ]
 }
