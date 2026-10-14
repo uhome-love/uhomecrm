@@ -19,7 +19,6 @@ import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import CarteiraKpis from "@/components/corretor/CarteiraKpis";
 import CaminhosCards from "@/components/corretor/CaminhosCards";
 import AgendaResumoWidget from "@/components/corretor/AgendaResumoWidget";
-import MinhasTarefasHojeCard from "@/components/corretor/MinhasTarefasHojeCard";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
 import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
 
@@ -108,7 +107,6 @@ export default function CorretorDashboard() {
       <div className="flex flex-col lg:flex-row gap-3.5">
         {/* Coluna principal */}
         <div className="flex-1 min-w-0 space-y-5">
-          <MinhasTarefasHojeCard />
           <CarteiraKpis />
           <CaminhosCards />
         </div>
