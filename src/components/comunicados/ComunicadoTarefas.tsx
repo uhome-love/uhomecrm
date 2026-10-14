@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Plus, CalendarDays, Bell, AlertTriangle, Sparkles } from "lucide-react";
+import { CheckCircle2, Plus, CalendarDays, Bell, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,11 +10,10 @@ const INICIO = new Date("2026-10-14T09:00:00-03:00").getTime();
 const chave = (uid: string) => `comunicado_tarefas_2026_10_visto:${uid}`;
 
 const ITENS = [
-  { icon: Plus, t: "Crie em segundos", d: "Escolha o cliente, o que fazer (Ligar, WhatsApp, Follow-up, Visita) e o horário. Atalhos: Hoje 18h, Amanhã 10h, Em 3 dias, Próxima semana." },
-  { icon: CalendarDays, t: "Tudo organizado num lugar só", d: "Abas Vencidas, Hoje, Próximas, Novas e Concluídas. Tarefa de hoje que passou do horário fica em vermelho: \"atrasada\"." },
-  { icon: CheckCircle2, t: "Concluir já atualiza o cliente", d: "Diga como foi o contato (ligação, WhatsApp, presencial) e escreva uma observação. Vai direto para a história do cliente e você já agenda o próximo passo na mesma janela." },
-  { icon: Bell, t: "Aviso na hora certa", d: "O CRM avisa no sininho (e no celular, se as notificações estiverem ligadas) quando chega a hora da tarefa." },
-  { icon: AlertTriangle, t: "Nenhum cliente esquecido", d: "A página mostra quem está sem próximo passo para você criar a tarefa com um clique." },
+  { icon: Plus, t: "Crie em segundos", d: "Cliente, o que fazer e horário, com atalhos." },
+  { icon: CalendarDays, t: "Tudo organizado", d: "Vencidas, Hoje, Próximas e Sem próximo passo." },
+  { icon: CheckCircle2, t: "Concluir atualiza", d: "A observação vai direto para a história do cliente." },
+  { icon: Bell, t: "Aviso no celular", d: "Push + sininho na hora da tarefa. Ative as notificações do CRM no celular." },
 ];
 
 export default function ComunicadoTarefas() {
@@ -41,26 +40,26 @@ export default function ComunicadoTarefas() {
   if (!user) return null;
   return (
     <Dialog open={open} onOpenChange={(o) => !o && fechar(false)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <div className="flex flex-col items-center text-center">
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Sparkles className="h-6 w-6" />
           </div>
           <DialogTitle className="text-lg font-bold">Novidade: suas Tarefas voltaram</DialogTitle>
           <DialogDescription className="mt-1 text-sm">
-            Agora com página própria no menu, logo abaixo de Agenda.
+            Página própria no menu, logo abaixo de Agenda.
           </DialogDescription>
         </div>
-        <div className="mt-2 space-y-3">
+        <div className="rounded-xl bg-primary/10 p-3 text-[13px] text-primary">
+          <b>Não é obrigatório.</b> É uma ferramenta para te ajudar a não esquecer nenhum cliente.
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {ITENS.map(({ icon: Icon, t, d }) => (
-            <div key={t} className="flex gap-3">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icon className="h-4 w-4" />
+            <div key={t} className="rounded-xl bg-muted/60 p-3">
+              <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Icon className="h-4 w-4 text-primary" /> {t}
               </div>
-              <div>
-                <div className="text-sm font-semibold text-foreground">{t}</div>
-                <div className="text-[13px] leading-snug text-muted-foreground">{d}</div>
-              </div>
+              <div className="text-[12px] leading-snug text-muted-foreground">{d}</div>
             </div>
           ))}
         </div>
