@@ -10,7 +10,7 @@ import {
   Users, UsersRound, Video, ChevronRight,
   Sun, Moon, ShieldCheck, ClipboardList, Wrench,
   Trophy, GraduationCap, Lightbulb, Layers,
-  Building2, Wallet, ListTodo, Database,
+  Building2, Wallet, ListTodo, CheckSquare, Database,
   BarChart2, GitBranch, Award, BellRing,
   UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock, Calculator, CalendarCheck, Radio,
 } from "lucide-react";
