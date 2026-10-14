@@ -190,17 +190,23 @@ Os 15 cenários do documento original e os 12 novos serão testados com corretor
 Testes da meta de 2 visitas: 0 ou 1 visita sem semana anterior = fora; 2 visitas + CRM ≥ 80% = apto; 3 = meta superada; 2 visitas + CRM abaixo de 80% = bloqueado por CRM; bateu na semana anterior = começa apto; em recuperação faz a 2ª = libera na hora; semana zerada = 1 one-on-one só; integração = não recebe; mudar a meta de 2 para 3 não muda semanas fechadas; demais regras da Roleta mantidas.
 12. Corretor com carência encerrada, CRM em dia e meta cumprida entra na Roleta.
 
-## 8. Decisões que a direção ainda precisa tomar
+## 8. Decisões
 
-Já decididas: visita válida (cliente real + feedback), início em 19/10/2026, carência de 30 dias.
+Já decididas pela direção:
+- Meta inicial de **2 visitas** por semana; CRM mínimo **80%** (régua atual, estagnados fora da conta, sem novas obrigações de tarefa).
+- Primeira apuração 12 a 18/10; exigência de visitas a partir de 19/10, após testes e aprovação.
+- Duas chaves independentes: CRM pode ser ligado sem visitas.
+- **Domingo unificado** com os outros dias: meta de visitas + CRM ≥ 80%, mantendo produto, turno e equipe.
+- Quem perde a condição **para de receber na hora**, mesmo já credenciado; não perde leads já recebidos.
+- Mantém 100 descartes no mês; saem 10 leads vermelhos e 4 presenças.
+- Carência de 30 dias com campo oficial de ingresso; Lucas e Gabrielle confirmam as datas antes de bloquear.
+- Meta de **R$ 1,5 milhão por gerente, inclusive Junior**; revisões e decisões gerenciais com **Lucas e Gabrielle**.
+- Página Uhome Performance **reformula a atual** (sem duplicar).
+- Relatórios de segunda 07h30 depois de validar o envio.
 
-1. **Domingo:** hoje o domingo exige 2 visitas + 4 presenças na semana. Com as presenças fora, o domingo passa a seguir a mesma regra da semana (meta de 2 visitas + CRM ≥ 80%)?
-2. **CRM 80% hoje à noite:** confirma ligar na Roleta noturna de hoje (14/10), depois de ver a lista de quem ficaria fora?
-3. **Corretor que fica bloqueado no meio do turno:** sai da fila na hora, ou termina o turno?
-4. **Estagnados na conta do CRM:** hoje os clientes estagnados ficam fora do % (régua atual). Mantemos assim, conforme a orientação de não mudar a régua?
-5. **Meta do gerente Junior** (equipe menor): também R$ 1,5 milhão?
-6. **Diretoria responsável** pelas revisões gerenciais: Gabrielle continua nessa função?
-7. **Data de ingresso:** quem preenche (RH, gerente ou direção)?
+Pendente:
+1. **Quando ligar o CRM 80%:** hoje 15 de 29 corretores estão abaixo. Ligar hoje à noite ou avisar o time e ligar em 1–2 dias? (decide depois de ver a lista nominal)
+2. **Domínio de e-mail** para o relatório (ex.: avisos@uhomesales.com).
 
 ## Detalhes técnicos
 
