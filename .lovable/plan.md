@@ -41,35 +41,44 @@ Regra oficial da direção:
 - **Na entrega de cada lead** a Roleta confere tudo de novo — não só quando o corretor se credencia. Irregular para de receber na hora, sem perder seus clientes e negócios.
 - Chave liga/desliga para emergência. Nada é publicado sem teste e aprovação explícita da direção.
 
-**Fase 2 — Painel do corretor na Minha rotina + ligação com a Roleta**
+**Fase 2 — "Minha evolução — Uhome Performance" na Minha rotina + ligação com a Roleta**
 
-Quadro obrigatório no topo da Minha rotina, compacto, na cor #4969FF:
+Reformula a parte de cima da Minha rotina (não cria outra página), com tom positivo e motivador. **Mantém o visual atual do CRM** (mesmas cores, letras, cantos arredondados e cartões que já usamos, azul #4969FF), sem tela vermelha. Frase de apoio: "Sua produtividade gera oportunidades." O que já existe (saudação, barra da Roleta, Saúde da carteira, Sua fila de hoje com Tarefas) continua; a Saúde da carteira passa a ser o card 2.
+
+Ordem dos cards (computador em grade, celular um embaixo do outro):
 
 ```text
-+--------------------------------------------------------------+
-| MINHA META DE VISITAS        2/3     [#########-----] 67%    |
-| Falta 1 visita                         Agenda de visitas >   |
-|--------------------------------------------------------------|
-| SAÚDE DO MEU CRM             94%     [############--] mín 90%|
-| Dentro da meta · 3 clientes para atualizar   Ver clientes >  |
-|--------------------------------------------------------------|
-| ROLETA: Bloqueada por falta de visitas                       |
-| Falta 1 visita realizada. Seu CRM está dentro da meta.       |
-|--------------------------------------------------------------|
-| [Minhas visitas] [Atualizar clientes] [Oferta Ativa]         |
-| [Meu credenciamento]                                         |
-+--------------------------------------------------------------+
++------------------------------+  +------------------------------+
+| MINHA META DE VISITAS        |  | SAÚDE DO MEU CRM             |
+| 2 de 3 visitas realizadas    |  | 94% — Dentro da meta Uhome   |
+| (o)----(o)----( )     67%    |  | [##########|##]  mín. 90%    |
+| "Você está muito perto!      |  | "Sua carteira está dentro do |
+|  Falta apenas 1 visita."     |  |  padrão Uhome..."            |
+| Semana anterior: 4 ✓ apto    |  | [Atualizar meus clientes]    |
++------------------------------+  +------------------------------+
++---------------------------------------------------------------+
+| MINHA ROLETA — VOCÊ ESTÁ PERTO DA SUA ROLETA!                 |
+| [✓] CRM acima de 90%   [ ] 3 visitas na semana (falta 1)      |
+| Novos leads da Roleta temporariamente indisponíveis.          |
+| [Buscar oportunidades na Oferta Ativa]                        |
++---------------------------------------------------------------+
++---------------------------------------------------------------+
+| O QUE POSSO FAZER AGORA?                                      |
+| 5 clientes precisam de contato            [Abrir]             |
+| 2 visitas para confirmar                  [Ver agenda]        |
+| Oferta Ativa disponível                   [Começar]           |
++---------------------------------------------------------------+
 ```
 
-- **Meta de visitas:** visitas válidas da semana / 3, barra, quantas faltam, link para a Agenda. Com 4 ou mais mostra o número real (ex.: 5/3).
-- **Saúde do meu CRM:** exatamente o mesmo % que já aparece hoje em "Saúde da carteira" na Minha rotina. Barra com marca no mínimo de 90%, "Dentro da meta" ou "Abaixo da meta", quantos clientes precisam de atualização (Atenção + Desatualizado, que a régua atual já informa) e link para o Pipeline já filtrado nesses clientes. Sem clientes ativos: "Sem carteira ativa".
-- **Situação da Roleta:** Roleta liberada / Bloqueada por falta de visitas / Bloqueada por CRM (abaixo de 90%) / Bloqueada por múltiplos motivos / Em integração — X dias restantes. Sempre diz exatamente o que falta. Ex.: "Parabéns! Você atingiu a meta de visitas e seu CRM está atualizado. Sua Roleta está liberada."
-- **Botões** levam para páginas que já existem: Agenda de visitas, Pipeline filtrado nos clientes a atualizar, Oferta Ativa e uma tela "Meu credenciamento" com todos os motivos.
-- **Atualiza sozinho** depois de registrar visita, registrar atividade/contato com cliente, virada da semana e exceção da direção. Os números vêm da mesma regra da Roleta — nada calculado duas vezes.
-- Em modo observação o quadro mostra o aviso "Prévia — ainda não afeta sua Roleta".
+1. **Minha meta de visitas:** "X de 3 visitas realizadas", 3 etapas que se completam a cada visita válida, %. Mensagens: 0 "Uma nova semana de oportunidades!..."; 1 "Você já deu o primeiro passo!..."; 2 "Você está muito perto!..."; 3 "Parabéns! Você conquistou sua meta semanal!"; 4+ "Excelente! Você superou sua meta...". Mostra **separado** o resultado da semana anterior ("Semana anterior: 4 visitas — você começou a semana apto"), para nunca mostrar bloqueio errado na segunda com 0/3.
+2. **Saúde do meu CRM:** o mesmo % da régua atual, barra com marca nos 90%. 90–100% "Sua carteira está dentro do padrão Uhome..."; 80–89% "Você está perto de recuperar o padrão!..."; abaixo de 80% "Vamos organizar sua carteira?...". Botão "Atualizar meus clientes" → Pipeline com o filtro que já existe.
+3. **Minha Roleta**, 5 cenários: **Roleta conquistada!**; **Você está perto da sua Roleta!** (faltam visitas, botão Oferta Ativa); **Sua Roleta está a uma atualização de distância** (CRM abaixo de 90%; se forem vários clientes, o texto fala em "atualizar seus clientes"); **Vamos conquistar sua Roleta** (checklist com check verde no que já cumpriu e o que falta no resto); **Sua jornada Uhome começou!** ("Integração: X de 30 dias"). Semana com menos de 3: selo **Em evolução**; semana zerada: **Plano de retomada**, com o one-on-one da segunda (data e plano, se permitido).
+4. **O que posso fazer agora?** Só com dados reais que já existem: clientes que precisam de contato, visitas para confirmar, negociações em andamento, Oferta Ativa disponível. Cada linha com botão para a tela certa. Nada inventado, nada duplicado.
 
-- Roleta: na hora de entregar cada lead, confere a regra. Se o corretor estiver bloqueado, o lead vai para o próximo da fila (ou Fila CEO). Todas as outras regras atuais continuam.
-- Bloqueado continua com seus leads, Pipeline, Agenda e Oferta Ativa.
+- **Reconhecimento discreto** (um aviso pequeno, uma vez por evento): 1ª visita da semana, meta de 3 conquistada, CRM voltou a 90%, Roleta recuperada, meta superada. Se o CRM ainda estiver abaixo de 90%, não diz que a Roleta foi liberada — mostra o que falta. Sem prêmios.
+- **Atualiza sozinho** depois de registrar visita, registrar contato, virada da semana e exceção da direção. Os números vêm da mesma regra da Roleta.
+- Roleta: na hora de entregar cada lead, confere a regra. Bloqueado continua com seus leads, Pipeline, Agenda e Oferta Ativa.
+- Antes de construir: **mockup** desta tela no visual do CRM (computador e celular) para sua aprovação.
 - **Dependência:** só precisa da Fase 1.
 
 **Fase 3 — Saúde do CRM: reaproveitar a régua atual (sem criar outra)**
