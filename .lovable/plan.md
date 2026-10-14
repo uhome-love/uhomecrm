@@ -51,3 +51,11 @@ Não muda (não é tarefa do corretor): mensagens de WhatsApp para o cliente "Le
 - Nova rota `/tarefas` + item no `Sidebar.tsx` (todas as variantes de papel); `/minhas-tarefas` (Agenda) continua.
 - Página usa `PipelineLeadDetail` em drawer local; hook `useMinhasTarefas` com `.range()` e BRT; componentes < 300 linhas.
 - `CriarLembreteModal` -> `CriarTarefaModal`; arquivos tocados: CardOverflowMenu, NegociosBoardInline, DrawerProximaAcao, DrawerTasksTab, PipelineLeadDetail, NextActionModal, CardMinimal, PipelineSortDropdown, AgendaCorretor, AgendaResumoWidget, useFilaDoDia, registroLimpo, RaioXCorretorPage.
+
+## Sugestões extras (opcionais — você escolhe quais entram)
+1. **Atalhos de data na criação**: "Hoje 18h", "Amanhã 10h", "Em 3 dias", "Próxima semana" — cria tarefa em 2 cliques.
+2. **Aviso no celular e no sino na hora da tarefa** (aproveita o push que já existe). Sem custo extra se rodar junto com uma conferência já existente.
+3. **Adiar rápido** (+1h, amanhã) com motivo curto — fica registrado e o Raio-X mostra quem adia demais.
+4. **Lead sem tarefa futura = alerta**: na página Tarefas, um bloco "Clientes sem próximo passo" (leads ativos do corretor sem nenhuma tarefa marcada), com botão "Criar tarefa".
+5. **Concluir em sequência**: depois de concluir, a próxima tarefa do dia já fica destacada — o corretor "limpa" a lista em ritmo.
+6. **Gestor vê as tarefas do time** (só leitura) na mesma página, com filtro por corretor.
