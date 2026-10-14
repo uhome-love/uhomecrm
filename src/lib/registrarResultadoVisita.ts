@@ -7,6 +7,8 @@ export interface FeedbackExtra {
   objecao?: string;
   temperatura?: string;
   proxima_acao?: string;
+  nova_data?: string;
+  nova_hora?: string;
 }
 
 interface Deps {
@@ -31,6 +33,10 @@ export async function registrarResultadoVisita(
   if (observacoes) {
     updates.observacoes = [visita.observacoes, observacoes].filter(Boolean).join(" | ");
   }
+  if (resultado === "reagendar" && feedback?.nova_data && feedback?.nova_hora) {
+    updates.data_visita = feedback.nova_data;
+    updates.hora_visita = feedback.nova_hora;
+  }
   await updateVisita(visita.id, updates, true);
 
   const statusVisita: VisitaStatus =
@@ -38,6 +44,7 @@ export async function registrarResultadoVisita(
   const feedbackHist = [
     `Resultado: ${RESULTADO_LABELS[resultado] || resultado}`,
     feedback?.temperatura ? `Temperatura: ${TEMPERATURA_LABEL[feedback.temperatura] || feedback.temperatura}` : null,
+    resultado === "reagendar" && feedback?.nova_data ? `Nova data: ${feedback.nova_data.split("-").reverse().join("/")} ${feedback.nova_hora || ""}` : null,
     feedback?.objecao ? `Objeção: ${feedback.objecao}` : null,
     observacoes || null,
   ].filter(Boolean).join(" · ");
