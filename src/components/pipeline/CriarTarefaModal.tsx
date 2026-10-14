@@ -7,7 +7,7 @@ import { Bell, Phone, MessageCircle, RefreshCw, Home, Search, X, type LucideIcon
 import { cn } from "@/lib/utils";
 
 /**
- * CriarTarefaModal — o PADRÃO ÚNICO de criar lembrete (Nova Gestão).
+ * CriarTarefaModal — o PADRÃO ÚNICO de criar tarefa (Nova Gestão).
  * O MESMO formulário é usado no ⋮ do card, no modal do lead e na Agenda.
  * Regra: lembrete é um alarme (não conta ponto — só ⚡ Registrar conta) e SEMPRE
  * tem data E hora. Quando aberto sem lead, o corretor busca o cliente aqui.
@@ -118,9 +118,9 @@ export default function CriarTarefaModal({ open, lead, permitirNota = false, onC
       origem: isNota ? "nota" : "manual",
     } as never);
     setBusy(false);
-    if (error) { toast.error(isNota ? "Não foi possível criar a anotação." : "Não foi possível criar o lembrete."); return; }
+    if (error) { toast.error(isNota ? "Não foi possível criar a anotação." : "Não foi possível criar a tarefa."); return; }
     const dataBr = new Date(data + "T00:00:00").toLocaleDateString("pt-BR");
-    toast.success(`${isNota ? "📝 Anotação criada" : "📌 Lembrete criado"} · ${dataBr} ${hora}`);
+    toast.success(`${isNota ? "📝 Anotação criada" : "📌 Tarefa criada"} · ${dataBr} ${hora}`);
     window.dispatchEvent(new CustomEvent("pipeline-reload"));
     onSaved?.();
     onClose();
@@ -131,17 +131,17 @@ export default function CriarTarefaModal({ open, lead, permitirNota = false, onC
       <DialogContent className="sm:max-w-sm gap-0 p-0 overflow-hidden">
         <div className="border-b border-border px-5 py-3.5">
           <div className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
-            <Bell className="h-4 w-4 text-primary" strokeWidth={2.2} /> {isNota ? "Nova anotação" : "Novo lembrete"}
+            <Bell className="h-4 w-4 text-primary" strokeWidth={2.2} /> {isNota ? "Nova anotação" : "Nova tarefa"}
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground">
             {isNota
-              ? "um lembrete só seu, sem precisar de cliente (reunião, recado, meta)"
+              ? "uma tarefa só sua, sem precisar de cliente (reunião, recado, meta)"
               : "um alarme pra você não esquecer — não conta ponto, só ⚡ Registrar conta"}
           </div>
         </div>
 
         <div className="space-y-3.5 px-5 py-4">
-          {/* Alternador: Lembrete de cliente x Anotação pessoal */}
+          {/* Alternador: Tarefa de cliente x Anotação pessoal */}
           {permitirNota && !lead && (
             <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-muted/50 p-1">
               <button
@@ -152,7 +152,7 @@ export default function CriarTarefaModal({ open, lead, permitirNota = false, onC
                   !isNota ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Lembrete de cliente
+                Tarefa de cliente
               </button>
               <button
                 type="button"
@@ -250,6 +250,24 @@ export default function CriarTarefaModal({ open, lead, permitirNota = false, onC
           </div>
           )}
 
+          {/* Atalhos de data/hora */}
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { label: "Hoje 18h", d: 0, h: "18:00" },
+              { label: "Amanhã 10h", d: 1, h: "10:00" },
+              { label: "Em 3 dias", d: 3, h: "09:00" },
+              { label: "Próxima semana", d: 7, h: "09:00" },
+            ].map((a) => {
+              const on = data === dataBRT(a.d) && hora === a.h;
+              return (
+                <button key={a.label} type="button" onClick={() => { setData(dataBRT(a.d)); setHora(a.h); }}
+                  className={on ? "rounded-lg border border-primary bg-primary/10 px-2.5 py-1 text-[12px] font-semibold text-primary" : "rounded-lg border border-border px-2.5 py-1 text-[12px] font-semibold text-foreground hover:border-primary/50"}>
+                  {a.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Data + hora (obrigatórios) */}
           <div className="flex gap-2">
             <div className="flex-1">
@@ -287,7 +305,7 @@ export default function CriarTarefaModal({ open, lead, permitirNota = false, onC
             <X className="h-4 w-4" /> Cancelar
           </button>
           <button type="button" onClick={salvar} disabled={!podeSalvar} className="rounded-lg bg-primary px-4 py-2 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-            {busy ? "Salvando…" : isNota ? "Criar anotação" : "Criar lembrete"}
+            {busy ? "Salvando…" : isNota ? "Criar anotação" : "Criar tarefa"}
           </button>
         </div>
       </DialogContent>
