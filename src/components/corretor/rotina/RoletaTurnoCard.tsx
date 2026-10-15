@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 
-interface RegraProps { ok: boolean; titulo: string; valor: string; detalhe?: string }
+interface RegraProps { ok: boolean; titulo: string; valor: string; detalhe?: string; extra?: React.ReactNode }
 
-function Regra({ ok, titulo, valor, detalhe }: RegraProps) {
+function Regra({ ok, titulo, valor, detalhe, extra }: RegraProps) {
   return (
     <div className="flex items-start gap-2.5 rounded-lg border border-border bg-background p-3">
       <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
@@ -21,6 +21,7 @@ function Regra({ ok, titulo, valor, detalhe }: RegraProps) {
         <p className={cn("text-sm font-bold", ok ? "text-success-600" : "text-destructive")}>
           {valor}{detalhe && <span className="ml-1 text-xs font-normal text-muted-foreground">{detalhe}</span>}
         </p>
+        {extra}
       </div>
     </div>
   );
