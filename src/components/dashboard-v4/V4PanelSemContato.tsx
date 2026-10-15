@@ -105,7 +105,7 @@ export function V4PanelSemContato() {
                 <p className="text-[10px] text-muted-foreground">{r.total} leads na cadência</p>
               </div>
               <div className="flex items-center gap-1.5 shrink-0 text-[11px] font-bold tabular-nums">
-                <span className="text-success-600" title="Em dia">{r.no_prazo}</span>
+                <span className="text-success-500" title="Em dia">{r.no_prazo}</span>
                 <span className="text-amber-600" title="Atrasados">{r.atrasado}</span>
                 <span className="text-red-600" title="Risco T6+">{r.risco}</span>
               </div>

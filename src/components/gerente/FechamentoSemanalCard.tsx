@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 interface Linha { corretor_id: string; visitas_validas: number; crm_pct: number | null; situacao: "apto" | "evolucao" | "retomada"; um_a_um_pendente: boolean; nome: string }
 
 const SIT = {
-  apto: { t: "Apto", c: "bg-success-600/10 text-success-600" },
+  apto: { t: "Apto", c: "bg-success-500/10 text-success-500" },
   evolucao: { t: "Em evolução", c: "bg-warning/10 text-warning" },
   retomada: { t: "Plano de retomada", c: "bg-destructive/10 text-destructive" },
 } as const;

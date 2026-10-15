@@ -471,7 +471,7 @@ export default function SimuladorFinanciamento() {
                     }`}
                   >
                     {analiseRendaEfetiva.aprovavel ? (
-                      <CheckCircle2 className="h-4 w-4 mt-0.5 text-success-600 shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 mt-0.5 text-success-500 shrink-0" />
                     ) : (
                       <AlertTriangle className="h-4 w-4 mt-0.5 text-danger-500 shrink-0" />
                     )}

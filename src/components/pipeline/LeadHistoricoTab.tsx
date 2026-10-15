@@ -499,7 +499,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const VISITA_EVENT_META: Record<string, { title: string; icon: any; color: string; tone?: "success" | "danger" | "neutral" | "warning" }> = {
     criada: { title: "Visita agendada", icon: MapPin, color: "text-primary", tone: "neutral" },
     status_alterado: { title: "Visita — status alterado", icon: Repeat, color: "text-primary" },
-    resultado_registrado: { title: "Resultado da visita registrado", icon: CheckCircle2, color: "text-success-600" },
+    resultado_registrado: { title: "Resultado da visita registrado", icon: CheckCircle2, color: "text-success-500" },
     data_alterada: { title: "Visita — data alterada", icon: Clock, color: "text-warning-600", tone: "warning" },
   };
   const STATUS_LABEL: Record<string, string> = {

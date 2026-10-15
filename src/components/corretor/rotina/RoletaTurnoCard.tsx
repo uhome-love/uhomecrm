@@ -14,12 +14,12 @@ function Regra({ ok, titulo, valor, detalhe, extra }: RegraProps) {
   return (
     <div className="flex items-start gap-2 rounded-lg border border-border bg-background px-3 py-2">
       <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
-        ok ? "bg-success-600 text-primary-foreground" : "bg-destructive text-destructive-foreground")}>
+        ok ? "bg-success-500 text-primary-foreground" : "bg-destructive text-destructive-foreground")}>
         {ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
       </span>
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</p>
-        <p className={cn("text-sm font-bold", ok ? "text-success-600" : "text-destructive")}>
+        <p className={cn("text-sm font-bold", ok ? "text-success-500" : "text-destructive")}>
           {valor}{detalhe && <span className="ml-1 text-xs font-normal text-muted-foreground">{detalhe}</span>}
         </p>
         {extra}
