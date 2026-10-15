@@ -11,13 +11,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
+import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
 
 import RoletaStatusBar from "@/components/corretor/RoletaStatusBar";
 import OnboardingWidget from "@/components/corretor/OnboardingWidget";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
-import CarteiraKpis from "@/components/corretor/CarteiraKpis";
-import CaminhosCards from "@/components/corretor/CaminhosCards";
+import RoletaTurnoCard from "@/components/corretor/rotina/RoletaTurnoCard";
+import MinhaEvolucaoKpis from "@/components/corretor/rotina/MinhaEvolucaoKpis";
+import MeuFocoHoje from "@/components/corretor/rotina/MeuFocoHoje";
+import EvolucaoSemanasChart from "@/components/corretor/rotina/EvolucaoSemanasChart";
+import AtalhosRotina from "@/components/corretor/rotina/AtalhosRotina";
 import AgendaResumoWidget from "@/components/corretor/AgendaResumoWidget";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
 import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
@@ -51,6 +55,9 @@ export default function CorretorDashboard() {
 
   const motivation = useDailyMotivation();
   const [focusOpen] = useState(false);
+  const { data: perf } = useRoletaPerformanceStatus();
+  const horaBRT = Number(new Date().toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }));
+  const saudacao = horaBRT < 12 ? "Bom dia" : horaBRT < 18 ? "Boa tarde" : "Boa noite";
 
   const dataFormatada = new Date().toLocaleDateString("pt-BR", {
     weekday: "long",
@@ -88,37 +95,34 @@ export default function CorretorDashboard() {
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-lg font-bold truncate">Olá, {primeiroNome}! 👋</p>
+              <p className="text-lg font-bold truncate">{saudacao}, {primeiroNome}! 👋</p>
               <p className="text-sm text-primary-foreground/80 italic leading-snug mt-0.5">"{motivation}"</p>
-              <p className="text-xs text-primary-foreground/60 mt-1 capitalize">{dataFormatada}</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-xs capitalize">{dataFormatada}</span>
+                {perf?.crm_atende && (
+                  <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-xs font-semibold">🏆 Padrão Uhome conquistado</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* 2. RoletaStatusBar (intocada) */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
+      {/* 2. Roleta do turno: barra de credenciamento + estado + regras */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="space-y-2">
         <RoletaStatusBar />
+        <RoletaTurnoCard />
       </motion.div>
 
-      {/* Widget de produtividade removido — estava zerado/não funcional */}
-
-      {/* 3. Layout 2 colunas: principal (3 blocos) + lateral fixa 280px */}
       <div className="flex flex-col lg:flex-row gap-3.5">
-        {/* Coluna principal */}
         <div className="flex-1 min-w-0 space-y-5">
-          <CarteiraKpis />
-          <CaminhosCards />
+          <MinhaEvolucaoKpis />
+          <MeuFocoHoje />
+          <EvolucaoSemanasChart />
         </div>
-
-        {/* Coluna lateral — desktop ≥1024px */}
-        <div className="hidden lg:block w-[280px] shrink-0 space-y-3.5">
+        <div className="w-full lg:w-[280px] shrink-0 space-y-3.5">
           <AgendaResumoWidget />
-        </div>
-
-        {/* Lateral — tablet/mobile vira accordion abaixo dos cards */}
-        <div className="lg:hidden space-y-3.5">
-          <AgendaResumoWidget />
+          <AtalhosRotina />
         </div>
       </div>
 
