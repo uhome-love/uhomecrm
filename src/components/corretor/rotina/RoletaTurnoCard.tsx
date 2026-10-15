@@ -11,7 +11,7 @@ interface RegraProps { ok: boolean; titulo: string; valor: string; detalhe?: str
 
 function Regra({ ok, titulo, valor, detalhe, extra }: RegraProps) {
   return (
-    <div className="flex items-start gap-2.5 rounded-lg border border-border bg-background p-3">
+    <div className="flex items-start gap-2 rounded-lg border border-border bg-background px-3 py-2">
       <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
         ok ? "bg-success-600 text-primary-foreground" : "bg-destructive text-destructive-foreground")}>
         {ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
@@ -33,19 +33,19 @@ export default function RoletaTurnoCard() {
 
   const regras: RegraProps[] = [];
   if (perf?.crm.estado === "calculado" && perf.crm.pct != null) {
-    regras.push({ ok: perf.crm_atende, titulo: "Saúde do CRM", valor: `${fmt(perf.crm.pct)}%`, detalhe: `/ mín. ${fmt(perf.crm_minimo_pct)}%` });
+    regras.push({ ok: perf.crm_atende, titulo: "Saúde do CRM", valor: `${fmt(perf.crm.pct)}%`, detalhe: `/ mín. ${fmt(perf.crm_minimo_pct)}%`, extra: <SaudeLinks verde={perf.crm.em_dia} ambar={perf.crm.ambar} vermelho={perf.crm.vermelho} /> });
   }
   if (evo) {
     const okVis = evo.semanaAnterior >= evo.meta || evo.semanaAtual >= evo.meta;
     const falta = Math.max(0, evo.meta - evo.semanaAtual);
-    regras.push({ ok: okVis, titulo: "Visitas", valor: `${evo.semanaAnterior} na semana passada`, detalhe: `/ mín. ${evo.meta}`,
-      extra: <p className="mt-0.5 text-xs text-muted-foreground">Esta semana: {evo.semanaAtual} de {evo.meta}{evo.semanaAnterior < evo.meta && falta > 0 ? ` — com mais ${falta} você já libera` : ""}</p> });
+    regras.push({ ok: okVis, titulo: "Visitas", valor: `${evo.semanaAnterior} sem. passada`, detalhe: `/ mín. ${evo.meta}`,
+      extra: <p className="text-xs text-muted-foreground">Esta semana {evo.semanaAtual}/{evo.meta}{evo.semanaAnterior < evo.meta && falta > 0 ? ` · faltam ${falta} p/ liberar` : ""}</p> });
     const estourou = evo.bloqueio?.codigo === "descartes";
     regras.push({ ok: !estourou, titulo: "Descartes do mês", valor: estourou ? "Limite atingido" : "Dentro do limite", detalhe: "máx. 100" });
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-border bg-card p-3">
+    <section className="space-y-2 rounded-xl border border-border bg-card p-2.5">
       <RoletaStatusBar />
       {regras.length > 0 && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
