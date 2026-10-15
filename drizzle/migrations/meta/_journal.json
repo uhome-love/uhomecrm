@@ -85,6 +85,13 @@
       "when": 1792088787893,
       "tag": "0011_fila_ceo_obrigatoria_por_produto",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792099886532,
+      "tag": "0012_roleta_visita_marcada_hoje_qualquer_data",
+      "breakpoints": true
     }
   ]
 }
