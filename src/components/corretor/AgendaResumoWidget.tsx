@@ -3,7 +3,6 @@ import { useFilaDoDia, type MotivoFila } from "@/hooks/useFilaDoDia";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Target, ArrowRight, Zap, Layers } from "lucide-react";
-import MinhasTarefasHojeCard from "@/components/corretor/MinhasTarefasHojeCard";
 
 /**
  * AgendaResumoWidget — resumo da nova Agenda dentro da Minha Rotina.
@@ -79,8 +78,6 @@ export default function AgendaResumoWidget() {
           ))
         )}
       </div>
-
-      <MinhasTarefasHojeCard />
 
       <button
         type="button"
