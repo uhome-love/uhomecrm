@@ -43,6 +43,13 @@
       "when": 1792015815445,
       "tag": "0005_roleta_entrega_confia_no_credenciamento",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792025632054,
+      "tag": "0006_crm_saude_separa_ambar_vermelho",
+      "breakpoints": true
     }
   ]
 }
