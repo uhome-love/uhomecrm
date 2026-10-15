@@ -76,6 +76,7 @@ export default {
           foreground: "hsl(0 0% 100%)",
           50: "hsl(var(--success-50))",
           500: "hsl(var(--success-500))",
+          600: "hsl(var(--success-600))",
           700: "hsl(var(--success-700))",
         },
         warning: {
