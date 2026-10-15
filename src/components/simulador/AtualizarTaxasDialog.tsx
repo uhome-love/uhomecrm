@@ -81,7 +81,7 @@ export function AtualizarTaxasDialog() {
                 {res.precisaRevisar ? (
                   <><AlertTriangle className="h-4 w-4 text-warning-600" /> Revisar taxas</>
                 ) : (
-                  <><CheckCircle2 className="h-4 w-4 text-success-600" /> Taxas atualizadas</>
+                  <><CheckCircle2 className="h-4 w-4 text-success-500" /> Taxas atualizadas</>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-1">{res.mensagem}</p>

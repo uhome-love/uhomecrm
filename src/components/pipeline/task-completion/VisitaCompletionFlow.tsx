@@ -648,7 +648,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
             <Button
               onClick={() => handleConfirmarVisita(true)}
               disabled={!obsValida || saving}
-              className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
+              className="w-full gap-1.5 bg-success-500 hover:bg-success-500 text-white"
               size="sm"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -673,7 +673,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
             <Button
               onClick={handleAgendouOk}
               disabled={!obsValida || saving}
-              className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
+              className="w-full gap-1.5 bg-success-500 hover:bg-success-500 text-white"
               size="sm"
             >
               <CalendarPlus className="w-3.5 h-3.5" />
@@ -713,7 +713,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
             <Button
               onClick={handleAgendouOk}
               disabled={!obsValida || saving}
-              className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
+              className="w-full gap-1.5 bg-success-500 hover:bg-success-500 text-white"
               size="sm"
             >
               <CalendarPlus className="w-3.5 h-3.5" />
@@ -748,7 +748,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
             <Button
               onClick={() => handleRegistrarResultado("realizada")}
               disabled={!obsValida || saving || !visitaAlvo || visitaFutura}
-              className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
+              className="w-full gap-1.5 bg-success-500 hover:bg-success-500 text-white"
               size="sm"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -783,7 +783,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               onClick={handleAgendouOk}
               disabled={!obsValida || saving}
               variant="outline"
-              className="w-full gap-1.5 border-success-500/40 text-success-600 hover:bg-success-500/5"
+              className="w-full gap-1.5 border-success-500/40 text-success-500 hover:bg-success-500/5"
               size="sm"
             >
               <CalendarPlus className="w-3.5 h-3.5" />

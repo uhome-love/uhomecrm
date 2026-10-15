@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const SIT = {
-  apto: { t: "Apto ✓", c: "text-success-600" },
+  apto: { t: "Apto ✓", c: "text-success-500" },
   evolucao: { t: "Em evolução", c: "text-warning" },
   retomada: { t: "Plano de retomada", c: "text-destructive" },
 } as const;
@@ -16,7 +16,7 @@ export function SaudeLinks({ verde, vermelho, ambar }: { verde?: number; vermelh
   const pill = "inline-flex items-center gap-1 rounded-full px-1.5 py-0 text-[11px] font-semibold hover:opacity-80";
   return (
     <div className="mt-1 flex flex-wrap items-center gap-1">
-      <button type="button" title="Em dia" onClick={() => navigate("/pipeline-leads?filtro=em_dia")} className={cn(pill, "bg-success-600/10 text-success-600")}>● {verde ?? 0}</button>
+      <button type="button" title="Em dia" onClick={() => navigate("/pipeline-leads?filtro=em_dia")} className={cn(pill, "bg-success-500/10 text-success-500")}>● {verde ?? 0}</button>
       <button type="button" title="Em atenção" onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")} className={cn(pill, "bg-warning/10 text-warning")}>● {ambar ?? 0}</button>
       <button type="button" title="Desatualizado" onClick={() => navigate("/pipeline-leads?filtro=atrasado")} className={cn(pill, "bg-destructive/10 text-destructive")}>● {vermelho ?? 0}</button>
     </div>

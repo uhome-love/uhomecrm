@@ -99,7 +99,7 @@ export default function CrmMetaAviso() {
     }
     return (
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm">
-        <Icone className="h-4 w-4 shrink-0 text-success-600" />
+        <Icone className="h-4 w-4 shrink-0 text-success-500" />
         <p className="min-w-0 flex-1">
           <span className="font-semibold">{titulo}</span>{" "}
           <span className="text-muted-foreground">{extra}</span>
