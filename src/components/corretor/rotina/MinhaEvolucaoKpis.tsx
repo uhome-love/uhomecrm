@@ -1,18 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
 import { useMinhaEvolucao } from "@/hooks/useMinhaEvolucao";
+import { useMinhaEvolucaoMes } from "@/hooks/useMinhaEvolucaoMes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
-const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
-
-function Barra({ pct }: { pct: number }) {
-  return (
-    <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
-    </div>
-  );
-}
 
 const SIT = {
   apto: { t: "Apto ✓", c: "text-success-600" },
@@ -25,67 +15,81 @@ export function SaudeLinks({ verde, vermelho, ambar }: { verde?: number; vermelh
   const navigate = useNavigate();
   const pill = "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold hover:opacity-80";
   return (
-    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
       <button type="button" title="Em dia" onClick={() => navigate("/pipeline-leads?filtro=em_dia")} className={cn(pill, "bg-success-600/10 text-success-600")}>● {verde ?? 0}</button>
       <button type="button" title="Em atenção" onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")} className={cn(pill, "bg-warning/10 text-warning")}>● {ambar ?? 0}</button>
       <button type="button" title="Desatualizado" onClick={() => navigate("/pipeline-leads?filtro=atrasado")} className={cn(pill, "bg-destructive/10 text-destructive")}>● {vermelho ?? 0}</button>
-      <span className="text-[11px] text-muted-foreground">iguais ao Pipeline</span>
     </div>
   );
 }
 
+function Delta({ atual, anterior, mes }: { atual: number; anterior: number; mes: string }) {
+  const d = atual - anterior;
+  return (
+    <p className={cn("mt-1 text-xs font-medium", d > 0 ? "text-success-600" : d < 0 ? "text-destructive" : "text-muted-foreground")}>
+      {d > 0 ? `+${d}` : d} vs {mes}
+    </p>
+  );
+}
+
+const brl = (v: number) => v >= 1_000_000
+  ? `R$ ${(v / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`
+  : `R$ ${Math.round(v / 1000).toLocaleString("pt-BR")} mil`;
+
 export default function MinhaEvolucaoKpis() {
-  const navigate = useNavigate();
-  const { data: perf, isLoading: l1 } = useRoletaPerformanceStatus();
-  const { data: evo, isLoading: l2 } = useMinhaEvolucao();
-  const pct = perf?.crm.pct ?? null;
+  const { data: evo } = useMinhaEvolucao();
+  const { data: mes, isLoading } = useMinhaEvolucaoMes();
 
   const card = "rounded-xl border border-border bg-card p-3 sm:p-4";
   const lbl = "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground";
+  const big = "mt-1 text-3xl font-black text-foreground";
   const sk = <Skeleton className="mt-1 h-8 w-16" />;
+
+  const faltam = evo ? Math.max(0, evo.meta - evo.semanaAtual) : 0;
 
   return (
     <section className="space-y-2">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Minha evolução</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Minha evolução{mes ? ` · ${mes.mesAtual}` : ""}
+      </h2>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <div className={card}>
-          <p className={lbl}>Saúde do CRM</p>
-          {l1 ? sk : (
-            <p className={cn("mt-1 text-3xl font-black", perf?.crm_atende ? "text-success-600" : "text-foreground")}>
-              {pct != null ? `${fmt(pct)}%` : "—"}
-            </p>
-          )}
-          <Barra pct={pct ?? 0} />
-          <SaudeLinks verde={perf?.crm.em_dia} vermelho={perf?.crm.vermelho} ambar={perf?.crm.ambar} />
+          <p className={lbl}>Leads</p>
+          {isLoading || !mes ? sk : <>
+            <p className={big}>{mes.atual.leads_recebidos}</p>
+            <Delta atual={mes.atual.leads_recebidos} anterior={mes.anterior.leads_recebidos} mes={mes.mesAnterior} />
+          </>}
         </div>
-
         <div className={card}>
-          <p className={lbl}>Visitas desta semana</p>
-          {l2 || !evo ? sk : (
-            <p className="mt-1 text-3xl font-black text-foreground">
-              {evo.semanaAtual} <span className="text-base font-semibold text-muted-foreground">de {evo.meta}</span>
-            </p>
-          )}
-          <Barra pct={evo ? (evo.semanaAtual / evo.meta) * 100 : 0} />
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {evo && evo.semanaAtual < evo.meta
-              ? `Falta${evo.meta - evo.semanaAtual === 1 ? "" : "m"} ${evo.meta - evo.semanaAtual} para garantir a próxima semana`
-              : "Meta da semana batida 🎯"}
-          </p>
+          <p className={lbl}>Visitas realizadas</p>
+          {isLoading || !mes ? sk : <>
+            <p className={big}>{mes.atual.visitas_realizadas}</p>
+            <Delta atual={mes.atual.visitas_realizadas} anterior={mes.anterior.visitas_realizadas} mes={mes.mesAnterior} />
+          </>}
         </div>
-
         <div className={card}>
-          <p className={lbl}>Minha situação</p>
-          {l2 || !evo ? sk : <p className={cn("mt-1 text-xl font-black", SIT[evo.situacao].c)}>{SIT[evo.situacao].t}</p>}
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {!evo ? "" : evo.situacao === "apto"
-              ? `Garantido até domingo pelas ${evo.semanaAnterior} visitas da semana passada`
-              : evo.situacao === "evolucao"
-                ? `Você fez ${evo.semanaAnterior} visita na semana passada. Faça ${evo.meta} esta semana.`
-                : `Vamos juntos: marque ${evo.meta} visitas esta semana. Seu gerente vai fazer um 1:1 com você.`}
-          </p>
+          <p className={lbl}>Vendas</p>
+          {isLoading || !mes ? sk : <>
+            <p className={big}>{mes.atual.vendas}</p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">
+              {mes.atual.vgv_assinado > 0 ? `${brl(mes.atual.vgv_assinado)} de VGV` : "Sem VGV no mês"}
+            </p>
+          </>}
         </div>
       </div>
+
+      {evo && (
+        <div className="flex flex-col gap-1 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-foreground">
+            <b>Esta semana:</b> {evo.semanaAtual} de {evo.meta} visitas
+            {faltam > 0 ? ` — faltam ${faltam} para a Roleta da próxima semana` : " — próxima semana garantida 🎯"}
+          </span>
+          <span className={cn("font-semibold", SIT[evo.situacao].c)}>
+            {SIT[evo.situacao].t}
+            {evo.situacao === "retomada" && <span className="font-normal text-muted-foreground"> · seu gerente vai fazer um 1:1</span>}
+          </span>
+        </div>
+      )}
     </section>
   );
 }
