@@ -23,27 +23,49 @@ function quando(t: TarefaItem): string {
   return `${d}/${m}${hora ? ` ${hora}` : ""}`;
 }
 
+/** "Próximo contato: Nilton Goulart" → "Próximo contato" (o nome já aparece em destaque). */
+function tituloSemNome(titulo: string, nome?: string | null): string {
+  const base = (titulo || "Tarefa").split(" — ")[0];
+  if (!nome) return base;
+  const limpo = base.replace(new RegExp(`\\s*[:\\-–]\\s*${nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i"), "");
+  return limpo.trim() || base;
+}
+
+const iconBtn = "inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground";
+
 export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbrir, onConcluir }: Props) {
   const vencida = t.status === "pendente" && !!t.vence_em && t.vence_em < hojeBRT();
-  // Tarefa de HOJE cujo horário já passou (horário sempre em BRT -03:00).
   const atrasadaHoje =
     t.status === "pendente" && t.vence_em === hojeBRT() && !!t.hora_vencimento &&
     new Date(`${t.vence_em}T${t.hora_vencimento.slice(0, 5)}:00-03:00`).getTime() < Date.now();
+  const atrasada = vencida || atrasadaHoje;
   const concluida = t.status === "concluida";
-  const titulo = (t.titulo || "Tarefa").split(" — ")[0];
+  const acao = tituloSemNome(t.titulo, t.lead?.nome);
+
   return (
-    <div className={cn("flex items-start gap-3 rounded-xl border bg-card p-3", atrasadaHoje ? "border-destructive/40" : "border-border", concluida && "opacity-70")}>
-      <div className={cn("w-[68px] shrink-0 text-[13px] font-bold tabular-nums", vencida || atrasadaHoje ? "text-destructive" : "text-foreground")}>
+    <div className={cn(
+      "flex items-start gap-3 rounded-xl border border-border border-l-4 bg-card px-3 py-2.5",
+      atrasada ? "border-l-destructive" : "border-l-transparent",
+      concluida && "opacity-70",
+    )}>
+      <div className={cn("w-[64px] shrink-0 pt-0.5 text-[13px] font-bold tabular-nums", atrasada ? "text-destructive" : "text-foreground")}>
         {quando(t)}
-        {atrasadaHoje && <div className="text-[10px] font-semibold uppercase">atrasada</div>}
+        {atrasadaHoje && <div className="text-[10px] font-semibold uppercase tracking-wide">atrasada</div>}
       </div>
+
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center">
-          <span className={cn("truncate text-[14px] font-semibold text-foreground", concluida && "line-through")}>{titulo}</span>
+        <div className="flex min-w-0 items-center gap-2">
+          {t.lead ? (
+            <span className={cn("truncate text-[15px] font-bold text-foreground", concluida && "line-through")}>{t.lead.nome}</span>
+          ) : (
+            <span className={cn("inline-flex items-center gap-1 truncate text-[15px] font-bold text-foreground", concluida && "line-through")}>
+              <StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> {acao}
+            </span>
+          )}
           <EtapaChip ctx={ctx} />
         </div>
-        <div className="truncate text-[12px] text-muted-foreground">
-          {t.lead ? t.lead.nome : <span className="inline-flex items-center gap-1"><StickyNote className="h-3 w-3" /> Anotação pessoal</span>}
+        <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
+          {t.lead ? <span className="font-medium text-foreground/80">{acao}</span> : "Anotação pessoal"}
           {t.lead?.empreendimento ? ` · ${t.lead.empreendimento}` : ""}
           {corretorNome ? ` · ${corretorNome}` : ""}
           <UltimaAcaoTexto ctx={ctx} />
@@ -51,26 +73,29 @@ export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbri
         {t.descricao && <div className="mt-0.5 line-clamp-1 text-[12px] text-muted-foreground/80">{t.descricao}</div>}
         {t.lead && <MiniHistorico ctx={ctx} />}
       </div>
-      {t.lead?.telefone && (
-        <>
-          <a href={waLink(t.lead.telefone) ?? undefined} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
-            <MessageCircle className="h-4 w-4" />
-          </a>
-          <a href={telLink(t.lead.telefone) ?? undefined} aria-label="Ligar" className="hidden rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground sm:block">
-            <Phone className="h-4 w-4" />
-          </a>
-        </>
-      )}
-      {t.lead && (
-        <button type="button" onClick={() => onAbrir(t.lead!.id)} className="hidden items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-[12px] font-medium hover:bg-muted sm:inline-flex">
-          <ExternalLink className="h-3.5 w-3.5" /> Abrir lead
-        </button>
-      )}
-      {!somenteLeitura && !concluida && (
-        <button type="button" onClick={() => onConcluir(t)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90">
-          <Check className="h-3.5 w-3.5" /> Concluir
-        </button>
-      )}
+
+      <div className="flex shrink-0 items-center gap-0.5">
+        {t.lead?.telefone && (
+          <>
+            <a href={waLink(t.lead.telefone) ?? undefined} target="_blank" rel="noreferrer" aria-label="WhatsApp" title="WhatsApp" className={iconBtn}>
+              <MessageCircle className="h-4 w-4" />
+            </a>
+            <a href={telLink(t.lead.telefone) ?? undefined} aria-label="Ligar" title="Ligar" className={cn(iconBtn, "hidden sm:inline-flex")}>
+              <Phone className="h-4 w-4" />
+            </a>
+          </>
+        )}
+        {t.lead && (
+          <button type="button" onClick={() => onAbrir(t.lead!.id)} aria-label="Abrir lead" title="Abrir lead" className={iconBtn}>
+            <ExternalLink className="h-4 w-4" />
+          </button>
+        )}
+        {!somenteLeitura && !concluida && (
+          <button type="button" onClick={() => onConcluir(t)} className="ml-1 inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90">
+            <Check className="h-3.5 w-3.5" /> Concluir
+          </button>
+        )}
+      </div>
     </div>
   );
 }

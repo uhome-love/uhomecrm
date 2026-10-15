@@ -17,8 +17,8 @@ function ultimaAcao(iso: string | null): { texto: string; velha: boolean } {
 function Linha({ r }: { r: RegistroMini }) {
   return (
     <span>
-      <span className="text-muted-foreground/80">{dm(r.quando)} · {r.tipo}{r.resultado ? ` · ${r.resultado}` : ""}</span>
-      {r.texto ? <span className="text-foreground/80"> — “{r.texto}”</span> : null}
+      <span className="font-semibold text-muted-foreground">{dm(r.quando)} · {r.tipo}{r.resultado ? ` · ${r.resultado}` : ""}</span>
+      {r.texto ? <span className="text-foreground/80">  {r.texto}</span> : null}
     </span>
   );
 }
@@ -28,7 +28,7 @@ export function EtapaChip({ ctx }: { ctx?: LeadContexto }) {
   if (!ctx?.etapa) return null;
   const sub = getLeadSubstatusBadge(ctx.flagStatus, ctx.etapaTipo);
   return (
-    <span className="ml-2 inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+    <span className="ml-auto inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
       {ctx.etapa}{sub ? ` · ${sub.label}` : ""}
     </span>
   );
@@ -45,18 +45,16 @@ export default function MiniHistorico({ ctx }: { ctx?: LeadContexto }) {
   const [aberto, setAberto] = useState(false);
   if (!ctx) return null;
   const [primeiro, ...resto] = ctx.registros;
-  if (!primeiro) return <div className="mt-1 text-[12px] italic text-muted-foreground">Nenhum registro ainda neste cliente.</div>;
+  if (!primeiro) return <div className="mt-2 text-[12px] italic text-muted-foreground">Nenhum registro ainda neste cliente.</div>;
   return (
-    <div className="mt-1 text-[12px]">
-      <div className="truncate"><span className="font-semibold text-foreground">Último: </span><Linha r={primeiro} /></div>
+    <div className="mt-2 rounded-lg bg-muted/50 px-2.5 py-1.5 text-[12px]">
+      <div className="truncate"><Linha r={primeiro} /></div>
+      {aberto && resto.map((r, i) => <div key={i} className="mt-1 truncate border-t border-border/60 pt-1"><Linha r={r} /></div>)}
       {resto.length > 0 && (
-        <>
-          <button type="button" onClick={() => setAberto((v) => !v)} className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-medium text-primary hover:underline">
-            {aberto ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            {aberto ? "Ocultar registros" : `Ver últimos registros (${ctx.registros.length})`}
-          </button>
-          {aberto && <div className="mt-1 space-y-0.5 border-l-2 border-border pl-2">{resto.map((r, i) => <div key={i} className="truncate"><Linha r={r} /></div>)}</div>}
-        </>
+        <button type="button" onClick={() => setAberto((v) => !v)} className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-medium text-primary hover:underline">
+          {aberto ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          {aberto ? "Ocultar" : `Ver mais ${resto.length} registro${resto.length > 1 ? "s" : ""}`}
+        </button>
       )}
     </div>
   );
