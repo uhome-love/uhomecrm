@@ -16,7 +16,7 @@ export function usePerformanceRoleta() {
     queryFn: async (): Promise<CorretorPerf[]> => {
       const { data, error } = await supabase.rpc("rpc_performance_roleta");
       if (error) throw error;
-      return ((data ?? []) as unknown as CorretorPerf[]).map((r) => ({ ...r, equipe: r.equipe || "Sem equipe" }));
+      return ((data ?? []) as unknown as CorretorPerf[]).filter((r) => r.user_id !== r.gerente_id).map((r) => ({ ...r, equipe: r.equipe || "Sem equipe", crm: { ...r.crm, pct: r.crm?.pct != null ? Math.round(Number(r.crm.pct)) : null } }));
     },
   });
 }
