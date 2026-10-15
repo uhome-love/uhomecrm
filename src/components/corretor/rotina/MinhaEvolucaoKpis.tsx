@@ -23,15 +23,6 @@ export function SaudeLinks({ verde, vermelho, ambar }: { verde?: number; vermelh
   );
 }
 
-function Delta({ atual, anterior, mes }: { atual: number; anterior: number; mes: string }) {
-  const d = atual - anterior;
-  return (
-    <p className={cn("mt-1 text-xs font-medium", d > 0 ? "text-success-600" : d < 0 ? "text-destructive" : "text-muted-foreground")}>
-      {d > 0 ? `+${d}` : d} vs {mes}
-    </p>
-  );
-}
-
 const brl = (v: number) => v >= 1_000_000
   ? `R$ ${(v / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`
   : `R$ ${Math.round(v / 1000).toLocaleString("pt-BR")} mil`;
@@ -57,14 +48,14 @@ export default function MinhaEvolucaoKpis() {
           <p className={lbl}>Leads</p>
           {isLoading || !mes ? sk : <>
             <p className={big}>{mes.atual.leads_recebidos}</p>
-            <Delta atual={mes.atual.leads_recebidos} anterior={mes.anterior.leads_recebidos} mes={mes.mesAnterior} />
+            <p className="mt-1 text-xs font-medium text-muted-foreground">recebidos no mês</p>
           </>}
         </div>
         <div className={card}>
           <p className={lbl}>Visitas realizadas</p>
           {isLoading || !mes ? sk : <>
             <p className={big}>{mes.atual.visitas_realizadas}</p>
-            <Delta atual={mes.atual.visitas_realizadas} anterior={mes.anterior.visitas_realizadas} mes={mes.mesAnterior} />
+            <p className="mt-1 text-xs font-medium text-muted-foreground">{mes.atual.leads_recebidos > 0 ? `${Math.round((mes.atual.visitas_realizadas / mes.atual.leads_recebidos) * 1000) / 10}`.replace(".", ",") + "% dos leads viraram visita" : "—"}</p>
           </>}
         </div>
         <div className={card}>
