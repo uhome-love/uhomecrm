@@ -1,6 +1,8 @@
 /** Bloco da Roleta do turno: aviso de estado (CrmMetaAviso) + as 3 regras com ✓/✗. Só lê — não credencia. */
 import { Check, X } from "lucide-react";
-import CrmMetaAviso from "@/components/corretor/CrmMetaAviso";
+import { useNavigate } from "react-router-dom";
+import RoletaStatusBar from "@/components/corretor/RoletaStatusBar";
+import { Button } from "@/components/ui/button";
 import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
 import { useMinhaEvolucao } from "@/hooks/useMinhaEvolucao";
 import { cn } from "@/lib/utils";
@@ -22,6 +24,8 @@ function Regra({ ok, texto }: { ok: boolean; texto: string }) {
 export default function RoletaTurnoCard() {
   const { data: perf } = useRoletaPerformanceStatus();
   const { data: evo } = useMinhaEvolucao();
+  const navigate = useNavigate();
+  const aAtualizar = perf?.crm.a_atualizar ?? 0;
 
   const regras: { ok: boolean; texto: string }[] = [];
   if (perf?.crm.estado === "calculado" && perf.crm.pct != null) {
@@ -33,12 +37,17 @@ export default function RoletaTurnoCard() {
   }
 
   return (
-    <section className="space-y-2">
-      <CrmMetaAviso />
+    <section className="space-y-2 rounded-xl border border-border bg-card p-2">
+      <RoletaStatusBar />
       {regras.length > 0 && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 rounded-xl border border-border bg-card px-3 py-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-2 pb-1">
           <span className="text-xs font-semibold text-muted-foreground">Regras da Roleta:</span>
           {regras.map((r) => <Regra key={r.texto} {...r} />)}
+          {perf && !perf.crm_atende && aAtualizar > 0 && (
+            <Button size="sm" className="ml-auto h-7 text-xs" onClick={() => navigate("/pipeline-leads?filtro=atrasado")}>
+              Atualizar {aAtualizar} cliente{aAtualizar === 1 ? "" : "s"}
+            </Button>
+          )}
         </div>
       )}
     </section>

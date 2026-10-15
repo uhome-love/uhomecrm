@@ -13,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
 
-import RoletaStatusBar from "@/components/corretor/RoletaStatusBar";
 import OnboardingWidget from "@/components/corretor/OnboardingWidget";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
@@ -110,7 +109,6 @@ export default function CorretorDashboard() {
 
       {/* 2. Roleta do turno: barra de credenciamento + estado + regras */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="space-y-2">
-        <RoletaStatusBar />
         <RoletaTurnoCard />
       </motion.div>
 
