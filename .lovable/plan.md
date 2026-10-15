@@ -7,7 +7,7 @@ A partir de segunda, 19/10, o corretor pode se credenciar se cumprir **uma** des
 
 O resto continua igual: CRM de 80% ou mais, até 100 descartes, credenciamento manual pelo botão e os horários de sempre. Na Roleta noturna continua sendo preciso ter uma visita marcada ou realizada no dia. No domingo, a regra das 2 visitas de segunda a sábado não muda.
 
-Exemplo: na segunda 19/10 a Rafaela está com 0 visitas da semana passada e fica bloqueada. Se ela fizer 2 visitas até quarta, já pode apertar o botão na quarta.
+Exemplo real: o corretor X não teve visitas na semana 1 e começa a semana 2 bloqueado. Na quinta ele registra a 2ª visita realizada e o CRM dele está em 80% ou mais. A partir do turno seguinte, ele aperta o botão de credenciamento e volta a receber leads. Como já tem 2 visitas na semana 2, ele também fica apto para receber na semana 3 inteira.
 
 ## Tela (Minha Rotina)
 O cartão de visitas do quadro da Roleta passa a mostrar as duas semanas:
