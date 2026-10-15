@@ -177,7 +177,13 @@ export default function PipelineKanban() {
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
   // Gestor/admin: alterna entre ver toda a equipe ou apenas a própria carteira
   // (leads cujo responsável é o próprio usuário logado). Filtro client-side.
-  const [minhaCarteira, setMinhaCarteira] = useState(false);
+  const [minhaCarteira, setMinhaCarteiraState] = useState<boolean>(() => {
+    try { return localStorage.getItem("uhome:pipeline:minhaCarteira") === "1"; } catch { return false; }
+  });
+  const setMinhaCarteira = (v: boolean) => {
+    setMinhaCarteiraState(v);
+    try { localStorage.setItem("uhome:pipeline:minhaCarteira", v ? "1" : "0"); } catch { /* ignore */ }
+  };
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
   const [negociosFilter, setNegociosFilter] = useState(false);
