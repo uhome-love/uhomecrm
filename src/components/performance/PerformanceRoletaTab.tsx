@@ -88,7 +88,7 @@ export default function PerformanceRoletaTab() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Aptos agora" value={k.aptos} sub={`de ${lista.length} corretores`} tone="text-success-600" />
+        <Kpi label="Aptos agora" value={k.aptos} sub={`de ${lista.length} corretores`} tone="text-success-500" />
         <Kpi label="Bloqueados · CRM abaixo de 80%" value={k.crm} tone="text-destructive" />
         <Kpi label="Bloqueados · menos de 2 visitas" value={k.vis} sub="vale a partir de 19/10" tone="text-warning" />
         <Kpi label="Bloqueados · descartes e outros" value={k.desc + k.outro} />
@@ -104,7 +104,7 @@ export default function PerformanceRoletaTab() {
                 <tr key={e.nome}>
                   <td className="py-2 font-semibold">{e.nome}</td>
                   <td className="py-2">{e.pct != null ? `${e.pct}%` : "—"}<div className="mt-1 h-1.5 w-20 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${e.pct ?? 0}%` }} /></div></td>
-                  <td className="py-2"><span className="flex gap-2"><Dot c="bg-success-600" n={e.verde} /><Dot c="bg-warning" n={e.ambar} /><Dot c="bg-destructive" n={e.verm} /></span></td>
+                  <td className="py-2"><span className="flex gap-2"><Dot c="bg-success-500" n={e.verde} /><Dot c="bg-warning" n={e.ambar} /><Dot c="bg-destructive" n={e.verm} /></span></td>
                   <td className="py-2">{e.visAnt} / {e.n * 2}</td>
                   <td className="py-2">{e.visAtual}</td>
                 </tr>
