@@ -32,7 +32,7 @@ export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbri
   const concluida = t.status === "concluida";
   const titulo = (t.titulo || "Tarefa").split(" — ")[0];
   return (
-    <div className={cn("flex items-center gap-3 rounded-xl border bg-card p-3", atrasadaHoje ? "border-destructive/40" : "border-border", concluida && "opacity-70")}>
+    <div className={cn("flex items-start gap-3 rounded-xl border bg-card p-3", atrasadaHoje ? "border-destructive/40" : "border-border", concluida && "opacity-70")}>
       <div className={cn("w-[68px] shrink-0 text-[13px] font-bold tabular-nums", vencida || atrasadaHoje ? "text-destructive" : "text-foreground")}>
         {quando(t)}
         {atrasadaHoje && <div className="text-[10px] font-semibold uppercase">atrasada</div>}
