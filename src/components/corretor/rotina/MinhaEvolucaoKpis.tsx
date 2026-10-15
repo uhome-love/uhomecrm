@@ -15,11 +15,10 @@ export function SaudeLinks({ verde, vermelho, ambar }: { verde?: number; vermelh
   const navigate = useNavigate();
   const pill = "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold hover:opacity-80";
   return (
-    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
       <button type="button" title="Em dia" onClick={() => navigate("/pipeline-leads?filtro=em_dia")} className={cn(pill, "bg-success-600/10 text-success-600")}>● {verde ?? 0}</button>
       <button type="button" title="Em atenção" onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")} className={cn(pill, "bg-warning/10 text-warning")}>● {ambar ?? 0}</button>
       <button type="button" title="Desatualizado" onClick={() => navigate("/pipeline-leads?filtro=atrasado")} className={cn(pill, "bg-destructive/10 text-destructive")}>● {vermelho ?? 0}</button>
-      <span className="text-[11px] text-muted-foreground">iguais ao Pipeline</span>
     </div>
   );
 }
