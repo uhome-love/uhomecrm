@@ -24,7 +24,7 @@ export default function FechamentoSemanalCard() {
     queryFn: async () => {
       const { data, error } = await supabase.from("roleta_fechamento_semanal").select("semana_inicio").order("semana_inicio", { ascending: false }).limit(500);
       if (error) throw error;
-      return Array.from(new Set((data ?? []).map((r) => r.semana_inicio as string)));
+      return Array.from(new Set<string>((data ?? []).map((r) => String(r.semana_inicio))));
     },
   });
   const [sel, setSel] = useState<string | null>(null);
