@@ -70,7 +70,7 @@ export default function NovoUsuarioWizard({ open, onOpenChange, onCreated }: Pro
 
   const canProceed = () => {
     if (step === 1) return !!role;
-    if (step === 2) return nome.trim().length >= 2 && /\S+@\S+\.\S+/.test(email) && senha.length >= 6;
+    if (step === 2) return nome.trim().length >= 2 && /\S+@\S+\.\S+/.test(email) && senha.length >= 8 && senha.length <= 128;
     if (step === 3) {
       if (role !== "corretor") return true;
       if (!isPrivileged) return true; // gerente auto-atribui a si
@@ -97,7 +97,17 @@ export default function NovoUsuarioWizard({ open, onOpenChange, onCreated }: Pro
       if (isPrivileged && jetimobId.trim()) body.jetimob_user_id = jetimobId.trim();
 
       const { data, error } = await supabase.functions.invoke("create-broker-user", { body });
-      if (error) throw error;
+      if (error) {
+        let serverMsg: string | null = null;
+        try {
+          const ctx = (error as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            const j = await ctx.json();
+            serverMsg = j?.error || null;
+          }
+        } catch { /* ignore */ }
+        throw new Error(serverMsg || error.message);
+      }
       if (data?.error) throw new Error(data.error);
       toast.success(data?.message || "Usuário criado!");
       setCreatedInfo({ email: email.trim(), senha });
@@ -191,11 +201,12 @@ export default function NovoUsuarioWizard({ open, onOpenChange, onCreated }: Pro
                 <div className="space-y-1.5">
                   <Label>Senha temporária *</Label>
                   <div className="flex gap-2">
-                    <Input value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mín. 6 caracteres" />
+                    <Input value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mín. 8 caracteres" minLength={8} maxLength={128} />
                     <Button type="button" variant="outline" size="icon" onClick={() => setSenha(generatePassword())} title="Gerar senha">
                       <Dice5 className="h-4 w-4" />
                     </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, com letras e números. Evite senhas comuns.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
