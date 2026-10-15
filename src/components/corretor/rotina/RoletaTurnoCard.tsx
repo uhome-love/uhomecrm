@@ -4,6 +4,7 @@ import RoletaStatusBar from "@/components/corretor/RoletaStatusBar";
 import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
 import { useMinhaEvolucao } from "@/hooks/useMinhaEvolucao";
 import { cn } from "@/lib/utils";
+import { SaudeLinks } from "@/components/corretor/rotina/MinhaEvolucaoKpis";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 
