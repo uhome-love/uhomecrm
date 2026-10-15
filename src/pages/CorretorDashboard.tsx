@@ -21,7 +21,7 @@ import MinhaEvolucaoKpis from "@/components/corretor/rotina/MinhaEvolucaoKpis";
 import MeuFocoHoje from "@/components/corretor/rotina/MeuFocoHoje";
 import EvolucaoSemanasChart from "@/components/corretor/rotina/EvolucaoSemanasChart";
 import AtalhosRotina from "@/components/corretor/rotina/AtalhosRotina";
-import AgendaResumoWidget from "@/components/corretor/AgendaResumoWidget";
+import ProximaVisitaCard from "@/components/corretor/rotina/ProximaVisitaCard";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
 import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
 
@@ -119,7 +119,7 @@ export default function CorretorDashboard() {
           <EvolucaoSemanasChart />
         </div>
         <div className="w-full lg:w-[280px] shrink-0 space-y-3.5">
-          <AgendaResumoWidget />
+          <ProximaVisitaCard />
           <AtalhosRotina />
         </div>
       </div>
