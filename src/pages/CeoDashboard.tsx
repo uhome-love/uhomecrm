@@ -1,3 +1,4 @@
+import PainelComAbas from "@/components/performance/PainelComAbas";
 import { useState, useEffect, useCallback, useMemo, forwardRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { GreetingBar } from "@/components/ui/GreetingBar";
@@ -153,7 +154,7 @@ function FunnelStep({ label, value, pct, color, isLast }: { label: string; value
 }
 
 // ─── Main Page ───
-export default function CeoDashboard() {
+function CeoDashboardVisaoGeral() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -1149,4 +1150,8 @@ export default function CeoDashboard() {
       />
     </div>
   );
+}
+
+export default function CeoDashboard() {
+  return <PainelComAbas><CeoDashboardVisaoGeral /></PainelComAbas>;
 }

@@ -1,3 +1,4 @@
+import PainelComAbas from "@/components/performance/PainelComAbas";
 // ─────────────────────────────────────────────────────────────────
 // DiretoraDashboard — dashboard da DIRETORA (foco em NEGÓCIOS). Rota /diretora.
 // Visual = Cockpit aprovado (mockup /diretora-mockup, modelo A), com DADOS REAIS
@@ -52,7 +53,7 @@ const NEGOCIOS = "/pipeline-leads?tab=negocios";
 const EQUIPES_TAB = "/pipeline-leads?tab=equipes";
 const VENDAS = "/vendas-realizadas";
 
-export default function DiretoraDashboard() {
+function DiretoraDashboardVisaoGeral() {
   const { user } = useAuth();
   const { openTab } = useTabContext();
   const { data: perfil } = useQuery({
@@ -261,4 +262,8 @@ export default function DiretoraDashboard() {
       </div>
     </div>
   );
+}
+
+export default function DiretoraDashboard() {
+  return <PainelComAbas><DiretoraDashboardVisaoGeral /></PainelComAbas>;
 }
