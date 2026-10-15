@@ -20,6 +20,19 @@ const SIT = {
   retomada: { t: "Plano de retomada", c: "text-destructive" },
 } as const;
 
+export function SaudeLinks({ vermelho, ambar, total }: { vermelho?: number; ambar?: number; total?: number }) {
+  const navigate = useNavigate();
+  if (!total) return <p className="mt-1.5 text-xs text-muted-foreground">Carteira em dia</p>;
+  const v = vermelho ?? 0, a = ambar ?? (vermelho == null ? total : 0);
+  return (
+    <p className="mt-1.5 text-xs">
+      {v > 0 && <button type="button" onClick={() => navigate("/pipeline-leads?filtro=atrasado")} className="font-semibold text-destructive hover:underline">{v} desatualizado{v === 1 ? "" : "s"}</button>}
+      {v > 0 && a > 0 && <span className="text-muted-foreground"> · </span>}
+      {a > 0 && <button type="button" onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")} className="font-semibold text-warning hover:underline">{a} em atenção</button>}
+    </p>
+  );
+}
+
 export default function MinhaEvolucaoKpis() {
   const navigate = useNavigate();
   const { data: perf, isLoading: l1 } = useRoletaPerformanceStatus();
@@ -34,7 +47,7 @@ export default function MinhaEvolucaoKpis() {
     <section className="space-y-2">
       <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Minha evolução</h2>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <button type="button" onClick={() => navigate("/pipeline-leads?filtro=atrasado")} className={cn(card, "text-left hover:border-primary/40")}>
+        <div className={card}>
           <p className={lbl}>Saúde do CRM</p>
           {l1 ? sk : (
             <p className={cn("mt-1 text-3xl font-black", perf?.crm_atende ? "text-success-600" : "text-foreground")}>
@@ -42,10 +55,8 @@ export default function MinhaEvolucaoKpis() {
             </p>
           )}
           <Barra pct={pct ?? 0} />
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {perf?.crm.a_atualizar ? `${perf.crm.a_atualizar} clientes para atualizar` : "Carteira em dia"}
-          </p>
-        </button>
+          <SaudeLinks vermelho={perf?.crm.vermelho} ambar={perf?.crm.ambar} total={perf?.crm.a_atualizar} />
+        </div>
 
         <div className={card}>
           <p className={lbl}>Visitas desta semana</p>

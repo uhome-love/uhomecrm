@@ -1,8 +1,7 @@
 /** Bloco da Roleta do turno: aviso de estado (CrmMetaAviso) + as 3 regras com ✓/✗. Só lê — não credencia. */
 import { Check, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import RoletaStatusBar from "@/components/corretor/RoletaStatusBar";
-import { Button } from "@/components/ui/button";
+import { SaudeLinks } from "@/components/corretor/rotina/MinhaEvolucaoKpis";
 import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
 import { useMinhaEvolucao } from "@/hooks/useMinhaEvolucao";
 import { cn } from "@/lib/utils";
@@ -24,7 +23,6 @@ function Regra({ ok, texto }: { ok: boolean; texto: string }) {
 export default function RoletaTurnoCard() {
   const { data: perf } = useRoletaPerformanceStatus();
   const { data: evo } = useMinhaEvolucao();
-  const navigate = useNavigate();
   const aAtualizar = perf?.crm.a_atualizar ?? 0;
 
   const regras: { ok: boolean; texto: string }[] = [];
@@ -44,9 +42,7 @@ export default function RoletaTurnoCard() {
           <span className="text-xs font-semibold text-muted-foreground">Regras da Roleta:</span>
           {regras.map((r) => <Regra key={r.texto} {...r} />)}
           {perf && !perf.crm_atende && aAtualizar > 0 && (
-            <Button size="sm" className="ml-auto h-7 text-xs" onClick={() => navigate("/pipeline-leads?filtro=atrasado")}>
-              Atualizar {aAtualizar} cliente{aAtualizar === 1 ? "" : "s"}
-            </Button>
+            <span className="ml-auto"><SaudeLinks vermelho={perf.crm.vermelho} ambar={perf.crm.ambar} total={aAtualizar} /></span>
           )}
         </div>
       )}
