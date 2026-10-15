@@ -31,7 +31,7 @@ export function gerarPdfPerformance(opts: { equipe: string; semanaLabel: string 
     autoTable(doc, {
       startY: y + 10, styles: { fontSize: 9 }, headStyles: { fillColor: [73, 105, 255] },
       head: [["Corretor", "Visitas válidas", "CRM", "Situação", "1:1"]],
-      body: opts.fechamento.map((l) => [l.nome, String(l.visitas_validas), l.crm_pct != null ? `${l.crm_pct}%` : "—", SIT[l.situacao] ?? l.situacao, l.um_a_um_pendente ? "Pendente" : ""]),
+      body: opts.fechamento.map((l) => [l.nome, String(l.visitas_validas), l.crm_pct != null ? `${Math.round(Number(l.crm_pct))}%` : "—", SIT[l.situacao] ?? l.situacao, l.um_a_um_pendente ? "Pendente" : ""]),
     });
   }
   const nome = `performance-roleta-${(opts.semanaLabel ?? "agora").replace(/\W+/g, "-")}.pdf`;

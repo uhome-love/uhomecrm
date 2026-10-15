@@ -66,7 +66,7 @@ export default function PerformanceRoletaTab() {
         const p = (x: Date) => x.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
         label = `${p(d)} a ${p(f)}`;
       }
-      gerarPdfPerformance({ equipe: equipe === "todas" ? "Todas" : equipe, semanaLabel: label, corretores: lista, fechamento });
+      gerarPdfPerformance({ equipe: equipe !== "todas" ? equipe : equipes.length === 1 ? equipes[0] : "Todas", semanaLabel: label, corretores: lista, fechamento });
     } finally { setGerando(false); }
   };
 
