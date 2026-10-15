@@ -16,10 +16,10 @@ function ultimaAcao(iso: string | null): { texto: string; velha: boolean } {
 
 function Linha({ r }: { r: RegistroMini }) {
   return (
-    <div className="truncate">
+    <span>
       <span className="text-muted-foreground/80">{dm(r.quando)} · {r.tipo}{r.resultado ? ` · ${r.resultado}` : ""}</span>
       {r.texto ? <span className="text-foreground/80"> — “{r.texto}”</span> : null}
-    </div>
+    </span>
   );
 }
 
@@ -55,7 +55,7 @@ export default function MiniHistorico({ ctx }: { ctx?: LeadContexto }) {
             {aberto ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
             {aberto ? "Ocultar registros" : `Ver últimos registros (${ctx.registros.length})`}
           </button>
-          {aberto && <div className="mt-1 space-y-0.5 border-l-2 border-border pl-2">{resto.map((r, i) => <Linha key={i} r={r} />)}</div>}
+          {aberto && <div className="mt-1 space-y-0.5 border-l-2 border-border pl-2">{resto.map((r, i) => <div key={i} className="truncate"><Linha r={r} /></div>)}</div>}
         </>
       )}
     </div>
