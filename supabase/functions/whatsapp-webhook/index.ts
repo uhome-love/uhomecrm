@@ -11,6 +11,7 @@ const corsHeaders = {
 function empreendimentoFromTemplate(templateName?: string | null): string | null {
   const t = (templateName ?? "").toString().trim().toLowerCase();
   if (!t) return null;
+  if (t.includes("openarvoredo") || t.includes("open_arvoredo") || t.includes("open arvoredo")) return "Open Arvoredo";
   if (t.includes("openbosque") || t.includes("openoutlet") || t.includes("open_bosque") || t.includes("open bosque")) return "Open Bosque";
   if (t.includes("lakebaical") || t.includes("lake baical") || t.includes("lakebaikal")) return "Lake Baikal";
   if (t.includes("canoas")) return "Casa Tua Canoas";
