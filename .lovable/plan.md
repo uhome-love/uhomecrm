@@ -11,14 +11,14 @@ Toda segunda às 00h05 (horário de Brasília), o sistema fecha a semana que aca
 O fechamento é um registro fixo: não muda depois. Ele serve de histórico para cobrança e para o 1:1.
 
 ## Onde aparece
-- **Sino do corretor (segunda 00h05):** "Fechamento da semana 13–19/10: 1 visita válida — Em evolução".
+- **Sino do corretor (segunda 00h05):** "Fechamento da semana 12–18/10: 1 visita válida — Em evolução".
 - **Sino do gerente:** resumo da equipe dele (quantos aptos, em evolução e em plano de retomada).
 - **Painel do gerente:** nova aba "Fechamento semanal" com seletor de semana, a lista dos corretores com visitas, CRM e situação, e a marca "1:1 pendente" para quem ficou em Plano de retomada.
 - **Minha Rotina:** a faixa "Situação" mostra a situação gravada no último fechamento.
 
 ## O que NÃO muda
 - As regras da Roleta e o credenciamento continuam iguais. O fechamento só registra, nunca bloqueia nem libera.
-- O primeiro fechamento roda na segunda, 19/10 (fecha a semana de 13 a 19/10... de 12 a 18/10).
+- O primeiro fechamento roda na segunda, 19/10, fechando a semana de 12 a 18/10.
 
 ## Validação
 - Rodar o fechamento da semana passada uma vez em teste e comparar os números com a contagem que a Roleta usa. Apagar o teste depois.
