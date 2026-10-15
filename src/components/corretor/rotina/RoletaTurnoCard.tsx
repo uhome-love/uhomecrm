@@ -36,7 +36,10 @@ export default function RoletaTurnoCard() {
     regras.push({ ok: perf.crm_atende, titulo: "Saúde do CRM", valor: `${fmt(perf.crm.pct)}%`, detalhe: `/ mín. ${fmt(perf.crm_minimo_pct)}%` });
   }
   if (evo) {
-    regras.push({ ok: evo.semanaAnterior >= evo.meta, titulo: "Visitas semana passada", valor: String(evo.semanaAnterior), detalhe: `/ mín. ${evo.meta}` });
+    const okVis = evo.semanaAnterior >= evo.meta || evo.semanaAtual >= evo.meta;
+    const falta = Math.max(0, evo.meta - evo.semanaAtual);
+    regras.push({ ok: okVis, titulo: "Visitas", valor: `${evo.semanaAnterior} na semana passada`, detalhe: `/ mín. ${evo.meta}`,
+      extra: <p className="mt-0.5 text-xs text-muted-foreground">Esta semana: {evo.semanaAtual} de {evo.meta}{evo.semanaAnterior < evo.meta && falta > 0 ? ` — com mais ${falta} você já libera` : ""}</p> });
     const estourou = evo.bloqueio?.codigo === "descartes";
     regras.push({ ok: !estourou, titulo: "Descartes do mês", valor: estourou ? "Limite atingido" : "Dentro do limite", detalhe: "máx. 100" });
   }
