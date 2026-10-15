@@ -188,7 +188,7 @@ function InfoOciosidadeNegocio() {
           Registre uma atividade <b className="font-semibold text-primary">⚡</b> e o negócio volta a ficar verde.
         </p>
         <p className="mt-2 text-muted-foreground">
-          A saúde da Roleta (80%) conta só seus clientes próprios. Parcerias aparecem aqui, mas não entram nos 80%.
+          A saúde da Roleta (80%) conta seus clientes e suas parcerias — os mesmos números destas bolinhas.
         </p>
       </PopoverContent>
     </Popover>

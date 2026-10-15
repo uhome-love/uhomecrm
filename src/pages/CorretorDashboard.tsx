@@ -19,7 +19,6 @@ import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import RoletaTurnoCard from "@/components/corretor/rotina/RoletaTurnoCard";
 import MinhaEvolucaoKpis from "@/components/corretor/rotina/MinhaEvolucaoKpis";
 import MeuFocoHoje from "@/components/corretor/rotina/MeuFocoHoje";
-import EvolucaoSemanasChart from "@/components/corretor/rotina/EvolucaoSemanasChart";
 import AtalhosRotina from "@/components/corretor/rotina/AtalhosRotina";
 import ProximaVisitaCard from "@/components/corretor/rotina/ProximaVisitaCard";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
@@ -116,7 +115,6 @@ export default function CorretorDashboard() {
         <div className="flex-1 min-w-0 space-y-5">
           <MinhaEvolucaoKpis />
           <MeuFocoHoje />
-          <EvolucaoSemanasChart />
         </div>
         <div className="w-full lg:w-[280px] shrink-0 space-y-3.5">
           <ProximaVisitaCard />
