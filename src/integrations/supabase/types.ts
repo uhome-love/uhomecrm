@@ -13341,6 +13341,42 @@ export type Database = {
           },
         ]
       }
+      roleta_fechamento_semanal: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          crm_pct: number | null
+          gerente_id: string | null
+          id: string
+          semana_inicio: string
+          situacao: string
+          um_a_um_pendente: boolean
+          visitas_validas: number
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          crm_pct?: number | null
+          gerente_id?: string | null
+          id?: string
+          semana_inicio: string
+          situacao: string
+          um_a_um_pendente?: boolean
+          visitas_validas?: number
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          crm_pct?: number | null
+          gerente_id?: string | null
+          id?: string
+          semana_inicio?: string
+          situacao?: string
+          um_a_um_pendente?: boolean
+          visitas_validas?: number
+        }
+        Relationships: []
+      }
       roleta_fila: {
         Row: {
           ativo: boolean | null
@@ -18191,6 +18227,10 @@ export type Database = {
       roleta_crm_minimo_pct: { Args: never; Returns: number }
       roleta_expand_turnos: { Args: { p_turnos: string[] }; Returns: string[] }
       roleta_fechar_dia: { Args: { p_data?: string }; Returns: number }
+      roleta_fechar_semana: {
+        Args: { p_notificar?: boolean; p_semana_inicio?: string }
+        Returns: number
+      }
       roleta_marcar_presenca:
         | {
             Args: {
