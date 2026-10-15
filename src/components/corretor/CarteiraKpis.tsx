@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCarteiraSaude } from "@/hooks/useCarteiraSaude";
 import { logDashboard } from "@/lib/dashboardTelemetry";
 import { useNavigate } from "react-router-dom";
-import CrmMetaAviso from "@/components/corretor/CrmMetaAviso";
 
 const BIG =
   "p-3 sm:p-4 [&>p:nth-child(2)]:text-2xl sm:[&>p:nth-child(2)]:text-3xl [&>p:nth-child(2)]:font-black [&>p:nth-child(1)]:text-xs [&>p:nth-child(1)]:normal-case [&>p:nth-child(1)]:tracking-normal";
@@ -36,7 +35,6 @@ export default function CarteiraKpis() {
           </span>
         )}
       </h2>
-      <CrmMetaAviso />
       <div className="grid grid-cols-3 gap-2">
         <StatCard
           label="Em dia"
