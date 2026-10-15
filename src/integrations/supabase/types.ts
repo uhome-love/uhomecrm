@@ -18417,6 +18417,19 @@ export type Database = {
           visitas_total: number
         }[]
       }
+      rpc_performance_roleta: {
+        Args: never
+        Returns: {
+          crm: Json
+          equipe: string
+          gerente_id: string
+          motivo: Json
+          nome: string
+          user_id: string
+          visitas_semana_atual: number
+          visitas_semana_passada: number
+        }[]
+      }
       rpc_placar_do_dia: { Args: never; Returns: Json }
       rpc_placar_mutirao: { Args: { p_sessao_id?: string }; Returns: Json }
       selecionar_reengajamento_base: {

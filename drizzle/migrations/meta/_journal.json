@@ -71,6 +71,13 @@
       "when": 1792027732751,
       "tag": "0009_roleta_fechamento_semanal",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792028090234,
+      "tag": "0010_rpc_performance_roleta",
+      "breakpoints": true
     }
   ]
 }

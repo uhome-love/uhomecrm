@@ -1,3 +1,4 @@
+import PainelComAbas from "@/components/performance/PainelComAbas";
 // ─────────────────────────────────────────────────────────────────
 // GerenteCockpit — dashboard do GERENTE (o time dele). Rota /gerente/cockpit.
 // Visual = Cockpit aprovado (mockup /gerente-mockup, modelo A), DADOS REAIS via
@@ -9,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabContext } from "@/contexts/TabContext";
 import { GreetingBar } from "@/components/ui/GreetingBar";
-import FechamentoSemanalCard from "@/components/gerente/FechamentoSemanalCard";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -60,7 +60,7 @@ const LEADS_TAB = "/pipeline-leads?tab=kanban";
 const VENDAS = "/vendas-realizadas";
 const VISITAS = "/visitas";
 
-export default function GerenteCockpit() {
+function GerenteCockpitVisaoGeral() {
   const { user } = useAuth();
   const { openTab } = useTabContext();
   const qc = useQueryClient();
@@ -206,7 +206,6 @@ export default function GerenteCockpit() {
           <p className="mt-1.5 text-[12px] text-slate-500 dark:text-slate-400">Em breve: as prioridades do dia (negócios em risco, corretores sem atividade, visitas a acompanhar) num lugar só, pro gerente se organizar.</p>
         </Card>
 
-        <FechamentoSemanalCard />
 
         {/* Corretores ranqueados */}
         <div>
@@ -247,4 +246,8 @@ export default function GerenteCockpit() {
       </Dialog>
     </div>
   );
+}
+
+export default function GerenteCockpit() {
+  return <PainelComAbas><GerenteCockpitVisaoGeral /></PainelComAbas>;
 }
