@@ -50,6 +50,13 @@
       "when": 1792025632054,
       "tag": "0006_crm_saude_separa_ambar_vermelho",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792026036286,
+      "tag": "0007_crm_saude_inclui_parcerias",
+      "breakpoints": true
     }
   ]
 }
