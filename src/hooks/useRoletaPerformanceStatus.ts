@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type CrmEstado = "calculado" | "sem_carteira" | "dados_insuficientes" | "erro";
 
 export interface RoletaPerformanceStatus {
-  crm: { estado: CrmEstado; pct: number | null; a_atualizar?: number; ativos?: number };
+  crm: { estado: CrmEstado; pct: number | null; a_atualizar?: number; ambar?: number; vermelho?: number; ativos?: number };
   crm_minimo_pct: number;
   crm_gate_ativo: boolean;
   visitas_gate_ativo: boolean;

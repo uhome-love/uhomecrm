@@ -532,6 +532,7 @@ export default function PipelineKanban() {
       const tipo = stageTypeById[l.stage_id];
       const saude = leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo, estagnacao_carencia_ate: l.estagnacao_carencia_ate });
       if (saude === "estagnado") { counts.estagnado++; continue; }
+      if (saude === "terminal") continue; // ganho/descarte não entram na régua de saúde
       const s = leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, tipo);
       counts[s]++;
     }
