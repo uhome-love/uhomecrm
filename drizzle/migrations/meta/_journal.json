@@ -64,6 +64,13 @@
       "when": 1792027116983,
       "tag": "0008_roleta_visitas_semana_atual_libera",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792027732751,
+      "tag": "0009_roleta_fechamento_semanal",
+      "breakpoints": true
     }
   ]
 }
