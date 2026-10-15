@@ -94,21 +94,26 @@ export function useSemProximoPasso(corretorId: string | null, pendentes: TarefaI
     enabled: !!corretorId && !!pendentes,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data: stages } = await supabase.from("pipeline_stages").select("id, tipo").eq("pipeline_tipo", "leads");
-      const ativos = ((stages ?? []) as { id: string; tipo: string }[])
-        .filter((s) => !TERMINAIS.includes(s.tipo)).map((s) => s.id);
-      const leads: { id: string; nome: string; telefone: string | null; empreendimento: string | null }[] = [];
+      const { data: stages } = await supabase.from("pipeline_stages").select("id, tipo, nome").eq("pipeline_tipo", "leads");
+      const lista = (stages ?? []) as { id: string; tipo: string; nome: string }[];
+      const nomeEtapa = new Map(lista.map((s) => [s.id, s.nome]));
+      const ativos = lista.filter((s) => !TERMINAIS.includes(s.tipo)).map((s) => s.id);
+      type Row = { id: string; nome: string; telefone: string | null; empreendimento: string | null; stage_id: string; ultima_acao_at: string | null };
+      const leads: Row[] = [];
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase.from("pipeline_leads")
-          .select("id, nome, telefone, empreendimento")
+          .select("id, nome, telefone, empreendimento, stage_id, ultima_acao_at")
           .eq("corretor_id", corretorId!).eq("arquivado", false).in("stage_id", ativos)
           .order("updated_at", { ascending: false }).range(from, from + 999);
         if (error) throw error;
-        leads.push(...((data ?? []) as typeof leads));
+        leads.push(...((data ?? []) as Row[]));
         if (!data || data.length < 1000) break;
       }
       const comTarefa = new Set((pendentes ?? []).map((t) => t.pipeline_lead_id).filter(Boolean));
-      return leads.filter((l) => !comTarefa.has(l.id));
+      return leads
+        .filter((l) => !comTarefa.has(l.id))
+        .map((l) => ({ ...l, etapa: nomeEtapa.get(l.stage_id) ?? null }))
+        .sort((a, b) => (a.ultima_acao_at ?? "").localeCompare(b.ultima_acao_at ?? ""));
     },
   });
 }
