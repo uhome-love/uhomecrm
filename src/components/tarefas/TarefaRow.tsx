@@ -3,9 +3,12 @@ import { cn } from "@/lib/utils";
 import { waLink, telLink } from "@/lib/phone";
 import type { TarefaItem } from "@/hooks/useMinhasTarefas";
 import { hojeBRT } from "@/hooks/useMinhasTarefas";
+import type { LeadContexto } from "@/hooks/useLeadContextoTarefas";
+import MiniHistorico, { EtapaChip, UltimaAcaoTexto } from "./MiniHistorico";
 
 interface Props {
   t: TarefaItem;
+  ctx?: LeadContexto;
   corretorNome?: string;
   somenteLeitura?: boolean;
   onAbrir: (leadId: string) => void;
@@ -35,13 +38,18 @@ export default function TarefaRow({ t, corretorNome, somenteLeitura, onAbrir, on
         {atrasadaHoje && <div className="text-[10px] font-semibold uppercase">atrasada</div>}
       </div>
       <div className="min-w-0 flex-1">
-        <div className={cn("truncate text-[14px] font-semibold text-foreground", concluida && "line-through")}>{titulo}</div>
+        <div className="flex min-w-0 items-center">
+          <span className={cn("truncate text-[14px] font-semibold text-foreground", concluida && "line-through")}>{titulo}</span>
+          <EtapaChip ctx={ctx} />
+        </div>
         <div className="truncate text-[12px] text-muted-foreground">
           {t.lead ? t.lead.nome : <span className="inline-flex items-center gap-1"><StickyNote className="h-3 w-3" /> Anotação pessoal</span>}
           {t.lead?.empreendimento ? ` · ${t.lead.empreendimento}` : ""}
           {corretorNome ? ` · ${corretorNome}` : ""}
+          <UltimaAcaoTexto ctx={ctx} />
         </div>
         {t.descricao && <div className="mt-0.5 line-clamp-1 text-[12px] text-muted-foreground/80">{t.descricao}</div>}
+        {t.lead && <MiniHistorico ctx={ctx} />}
       </div>
       {t.lead?.telefone && (
         <>
