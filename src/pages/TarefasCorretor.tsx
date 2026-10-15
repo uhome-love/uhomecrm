@@ -12,6 +12,7 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import RegistrarAtividadeModal from "@/components/pipeline/RegistrarAtividadeModal";
 import CriarTarefaModal from "@/components/pipeline/CriarTarefaModal";
 import TarefaRow from "@/components/tarefas/TarefaRow";
+import { useLeadContextoTarefas } from "@/hooks/useLeadContextoTarefas";
 import SemProximoPasso from "@/components/tarefas/SemProximoPasso";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,7 @@ export default function TarefasCorretor() {
     const base = abas[aba];
     return q ? base.filter((t) => `${t.lead?.nome ?? ""} ${t.titulo}`.toLowerCase().includes(q)) : base;
   }, [abas, aba, busca]);
+  const contexto = useLeadContextoTarefas(lista.map((t) => t.pipeline_lead_id).filter((x): x is string => !!x));
 
   const meta = usePipelineMeta();
   const drawer = useEstagnadoLeadDrawer();
@@ -147,7 +149,7 @@ export default function TarefasCorretor() {
       ) : (
         <div className="space-y-2">
           {lista.map((t) => (
-            <TarefaRow key={t.id} t={t} somenteLeitura={somenteLeitura}
+            <TarefaRow key={t.id} t={t} ctx={t.pipeline_lead_id ? contexto.data?.get(t.pipeline_lead_id) : undefined} somenteLeitura={somenteLeitura}
               corretorNome={visao === "time" && t.responsavel_id ? nomes[t.responsavel_id] : undefined}
               onAbrir={drawer.openLead} onConcluir={concluir} />
           ))}

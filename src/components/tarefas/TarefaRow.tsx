@@ -3,9 +3,12 @@ import { cn } from "@/lib/utils";
 import { waLink, telLink } from "@/lib/phone";
 import type { TarefaItem } from "@/hooks/useMinhasTarefas";
 import { hojeBRT } from "@/hooks/useMinhasTarefas";
+import type { LeadContexto } from "@/hooks/useLeadContextoTarefas";
+import MiniHistorico, { EtapaChip, UltimaAcaoTexto } from "./MiniHistorico";
 
 interface Props {
   t: TarefaItem;
+  ctx?: LeadContexto;
   corretorNome?: string;
   somenteLeitura?: boolean;
   onAbrir: (leadId: string) => void;
@@ -20,7 +23,7 @@ function quando(t: TarefaItem): string {
   return `${d}/${m}${hora ? ` ${hora}` : ""}`;
 }
 
-export default function TarefaRow({ t, corretorNome, somenteLeitura, onAbrir, onConcluir }: Props) {
+export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbrir, onConcluir }: Props) {
   const vencida = t.status === "pendente" && !!t.vence_em && t.vence_em < hojeBRT();
   // Tarefa de HOJE cujo horário já passou (horário sempre em BRT -03:00).
   const atrasadaHoje =
@@ -29,19 +32,24 @@ export default function TarefaRow({ t, corretorNome, somenteLeitura, onAbrir, on
   const concluida = t.status === "concluida";
   const titulo = (t.titulo || "Tarefa").split(" — ")[0];
   return (
-    <div className={cn("flex items-center gap-3 rounded-xl border bg-card p-3", atrasadaHoje ? "border-destructive/40" : "border-border", concluida && "opacity-70")}>
+    <div className={cn("flex items-start gap-3 rounded-xl border bg-card p-3", atrasadaHoje ? "border-destructive/40" : "border-border", concluida && "opacity-70")}>
       <div className={cn("w-[68px] shrink-0 text-[13px] font-bold tabular-nums", vencida || atrasadaHoje ? "text-destructive" : "text-foreground")}>
         {quando(t)}
         {atrasadaHoje && <div className="text-[10px] font-semibold uppercase">atrasada</div>}
       </div>
       <div className="min-w-0 flex-1">
-        <div className={cn("truncate text-[14px] font-semibold text-foreground", concluida && "line-through")}>{titulo}</div>
+        <div className="flex min-w-0 items-center">
+          <span className={cn("truncate text-[14px] font-semibold text-foreground", concluida && "line-through")}>{titulo}</span>
+          <EtapaChip ctx={ctx} />
+        </div>
         <div className="truncate text-[12px] text-muted-foreground">
           {t.lead ? t.lead.nome : <span className="inline-flex items-center gap-1"><StickyNote className="h-3 w-3" /> Anotação pessoal</span>}
           {t.lead?.empreendimento ? ` · ${t.lead.empreendimento}` : ""}
           {corretorNome ? ` · ${corretorNome}` : ""}
+          <UltimaAcaoTexto ctx={ctx} />
         </div>
         {t.descricao && <div className="mt-0.5 line-clamp-1 text-[12px] text-muted-foreground/80">{t.descricao}</div>}
+        {t.lead && <MiniHistorico ctx={ctx} />}
       </div>
       {t.lead?.telefone && (
         <>
