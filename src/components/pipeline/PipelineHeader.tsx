@@ -383,8 +383,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
             <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-1 shrink-0">
-              <button type="button" onClick={() => setMinhaCarteira(false)} className={`h-8 px-3 text-xs font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Equipe</button>
-              <button type="button" onClick={() => setMinhaCarteira(true)} className={`h-8 px-3 text-xs font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><span className="hidden md:inline">Minha carteira</span><span className="md:hidden">Minha</span></button>
+              <button type="button" onClick={() => setMinhaCarteira(false)} className={`h-8 px-3 text-xs font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{isAdmin || isDiretor ? "Empresa" : "Equipe"}</button>
+              <button type="button" onClick={() => setMinhaCarteira(true)} className={`h-8 px-3 text-xs font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><span className="hidden md:inline">Meus leads</span><span className="md:hidden">Meus</span></button>
             </div>
           )}
 

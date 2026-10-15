@@ -334,6 +334,11 @@ const CORRETOR_MODE_GESTORES: string[] = [
   // 12/08/2026: Junior Padilha removido — perfil 100% gerente (igual Bruno/Gabriel).
 ];
 
+// Diretoria que também atende leads repassados pela Fila CEO (ex.: disparos).
+const CORRETOR_MODE_DIRETORES: string[] = [
+  "7882d73e-ff5c-4b23-9b08-2adeadcd1800", // Gabrielle Rodrigues
+];
+
 const MODO_CORRETOR_GROUP: NavGroup = {
   title: "Modo Corretor",
   items: [
@@ -401,7 +406,10 @@ export default function Sidebar({
   const { mutiraoAtivo } = useMutiraoAtivo();
 
   const baseGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
-  const showCorretorMode = role === "gestor" && !!userId && CORRETOR_MODE_GESTORES.includes(userId);
+  const showCorretorMode =
+    !!userId &&
+    ((role === "gestor" && CORRETOR_MODE_GESTORES.includes(userId)) ||
+      (role === "diretor" && CORRETOR_MODE_DIRETORES.includes(userId)));
   const rawGroups = showCorretorMode
     ? [baseGroups[0], MODO_CORRETOR_GROUP, ...baseGroups.slice(1)]
     : baseGroups;
