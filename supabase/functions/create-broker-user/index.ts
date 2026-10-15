@@ -354,14 +354,21 @@ serve(async (req) => {
       });
 
       if (createError) {
-        const createErrorMessage = createError.message || "Erro desconhecido ao criar usuário";
-        if (createErrorMessage.toLowerCase().includes("already been registered")) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: "Este e-mail já está cadastrado. Edite o usuário existente.",
-          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const msg = createError.message || "Erro desconhecido ao criar usuário";
+        const low = msg.toLowerCase();
+        const code = String((createError as any).code || "");
+        console.error("create_user auth error:", code, msg);
+        let friendly = `Não foi possível criar o usuário: ${msg}`;
+        if (low.includes("already been registered") || code === "email_exists") {
+          friendly = "Este e-mail já está cadastrado. Edite o usuário existente.";
+        } else if (code === "weak_password" || low.includes("password")) {
+          friendly = "Senha fraca: use no mínimo 8 caracteres, misturando letras e números, e evite senhas comuns (ex.: 12345678, uhome123).";
+        } else if (low.includes("email") && (low.includes("invalid") || low.includes("valid"))) {
+          friendly = "E-mail inválido. Confira se foi digitado corretamente.";
         }
-        throw new Error(`Erro ao criar usuário: ${createErrorMessage}`);
+        return new Response(JSON.stringify({ success: false, error: friendly }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       await new Promise((r) => setTimeout(r, 500));
