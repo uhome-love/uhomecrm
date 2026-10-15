@@ -23,7 +23,7 @@ function quando(t: TarefaItem): string {
   return `${d}/${m}${hora ? ` ${hora}` : ""}`;
 }
 
-export default function TarefaRow({ t, corretorNome, somenteLeitura, onAbrir, onConcluir }: Props) {
+export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbrir, onConcluir }: Props) {
   const vencida = t.status === "pendente" && !!t.vence_em && t.vence_em < hojeBRT();
   // Tarefa de HOJE cujo horário já passou (horário sempre em BRT -03:00).
   const atrasadaHoje =
