@@ -1165,6 +1165,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   return (
     <div className="relative overflow-hidden" style={{ background: "var(--arena-bg-from)" }}>
+      {isServerList && (
+        <div className="px-3 pt-2">
+          <ListaEmpreendimentoFiltro listaId={lista.id} value={listaEmps} onChange={setListaEmps} />
+        </div>
+      )}
       {/* ═══ ARENA OVERLAYS ═══ */}
       {showFlash && <div className="round-flash" />}
       {showRound && (
