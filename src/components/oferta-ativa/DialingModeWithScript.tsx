@@ -30,6 +30,7 @@ import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import { useIsMobile } from "@/hooks/use-mobile";
 import HomiObjectionHelper from "./HomiObjectionHelper";
 import FichaRapida from "./FichaRapida";
+import ListaEmpreendimentoFiltro, { lerFiltroLista, salvarFiltroLista } from "./ListaEmpreendimentoFiltro";
 import { getResultadoMeta } from "@/lib/motivosLigacao";
 
 /** Format Brazilian phone */
@@ -87,7 +88,10 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   }, [isCampaign, empFilter, allCampaignListaIds, campaignEmpMap]);
   
   // Always call all hooks (React rules), but only use the active one
-  const serverQueue = useOAServerQueue((!isCustom && !isCampaign) ? lista.id : "__noop__");
+  const isServerList = !isCustom && !isCampaign;
+  const [listaEmps, setListaEmpsState] = useState<string[]>(() => (isServerList ? lerFiltroLista(lista.id) : []));
+  const setListaEmps = useCallback((v: string[]) => { setListaEmpsState(v); salvarFiltroLista(lista.id, v); }, [lista.id]);
+  const serverQueue = useOAServerQueue(isServerList ? lista.id : "__noop__", listaEmps);
   const campaignQueue = useOACampaignQueue(isCampaign ? campaignListaIds : []);
   const customQueue = useCustomListQueue(lista);
   const { registrar: oaRegistrar } = useOARegistrarTentativa();
@@ -194,6 +198,17 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       fetchNext();
     }
   }, [fetchNext]);
+
+  // Re-fetch when empreendimento filter (dentro da lista) changes
+  const listaEmpsKey = listaEmps.join("|");
+  const prevListaEmpsRef = useRef(listaEmpsKey);
+  useEffect(() => {
+    if (isServerList && hasFetchedRef.current && prevListaEmpsRef.current !== listaEmpsKey) {
+      prevListaEmpsRef.current = listaEmpsKey;
+      if (lead) unlockLead(lead.id);
+      fetchNext();
+    }
+  }, [listaEmpsKey, isServerList, fetchNext, lead, unlockLead]);
 
   // Re-fetch when empreendimento filter changes in campaign mode
   useEffect(() => {
@@ -673,13 +688,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   // Auto-redirect when queue is empty
   const hasRedirectedRef = useRef(false);
   useEffect(() => {
-    if (!lead && !isLoading && queueEmpty && !hasRedirectedRef.current) {
+    if (!lead && !isLoading && queueEmpty && listaEmps.length === 0 && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
       toast.info("📋 Leads desta lista acabaram!", { duration: 5000 });
       const timer = setTimeout(() => onBack(), 3000);
       return () => clearTimeout(timer);
     }
-  }, [lead, isLoading, queueEmpty, onBack]);
+  }, [lead, isLoading, queueEmpty, onBack, listaEmps.length]);
 
   // Session guard
   if (blocked) {
@@ -700,6 +715,23 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
+
+  if (!lead && isServerList && listaEmps.length > 0) {
+    return (
+      <div className="space-y-3">
+        <ListaEmpreendimentoFiltro listaId={lista.id} value={listaEmps} onChange={setListaEmps} />
+        <Card>
+          <CardContent className="py-10 text-center">
+            <p className="font-bold text-foreground">Acabaram os leads de {listaEmps.map((e) => e || "Sem empreendimento").join(" e ")} nesta lista.</p>
+            <div className="flex gap-2 justify-center mt-4">
+              <Button onClick={() => setListaEmps([])}>Ver todos</Button>
+              <Button variant="outline" onClick={onBack}>Voltar às listas</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (!lead) {
@@ -1133,6 +1165,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   return (
     <div className="relative overflow-hidden" style={{ background: "var(--arena-bg-from)" }}>
+      {isServerList && (
+        <div className="px-3 pt-2">
+          <ListaEmpreendimentoFiltro listaId={lista.id} value={listaEmps} onChange={setListaEmps} />
+        </div>
+      )}
       {/* ═══ ARENA OVERLAYS ═══ */}
       {showFlash && <div className="round-flash" />}
       {showRound && (
