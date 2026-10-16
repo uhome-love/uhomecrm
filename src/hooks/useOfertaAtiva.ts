@@ -177,7 +177,8 @@ export function useOALeads(listaId?: string, sortMode: OASortMode = "recente") {
 }
 
 // ─── Hook: Server-side lead fetching (atomic lock + anti-repeat + scoring) ───
-export function useOAServerQueue(listaId: string) {
+export function useOAServerQueue(listaId: string, empreendimentos: string[] = []) {
+  const empKey = empreendimentos.join("\u0001");
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [currentLead, setCurrentLead] = useState<OALead | null>(null);
@@ -194,6 +195,7 @@ export function useOAServerQueue(listaId: string) {
         p_corretor_id: user.id,
         p_lista_id: listaId,
         p_lock_minutes: 5,
+        p_empreendimentos: empKey ? empKey.split("\u0001") : null,
       });
       if (error) { console.error("fetch_next_lead error:", error); return null; }
       const result = data as any;
@@ -209,7 +211,7 @@ export function useOAServerQueue(listaId: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, listaId]);
+  }, [user, listaId, empKey]);
 
   // Heartbeat: renew lock every 60s (TTL/3 for 5min lock) + renew on focus
   const renewLock = useCallback(async (leadId: string) => {
