@@ -17077,6 +17077,7 @@ export type Database = {
       fetch_next_lead: {
         Args: {
           p_corretor_id: string
+          p_empreendimentos?: string[]
           p_lista_id: string
           p_lock_minutes?: number
         }
@@ -18002,6 +18003,13 @@ export type Database = {
         Returns: boolean
       }
       oa_ao_vivo_my_profile_id: { Args: never; Returns: string }
+      oa_lista_empreendimentos: {
+        Args: { p_lista_id: string }
+        Returns: {
+          disponiveis: number
+          empreendimento: string
+        }[]
+      }
       oferta_ativa_esta_em_cooldown: {
         Args: { p_corretor_id: string; p_pipeline_lead_id: string }
         Returns: boolean
