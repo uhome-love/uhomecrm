@@ -22,11 +22,12 @@ interface Corretor {
   gestao?: string | null;
 }
 
-const CARGOS_GESTAO = ["gerente", "diretor", "diretora"];
+const CARGOS_GESTAO = ["admin", "gerente", "diretor", "diretora"];
 
 function labelCargo(cargo: string | null | undefined) {
   if (!cargo) return "Gestão";
   const c = cargo.toLowerCase();
+  if (c === "admin") return "CEO";
   if (c.startsWith("diretor")) return c === "diretora" ? "Diretora" : "Diretor";
   return "Gerente";
 }
@@ -55,7 +56,8 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
 
       const gestaoList: Corretor[] = ((profRes.data || []) as any[])
         .filter((p) => p.user_id)
-        .map((p) => ({ user_id: p.user_id, nome: p.nome || "Gestor", equipe: null, gestao: labelCargo(p.cargo) }));
+        .map((p) => ({ user_id: p.user_id, nome: p.nome || "Gestor", equipe: null, gestao: labelCargo(p.cargo) }))
+        .sort((a, b) => Number(b.gestao === "CEO") - Number(a.gestao === "CEO"));
       const gestaoIds = new Set(gestaoList.map((g) => g.user_id));
 
       const corretoresList = ((tmRes.data || []) as any[])
