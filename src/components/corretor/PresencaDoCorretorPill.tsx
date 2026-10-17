@@ -111,7 +111,7 @@ export default function PresencaDoCorretorPill({ profileId, authUserId }: Props)
 
   // ===== Sábado / Domingo (benefício por credencial) =====
   if (regime.regime === "sabado") {
-    const aprovado = credAprovadoDiaTodo;
+    const aprovado = creds.some((c: { status: string }) => c.status === "aprovado");
     return (
       <PillView
         icon={aprovado ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
