@@ -22,6 +22,7 @@ interface PipelineLeadOption {
   empreendimento: string | null;
   telefone: string | null;
   stage_id: string;
+  corretor_id?: string | null;
 }
 
 interface TeamMemberOption {
@@ -266,7 +267,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
       setForm(f => ({
         ...f,
         pipeline_lead_id: leadId,
-        corretor_id: isManager && (lead as any).corretor_id ? (lead as any).corretor_id : f.corretor_id,
+        corretor_id: isManager && lead.corretor_id ? lead.corretor_id : f.corretor_id,
         nome_cliente: lead.nome,
         telefone: lead.telefone || f.telefone || "",
         empreendimento: lead.empreendimento || f.empreendimento || "",
