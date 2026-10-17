@@ -22,6 +22,7 @@ interface PipelineLeadOption {
   empreendimento: string | null;
   telefone: string | null;
   stage_id: string;
+  corretor_id?: string | null;
 }
 
 interface TeamMemberOption {
@@ -151,7 +152,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
       }
 
       const [leadsRes, teamRes, campanhasRes, stagesRes] = await Promise.all([
-        supabase.from("pipeline_leads").select("id, nome, empreendimento, telefone, stage_id").order("updated_at", { ascending: false }).limit(500),
+        supabase.from("pipeline_leads").select("id, nome, empreendimento, telefone, stage_id, corretor_id").order("updated_at", { ascending: false }).limit(500),
         teamQuery,
         supabase.from("roleta_campanhas").select("empreendimento").eq("ativo", true),
         supabase.from("pipeline_stages").select("id, nome").order("ordem", { ascending: true }),
@@ -159,7 +160,16 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
 
       const leads = (leadsRes.data || []) as PipelineLeadOption[];
       setPipelineLeads(leads);
-      setTeamMembers((teamRes.data || []).filter((m) => m.user_id) as TeamMemberOption[]);
+      let members = (teamRes.data || []).filter((m) => m.user_id) as TeamMemberOption[];
+      if (isManager) {
+        const { data: me } = await supabase.from("profiles").select("nome, cargo").eq("user_id", user.id).maybeSingle();
+        const cargo = me?.cargo === "admin" ? "CEO" : me?.cargo?.startsWith("diretor") ? "Diretoria" : "Gerente";
+        members = [
+          { user_id: user.id, nome: `Eu mesmo (${me?.nome || "eu"} · ${cargo})`, equipe: "Eu" } as TeamMemberOption,
+          ...members.filter((m) => m.user_id !== user.id),
+        ];
+      }
+      setTeamMembers(members);
       setStages((stagesRes.data || []) as StageOption[]);
 
       const empSet = new Set<string>();
@@ -257,6 +267,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
       setForm(f => ({
         ...f,
         pipeline_lead_id: leadId,
+        corretor_id: isManager && lead.corretor_id ? lead.corretor_id : f.corretor_id,
         nome_cliente: lead.nome,
         telefone: lead.telefone || f.telefone || "",
         empreendimento: lead.empreendimento || f.empreendimento || "",
