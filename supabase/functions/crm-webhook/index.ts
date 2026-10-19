@@ -259,7 +259,6 @@ Deno.serve(async (req) => {
           tipo: 'entrada',
           titulo,
           descricao: montarDetalhesSite(),
-          data: new Date().toISOString().slice(0, 10),
           status: 'concluida',
           created_by: autor || '00000000-0000-0000-0000-000000000000',
         })
