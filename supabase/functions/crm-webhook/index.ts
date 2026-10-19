@@ -235,6 +235,39 @@ Deno.serve(async (req) => {
       imovelTitulo = 'Lead Geral (sem imóvel específico)'
     }
 
+    // ── Registro na história do lead (nunca derruba a entrada) ──
+    const onde = origemDetalheLabel || origemComponente || `site_${tipo}`
+    const montarDetalhesSite = (): string => {
+      const linhas: string[] = [`📍 Onde clicou: ${onde}`]
+      if (origemComponente && origemComponente !== onde) linhas.push(`🔘 Botão: ${origemComponente}`)
+      linhas.push(`🌐 Página: ${paginaUrl || 'não informada pelo site'}`)
+      if (imovelTitulo || imovelCodigo) {
+        linhas.push(`🏠 Imóvel: ${imovelTitulo || ''}${imovelCodigo ? ` (cód. ${imovelCodigo})` : ''}`.trim())
+      } else {
+        linhas.push('🏠 Imóvel: lead geral, sem imóvel específico')
+      }
+      if (imovelUrl) linhas.push(`🔗 Link: ${imovelUrl}`)
+      if (record.bairro_interesse) linhas.push(`📌 Bairro de interesse: ${record.bairro_interesse}`)
+      const fonte = [record.utm_source, record.utm_medium, record.utm_campaign].filter(Boolean).join(' / ')
+      linhas.push(`📣 De onde veio: ${fonte || (origemRef === 'organico' ? 'acesso direto/orgânico' : origemRef)}`)
+      return linhas.join('\n')
+    }
+    const registrarHistoricoSite = async (leadId: string, titulo: string, autor: string | null) => {
+      try {
+        const { error } = await supabase.from('pipeline_atividades').insert({
+          pipeline_lead_id: leadId,
+          tipo: 'entrada',
+          titulo,
+          descricao: montarDetalhesSite(),
+          status: 'concluida',
+          created_by: autor || '00000000-0000-0000-0000-000000000000',
+        })
+        if (error) console.warn('[crm-webhook] historico falhou:', error.message)
+      } catch (e) {
+        console.warn('[crm-webhook] historico erro:', e)
+      }
+    }
+
     let pipelineLeadId: string | null = null
     let isExisting = false
     let existingCorretorId: string | null = null
@@ -317,6 +350,7 @@ Deno.serve(async (req) => {
             })
             .eq('id', existingLead.id)
           console.log(`[crm-webhook] Dedup: lead ${existingLead.id} kept with corretor=${existingCorretorId}, new interest appended`)
+          await registrarHistoricoSite(existingLead.id, `🔄 Novo interesse via Site — ${onde}`, existingCorretorId)
         } else {
           // Lead exists but has no corretor — reactivate as Novo Lead so roleta can distribute
           await supabase
@@ -338,6 +372,7 @@ Deno.serve(async (req) => {
             })
             .eq('id', existingLead.id)
           console.log(`[crm-webhook] Dedup: lead ${existingLead.id} reactivated for roleta`)
+          await registrarHistoricoSite(existingLead.id, `🔄 Novo interesse via Site — ${onde}`, null)
         }
       } else {
         // ── NEW LEAD: insert WITHOUT corretor, let trigger handle roleta ──
@@ -378,6 +413,7 @@ Deno.serve(async (req) => {
         }
 
         pipelineLeadId = newLead.id
+        await registrarHistoricoSite(newLead.id, `Lead gerado via Site — ${onde}`, newLead.corretor_id)
         existingCorretorId = newLead.corretor_id // may be set by trigger
         console.log(`[crm-webhook] New lead ${newLead.id} → Novo Lead stage, corretor from trigger: ${existingCorretorId || 'fila_ceo'}`)
 
