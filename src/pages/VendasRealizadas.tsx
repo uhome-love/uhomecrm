@@ -262,10 +262,10 @@ export default function VendasRealizadas() {
 
       if (!isAdmin && !isGestor && profileId) {
         query = query.eq("corretor_id", profileId);
-        const { data: partnerDeals } = await supabase.from("v_kpi_negocios")
-          .select("id").eq("auth_user_id", user!.id).eq("fase", "ganho")
-          .gte("data_assinatura", dateRange.start).lte("data_assinatura", dateRange.end).eq("is_parceria", true);
-        const partnerDealIds = (partnerDeals || []).map(d => d.id as string);
+        const { data: partnerDeals } = await supabase.from("v_fato_venda")
+          .select("negocio_id").eq("corretor_auth_id", user!.id)
+          .gte("data_assinatura", dateRange.start).lte("data_assinatura", dateRange.end).eq("em_parceria", true);
+        const partnerDealIds = (partnerDeals || []).map(d => d.negocio_id as string);
         if (partnerDealIds.length > 0) {
           const { data: extraDeals } = await supabase.from("negocios")
             .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id, observacoes")
@@ -282,10 +282,10 @@ export default function VendasRealizadas() {
         const teamProfileIds = (teamProfiles || []).map(p => p.id);
         if (profileId && !teamProfileIds.includes(profileId)) teamProfileIds.push(profileId);
 
-        const { data: partnerDeals } = await supabase.from("v_kpi_negocios")
-          .select("id").in("auth_user_id", allTeamAuthIds).eq("fase", "ganho")
-          .gte("data_assinatura", dateRange.start).lte("data_assinatura", dateRange.end).eq("is_parceria", true);
-        const partnerDealIds = (partnerDeals || []).map(d => d.id as string);
+        const { data: partnerDeals } = await supabase.from("v_fato_venda")
+          .select("negocio_id").in("corretor_auth_id", allTeamAuthIds)
+          .gte("data_assinatura", dateRange.start).lte("data_assinatura", dateRange.end).eq("em_parceria", true);
+        const partnerDealIds = (partnerDeals || []).map(d => d.negocio_id as string);
 
         if (teamProfileIds.length > 0) query = query.in("corretor_id", teamProfileIds);
 
@@ -312,16 +312,18 @@ export default function VendasRealizadas() {
       let parceriaSet = new Set<string>();
       let parceriaPartners: Record<string, PartnerInfo> = {};
       if (dealIds.length > 0) {
-        const { data: kpiRows } = await supabase.from("v_kpi_negocios")
-          .select("id, auth_user_id, pipeline_lead_id, is_parceria, fator_split")
-          .eq("is_parceria", true).in("id", dealIds);
+        // Fonte única de parcerias (negócio duplo OU parceria registrada no lead): v_fato_venda.
+        const { data: kpiRows } = await supabase.from("v_fato_venda")
+          .select("negocio_id, corretor_auth_id, pipeline_lead_id, participacao")
+          .eq("em_parceria", true).in("negocio_id", dealIds);
         (kpiRows || []).forEach(r => {
-          const plId = r.pipeline_lead_id;
+          const plId = r.pipeline_lead_id as string | null;
           if (!plId) return;
           parceriaSet.add(plId);
-          if (!parceriaPartners[plId]) parceriaPartners[plId] = { auth_user_ids: [], fator_split: Number(r.fator_split || 0.5) };
-          if (r.auth_user_id && !parceriaPartners[plId].auth_user_ids.includes(r.auth_user_id)) {
-            parceriaPartners[plId].auth_user_ids.push(r.auth_user_id);
+          if (!parceriaPartners[plId]) parceriaPartners[plId] = { auth_user_ids: [], fator_split: Number(r.participacao || 0.5) };
+          const aid = r.corretor_auth_id as string | null;
+          if (aid && !parceriaPartners[plId].auth_user_ids.includes(aid)) {
+            parceriaPartners[plId].auth_user_ids.push(aid);
           }
         });
       }

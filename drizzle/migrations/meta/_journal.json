@@ -106,6 +106,13 @@
       "when": 1792176156799,
       "tag": "0014_oa_filtro_empreendimentos_lista",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792433463365,
+      "tag": "0015_venda_ganha_sobrevive_nova_negociacao",
+      "breakpoints": true
     }
   ]
 }
