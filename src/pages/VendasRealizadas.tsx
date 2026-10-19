@@ -464,17 +464,36 @@ export default function VendasRealizadas() {
     },
   });
 
+  // Nomes dos parceiros de uma venda (parceria registrada no lead ou negócio duplo).
+  const partnerNames = (v: VendaRow): string[] => {
+    const p = v.pipeline_lead_id ? parceriaPartners[v.pipeline_lead_id] : null;
+    return (p?.auth_user_ids || []).map(id => (authProfiles[id]?.nome || "").toLowerCase()).filter(Boolean);
+  };
+
   const filtered = useMemo(() => {
     if (!search.trim()) return vendas;
     const s = search.toLowerCase();
     return vendas.filter(v =>
       v.nome_cliente?.toLowerCase().includes(s) ||
       v.empreendimento?.toLowerCase().includes(s) ||
-      (v.corretor_id && profiles[v.corretor_id]?.nome?.toLowerCase().includes(s))
+      (v.corretor_id && profiles[v.corretor_id]?.nome?.toLowerCase().includes(s)) ||
+      partnerNames(v).some(n => n.includes(s))
     );
-  }, [vendas, search, profiles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendas, search, profiles, parceriaPartners, authProfiles]);
 
-  const totalVGV = filtered.reduce((s, v) => s + (v.vgv_final || v.vgv_estimado || 0), 0);
+  // Busca por corretor: em parceria conta só a parte dele (mesma régua do VGV oficial).
+  const totalVGV = filtered.reduce((acc, v) => {
+    const valor = v.vgv_final || v.vgv_estimado || 0;
+    const s = search.trim().toLowerCase();
+    if (!s) return acc + valor;
+    const bateClienteOuProduto = v.nome_cliente?.toLowerCase().includes(s) || v.empreendimento?.toLowerCase().includes(s);
+    const p = v.pipeline_lead_id ? parceriaPartners[v.pipeline_lead_id] : null;
+    if (!bateClienteOuProduto && p && p.auth_user_ids.length >= 2 && partnerNames(v).some(n => n.includes(s))) {
+      return acc + valor * (p.fator_split || 0.5);
+    }
+    return acc + valor;
+  }, 0);
   const totalVendas = filtered.length;
   const ticketMedio = totalVendas > 0 ? totalVGV / totalVendas : 0;
 
