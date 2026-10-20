@@ -12,10 +12,13 @@ import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import BasesAtivasGrid from "@/components/oferta-ativa/BasesAtivasGrid";
 import ReservadosPanel from "@/components/oferta-ativa/ReservadosPanel";
 import MeusResultadosPanel from "@/components/oferta-ativa/MeusResultadosPanel";
+import PortasOfertaAtiva, { type Porta } from "@/components/oferta-ativa/bolsao/PortasOfertaAtiva";
+import BolsaoDiscador from "@/components/oferta-ativa/bolsao/BolsaoDiscador";
 
 export default function CorretorCall() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("call");
+  const [porta, setPorta] = useState<Porta>("listas");
 
   // Mantém o badge leve de sessão (não escurece a tela)
   useEffect(() => {
@@ -50,8 +53,13 @@ export default function CorretorCall() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="call" className="mt-3">
-          <CorretorEntrada onSair={() => navigate("/corretor")} />
+        <TabsContent value="call" className="mt-3 space-y-3">
+          <PortasOfertaAtiva value={porta} onChange={setPorta} />
+          {porta === "listas" ? (
+            <CorretorEntrada onSair={() => navigate("/corretor")} />
+          ) : (
+            <BolsaoDiscador key={porta} porta={porta} />
+          )}
         </TabsContent>
         <TabsContent value="bases" className="mt-3">
           <BasesAtivasGrid />
