@@ -77,8 +77,9 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     setBusy(false);
     const res = data as { ok: boolean; error?: string } | null;
     if (error || !res?.ok) {
-      toast.error(res?.error === "reserva_nao_encontrada" ? "Outro corretor já pegou esse cliente." : "Erro ao registrar. Tente de novo.");
-      setLead(null);
+      const deOutro = res?.error === "reserva_nao_encontrada";
+      toast.error(deOutro ? "Outro corretor já pegou esse cliente." : "Erro ao registrar. Tente de novo.");
+      if (deOutro) setLead(null);
       return;
     }
     if (resultado === "nao_atendeu") toast.success("Ok, ele volta para a lista amanhã.");
@@ -134,7 +135,7 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
           </span>
         </div>
         <p className="text-sm text-muted-foreground">
-          {TEXTO_PORTA[porta]} Reservado para você até {formatBRT(lead.reservado_ate, "HH:mm")}.
+          {TEXTO_PORTA[porta]}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm" disabled={!fone}>

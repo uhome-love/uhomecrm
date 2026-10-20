@@ -1,12 +1,10 @@
 // bolsao-aproveitar — corretor aproveita um lead reservado do Bolsão (estagnados/descartados).
-// Também aceita { acao: "renovar" } para estender a reserva enquanto o cliente está aberto na tela.
+// Mesmo padrão das Listas da Oferta Ativa: a reserva só impede outro corretor de puxar; o dono pode aproveitar a qualquer momento.
 // Reserva vencida do próprio corretor ainda pode ser aproveitada se ninguém mais puxou e o lead segue elegível.
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { reactivateLead, NOVO_LEAD_STAGE_ID } from "../_shared/reactivateLead.ts";
-
-const RESERVA_MIN = 5;
 
 async function logEvento(admin: SupabaseClient, level: string, message: string, ctx: Record<string, unknown>) {
   try {
@@ -26,7 +24,7 @@ Deno.serve(async (req) => {
     admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const body = await req.json().catch(() => ({}));
     const leadId: string | undefined = typeof body?.pipeline_lead_id === "string" ? body.pipeline_lead_id : undefined;
-    const acao = body?.acao === "renovar" ? "renovar" : "aproveitar";
+    const acao = "aproveitar";
     if (!leadId || !/^[0-9a-f-]{36}$/i.test(leadId)) return errorResponse("pipeline_lead_id required", 400);
     ctx = { lead_id: leadId, user_id: userId, acao };
 
@@ -61,13 +59,6 @@ Deno.serve(async (req) => {
         await logEvento(admin, "warn", "Reserva vencida e lead não elegível", ctx);
         return jsonResponse({ ok: false, error: "NAO_ELEGIVEL" }, 200);
       }
-    }
-
-    if (acao === "renovar") {
-      const ate = new Date(agora.getTime() + RESERVA_MIN * 60_000).toISOString();
-      await admin.from("bolsao_reservas").update({ reservado_ate: ate, updated_at: agora.toISOString() })
-        .eq("pipeline_lead_id", leadId).eq("corretor_id", userId);
-      return jsonResponse({ ok: true, reservado_ate: ate }, 200);
     }
 
     const { data: prof } = await admin.from("profiles").select("id").eq("user_id", userId).maybeSingle();
