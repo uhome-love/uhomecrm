@@ -1,4 +1,25 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
+
+/** Nome do formulário Meta a partir do número (cache no servidor via resolve-meta-forms). */
+function useNomeFormulario(formulario?: string | null) {
+  const id = (formulario ?? "").trim();
+  const numerico = /^\d{6,}$/.test(id);
+  const { data } = useQuery({
+    queryKey: ["meta-form-name", id],
+    enabled: numerico,
+    staleTime: 24 * 60 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("resolve-meta-forms", { body: { ids: [id] } });
+      if (error) return null;
+      const names = (data as { names?: Record<string, string | null> } | null)?.names ?? {};
+      return names[id] ?? null;
+    },
+  });
+  if (!numerico) return id || null;
+  return data ?? `Formulário nº ${id}`;
+}
 
 interface Props {
   origem?: string | null;
@@ -12,6 +33,7 @@ interface Props {
 
 /** Linhas da origem do lead (de onde veio, anúncio, formulário) — estilo lista do iPhone. */
 export default function DrawerOrigemLead({ origem, campanha, conjunto, anuncio, formulario, plataforma, entrouEm }: Props) {
+  const nomeFormulario = useNomeFormulario(formulario);
   let entrou: string | null = null;
   if (entrouEm) entrou = (() => { const d = formatBRT(entrouEm, "dd/MM/yyyy", ""); const h = formatBRT(entrouEm, "HH:mm", ""); return d ? `${d} às ${h}` : null; })();
   const rows = [
@@ -20,7 +42,7 @@ export default function DrawerOrigemLead({ origem, campanha, conjunto, anuncio, 
     { k: "Campanha", v: campanha },
     { k: "Conjunto", v: conjunto },
     { k: "Anúncio", v: anuncio },
-    { k: "Formulário", v: formulario },
+    { k: "Formulário", v: nomeFormulario },
     { k: "Entrou em", v: entrou },
   ].filter((r) => r.v && String(r.v).trim());
   if (rows.length === 0) return null;
