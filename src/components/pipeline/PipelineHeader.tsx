@@ -378,11 +378,11 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3.5 rounded-full sm:rounded-md text-[13px] sm:text-xs border-none cursor-pointer ${
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3 sm:px-3.5 rounded-full sm:rounded-md text-[13px] sm:text-xs border-none cursor-pointer ${
                   activeTab === tab.key ? "bg-card text-foreground font-semibold shadow-sm" : "bg-transparent text-muted-foreground font-medium hover:text-foreground"
                 }`}
               >
-                {tab.icon} {tab.label}
+                <span className="hidden sm:inline-flex">{tab.icon}</span> {tab.label}
               </button>
             ))}
           </div>
@@ -470,7 +470,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 className="inline-flex items-center gap-1.5 rounded-full sm:rounded-lg border border-primary bg-primary/10 justify-center w-9 sm:w-auto sm:px-3 h-9 text-xs relative font-semibold text-primary cursor-pointer"
               >
                 <SlidersHorizontal className="h-4 w-4" /> <span className="hidden sm:inline">Filtros</span>
-                {activeChips.length > 0 && <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{activeChips.length}</span>}
+                {activeChips.length > 0 && <span className="absolute -top-1 -right-1 sm:static inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{activeChips.length}</span>}
               </button>
             )}
           </div>
