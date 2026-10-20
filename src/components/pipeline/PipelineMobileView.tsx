@@ -130,13 +130,13 @@ const PipelineMobileView = memo(function PipelineMobileView({
           overflowX: "auto",
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
-          padding: "0 12px",
-          gap: 2,
+          padding: "10px 16px",
+          gap: 8,
           position: "sticky",
           top: 0,
           zIndex: 25 /* Z.mobileTabs */,
         }}
-        className="scrollbar-none bg-card border-b border-border"
+        className="scrollbar-none bg-background/85 backdrop-blur-xl border-b border-border/60"
       >
         {stages.map(stage => {
           const isActive = stage.id === activeStageId;
@@ -148,26 +148,19 @@ const PipelineMobileView = memo(function PipelineMobileView({
               data-stage-id={stage.id}
               onClick={() => setActiveStageId(stage.id)}
               className={[
-                "flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer bg-transparent border-0 transition-all duration-200 ease-out active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100",
-                "border-b-2",
+                "flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-full h-9 px-3.5 text-[13px] font-semibold transition-all duration-200 active:scale-95 motion-reduce:transition-none",
                 isActive
-                  ? "text-foreground border-primary"
-                  : "text-muted-foreground border-transparent hover:text-foreground/80",
+                  ? "bg-foreground text-background shadow-sm"
+                  : "bg-muted/70 text-muted-foreground",
               ].join(" ")}
-              style={{
-                padding: "7px 10px",
-                fontSize: 11, fontWeight: 600,
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
             >
-              <span style={{ fontSize: 12 }}>{emoji}</span>
+              <span className="text-sm leading-none">{emoji}</span>
               {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
               <span
-                className={isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}
-                style={{
-                  fontSize: 10, fontWeight: 700,
-                  padding: "1px 6px", borderRadius: 100,
-                }}
+                className={[
+                  "min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center",
+                  isActive ? "bg-background/20 text-background" : "bg-background text-foreground/70",
+                ].join(" ")}
               >
                 {count}
               </span>
