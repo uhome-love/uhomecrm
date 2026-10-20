@@ -1,13 +1,11 @@
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CheckCircle2, XCircle, Phone, CalendarCheck, DollarSign, Users, BarChart3, Building2, Target, Megaphone, UserCheck, Activity, Eye } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import { StateWrapper } from "@/components/ui/StateWrapper";
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
 import type { KpiDetailType } from "@/components/ceo/KpiDetailDialog";
-import { MiniKpi, SectionLabel, HBar, formatBRLCompact, ORIGIN_COLORS, FALLBACK_COLORS } from "./DesktopPrimitives";
+import { MiniKpi, SectionLabel, formatBRLCompact } from "./DesktopPrimitives";
+
 
 export default function DesktopNegocios({ model }: { model: CeoDashboardController }) {
   const { navigate, setKpiDetail, kpis, prevKpis, negocioFases, vendasPeriodo, vgvMesAtual, reload, errors, delta, ceoMetas, totalNeg, vgvContrato, countContrato, periodoLabel, conversoes, negFunnelOrder, negFunnelLabels, negFunnelColors } = model;
@@ -37,7 +35,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
             onClick={() => setKpiDetail({ type: "propostas", label: "Propostas" })} />
         </div>
 
-        <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+        <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
             <p className="text-[10px] text-muted-foreground">
@@ -59,7 +57,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
                 const vgv = data?.vgv || 0;
                 const maxCount = Math.max(...negocioFases.map((f) => f.count), 1);
                 const widthPct = maxCount > 0 ? Math.max((count / maxCount) * 100, 18) : 18;
-                const color = negFunnelColors[fase] || "#a1a1aa";
+                const color = negFunnelColors[fase] || "var(--ceo-chart-fallback)";
                 const isCaiu = fase.toLowerCase().includes("caiu") || fase.toLowerCase().includes("perdid");
                 const detailType: KpiDetailType | null =
                   fase === "proposta" ? "negociacao" : fase === "contrato_gerado" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
@@ -69,7 +67,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
                     type="button"
                     disabled={!detailType}
                     onClick={() => detailType && setKpiDetail({ type: detailType, label: negFunnelLabels[fase] || fase })}
-                    className={`flex flex-col items-center text-center gap-2 rounded-lg p-1 ${detailType ? "hover:bg-white/60 dark:hover:bg-white/[0.04] transition-colors" : "cursor-default"}`}
+                    className={`flex flex-col items-center text-center gap-2 rounded-lg p-1 ${detailType ? "hover:bg-[var(--ceo-desktop-solid-60)] dark:hover:bg-[var(--ceo-desktop-solid-04)] transition-colors" : "cursor-default"}`}
                   >
                     <span className="text-2xl font-[800] leading-none" style={{ color }}>
                       {count}
@@ -99,7 +97,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
             {/* Taxas de conversão do período */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
               {conversoes.map(c => (
-                <div key={c.label} className="bg-white dark:bg-muted/50 rounded-lg px-3 py-2 border border-[#e8e8f0] dark:border-border">
+                <div key={c.label} className="bg-[var(--ceo-desktop-solid)] dark:bg-muted/50 rounded-lg px-3 py-2 border border-[var(--ceo-desktop-line)] dark:border-border">
                   <p className="text-[10px] text-muted-foreground truncate">{c.label}</p>
                   <p className="text-base font-[800] text-foreground leading-tight">{c.value}</p>
                   <p className="text-[9px] text-muted-foreground/70 truncate">{c.sub}</p>
@@ -111,7 +109,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
         </Card>
 
         {/* Vendas assinadas no período */}
-        <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none mt-4">
+        <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none mt-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold flex items-center gap-2">
               <DollarSign className="h-3.5 w-3.5 text-success" /> Vendas assinadas no período
@@ -126,7 +124,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
             ) : (
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
                 <table className="w-full text-[11px]">
-                  <thead className="sticky top-0 bg-[#f7f7fb] dark:bg-card">
+                  <thead className="sticky top-0 bg-[var(--ceo-desktop-surface)] dark:bg-card">
                     <tr className="text-[10px] text-muted-foreground text-left">
                       <th className="py-1.5 pr-2 font-medium">Cliente</th>
                       <th className="py-1.5 pr-2 font-medium">Empreendimento</th>
@@ -140,7 +138,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
                       <tr
                         key={v.id}
                         onClick={() => v.leadId && navigate(`/pipeline-leads?lead=${v.leadId}`)}
-                        className={`border-t border-[#e8e8f0] dark:border-border ${v.leadId ? "cursor-pointer hover:bg-white/60 dark:hover:bg-white/[0.04]" : ""}`}
+                        className={`border-t border-[var(--ceo-desktop-line)] dark:border-border ${v.leadId ? "cursor-pointer hover:bg-[var(--ceo-desktop-solid-60)] dark:hover:bg-[var(--ceo-desktop-solid-04)]" : ""}`}
                       >
                         <td className="py-1.5 pr-2 font-medium text-foreground truncate max-w-[160px]">{v.cliente}</td>
                         <td className="py-1.5 pr-2 text-muted-foreground truncate max-w-[160px]">{v.empreendimento}</td>

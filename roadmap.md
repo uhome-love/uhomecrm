@@ -22,5 +22,8 @@
 # Roadmap — Redesign mobile: gestão
 - [x] Preparar e apresentar mockup do Painel do CEO, mantendo os indicadores e ações atuais
 - [x] Aprovar mockup e plano da pequena etapa antes de alterar o CRM
-- [ ] Aplicar apenas a apresentação mobile; preservar computador e regras de dados
-- [ ] Validar ao vivo com leitura dos dados e sem alterar leads reais
+- [x] Aplicar apenas a apresentação mobile; preservar computador e regras de dados
+- [x] Validar ao vivo com leitura dos dados e sem alterar leads reais
+- [ ] Aguardar validação de Lucas antes da próxima tela
+
+Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personalizado, atualização, detalhamentos de leads e visitas, expansões, 13 indicadores e 7 indicadores por equipe iguais entre celular/computador, abas compartilhadas com acesso do CEO. Sem ações sobre clientes. Fila CEO vazia: botão desabilitado preservado; distribuição não testada. Contas de diretora/gerente não foram usadas. Testes pertinentes: 22 passaram; teste antigo de identificação aponta três arquivos já movidos para legado, fora desta etapa.

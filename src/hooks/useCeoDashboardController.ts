@@ -267,10 +267,10 @@ export function useCeoDashboardController() {
     ganho: "Ganho",
   };
   const negFunnelColors: Record<string,string> = {
-    documentacao: "#4969FF",
-    proposta: "#F59E0B",
-    contrato_gerado: "#8B5CF6",
-    ganho: "#22C55E",
+    documentacao: "var(--ceo-chart-primary)",
+    proposta: "var(--ceo-chart-proposal)",
+    contrato_gerado: "var(--ceo-chart-contract)",
+    ganho: "var(--ceo-chart-won)",
   };
 
 

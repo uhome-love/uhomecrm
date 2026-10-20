@@ -1,13 +1,9 @@
-import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CheckCircle2, XCircle, Phone, CalendarCheck, DollarSign, Users, BarChart3, Building2, Target, Megaphone, UserCheck, Activity, Eye } from "lucide-react";
+import { Phone } from "lucide-react";
 import { StateWrapper } from "@/components/ui/StateWrapper";
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
-import type { KpiDetailType } from "@/components/ceo/KpiDetailDialog";
-import { MiniKpi, SectionLabel, HBar, formatBRLCompact, ORIGIN_COLORS, FALLBACK_COLORS } from "./DesktopPrimitives";
+import { MiniKpi, SectionLabel, formatBRLCompact } from "./DesktopPrimitives";
+
 
 export default function DesktopOferta({ model }: { model: CeoDashboardController }) {
   const { setKpiDetail, kpis, prevKpis, teams, corretoresRank, metasDiaTotal, reload, errors, delta, ceoMetas, totalTeam } = model;
@@ -30,7 +26,7 @@ export default function DesktopOferta({ model }: { model: CeoDashboardController
             variant={kpis.taxaConversao >= 10 ? "success" : kpis.taxaConversao >= 5 ? "warning" : "default"} />
         </div>
 
-        <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+        <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold">Performance por Equipe</CardTitle>
           </CardHeader>
@@ -58,7 +54,7 @@ export default function DesktopOferta({ model }: { model: CeoDashboardController
                 </thead>
                 <tbody>
                   {teams.sort((a, b) => b.ligacoes - a.ligacoes).map(t => (
-                    <tr key={t.gerente_id} className="border-b border-[#e8e8f0]/50 dark:border-border hover:bg-white/50 dark:hover:bg-white/[0.02] transition-colors">
+                    <tr key={t.gerente_id} className="border-b border-[var(--ceo-desktop-line-50)] dark:border-border hover:bg-[var(--ceo-desktop-solid-50)] dark:hover:bg-[var(--ceo-desktop-solid-02)] transition-colors">
                       <td className="py-2 font-medium text-foreground">{t.gerente_nome}</td>
                       <td className="py-2 text-right font-semibold text-primary">{t.ligacoes}</td>
                       <td className="py-2 text-right text-success font-semibold">{t.aproveitados}</td>
@@ -90,7 +86,7 @@ export default function DesktopOferta({ model }: { model: CeoDashboardController
 
         {/* Top Corretores */}
         {(corretoresRank.length > 0 || errors.teams) && (
-          <Card className="mt-3 bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+          <Card className="mt-3 bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold">Top Corretores — Oferta Ativa</CardTitle>
             </CardHeader>
@@ -116,7 +112,7 @@ export default function DesktopOferta({ model }: { model: CeoDashboardController
                   </thead>
                   <tbody>
                     {[...corretoresRank].sort((a, b) => b.ligacoes - a.ligacoes).slice(0, 10).map((c, i) => (
-                      <tr key={c.corretor_id} className="border-b border-[#e8e8f0]/50 dark:border-border">
+                      <tr key={c.corretor_id} className="border-b border-[var(--ceo-desktop-line-50)] dark:border-border">
                         <td className="py-1.5 font-bold text-muted-foreground">{i + 1}</td>
                         <td className="py-1.5 font-medium text-foreground">{c.nome}</td>
                         <td className="py-1.5 text-muted-foreground">{c.gerente_nome}</td>

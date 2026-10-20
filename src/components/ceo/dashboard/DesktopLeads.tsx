@@ -1,13 +1,9 @@
-import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CheckCircle2, XCircle, Phone, CalendarCheck, DollarSign, Users, BarChart3, Building2, Target, Megaphone, UserCheck, Activity, Eye } from "lucide-react";
-import { StateWrapper } from "@/components/ui/StateWrapper";
+import { Users, Building2, Target, Megaphone } from "lucide-react";
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
-import type { KpiDetailType } from "@/components/ceo/KpiDetailDialog";
-import { MiniKpi, SectionLabel, HBar, formatBRLCompact, ORIGIN_COLORS, FALLBACK_COLORS } from "./DesktopPrimitives";
+import { MiniKpi, SectionLabel, HBar, ORIGIN_COLORS, FALLBACK_COLORS } from "./DesktopPrimitives";
+
 
 export default function DesktopLeads({ model }: { model: CeoDashboardController }) {
   const { filaCeoCount, setBulkEmpOpen, setKpiDetail, showAllCorretorLeads, setShowAllCorretorLeads, campanhas, origens, leadsPorEmpreendimento, leadsPorCorretor, totalLeadsPeriodo, leadsReaproveitadosOA, novoInteresse, presentesHoje, hoje, leadsDistribuidos } = model;
@@ -33,7 +29,7 @@ export default function DesktopLeads({ model }: { model: CeoDashboardController 
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Leads por Campanha/Empreendimento */}
-          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+          <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs font-semibold flex items-center gap-2">
@@ -65,7 +61,7 @@ export default function DesktopLeads({ model }: { model: CeoDashboardController 
           </Card>
 
           {/* Leads por Origem */}
-          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+          <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <Megaphone className="h-3.5 w-3.5 text-primary" /> Leads por Origem
@@ -84,7 +80,7 @@ export default function DesktopLeads({ model }: { model: CeoDashboardController 
           </Card>
 
           {/* Leads por Corretor */}
-          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+          <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <Users className="h-3.5 w-3.5 text-primary" /> Leads por Corretor

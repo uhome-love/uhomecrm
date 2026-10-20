@@ -12,7 +12,7 @@ import MobileDados from "./MobileDados";
 import MobileApprovals from "./MobileApprovals";
 
 export default function MobileDashboardContent({ model: m }: { model: CeoDashboardController }) {
-  return <div className="min-w-0 px-[18px] pt-4 pb-8">
+  return <div className="ceo-mobile min-w-0 px-[18px] pt-4 pb-8">
     <div className="mb-6 flex items-center justify-between gap-3">
       <MobilePeriodSelector />
       <Button variant="outline" onClick={() => m.setDispatchOpen(true)} disabled={m.filaCeoCount === 0} className="h-11 shrink-0 gap-2 border-primary/20 bg-primary/5 px-3 text-xs text-primary"><Inbox />Fila CEO{m.filaCeoCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] text-primary-foreground">{m.filaCeoCount}</span>}</Button>

@@ -1,15 +1,11 @@
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Inbox } from "lucide-react";
-import { StateWrapper } from "@/components/ui/StateWrapper";
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
-import type { KpiDetailType } from "@/components/ceo/KpiDetailDialog";
-import { MiniKpi, SectionLabel, HBar, formatBRLCompact, ORIGIN_COLORS, FALLBACK_COLORS } from "./DesktopPrimitives";
 import { GreetingBar } from "@/components/ui/GreetingBar";
 import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
+
 export default function DesktopHeader({model}: {model:CeoDashboardController}) {
 const { user, period, range, frase, setDispatchOpen, filaCeoCount, lastUpdate, profile, reload, hoje } = model;
 return <>      {/* ═══ GREETING ═══ */}
@@ -40,7 +36,7 @@ return <>      {/* ═══ GREETING ═══ */}
           >
             <Inbox className="h-3.5 w-3.5" />
             Fila CEO
-            {filaCeoCount > 0 && <Badge className="bg-primary text-white text-[10px] px-1.5 py-0 ml-1">{filaCeoCount}</Badge>}
+            {filaCeoCount > 0 && <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0 ml-1">{filaCeoCount}</Badge>}
           </Button>
         </div>
       </div>

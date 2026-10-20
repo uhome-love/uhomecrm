@@ -13,7 +13,9 @@ export default function MobileDados({ model: m }: { model: CeoDashboardControlle
       {m.isAdmin && <Button variant="outline" className="mt-3 h-11 w-full text-primary" onClick={() => m.navigate("/marketing")}>Ver Marketing</Button>}
     </MobileDisclosure>
     <MobileDisclosure title="RH & Equipe">
+      <StateWrapper error={m.errors.teams ?? m.errors.extra} onRetry={m.reload} errorTitle="Falha ao carregar RH e equipe">
       <MobileDataRow label="Presentes Hoje" value={m.presentesHoje} /><MobileDataRow label="Equipes Ativas" value={m.teams.length} /><MobileDataRow label="Total Corretores" value={m.corretoresRank.length} />
+      </StateWrapper>
       {m.isAdmin && <Button variant="outline" className="mt-3 h-11 w-full text-primary" onClick={() => m.navigate("/rh")}>Ver RH</Button>}
     </MobileDisclosure>
     <MobileDisclosure title="Alertas & Atenção" defaultOpen>
