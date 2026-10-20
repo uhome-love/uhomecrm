@@ -54,7 +54,7 @@ export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbri
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {t.lead ? (
             <span className={cn("truncate text-[15px] font-bold text-foreground", concluida && "line-through")}>{t.lead.nome}</span>
           ) : (
