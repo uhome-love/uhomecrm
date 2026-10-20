@@ -16,7 +16,7 @@ function useTotal(porta: "estagnados" | "descartados") {
   });
 }
 
-export default function PortasOfertaAtiva({ value, onChange }: { value: Porta; onChange: (p: Porta) => void }) {
+export default function PortasOfertaAtiva({ value, onChange }: { value: Porta | null; onChange: (p: Porta) => void }) {
   const est = useTotal("estagnados");
   const desc = useTotal("descartados");
   const portas: { v: Porta; titulo: string; desc: string; n?: number }[] = [
