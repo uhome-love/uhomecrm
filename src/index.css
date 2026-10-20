@@ -247,6 +247,8 @@
     --ceo-funnel-7: hsl(135, 70%, 76%);
     --ceo-funnel-8: hsl(120, 70%, 79%);
     --ceo-funnel-9: hsl(105, 70%, 82%);
+    --ceo-funnel-10: hsl(90, 70%, 85%);
+    --ceo-funnel-11: hsl(75, 70%, 88%);
   }
 
   /* Dark mode — slate neutro-frio com ESCADA DE ELEVAÇÃO real (fundo < card <
