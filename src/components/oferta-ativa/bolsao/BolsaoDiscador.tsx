@@ -123,7 +123,7 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
               {lead.origem ? ` · ${lead.origem}` : ""} · entrou em {formatBRT(lead.entrou_em, "dd/MM/yyyy")}
             </div>
           </div>
-          <span className="rounded-md bg-warning/15 px-2 py-1 text-xs font-medium text-warning-foreground">
+          <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
             Pode ser seu
           </span>
         </div>

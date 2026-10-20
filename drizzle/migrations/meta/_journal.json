@@ -127,6 +127,13 @@
       "when": 1792512645522,
       "tag": "0017_bolsao_fase2_servidor",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792513179415,
+      "tag": "0018_bolsao_fase2_desempenho",
+      "breakpoints": true
     }
   ]
 }
