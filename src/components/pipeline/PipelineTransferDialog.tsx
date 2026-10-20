@@ -43,12 +43,25 @@ export default function PipelineTransferDialog({ open, onOpenChange, leadId, lea
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const { data } = await supabase
-        .from("team_members")
-        .select("user_id, nome, equipe")
-        .eq("status", "ativo")
-        .order("nome");
-      setCorretores((data || []).filter(m => m.user_id && m.user_id !== currentCorretorId));
+      const [tm, gest] = await Promise.all([
+        supabase.from("team_members").select("user_id, nome, equipe").eq("status", "ativo").order("nome"),
+        supabase.from("profiles").select("user_id, nome, cargo").eq("ativo", true)
+          .in("cargo", ["admin", "gerente", "diretor", "diretora"]).order("nome"),
+      ]);
+      const rotulo = (c: string | null, nome: string) =>
+        c === "admin" ? "CEO" : /gabrielle/i.test(nome) || c?.startsWith("diretor") ? "Diretora" : "Gerente";
+      const seen = new Set<string>();
+      const lista: TeamMember[] = [];
+      const gestao = (gest.data || [])
+        .filter(p => p.user_id && p.nome)
+        .map(p => ({ user_id: p.user_id as string, nome: p.nome as string, equipe: `Gestão · ${rotulo(p.cargo, p.nome as string)}` }))
+        .sort((a, b) => (a.equipe.includes("CEO") ? -1 : b.equipe.includes("CEO") ? 1 : a.equipe.includes("Diretora") ? -1 : b.equipe.includes("Diretora") ? 1 : a.nome.localeCompare(b.nome)));
+      for (const m of [...gestao, ...((tm.data || []) as TeamMember[])]) {
+        if (!m.user_id || m.user_id === currentCorretorId || seen.has(m.user_id)) continue;
+        seen.add(m.user_id);
+        lista.push(m);
+      }
+      setCorretores(lista);
     })();
   }, [open, currentCorretorId]);
 
