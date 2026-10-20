@@ -113,6 +113,13 @@
       "when": 1792433463365,
       "tag": "0015_venda_ganha_sobrevive_nova_negociacao",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792512461822,
+      "tag": "0016_bolsao_fase1_prazo_gerente",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,8 @@ export interface LeadEstagnacao {
   categoria: CategoriaEstagnacao;
   estagnado_prazo_em: string | null;
   motivo: string | null;
+  /** Data em que o lead sai da posse do gerente e vai para o Bolsão (null = nunca vai). */
+  bolsao_em: string | null;
 }
 
 export type AcaoEstagnacao = "devolver" | "repassar" | "roleta" | "descartar";

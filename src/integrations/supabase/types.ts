@@ -17397,6 +17397,7 @@ export type Database = {
       get_pipeline_estagnacao: {
         Args: never
         Returns: {
+          bolsao_em: string
           categoria: string
           corretor_id: string
           corretor_nome: string
