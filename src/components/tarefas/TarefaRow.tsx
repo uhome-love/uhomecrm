@@ -44,7 +44,7 @@ export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbri
 
   return (
     <div className={cn(
-      "flex items-start gap-3 rounded-xl border border-border border-l-4 bg-card px-3 py-2.5",
+      "flex flex-wrap items-start gap-x-3 gap-y-2 rounded-xl border sm:flex-nowrap border-border border-l-4 bg-card px-3 py-2.5",
       atrasada ? "border-l-destructive" : "border-l-transparent",
       concluida && "opacity-70",
     )}>
@@ -54,7 +54,7 @@ export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbri
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {t.lead ? (
             <span className={cn("truncate text-[15px] font-bold text-foreground", concluida && "line-through")}>{t.lead.nome}</span>
           ) : (
@@ -74,13 +74,13 @@ export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbri
         {t.lead && <MiniHistorico ctx={ctx} />}
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div className="flex w-full shrink-0 items-center justify-end gap-1 border-t border-border/60 pt-2 sm:w-auto sm:gap-0.5 sm:border-0 sm:pt-0">
         {t.lead?.telefone && (
           <>
             <a href={waLink(t.lead.telefone) ?? undefined} target="_blank" rel="noreferrer" aria-label="WhatsApp" title="WhatsApp" className={iconBtn}>
               <MessageCircle className="h-4 w-4" />
             </a>
-            <a href={telLink(t.lead.telefone) ?? undefined} aria-label="Ligar" title="Ligar" className={cn(iconBtn, "hidden sm:inline-flex")}>
+            <a href={telLink(t.lead.telefone) ?? undefined} aria-label="Ligar" title="Ligar" className={iconBtn}>
               <Phone className="h-4 w-4" />
             </a>
           </>
@@ -91,7 +91,7 @@ export default function TarefaRow({ t, ctx, corretorNome, somenteLeitura, onAbri
           </button>
         )}
         {!somenteLeitura && !concluida && (
-          <button type="button" onClick={() => onConcluir(t)} className="ml-1 inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90">
+          <button type="button" onClick={() => onConcluir(t)} className="ml-1 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-[13px] sm:px-2.5 sm:py-1.5 sm:text-[12px] font-semibold text-primary-foreground hover:bg-primary/90">
             <Check className="h-3.5 w-3.5" /> Concluir
           </button>
         )}

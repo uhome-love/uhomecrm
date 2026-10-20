@@ -186,7 +186,7 @@ export default function AppLayout() {
                   <UhomeLogo size="md" />
                 </div>
                 {(isFullscreen || isSession) && (
-                  <span className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)" }}>
+                  <span className="hidden md:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)" }}>
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
                     ⚡ Modo Arena
                   </span>

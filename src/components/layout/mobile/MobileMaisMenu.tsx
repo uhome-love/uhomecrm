@@ -43,17 +43,17 @@ export default function MobileMaisMenu({ groups, activePath, userName, userRole,
   );
 
   const Bloco = ({ children }: { children: React.ReactNode }) => (
-    <div className="overflow-hidden rounded-2xl bg-card shadow-sm [&>*+*]:border-t [&>*+*]:border-border/60">{children}</div>
+    <div className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/50 [&>*+*]:border-t [&>*+*]:border-border/60">{children}</div>
   );
 
   return (
-    <div className="flex flex-col gap-6 px-4 pb-[calc(2rem+var(--sab))] pt-2">
+    <div className="flex flex-col gap-6 px-4 pb-[calc(2rem+var(--sab))] pt-6">
       <h2 className="px-1 text-[32px] font-bold tracking-tight text-foreground">Mais</h2>
 
       <button
         type="button"
         onClick={() => go("/configuracoes")}
-        className="flex items-center gap-4 rounded-2xl bg-card p-4 text-left shadow-sm active:bg-muted"
+        className="flex items-center gap-4 rounded-2xl bg-card p-4 text-left shadow-sm ring-1 ring-border/50 outline-none active:bg-muted"
       >
         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
           {userInitials}
