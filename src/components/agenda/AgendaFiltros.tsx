@@ -1,6 +1,6 @@
 import { SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { MotivoFila } from "@/hooks/useFilaDoDia";
 import { MOTIVO_META, MOTIVO_ORDEM, type FocoAgenda } from "./agendaMeta";
