@@ -8,3 +8,4 @@
 - Fila CEO obrigatória por produto: lista de canônicos em roleta_config.fila_ceo_obrigatoria_canonicos, checada no início de distribuir_lead_atomico (vale até com p_force). Why: produto exclusivo nunca pode cair num corretor pela Roleta; chave independente das outras regras.
 - Bolsão (OA): estagnados saem da página do gerente após 7 dias (get_pipeline_estagnacao.bolsao_em); leads com visita/parceria ficam com o gerente. Why: prazo de posse do gerente antes do reaproveitamento.
 - Bolsão servidor: elegibilidade única em bolsao_elegiveis (privada), acesso só por bolsao_contagens/bolsao_puxar/bolsao_registrar e edge bolsao-aproveitar (reutiliza reactivateLead). Why: uma régua só para as duas portas e reserva atômica 1 por vez.
+- Keep Agenda presentation split into focused card, contact, filter, help and cadence components while retaining useFilaDoDia as the shared data source. Why: smaller files prevent UI changes from duplicating or altering queue rules.
