@@ -18,3 +18,9 @@
 - [x] Aprovar plano da etapa, preservando regras e estilo do computador
 - [x] Remover duplicação de Tarefas e aplicar apresentação mobile às Prioridades
 - [x] Validar prioridades, filtros e abertura/cancelamento com lead de teste, sem alterar leads reais
+
+# Roadmap — Redesign mobile: gestão
+- [ ] Preparar e apresentar mockup do Painel do CEO, mantendo os indicadores e ações atuais
+- [ ] Aprovar mockup e plano da pequena etapa antes de alterar o CRM
+- [ ] Aplicar apenas a apresentação mobile; preservar computador e regras de dados
+- [ ] Validar ao vivo com leitura dos dados e sem alterar leads reais
