@@ -12,3 +12,9 @@
 - [ ] Fase 1: credenciamento por visitas (meta 2) — 19/10
 - [ ] Fase 2: nova Minha rotina "Minha evolução"
 - [ ] Fases 3–6
+
+# Roadmap — Agenda pessoal no celular
+- [ ] Aprovar mockup visual de Prioridades e Tarefas
+- [ ] Aprovar plano da etapa, preservando regras e computador
+- [ ] Implementar apenas a apresentação mobile da Agenda pessoal
+- [ ] Validar abas, filtros e abertura/cancelamento com lead de teste, sem alterar leads reais
