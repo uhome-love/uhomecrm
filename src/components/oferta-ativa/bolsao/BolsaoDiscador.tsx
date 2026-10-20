@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Phone, MessageCircle, CheckCircle2, PhoneMissed, XCircle, Loader2 } from "lucide-react";
 import EmpreendimentoSeletor from "./EmpreendimentoSeletor";
@@ -77,7 +77,7 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     setBusy(false);
     const res = data as { ok: boolean; error?: string } | null;
     if (error || !res?.ok) {
-      toast.error(res?.error === "reserva_nao_encontrada" ? "A reserva expirou. Puxe outro cliente." : "Erro ao registrar.");
+      toast.error(res?.error === "reserva_nao_encontrada" ? "Outro corretor já pegou esse cliente." : "Erro ao registrar. Tente de novo.");
       setLead(null);
       return;
     }
@@ -116,21 +116,6 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     qc.invalidateQueries({ queryKey: ["bolsao-contagens", porta] });
   };
 
-  // Mantém a reserva viva enquanto o cliente está aberto na tela.
-  const leadId = lead?.id;
-  useEffect(() => {
-    if (!leadId) return;
-    const t = window.setInterval(async () => {
-      const { data } = await supabase.functions.invoke("bolsao-aproveitar", {
-        body: { pipeline_lead_id: leadId, acao: "renovar" },
-      });
-      const res = data as { ok?: boolean; reservado_ate?: string } | null;
-      if (res?.ok && res.reservado_ate) {
-        setLead((prev) => (prev && prev.id === leadId ? { ...prev, reservado_ate: res.reservado_ate! } : prev));
-      }
-    }, 120_000);
-    return () => window.clearInterval(t);
-  }, [leadId]);
 
   if (lead) {
     const fone = soDigitos(lead.telefone);
