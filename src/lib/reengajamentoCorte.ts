@@ -5,6 +5,7 @@
  */
 export function corteReengajamento(
   atividades: Array<{ titulo?: string | null; created_at?: string | null }> | null | undefined,
+  reaproveitadoEm?: string | null,
 ): string | null {
   let corte: string | null = null;
   for (const a of atividades || []) {
@@ -12,6 +13,8 @@ export function corteReengajamento(
     if (!a.titulo.includes("Mensagem do disparo") || !a.titulo.includes("respondeu SIM")) continue;
     if (!corte || a.created_at > corte) corte = a.created_at;
   }
+  // Lead aproveitado do Bolsão: história do novo dono começa no aproveitamento.
+  if (reaproveitadoEm && (!corte || reaproveitadoEm > corte)) corte = reaproveitadoEm;
   if (!corte) return null;
   // margem de 2 min: o registro de reativação/movimentação nasce no mesmo instante
   return new Date(new Date(corte).getTime() - 2 * 60 * 1000).toISOString();
