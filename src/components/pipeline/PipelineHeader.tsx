@@ -320,16 +320,16 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
   if (riscoFilter && clearRisco) activeChips.push({ id: "risco", label: "Em risco de estagnação", onRemove: clearRisco });
 
   return (
-    <div className="shrink-0 bg-muted/40 dark:bg-card border-b border-border sticky top-0" style={{ zIndex: 30 /* Z.headerSticky */ }}>
+    <div className="shrink-0 bg-background sm:bg-muted/40 dark:bg-card border-b border-border sticky top-0" style={{ zIndex: 30 /* Z.headerSticky */ }}>
       {/* ── HEADER ÚNICO RESPONSIVO — 3 zonas (mockup aprovado, mobile→desktop) ── */}
       <div>
         {/* ══ ZONA 1 — Identidade + ação primária ══ */}
-        <div className="flex h-12 lg:h-14 items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6">
+        <div className="flex h-14 sm:h-12 lg:h-14 items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
+            <div className="hidden sm:flex w-7 h-7 rounded-[7px] bg-primary items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
-            <span className="text-[16px] font-bold text-foreground tracking-[-0.3px] whitespace-nowrap">Pipeline</span>
+            <span className="text-[26px] sm:text-[16px] font-extrabold sm:font-bold text-foreground tracking-[-0.6px] sm:tracking-[-0.3px] whitespace-nowrap">Pipeline</span>
             <PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={gestorFilter} />
           </div>
 
@@ -339,7 +339,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 type="button"
                 onClick={() => setGanhosFilter(v => !v)}
                 title="Ver leads ganhos / vendidos"
-                className={`inline-flex items-center gap-1.5 rounded-lg h-9 px-3 text-xs font-semibold transition-colors ${ganhosFilter ? "bg-emerald-600 text-white" : "text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"}`}
+                className={`inline-flex items-center gap-1.5 rounded-full sm:rounded-lg h-9 px-3 text-xs font-semibold transition-colors ${ganhosFilter ? "bg-emerald-600 text-white" : "text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"}`}
               >
                 <Trophy size={14} strokeWidth={2} /> Ganhos
               </button>
@@ -356,7 +356,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   {focusLeadsCount > 0 && <span className="bg-white/20 rounded-md px-1.5 py-px text-[10px] font-bold">{focusLeadsCount}</span>}
                 </button>
                 {canAdd && (
-                  <button onClick={() => setAddOpen(true)} className="whitespace-nowrap inline-flex items-center gap-1.5 h-9 px-2.5 sm:px-3.5 bg-primary hover:bg-primary-600 text-white rounded-lg font-semibold text-xs cursor-pointer">
+                  <button onClick={() => setAddOpen(true)} className="whitespace-nowrap inline-flex items-center gap-1.5 h-9 px-3.5 bg-primary hover:bg-primary-600 text-primary-foreground rounded-full sm:rounded-lg font-semibold text-xs cursor-pointer">
                     <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Novo Lead</span><span className="sm:hidden">Novo</span>
                   </button>
                 )}
@@ -366,13 +366,13 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         </div>
 
         {/* ══ ZONA 2 — Navegação (abas) + lente + Sinal + toggle da 3ª linha ══ */}
-        <div className="flex min-h-12 flex-wrap items-center gap-x-3 lg:gap-x-4 gap-y-2 border-t border-border px-3 sm:px-4 lg:px-6 py-2">
-          <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-1 shrink-0">
+        <div className="flex min-h-12 flex-wrap items-center gap-x-3 lg:gap-x-4 gap-y-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
+          <div className="inline-flex items-center gap-0.5 rounded-full sm:rounded-lg sm:border border-border bg-muted p-1 shrink-0">
             {roleTabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3.5 rounded-md text-xs border-none cursor-pointer ${
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3.5 rounded-full sm:rounded-md text-[13px] sm:text-xs border-none cursor-pointer ${
                   activeTab === tab.key ? "bg-card text-foreground font-semibold shadow-sm" : "bg-transparent text-muted-foreground font-medium hover:text-foreground"
                 }`}
               >
@@ -448,20 +448,20 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               </div>
             )}
 
-            <div className="h-5 w-px bg-border" />
+            <div className="hidden sm:block h-5 w-px bg-border" />
             {toolsOpen ? (
               <button
                 onClick={() => setToolsOpen(false)}
                 aria-label="Ocultar busca e filtros"
                 title="Ocultar busca e filtros"
-                className="inline-flex items-center justify-center rounded-lg border border-border bg-muted/40 h-9 w-9 text-muted-foreground hover:text-foreground cursor-pointer"
+                className="inline-flex items-center justify-center rounded-full sm:rounded-lg sm:border border-border bg-muted sm:bg-muted/40 h-9 w-9 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <ChevronDown className="h-4 w-4 rotate-180" />
               </button>
             ) : (
               <button
                 onClick={() => setToolsOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-primary bg-primary/10 px-3 h-9 text-xs font-semibold text-primary cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-full sm:rounded-lg border border-primary bg-primary/10 px-3 h-9 text-xs font-semibold text-primary cursor-pointer"
               >
                 <SlidersHorizontal className="h-4 w-4" /> Filtros
                 {activeChips.length > 0 && <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{activeChips.length}</span>}
@@ -486,7 +486,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
         {/* ══ ZONA 3 — Ferramentas (busca + filtros + ordenação + ações) · colapsável ══ */}
         {toolsOpen && (
-        <div className="flex min-h-12 flex-wrap items-center gap-1.5 lg:gap-2 border-t border-border px-3 sm:px-4 lg:px-6 py-2">
+        <div className="flex min-h-12 flex-wrap items-center gap-1.5 lg:gap-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
           <div className="relative w-full sm:w-[150px] lg:w-[150px] xl:w-[150px] 2xl:w-[230px]">
             <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -494,7 +494,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               placeholder="Buscar lead, cliente, empreendimento…"
               value={filters.search}
               onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-              className="w-full outline-none h-9 rounded-lg bg-muted/40 border border-border pl-9 pr-8 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary"
+              className="w-full outline-none h-10 sm:h-9 rounded-full sm:rounded-lg bg-muted sm:bg-muted/40 border border-transparent sm:border-border pl-9 pr-8 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary"
             />
             {filters.search && (
               <button aria-label="Limpar busca" onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
