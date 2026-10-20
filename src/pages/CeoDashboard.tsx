@@ -1,19 +1,17 @@
 import PainelComAbas from "@/components/performance/PainelComAbas";
 import { useCeoDashboardController } from "@/hooks/useCeoDashboardController";
-import { useIsMobile } from "@/hooks/use-mobile";
 import DesktopDashboardContent from "@/components/ceo/dashboard/DesktopDashboardContent";
-import MobileDashboardContent from "@/components/ceo/dashboard/MobileDashboardContent";
-import MobileHeader from "@/components/ceo/dashboard/MobileHeader";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import BulkEmpreendimentoAssign from "@/components/ceo/BulkEmpreendimentoAssign";
 import KpiDetailDialog from "@/components/ceo/KpiDetailDialog";
 
+// Celular e computador usam a mesma tela (visual mobile novo revertido a pedido em 20/10/2026;
+// componentes Mobile* seguem em src/components/ceo/dashboard para reativar se necessário).
 export default function CeoDashboard() {
   const model = useCeoDashboardController();
-  const mobile = useIsMobile();
   return <>
-    <PainelComAbas mobileHeader={<MobileHeader model={model} />}>
-      {mobile ? <MobileDashboardContent model={model} /> : <DesktopDashboardContent model={model} />}
+    <PainelComAbas>
+      <DesktopDashboardContent model={model} />
     </PainelComAbas>
     <FilaCeoDispatchModal open={model.dispatchOpen} onOpenChange={model.setDispatchOpen} onDispatched={() => { model.reload(); model.loadFilaCeo(); }} />
     <BulkEmpreendimentoAssign open={model.bulkEmpOpen} onOpenChange={model.setBulkEmpOpen} onComplete={model.reload} />
