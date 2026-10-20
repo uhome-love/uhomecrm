@@ -15,6 +15,6 @@
 
 # Roadmap — Agenda pessoal no celular
 - [x] Mockup aprovado com ajuste: Agenda somente com Prioridades; tarefas na página própria
-- [ ] Aprovar plano da etapa, preservando regras e estilo do computador
+- [x] Aprovar plano da etapa, preservando regras e estilo do computador
 - [ ] Remover duplicação de Tarefas e aplicar apresentação mobile às Prioridades
 - [ ] Validar prioridades, filtros e abertura/cancelamento com lead de teste, sem alterar leads reais
