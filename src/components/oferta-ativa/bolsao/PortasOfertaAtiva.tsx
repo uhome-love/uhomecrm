@@ -30,13 +30,15 @@ export default function PortasOfertaAtiva({ value, onChange }: { value: Porta | 
         <button
           key={p.v}
           onClick={() => onChange(p.v)}
-          className={`rounded-xl border-2 p-3 text-left transition-colors ${
+          className={`flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors ${
             value === p.v ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted"
           }`}
         >
-          <div className="text-sm font-semibold">{p.titulo}</div>
-          {p.n !== undefined && <div className="text-2xl font-bold">{p.n}</div>}
-          <div className="text-xs text-muted-foreground">{p.desc}</div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">{p.titulo}</div>
+            <div className="text-xs text-muted-foreground">{p.desc}</div>
+          </div>
+          {p.n !== undefined && <div className="shrink-0 text-2xl font-bold">{p.n.toLocaleString("pt-BR")}</div>}
         </button>
       ))}
     </div>

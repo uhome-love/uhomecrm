@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Phone, MessageCircle, CheckCircle2, PhoneMissed, XCircle, Shuffle, Loader2 } from "lucide-react";
+import { Phone, MessageCircle, CheckCircle2, PhoneMissed, XCircle, Loader2 } from "lucide-react";
+import EmpreendimentoSeletor from "./EmpreendimentoSeletor";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -158,40 +159,32 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     );
   }
 
+  const totalSel = selecionados.length
+    ? (contagens.data ?? []).filter((c) => selecionados.includes(c.empreendimento)).reduce((s, c) => s + Number(c.total), 0)
+    : total;
+
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-4">
-      <div className="text-sm font-semibold">Empreendimento</div>
-      {contagens.isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelecionados([])}
-            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium ${
-              selecionados.length === 0 ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
-            }`}
-          >
-            <Shuffle className="h-3 w-3" /> Aleatório · {total}
-          </button>
-          {(contagens.data ?? []).map((c) => (
-            <button
-              key={c.empreendimento}
-              onClick={() => toggle(c.empreendimento)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-                selecionados.includes(c.empreendimento)
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {c.empreendimento} · {c.total}
-            </button>
-          ))}
+    <div className="rounded-xl border bg-card">
+      <div className="p-5">
+        {contagens.isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <EmpreendimentoSeletor contagens={contagens.data ?? []} selecionados={selecionados} setSelecionados={setSelecionados} />
+        )}
+        {vazio && <p className="mt-3 text-sm text-muted-foreground">Nenhum cliente disponível com esse filtro agora.</p>}
+      </div>
+      <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-b-xl border-t bg-card/95 px-5 py-3 backdrop-blur">
+        <div className="min-w-0 text-sm">
+          <span className="text-muted-foreground">Selecionado: </span>
+          <span className="font-medium">
+            {selecionados.length ? selecionados.join(", ") : "Aleatório (todos)"}
+          </span>
+          <span className="text-muted-foreground"> · {totalSel} clientes</span>
         </div>
-      )}
-      {vazio && <p className="text-sm text-muted-foreground">Nenhum cliente disponível com esse filtro agora.</p>}
-      <Button onClick={puxar} disabled={busy || total === 0} className="gap-1">
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />} Começar a ligar
-      </Button>
+        <Button onClick={puxar} disabled={busy || totalSel === 0} className="gap-1">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />} Começar a ligar
+        </Button>
+      </div>
     </div>
   );
 }
