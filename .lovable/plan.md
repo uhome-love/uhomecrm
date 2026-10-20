@@ -23,14 +23,33 @@ Corretor aproveita -> vai para o pipeline dele em "Novo Lead"
 
 Regra de entrada: só leads estagnados que **nunca tiveram visita registrada nem negócio criado**. Quem já teve visita ou negócio fica fora para sempre e continua com o gerente.
 
-## Onde fica: proposta
-Uma **nova aba "Bolsão" dentro da Oferta Ativa**, não uma página nova. O corretor já usa a Oferta Ativa para ligar, então a tela de discagem, o filtro por empreendimento (que acabou de ser feito) e o placar já estão prontos para reaproveitar.
+## Onde fica: entrada da Oferta Ativa com 3 portas
+Ao abrir a Oferta Ativa, o corretor escolhe de onde quer ligar:
+
+```text
++----------------------+----------------------+----------------------+
+| Estagnados recentes  | Descartados recentes | Listas de leads      |
+| ~985 hoje            | ~2.074 (últimos 60d) | (campanhas atuais)   |
++----------------------+----------------------+----------------------+
+        |
+        v
+Escolhe: [um ou mais empreendimentos]  ou  [Aleatório - qualquer produto]
+        |
+        v
+Tela de ligação de sempre (um cliente por vez)
+```
+
+- **Estagnados recentes**: leads que passaram os 7 dias com o gerente sem decisão.
+- **Descartados recentes**: leads descartados como reengajáveis (descarte definitivo fica fora).
+- **Listas de leads**: as campanhas da Oferta Ativa como já funcionam hoje.
+- Estagnados e descartados são **listas vivas**: cada lead que estagna (depois dos 7 dias) ou é descartado entra sozinho, sem ninguém criar lista. Quem é aproveitado sai na hora.
+- Nas três portas vale a mesma regra: **nunca entra lead com visita registrada ou negócio criado**.
+- Os descartados entram após um período de espera (ex.: 7 dias depois do descarte), para não ligar no dia seguinte a quem disse que não queria.
 
 ## Como o corretor usa: duas opções para escolher
-**Opção A: um cliente por vez, aleatório (recomendada)**
-- O corretor escolhe o empreendimento e clica em "Puxar cliente".
-- Vem 1 lead aleatório, reservado só para ele por alguns minutos.
-- Ele liga ou chama no WhatsApp e registra o resultado: Aproveitar (vai para o pipeline dele) / Não atendeu (volta para o Bolsão e só pode ser puxado de novo depois de um tempo) / Sem interesse (descartar).
+**Opção A: um cliente por vez (recomendada)**
+- Depois de escolher a porta e o empreendimento (ou Aleatório), vem 1 lead por vez, reservado só para ele por alguns minutos.
+- Ele liga ou chama no WhatsApp e registra o resultado: Aproveitar (vai para o pipeline dele) / Não atendeu (volta para a lista e só pode ser puxado de novo depois de um tempo) / Sem interesse (descartar).
 - Vantagem: ninguém escolhe só os "melhores", e é justo para todos.
 
 **Opção B: pegar um pacote de X leads**
