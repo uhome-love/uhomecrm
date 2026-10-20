@@ -14,7 +14,7 @@
 - [ ] Fases 3–6
 
 # Roadmap — Agenda pessoal no celular
-- [ ] Aprovar mockup visual de Prioridades e Tarefas
-- [ ] Aprovar plano da etapa, preservando regras e computador
-- [ ] Implementar apenas a apresentação mobile da Agenda pessoal
-- [ ] Validar abas, filtros e abertura/cancelamento com lead de teste, sem alterar leads reais
+- [x] Mockup aprovado com ajuste: Agenda somente com Prioridades; tarefas na página própria
+- [ ] Aprovar plano da etapa, preservando regras e estilo do computador
+- [ ] Remover duplicação de Tarefas e aplicar apresentação mobile às Prioridades
+- [ ] Validar prioridades, filtros e abertura/cancelamento com lead de teste, sem alterar leads reais
