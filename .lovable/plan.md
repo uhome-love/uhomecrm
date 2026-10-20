@@ -83,3 +83,23 @@ Roleta, Fila CEO (Lake Baikal continua fora), cadência Sem Contato, regras de V
 - Bolsão = leads com `estagnado = true`, `estagnado_em` há mais de 7 dias, `negocio_id` vazio e sem nenhuma visita; filtrado no servidor (página de estagnados do gerente passa a excluí-los).
 - Puxar/aproveitar por funções no servidor com trava por lead (mesmo padrão da Oferta Ativa), reaproveitando o fluxo de reativação de lead.
 - Ocultar histórico: marcar a data de "reaproveitado em" e esconder registros anteriores a ela para o corretor dono.
+
+## Regras confirmadas por você
+- Lead aproveitado que estagnar de novo: volta para o gerente, 7 dias, e depois de novo para o Bolsão.
+- Bolsão **não** tem placar próprio. Se o corretor marcar visita com um lead do Bolsão, ela conta normalmente no placar de visitas do dia (o da TV).
+- **Sem limite** de aproveitamentos por corretor.
+
+## Telas afetadas e como ficam em sintonia
+Regra-mãe: **um lead só pode estar em um lugar ativo por vez.** Quando um lead é aproveitado, sai de todos os outros na hora.
+
+- **Pipeline de Leads (ativo)**: lead aproveitado entra no pipeline do corretor em "Novo Lead", com aceite já feito, usando o mesmo fluxo de reativação que a Oferta Ativa já usa (que já checa telefone duplicado com outro lead ativo). Se o telefone já estiver ativo com outro corretor, o lead não pode ser aproveitado.
+- **Leads Estagnados (gerente)**: mostra só os 7 dias de posse, com contador "vai para o Bolsão em X dias". Depois disso o gerente não vê mais.
+- **Oferta Ativa**: ganha as 3 portas na entrada. As listas/campanhas atuais continuam iguais. A limpeza automática da Oferta Ativa (que hoje tira da base fria quem existe no pipeline, inclusive descartados) segue valendo para as **listas**; Bolsão e Descartados são portas separadas, então não há conflito.
+- **Central de Reengajamento (WhatsApp)**: hoje dispara para descartados reengajáveis. Para não ter corretor ligando e WhatsApp disparando para o mesmo lead ao mesmo tempo: lead reservado ou aproveitado no Bolsão fica fora do disparo; e lead que respondeu um disparo de reengajamento (vai para a Fila CEO) sai do Bolsão. Lead que está numa fila de disparo pendente não aparece no Bolsão até o disparo terminar.
+- **Base Única de Leads**: só leitura do que acontece. O lead aproveitado aparece como "em atendimento no CRM", como já acontece com quem está no pipeline, e sai das próximas campanhas da Oferta Ativa.
+- **Roleta e Fila CEO**: não mudam. Produtos obrigatórios da Fila CEO (Lake Baikal) **não entram** no Bolsão nem em Descartados recentes.
+- **Placar da TV**: nada novo; a visita marcada já conta como qualquer outra.
+- **Cadência Sem Contato / descarte automático em 24h**: continuam iguais; o que eles marcam como estagnado ou descartado é o que alimenta as portas.
+
+## Pontos que vou conferir antes do plano técnico
+Cada robô que hoje mexe em estagnados e descartados (cadência Sem Contato, descarte automático, varredura de descartados, disparo de reengajamento, entrada de leads novos do Meta/Site que reativa lead antigo) será revisado um por um para garantir que respeita a regra "um lugar ativo por vez".
