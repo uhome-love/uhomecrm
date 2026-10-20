@@ -1,3 +1,4 @@
+import { registrarAtividadeComAviso } from "@/lib/registrarAtividade";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -114,13 +115,13 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
     });
 
     if (user) {
-      supabase.from("pipeline_atividades").insert({
+      registrarAtividadeComAviso({
         pipeline_lead_id: leadId,
         tipo: "whatsapp",
         titulo: "WhatsApp enviado (template)",
         descricao: msg.substring(0, 200),
         created_by: user.id,
-      }).then(() => {});
+      });
       supabase.from("pipeline_leads").update({
         ultima_acao_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -138,12 +139,12 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
       window.open(getWhatsAppUrl(leadTelefone), "_blank");
     }
     if (user) {
-      supabase.from("pipeline_atividades").insert({
+      registrarAtividadeComAviso({
         pipeline_lead_id: leadId,
         tipo: "whatsapp",
         titulo: "WhatsApp enviado",
         created_by: user.id,
-      }).then(() => {});
+      });
       supabase.from("pipeline_leads").update({
         ultima_acao_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

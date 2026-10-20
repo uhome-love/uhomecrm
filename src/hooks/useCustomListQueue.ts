@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 /**
  * useCustomListQueue — Client-side queue for custom (pipeline-based) lists.
  *
@@ -191,7 +192,7 @@ export function useCustomListRegistrar() {
         ? ` (${semInteresseLabels[interesseTipo]})`
         : "";
 
-      await supabase.from("pipeline_atividades").insert({
+      await registrarAtividade({
         pipeline_lead_id: lead.id,
         created_by: user.id,
         tipo: "contato",

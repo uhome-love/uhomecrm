@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -184,7 +185,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     } as never).eq("id", leadId);
 
     // Activity capture (sempre — em todos os outcomes)
-    await supabase.from("pipeline_atividades").insert({
+    await registrarAtividade({
       pipeline_lead_id: leadId,
       tipo: tipo_contato,
       tipo_contato,

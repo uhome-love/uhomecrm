@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 import { useState, useMemo } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
@@ -188,7 +189,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
     }
     setSalvando(true);
     try {
-      await supabase.from("pipeline_atividades").insert({
+      await registrarAtividade({
         pipeline_lead_id: lead.id,
         tipo: "ligacao",
         titulo: resultado === "atendeu" ? "Liguei — atendeu" : "Liguei — não atendeu",

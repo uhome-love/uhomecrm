@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 /**
  * VisitaCompletionFlow — Fluxo fixo de conclusão de tarefa na etapa Visita.
  * Introduzido 2026-07-20.
@@ -219,7 +220,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
 
 
     const userId = (await supabase.auth.getUser()).data?.user?.id || "";
-    await supabase.from("pipeline_atividades").insert({
+    await registrarAtividade({
       pipeline_lead_id: leadId,
       tipo: "visita",
       tipo_contato: "visita",

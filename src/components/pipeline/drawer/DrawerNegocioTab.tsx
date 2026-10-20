@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -166,7 +167,7 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
     // Registra no histórico/timeline do lead
     if (pipelineLeadId && user) {
       try {
-        await supabase.from("pipeline_atividades").insert({
+        await registrarAtividade({
           pipeline_lead_id: pipelineLeadId,
           tipo: "sistema",
           titulo: "Informações do negócio atualizadas",
