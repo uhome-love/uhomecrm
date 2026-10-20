@@ -673,10 +673,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       )}
 
       {/* ── DETALHES DO LEAD — recolhível pra desafogar a coluna (declutter) ── */}
-      <Collapsible className="rounded-xl border border-border/70">
-        <CollapsibleTrigger className="group/det flex w-full items-center justify-between px-3 py-2.5 text-[12.5px] font-semibold hover:bg-muted/30 transition-colors">
-          <span className="flex items-center gap-1.5"><ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/det:rotate-90" /> Detalhes do lead</span>
-          <span className="text-[10.5px] font-normal text-muted-foreground">qualificação · empreendimento · materiais</span>
+      <Collapsible className="rounded-2xl md:rounded-xl border border-border/70 bg-card">
+        <CollapsibleTrigger className="group/det flex w-full items-center justify-between gap-3 px-4 md:px-3 py-3.5 md:py-2.5 text-[12.5px] font-semibold hover:bg-muted/30 transition-colors">
+          <span className="flex flex-col items-start text-left gap-0.5 min-w-0">
+            <span className="text-[15px] md:text-[12.5px] font-semibold text-foreground">Detalhes do lead</span>
+            <span className="text-[12px] md:text-[10.5px] font-normal text-muted-foreground truncate">Qualificação, empreendimento e materiais</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/det:rotate-90" />
         </CollapsibleTrigger>
         <CollapsibleContent className="px-2.5 pb-2.5 space-y-2">
 
