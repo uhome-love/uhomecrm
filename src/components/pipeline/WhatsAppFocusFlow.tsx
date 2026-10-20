@@ -1,3 +1,4 @@
+import { registrarAtividadeComAviso } from "@/lib/registrarAtividade";
 import { useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Copy, ExternalLink, Check, Pencil, MessageSquarePlus } from "lucide-react";
@@ -143,7 +144,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
   const registerActivity = useCallback(async () => {
     if (!user) return;
     await Promise.all([
-      supabase.from("pipeline_atividades").insert({
+      registrarAtividadeComAviso({
         pipeline_lead_id: lead.id,
         tipo: "whatsapp",
         titulo: "WhatsApp enviado",

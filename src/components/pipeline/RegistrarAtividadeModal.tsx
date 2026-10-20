@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -208,14 +209,13 @@ export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTaref
     setBusy(true);
     try {
       if (ativ && user) {
-        const { error } = await supabase.from("pipeline_atividades").insert({
+        await registrarAtividade({
           pipeline_lead_id: lead.id,
           tipo: ativ.tipo,
           titulo: ativ.label,
           descricao: textoObs || null,
           created_by: user.id,
         });
-        if (error) throw error;
       }
       // Registrar um CONTATO real (toque) cumpre os lembretes VENCIDOS do lead:
       // senão o lead volta como "atrasado" mesmo depois de atualizado (bug relatado

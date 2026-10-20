@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 // ─────────────────────────────────────────────────────────────────
 // completeLeadTask — helper compartilhado para concluir uma tarefa de LEAD
 // a partir do payload do TaskCompletionDialog. Espelha o fluxo que existe
@@ -76,7 +77,7 @@ export async function completeLeadTask({
     // Toque humano do corretor (aditivo — não substitui ultima_acao_at)
     await registrarToque(leadId);
 
-    await supabase.from("pipeline_atividades").insert({
+    await registrarAtividade({
       pipeline_lead_id: leadId,
       tipo: tipo_contato,
       tipo_contato,

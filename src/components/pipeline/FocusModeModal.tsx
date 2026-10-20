@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
@@ -506,7 +507,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
 
       // 3) Activity capture (sempre)
       const tituloAtividade = `${completingOverdue.titulo} — ${resultado}`;
-      await supabase.from("pipeline_atividades").insert({
+      await registrarAtividade({
         pipeline_lead_id: currentLead.id,
         created_by: corretorId,
         tipo: tipo_contato,

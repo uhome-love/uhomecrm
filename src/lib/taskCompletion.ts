@@ -1,3 +1,4 @@
+import { registrarAtividade } from "@/lib/registrarAtividade";
 /**
  * Orquestrador pós-conclusão de tarefa — extraído de LeadTarefasTab (2026-05-24).
  * Reusado por DrawerTasksTab (drawer v4) e potencialmente por outros consumidores
@@ -119,7 +120,7 @@ export async function runTaskCompletion(
     await registrarToque(ctx.leadId);
 
     // 3) Atividade (sempre, exceto lembrete)
-    await supabase.from("pipeline_atividades").insert({
+    await registrarAtividade({
       pipeline_lead_id: ctx.leadId,
       tipo: tipo_contato,
       tipo_contato,
