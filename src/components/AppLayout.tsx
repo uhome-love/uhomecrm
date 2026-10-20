@@ -181,8 +181,8 @@ export default function AppLayout() {
               style={{ paddingTop: "var(--sat)", height: "calc(3.5rem + var(--sat))" }}
             >
               <div className="flex items-center gap-3">
-                <SidebarTrigger className={cn("hidden md:inline-flex", theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]")} data-x={theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]"} />
-                <div className="hidden sm:flex items-center">
+                <SidebarTrigger className={cn("hidden md:inline-flex", theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]")} />
+                <div className="flex items-center">
                   <UhomeLogo size="md" />
                 </div>
                 {(isFullscreen || isSession) && (
