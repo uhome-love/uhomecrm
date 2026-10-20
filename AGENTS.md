@@ -7,3 +7,4 @@
 - Painéis CEO/diretora/gerente usam PainelComAbas (Visão geral | Performance da Roleta); dados da aba vêm só de rpc_performance_roleta (escopo por papel no servidor) — mesma régua da Minha Rotina.
 - Fila CEO obrigatória por produto: lista de canônicos em roleta_config.fila_ceo_obrigatoria_canonicos, checada no início de distribuir_lead_atomico (vale até com p_force). Why: produto exclusivo nunca pode cair num corretor pela Roleta; chave independente das outras regras.
 - Bolsão (OA): estagnados saem da página do gerente após 7 dias (get_pipeline_estagnacao.bolsao_em); leads com visita/parceria ficam com o gerente. Why: prazo de posse do gerente antes do reaproveitamento.
+- Bolsão servidor: elegibilidade única em bolsao_elegiveis (privada), acesso só por bolsao_contagens/bolsao_puxar/bolsao_registrar e edge bolsao-aproveitar (reutiliza reactivateLead). Why: uma régua só para as duas portas e reserva atômica 1 por vez.

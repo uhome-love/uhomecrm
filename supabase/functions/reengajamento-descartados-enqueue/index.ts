@@ -635,7 +635,18 @@ Deno.serve(async (req) => {
         }
         const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(cap);
         if (error) throw error;
-        return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" }));
+        // Bolsão: lead reservado agora por um corretor não recebe disparo (um lugar ativo por vez).
+        const candIds = (data || []).map((l: any) => l.id);
+        const reservados = new Set<string>();
+        for (let i = 0; i < candIds.length; i += 500) {
+          const { data: rs } = await supabase.from("bolsao_reservas")
+            .select("pipeline_lead_id")
+            .in("pipeline_lead_id", candIds.slice(i, i + 500))
+            .gt("reservado_ate", new Date().toISOString());
+          for (const r of rs || []) reservados.add((r as { pipeline_lead_id: string }).pipeline_lead_id);
+        }
+        return (data || []).filter((l: any) => !reservados.has(l.id))
+          .map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" }));
       };
 
       const dedupViaEventos = async (cand: Lead[], sourceKey: string): Promise<Lead[]> => {

@@ -1237,6 +1237,42 @@ export type Database = {
         }
         Relationships: []
       }
+      bolsao_reservas: {
+        Row: {
+          cooldown_ate: string | null
+          corretor_id: string | null
+          created_at: string
+          pipeline_lead_id: string
+          porta: string
+          reservado_ate: string | null
+          tentativas: number
+          ultimo_resultado: string | null
+          updated_at: string
+        }
+        Insert: {
+          cooldown_ate?: string | null
+          corretor_id?: string | null
+          created_at?: string
+          pipeline_lead_id: string
+          porta?: string
+          reservado_ate?: string | null
+          tentativas?: number
+          ultimo_resultado?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cooldown_ate?: string | null
+          corretor_id?: string | null
+          created_at?: string
+          pipeline_lead_id?: string
+          porta?: string
+          reservado_ate?: string | null
+          tentativas?: number
+          ultimo_resultado?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brevo_contacts: {
         Row: {
           brevo_id: string | null
@@ -10880,6 +10916,7 @@ export type Database = {
           radar_status_imovel: string | null
           radar_tipologia: string | null
           radar_valor_max: number | null
+          reaproveitado_em: string | null
           reativado_em: string | null
           reativado_por_nutricao: boolean
           reciclagem_aviso_at: string | null
@@ -10997,6 +11034,7 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          reaproveitado_em?: string | null
           reativado_em?: string | null
           reativado_por_nutricao?: boolean
           reciclagem_aviso_at?: string | null
@@ -11114,6 +11152,7 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          reaproveitado_em?: string | null
           reativado_em?: string | null
           reativado_por_nutricao?: boolean
           reciclagem_aviso_at?: string | null
@@ -16822,6 +16861,28 @@ export type Database = {
           ultima_conversao_em: string
           ultimo_formulario: string
         }[]
+      }
+      bolsao_contagens: {
+        Args: { p_porta: string }
+        Returns: {
+          empreendimento: string
+          total: number
+        }[]
+      }
+      bolsao_elegiveis: {
+        Args: { p_porta: string }
+        Returns: {
+          empreendimento_label: string
+          lead_id: string
+        }[]
+      }
+      bolsao_puxar: {
+        Args: { p_empreendimentos?: string[]; p_porta: string }
+        Returns: Json
+      }
+      bolsao_registrar: {
+        Args: { p_lead_id: string; p_resultado: string }
+        Returns: Json
       }
       buscar_conhecimento: {
         Args: {

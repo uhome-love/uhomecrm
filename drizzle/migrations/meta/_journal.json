@@ -120,6 +120,13 @@
       "when": 1792512461822,
       "tag": "0016_bolsao_fase1_prazo_gerente",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792512645522,
+      "tag": "0017_bolsao_fase2_servidor",
+      "breakpoints": true
     }
   ]
 }
