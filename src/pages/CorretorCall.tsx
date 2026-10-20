@@ -18,7 +18,7 @@ import BolsaoDiscador from "@/components/oferta-ativa/bolsao/BolsaoDiscador";
 export default function CorretorCall() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("call");
-  const [porta, setPorta] = useState<Porta>("listas");
+  const [porta, setPorta] = useState<Porta | null>(null);
 
   // Mantém o badge leve de sessão (não escurece a tela)
   useEffect(() => {
@@ -54,8 +54,14 @@ export default function CorretorCall() {
         </TabsList>
 
         <TabsContent value="call" className="mt-3 space-y-3">
+          {!porta && (
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">Para quem você quer ligar hoje?</h2>
+              <p className="text-sm text-muted-foreground">Escolha uma opção. Depois você escolhe o empreendimento.</p>
+            </div>
+          )}
           <PortasOfertaAtiva value={porta} onChange={setPorta} />
-          {porta === "listas" ? (
+          {!porta ? null : porta === "listas" ? (
             <CorretorEntrada onSair={() => navigate("/corretor")} />
           ) : (
             <BolsaoDiscador key={porta} porta={porta} />
