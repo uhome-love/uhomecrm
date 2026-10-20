@@ -22,6 +22,7 @@ import MeuFocoHoje from "@/components/corretor/rotina/MeuFocoHoje";
 import AtalhosRotina from "@/components/corretor/rotina/AtalhosRotina";
 import ProximaVisitaCard from "@/components/corretor/rotina/ProximaVisitaCard";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
+import { useIsMobile } from "@/hooks/use-mobile";
 import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
 
 
@@ -52,6 +53,7 @@ export default function CorretorDashboard() {
     .toUpperCase();
 
   const motivation = useDailyMotivation();
+  const isMobile = useIsMobile();
   const [focusOpen] = useState(false);
   const { data: perf } = useRoletaPerformanceStatus();
   const horaBRT = Number(new Date().toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }));
@@ -72,8 +74,28 @@ export default function CorretorDashboard() {
 
 
 
-      {/* 1. Saudação HOMI (gradient inline — intocado) */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      {/* 1. Celular: título grande estilo iPhone + próxima visita + atalhos redondos */}
+      {isMobile && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium capitalize text-muted-foreground">{dataFormatada}</p>
+              <h1 className="truncate text-[30px] font-bold leading-tight tracking-tight text-foreground">{saudacao}, {primeiroNome}</h1>
+            </div>
+            {avatarSrc ? (
+              <img src={avatarSrc} alt={profile?.nome || "Avatar"} className="h-12 w-12 shrink-0 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">{initials || "?"}</div>
+            )}
+          </div>
+          <p className="text-sm italic text-muted-foreground">"{motivation}"</p>
+          <ProximaVisitaCard />
+          <AtalhosRotina variante="redondo" />
+        </motion.div>
+      )}
+
+      {/* 1. Saudação HOMI (gradient inline — computador) */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="hidden md:block">
         <div
           className="rounded-2xl p-5 text-primary-foreground relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary"
         >
@@ -116,10 +138,12 @@ export default function CorretorDashboard() {
           <MinhaEvolucaoKpis />
           <MeuFocoHoje />
         </div>
-        <div className="w-full lg:w-[280px] shrink-0 space-y-3.5">
-          <ProximaVisitaCard />
-          <AtalhosRotina />
-        </div>
+        {!isMobile && (
+          <div className="w-full lg:w-[280px] shrink-0 space-y-3.5">
+            <ProximaVisitaCard />
+            <AtalhosRotina />
+          </div>
+        )}
       </div>
 
       {/* FocusModeModal montado (mantido) */}
