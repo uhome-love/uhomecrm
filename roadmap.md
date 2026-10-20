@@ -21,6 +21,6 @@
 
 # Roadmap — Redesign mobile: gestão
 - [x] Preparar e apresentar mockup do Painel do CEO, mantendo os indicadores e ações atuais
-- [ ] Aprovar mockup e plano da pequena etapa antes de alterar o CRM
+- [x] Aprovar mockup e plano da pequena etapa antes de alterar o CRM
 - [ ] Aplicar apenas a apresentação mobile; preservar computador e regras de dados
 - [ ] Validar ao vivo com leitura dos dados e sem alterar leads reais
