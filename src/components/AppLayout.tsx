@@ -41,6 +41,8 @@ import { HomiProvider } from "@/contexts/HomiContext";
 import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
+import MobileBottomNav from "@/components/layout/mobile/MobileBottomNav";
+import { useIsMobile } from "@/hooks/use-mobile";
 const homiMascot = "/images/homi-mascot-official.png";
 
 const HomiProactiveAlert = lazy(() => import("@/components/homi/HomiProactiveAlert"));
@@ -84,6 +86,7 @@ export default function AppLayout() {
   const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const { isFullscreen, isSession } = useArenaMode();
   const { tabs, activeTabId } = useTabContext();
+  const isMobile = useIsMobile();
 
 
   // Derive role for the new Sidebar.
@@ -178,8 +181,8 @@ export default function AppLayout() {
               style={{ paddingTop: "var(--sat)", height: "calc(3.5rem + var(--sat))" }}
             >
               <div className="flex items-center gap-3">
-                <SidebarTrigger className={theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]"} />
-                <div className="hidden sm:flex items-center">
+                <SidebarTrigger className={cn("hidden md:inline-flex", theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]")} />
+                <div className="flex items-center">
                   <UhomeLogo size="md" />
                 </div>
                 {(isFullscreen || isSession) && (
@@ -304,7 +307,7 @@ export default function AppLayout() {
             <PushPromptBanner />
             <TelefoneFaltandoBanner />
 
-            <TabBar />
+            {!isMobile && <TabBar />}
             
             <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-background">
               {tabs.map(tab => {
@@ -318,7 +321,7 @@ export default function AppLayout() {
                       "absolute inset-0 overflow-y-auto overflow-x-hidden",
                       !tab.noPadding && "p-4 sm:p-6 lg:p-8"
                     )}
-                    style={{ display: isActiveTab ? 'block' : 'none' }}
+                    style={{ display: isActiveTab ? 'block' : 'none', paddingBottom: isMobile ? "calc(6rem + var(--sab))" : undefined }}
                   >
                     <ErrorBoundary module={tab.componentKey}>
                       <Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
@@ -346,6 +349,7 @@ export default function AppLayout() {
         />
         {isCorretor && !isAdmin && !isDiretor && !isGestor && <VisitaPendenteBloqueio />}
         {isCorretor && !isAdmin && !isDiretor && !isGestor && <ComunicadoTarefas />}
+        {isMobile && !isFullscreen && <MobileBottomNav role={sidebarRole} />}
         <NewLeadBanner />
         <GlobalSearch />
         <BackendHealthBanner />

@@ -956,3 +956,28 @@ body.arena-mode [data-sidebar] {
 .lp-casatua button, .lp-casatua input { font-family: inherit; }
 .lp-noscroll { scrollbar-width: none; }
 .lp-noscroll::-webkit-scrollbar { display: none; }
+
+/* ── Mobile app feel (iPhone) ── */
+@media (max-width: 767px) {
+  /* iOS dá zoom ao focar campo com fonte < 16px: forçar 16px no celular */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px !important;
+  }
+  html, body {
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  button, a { touch-action: manipulation; }
+}
+
+@layer components {
+  .mobile-glass {
+    background-color: hsl(var(--background) / 0.82);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+}
