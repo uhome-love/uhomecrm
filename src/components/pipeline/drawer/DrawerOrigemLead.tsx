@@ -13,7 +13,7 @@ interface Props {
 /** Linhas da origem do lead (de onde veio, anúncio, formulário) — estilo lista do iPhone. */
 export default function DrawerOrigemLead({ origem, campanha, conjunto, anuncio, formulario, plataforma, entrouEm }: Props) {
   let entrou: string | null = null;
-  if (entrouEm) entrou = formatBRT(entrouEm, "dd/MM/yyyy 'às' HH:mm", "") || null;
+  if (entrouEm) entrou = (() => { const d = formatBRT(entrouEm, "dd/MM/yyyy", ""); const h = formatBRT(entrouEm, "HH:mm", ""); return d ? `${d} às ${h}` : null; })();
   const rows = [
     { k: "Origem", v: origem },
     { k: "Plataforma", v: plataforma },
