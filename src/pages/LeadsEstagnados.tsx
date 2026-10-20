@@ -547,6 +547,17 @@ function LeadRow({
                 </span>
               </>
             )}
+            {lead.bolsao_em && (() => {
+              const dias = Math.max(0, Math.ceil((new Date(lead.bolsao_em).getTime() - Date.now()) / 86_400_000));
+              return (
+                <>
+                  <span className="opacity-40">·</span>
+                  <span className="rounded-md bg-warning/15 px-1.5 py-0.5 font-medium text-warning-foreground">
+                    Vai para o Bolsão {dias <= 0 ? "hoje" : `em ${dias} ${dias === 1 ? "dia" : "dias"}`}
+                  </span>
+                </>
+              );
+            })()}
           </div>
         </button>
       </div>
