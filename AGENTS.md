@@ -9,3 +9,4 @@
 - Bolsão (OA): estagnados saem da página do gerente após 7 dias (get_pipeline_estagnacao.bolsao_em); leads com visita/parceria ficam com o gerente. Why: prazo de posse do gerente antes do reaproveitamento.
 - Bolsão servidor: elegibilidade única em bolsao_elegiveis (privada), acesso só por bolsao_contagens/bolsao_puxar/bolsao_registrar e edge bolsao-aproveitar (reutiliza reactivateLead). Why: uma régua só para as duas portas e reserva atômica 1 por vez.
 - Keep Agenda presentation split into focused card, contact, filter, help and cadence components while retaining useFilaDoDia as the shared data source. Why: smaller files prevent UI changes from duplicating or altering queue rules.
+- Keep CEO dashboard actions and derived data in a shared controller, with focused desktop and mobile presentation sections. Why: both layouts must display the same metrics and invoke the same existing actions without duplicating queries or business rules.
