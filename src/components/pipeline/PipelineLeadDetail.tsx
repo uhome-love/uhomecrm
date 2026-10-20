@@ -41,7 +41,7 @@ import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
 import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
 import DrawerEmpreendimento from "./drawer/DrawerEmpreendimento";
-import LeadMateriaisPanel from "./drawer/LeadMateriaisPanel";
+import DrawerOrigemLead from "./drawer/DrawerOrigemLead";
 import DrawerAnotarDialog from "./drawer/DrawerAnotarDialog";
 import DrawerProximaAcao, { parseNextActionType } from "./drawer/DrawerProximaAcao";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
@@ -677,7 +677,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <CollapsibleTrigger className="group/det flex w-full items-center justify-between gap-3 px-4 md:px-3 py-3.5 md:py-2.5 text-[12.5px] font-semibold hover:bg-muted/30 transition-colors">
           <span className="flex flex-col items-start text-left gap-0.5 min-w-0">
             <span className="text-[15px] md:text-[12.5px] font-semibold text-foreground">Detalhes do lead</span>
-            <span className="text-[12px] md:text-[10.5px] font-normal text-muted-foreground truncate">Qualificação, empreendimento e materiais</span>
+            <span className="text-[12px] md:text-[10.5px] font-normal text-muted-foreground truncate">Origem, anúncio e formulário</span>
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/det:rotate-90" />
         </CollapsibleTrigger>
@@ -703,20 +703,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           else if (lead.formulario) parts.push(lead.formulario);
           return parts.join(" · ") || null;
         })()}
-        tentativasContato={callAttempts}
-        diasNaEtapa={Math.floor(hoursInStage / 24)}
-        diasDesdeUltimoContato={daysSinceLastAction}
         onEdit={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
       />
 
-      {/* Materiais relevantes para o lead (Fase 5 — Hub de Materiais) */}
-      <LeadMateriaisPanel
-        leadId={lead.id}
-        empreendimento={lead.empreendimento}
-        observacoes={lead.observacoes}
-        origemDetalhe={lead.origem_detalhe}
-        imovelCodigo={lead.imovel_codigo}
-        telefone={lead.telefone}
+      {/* Origem do lead — de onde veio, anúncio e formulário */}
+      <DrawerOrigemLead
+        origem={getOrigemLabel(lead.origem)?.label ?? lead.origem}
+        plataforma={lead.plataforma}
+        campanha={lead.campanha}
+        conjunto={lead.conjunto_anuncio}
+        anuncio={lead.anuncio}
+        formulario={lead.formulario}
+        entrouEm={lead.created_at}
       />
 
 

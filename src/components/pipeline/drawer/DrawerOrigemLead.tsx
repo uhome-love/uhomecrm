@@ -1,4 +1,4 @@
-import { formatBRT } from "@/lib/formatBRT";
+import { formatBRT } from "@/lib/brtTime";
 
 interface Props {
   origem?: string | null;
@@ -13,7 +13,7 @@ interface Props {
 /** Linhas da origem do lead (de onde veio, anúncio, formulário) — estilo lista do iPhone. */
 export default function DrawerOrigemLead({ origem, campanha, conjunto, anuncio, formulario, plataforma, entrouEm }: Props) {
   let entrou: string | null = null;
-  if (entrouEm) { try { entrou = formatBRT(entrouEm, "dd/MM/yyyy 'às' HH:mm"); } catch { entrou = null; } }
+  if (entrouEm) entrou = formatBRT(entrouEm, "dd/MM/yyyy 'às' HH:mm", "") || null;
   const rows = [
     { k: "Origem", v: origem },
     { k: "Plataforma", v: plataforma },
