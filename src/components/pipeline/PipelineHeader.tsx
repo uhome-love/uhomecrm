@@ -274,6 +274,12 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
       : `${filteredLeadsCount} leads`;
 
   // ── Colapsar a 3ª linha (ferramentas) — lembra a escolha por usuário ──
+  const [compactTop, setCompactTop] = useState(false);
+  useEffect(() => {
+    const h = (e: Event) => setCompactTop(Boolean((e as CustomEvent<boolean>).detail));
+    window.addEventListener("pipeline-mobile-scroll", h);
+    return () => window.removeEventListener("pipeline-mobile-scroll", h);
+  }, []);
   const [toolsOpen, setToolsOpen] = useState<boolean>(() => {
     try { return localStorage.getItem("pipeline_tools_open") !== "0"; } catch { return true; }
   });
@@ -322,7 +328,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
   return (
     <div className="shrink-0 bg-background sm:bg-muted/40 dark:bg-card border-b border-border sticky top-0" style={{ zIndex: 30 /* Z.headerSticky */ }}>
       {/* ── HEADER ÚNICO RESPONSIVO — 3 zonas (mockup aprovado, mobile→desktop) ── */}
-      <div>
+      <div className={`transition-all duration-300 overflow-hidden sm:overflow-visible sm:max-h-none sm:opacity-100 ${compactTop && !toolsOpen ? "max-h-0 opacity-0" : "max-h-[600px] opacity-100"}`}>
         {/* ══ ZONA 1 — Identidade + ação primária ══ */}
         <div className="flex h-14 sm:h-12 lg:h-14 items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
@@ -339,9 +345,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 type="button"
                 onClick={() => setGanhosFilter(v => !v)}
                 title="Ver leads ganhos / vendidos"
-                className={`inline-flex items-center gap-1.5 rounded-full sm:rounded-lg h-9 px-3 text-xs font-semibold transition-colors ${ganhosFilter ? "bg-emerald-600 text-white" : "text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"}`}
+                className={`inline-flex items-center justify-center gap-1.5 rounded-full sm:rounded-lg h-10 w-10 sm:w-auto sm:h-9 sm:px-3 text-xs font-semibold transition-colors ${ganhosFilter ? "bg-emerald-600 text-white" : "bg-muted sm:bg-transparent text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"}`}
               >
-                <Trophy size={14} strokeWidth={2} /> Ganhos
+                <Trophy size={16} strokeWidth={2} /> <span className="hidden sm:inline">Ganhos</span>
               </button>
             )}
             {activeTab === "kanban" && (
@@ -356,8 +362,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   {focusLeadsCount > 0 && <span className="bg-white/20 rounded-md px-1.5 py-px text-[10px] font-bold">{focusLeadsCount}</span>}
                 </button>
                 {canAdd && (
-                  <button onClick={() => setAddOpen(true)} className="whitespace-nowrap inline-flex items-center gap-1.5 h-9 px-3.5 bg-primary hover:bg-primary-600 text-primary-foreground rounded-full sm:rounded-lg font-semibold text-xs cursor-pointer">
-                    <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Novo Lead</span><span className="sm:hidden">Novo</span>
+                  <button onClick={() => setAddOpen(true)} className="whitespace-nowrap inline-flex items-center gap-1.5 justify-center h-10 w-10 sm:w-auto sm:h-9 sm:px-3.5 bg-primary hover:bg-primary-600 text-primary-foreground rounded-full sm:rounded-lg font-semibold text-xs cursor-pointer">
+                    <Plus className="h-5 w-5 sm:h-[13px] sm:w-[13px]" strokeWidth={2} /> <span className="hidden sm:inline">Novo Lead</span>
                   </button>
                 )}
               </>
@@ -366,17 +372,17 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         </div>
 
         {/* ══ ZONA 2 — Navegação (abas) + lente + Sinal + toggle da 3ª linha ══ */}
-        <div className="flex min-h-12 flex-wrap items-center gap-x-3 lg:gap-x-4 gap-y-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
+        <div className="flex min-h-12 flex-nowrap sm:flex-wrap items-center gap-x-2 sm:gap-x-3 lg:gap-x-4 gap-y-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
           <div className="inline-flex items-center gap-0.5 rounded-full sm:rounded-lg sm:border border-border bg-muted p-1 shrink-0">
             {roleTabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3.5 rounded-full sm:rounded-md text-[13px] sm:text-xs border-none cursor-pointer ${
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3 sm:px-3.5 rounded-full sm:rounded-md text-[13px] sm:text-xs border-none cursor-pointer ${
                   activeTab === tab.key ? "bg-card text-foreground font-semibold shadow-sm" : "bg-transparent text-muted-foreground font-medium hover:text-foreground"
                 }`}
               >
-                {tab.icon} {tab.label}
+                <span className="hidden sm:inline-flex">{tab.icon}</span> {tab.label}
               </button>
             ))}
           </div>
@@ -388,7 +394,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             </div>
           )}
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {activeTab === "kanban" && (
               <PipelineFiltroBadges
                 showEstagnado={showEstagnado}
@@ -461,10 +467,10 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             ) : (
               <button
                 onClick={() => setToolsOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full sm:rounded-lg border border-primary bg-primary/10 px-3 h-9 text-xs font-semibold text-primary cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-full sm:rounded-lg border border-primary bg-primary/10 justify-center w-9 sm:w-auto sm:px-3 h-9 text-xs relative font-semibold text-primary cursor-pointer"
               >
-                <SlidersHorizontal className="h-4 w-4" /> Filtros
-                {activeChips.length > 0 && <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{activeChips.length}</span>}
+                <SlidersHorizontal className="h-4 w-4" /> <span className="hidden sm:inline">Filtros</span>
+                {activeChips.length > 0 && <span className="absolute -top-1 -right-1 sm:static inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{activeChips.length}</span>}
               </button>
             )}
           </div>
