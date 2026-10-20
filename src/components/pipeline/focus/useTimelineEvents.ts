@@ -79,7 +79,7 @@ export function useTimelineEvents(leadId: string | null | undefined): UseTimelin
           .limit(30),
         supabase
           .from("pipeline_leads")
-          .select("id, created_at, nome")
+          .select("id, created_at, nome, reaproveitado_em")
           .eq("id", leadId)
           .maybeSingle(),
       ]);
@@ -139,7 +139,7 @@ export function useTimelineEvents(leadId: string | null | undefined): UseTimelin
 
       merged.sort((a, b) => (a.at < b.at ? 1 : -1));
       // Lead reengajado: corretor vê só a partir do SIM ao disparo (gestão vê tudo).
-      const corte = isGestor ? null : corteReengajamento(atRes.data as any);
+      const corte = isGestor ? null : corteReengajamento(atRes.data, leadRes.data?.reaproveitado_em ?? null);
       setEvents(corte ? merged.filter((e) => e.kind === "tarefa_pendente" || e.at >= corte) : merged);
       setLoading(false);
     })();

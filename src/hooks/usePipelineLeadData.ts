@@ -69,7 +69,7 @@ export interface PipelineHistorico {
 export async function fetchLeadDetailData(leadId: string) {
   // Uma onda só: tudo que a aba História precisa vai junto (antes, visita_eventos
   // e lia_estado eram useEffect separados, criando uma 3ª onda de requisições).
-  const [atRes, anRes, taRes, hiRes, veRes, liaRes] = await Promise.all([
+  const [atRes, anRes, taRes, hiRes, veRes, liaRes, plRes] = await Promise.all([
     supabase.from("pipeline_atividades").select("*").eq("pipeline_lead_id", leadId).order("data", { ascending: false }),
     supabase.from("pipeline_anotacoes").select("*").eq("pipeline_lead_id", leadId).order("fixada", { ascending: false }).order("created_at", { ascending: false }),
     supabase.from("pipeline_tarefas").select("*").eq("pipeline_lead_id", leadId).order("created_at", { ascending: false }),
@@ -78,6 +78,7 @@ export async function fetchLeadDetailData(leadId: string) {
       .select("id, tipo, status_anterior, status_novo, data_anterior, data_nova, ator_id, created_at")
       .eq("pipeline_lead_id", leadId).order("created_at", { ascending: false }),
     supabase.from("lia_estado").select("telefone").eq("lead_id", leadId).maybeSingle(),
+    supabase.from("pipeline_leads").select("reaproveitado_em").eq("id", leadId).maybeSingle(),
   ]);
   return {
     atividades: (atRes.data || []) as PipelineAtividade[],
@@ -86,6 +87,7 @@ export async function fetchLeadDetailData(leadId: string) {
     historico: (hiRes.data || []) as PipelineHistorico[],
     visitaEventos: (veRes.data || []) as any[],
     temLiaConversa: !!(liaRes.data as any)?.telefone,
+    reaproveitadoEm: (plRes.data?.reaproveitado_em ?? null) as string | null,
   };
 }
 
@@ -123,7 +125,7 @@ export function usePipelineLeadData(leadId: string | null) {
     if (!d) return null;
     // Lead reengajado: corretor vê só a partir da mensagem do disparo respondida com SIM.
     // Gestão (gestor/diretor/admin) continua vendo tudo. Nada é apagado.
-    const corte = isGestor || rolesLoading ? null : corteReengajamento(d.atividades);
+    const corte = isGestor || rolesLoading ? null : corteReengajamento(d.atividades, d.reaproveitadoEm);
     if (!corte) return d;
     const after = (x: { created_at?: string | null }) => !x.created_at || x.created_at >= corte;
     return {
