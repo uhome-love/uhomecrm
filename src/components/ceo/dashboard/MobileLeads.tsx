@@ -1,9 +1,10 @@
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
+import type { KpiDetailType } from "@/components/ceo/KpiDetailDialog";
 import { Button } from "@/components/ui/button";
 import { MobileSection, MobileKpiRail, MobileDisclosure, MobileDataRow } from "./MobilePrimitives";
 
 export default function MobileLeads({ model: m }: { model: CeoDashboardController }) {
-  const detail = (type: Parameters<typeof m.setKpiDetail>[0] extends infer _T ? "total_leads" | "reaproveitados_oa" | "enviados_roleta" | "presentes_hoje" : never, label: string) => () => m.setKpiDetail({ type, label });
+  const detail = (type: KpiDetailType, label: string) => () => m.setKpiDetail({ type, label });
   const empSum = m.leadsPorEmpreendimento.reduce((s, x) => s + x.count, 0);
   const corretorSum = m.leadsPorCorretor.reduce((s, x) => s + x.count, 0);
   return <MobileSection title="Roleta de leads" suffix={<span className="text-[11px] text-muted-foreground">{m.periodoLabel}</span>}>

@@ -68,13 +68,13 @@ export function useCeoDashboardController() {
       if (error) throw error;
       if (!data || data.length === 0) return {};
       return {
-        meta_ligacoes: data.reduce((a: number, m: any) => a + (m.meta_ligacoes || 0), 0),
-        meta_visitas_marcadas: data.reduce((a: number, m: any) => a + (m.meta_visitas_marcadas || 0), 0),
-        meta_visitas_realizadas: data.reduce((a: number, m: any) => a + (m.meta_visitas_realizadas || 0), 0),
-        meta_vgv_assinado: data.reduce((a: number, m: any) => a + (m.meta_vgv_assinado || 0), 0),
-        meta_propostas: data.reduce((a: number, m: any) => a + (m.meta_propostas || 0), 0),
-        meta_contratos: data.reduce((a: number, m: any) => a + (m.meta_contratos || 0), 0),
-        meta_assinados: data.reduce((a: number, m: any) => a + (m.meta_assinados || 0), 0),
+        meta_ligacoes: data.reduce((a, m) => a + (m.meta_ligacoes || 0), 0),
+        meta_visitas_marcadas: data.reduce((a, m) => a + (m.meta_visitas_marcadas || 0), 0),
+        meta_visitas_realizadas: data.reduce((a, m) => a + (m.meta_visitas_realizadas || 0), 0),
+        meta_vgv_assinado: data.reduce((a, m) => a + (m.meta_vgv_assinado || 0), 0),
+        meta_propostas: data.reduce((a, m) => a + (m.meta_propostas || 0), 0),
+        meta_contratos: data.reduce((a, m) => a + (m.meta_contratos || 0), 0),
+        meta_assinados: data.reduce((a, m) => a + (m.meta_assinados || 0), 0),
       };
     },
     staleTime: 5 * 60 * 1000,
@@ -226,8 +226,8 @@ export function useCeoDashboardController() {
     propostas: acc.propostas + t.propostas, vgv: acc.vgv + t.vgv,
   }), { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0, visitasRealizadas: 0, propostas: 0, vgv: 0 });
 
-  const totalNeg = negocioFases.reduce((a: number, f: any) => a + f.count, 0);
-  const negTotalVgv = negocioFases.reduce((a: number, f: any) => a + f.vgv, 0);
+  const totalNeg = negocioFases.reduce((a, f) => a + f.count, 0);
+  const negTotalVgv = negocioFases.reduce((a, f) => a + f.vgv, 0);
   // "Contrato" = fase canônica intermediária (contrato gerado/em assinatura)
   const contratoGerado = negocioFases.find((f) => f.fase === "contrato_gerado");
   const vgvContrato = contratoGerado?.vgv || 0;
