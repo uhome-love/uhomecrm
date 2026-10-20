@@ -140,7 +140,7 @@ export function useTimelineEvents(leadId: string | null | undefined): UseTimelin
       merged.sort((a, b) => (a.at < b.at ? 1 : -1));
       // Lead reengajado: corretor vê só a partir do SIM ao disparo (gestão vê tudo).
       const corte = isGestor ? null : corteReengajamento(atRes.data, leadRes.data?.reaproveitado_em ?? null);
-      setEvents(corte ? merged.filter((e) => e.kind === "tarefa_pendente" || e.at >= corte) : merged);
+      setEvents(corte ? merged.filter((e) => (e.kind === "tarefa_pendente" && !leadRes.data?.reaproveitado_em) || e.at >= corte) : merged);
       setLoading(false);
     })();
 

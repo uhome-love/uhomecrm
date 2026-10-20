@@ -132,7 +132,7 @@ export function usePipelineLeadData(leadId: string | null) {
       ...d,
       atividades: d.atividades.filter(after),
       anotacoes: d.anotacoes.filter(after),
-      tarefas: d.tarefas.filter((t) => t.status === "pendente" || t.status === "em_andamento" || after(t)),
+      tarefas: d.tarefas.filter((t) => (!d.reaproveitadoEm && t.status === "pendente") || (!d.reaproveitadoEm && t.status === "em_andamento") || after(t)),
       historico: d.historico.filter(after),
       visitaEventos: d.visitaEventos.filter(after),
     };
