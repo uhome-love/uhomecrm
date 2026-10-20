@@ -173,7 +173,7 @@ function VisitaCompactCard({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-[10px] border transition-all cursor-pointer group",
+        "flex items-center gap-2.5 px-3.5 py-3 md:px-3 md:py-2 rounded-2xl md:rounded-[10px] border transition-all cursor-pointer group active:scale-[0.99]",
         isColleague
           ? "bg-muted/60 dark:bg-white/3 border-border/60 dark:border-white/5"
           : "bg-card border-border",
@@ -186,7 +186,7 @@ function VisitaCompactCard({
       <div className={cn("w-2 h-2 rounded-full shrink-0", STATUS_DOT_COLORS[visita.status] || "bg-muted-foreground")} />
 
       {/* Time */}
-      <span className="text-[12px] font-mono font-semibold text-foreground w-[42px] shrink-0">
+      <span className="text-[14px] md:text-[12px] font-mono font-semibold text-foreground w-[46px] md:w-[42px] shrink-0">
         {visita.hora_visita ? visita.hora_visita.slice(0, 5) : "—"}
       </span>
 
@@ -194,7 +194,7 @@ function VisitaCompactCard({
       <div className="flex flex-col min-w-0 flex-1 gap-0.5">
         <div className="flex items-center gap-2 min-w-0">
           <span className={cn(
-            "text-[12px] font-semibold truncate min-w-0",
+            "text-[15px] md:text-[12px] font-semibold truncate min-w-0",
             isDone && visita.status !== "realizada" ? "text-muted-foreground line-through" : isDone ? "text-muted-foreground" : "text-foreground"
           )}>
             {visita.nome_cliente}
@@ -222,7 +222,7 @@ function VisitaCompactCard({
         {(visita.empreendimento || (showCorretor && visita.corretor_nome) || isOverdue) && (
           <div className="flex items-center gap-2 sm:hidden min-w-0">
             {visita.empreendimento && (
-              <span className="text-[10px] text-muted-foreground truncate">{visita.empreendimento}</span>
+              <span className="text-[12px] text-muted-foreground truncate">{visita.empreendimento}</span>
             )}
             {showCorretor && visita.corretor_nome && (
               <span className={cn("text-[10px] font-medium truncate", isColleague ? "text-primary" : "text-neutral-500")}>
@@ -249,7 +249,7 @@ function VisitaCompactCard({
         {visita.status !== "realizada" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkRealizada(visita); }}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-success-500/10 text-success-500 transition-colors"
+            className="w-9 h-9 md:w-7 md:h-7 flex items-center justify-center rounded-full md:rounded-md hover:bg-success-500/10 text-success-500 transition-colors"
             title="Marcar como Realizada"
             aria-label="Marcar como Realizada"
           >
@@ -259,7 +259,7 @@ function VisitaCompactCard({
         {visita.status !== "no_show" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkNoShow(visita.id); }}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-danger-500/10 text-danger-500 transition-colors"
+            className="w-9 h-9 md:w-7 md:h-7 flex items-center justify-center rounded-full md:rounded-md hover:bg-danger-500/10 text-danger-500 transition-colors"
             title="Marcar como No-show"
             aria-label="Marcar como No-show"
           >
@@ -269,7 +269,7 @@ function VisitaCompactCard({
         {isDone && (
           <button
             onClick={(e) => { e.stopPropagation(); onReabrir(visita.id); }}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-primary/10 text-primary transition-colors"
+            className="w-9 h-9 md:w-7 md:h-7 flex items-center justify-center rounded-full md:rounded-md hover:bg-primary/10 text-primary transition-colors"
             title="Reabrir visita (voltar para Marcada)"
             aria-label="Reabrir visita"
           >
@@ -686,7 +686,7 @@ export default function AgendaVisitas() {
   );
 
   return (
-    <div className="bg-background p-6 -m-6 min-h-full space-y-4">
+    <div className="bg-background p-4 -m-4 md:p-6 md:-m-6 min-h-full space-y-4">
 
       {/* ═══════ HEADER ═══════ */}
       <PageHeader
@@ -732,13 +732,13 @@ export default function AgendaVisitas() {
 
         {/* Row 2: busca + filtros */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[160px] max-w-[280px]">
+          <div className="relative w-full md:w-auto md:flex-1 min-w-[160px] md:max-w-[280px]">
             <Search size={13} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               placeholder="Buscar cliente, empreend. ou corretor..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] focus:border-primary transition-all outline-none text-foreground placeholder:text-muted-foreground"
+              className="text-[12px] pl-8 pr-3 h-[40px] md:h-[32px] rounded-xl w-full bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] focus:border-primary transition-all outline-none text-foreground placeholder:text-muted-foreground"
             />
             {searchTerm && (
               <button onClick={() => setSearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-neutral-500">
@@ -810,7 +810,7 @@ export default function AgendaVisitas() {
       </div>
 
       {/* ═══════ KPIs ═══════ */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="flex md:grid overflow-x-auto no-scrollbar snap-x -mx-4 px-4 md:mx-0 md:px-0 md:grid-cols-3 lg:grid-cols-6 gap-2 [&>*]:min-w-[132px] [&>*]:snap-start md:[&>*]:min-w-0">
         <StatCard label="Agendadas" value={agendadasPeriodo ?? 0} tone="primary" accent />
         <StatCard label="Total" value={kpis.total} tone="primary" />
         <StatCard
@@ -869,13 +869,13 @@ export default function AgendaVisitas() {
       )}
 
       {/* ═══════ PERIOD PILLS + VIEW TOGGLE ═══════ */}
-      <div className="flex items-center gap-1 flex-wrap">
+      <div className="flex items-center gap-1 flex-nowrap md:flex-wrap overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
         {PERIOD_OPTIONS.map(p => (
           <button
             key={p.key}
             onClick={() => setPeriod(p.key)}
             className={cn(
-              "px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-all",
+              "px-3.5 py-2 md:px-3 md:py-1.5 rounded-full md:rounded-[8px] text-[13px] md:text-[12px] font-medium transition-all shrink-0 whitespace-nowrap",
               period === p.key
                 ? "bg-primary text-white"
                 : "text-neutral-500 bg-white dark:bg-white/5 border border-border dark:border-white/10 hover:text-foreground dark:hover:text-white"
@@ -884,7 +884,7 @@ export default function AgendaVisitas() {
             {p.label}
           </button>
         ))}
-        <span className="text-[11px] text-muted-foreground ml-2">
+        <span className="text-[11px] text-muted-foreground ml-2 shrink-0 whitespace-nowrap">
           {dateRange.from === dateRange.to
             ? format(new Date(dateRange.from + "T12:00:00"), "dd/MM/yyyy")
             : `${format(new Date(dateRange.from + "T12:00:00"), "dd/MM")} — ${format(new Date(dateRange.to + "T12:00:00"), "dd/MM")}`
