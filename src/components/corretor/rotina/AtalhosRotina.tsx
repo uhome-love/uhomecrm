@@ -2,8 +2,36 @@ import { useNavigate } from "react-router-dom";
 import { Phone, Users, ListChecks, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function AtalhosRotina() {
+const ATALHOS = [
+  { label: "Oferta Ativa", path: "/corretor/call", icon: Phone },
+  { label: "Clientes", path: "/pipeline-leads", icon: Users },
+  { label: "Tarefas", path: "/tarefas", icon: ListChecks },
+  { label: "Agenda", path: "/agenda-visitas", icon: CalendarDays },
+];
+
+export default function AtalhosRotina({ variante = "lista" }: { variante?: "lista" | "redondo" }) {
   const navigate = useNavigate();
+
+  if (variante === "redondo") {
+    return (
+      <div className="grid grid-cols-4 gap-2">
+        {ATALHOS.map(({ label, path, icon: Icon }) => (
+          <button
+            key={path}
+            type="button"
+            onClick={() => navigate(path)}
+            className="flex flex-col items-center gap-1.5 transition-transform active:scale-90"
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30">
+              <Icon className="h-6 w-6" />
+            </span>
+            <span className="text-xs font-medium text-foreground">{label}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <section className="rounded-xl border border-border bg-card p-4">
       <h2 className="mb-3 text-sm font-bold text-foreground">Atalhos</h2>
