@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Phone, MessageCircle, CheckCircle2, PhoneMissed, XCircle, Loader2 } from "lucide-react";
 import EmpreendimentoSeletor from "./EmpreendimentoSeletor";
@@ -97,20 +97,40 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     setBusy(false);
     const res = data as { ok?: boolean; error?: string } | null;
     if (error || !res?.ok) {
+      const code = res?.error;
       const msg =
-        res?.error === "DUPLICATE_ACTIVE"
+        code === "DUPLICATE_ACTIVE"
           ? "Esse telefone já está ativo com outro corretor."
-          : res?.error === "RESERVA_EXPIRADA"
-            ? "A reserva expirou. Puxe outro cliente."
-            : "Não foi possível aproveitar.";
+          : code === "RESERVA_DE_OUTRO"
+            ? "Sua reserva venceu e outro corretor já pegou esse cliente."
+            : code === "NAO_ELEGIVEL"
+              ? "Esse cliente não está mais disponível para aproveitar."
+              : "Não foi possível aproveitar agora. Tente de novo.";
       toast.error(msg);
-      setLead(null);
+      // Só fecha o cliente quando não há como tentar de novo.
+      if (code === "DUPLICATE_ACTIVE" || code === "RESERVA_DE_OUTRO" || code === "NAO_ELEGIVEL") setLead(null);
       return;
     }
     toast.success(`${lead.nome} agora está no seu pipeline, em Novo Lead.`);
     setLead(null);
     qc.invalidateQueries({ queryKey: ["bolsao-contagens", porta] });
   };
+
+  // Mantém a reserva viva enquanto o cliente está aberto na tela.
+  const leadId = lead?.id;
+  useEffect(() => {
+    if (!leadId) return;
+    const t = window.setInterval(async () => {
+      const { data } = await supabase.functions.invoke("bolsao-aproveitar", {
+        body: { pipeline_lead_id: leadId, acao: "renovar" },
+      });
+      const res = data as { ok?: boolean; reservado_ate?: string } | null;
+      if (res?.ok && res.reservado_ate) {
+        setLead((prev) => (prev && prev.id === leadId ? { ...prev, reservado_ate: res.reservado_ate! } : prev));
+      }
+    }, 120_000);
+    return () => window.clearInterval(t);
+  }, [leadId]);
 
   if (lead) {
     const fone = soDigitos(lead.telefone);
