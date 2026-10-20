@@ -20,6 +20,7 @@ import UhomeLogo from "@/components/UhomeLogo";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMutiraoAtivo } from "@/hooks/useMutiraoAtivo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import MobileMaisMenu from "@/components/layout/mobile/MobileMaisMenu";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -597,17 +598,24 @@ export default function Sidebar({
     </>
   );
 
-  // Mobile: render as Sheet drawer
+  // Mobile: tela "Mais" (estilo Ajustes do iPhone), aberta pela barra de baixo
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent
-          side="left"
-          className={cn("w-[260px] p-0 flex flex-col", isDark ? "bg-[#0c0c0e]" : "bg-[#e8e8f0]")}
-        >
-          <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
-          <div className="flex flex-col h-full overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-            {renderFullNav()}
+        <SheetContent side="bottom" className="h-[94dvh] rounded-t-3xl border-0 bg-muted/60 p-0 backdrop-blur-xl">
+          <SheetTitle className="sr-only">Mais</SheetTitle>
+          <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
+          <div className="h-full overflow-y-auto pt-2" style={{ scrollbarWidth: "none" }}>
+            <MobileMaisMenu
+              groups={groups}
+              activePath={location.pathname}
+              userName={userName}
+              userRole={userRole}
+              userInitials={userInitials}
+              isDark={isDark}
+              onThemeToggle={onThemeToggle}
+              go={(path) => { go(path); setOpenMobile(false); }}
+            />
           </div>
         </SheetContent>
       </Sheet>
