@@ -32,23 +32,23 @@ export default function CorretorCall() {
   return (
     <div className="w-full max-w-[1600px] mx-auto px-3 md:px-4 py-3 space-y-3">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="inline-flex h-9 flex-wrap">
-          <TabsTrigger value="call" className="gap-1.5">
+        <TabsList className="flex h-10 w-full justify-start overflow-x-auto md:inline-flex md:w-auto" style={{ scrollbarWidth: "none" }}>
+          <TabsTrigger value="call" className="shrink-0 gap-1.5">
             <Phone className="h-3.5 w-3.5" /> Ligar
           </TabsTrigger>
-          <TabsTrigger value="bases" className="gap-1.5">
+          <TabsTrigger value="bases" className="shrink-0 gap-1.5">
             <Layers className="h-3.5 w-3.5" /> Bases
           </TabsTrigger>
-          <TabsTrigger value="reservados" className="gap-1.5">
+          <TabsTrigger value="reservados" className="shrink-0 gap-1.5">
             <Bookmark className="h-3.5 w-3.5" /> Reservados
           </TabsTrigger>
-          <TabsTrigger value="aproveitados" className="gap-1.5">
+          <TabsTrigger value="aproveitados" className="shrink-0 gap-1.5">
             <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
           </TabsTrigger>
-          <TabsTrigger value="resultados" className="gap-1.5">
+          <TabsTrigger value="resultados" className="shrink-0 gap-1.5">
             <BarChart3 className="h-3.5 w-3.5" /> Meus resultados
           </TabsTrigger>
-          <TabsTrigger value="ranking" className="gap-1.5">
+          <TabsTrigger value="ranking" className="shrink-0 gap-1.5">
             <Trophy className="h-3.5 w-3.5" /> Ranking
           </TabsTrigger>
         </TabsList>

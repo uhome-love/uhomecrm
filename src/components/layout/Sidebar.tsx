@@ -602,7 +602,7 @@ export default function Sidebar({
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent side="bottom" className="h-[94dvh] rounded-t-3xl border-0 bg-muted/60 p-0 backdrop-blur-xl">
+        <SheetContent side="bottom" className="h-[94dvh] rounded-t-3xl border-0 bg-background p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <SheetTitle className="sr-only">Mais</SheetTitle>
           <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
           <div className="h-full overflow-y-auto pt-2" style={{ scrollbarWidth: "none" }}>
