@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Phone, MessageSquare, StickyNote } from "lucide-react";
+import { Phone, MessageSquare, StickyNote, CalendarPlus, ListPlus } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type DrawerActionKey = "ligar" | "whatsapp" | "anotar";
 
@@ -8,18 +9,52 @@ interface Props {
   onLigar: () => void;
   onWhatsapp: () => void;
   onAnotar: () => void;
+  /** Só no celular: atalhos redondos extras. */
+  onVisita?: () => void;
+  onTarefa?: () => void;
   /** Botão que ganha destaque primário (cor cheia) — geralmente derivado da próxima ação. */
   primary?: DrawerActionKey;
 }
 
 /**
- * Linha limpa de ações principais do drawer.
- * 3 botões numa linha: Ligar / WhatsApp / Anotar.
- * Hierarquia contextual: o botão correspondente à próxima ação vira primário (cor cheia).
+ * Ações principais do drawer.
+ * Desktop: 3 botões (Ligar / WhatsApp / Anotar).
+ * Celular: botões redondos grandes estilo iPhone (Ligar / WhatsApp / Visita / Tarefa / Anotar).
  */
 export default function DrawerActionGrid({
-  hasPhone, onLigar, onWhatsapp, onAnotar, primary,
+  hasPhone, onLigar, onWhatsapp, onAnotar, onVisita, onTarefa, primary,
 }: Props) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    const round: { key: string; label: string; icon: typeof Phone; onClick?: () => void; disabled?: boolean; tone: string }[] = [
+      { key: "ligar", label: "Ligar", icon: Phone, onClick: onLigar, disabled: !hasPhone, tone: "bg-primary text-primary-foreground" },
+      { key: "whatsapp", label: "WhatsApp", icon: MessageSquare, onClick: onWhatsapp, disabled: !hasPhone, tone: "bg-emerald-600 text-white" },
+      { key: "visita", label: "Visita", icon: CalendarPlus, onClick: onVisita, tone: "bg-muted text-foreground" },
+      { key: "tarefa", label: "Tarefa", icon: ListPlus, onClick: onTarefa, tone: "bg-muted text-foreground" },
+      { key: "anotar", label: "Anotar", icon: StickyNote, onClick: onAnotar, tone: "bg-muted text-foreground" },
+    ];
+    return (
+      <div className="flex items-start justify-between gap-1 py-1">
+        {round.filter(a => a.onClick).map((a) => (
+          <button
+            key={a.key}
+            type="button"
+            onClick={a.onClick}
+            disabled={a.disabled}
+            aria-label={a.label}
+            className="flex flex-1 flex-col items-center gap-1.5 min-w-0 disabled:opacity-40 active:scale-95 transition-transform"
+          >
+            <span className={`flex h-14 w-14 items-center justify-center rounded-full shadow-sm ${a.tone}`}>
+              <a.icon className="h-6 w-6" strokeWidth={2} />
+            </span>
+            <span className="text-[12px] font-semibold text-foreground truncate max-w-full">{a.label}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   const items: { key: DrawerActionKey; label: string; icon: typeof Phone; onClick: () => void; disabled?: boolean; primaryColor: string }[] = [
     { key: "ligar", label: "Ligar", icon: Phone, onClick: onLigar, disabled: !hasPhone, primaryColor: "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:text-white" },
     { key: "whatsapp", label: "WhatsApp", icon: MessageSquare, onClick: onWhatsapp, disabled: !hasPhone, primaryColor: "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 hover:text-white" },
