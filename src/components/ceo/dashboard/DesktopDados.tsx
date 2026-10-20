@@ -1,13 +1,10 @@
-import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CheckCircle2, XCircle, Phone, CalendarCheck, DollarSign, Users, BarChart3, Building2, Target, Megaphone, UserCheck, Activity, Eye } from "lucide-react";
+import { CheckCircle2, Megaphone, UserCheck, Activity, Eye } from "lucide-react";
 import { StateWrapper } from "@/components/ui/StateWrapper";
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
-import type { KpiDetailType } from "@/components/ceo/KpiDetailDialog";
-import { MiniKpi, SectionLabel, HBar, formatBRLCompact, ORIGIN_COLORS, FALLBACK_COLORS } from "./DesktopPrimitives";
+import { SectionLabel, formatBRLCompact } from "./DesktopPrimitives";
+
 
 export default function DesktopDados({ model }: { model: CeoDashboardController }) {
   const { navigate, isAdmin, alertas, vgvEmRisco, teams, corretoresRank, origens, totalLeadsPeriodo, presentesHoje, reload, errors } = model;
@@ -16,22 +13,22 @@ export default function DesktopDados({ model }: { model: CeoDashboardController 
         <SectionLabel icon={Activity}>Dados Gerais</SectionLabel>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Marketing */}
-          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+          <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <Megaphone className="h-3.5 w-3.5 text-primary" /> Marketing
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--ceo-desktop-solid)] dark:bg-muted/50 border border-[var(--ceo-desktop-line)] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Total Leads Gerados</span>
                 <span className="text-sm font-bold text-primary">{totalLeadsPeriodo}</span>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--ceo-desktop-solid)] dark:bg-muted/50 border border-[var(--ceo-desktop-line)] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Origens Ativas</span>
                 <span className="text-sm font-bold">{origens.length}</span>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--ceo-desktop-solid)] dark:bg-muted/50 border border-[var(--ceo-desktop-line)] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Top Origem</span>
                 <span className="text-sm font-bold">{origens[0]?.origem || "—"}</span>
               </div>
@@ -44,22 +41,22 @@ export default function DesktopDados({ model }: { model: CeoDashboardController 
           </Card>
 
           {/* RH */}
-          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+          <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <UserCheck className="h-3.5 w-3.5 text-primary" /> RH & Equipe
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--ceo-desktop-solid)] dark:bg-muted/50 border border-[var(--ceo-desktop-line)] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Presentes Hoje</span>
                 <span className="text-sm font-bold text-success">{presentesHoje}</span>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--ceo-desktop-solid)] dark:bg-muted/50 border border-[var(--ceo-desktop-line)] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Equipes Ativas</span>
                 <span className="text-sm font-bold">{teams.length}</span>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-muted/50 border border-[#e8e8f0] dark:border-border">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--ceo-desktop-solid)] dark:bg-muted/50 border border-[var(--ceo-desktop-line)] dark:border-border">
                 <span className="text-[11px] text-muted-foreground">Total Corretores</span>
                 <span className="text-sm font-bold">{corretoresRank.length}</span>
               </div>
@@ -72,7 +69,7 @@ export default function DesktopDados({ model }: { model: CeoDashboardController 
           </Card>
 
           {/* Alertas & Info */}
-          <Card className="bg-[#f7f7fb] dark:bg-card border-border shadow-none">
+          <Card className="bg-[var(--ceo-desktop-surface)] dark:bg-card border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
                 <Eye className="h-3.5 w-3.5 text-primary" /> Alertas & Atenção

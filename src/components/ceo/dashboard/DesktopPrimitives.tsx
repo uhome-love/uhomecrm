@@ -4,16 +4,16 @@ import { StatCard } from "@/components/ui/StatCard";
 import { fmtMoney } from "@/lib/fmtMoney";
 export const formatBRLCompact = (v: number) => fmtMoney(v, "short");
 export const ORIGIN_COLORS: Record<string, string> = {
-  meta_ads: "#4969FF", "Meta Ads": "#4969FF",
-  "TikTok Ads": "#ec4899",
-  "Landing Page": "#10b981",
-  imovelweb: "#f97316", ImovelWeb: "#f97316",
-  site_uhome: "#06b6d4", "Site - uhome.com.br": "#06b6d4",
-  jetimob: "#6366f1", indicacao: "#8b5cf6",
-  whatsapp: "#22c55e", rd_station: "#f59e0b",
-  "Oferta Ativa": "#4969FF",
+  meta_ads: "var(--ceo-chart-primary)", "Meta Ads": "var(--ceo-chart-primary)",
+  "TikTok Ads": "var(--ceo-chart-pink)",
+  "Landing Page": "var(--ceo-chart-green)",
+  imovelweb: "var(--ceo-chart-orange)", ImovelWeb: "var(--ceo-chart-orange)",
+  site_uhome: "var(--ceo-chart-cyan)", "Site - uhome.com.br": "var(--ceo-chart-cyan)",
+  jetimob: "var(--ceo-chart-indigo)", indicacao: "var(--ceo-chart-purple)",
+  whatsapp: "var(--ceo-chart-won)", rd_station: "var(--ceo-chart-yellow)",
+  "Oferta Ativa": "var(--ceo-chart-primary)",
 };
-export const FALLBACK_COLORS = ["#4969FF","#ec4899","#10b981","#f97316","#06b6d4","#6366f1","#8b5cf6","#f59e0b","#ef4444","#14b8a6"];
+export const FALLBACK_COLORS = ["var(--ceo-chart-primary)","var(--ceo-chart-pink)","var(--ceo-chart-green)","var(--ceo-chart-orange)","var(--ceo-chart-cyan)","var(--ceo-chart-indigo)","var(--ceo-chart-purple)","var(--ceo-chart-yellow)","var(--ceo-chart-red)","var(--ceo-chart-teal)"];
 
 // ─── Section Label ───
 export function SectionLabel({ children, icon: Icon }: { children: string; icon: LucideIcon }) {
@@ -87,7 +87,7 @@ export function HBar({ label, value, max, color }: { label: string; value: numbe
         <span className="truncate text-muted-foreground group-hover/bar:text-foreground transition-colors">{label}</span>
         <span className="font-semibold text-foreground ml-2 shrink-0">{value}</span>
       </div>
-      <div className="h-2 rounded-full bg-[#e8e8f0] dark:bg-muted/60 overflow-hidden">
+      <div className="h-2 rounded-full bg-[var(--ceo-desktop-line)] dark:bg-muted/60 overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
     </div>

@@ -9,6 +9,7 @@ import DesktopNegocios from "./DesktopNegocios";
 import DesktopOferta from "./DesktopOferta";
 import DesktopDados from "./DesktopDados";
 
+
 export default function DesktopDashboardContent({ model: m }: { model: CeoDashboardController }) {
   return <div className="bg-background p-4 -m-4 sm:p-6 sm:-m-6 min-h-full space-y-5">
     <DesktopHeader model={m} />

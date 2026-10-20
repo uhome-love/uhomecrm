@@ -212,6 +212,41 @@
     --pipeline-tab-active-bg: 0 0% 100%;
     --pipeline-progress-track: 240 5% 96%;
     --pipeline-empty-icon-bg: 239 84% 67%;
+
+    /* CEO desktop: retain existing surfaces and chart palette across extraction. */
+    --ceo-desktop-surface: #f7f7fb;
+    --ceo-desktop-line: #e8e8f0;
+    --ceo-desktop-solid: #ffffff;
+    --ceo-desktop-solid-60: rgb(255 255 255 / 0.6);
+    --ceo-desktop-solid-50: rgb(255 255 255 / 0.5);
+    --ceo-desktop-solid-04: rgb(255 255 255 / 0.04);
+    --ceo-desktop-solid-02: rgb(255 255 255 / 0.02);
+    --ceo-desktop-line-50: rgb(232 232 240 / 0.5);
+    --ceo-desktop-approve-hover: #059669;
+    --ceo-chart-primary: #4969FF;
+    --ceo-chart-pink: #ec4899;
+    --ceo-chart-green: #10b981;
+    --ceo-chart-orange: #f97316;
+    --ceo-chart-cyan: #06b6d4;
+    --ceo-chart-indigo: #6366f1;
+    --ceo-chart-purple: #8b5cf6;
+    --ceo-chart-yellow: #f59e0b;
+    --ceo-chart-red: #ef4444;
+    --ceo-chart-teal: #14b8a6;
+    --ceo-chart-proposal: #F59E0B;
+    --ceo-chart-contract: #8B5CF6;
+    --ceo-chart-won: #22C55E;
+    --ceo-chart-fallback: #a1a1aa;
+    --ceo-funnel-0: hsl(240, 70%, 55%);
+    --ceo-funnel-1: hsl(225, 70%, 58%);
+    --ceo-funnel-2: hsl(210, 70%, 61%);
+    --ceo-funnel-3: hsl(195, 70%, 64%);
+    --ceo-funnel-4: hsl(180, 70%, 67%);
+    --ceo-funnel-5: hsl(165, 70%, 70%);
+    --ceo-funnel-6: hsl(150, 70%, 73%);
+    --ceo-funnel-7: hsl(135, 70%, 76%);
+    --ceo-funnel-8: hsl(120, 70%, 79%);
+    --ceo-funnel-9: hsl(105, 70%, 82%);
   }
 
   /* Dark mode — slate neutro-frio com ESCADA DE ELEVAÇÃO real (fundo < card <
@@ -959,6 +994,10 @@ body.arena-mode [data-sidebar] {
 
 /* ── Mobile app feel (iPhone) ── */
 @media (max-width: 767px) {
+  .ceo-mobile {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0;
+  }
   /* iOS dá zoom ao focar campo com fonte < 16px: forçar 16px no celular */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   textarea,
