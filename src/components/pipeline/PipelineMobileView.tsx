@@ -115,6 +115,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
+    window.dispatchEvent(new CustomEvent("pipeline-mobile-scroll", { detail: el.scrollTop > 40 }));
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 300) {
       setVisibleCount(prev => Math.min(prev + LOAD_BATCH, stageLeads.length));
     }

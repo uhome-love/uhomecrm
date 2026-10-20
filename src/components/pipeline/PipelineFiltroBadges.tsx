@@ -31,7 +31,7 @@ function InfoOciosidade() {
           onClick={(e) => e.stopPropagation()}
           aria-label="Como funciona a cor do lead"
           title="Como funciona a cor do lead"
-          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="hidden sm:inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <HelpCircle className="h-4 w-4" />
         </button>
