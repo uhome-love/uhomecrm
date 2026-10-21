@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import AttemptModal from "./AttemptModal";
 import CustomListAttemptModal from "./CustomListAttemptModal";
+import DialingMobileView from "./mobile/DialingMobileView";
 import ScriptPanel from "./ScriptPanel";
 import AttemptHistory from "./AttemptHistory";
 import ScoringLegend from "./ScoringLegend";
@@ -1220,7 +1221,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           >
             <ArrowLeft className="h-3 w-3" /> Listas
           </Button>
-          <span className="text-muted-foreground">
+          <span className="hidden text-muted-foreground md:inline">
             Lead <strong style={{ color: "var(--arena-text)" }}>#{sessionLeadsServed + 1}</strong> · ROUND {sessionLeadsServed + 1} · {lead.empreendimento}
           </span>
           {/* Empreendimento filter for campaign mode */}
@@ -1245,7 +1246,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-emerald-400/70">🔒 Reservado</span>
+          <span className="hidden text-[10px] text-emerald-400/70 md:inline">🔒 Reservado</span>
           <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />{formatSessionTime(sessionSeconds)}</span>
           {streak >= 2 && (
             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>
@@ -1300,43 +1301,24 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       </div>
 
 
-      {/* ═══ MOBILE: Tabs ═══ */}
+      {/* ═══ MOBILE: tela única do cliente ═══ */}
       {isMobile ? (
-        <div className="space-y-2">
-          <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--arena-card-bg)" }}>
-            {([
-              { key: "lead" as const, label: "Lead", emoji: "👤" },
-              { key: "script" as const, label: "Script", emoji: "📋" },
-              { key: "whatsapp" as const, label: "Resultado", emoji: "📊" },
-            ]).map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setMobileTab(tab.key)}
-                className="flex-1 py-2 rounded-md text-xs font-semibold transition-all"
-                style={{
-                  background: mobileTab === tab.key ? "rgba(59,130,246,0.2)" : "transparent",
-                  color: mobileTab === tab.key ? "#93C5FD" : "#6B7280",
-                  border: mobileTab === tab.key ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
-                }}
-              >
-                {tab.emoji} {tab.label}
-              </button>
-            ))}
-          </div>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={mobileTab}
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              transition={{ duration: 0.2 }}
-            >
-              {mobileTab === "lead" && LeadColumn}
-              {mobileTab === "script" && ToolsColumn}
-              {mobileTab === "whatsapp" && ResultColumn}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+        <DialingMobileView
+          lead={lead}
+          callActive={callActive}
+          callTimerLabel={formatTimer(callTimer)}
+          disabled={showModal || showResultPopup || submitting}
+          roteiro={ToolsColumn}
+          onLigar={() => handleAction("ligacao")}
+          onWhatsApp={handleWhatsAppDuringCall}
+          onEncerrar={handleOpenResultPopup}
+          onResultado={(key) => {
+            if (key === "agendar" || key === "com_interesse") { handlePopupResult(key); return; }
+            stopTimer();
+            setShowResultPopup(true);
+            handlePopupResult(key);
+          }}
+        />
       ) : (
         /* ═══ DESKTOP: 2-column layout (55|45) — viewport height ═══ */
         <div
