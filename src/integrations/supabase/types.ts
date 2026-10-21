@@ -18301,6 +18301,15 @@ export type Database = {
         Args: { p_notificar?: boolean; p_semana_inicio?: string }
         Returns: number
       }
+      roleta_janela_cred_aberta: {
+        Args: { p_janela: string }
+        Returns: boolean
+      }
+      roleta_janela_cred_faixa: {
+        Args: { p_janela: string }
+        Returns: Record<string, unknown>
+      }
+      roleta_janela_cred_msg: { Args: { p_janela: string }; Returns: string }
       roleta_marcar_presenca:
         | {
             Args: {
