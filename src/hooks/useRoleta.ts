@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { pedidoDentroDaJanela, mensagemJanelaFechada } from "@/lib/roletaJanelaCred";
 import { supabase } from "@/integrations/supabase/client";
 import { filaCeoStageOrFilter } from "@/lib/filaCeoStages";
 import { useAuth } from "@/hooks/useAuth";

@@ -18,6 +18,8 @@ import CorretoresBloqueadosPanel from "@/components/roleta/CorretoresBloqueadosP
 import PendingLeadsPanel from "@/components/pipeline/PendingLeadsPanel";
 import DistributionDashboard from "@/components/pipeline/DistributionDashboard";
 import { MapeamentoMetaTab } from "./MapeamentoMetaTab";
+import { CentralRoletaMobile } from "./mobile/CentralRoletaMobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
@@ -89,6 +91,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 export function CentralRoletaCeo() {
   const roleta = useRoleta();
+  const isMobile = useIsMobile();
   const { loading, fila, pendentesCount } = roleta;
   const windowInfo = getCurrentWindowInfo();
 
@@ -105,11 +108,44 @@ export function CentralRoletaCeo() {
 
   const currentGroup = NAV_GROUPS.find((g) => g.key === activeGroup) ?? NAV_GROUPS[0];
 
+  const renderConteudo = (sub: string) => (
+    <>
+      {sub === "board" && <RoletaOperacaoTab roleta={roleta} />}
+      {sub === "pendentes" && <PendingLeadsPanel />}
+      {sub === "bloqueados" && <CorretoresBloqueadosPanel />}
+      {sub === "gerados" && <LeadsGeradosTab />}
+      {sub === "roletagens" && <RoletagensTab view="roletagens" />}
+      {sub === "perdidos" && <RoletagensTab view="perdidos" />}
+      {sub === "whatsapp" && <WhatsAppEntradasTab />}
+      {sub === "metricas" && <RoletaMetricasTab />}
+      {sub === "inteligencia" && <LeadIntelligenceTab />}
+      {sub === "parametros" && <RoletaConfigTab />}
+      {sub === "mapeamento" && <MapeamentoMetaTab />}
+      {sub === "performance" && <DistributionDashboard />}
+    </>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <>
+        <CentralRoletaMobile
+          roleta={roleta}
+          onIncluir={() => setShowIncluirModal(true)}
+          outrasAbas={NAV_GROUPS.filter((g) => g.key !== "operacao").flatMap((g) =>
+            g.subs.map((s) => ({ value: s.value, label: s.label, grupo: g.label }))
+          )}
+          renderConteudo={renderConteudo}
+        />
+        <RoletaIncluirModal roleta={roleta} open={showIncluirModal} onOpenChange={setShowIncluirModal} />
+      </>
     );
   }
 
