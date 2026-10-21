@@ -1318,42 +1318,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             handlePopupResult(key);
           }}
         />
-      ) : false ? (
-        <div className="space-y-2">
-          <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--arena-card-bg)" }}>
-            {([
-              { key: "lead" as const, label: "Lead", emoji: "👤" },
-              { key: "script" as const, label: "Script", emoji: "📋" },
-              { key: "whatsapp" as const, label: "Resultado", emoji: "📊" },
-            ]).map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setMobileTab(tab.key)}
-                className="flex-1 py-2 rounded-md text-xs font-semibold transition-all"
-                style={{
-                  background: mobileTab === tab.key ? "rgba(59,130,246,0.2)" : "transparent",
-                  color: mobileTab === tab.key ? "#93C5FD" : "#6B7280",
-                  border: mobileTab === tab.key ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
-                }}
-              >
-                {tab.emoji} {tab.label}
-              </button>
-            ))}
-          </div>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={mobileTab}
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              transition={{ duration: 0.2 }}
-            >
-              {mobileTab === "lead" && LeadColumn}
-              {mobileTab === "script" && ToolsColumn}
-              {mobileTab === "whatsapp" && ResultColumn}
-            </motion.div>
-          </AnimatePresence>
-        </div>
       ) : (
         /* ═══ DESKTOP: 2-column layout (55|45) — viewport height ═══ */
         <div
