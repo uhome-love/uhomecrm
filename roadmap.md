@@ -30,7 +30,7 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 
 # Roadmap — Redesign mobile: o que falta
 - [x] 1. Zoom restante (já coberto pela regra geral de 16px no celular)
-- [ ] 2. Tarefas — aguardando mockup aprovado
+- [x] 2. Tarefas (concluir/adiar de verdade com cliente de teste ainda não feito)
 - [ ] 3. Oferta Ativa na ligação + Mutirão
 - [ ] 4. Negócios
 - [ ] 5. Roleta (corretor e gestão)
