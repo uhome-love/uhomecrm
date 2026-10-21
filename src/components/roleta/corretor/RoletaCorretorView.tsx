@@ -246,6 +246,13 @@ export function RoletaCorretorView() {
   }
 
   // Pending approval
+  if (meuCredenciamento?.status === "pendente" && isMobile) {
+    return (
+      <RoletaAvisoMobile subtitulo={subtituloMobile} icone="⏳" titulo="Aguardando aprovação">
+        <p>Seu pedido foi enviado. Assim que aprovado, você entra na fila sozinho.</p>
+      </RoletaAvisoMobile>
+    );
+  }
   if (meuCredenciamento?.status === "pendente") {
     return (
       <div className="max-w-lg mx-auto space-y-6 py-8">
@@ -276,6 +283,14 @@ export function RoletaCorretorView() {
   }
 
   // Not credenciado — check if within credenciamento window
+  if (!windowInfo.credenciamentoAberto && isMobile) {
+    return (
+      <RoletaAvisoMobile subtitulo={subtituloMobile} icone="🔒" titulo="Entrada fechada">
+        <p>Manhã 07:00–09:30 · Tarde 12:00–13:30 · Noite 18:30–21:30</p>
+        <p>Próxima abertura em <CountdownTimer target={windowInfo.proximaTransicao} /></p>
+      </RoletaAvisoMobile>
+    );
+  }
   if (!windowInfo.credenciamentoAberto) {
     return (
       <div className="max-w-lg mx-auto space-y-6 py-8">
