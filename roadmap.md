@@ -32,7 +32,7 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [x] 1. Zoom restante (já coberto pela regra geral de 16px no celular)
 - [x] 2. Tarefas (concluir/adiar de verdade com cliente de teste ainda não feito)
 - [x] 3. Oferta Ativa na ligação — A (Bolsão) e B (Listas) feitas; Mutirão cancelado (não será usado)
-- [ ] 4. Negócios
+- [x] 4. Negócios — já vivem dentro do Pipeline (etapas Em Negociação/Contrato), que já foi redesenhado
 - [ ] 5. Roleta (corretor e gestão)
 - [x] 6. Painéis gerente/diretora — não redesenhar (decisão do Lucas)
 - [ ] 7. Relatórios e tabelas
