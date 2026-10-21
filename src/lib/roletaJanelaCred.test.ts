@@ -15,4 +15,8 @@ describe("janela de credenciamento da Roleta (BRT)", () => {
     expect(pedidoDentroDaJanela("noturna", new Date("2026-10-21T00:29:00Z"))).toBe(true); // 21:29
     expect(pedidoDentroDaJanela("noturna", new Date("2026-10-21T00:30:00Z"))).toBe(false);
   });
+  it("noturna abre às 18:00 e recusa 17:59", () => {
+    expect(pedidoDentroDaJanela("noturna", new Date("2026-10-21T21:00:00Z"))).toBe(true); // 18:00
+    expect(pedidoDentroDaJanela("noturna", new Date("2026-10-21T20:59:00Z"))).toBe(false); // 17:59
+  });
 });
