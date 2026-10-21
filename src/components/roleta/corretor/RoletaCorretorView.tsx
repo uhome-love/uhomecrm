@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { RoletaEntrarMobile, type JanelaOpcao } from "./mobile/RoletaEntrarMobile";
+import { RoletaNaFilaMobile, RoletaAvisoMobile } from "./mobile/RoletaNaFilaMobile";
 import {
   useRoleta,
   getCurrentWindowInfo,
@@ -53,6 +56,7 @@ function CountdownTimer({ target }: { target: Date }) {
 
 export function RoletaCorretorView() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   // Uhome Performance: com a chave do CRM ligada, a noite segue a regra dos outros turnos.
   const { data: perfStatus } = useRoletaPerformanceStatus();
   const noturnaSemRequisitos = !!perfStatus?.crm_gate_ativo;
@@ -166,10 +170,29 @@ export function RoletaCorretorView() {
     return <StateWrapper loading skeletonVariant="page" className="py-4" />;
   }
 
+  const subtituloMobile = `${windowInfo.emoji} ${windowInfo.descricao}`;
+
   // Already credenciado and approved
   if (meuCredenciamento?.status === "aprovado") {
     const minhasFila = fila.filter((f) => f.corretor_id === user?.id);
     const leadsHoje = minhasFila.reduce((sum, f) => sum + (f.leads_recebidos || 0), 0);
+    if (isMobile) {
+      return (
+        <RoletaNaFilaMobile
+          subtitulo={subtituloMobile}
+          posicoes={minhasFila.map((f) => ({
+            id: f.id,
+            nome: segmentos.find((s) => s.id === f.segmento_id)?.nome || "Segmento",
+            posicao: f.posicao,
+            leads: f.leads_recebidos || 0,
+          }))}
+          leadsHoje={leadsHoje}
+          naFila={new Set(fila.map((f) => f.corretor_id)).size}
+          onSair={() => sairDaRoleta(meuCredenciamento.id)}
+          saindo={submitting}
+        />
+      );
+    }
     return (
       <div className="max-w-lg mx-auto space-y-6 py-8">
         <div className="text-center">
