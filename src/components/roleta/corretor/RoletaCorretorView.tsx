@@ -313,6 +313,13 @@ export function RoletaCorretorView() {
   const semAlocacao = !loadingAlocacao && !erroAlocacao && minhaAlocacao.length === 0;
   const alocacaoAtiva = minhaAlocacao.filter((a) => a.ativo);
   const todosInativos = !loadingAlocacao && minhaAlocacao.length > 0 && alocacaoAtiva.length === 0;
+  const desabilitado =
+    loadingAlocacao ||
+    marcandoPresenca ||
+    submitting ||
+    (selectedJanela === "noturna" && !noturnaSemRequisitos && (checkingNoturna || noturnaEligible === false)) ||
+    (isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo) ||
+    carregandoElegibilidade;
 
   const avisos = (
     <>
