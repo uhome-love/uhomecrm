@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Phone, MessageCircle, CheckCircle2, PhoneMissed, XCircle, Loader2 } from "lucide-react";
 import EmpreendimentoSeletor from "./EmpreendimentoSeletor";
@@ -30,7 +30,23 @@ function soDigitos(t: string | null) {
 
 export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
   const qc = useQueryClient();
-  const [selecionados, setSelecionados] = useState<string[]>([]);
+  const chave = `oa_bolsao_emps_${porta}`;
+  const [selecionados, setSelecionados] = useState<string[]>(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(chave) || "[]");
+      return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      if (selecionados.length) localStorage.setItem(chave, JSON.stringify(selecionados));
+      else localStorage.removeItem(chave);
+    } catch {
+      /* ignore */
+    }
+  }, [chave, selecionados]);
   const [lead, setLead] = useState<BolsaoLead | null>(null);
   const [vazio, setVazio] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -46,9 +62,6 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
   });
 
   const total = (contagens.data ?? []).reduce((s, c) => s + Number(c.total), 0);
-
-  const toggle = (emp: string) =>
-    setSelecionados((prev) => (prev.includes(emp) ? prev.filter((e) => e !== emp) : [...prev, emp]));
 
   const puxar = async () => {
     setBusy(true);
@@ -179,7 +192,7 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
         )}
         {vazio && <p className="mt-3 text-sm text-muted-foreground">Nenhum cliente disponível com esse filtro agora.</p>}
       </div>
-      <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-b-xl border-t bg-card/95 px-5 py-3 backdrop-blur">
+      <div className="sticky bottom-[calc(4.25rem+var(--sab))] z-30 flex md:bottom-0 flex-wrap items-center justify-between gap-3 rounded-b-xl border-t bg-card/95 px-5 py-3 backdrop-blur">
         <div className="min-w-0 text-sm">
           <span className="text-muted-foreground">Selecionado: </span>
           <span className="font-medium">
