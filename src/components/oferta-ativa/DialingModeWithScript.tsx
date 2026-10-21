@@ -1221,7 +1221,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           >
             <ArrowLeft className="h-3 w-3" /> Listas
           </Button>
-          <span className="text-muted-foreground">
+          <span className="hidden text-muted-foreground md:inline">
             Lead <strong style={{ color: "var(--arena-text)" }}>#{sessionLeadsServed + 1}</strong> · ROUND {sessionLeadsServed + 1} · {lead.empreendimento}
           </span>
           {/* Empreendimento filter for campaign mode */}
@@ -1246,7 +1246,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-emerald-400/70">🔒 Reservado</span>
+          <span className="hidden text-[10px] text-emerald-400/70 md:inline">🔒 Reservado</span>
           <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />{formatSessionTime(sessionSeconds)}</span>
           {streak >= 2 && (
             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>

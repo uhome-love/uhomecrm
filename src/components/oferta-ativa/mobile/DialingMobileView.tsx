@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Phone, MessageCircle, FileText, Square, CheckCircle2, PhoneMissed, XCircle, Home, Ban } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
@@ -30,9 +30,11 @@ const sec = "flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-muted 
 
 export default function DialingMobileView(p: Props) {
   const [roteiroAberto, setRoteiroAberto] = useState(false);
+  const topo = useRef<HTMLDivElement>(null);
+  useEffect(() => { topo.current?.scrollIntoView({ block: "start" }); }, [p.lead.nome]);
   return (
-    <div className="pb-[250px]">
-      <div className="mx-auto mt-4 flex h-[84px] w-[84px] items-center justify-center rounded-full bg-primary/15 text-[32px] font-extrabold text-primary">
+    <div ref={topo} className="scroll-mt-24 pb-[250px]">
+      <div className="mx-auto mt-2 flex h-[76px] w-[76px] items-center justify-center rounded-full bg-primary/15 text-[32px] font-extrabold text-primary">
         {iniciais(p.lead.nome)}
       </div>
       <h2 className="mt-3 text-center text-[26px] font-extrabold leading-tight text-foreground">{p.lead.nome}</h2>
