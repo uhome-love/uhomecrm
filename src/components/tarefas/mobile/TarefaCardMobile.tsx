@@ -38,16 +38,17 @@ function acaoDe(t: TarefaItem): string {
 export default function TarefaCardMobile({ t, tom, corretorNome, somenteLeitura, onAbrir, onConcluir, onAdiar }: Props) {
   const [dx, setDx] = useState(0);
   const start = useRef<{ x: number; y: number; base: number; lock?: "h" | "v" } | null>(null);
+  const arrastou = useRef(false);
   const concluida = t.status === "concluida";
   const podeDeslizar = !somenteLeitura && !concluida;
   const acao = acaoDe(t);
   const cor = tom === "atrasada" ? "text-destructive" : tom === "hoje" ? "text-primary" : "text-muted-foreground";
 
-  const onDown = (e: React.PointerEvent) => { if (podeDeslizar) start.current = { x: e.clientX, y: e.clientY, base: dx }; };
+  const onDown = (e: React.PointerEvent) => { arrastou.current = false; if (podeDeslizar) start.current = { x: e.clientX, y: e.clientY, base: dx }; };
   const onMove = (e: React.PointerEvent) => {
     const s = start.current; if (!s) return;
     const mx = e.clientX - s.x, my = e.clientY - s.y;
-    if (!s.lock) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; s.lock = Math.abs(mx) > Math.abs(my) ? "h" : "v"; }
+    if (!s.lock) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; s.lock = Math.abs(mx) > Math.abs(my) ? "h" : "v"; if (s.lock === "h") arrastou.current = true; }
     if (s.lock === "h") setDx(Math.max(-ACOES, Math.min(0, s.base + mx)));
   };
   const onUp = () => {
@@ -56,13 +57,14 @@ export default function TarefaCardMobile({ t, tom, corretorNome, somenteLeitura,
     setDx((v) => (v < -ACOES / 2 ? -ACOES : 0));
   };
   const abrir = () => {
+    if (arrastou.current) { arrastou.current = false; return; }
     if (dx !== 0) { setDx(0); return; }
     if (t.lead) onAbrir(t.lead.id);
   };
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      {podeDeslizar && (
+      {podeDeslizar && dx !== 0 && (
         <div className="absolute inset-y-0 right-0 flex" style={{ width: ACOES }}>
           {t.lead?.telefone ? (
             <a href={waLink(t.lead.telefone) ?? undefined} target="_blank" rel="noreferrer" onClick={() => setDx(0)}
