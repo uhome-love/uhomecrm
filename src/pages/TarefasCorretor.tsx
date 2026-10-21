@@ -18,6 +18,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { hojeBRT } from "@/hooks/useMinhasTarefas";
+import { dataAdiada } from "@/lib/adiarTarefa";
+import TarefasMobileView from "@/components/tarefas/mobile/TarefasMobileView";
+import AdiarSheet from "@/components/tarefas/mobile/AdiarSheet";
 
 const ABAS: { key: AbaTarefa; label: string; tom: string }[] = [
   { key: "vencidas", label: "Vencidas", tom: "text-destructive" },
@@ -79,6 +84,70 @@ export default function TarefasCorretor() {
     toast.success("Anotação concluída ✅");
     recarregar();
   };
+
+  const isMobile = useIsMobile();
+  const [adiando, setAdiando] = useState<TarefaItem | null>(null);
+  const [modoMobile, setModoMobile] = useState<"minhas" | "concluidas" | "sem_passo">("minhas");
+  useEffect(() => { if (visao !== "me" && modoMobile === "sem_passo") setModoMobile("minhas"); }, [visao, modoMobile]);
+  const adiar = async (t: TarefaItem, dias: number) => {
+    setAdiando(null);
+    const { error } = await supabase.from("pipeline_tarefas")
+      .update({ vence_em: dataAdiada(hojeBRT(), dias) } as never).eq("id", t.id);
+    if (error) { toast.error("Não foi possível adiar."); return; }
+    toast.success("Tarefa adiada");
+    recarregar();
+  };
+
+  const modais = (
+    <>
+      <RegistrarAtividadeModal
+        lead={concluindo?.lead ? { id: concluindo.lead.id, nome: concluindo.lead.nome } : null}
+        concluirTarefaId={concluindo?.id ?? null}
+        subtitulo={concluindo ? `concluir: ${(concluindo.titulo || "").split(" — ")[0]} · vai para o histórico do lead` : undefined}
+        onClose={() => setConcluindo(null)}
+        onSaved={recarregar}
+      />
+      <CriarTarefaModal open={criar.open} lead={criar.lead} permitirNota={!criar.lead}
+        onClose={() => setCriar({ open: false, lead: null })} onSaved={recarregar} />
+      <AdiarSheet tarefa={adiando} onClose={() => setAdiando(null)} onEscolher={adiar} />
+      {drawer.loadingLead && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/40">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      )}
+      {drawer.lead && (
+        <PipelineLeadDetail lead={drawer.lead} stages={meta.stages} segmentos={meta.segmentos} open={drawer.open}
+          onOpenChange={(o) => { if (!o) { drawer.close(); recarregar(); } }}
+          onUpdate={drawer.onUpdate} onMove={drawer.onMove} onDelete={drawer.onDelete} />
+      )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <TarefasMobileView
+          abas={abas} isLoading={isLoading} busca={busca} setBusca={setBusca}
+          modo={modoMobile} setModo={setModoMobile}
+          nSemPasso={semPasso.data?.length ?? 0} mostrarSemPasso={visao === "me"}
+          semPassoNode={semPasso.isLoading
+            ? <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+            : <SemProximoPasso leads={semPasso.data ?? []} onAbrir={drawer.openLead} onCriar={(lead) => setCriar({ open: true, lead })} />}
+          seletorGestao={isGestao ? (
+            <select value={visao} onChange={(e) => setVisao(e.target.value)} className="h-11 w-full rounded-xl border border-border bg-card px-3 text-base">
+              <option value="me">Minhas tarefas</option>
+              <option value="time">Todo o time (só ver)</option>
+              {(equipe.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </select>
+          ) : undefined}
+          somenteLeitura={somenteLeitura} nomes={nomes} mostrarCorretor={visao === "time"}
+          onNova={() => setCriar({ open: true, lead: null })}
+          onAbrir={drawer.openLead} onConcluir={concluir} onAdiar={setAdiando}
+        />
+        {modais}
+      </>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
