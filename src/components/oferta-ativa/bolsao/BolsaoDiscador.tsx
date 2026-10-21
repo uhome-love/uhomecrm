@@ -183,7 +183,7 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     : total;
 
   return (
-    <div className="rounded-xl border bg-card">
+    <div className="flex flex-col rounded-xl border bg-card">
       <div className="p-5">
         {contagens.isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -192,7 +192,7 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
         )}
         {vazio && <p className="mt-3 text-sm text-muted-foreground">Nenhum cliente disponível com esse filtro agora.</p>}
       </div>
-      <div className="sticky bottom-[calc(4.25rem+var(--sab))] z-30 flex md:bottom-0 flex-wrap items-center justify-between gap-3 rounded-b-xl border-t bg-card/95 px-5 py-3 backdrop-blur">
+      <div className="order-first flex rounded-t-xl border-b md:order-none md:sticky md:bottom-0 md:z-30 md:border-b-0 flex-wrap items-center justify-between gap-3 md:rounded-t-none md:rounded-b-xl md:border-t bg-card/95 px-5 py-3 backdrop-blur">
         <div className="min-w-0 text-sm">
           <span className="text-muted-foreground">Selecionado: </span>
           <span className="font-medium">
