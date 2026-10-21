@@ -17,6 +17,8 @@ import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
 import { useMinhaAlocacao } from "@/hooks/useFocoCorretores";
 import PresencaDoCorretorPill from "@/components/corretor/PresencaDoCorretorPill";
 import { useRoletaPerformanceStatus } from "@/hooks/useRoletaPerformanceStatus";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { RoletaInicioCardMobile } from "@/components/corretor/RoletaInicioCardMobile";
 
 // Segmento shape
 
@@ -241,6 +243,7 @@ export default function RoletaStatusBar() {
   // Uhome Performance: com a chave do CRM ligada, a noite não exige mais visita do dia.
   const { data: perfStatus } = useRoletaPerformanceStatus();
   const noturnaSemRequisitos = !!perfStatus?.crm_gate_ativo;
+  const isMobile = useIsMobile();
   const [credModalOpen, setCredModalOpen] = useState(false);
   const [segmentos, setSegmentos] = useState<Segmento[]>([]);
   const [credStatus, setCredStatus] = useState<string>("");
@@ -367,12 +370,32 @@ export default function RoletaStatusBar() {
 
   if (loading) return <div className="h-12 rounded-xl border border-border bg-card animate-pulse" />;
 
+  const NOME_TURNO: Record<string, string> = { manha: "da manhã", tarde: "da tarde", noite: "da noite", dia_todo: "de hoje" };
+  const janelaAberta = JANELAS_CONFIG.find((j) => getJanelaStatus(j) === "aberto" && !credenciamentosPorJanela[j.key]);
+  const janelaFutura = JANELAS_CONFIG.find((j) => getJanelaStatus(j) === "futuro");
+
+  const cardMobile = isMobile ? (
+    <RoletaInicioCardMobile
+      presenca={<PresencaDoCorretorPill profileId={profileId} authUserId={user?.id} />}
+      estado={isActiveRoleta ? "ativo" : credStatus === "pendente" ? "pendente" : "inativo"}
+      turnoAberto={janelaAberta ? { label: NOME_TURNO[janelaAberta.key], fecha: formatHora(janelaAberta.credAberto.fim) } : null}
+      proximoTurno={janelaFutura ? `${janelaFutura.label} às ${formatHora(janelaFutura.credAberto.inicio)}` : null}
+      empreendimentos={alocacaoAtiva.map((a) => a.empreendimento_nome).filter(Boolean) as string[]}
+      perf={perfStatus}
+      onEntrar={() => janelaAberta && saveCredenciamento(janelaAberta.key)}
+      entrando={saving}
+      semAlocacao={!loadingAlocacao && alocacaoAtiva.length === 0}
+      onDetalhes={() => setCredModalOpen(true)}
+    />
+  ) : null;
+
   return (
     <>
+      {cardMobile}
       <motion.div
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`rounded-xl border px-4 py-2.5 flex items-center justify-between gap-3 transition-colors ${
+        className={`${isMobile ? "hidden " : ""}rounded-xl border px-4 py-2.5 flex items-center justify-between gap-3 transition-colors ${
           isActiveRoleta ? "border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20" : "border-border bg-card"
         }`}
       >
