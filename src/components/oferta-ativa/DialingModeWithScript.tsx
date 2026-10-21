@@ -1300,8 +1300,25 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       </div>
 
 
-      {/* ═══ MOBILE: Tabs ═══ */}
+      {/* ═══ MOBILE: tela única do cliente ═══ */}
       {isMobile ? (
+        <DialingMobileView
+          lead={lead}
+          callActive={callActive}
+          callTimerLabel={formatTimer(callTimer)}
+          disabled={showModal || showResultPopup || submitting}
+          roteiro={ToolsColumn}
+          onLigar={() => handleAction("ligacao")}
+          onWhatsApp={handleWhatsAppDuringCall}
+          onEncerrar={handleOpenResultPopup}
+          onResultado={(key) => {
+            if (key === "agendar" || key === "com_interesse") { handlePopupResult(key); return; }
+            stopTimer();
+            setShowResultPopup(true);
+            handlePopupResult(key);
+          }}
+        />
+      ) : false ? (
         <div className="space-y-2">
           <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--arena-card-bg)" }}>
             {([
