@@ -60,8 +60,8 @@ interface JanelaInfo {
 
 const JANELAS: JanelaInfo[] = [
   { id: "manha", label: "Manhã", emoji: "🌅", inicio: "07:30", fim: "12:00", credenciamentoAberto: false, descricao: "Roleta da manhã ativa" },
-  { id: "tarde", label: "Tarde", emoji: "🌞", inicio: "12:00", fim: "18:30", credenciamentoAberto: false, descricao: "Roleta da tarde ativa" },
-  { id: "noturna", label: "Noturna", emoji: "🌙", inicio: "18:30", fim: "23:30", credenciamentoAberto: false, descricao: "Roleta noturna ativa" },
+  { id: "tarde", label: "Tarde", emoji: "🌞", inicio: "12:00", fim: "18:00", credenciamentoAberto: false, descricao: "Roleta da tarde ativa" },
+  { id: "noturna", label: "Noturna", emoji: "🌙", inicio: "18:00", fim: "23:30", credenciamentoAberto: false, descricao: "Roleta noturna ativa" },
   { id: "madrugada", label: "Madrugada", emoji: "🔒", inicio: "23:30", fim: "07:30", credenciamentoAberto: false, descricao: "Acumulando leads para amanhã" },
 ];
 
