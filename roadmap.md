@@ -38,3 +38,7 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [ ] 7. Relatórios e tabelas
 - [ ] 8. Telas menos usadas
 - [ ] 9. Acabamento e teste final
+
+# Roadmap — Roleta: horário do credenciamento
+- [x] Tela de aprovação recusa pedido feito fora do horário (teste ok)
+- [ ] Servidor recusar pedido fora do horário (migration — só após 19h BRT, regra de migrations)
