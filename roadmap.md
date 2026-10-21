@@ -34,7 +34,7 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [ ] 3. Oferta Ativa na ligação + Mutirão
 - [ ] 4. Negócios
 - [ ] 5. Roleta (corretor e gestão)
-- [ ] 6. Painéis gerente/diretora — aguardando decisão do Lucas
+- [x] 6. Painéis gerente/diretora — não redesenhar (decisão do Lucas)
 - [ ] 7. Relatórios e tabelas
 - [ ] 8. Telas menos usadas
 - [ ] 9. Acabamento e teste final
