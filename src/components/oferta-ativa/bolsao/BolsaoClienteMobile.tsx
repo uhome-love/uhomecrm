@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { ChevronLeft, Phone, MessageCircle, CheckCircle2, PhoneMissed, XCircle, Loader2 } from "lucide-react";
 import { formatBRT } from "@/lib/brtTime";
 
@@ -18,10 +19,12 @@ function iniciais(nome: string) {
 }
 
 export default function BolsaoClienteMobile({ porta, lead, restantes, busy, onAproveitar, onNaoAtendeu, onSemInteresse, onSair }: Props) {
+  const topo = useRef<HTMLDivElement>(null);
+  useEffect(() => { topo.current?.scrollIntoView({ block: "start" }); }, [lead.nome]);
   const fone = (lead.telefone ?? "").replace(/\D/g, "");
   const redondo = "flex h-[62px] w-[62px] items-center justify-center rounded-full active:scale-95";
   return (
-    <div className="pb-[200px]">
+    <div ref={topo} className="scroll-mt-16 pb-[200px]">
       <div className="flex items-center justify-between gap-2 py-1">
         <button type="button" onClick={onSair} disabled={busy} className="flex h-11 items-center text-[15px] font-semibold text-primary">
           <ChevronLeft className="h-5 w-5" />Sair
