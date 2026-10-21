@@ -50,7 +50,7 @@ export default function TarefasMobileView(p: Props) {
   );
 
   return (
-    <div className="min-h-full bg-background px-4 pb-8 pt-2">
+    <div className="min-h-full bg-background pb-8 pt-1">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <h1 className="text-[32px] font-extrabold leading-tight tracking-tight text-foreground">Tarefas</h1>
