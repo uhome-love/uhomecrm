@@ -27,3 +27,14 @@
 - [ ] Aguardar validação de Lucas antes da próxima tela
 
 Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personalizado, atualização, detalhamentos de leads e visitas, expansões, 13 indicadores e 7 indicadores por equipe iguais entre celular/computador, abas compartilhadas com acesso do CEO. Sem ações sobre clientes. Fila CEO vazia: botão desabilitado preservado; distribuição não testada. Contas de diretora/gerente não foram usadas. Testes pertinentes: 22 passaram; teste antigo de identificação aponta três arquivos já movidos para legado, fora desta etapa.
+
+# Roadmap — Redesign mobile: o que falta
+- [x] 1. Zoom restante (já coberto pela regra geral de 16px no celular)
+- [ ] 2. Tarefas — aguardando mockup aprovado
+- [ ] 3. Oferta Ativa na ligação + Mutirão
+- [ ] 4. Negócios
+- [ ] 5. Roleta (corretor e gestão)
+- [ ] 6. Painéis gerente/diretora — aguardando decisão do Lucas
+- [ ] 7. Relatórios e tabelas
+- [ ] 8. Telas menos usadas
+- [ ] 9. Acabamento e teste final
