@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
+import { useIsMobile } from "@/hooks/use-mobile";
+import BolsaoClienteMobile from "./BolsaoClienteMobile";
 
 export type PortaBolsao = "estagnados" | "descartados";
 
@@ -30,6 +32,7 @@ function soDigitos(t: string | null) {
 
 export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
   const qc = useQueryClient();
+  const isMobile = useIsMobile();
   const chave = `oa_bolsao_emps_${porta}`;
   const [selecionados, setSelecionados] = useState<string[]>(() => {
     try {
@@ -130,6 +133,17 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     qc.invalidateQueries({ queryKey: ["bolsao-contagens", porta] });
   };
 
+
+  if (lead && isMobile) {
+    const restantes = selecionados.length
+      ? (contagens.data ?? []).filter((c) => selecionados.includes(c.empreendimento)).reduce((s, c) => s + Number(c.total), 0)
+      : total;
+    return (
+      <BolsaoClienteMobile porta={porta} lead={lead} restantes={restantes} busy={busy}
+        onAproveitar={aproveitar} onNaoAtendeu={() => registrar("nao_atendeu")}
+        onSemInteresse={() => registrar("sem_interesse")} onSair={() => registrar("liberar")} />
+    );
+  }
 
   if (lead) {
     const fone = soDigitos(lead.telefone);
