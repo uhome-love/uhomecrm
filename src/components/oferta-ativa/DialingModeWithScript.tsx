@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import AttemptModal from "./AttemptModal";
 import CustomListAttemptModal from "./CustomListAttemptModal";
+import DialingMobileView from "./mobile/DialingMobileView";
 import ScriptPanel from "./ScriptPanel";
 import AttemptHistory from "./AttemptHistory";
 import ScoringLegend from "./ScoringLegend";
