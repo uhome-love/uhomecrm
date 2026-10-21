@@ -21,8 +21,11 @@ Ele tinha escolhido Lake Eyre, tocou em "Aleatório (todos)" e o Lake Eyre "sumi
 - Quem entra no Bolsão, um cliente por vez, Aproveitar / Não atendeu / Sem interesse, contagens e regras do servidor.
 - Listas da Oferta Ativa, Pipeline, Roleta, Fila CEO.
 
-## Validação
-- No preview em tamanho de iPhone e computador: escolher, ir para Aleatório, voltar a escolher Lake Eyre, buscar, trocar de porta. Sem tocar em "Começar a ligar" com cliente real.
+## Validação ponta a ponta (para achar outros problemas)
+- Celular e computador, conta de corretor: escolher, ir para Aleatório, voltar a escolher Lake Eyre, buscar, trocar de porta, trocar entre Estagnados, Descartados e Listas.
+- Fluxo completo com **cliente de teste** (apagado no fim): puxar, Ligar/WhatsApp, Aproveitar (confere Novo Lead no Pipeline e histórico antigo oculto), Não atendeu (some por 24h), Sem interesse (sai da lista), Sair (volta para a lista), filtro sem clientes, aviso de cliente já pego por outro.
+- Conferir que as contagens batem depois de cada ação e que a Central de Reengajamento e a Base Única mostram o cliente certo.
+- Qualquer outro problema encontrado: corrijo se for da tela; se mexer em regra, te aviso antes.
 
 ## Detalhes técnicos
 - Só tela: `EmpreendimentoSeletor.tsx` (grupo aberto por padrão no mobile via `useIsMobile`, faixa de selecionados com remover), `BolsaoDiscador.tsx` (localStorage `oa_bolsao_emps_<porta>`, padding inferior para a barra fixa) e o local que renderiza as portas em `CorretorCall.tsx` (botão Trocar, se ainda não existir).
