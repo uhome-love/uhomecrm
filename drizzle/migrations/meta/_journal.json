@@ -134,6 +134,13 @@
       "when": 1792513179415,
       "tag": "0018_bolsao_fase2_desempenho",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792617289875,
+      "tag": "0019_roleta_recusa_cred_fora_horario",
+      "breakpoints": true
     }
   ]
 }
