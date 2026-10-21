@@ -1,17 +1,29 @@
-# Open Arvoredo: Meta mostra 24 leads e o CRM mostra 18
+# Oferta Ativa (Estagnados/Descartados): corretor não consegue sair do "Aleatório"
 
-## O que encontrei (só leitura, nada foi alterado)
-Os leads chegaram. A diferença vem da forma de contar:
+## O que o Anderson viu
+Ele tinha escolhido Lake Eyre, tocou em "Aleatório (todos)" e o Lake Eyre "sumiu" da tela. Não encontrou como voltar a escolher.
 
-- **17 clientes novos** da campanha "Open Arvoredo v1" entraram hoje, mais 1 Open Arvoredo de outra origem. Esses são os 18 do painel.
-- **4 clientes que já estavam no CRM** preencheram o formulário de novo hoje: Amanda Neves, Dionata Sales, Allan Lima e "construtora amorim". O CRM não cria um cliente repetido. Ele registra "novo interesse" no cliente que já existe e manda para a Roleta. Para a Meta, cada um conta como lead novo. Para o painel "Leads por Empreendimento", não conta, porque o cliente não é novo.
-- Isso dá **21 ou 22**, conforme o fuso. A Meta fecha o dia em outro horário, e a Pam entrou perto da meia-noite.
-- Faltam **2 ou 3** que eu não consegui explicar só com os dados do CRM.
+## Causa provável (confirmar no passo 1)
+- Tocar em "Aleatório" limpa a escolha, e isso está certo.
+- Lake Eyre tem menos de 10 clientes, então fica escondido dentro de "Outros empreendimentos", que vem **fechado**. Quando a escolha some, o empreendimento some junto da vista.
+- No celular, o "Outros empreendimentos" fica no fim da tela, perto da barra "Começar a ligar" e da barra de botões de baixo, o que pode cobrir esse botão.
+- Não há um botão "Voltar" claro para trocar entre Estagnados, Descartados e Listas.
 
-## O que proponho
-1. **Achar os 2 ou 3 que faltam:** puxar da Meta a lista de leads de hoje do formulário do Open Arvoredo e comparar um por um com o CRM. Se algum não tiver entrado, eu trago para o CRM pela rotina de recuperação que já existe. Não vou criar nada à mão.
-2. **Painel mais claro:** em "Leads por Empreendimento", mostrar ao lado do número quantos clientes antigos voltaram. Por exemplo: "Open Arvoredo 18 (+4 retornos)". Assim o número chega mais perto do que a Meta mostra. A conta atual não muda.
+## O que vamos fazer
+1. **Reproduzir** no tamanho de iPhone com a conta de um corretor, sem puxar nem registrar cliente: escolher um empreendimento pequeno, tocar em Aleatório e tentar voltar.
+2. **Empreendimentos pequenos visíveis**: "Outros empreendimentos" passa a vir aberto no celular (ou mostra os primeiros direto), e a busca continua no topo.
+3. **Escolha sempre visível**: os empreendimentos escolhidos aparecem em destaque logo abaixo do "Aleatório", com um "x" para tirar. Tocar num empreendimento tira o "Aleatório" na hora.
+4. **Nada coberto**: espaço no fim da tela para a barra "Começar a ligar" e a barra de baixo não cobrirem nenhum botão.
+5. **Lembrar a última escolha** no aparelho, por porta (Estagnados e Descartados separados), como já acontece nas Listas.
+6. **Botão "Trocar"** visível para voltar às 3 portas.
+
+## O que NÃO muda
+- Quem entra no Bolsão, um cliente por vez, Aproveitar / Não atendeu / Sem interesse, contagens e regras do servidor.
+- Listas da Oferta Ativa, Pipeline, Roleta, Fila CEO.
+
+## Validação
+- No preview em tamanho de iPhone e computador: escolher, ir para Aleatório, voltar a escolher Lake Eyre, buscar, trocar de porta. Sem tocar em "Começar a ligar" com cliente real.
 
 ## Detalhes técnicos
-- Passo 1: rodar o `meta-leads-backfill` em modo de verificação, só para o form do Open Arvoredo, e comparar o `meta_lead_id` com `pipeline_leads`.
-- Passo 2: contar as atividades `tipo='entrada'` do dia por empreendimento, em leads criados antes do período, e mostrar no `DesktopLeads`/`MobileLeads`. Só muda a tela.
+- Só tela: `EmpreendimentoSeletor.tsx` (grupo aberto por padrão no mobile via `useIsMobile`, faixa de selecionados com remover), `BolsaoDiscador.tsx` (localStorage `oa_bolsao_emps_<porta>`, padding inferior para a barra fixa) e o local que renderiza as portas em `CorretorCall.tsx` (botão Trocar, se ainda não existir).
+- Sem banco, sem edge function.
