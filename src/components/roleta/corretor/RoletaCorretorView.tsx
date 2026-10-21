@@ -314,6 +314,108 @@ export function RoletaCorretorView() {
   const alocacaoAtiva = minhaAlocacao.filter((a) => a.ativo);
   const todosInativos = !loadingAlocacao && minhaAlocacao.length > 0 && alocacaoAtiva.length === 0;
 
+  const avisos = (
+    <>
+      {/* Sunday/Holiday eligibility */}
+      {isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo && (
+        <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
+          <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <p className="text-xs text-destructive">
+            Para participar da roleta de {isSunday ? "domingo" : "feriado"}, você precisa ter
+            realizado pelo menos {elegibilidade.visitas_min_domingo} visitas de segunda a
+            sábado. Você realizou {elegibilidade.visitas_semana}.
+          </p>
+        </div>
+      )}
+      {isDiaEspecial && elegibilidade && elegibilidade.pode_domingo && (
+        <div className="flex items-start gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+          <p className="text-xs text-emerald-700 dark:text-emerald-400">
+            Elegível! {elegibilidade.visitas_semana} visitas realizadas na semana.
+          </p>
+        </div>
+      )}
+
+      {/* Noturna validation feedback */}
+      {selectedJanela === "noturna" && !noturnaSemRequisitos && (
+        <>
+          {checkingNoturna && (
+            <div className="flex items-center gap-2 p-3 rounded-md bg-muted border">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Verificando elegibilidade...</p>
+            </div>
+          )}
+          {!checkingNoturna && noturnaEligible === false && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
+              <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <p className="text-xs text-destructive">{noturnaReason}</p>
+            </div>
+          )}
+          {!checkingNoturna && noturnaEligible === true && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                Você está elegível para a janela noturna!
+              </p>
+            </div>
+          )}
+          {noturnaEligible === null && !checkingNoturna && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                Para a janela noturna, é necessário ter marcado ou realizado pelo menos 1 visita
+                hoje e não possuir leads sem atualização há mais de 3h.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+
+  if (isMobile) {
+    const brtNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const mins = brtNow.getHours() * 60 + brtNow.getMinutes();
+    const opcoes: JanelaOpcao[] = isDiaEspecial
+      ? [{ value: "dia_todo", label: "Dia todo", disabled: false }]
+      : [
+          { value: "manha", label: "Manhã", disabled: mins >= 9 * 60 + 30 },
+          { value: "tarde", label: "Tarde", disabled: mins >= 13 * 60 + 30 || mins < 12 * 60 },
+          { value: "noturna", label: "Noite", disabled: mins >= 21 * 60 + 30 || mins < 18 * 60 + 30 },
+        ];
+    const avisoBox = (txt: string) => (
+      <div className="flex items-start gap-2 rounded-2xl bg-amber-50 dark:bg-amber-950/20 p-4 text-sm text-amber-700 dark:text-amber-400">
+        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+        <p>{txt}</p>
+      </div>
+    );
+    const avisoAlocacao = erroAlocacao
+      ? avisoBox("Não consegui carregar seu foco agora. Toque em “Atualizar” — você ainda pode entrar, a validação é feita no servidor.")
+      : todosInativos
+      ? avisoBox("Seus empreendimentos de foco estão inativos no momento. Fale com seu gestor.")
+      : semAlocacao
+      ? avisoBox("Você ainda não tem empreendimentos alocados. Fale com seu gestor pra receber leads da roleta.")
+      : null;
+    return (
+      <RoletaEntrarMobile
+        subtitulo={`${windowInfo.emoji} ${windowInfo.descricao}`}
+        opcoes={opcoes}
+        janela={selectedJanela}
+        onJanela={(v) => { setJanelaManual(true); setSelectedJanela(v); }}
+        perf={perfStatus}
+        leadsDesatualizados={elegibilidade?.leads_desatualizados ?? null}
+        limiteDesatualizados={elegibilidade?.limite_bloqueio ?? null}
+        carregandoAlocacao={loadingAlocacao}
+        alocacao={alocacaoAtiva}
+        avisoAlocacao={avisoAlocacao}
+        avisos={avisos}
+        onAtualizarAlocacao={() => refetchAlocacao()}
+        onEntrar={handleMarcarPresenca}
+        entrando={marcandoPresenca}
+        desabilitado={!!desabilitado}
+      />
+    );
+  }
 
   return (
     <div className="max-w-lg mx-auto space-y-6 py-8">
@@ -470,60 +572,7 @@ export function RoletaCorretorView() {
             )}
           </div>
 
-          {/* Sunday/Holiday eligibility */}
-          {isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo && (
-            <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
-              <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-              <p className="text-xs text-destructive">
-                Para participar da roleta de {isSunday ? "domingo" : "feriado"}, você precisa ter
-                realizado pelo menos {elegibilidade.visitas_min_domingo} visitas de segunda a
-                sábado. Você realizou {elegibilidade.visitas_semana}.
-              </p>
-            </div>
-          )}
-          {isDiaEspecial && elegibilidade && elegibilidade.pode_domingo && (
-            <div className="flex items-start gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-              <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                Elegível! {elegibilidade.visitas_semana} visitas realizadas na semana.
-              </p>
-            </div>
-          )}
-
-          {/* Noturna validation feedback */}
-          {selectedJanela === "noturna" && !noturnaSemRequisitos && (
-            <>
-              {checkingNoturna && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-muted border">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Verificando elegibilidade...</p>
-                </div>
-              )}
-              {!checkingNoturna && noturnaEligible === false && (
-                <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
-                  <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                  <p className="text-xs text-destructive">{noturnaReason}</p>
-                </div>
-              )}
-              {!checkingNoturna && noturnaEligible === true && (
-                <div className="flex items-start gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                    Você está elegível para a janela noturna!
-                  </p>
-                </div>
-              )}
-              {noturnaEligible === null && !checkingNoturna && (
-                <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
-                    Para a janela noturna, é necessário ter marcado ou realizado pelo menos 1 visita
-                    hoje e não possuir leads sem atualização há mais de 3h.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
+          {avisos}
 
           <Button
             className="w-full"
