@@ -20,7 +20,7 @@ export function FilaLinhaDeslizavel({ nome, detalhe, destaque, onTirar }: Props)
 
   return (
     <div className="relative overflow-hidden border-b border-border/60 last:border-0">
-      <button
+      {dx < 0 && <button
         type="button"
         onClick={() => { setDx(0); onTirar(); }}
         className="absolute inset-y-0 right-0 flex items-center justify-center gap-1 bg-destructive text-xs font-semibold text-destructive-foreground"
@@ -28,7 +28,7 @@ export function FilaLinhaDeslizavel({ nome, detalhe, destaque, onTirar }: Props)
         aria-label={`Tirar ${nome} da fila`}
       >
         <UserX className="h-4 w-4" /> Tirar
-      </button>
+      </button>}
       <div
         className="relative flex items-center justify-between bg-card px-4 py-3 transition-transform duration-150"
         style={{ transform: `translateX(${dx}px)`, touchAction: "pan-y" }}
