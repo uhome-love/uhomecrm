@@ -286,7 +286,7 @@ export function RoletaCorretorView() {
   if (!windowInfo.credenciamentoAberto && isMobile) {
     return (
       <RoletaAvisoMobile subtitulo={subtituloMobile} icone="🔒" titulo="Entrada fechada">
-        <p>Manhã 07:00–09:30 · Tarde 12:00–13:30 · Noite 18:30–21:30</p>
+        <p>Manhã 07:00–09:30 · Tarde 12:00–13:30 · Noite 18:00–21:30</p>
         <p>Próxima abertura em <CountdownTimer target={windowInfo.proximaTransicao} /></p>
       </RoletaAvisoMobile>
     );
@@ -310,7 +310,7 @@ export function RoletaCorretorView() {
             <div className="space-y-1 text-sm text-left max-w-xs mx-auto">
               <p>🌅 <strong>Manhã</strong>: 07:00 – 09:30</p>
               <p>🌞 <strong>Tarde</strong>: 12:00 – 13:30</p>
-              <p>🌙 <strong>Noturna</strong>: 18:30 – 21:30</p>
+              <p>🌙 <strong>Noturna</strong>: 18:00 – 21:30</p>
             </div>
 
             <div className="flex items-center justify-center gap-2 pt-2">
@@ -506,7 +506,7 @@ export function RoletaCorretorView() {
                     const t0930 = 9 * 60 + 30;
                     const t1200 = 12 * 60;
                     const t1330 = 13 * 60 + 30;
-                    const t1830 = 18 * 60 + 30;
+                    const t1830 = 18 * 60;
                     const t2130 = 21 * 60 + 30;
 
                     const manhaEncerrado = mins >= t0930;
@@ -521,7 +521,7 @@ export function RoletaCorretorView() {
                         </SelectItem>
 
                         <SelectItem value="tarde" disabled={tardeEncerrado || mins < t1200}>
-                          🌞 Tarde (12:00–18:30){" "}
+                          🌞 Tarde (12:00–18:00){" "}
                           {tardeEncerrado
                             ? "— encerrado"
                             : mins < t1200
@@ -532,11 +532,11 @@ export function RoletaCorretorView() {
                           value="noturna"
                           disabled={noturnaEncerrado || noturnaAindaNaoAbriu}
                         >
-                          🌙 Noturna (18:30–23:30){" "}
+                          🌙 Noturna (18:00–23:30){" "}
                           {noturnaEncerrado
                             ? "— encerrado"
                             : noturnaAindaNaoAbriu
-                            ? "— abre às 18:30"
+                            ? "— abre às 18:00"
                             : ""}
                         </SelectItem>
                       </>
