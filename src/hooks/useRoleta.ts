@@ -592,6 +592,19 @@ export function useRoleta() {
       const profileId = await getProfileId();
       if (!profileId) throw new Error("Perfil não encontrado");
 
+      // Pedido feito fora do horário do turno não pode ser aprovado
+      const { data: pedido } = await supabase.from("roleta_credenciamentos")
+        .select("janela, created_at, status").eq("id", credId).maybeSingle();
+      if (pedido && pedido.status === "pendente" && pedido.created_at &&
+          !pedidoDentroDaJanela(pedido.janela, new Date(pedido.created_at))) {
+        await supabase.from("roleta_credenciamentos")
+          .update({ status: "recusado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
+          .eq("id", credId);
+        toast.error(`Pedido feito fora do horário. ${mensagemJanelaFechada(pedido.janela)}`);
+        await loadCredenciamentos();
+        return;
+      }
+
       // Approve
       const { data: cred } = await supabase.from("roleta_credenciamentos")
         .update({ status: "aprovado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
