@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronRight, Search, Shuffle } from "lucide-react";
+import { ChevronRight, Search, Shuffle, X } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -34,13 +35,15 @@ function Chip({ c, ativo, onClick, grande }: { c: Contagem; ativo: boolean; onCl
 function Grupo({ titulo, itens, sel, toggle, abertoInicial }: {
   titulo: string; itens: Contagem[]; sel: string[]; toggle: (e: string) => void; abertoInicial: boolean;
 }) {
-  const [aberto, setAberto] = useState(abertoInicial);
+  const [aberto, setAberto] = useState<boolean | null>(null);
   if (!itens.length) return null;
   const marcados = itens.filter((i) => sel.includes(i.empreendimento)).length;
+  const isMobile = useIsMobile();
+  const aberto2 = abertoInicial || (aberto ?? (isMobile || marcados > 0));
   return (
-    <Collapsible open={aberto || abertoInicial} onOpenChange={setAberto}>
+    <Collapsible open={aberto2} onOpenChange={setAberto}>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">
-        <ChevronRight className={`h-4 w-4 transition-transform ${aberto || abertoInicial ? "rotate-90" : ""}`} />
+        <ChevronRight className={`h-4 w-4 transition-transform ${aberto2 ? "rotate-90" : ""}`} />
         {titulo} ({itens.length}){marcados ? ` · ${marcados} selecionado(s)` : ""}
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -96,6 +99,22 @@ export default function EmpreendimentoSeletor({ contagens, selecionados, setSele
         </span>
         <span className="ml-4 text-lg font-bold">{total}</span>
       </button>
+
+      {selecionados.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Escolhidos:</span>
+          {selecionados.map((e) => (
+            <button
+              key={e}
+              type="button"
+              onClick={() => toggle(e)}
+              className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
+            >
+              {e} <X className="h-3 w-3" />
+            </button>
+          ))}
+        </div>
+      )}
 
       {principais.length > 0 && (
         <div className="space-y-2">
