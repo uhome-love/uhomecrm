@@ -42,3 +42,8 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 # Roadmap — Roleta: horário do credenciamento
 - [x] Tela de aprovação recusa pedido feito fora do horário (teste ok)
 - [ ] Servidor recusar pedido fora do horário (migration — só após 19h BRT, regra de migrations)
+
+# Roadmap — Roleta no celular
+- [x] Gestão: Central da Roleta no celular (validada, Tirar da fila cancelado)
+- [ ] Corretor: aplicar o desenho no cartão da Roleta do Início (página /roleta é só da gestão) — aguarda ok do Lucas
+- [ ] Horário da noite 18:00 x 18:30 — aguarda decisão
