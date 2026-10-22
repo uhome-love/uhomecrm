@@ -17269,6 +17269,19 @@ export type Database = {
       cleanup_jetimob_processed: { Args: never; Returns: undefined }
       cleanup_old_network_telemetry: { Args: never; Returns: undefined }
       cleanup_ops_events: { Args: never; Returns: undefined }
+      confirmar_venda: {
+        Args: {
+          p_comprovante_path: string
+          p_data: string
+          p_empreendimento_id: string
+          p_intermediacao_id: string
+          p_lead_id: string
+          p_observacao?: string
+          p_unidade: string
+          p_vgv: number
+        }
+        Returns: Json
+      }
       consolidar_lead_ganho: { Args: { p_negocio_id: string }; Returns: Json }
       contar_leads_desatualizados: {
         Args: { p_corretor_id: string }
@@ -18849,9 +18862,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      validar_venda_completa: {
+        Args: { p_venda: Database["public"]["Tables"]["negocios"]["Row"] }
+        Returns: undefined
+      }
       vault_secret_upsert: {
         Args: { p_name: string; p_secret: string }
         Returns: string
+      }
+      venda_intermediacoes: {
+        Args: { p_lead_id: string }
+        Returns: {
+          comprador_nome: string
+          empreendimento: string
+          filename: string
+          id: string
+          unidade: string
+          vgv: number
+        }[]
       }
       vendas_docs_pode: { Args: { p_name: string }; Returns: boolean }
       vincular_alias_com_backfill: {

@@ -169,6 +169,13 @@
       "when": 1792706525970,
       "tag": "0023_vendas_docs_storage_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792711127093,
+      "tag": "0024_confirmacao_venda_com_documentos",
+      "breakpoints": true
     }
   ]
 }
