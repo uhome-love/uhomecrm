@@ -54,7 +54,8 @@ const BodySchema = z.object({
   }),
   testemunhas: z.array(z.object({ nome: z.string().default(""), email: z.string().default("") })).default([]),
   dataContrato: z.string().min(1),
-  formaPagamento: z.enum(["zemo", "nota_fiscal", "pix"]).default("zemo"),
+  // Obrigatório: quem cria a intermediação escolhe (nenhuma forma pré-selecionada).
+  formaPagamento: z.enum(["zemo", "nota_fiscal", "pix"], { required_error: "Escolha a forma de pagamento (ZemoBank, Nota fiscal ou PIX)." }),
   descontoNfPct: z.number().min(0).max(50).default(10),
   construtora: z.string().max(120).optional(),
   negocioId: z.string().uuid().optional(),
@@ -497,6 +498,10 @@ Deno.serve(async (req) => {
         });
       if (uploadErr) throw uploadErr;
 
+      const calc = calcular(body);
+      const pctNf = body.formaPagamento === "nota_fiscal" ? body.descontoNfPct : 0;
+      const bruto = round2(body.comissao.valorTotal);
+      const liquido = round2(bruto - (bruto * pctNf) / 100);
       const { error: insertErr } = await supabase.from("intermediacoes").insert({
         id: intermediacaoId,
         created_by: userId,
@@ -510,8 +515,39 @@ Deno.serve(async (req) => {
         arquivo_path: arquivoPath,
         filename,
         payload: body,
+        forma_pagamento: body.formaPagamento,
+        desconto_nf_pct: pctNf,
+        negocio_id: body.negocioId ?? null,
+        pipeline_lead_id: body.pipelineLeadId ?? null,
+        valor_bruto: bruto,
+        valor_liquido: liquido,
+        parcelas: body.comissao.parcelas,
       });
       if (insertErr) throw insertErr;
+
+      // Detalhes financeiros (service role; tabelas restritas a CEO/diretora).
+      try {
+        const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        const nCorr = body.corretores.length;
+        const benef = calc.credores.map((c, i) => {
+          const desconto = round2((c.total * pctNf) / 100);
+          const papel = c.isUhome ? "uhome" : i < nCorr ? "corretor" : i === nCorr ? "diretora" : "diretoria";
+          return { intermediacao_id: intermediacaoId, nome: c.nome, papel, valor_bruto: c.total, desconto, valor_liquido: round2(c.total - desconto) };
+        });
+        await admin.from("intermediacao_beneficiarios").insert(benef);
+        await admin.from("negocios_recebimentos").insert(body.comissao.parcelas.map((p, i) => ({
+          intermediacao_id: intermediacaoId, negocio_id: body.negocioId ?? null, parcela_num: i + 1,
+          vencimento: /^\d{4}-\d{2}-\d{2}$/.test(p.vencimento) ? p.vencimento : null,
+          valor: p.valor, forma: body.formaPagamento, created_by: userId,
+          observacao: /^\d{4}-\d{2}-\d{2}$/.test(p.vencimento) ? null : `Vencimento: ${p.vencimento}`,
+        })));
+        if (body.negocioId) {
+          await admin.from("intermediacoes").update({ status: "substituida" }).eq("negocio_id", body.negocioId).eq("status", "ativa").neq("id", intermediacaoId);
+          await admin.from("negocios_recebimentos").update({ status: "cancelado" })
+            .eq("negocio_id", body.negocioId).eq("status", "pendente").neq("intermediacao_id", intermediacaoId);
+          await admin.from("negocios").update({ intermediacao_id: intermediacaoId }).eq("id", body.negocioId);
+        }
+      } catch (finErr) { console.error("[gerar-intermediacao] detalhes financeiros falharam", finErr); }
     } catch (histErr) {
       console.error("[gerar-intermediacao] Falha ao salvar histórico (ignorada):", histErr);
     }
