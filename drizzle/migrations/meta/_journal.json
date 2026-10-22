@@ -148,6 +148,13 @@
       "when": 1792679569298,
       "tag": "0020_avisos_seguem_saude_pipeline",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792703170636,
+      "tag": "0021_construtora_empreendimentos_canonicos",
+      "breakpoints": true
     }
   ]
 }

@@ -3201,6 +3201,7 @@ export type Database = {
       empreendimentos_canonicos: {
         Row: {
           ativo: boolean
+          construtora: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -3211,6 +3212,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          construtora?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -3221,6 +3223,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          construtora?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
