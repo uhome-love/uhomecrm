@@ -69,7 +69,7 @@ export function useEditarVenda() {
             negocio_id: p.id,
             created_by: user?.id ?? null,
             tipo: "edicao_manual",
-            titulo: "Edição em Vendas Realizadas",
+            titulo: "Edição em Vendas",
             descricao: changes.join(" | "),
           } as never);
         }
