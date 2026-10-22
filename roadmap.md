@@ -53,7 +53,10 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [ ] Fase 0.5b — Gravar vínculos/limpeza após aprovação da planilha (aguarda Lucas)
 - [x] Fase 0 — Mockups aprovados
 - [x] Renomear "Vendas Realizadas" para "Vendas"
-- [ ] Fase 1 — Guardar tudo certo (banco, só após 19h BRT)
+- [x] Fase 1 — estrutura (intermediação com forma/vínculo/parcelas, beneficiários, recebimentos, custos, comprovante privado)
+- [x] Fase 1 — 12 vínculos intermediação↔venda gravados, 19 repetidas marcadas
+- [ ] Fase 1 — 11 vínculos "dúvida" para conferir na lista de pendências (Fase 2)
+- [ ] Fase 1 — importar 34 intermediações do Drive (antes de julho) e corrigir Skyline R$ 32,7 mi (aguarda ok do Lucas sobre qual registro)
 - [ ] Fase 2 — Confirmar venda com 6 itens obrigatórios + trava
 - [ ] Fase 3 — Jornada do negócio (sugestões 1–4)
 - [ ] Fase 4 — Nova página Vendas
