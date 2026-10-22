@@ -23,7 +23,15 @@ Vendas antigas não são bloqueadas. Elas aparecem com o selo "documentos penden
 3. **Contrato:** ao entrar, sugerir "Gerar intermediação". O mais comum é a intermediação ficar pronta antes da assinatura.
 4. **Contrato "gerado" ou "em leitura" parado há mais de 7 dias:** aviso ao gerente.
 5. **Ganho:** a janela de confirmação acima. Depois da assinatura, as parcelas da comissão entram sozinhas no Financeiro, a partir da intermediação.
-6. **Distrato ou caiu depois do Ganho:** a venda sai do VGV e as parcelas que ainda não foram recebidas são canceladas no Financeiro.
+6. **Distrato:** depois que a venda está ganha, só o CEO (admin) ou a diretora podem registrar o distrato, e apenas no Financeiro, informando motivo e data. Corretor e gerente não conseguem desfazer uma venda ganha. Com o distrato, a venda sai do VGV e as parcelas ainda não recebidas são canceladas.
+
+## Outras sugestões
+- **Nome "Vendas":** a página "Vendas Realizadas" passa a se chamar "Vendas" em todos os lugares (menu, títulos, atalhos e menu Mais do celular). O endereço antigo continua funcionando.
+- **Menu "Gestão Financeira":** Vendas e Financeiro ficam lado a lado no menu, junto com Intermediação.
+- **Busca única:** em Vendas, um campo para achar a venda pelo nome do cliente, pela unidade ou pelo empreendimento.
+- **Exportar:** Vendas e Financeiro ganham um botão para baixar Excel com os filtros aplicados.
+- **Aviso de parcela:** CEO e diretora recebem, no sino, um aviso das parcelas que vencem na semana e das atrasadas.
+- **Histórico de alterações:** toda mudança de VGV, unidade, recebimento ou distrato fica registrada, com quem fez e quando.
 
 ## Fases (uma de cada vez, com validação ao vivo e cliente de teste)
 
