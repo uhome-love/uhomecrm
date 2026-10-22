@@ -56,7 +56,7 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [x] Fase 1 — estrutura (intermediação com forma/vínculo/parcelas, beneficiários, recebimentos, custos, comprovante privado)
 - [x] Fase 1 — 12 vínculos intermediação↔venda gravados, 19 repetidas marcadas
 - [ ] Fase 1 — 11 vínculos "dúvida" para conferir na lista de pendências (Fase 2)
-- [ ] Fase 1 — importar 34 intermediações do Drive (antes de julho), autorizado por Lucas em 22/10; conferir documentos e vínculos antes de gravar
+- [ ] Fase 1 — importação dos 34 documentos: 32 registros novos, Sandro/Marco já existentes; terminar reconciliação e validar anexos; vínculos prováveis ficam pendentes
 - [ ] Fase 1 — Skyline R$ 32,7 mi: manter sem alteração; aguarda Lucas confirmar o VGV correto
 - [ ] Fase 2 — Confirmar venda com 6 itens obrigatórios + trava
 - [ ] Fase 3 — Jornada do negócio (sugestões 1–4)
@@ -64,4 +64,4 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [ ] Fase 5 — Financeiro (distrato só CEO/diretora)
 - [ ] Fase 6 — Validação ponta a ponta
 
-- [x] Intermediação: forma de pagamento (Zemo/NF -10%/PIX; Open padrão NF, aceita PIX), vínculo com cliente/negócio, construtora no documento
+- [x] Intermediação: forma de pagamento obrigatória sem pré-seleção (Zemo/NF -10%/PIX), vínculo com cliente/negócio, construtora no documento
