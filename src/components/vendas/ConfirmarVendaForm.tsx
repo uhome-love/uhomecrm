@@ -36,6 +36,8 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
   const input = useRef<HTMLInputElement>(null);
   const inicializado = useRef(false);
   const ocupado = useRef(false);
+  const confirmado = useRef(false);
+  const rascunho = useRef("");
   const hoje = formatBRT(new Date(), "yyyy-MM-dd");
   const emp = dados.empreendimentos.find(e => e.id === empId);
   const inter = dados.intermediacoes.find(i => i.id === interId);
@@ -53,6 +55,22 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
   const pendencias = pendenciasVenda({ empreendimentoCanonicoId: empId, construtora: emp?.construtora, unidade, vgvFinal: vgv, dataAssinatura: data, intermediacaoId: interId, comprovanteAtoPath: path || (arquivo ? "novo-anexo" : null) }, hoje);
   const unidadeDiferente = !!inter && inter.unidade?.trim().toLowerCase() !== unidade.trim().toLowerCase();
   const vgvDiferente = !!inter?.vgv && Math.abs(Number(inter.vgv) - vgv) > 0.01;
+  useEffect(() => () => {
+    if (rascunho.current && !confirmado.current) {
+      void supabase.storage.from("vendas-docs").remove([rascunho.current]);
+    }
+  }, []);
+
+  async function removerComprovante() {
+    if (saving) return;
+    if (rascunho.current) {
+      const result = await supabase.storage.from("vendas-docs").remove([rascunho.current]);
+      if (result.error) { setErro("Não foi possível remover o anexo. Tente novamente."); return; }
+      rascunho.current = "";
+    }
+    setArquivo(null); setPath("");
+    if (input.current) input.current.value = "";
+  }
 
   async function confirmar() {
     if (ocupado.current || pendencias.length || unidadeDiferente) return;
@@ -64,17 +82,19 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
         comprovante = `lead/${leadId}/${crypto.randomUUID()}.${ext}`;
         const upload = await supabase.storage.from("vendas-docs").upload(comprovante, arquivo, { upsert: false, contentType: arquivo.type });
         if (upload.error) throw upload.error;
+        rascunho.current = comprovante;
         setPath(comprovante);
       }
       const result = await supabase.rpc("confirmar_venda", { p_lead_id: leadId, p_empreendimento_id: empId, p_unidade: unidade.trim(), p_vgv: vgv, p_data: data, p_intermediacao_id: interId, p_comprovante_path: comprovante, p_observacao: obs.trim() || null });
       if (result.error) throw result.error;
+      confirmado.current = true;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["negocios-board"] }),
         queryClient.invalidateQueries({ queryKey: ["vendas-realizadas"] }),
         queryClient.invalidateQueries({ queryKey: ["vendas-pendencias-documentos"] }),
       ]);
       const resposta = result.data as { ja_confirmada?: boolean } | null;
-      toast.success(resposta?.ja_confirmada ? "Venda já registrada; dados atualizados." : "Venda assinada e registrada!");
+      toast.success(resposta?.ja_confirmada ? "Venda já registrada." : "Venda assinada e registrada!");
       window.dispatchEvent(new CustomEvent("pipeline-reload"));
       onConfirmed();
     } catch (e) {
@@ -108,7 +128,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
           if (!comprovantePermitido(f)) { setErro("Selecione um PDF ou imagem de até 20 MB."); return; }
           setArquivo(f); setPath(""); setErro(null);
         }} />
-        {arquivo || path ? <div className="flex items-center gap-2 border border-border rounded-lg p-3"><Paperclip className="size-4 shrink-0 text-primary" /><span className="text-sm break-all min-w-0 flex-1">{arquivo?.name || "Comprovante anexado"}</span><Button disabled={saving || !!path} variant="ghost" size="icon" aria-label="Remover comprovante" onClick={() => { setArquivo(null); setPath(""); if (input.current) input.current.value = ""; }}><X className="size-4" /></Button></div> : <Button variant="outline" className="w-full h-12" onClick={() => input.current?.click()}><Upload className="mr-2 size-4" />Anexar PDF ou imagem</Button>}
+        {arquivo || path ? <div className="flex items-center gap-2 border border-border rounded-lg p-3"><Paperclip className="size-4 shrink-0 text-primary" /><span className="text-sm break-all min-w-0 flex-1">{arquivo?.name || "Comprovante anexado"}</span><Button disabled={saving || (!!path && !rascunho.current)} variant="ghost" size="icon" aria-label="Remover comprovante" onClick={() => void removerComprovante()}><X className="size-4" /></Button></div> : <Button variant="outline" className="w-full h-12" onClick={() => input.current?.click()}><Upload className="mr-2 size-4" />Anexar PDF ou imagem</Button>}
       </section>
       <div className="space-y-1.5"><Label htmlFor="venda-observacao">Observação</Label><Textarea id="venda-observacao" value={obs} onChange={e => setObs(e.target.value)} rows={2} /></div>
       {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
