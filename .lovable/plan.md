@@ -49,7 +49,7 @@ Vendas antigas não são bloqueadas. Elas aparecem com o selo "documentos penden
 
 **Fase 3: Jornada do negócio.** Entram as sugestões de 1 a 4, se você aprovar.
 
-**Fase 4: Vendas Realizadas nova.**
+**Fase 4: Página Vendas (antiga Vendas Realizadas), nova.**
 - Filtros fixos no topo: período, construtora, empreendimento, corretor e equipe.
 - Indicadores: VGV, número de vendas, ticket médio e vendas sem intermediação.
 - Abas Vendas, Ranking, Construtoras e Origens.
@@ -58,7 +58,7 @@ Vendas antigas não são bloqueadas. Elas aparecem com o selo "documentos penden
 
 **Fase 5: Financeiro.**
 - Só você e a diretora veem.
-- Abas A receber, Recebido, Ganhos por pessoa, Custos e Lucro e ROI.
+- Abas A receber, Recebido, Ganhos por pessoa, Custos, Lucro e ROI, e Distratos (só CEO/diretora).
 - "Marcar recebida", com a forma de pagamento e o comprovante.
 - Nota fiscal mostra o recebido pela Uhome e o repassado ao time.
 - Mídia do Meta automática e custos fixos lançados à mão.
@@ -80,5 +80,7 @@ Vendas antigas não são bloqueadas. Elas aparecem com o selo "documentos penden
   - `VendasRealizadas.tsx` (1.028 linhas) é dividida em `src/components/vendas/` (filtros, indicadores, abas, detalhe).
   - Nova página `/financeiro` em `src/components/financeiro/` com um controller compartilhado, registrada em `pageRegistry` e restrita a admin/diretor.
   - `IntermediacaoPage.tsx` (1.073 linhas) termina a divisão em componentes.
-- Testes: a regra "Ganho exige os 6 itens", o cálculo das parcelas e do NF −10%, e a distribuição por pessoa igual ao líquido.
+- Distrato: um gatilho recusa que uma venda saia de `fase` 'ganho' quando quem faz não é admin nem diretor (`has_role`). A RPC `registrar_distrato` grava o motivo e a data e cancela as parcelas pendentes.
+- O rótulo "Vendas" passa a valer em `pageRegistry`, no menu lateral, no menu Mais do celular e nos títulos. A rota `/vendas-realizadas` é mantida.
+- Testes: as regras "Ganho exige os 6 itens" e "só admin/diretora faz distrato", o cálculo das parcelas e do NF −10%, e a distribuição por pessoa igual ao líquido.
 - No máximo 2 mudanças de banco por dia, sempre depois das 19h. `AGENTS.md` ganha a regra da trava de Ganho, e a memória ganha a regra "venda ganha exige comprovante + intermediação".
