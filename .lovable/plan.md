@@ -11,7 +11,7 @@ Ao criar a intermediação, o gerente escolhe uma opção:
 | Nota fiscal | A Uhome recebe tudo e repassa depois | **10% do valor bruto da comissão**, descontado da parte de todos |
 | PIX | Direto na conta de cada pessoa | nenhum |
 
-- **Open Bosque e Open Arvoredo** (construtora Open) já abrem com "Nota fiscal" marcada e travada: a comissão vem inteira para a Uhome.
+- **Open Bosque e Open Arvoredo** (construtora Open) já abrem com "Nota fiscal" marcada, mas o gerente pode trocar para PIX (por exemplo, quando o cliente paga a entrada). A escolha é sempre do gerente.
 - Com nota fiscal, a divisão mostra três linhas: comissão bruta, desconto da nota (10%) e valor líquido distribuído. Cada pessoa vê o valor dela já com o desconto.
 - O documento gerado deixa isso escrito: "Forma de pagamento: Nota fiscal — a Uhome Imóveis recebe o valor integral e repassa a cada beneficiário, já descontados 10% referentes à nota fiscal." O quadro de pagamentos mostra o bruto, o desconto e o líquido.
 - Com Zemo ou PIX, o documento mostra a forma escolhida e o quadro de sempre.
@@ -66,7 +66,7 @@ Avulso .................................. Imóvel de terceiros
 - `intermediacoes`: novas colunas `forma_pagamento` (zemo|nota_fiscal|pix), `desconto_nf_pct` (padrão 10), `negocio_id`, `pipeline_lead_id`, `valor_bruto`, `valor_liquido`. São todas opcionais, então as antigas não quebram.
 - Índice único parcial por `negocio_id` para intermediações ativas.
 - `empreendimentos_canonicos`: preencher `construtora` com a lista acima. A construtora padronizada é atualizada nas vendas por `empreendimento_canonico_id` e alias. É só ajuste de dados, sem migration.
-- Forma travada em NF para os canônicos da construtora Open: regra em constante única no front e conferida também na edge `gerar-intermediacao`.
+- Forma padrão NF (não travada) para os canônicos da construtora Open; `forma_pagamento` obrigatória, conferida também na edge `gerar-intermediacao`.
 - `IntermediacaoPage.tsx` (1.002 linhas) é dividida: seletor de cliente, seletor de forma e quadro de cálculo viram componentes. A função de cálculo vira lib com teste: NF 10% sobre o bruto, soma das partes = líquido.
 - Edge `gerar-intermediacao`: texto da forma de pagamento e quadro bruto/desconto/líquido no .docx.
 - Salvar em memória: regra NF −10% / Open sempre NF / tabela de construtoras.
