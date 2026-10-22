@@ -1,28 +1,34 @@
-# Aviso "sem atualização" deixa o cliente verde no Pipeline
+# Avisos do cliente seguindo a mesma cor do Pipeline
 
 ## O que o corretor relatou (áudio + print)
-- Recebe "Renata Mohr está sem atualização" (vermelho), mas no Pipeline ela aparece verde.
-- Clientes somem do Pipeline (estagnam) mesmo com aviso, e ele só percebe depois.
+- Recebe "Renata Mohr está sem atualização" (vermelho), mas no Pipeline ela está verde.
+- Clientes somem do Pipeline (estagnam) e ele não percebe a tempo.
 
 ## O que encontrei (confirmado nos dados)
-- A rotina que manda o aviso "sem atualização" (a cada 7 dias sem mexer no cliente), ao avisar, **grava no próprio cliente** que avisou. Essa gravação conta como "última atualização".
-- Resultado: no mesmo segundo do aviso, o cliente fica com "atualizado agora" e **fica verde** no Pipeline. Renata, Cintia e Josiane: horário do aviso = horário da "última atualização" (21/10, 18:11 / 18:07 / 17:58).
-- Isso aconteceu em **614 avisos nos últimos 30 dias**.
-- O mesmo vale para o aviso da cadência Sem Contato ("estagna em 24h"): o caso Dudi também ficou "atualizado" no horário do aviso.
-- Enquanto isso, a contagem que realmente estagna o cliente olha só ações do corretor. Ou seja: a tela diz "em dia" e o cliente continua caminhando para estagnar — exatamente a confusão relatada.
+Você está certo: o aviso não segue a cor do Pipeline.
+- **A cor do Pipeline** conta os dias desde o último contato do corretor, com prazo por etapa. Aquecimento fica verde até 15 dias, amarelo até 30 e estagna com 21 sem contato.
+- **O aviso "sem atualização"** usa uma regra antiga e única: 7 dias, em qualquer etapa. Renata, Cintia e Josiane tiveram o último contato em 14/10. Com 7 dias em Aquecimento, estão verdes de verdade, mas receberam o aviso vermelho.
+- Além disso, ao mandar esse aviso, o sistema grava no cliente como se ele tivesse sido atualizado. Isso aconteceu em 614 avisos nos últimos 30 dias e esconde a data real.
+- Por outro lado, a passagem para amarelo e para vermelho não gera aviso. Só existe o aviso final da estagnação.
 
-## Correção proposta
-1. Os avisos automáticos deixam de contar como atualização do cliente. A cor e a "última atualização" voltam a refletir só o que o corretor fez.
-2. O aviso "sem atualização" passa a usar essa mesma régua (ação do corretor), não a data técnica de alteração.
-3. Corrigir os clientes já afetados: recalcular a "última atualização" a partir da última ação real do corretor, para a cor voltar a ficar certa (amarelo/vermelho onde for o caso).
-4. Nenhuma regra de estagnação, cadência ou distribuição muda. O corretor continua recebendo os mesmos avisos; só deixam de esconder o problema.
+## Como fica
+Os avisos passam a seguir as cores do Pipeline, uma vez por cliente em cada mudança:
+1. **Verde:** sem aviso.
+2. **Ficou amarelo:** "Renata Mohr precisa de atenção · X dias sem contato".
+3. **Ficou vermelho:** "Renata Mohr está desatualizada · estagna em X dias".
+4. **Prestes a estagnar** (os avisos que já existem: "estagna em 24h/48h" e cadência Sem Contato): continuam iguais.
+5. O aviso antigo de 7 dias é desligado.
+6. Os avisos deixam de contar como atualização do cliente.
+
+Nenhuma regra de cor, estagnação, cadência ou distribuição muda. Só os avisos passam a seguir a mesma régua.
 
 ## Validação
-- Antes/depois com a Renata, Cintia e Josiane: cor no Pipeline igual ao aviso.
-- Rodar a rotina de aviso numa conferência sem gravar e confirmar que a "última atualização" não muda.
-- Conferir ao vivo o Pipeline do corretor (sem alterar clientes reais).
+- Renata, Cintia e Josiane: confirmar que hoje não recebem aviso, porque estão verdes.
+- Conferir quantos clientes receberiam aviso amarelo ou vermelho na primeira rodada, sem enviar nada. Se forem muitos, mando no primeiro dia só o resumo por corretor.
+- Ver o sino de um corretor ao vivo, sem alterar clientes reais.
 
 ## Detalhes técnicos
-- Causa: `detectar_leads_parados` faz `UPDATE pipeline_leads SET last_escalation_at, escalation_level`, o que dispara a atualização de `updated_at` e `ultima_acao_at`. Cadência Sem Contato (aviso 24h) tem o mesmo padrão.
-- Migration (após 19h BRT): ajustar o trigger de `ultima_acao_at`/`updated_at` para ignorar updates que mexem só em campos de sistema (`last_escalation_at`, `escalation_level`, campos de aviso da cadência/estagnação); `detectar_leads_parados` passa a usar `_pipeline_ultima_acao_humana`.
-- Backfill pontual via run_sql: `ultima_acao_at` = última ação humana para os leads cujo `ultima_acao_at` coincide com uma notificação automática.
+- `detectar_leads_parados`: trocar o critério de `updated_at < 7 dias` por `lead_saude_status` (a mesma fonte de `leadSaude.ts`). Notificar só na transição verde→ambar e ambar→vermelho, com dedup `agrupamento_key` = `saude_<cor>_<lead_id>_<relogio>`, para reavisar só se houver novo contato e nova queda.
+- O UPDATE de `last_escalation_at`/`escalation_level` não pode tocar em `updated_at`/`ultima_acao_at`. Ajustar o trigger para ignorar updates só desses campos de sistema (e dos campos de aviso da cadência).
+- Backfill via run_sql: restaurar `ultima_acao_at` dos leads em que ele coincide com o horário de uma notificação automática.
+- Migration só após 19h BRT. Os avisos de pré-estagnação e de cadência não mudam.
