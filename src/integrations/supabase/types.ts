@@ -18882,6 +18882,7 @@ export type Database = {
         }[]
       }
       vendas_docs_pode: { Args: { p_name: string }; Returns: boolean }
+      vendas_docs_rascunho_pode: { Args: { p_name: string }; Returns: boolean }
       vincular_alias_com_backfill: {
         Args: { p_empreendimento_id: string; p_texto: string; p_tipo: string }
         Returns: Json

@@ -183,6 +183,13 @@
       "when": 1792711603136,
       "tag": "0025_confirmacao_venda_regularizacao_e_parcelas",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792711904947,
+      "tag": "0026_confirmacao_venda_preserva_vendas_anteriores",
+      "breakpoints": true
     }
   ]
 }
