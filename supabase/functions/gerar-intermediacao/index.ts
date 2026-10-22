@@ -502,6 +502,11 @@ Deno.serve(async (req) => {
       const pctNf = body.formaPagamento === "nota_fiscal" ? body.descontoNfPct : 0;
       const bruto = round2(body.comissao.valorTotal);
       const liquido = round2(bruto - (bruto * pctNf) / 100);
+      if (body.negocioId) {
+        // Nova intermediação do mesmo negócio substitui a anterior (índice único de ativa por negócio).
+        const adminSub = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        await adminSub.from("intermediacoes").update({ status: "substituida" }).eq("negocio_id", body.negocioId).eq("status", "ativa");
+      }
       const { error: insertErr } = await supabase.from("intermediacoes").insert({
         id: intermediacaoId,
         created_by: userId,
@@ -542,7 +547,6 @@ Deno.serve(async (req) => {
           observacao: /^\d{4}-\d{2}-\d{2}$/.test(p.vencimento) ? null : `Vencimento: ${p.vencimento}`,
         })));
         if (body.negocioId) {
-          await admin.from("intermediacoes").update({ status: "substituida" }).eq("negocio_id", body.negocioId).eq("status", "ativa").neq("id", intermediacaoId);
           await admin.from("negocios_recebimentos").update({ status: "cancelado" })
             .eq("negocio_id", body.negocioId).eq("status", "pendente").neq("intermediacao_id", intermediacaoId);
           await admin.from("negocios").update({ intermediacao_id: intermediacaoId }).eq("id", body.negocioId);
