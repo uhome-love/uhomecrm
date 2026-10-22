@@ -34,6 +34,7 @@ const TEMP_META: Record<QuizTemp, { label: string; cls: string; ord: number }> =
 };
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
+import { brtMinutesOfDay, todayBRT } from "@/lib/brtTime";
 import { empreendimentoFromTemplate } from "@/lib/reengajamentoEmpreendimento";
 import FilaCeoRepassarDialog from "./FilaCeoRepassarDialog";
 
@@ -171,6 +172,34 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   // é tratado como lead novo. Só "reengajamento" (reativado por nutrição) e "quiz" são separados.
   const leadsNovos = useMemo(() => allLeads.filter((l) => !l.reativado_por_nutricao && !isQuizLead(l)), [allLeads]);
   const leads = activeTab === "reengajamento" ? leadsReengajamento : leadsNovos;
+
+  // Turno em andamento (mesma divisão do servidor: <12:00 manhã, <18:30 tarde, depois noturna).
+  const minsAgora = brtMinutesOfDay();
+  const turnoAgora: Destino | null = isAllDayRoleta ? "dia_todo" : minsAgora < 720 ? "manha" : minsAgora < 1110 ? "tarde" : "noturna";
+  const turnoEncerrado = (id: Destino) =>
+    (id === "manha" && minsAgora >= 720) || (id === "tarde" && minsAgora >= 1110);
+  const [filaPorJanela, setFilaPorJanela] = useState<Record<string, number>>({});
+  const nomeTurno: Record<string, string> = { manha: "da Manhã", tarde: "da Tarde", noturna: "Noturna", dia_todo: "do Dia Todo" };
+  const sufixoTurno = nomeTurno[selectedDestino] ? ` (Roleta ${nomeTurno[selectedDestino]})` : "";
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedDestino(isAllDayRoleta ? "dia_todo" : "qualquer");
+    (async () => {
+      const { data } = await supabase
+        .from("roleta_fila")
+        .select("ativo, roleta_credenciamentos!inner(janela, status, data)")
+        .eq("roleta_credenciamentos.status", "aprovado")
+        .eq("roleta_credenciamentos.data", todayBRT());
+      const cont: Record<string, number> = {};
+      for (const r of (data ?? []) as Array<{ ativo: boolean | null; roleta_credenciamentos: { janela: string } | { janela: string }[] }>) {
+        if (r.ativo === false) continue;
+        const c = Array.isArray(r.roleta_credenciamentos) ? r.roleta_credenciamentos[0] : r.roleta_credenciamentos;
+        if (c?.janela) cont[c.janela] = (cont[c.janela] ?? 0) + 1;
+      }
+      setFilaPorJanela(cont);
+    })();
+  }, [open, isAllDayRoleta]);
 
   useEffect(() => {
     if (open && initialTab) setActiveTab(initialTab);
@@ -430,12 +459,12 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
             toast.success(`✅ ${dispatched} leads distribuídos com sucesso!`);
           } else if (dispatched > 0 && failed > 0) {
             const reasonParts = Object.entries(failed_by_reason as Record<string, number>)
-              .map(([reason, count]) => `${count} ${FAILURE_REASON_LABELS[reason] || reason}`)
+              .map(([reason, count]) => `${count} ${FAILURE_REASON_LABELS[reason] || reason}${sufixoTurno}`)
               .join(", ");
             toast.success(`✅ ${dispatched} distribuídos. ⚠️ ${failed} falharam: ${reasonParts}`);
           } else {
             const reasonParts = Object.entries(failed_by_reason as Record<string, number>)
-              .map(([reason, count]) => `${count} ${FAILURE_REASON_LABELS[reason] || reason}`)
+              .map(([reason, count]) => `${count} ${FAILURE_REASON_LABELS[reason] || reason}${sufixoTurno}`)
               .join(", ");
             toast.error(`❌ Nenhum lead distribuído. ${reasonParts || "Verifique a roleta."}`);
           }
@@ -686,11 +715,15 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                     if (d.shiftOnly && isAllDayRoleta) return false;
                     return true;
                   })
-                  .map((j) => (
+                  .map((j) => {
+                    const encerrada = !isAllDayRoleta && turnoEncerrado(j.id);
+                    const agora = j.id === turnoAgora;
+                    return (
                     <button
                       key={j.id}
+                      disabled={encerrada}
                       onClick={() => setSelectedDestino(j.id)}
-                      className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm text-left transition-colors ${
+                      className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         selectedDestino === j.id
                           ? "border-primary bg-primary/10 text-primary font-medium"
                           : "border-border hover:border-primary/40 text-foreground"
@@ -698,8 +731,15 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                     >
                       <span>{j.emoji}</span>
                       <span>{j.label}</span>
+                      {encerrada && <span className="ml-auto text-[11px] text-muted-foreground">encerrada</span>}
+                      {agora && (
+                        <span className="ml-auto text-[11px] font-medium text-primary">
+                          agora · {filaPorJanela[j.id] ?? 0} na fila
+                        </span>
+                      )}
                     </button>
-                  ))}
+                    );
+                  })}
               </div>
 
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-3 mb-1">Oferta Ativa</p>
