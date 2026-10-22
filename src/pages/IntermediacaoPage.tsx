@@ -19,6 +19,11 @@ import {
 import { toast } from "sonner";
 import { Plus, Trash2, FileSignature, Loader2, Download, Search, Pencil } from "lucide-react";
 import { formatCurrencyInput, handleCurrencyChange, parseCurrencyToNumber, numberToRawCurrency } from "@/utils/currencyFormat";
+import { ClientePipelineSeletor, type ClienteSelecionado } from "@/components/intermediacao/ClientePipelineSeletor";
+import { FormaPagamentoCard } from "@/components/intermediacao/FormaPagamentoCard";
+import {
+  DESCONTO_NF_PCT_PADRAO, construtoraDoEmpreendimento, formaPadrao, type FormaPagamento,
+} from "@/lib/intermediacaoPagamento";
 
 // ─── Máscaras de documentos/contato ────────────────────────────────────────────
 const onlyDigits = (v: string) => v.replace(/\D/g, "");
@@ -277,6 +282,30 @@ export default function IntermediacaoPage() {
   // Aba ativa (controlada, para permitir "Editar" a partir do histórico)
   const [aba, setAba] = useState("gerar");
 
+  // Cliente do Pipeline, forma de pagamento e construtora
+  const [cliente, setCliente] = useState<ClienteSelecionado | null>(null);
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamento | null>(null);
+  const [construtora, setConstrutora] = useState("");
+  const [construtoraManual, setConstrutoraManual] = useState(false);
+
+  // Construtora automática pelo empreendimento; Open já abre com nota fiscal (gerente pode trocar).
+  useEffect(() => {
+    if (!construtoraManual) setConstrutora(construtoraDoEmpreendimento(empreendimento) ?? "");
+    if (formaPadrao(empreendimento) === "nota_fiscal") setFormaPagamento((f) => f ?? "nota_fiscal");
+  }, [empreendimento, construtoraManual]);
+
+  const aplicarCliente = (c: ClienteSelecionado) => {
+    setCliente(c);
+    setCompradores((prev) => [{ ...prev[0], nomeCompleto: prev[0].nomeCompleto || c.nome, telefone: prev[0].telefone || c.telefone, email: prev[0].email || c.email }, ...prev.slice(1)]);
+    if (c.empreendimento) { setEmpreendimento(c.empreendimento); setConstrutoraManual(false); }
+    if (c.unidade) setUnidade(c.unidade);
+    if (c.vgv > 0) setVgv(numberToRawCurrency(c.vgv));
+    if (c.corretorAuthId && opcoesCorretores.some((o) => o.user_id === c.corretorAuthId)) {
+      selecionarCorretor(c.corretorAuthId, setCorretor1);
+    }
+    if (!c.negocioId) toast.info("Este cliente ainda não tem negócio aberto. A intermediação fica ligada ao cliente.");
+  };
+
   // Carrega um payload salvo de volta no formulário (fluxo de edição).
   const carregarIntermediacao = (p: any) => {
     if (!p) return;
@@ -334,6 +363,13 @@ export default function IntermediacaoPage() {
     setTestemunha2(ts[1] ? { nome: ts[1].nome ?? "", email: ts[1].email ?? "" } : { ...CAROLINA });
 
     setDataContrato(p.dataContrato ?? hoje);
+    setFormaPagamento(p.formaPagamento === "nota_fiscal" || p.formaPagamento === "pix" || p.formaPagamento === "zemo" ? p.formaPagamento : null);
+    setConstrutora(p.construtora ?? construtoraDoEmpreendimento(im.empreendimento) ?? "");
+    setConstrutoraManual(!!p.construtora);
+    setCliente(p.pipelineLeadId ? {
+      pipelineLeadId: p.pipelineLeadId, negocioId: p.negocioId ?? null, nome: mapeados[0]?.nomeCompleto || mapeados[0]?.razaoSocial || "",
+      telefone: "", email: "", empreendimento: im.empreendimento ?? "", unidade: im.unidade ?? "", vgv: im.vgv ?? 0, corretorAuthId: null,
+    } : null);
     setAba("gerar");
     window.scrollTo({ top: 0, behavior: "smooth" });
     toast.info("Dados carregados. Ajuste o que precisar e gere novamente.");
@@ -446,6 +482,7 @@ export default function IntermediacaoPage() {
     }
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
+    if (!formaPagamento) return toast.error("Escolha a forma de pagamento (ZemoBank, Nota fiscal ou PIX).");
     if (parseCurrencyToNumber(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
     if (pctExcedido) return toast.error("A soma dos percentuais (corretores + Gabrielle + Diretoria) ultrapassa 100%.");
     if (parcelas.some((p) => !p.vencimento || parseCurrencyToNumber(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
@@ -495,8 +532,21 @@ export default function IntermediacaoPage() {
         { nome: testemunha2.nome.trim(), email: testemunha2.email.trim() },
       ],
       dataContrato,
+      formaPagamento,
+      descontoNfPct: formaPagamento === "nota_fiscal" ? DESCONTO_NF_PCT_PADRAO : 0,
+      construtora: construtora.trim() || undefined,
+      negocioId: cliente?.negocioId ?? undefined,
+      pipelineLeadId: cliente?.pipelineLeadId ?? undefined,
     };
 
+    if (cliente?.negocioId) {
+      const { data: existentes } = await supabase
+        .from("intermediacoes")
+        .select("id")
+        .eq("payload->>negocioId", cliente.negocioId)
+        .limit(1);
+      if (existentes?.length && !window.confirm("Esta venda já tem intermediação. Gerar uma nova versão mesmo assim?")) return;
+    }
 
     setGerando(true);
     try {
@@ -548,6 +598,8 @@ export default function IntermediacaoPage() {
         <TabsContent value="gerar" className="space-y-6">
 
 
+      <ClientePipelineSeletor value={cliente} onSelect={aplicarCliente} onClear={() => setCliente(null)} />
+
       {/* Comprador(es) */}
       <Card>
         <CardHeader><CardTitle className="text-base">Comprador (Contratante)</CardTitle></CardHeader>
@@ -586,7 +638,8 @@ export default function IntermediacaoPage() {
         <CardContent className="grid sm:grid-cols-3 gap-4">
           <div className="space-y-2 sm:col-span-2"><Label>Empreendimento</Label><Input value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} placeholder="Ex: Shift Torre Residencial" /></div>
           <div className="space-y-2"><Label>Unidade</Label><Input value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="Ex: 1107" /></div>
-          <div className="space-y-2 sm:col-span-3"><Label>VGV (valor do imóvel)</Label><Input value={formatCurrencyInput(vgv)} onChange={(e) => setVgv(handleCurrencyChange(e.target.value))} inputMode="numeric" placeholder="R$ 000.000,00" /></div>
+          <div className="space-y-2"><Label>Construtora / Incorporadora</Label><Input value={construtora} onChange={(e) => { setConstrutora(e.target.value); setConstrutoraManual(true); }} placeholder="Automática pelo empreendimento" /></div>
+          <div className="space-y-2 sm:col-span-2"><Label>VGV (valor do imóvel)</Label><Input value={formatCurrencyInput(vgv)} onChange={(e) => setVgv(handleCurrencyChange(e.target.value))} inputMode="numeric" placeholder="R$ 000.000,00" /></div>
         </CardContent>
       </Card>
 
@@ -698,6 +751,15 @@ export default function IntermediacaoPage() {
         </CardContent>
       </Card>
 
+      <FormaPagamentoCard
+        forma={formaPagamento}
+        onChange={setFormaPagamento}
+        empreendimento={empreendimento}
+        credores={calc.credores}
+        pctDesconto={DESCONTO_NF_PCT_PADRAO}
+      />
+
+
       {/* Testemunhas */}
       <Card>
         <CardHeader><CardTitle className="text-base">Testemunhas</CardTitle></CardHeader>
@@ -755,6 +817,15 @@ export default function IntermediacaoPage() {
             </TableBody>
           </Table>
 
+          {formaPagamento !== "zemo" ? (
+            <p className="text-sm text-muted-foreground">
+              {formaPagamento === "nota_fiscal"
+                ? `2.1 — Nota fiscal: a Uhome recebe o valor integral e repassa a cada beneficiário, já descontados ${DESCONTO_NF_PCT_PADRAO}% (veja o quadro de repasse acima).`
+                : formaPagamento === "pix"
+                  ? "2.1 — PIX: cada beneficiário recebe direto na sua conta, conforme o quadro acima."
+                  : "2.1 — Escolha a forma de pagamento."}
+            </p>
+          ) : (
           <div>
             <p className="text-sm font-medium mb-2">2.1 — Divisão de pagamento (ZemoBank)</p>
             <Table>
@@ -776,6 +847,7 @@ export default function IntermediacaoPage() {
               </TableBody>
             </Table>
           </div>
+          )}
         </CardContent>
       </Card>
 
