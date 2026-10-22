@@ -1,3 +1,4 @@
+import { ConfirmarVendaForm } from "@/components/vendas/ConfirmarVendaForm";
 import { DISCARD_REASONS_REENGAJAVEL, reasonDisplay } from "@/lib/discardReasons";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -1048,71 +1049,6 @@ function PropostaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   );
 }
 
-// Venda (Ganho): confirma os dados REAIS do fechamento. Substitui o antigo caminho
-// que gravava data_assinatura = hoje automaticamente (bug: venda caía no mês errado).
-function VendaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
-  const hojeBRT = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-  const [valor, setValor] = useState<string>(lead.valor_estimado ? String(lead.valor_estimado) : "");
-  const [dataAssinatura, setDataAssinatura] = useState<string>(hojeBRT);
-  const [unidade, setUnidade] = useState("");
-  const [obs, setObs] = useState("");
-  const valorNum = Number(valor.replace(/\./g, "").replace(",", ".")) || 0;
-  const dataValida = !!dataAssinatura && dataAssinatura <= hojeBRT;
-
-  return (
-    <div className="max-w-lg mx-auto w-full">
-      <DialogHeader>
-        <DialogTitle className="text-base flex items-center gap-2">🏆 Confirmar venda</DialogTitle>
-      </DialogHeader>
-      <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{lead.nome}</strong></p>
-      <p className="text-[10px] text-muted-foreground">Confirme os dados reais do fechamento — eles alimentam meta, comissão e relatórios.</p>
-
-      <div className="space-y-3 mt-3">
-        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
-          <SectionTitle n={1}>Dados da venda</SectionTitle>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">VGV assinado (R$) *</Label>
-            <Input type="text" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs bg-background" />
-            <p className="text-[10px] text-muted-foreground">Valor real do contrato — não o estimado.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Data da assinatura *</Label>
-            <Input type="date" value={dataAssinatura} max={hojeBRT} onChange={e => setDataAssinatura(e.target.value)} className="h-8 text-xs bg-background" />
-            <p className="text-[10px] text-muted-foreground">Quando o contrato foi assinado — define o mês da venda e da comissão.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Unidade / imóvel *</Label>
-            <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs bg-background" />
-          </div>
-        </div>
-        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
-          <SectionTitle n={2}>Observações (opcional)</SectionTitle>
-          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-16 bg-background" placeholder="Condições, forma de pagamento..." />
-        </div>
-      </div>
-
-      <DialogFooter>
-        <Button
-          size="sm"
-          className="text-xs gap-1"
-          disabled={valorNum <= 0 || !dataValida || !unidade.trim()}
-          onClick={() => {
-            onConfirm({
-              leadId: lead.id,
-              targetStageId,
-              observacao: `Venda: ${fmtMoney(valorNum, "exact")} | Assinatura: ${dataAssinatura} | Unidade: ${unidade}${obs ? ` | ${obs}` : ""}`,
-              extraData: { fecharVenda: true, vgvFinal: valorNum, dataAssinatura, unidade, observacao: obs },
-            });
-          }}
-        >
-          🏆 Confirmar venda
-        </Button>
-      </DialogFooter>
-    </div>
-  );
-}
-
-
 // ─── Aprovação / Documentação ───
 function AprovacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
   const [tipo, setTipo] = useState("");
@@ -1320,6 +1256,16 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     onOpenChange(v);
   };
 
+  if (targetStage.tipo === "venda" || targetStage.nome.toLowerCase().includes("ganho")) {
+    return <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+        <ConfirmarVendaForm leadId={lead.id} nome={lead.nome} valorEstimado={lead.valor_estimado}
+          empreendimento={lead.empreendimento} onCancel={onCancel}
+          onConfirmed={() => onConfirm({ leadId: lead.id, targetStageId: targetStage.id, extraData: { vendaConfirmada: true } })} />
+      </DialogContent>
+    </Dialog>;
+  }
+
   const stageName = targetStage.nome.toLowerCase();
   const stageType = targetStage.tipo;
 
@@ -1348,9 +1294,6 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
       stageType === "contrato_gerado" || stageName.includes("contrato")
     ) {
       return <NotaRapidaForm lead={lead} targetStage={targetStage} onConfirm={onConfirm} onCancel={onCancel} />;
-    }
-    if (stageType === "venda" || stageName.includes("ganho") || stageName === "venda") {
-      return <VendaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
     if (stageType === "convertido" || stageName.includes("negócio criado") || stageName.includes("negocio criado")) {
       return <NegocioCriadoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;

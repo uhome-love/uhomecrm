@@ -902,7 +902,7 @@ export default function PipelineKanban() {
 
       {selectedLead && (
         <PipelineLeadDetail
-          lead={selectedLead}
+          lead={pipeline.leads.find(l => l.id === selectedLead.id) ?? selectedLead}
           stages={pipeline.stages}
           segmentos={pipeline.segmentos}
           corretorNomes={pipeline.corretorNomes}

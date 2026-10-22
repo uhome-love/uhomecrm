@@ -30,6 +30,20 @@ export function ClientePipelineSeletor({
   const [carregando, setCarregando] = useState(false);
 
   useEffect(() => {
+    const leadId = new URLSearchParams(window.location.search).get("lead");
+    if (!leadId || value) return;
+    let ativo = true;
+    async function abrirCliente() {
+      const { data, error } = await supabase.from("pipeline_leads")
+        .select("id,nome,telefone,email,empreendimento,negocio_id,corretor_id")
+        .eq("id", leadId).maybeSingle();
+      if (ativo && data && !error) await escolher(data);
+    }
+    void abrirCliente();
+    return () => { ativo = false; };
+  }, []);
+
+  useEffect(() => {
     const termo = busca.trim();
     if (termo.length < 3) { setResultados([]); return; }
     const t = setTimeout(async () => {
@@ -51,7 +65,7 @@ export function ClientePipelineSeletor({
     const q = supabase.from("negocios").select("id, empreendimento, unidade, vgv_final, vgv_estimado");
     const { data: neg } = negocioId
       ? await q.eq("id", negocioId).maybeSingle()
-      : await q.eq("pipeline_lead_id", l.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      : await q.eq("pipeline_lead_id", l.id).eq("status", "ativo").neq("fase", "ganho").order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (neg) {
       negocioId = neg.id;
       unidade = neg.unidade ?? "";

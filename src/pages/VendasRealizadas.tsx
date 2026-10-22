@@ -17,6 +17,8 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import { resolveFormName } from "@/lib/metaFormIdMap";
 import { toast } from "sonner";
 import { EditarVendaDrawer } from "@/components/vendas/EditarVendaDrawer";
+import { PendenciasVendas } from "@/components/vendas/PendenciasVendas";
+import { Button } from "@/components/ui/button";
 
 const formatCurrency = (v: number) => fmtMoney(v, "short");
 const formatVgvExact = (v: number) => fmtMoney(v, "exact");
@@ -216,14 +218,14 @@ function MetaBlock({
 
 export default function VendasRealizadas() {
   const { user } = useAuth();
-  const { isAdmin, isGestor } = useUserRole();
+  const { isAdmin, isGestor, isDiretor } = useUserRole();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [periodMode, setPeriodMode] = useState<"mes" | "ano">("mes");
-  const [activeTab, setActiveTab] = useState<"vendas" | "origens">("vendas");
+  const [activeTab, setActiveTab] = useState<"vendas" | "origens" | "pendencias">("vendas");
   const [editingVenda, setEditingVenda] = useState<VendaRow | null>(null);
 
   const mesStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
@@ -707,6 +709,7 @@ export default function VendasRealizadas() {
 
       {/* ═══════ TABS ═══════ */}
       <div className="flex items-center gap-1">
+        {(isAdmin || isDiretor) && <Button variant={activeTab === "pendencias" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("pendencias")}>Pendências</Button>}
         <button onClick={() => setActiveTab("vendas")}
           className={cn("text-[12px] font-medium px-3 py-1.5 rounded-[8px] transition-all flex items-center gap-1.5",
             activeTab === "vendas" ? "bg-primary text-white" : "text-neutral-500 bg-white dark:bg-white/5 border border-border dark:border-white/10 hover:text-foreground")}>
@@ -929,6 +932,8 @@ export default function VendasRealizadas() {
           )}
         </div>
       )}
+
+      {activeTab === "pendencias" && (isAdmin || isDiretor) && <PendenciasVendas />}
 
       {/* ═══════ ORIGENS & CAMPANHAS ═══════ */}
       {activeTab === "origens" && (isAdmin || isGestor) && (
