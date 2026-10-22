@@ -17,13 +17,18 @@ export function useConfirmarVenda(leadId: string) {
     async function carregar() {
       setLoading(true); setError(null);
       try {
-        const [emps, ints, negs] = await Promise.all([
+        const [emps, ints, lead] = await Promise.all([
           supabase.from("empreendimentos_canonicos").select("id,nome,construtora").eq("ativo", true).order("nome"),
           supabase.rpc("venda_intermediacoes", { p_lead_id: leadId }),
-          supabase.from("negocios").select("id,empreendimento_canonico_id,unidade,vgv_final,vgv_estimado,data_assinatura,intermediacao_id,comprovante_ato_path").eq("pipeline_lead_id", leadId).eq("status", "ativo").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+          supabase.from("pipeline_leads").select("negocio_id").eq("id", leadId).single(),
         ]);
         if (emps.error) throw emps.error;
         if (ints.error) throw ints.error;
+        if (lead.error) throw lead.error;
+        let query = supabase.from("negocios").select("id,empreendimento_canonico_id,unidade,vgv_final,vgv_estimado,data_assinatura,intermediacao_id,comprovante_ato_path")
+          .eq("pipeline_lead_id", leadId).eq("status", "ativo");
+        query = lead.data.negocio_id ? query.eq("id", lead.data.negocio_id) : query.neq("fase", "ganho");
+        const negs = await query.order("created_at", { ascending: false }).limit(1).maybeSingle();
         if (negs.error) throw negs.error;
         if (!ativo) return;
         setEmpreendimentos(emps.data ?? []); setIntermediacoes(ints.data ?? []); setNegocio(negs.data);

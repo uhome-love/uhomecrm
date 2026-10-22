@@ -73,7 +73,8 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
         queryClient.invalidateQueries({ queryKey: ["vendas-realizadas"] }),
         queryClient.invalidateQueries({ queryKey: ["vendas-pendencias-documentos"] }),
       ]);
-      toast.success("Venda assinada e registrada!");
+      const resposta = result.data as { ja_confirmada?: boolean } | null;
+      toast.success(resposta?.ja_confirmada ? "Venda já registrada; dados atualizados." : "Venda assinada e registrada!");
       window.dispatchEvent(new CustomEvent("pipeline-reload"));
       onConfirmed();
     } catch (e) {
