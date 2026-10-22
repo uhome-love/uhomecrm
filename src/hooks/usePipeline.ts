@@ -750,6 +750,17 @@ export function usePipeline(
             .in("user_id", [corretorUserId, gerenteUserId].filter(Boolean) as string[]);
           const profileMap = new Map((profileRows || []).map(p => [p.user_id, p.id]));
 
+          // Indo direto para Ganho (sem negócio aberto): cria já com os dados reais da
+          // venda — o gatilho enforce_data_assinatura_ganho recusa ganho sem data.
+          const vendaInsert: Record<string, any> = {};
+          if (dealFase === "ganho") {
+            vendaInsert.status = "ativo";
+            vendaInsert.data_assinatura = dealDetails?.dataAssinatura ||
+              new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+            if (dealDetails?.vgvFinal != null) vendaInsert.vgv_final = dealDetails.vgvFinal;
+            if (dealDetails?.unidade) vendaInsert.unidade = dealDetails.unidade;
+          }
+
           const { data: negocio, error: negError } = await supabase
             .from("negocios")
             .insert({
@@ -761,19 +772,23 @@ export function usePipeline(
               telefone: lead.telefone || null,
               fase: dealFase,
               origem: "pipeline_convertido",
-              vgv_estimado: lead.valor_estimado || null,
-            })
+              vgv_estimado: lead.valor_estimado || dealDetails?.vgvFinal || null,
+              ...vendaInsert,
+            } as any)
             .select("id")
             .single();
 
           if (negocio && !negError) {
             negocioId = negocio.id;
-            toast.success(`🎉 Negócio criado para ${lead.nome}!`, {
-              description: "🎯 Envie a proposta em até 24h!",
-              duration: 5000,
-            });
+            if (dealFase !== "ganho") {
+              toast.success(`🎉 Negócio criado para ${lead.nome}!`, {
+                description: "🎯 Envie a proposta em até 24h!",
+                duration: 5000,
+              });
+            }
           } else if (negError) {
             console.error("[moveLead] Erro ao criar negócio:", negError);
+            if (dealFase === "ganho") throw negError;
             toast.warning("Lead movido, mas houve erro ao criar negócio automaticamente.", { duration: 4000 });
           }
         }
