@@ -860,6 +860,18 @@ export function usePipeline(
         }
       } catch (negocioError) {
         console.error("[moveLead] Catch - Erro ao sincronizar negócio:", negocioError);
+        if (dealFase === "ganho") {
+          // Venda não gravada → cliente NÃO pode ficar em Ganho (senão some do VGV).
+          await supabase.from("pipeline_leads")
+            .update({ stage_id: oldStageId, stage_changed_at: oldStageChangedAt } as any)
+            .eq("id", leadId);
+          setLeads(prev => prev.map(l =>
+            l.id === leadId ? { ...l, stage_id: oldStageId, stage_changed_at: oldStageChangedAt } : l
+          ));
+          toast.error("A venda não foi registrada, tente de novo.", { duration: 6000 });
+          setTimeout(() => { localMutationRef.current = false; }, 500);
+          return;
+        }
         toast.warning("Lead movido, mas erro ao sincronizar o negócio.", { duration: 4000 });
       }
     }
