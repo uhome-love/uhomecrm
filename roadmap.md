@@ -54,4 +54,4 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [ ] Fase 0 — Mockups (Financeiro, Vendas Realizadas, Confirmar venda)
 - [ ] Fases 1–7 conforme plano
 
-- [ ] Intermediação: forma de pagamento (Zemo/NF -10%/PIX; Open padrão NF, aceita PIX), vínculo com cliente/negócio, construtoras oficiais — aguarda desenho
+- [x] Intermediação: forma de pagamento (Zemo/NF -10%/PIX; Open padrão NF, aceita PIX), vínculo com cliente/negócio, construtora no documento
