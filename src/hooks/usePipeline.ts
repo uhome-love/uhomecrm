@@ -656,6 +656,13 @@ export function usePipeline(
     const oldStageChangedAt = lead.stage_changed_at;
     if (oldStageId === newStageId) return;
 
+    // A confirmação transacional e seus anexos pertencem à janela compartilhada.
+    // Nenhum consumidor legado pode entrar em Ganho pelo movimento genérico.
+    if (stages.find(s => s.id === newStageId)?.tipo === "venda") {
+      toast.error("Abra Confirmar venda para preencher os dados e anexos obrigatórios.");
+      return;
+    }
+
     localMutationRef.current = true;
 
     // ─── Optimistic update (immediate UI response) ───

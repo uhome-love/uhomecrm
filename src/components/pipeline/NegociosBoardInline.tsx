@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import PipelineStageTransitionPopup, { type TransitionResult } from "./PipelineStageTransitionPopup";
+import { ConfirmarVendaForm } from "@/components/vendas/ConfirmarVendaForm";
 
 // Assinatura real do moveLead (aceita observação + dados da venda p/ o Ganho).
 type MoveLeadFn = (leadId: string, newStageId: string, observacao?: string, dealDetails?: { vgvFinal?: number | null; dataAssinatura?: string | null; unidade?: string | null }) => void | Promise<unknown>;
@@ -273,6 +274,11 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, s
           targetStage={vendaStage}
           onConfirm={(r: TransitionResult) => {
             const ex = r.extraData || {};
+            if (ex.vendaConfirmada === true) {
+              invalidateBoard();
+              setGanhoDrop(null);
+              return;
+            }
             Promise.resolve(
               onMoveLead?.(ganhoDrop.leadId, vendaStage.id, (ex.observacao as string) || r.observacao, {
                 vgvFinal: ex.vgvFinal as number,
@@ -388,6 +394,7 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
   const [discard, setDiscard] = useState(false);
   const [discardTipo, setDiscardTipo] = useState<"reengajavel" | "definitivo">("reengajavel");
   const [regredirOpen, setRegredirOpen] = useState(false);
+  const [confirmarOpen, setConfirmarOpen] = useState(false);
   const queryClient = useQueryClient();
   if (!leadId) return null;
 
@@ -403,6 +410,10 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
   const canRegredir = temNegocio && !!posVisitaStage;
   const mover = async (stageId: string) => {
     if (!onMoveLead) return;
+    if (stages?.find(s => s.id === stageId)?.tipo === "venda") {
+      setConfirmarOpen(true);
+      return;
+    }
     await onMoveLead(leadId, stageId);
     queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
   };
@@ -466,6 +477,12 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
         </DropdownMenuContent>
       </DropdownMenu>
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
+        <Dialog open={confirmarOpen} onOpenChange={setConfirmarOpen}>
+          <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+            <ConfirmarVendaForm leadId={leadId} nome={nome} onCancel={() => setConfirmarOpen(false)}
+              onConfirmed={() => { setConfirmarOpen(false); refetch(); }} />
+          </DialogContent>
+        </Dialog>
         <CriarTarefaModal open={lembrete} lead={{ id: leadId, nome }} onClose={() => setLembrete(false)} />
         {registrar && (
           <RegistrarAtividadeModal lead={{ id: leadId, nome }} onClose={() => setRegistrar(false)} onSaved={() => invalidateTaskQueries(queryClient, leadId)} />

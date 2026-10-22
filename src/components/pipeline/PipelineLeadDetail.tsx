@@ -1134,6 +1134,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           targetStage={transitionTarget}
           onCancel={() => setTransitionTarget(null)}
           onConfirm={async (r) => {
+            if (r.extraData?.vendaConfirmada === true) {
+              setTransitionTarget(null);
+              leadData.reload();
+              window.dispatchEvent(new CustomEvent("pipeline-reload"));
+              return;
+            }
             await onMove(lead.id, r.targetStageId, r.observacao || undefined);
             setMoveObs("");
             setTransitionTarget(null);

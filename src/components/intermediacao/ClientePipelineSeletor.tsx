@@ -30,6 +30,20 @@ export function ClientePipelineSeletor({
   const [carregando, setCarregando] = useState(false);
 
   useEffect(() => {
+    const leadId = new URLSearchParams(window.location.search).get("lead");
+    if (!leadId || value) return;
+    let ativo = true;
+    async function abrirCliente() {
+      const { data, error } = await supabase.from("pipeline_leads")
+        .select("id,nome,telefone,email,empreendimento,negocio_id,corretor_id")
+        .eq("id", leadId).maybeSingle();
+      if (ativo && data && !error) await escolher(data);
+    }
+    void abrirCliente();
+    return () => { ativo = false; };
+  }, []);
+
+  useEffect(() => {
     const termo = busca.trim();
     if (termo.length < 3) { setResultados([]); return; }
     const t = setTimeout(async () => {
