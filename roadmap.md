@@ -47,3 +47,9 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [x] Gestão: Central da Roleta no celular (validada, Tirar da fila cancelado)
 - [ ] Corretor: aplicar o desenho no cartão da Roleta do Início (página /roleta é só da gestão) — aguarda ok do Lucas
 - [ ] Horário da noite 18:00 x 18:30 — aguarda decisão
+
+## Financeiro + Vendas Realizadas (plano aprovado 22/10)
+- [x] Fase 0.5a — Conferência vendas × intermediações × empreendimentos (planilha entregue)
+- [ ] Fase 0.5b — Gravar vínculos/limpeza após aprovação da planilha (aguarda Lucas)
+- [ ] Fase 0 — Mockups (Financeiro, Vendas Realizadas, Confirmar venda)
+- [ ] Fases 1–7 conforme plano
