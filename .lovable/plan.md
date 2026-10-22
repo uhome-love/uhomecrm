@@ -39,6 +39,18 @@ Financeiro (CEO/diretora)
 ### Fase 0 — Mockups para aprovação
 Mockup das telas: Vendas Realizadas, Financeiro (Visão geral, A receber, Ganhos, Custos, Resultado) e Confirmar venda. Nada é construído antes do seu ok.
 
+### Fase 0.5 — Validação dos cadastros e vínculo das intermediações (primeiro passo de dados)
+- **Empreendimentos oficiais:** conferir a lista oficial. Cada empreendimento passa a ter **construtora/incorporadora** obrigatória. Juntar nomes repetidos (ex.: "Connect JW", "Connect JW - v2") num só.
+- **Vendas:** ligar cada uma das 115 vendas ao empreendimento oficial, preenchendo a construtora pelo empreendimento. A unidade é validada contra a intermediação.
+- **Intermediações:** ligar cada uma à sua venda por cliente, unidade, empreendimento e VGV. Marcar as duplicadas.
+- **Relatório de conferência para você aprovar antes de gravar,** dividido em:
+  - ligado automaticamente;
+  - casos com dúvida, para escolher;
+  - venda sem intermediação;
+  - intermediação sem venda;
+  - unidade ou VGV diferentes entre a venda e a intermediação.
+- **Fonte única:** a intermediação é a única fonte de comissão e divisão. A pagadoria antiga é ignorada.
+
 ### Fase 1 — Padrão obrigatório ao marcar Ganho
 - **Campos exigidos:** empreendimento (da lista oficial), construtora (preenchida pelo empreendimento), unidade, VGV, data da assinatura, **intermediação** e **comprovante** (contrato ou sinal).
 - **Escolha da intermediação:** o sistema sugere a do mesmo cliente e unidade. Se ela não existe, aparece o botão "Gerar intermediação", que abre a página Intermediação.
