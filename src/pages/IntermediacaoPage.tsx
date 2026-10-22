@@ -22,7 +22,7 @@ import { formatCurrencyInput, handleCurrencyChange, parseCurrencyToNumber, numbe
 import { ClientePipelineSeletor, type ClienteSelecionado } from "@/components/intermediacao/ClientePipelineSeletor";
 import { FormaPagamentoCard } from "@/components/intermediacao/FormaPagamentoCard";
 import {
-  DESCONTO_NF_PCT_PADRAO, construtoraDoEmpreendimento, formaPadrao, type FormaPagamento,
+  DESCONTO_NF_PCT_PADRAO, construtoraDoEmpreendimento, type FormaPagamento,
 } from "@/lib/intermediacaoPagamento";
 
 // ─── Máscaras de documentos/contato ────────────────────────────────────────────
@@ -288,10 +288,9 @@ export default function IntermediacaoPage() {
   const [construtora, setConstrutora] = useState("");
   const [construtoraManual, setConstrutoraManual] = useState(false);
 
-  // Construtora automática pelo empreendimento; Open já abre com nota fiscal (gerente pode trocar).
+  // Construtora automática pelo empreendimento. Forma de pagamento nunca vem marcada: quem cria escolhe.
   useEffect(() => {
     if (!construtoraManual) setConstrutora(construtoraDoEmpreendimento(empreendimento) ?? "");
-    if (formaPadrao(empreendimento) === "nota_fiscal") setFormaPagamento((f) => f ?? "nota_fiscal");
   }, [empreendimento, construtoraManual]);
 
   const aplicarCliente = (c: ClienteSelecionado) => {

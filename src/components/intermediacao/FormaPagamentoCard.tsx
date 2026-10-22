@@ -38,9 +38,9 @@ export function FormaPagamentoCard({
             </button>
           ))}
         </div>
-        {isOpen && (
+        {!forma && (
           <p className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-            Open: já vem marcada como Nota fiscal, mas pode trocar para PIX (por exemplo, quando o cliente pagou a entrada).
+            Escolha a forma de pagamento desta venda.{isOpen ? " Open pode ser Nota fiscal ou PIX (por exemplo, com entrada maior)." : ""}
           </p>
         )}
         {forma === "nota_fiscal" && r.bruto > 0 && (
