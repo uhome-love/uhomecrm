@@ -58,7 +58,7 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [ ] Fase 1 — 11 vínculos "dúvida" para conferir na lista de pendências (Fase 2)
 - [x] Fase 1 — 34 documentos do Drive conferidos: 32 registros novos e 2 já existentes (Sandro/Marco); 25 vínculos novos certos, 26 divisões certas reconciliadas e 34 anexos privados acessíveis. Sete vínculos prováveis pendentes; Marco/Skyline intacto. Nenhuma baixa/cobrança histórica presumida. Busca/download no preview e 3 testes de pagamento validados.
 - [ ] Fase 1 — Skyline R$ 32,7 mi: manter sem alteração; aguarda Lucas confirmar o VGV correto
-- [ ] Fase 2 — Confirmar venda com 6 itens obrigatórios + trava
+- [ ] Fase 2 — Em execução autorizada: confirmação única com dados oficiais, intermediação vinculada e comprovante do ato; trava no servidor, aviso após gravar e pendências históricas
 - [ ] Fase 3 — Jornada do negócio (sugestões 1–4)
 - [ ] Fase 4 — Nova página Vendas
 - [ ] Fase 5 — Financeiro (distrato só CEO/diretora)
