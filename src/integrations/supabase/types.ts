@@ -2472,6 +2472,66 @@ export type Database = {
         }
         Relationships: []
       }
+      custos_fixos: {
+        Row: {
+          categoria: string
+          competencia: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          competencia: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          competencia?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      custos_midia_manual: {
+        Row: {
+          canal: string
+          competencia: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          valor: number
+        }
+        Insert: {
+          canal?: string
+          competencia: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          valor?: number
+        }
+        Update: {
+          canal?: string
+          competencia?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       diretoria_equipes: {
         Row: {
           created_at: string
@@ -4592,6 +4652,53 @@ export type Database = {
         }
         Relationships: []
       }
+      intermediacao_beneficiarios: {
+        Row: {
+          created_at: string
+          desconto: number
+          id: string
+          intermediacao_id: string
+          nome: string
+          papel: string
+          percentual: number | null
+          user_id: string | null
+          valor_bruto: number
+          valor_liquido: number
+        }
+        Insert: {
+          created_at?: string
+          desconto?: number
+          id?: string
+          intermediacao_id: string
+          nome: string
+          papel: string
+          percentual?: number | null
+          user_id?: string | null
+          valor_bruto?: number
+          valor_liquido?: number
+        }
+        Update: {
+          created_at?: string
+          desconto?: number
+          id?: string
+          intermediacao_id?: string
+          nome?: string
+          papel?: string
+          percentual?: number | null
+          user_id?: string | null
+          valor_bruto?: number
+          valor_liquido?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intermediacao_beneficiarios_intermediacao_id_fkey"
+            columns: ["intermediacao_id"]
+            isOneToOne: false
+            referencedRelation: "intermediacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intermediacoes: {
         Row: {
           arquivo_path: string
@@ -4599,13 +4706,22 @@ export type Database = {
           corretores: string[]
           created_at: string
           created_by: string
+          desconto_nf_pct: number | null
           empreendimento: string
           filename: string
+          forma_pagamento: string | null
           id: string
+          negocio_id: string | null
+          origem: string
+          parcelas: Json | null
           payload: Json | null
+          pipeline_lead_id: string | null
+          status: string
           tipo_pessoa: string
           unidade: string
+          valor_bruto: number | null
           valor_comissao: number
+          valor_liquido: number | null
           vgv: number
         }
         Insert: {
@@ -4614,13 +4730,22 @@ export type Database = {
           corretores: string[]
           created_at?: string
           created_by: string
+          desconto_nf_pct?: number | null
           empreendimento: string
           filename: string
+          forma_pagamento?: string | null
           id?: string
+          negocio_id?: string | null
+          origem?: string
+          parcelas?: Json | null
           payload?: Json | null
+          pipeline_lead_id?: string | null
+          status?: string
           tipo_pessoa: string
           unidade: string
+          valor_bruto?: number | null
           valor_comissao: number
+          valor_liquido?: number | null
           vgv: number
         }
         Update: {
@@ -4629,16 +4754,47 @@ export type Database = {
           corretores?: string[]
           created_at?: string
           created_by?: string
+          desconto_nf_pct?: number | null
           empreendimento?: string
           filename?: string
+          forma_pagamento?: string | null
           id?: string
+          negocio_id?: string | null
+          origem?: string
+          parcelas?: Json | null
           payload?: Json | null
+          pipeline_lead_id?: string | null
+          status?: string
           tipo_pessoa?: string
           unidade?: string
+          valor_bruto?: number | null
           valor_comissao?: number
+          valor_liquido?: number | null
           vgv?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "intermediacoes_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intermediacoes_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
+          },
+          {
+            foreignKeyName: "intermediacoes_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_pdn_linhas"
+            referencedColumns: ["negocio_id"]
+          },
+        ]
       }
       jetimob_campaign_map: {
         Row: {
@@ -8000,11 +8156,15 @@ export type Database = {
       negocios: {
         Row: {
           auth_user_id: string | null
+          comprovante_ato_path: string | null
           construtora: string | null
           contrato_situacao: string | null
           corretor_id: string | null
           created_at: string | null
           data_assinatura: string | null
+          distrato_em: string | null
+          distrato_motivo: string | null
+          distrato_por: string | null
           documentacao_situacao: string | null
           empreendimento: string | null
           empreendimento_canonico_id: string | null
@@ -8014,6 +8174,7 @@ export type Database = {
           gerente_id: string | null
           id: string
           imovel_interesse: string | null
+          intermediacao_id: string | null
           lead_id: string | null
           lead_id_match_metodo: string | null
           lead_id_match_score: number | null
@@ -8040,11 +8201,15 @@ export type Database = {
         }
         Insert: {
           auth_user_id?: string | null
+          comprovante_ato_path?: string | null
           construtora?: string | null
           contrato_situacao?: string | null
           corretor_id?: string | null
           created_at?: string | null
           data_assinatura?: string | null
+          distrato_em?: string | null
+          distrato_motivo?: string | null
+          distrato_por?: string | null
           documentacao_situacao?: string | null
           empreendimento?: string | null
           empreendimento_canonico_id?: string | null
@@ -8054,6 +8219,7 @@ export type Database = {
           gerente_id?: string | null
           id?: string
           imovel_interesse?: string | null
+          intermediacao_id?: string | null
           lead_id?: string | null
           lead_id_match_metodo?: string | null
           lead_id_match_score?: number | null
@@ -8080,11 +8246,15 @@ export type Database = {
         }
         Update: {
           auth_user_id?: string | null
+          comprovante_ato_path?: string | null
           construtora?: string | null
           contrato_situacao?: string | null
           corretor_id?: string | null
           created_at?: string | null
           data_assinatura?: string | null
+          distrato_em?: string | null
+          distrato_motivo?: string | null
+          distrato_por?: string | null
           documentacao_situacao?: string | null
           empreendimento?: string | null
           empreendimento_canonico_id?: string | null
@@ -8094,6 +8264,7 @@ export type Database = {
           gerente_id?: string | null
           id?: string
           imovel_interesse?: string | null
+          intermediacao_id?: string | null
           lead_id?: string | null
           lead_id_match_metodo?: string | null
           lead_id_match_score?: number | null
@@ -8175,6 +8346,13 @@ export type Database = {
             referencedRelation: "empreendimentos_canonicos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "negocios_intermediacao_id_fkey"
+            columns: ["intermediacao_id"]
+            isOneToOne: false
+            referencedRelation: "intermediacoes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       negocios_atividades: {
@@ -8225,6 +8403,86 @@ export type Database = {
           },
           {
             foreignKeyName: "negocios_atividades_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_pdn_linhas"
+            referencedColumns: ["negocio_id"]
+          },
+        ]
+      }
+      negocios_recebimentos: {
+        Row: {
+          comprovante_path: string | null
+          created_at: string
+          created_by: string | null
+          forma: string | null
+          id: string
+          intermediacao_id: string | null
+          negocio_id: string | null
+          observacao: string | null
+          parcela_num: number
+          recebido_em: string | null
+          status: string
+          updated_at: string
+          valor: number
+          vencimento: string | null
+        }
+        Insert: {
+          comprovante_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          forma?: string | null
+          id?: string
+          intermediacao_id?: string | null
+          negocio_id?: string | null
+          observacao?: string | null
+          parcela_num?: number
+          recebido_em?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+          vencimento?: string | null
+        }
+        Update: {
+          comprovante_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          forma?: string | null
+          id?: string
+          intermediacao_id?: string | null
+          negocio_id?: string | null
+          observacao?: string | null
+          parcela_num?: number
+          recebido_em?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+          vencimento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negocios_recebimentos_intermediacao_id_fkey"
+            columns: ["intermediacao_id"]
+            isOneToOne: false
+            referencedRelation: "intermediacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negocios_recebimentos_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negocios_recebimentos_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_fato_venda"
+            referencedColumns: ["negocio_id"]
+          },
+          {
+            foreignKeyName: "negocios_recebimentos_negocio_id_fkey"
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "v_pdn_linhas"
