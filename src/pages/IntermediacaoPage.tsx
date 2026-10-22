@@ -1006,8 +1006,8 @@ function HistoricoTab({ onEditar }: { onEditar: (payload: any) => void }) {
                           size="sm"
                           variant="outline"
                           onClick={() => onEditar(r.payload)}
-                          disabled={!r.payload}
-                          title={r.payload ? "Editar e gerar novamente" : "Registro antigo sem dados para edição"}
+                          disabled={!r.payload || r.payload.importacaoHistorica === true}
+                          title={r.payload?.importacaoHistorica ? "Documento histórico: divisão original preservada" : r.payload ? "Editar e gerar novamente" : "Registro antigo sem dados para edição"}
                         >
                           <Pencil className="h-4 w-4" />
                           <span className="ml-1">Editar</span>
