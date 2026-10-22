@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcularRepasse, construtoraDoEmpreendimento, formaPadrao } from "./intermediacaoPagamento";
+import { calcularRepasse, construtoraDoEmpreendimento } from "./intermediacaoPagamento";
 
 const credores = [
   { nome: "Corretor", total: 8000 },
@@ -20,12 +20,6 @@ describe("forma de pagamento da intermediação", () => {
   it("PIX e Zemo não têm desconto", () => {
     expect(calcularRepasse(credores, "pix").desconto).toBe(0);
     expect(calcularRepasse(credores, "zemo").liquido).toBe(20000);
-  });
-
-  it("Open Bosque e Open Arvoredo abrem com nota fiscal; outros com Zemo", () => {
-    expect(formaPadrao("Open Bosque")).toBe("nota_fiscal");
-    expect(formaPadrao("Open Arvoredo")).toBe("nota_fiscal");
-    expect(formaPadrao("Shift")).toBe("zemo");
   });
 
   it("construtoras oficiais", () => {

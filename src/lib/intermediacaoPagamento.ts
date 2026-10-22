@@ -48,11 +48,6 @@ export function construtoraDoEmpreendimento(nome: string | null | undefined): st
   return null;
 }
 
-/** Forma que já vem marcada. Open abre com nota fiscal, mas o gerente pode trocar. */
-export function formaPadrao(empreendimento: string | null | undefined): FormaPagamento {
-  return construtoraDoEmpreendimento(empreendimento) === "Open" ? "nota_fiscal" : "zemo";
-}
-
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 export interface LinhaRepasse { nome: string; bruto: number; desconto: number; liquido: number }
