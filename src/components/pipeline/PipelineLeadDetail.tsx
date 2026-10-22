@@ -109,7 +109,10 @@ const PDN_GRUPO_LABEL: Record<string, string> = {
   ganho: "Ganho",
 };
 
-export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete, etapaSugerida }: Props) {
+export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete, etapaSugerida }: Props) {
+  const [confirmedLead, setConfirmedLead] = useState<PipelineLead | null>(null);
+  const lead = confirmedLead?.id === leadProp.id ? confirmedLead : leadProp;
+  useEffect(() => { setConfirmedLead(null); }, [leadProp.id, leadProp.stage_id, leadProp.updated_at]);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
@@ -1136,6 +1139,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           onConfirm={async (r) => {
             if (r.extraData?.vendaConfirmada === true) {
               setTransitionTarget(null);
+              const result = await supabase.from("pipeline_leads").select("*").eq("id", lead.id).single();
+              if (result.data) setConfirmedLead(result.data as unknown as PipelineLead);
               leadData.reload();
               window.dispatchEvent(new CustomEvent("pipeline-reload"));
               return;
