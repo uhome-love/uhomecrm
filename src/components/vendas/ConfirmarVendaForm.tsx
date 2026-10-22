@@ -14,11 +14,15 @@ import { formatBRT } from "@/lib/brtTime";
 import { handleCurrencyChange, formatCurrencyInput, parseCurrencyToNumber, numberToRawCurrency } from "@/utils/currencyFormat";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Props { leadId: string; nome: string; valorEstimado?: number | null; empreendimento?: string | null; onConfirmed: () => void; onCancel: () => void }
 
 export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento, onConfirmed, onCancel }: Props) {
   const dados = useConfirmarVenda(leadId);
+  const queryClient = useQueryClient();
+  const { isGestor, isAdmin, isDiretor } = useUserRole();
   const [empId, setEmpId] = useState("");
   const [unidade, setUnidade] = useState("");
   const [valor, setValor] = useState(numberToRawCurrency(valorEstimado ?? 0));
@@ -64,6 +68,11 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
       }
       const result = await supabase.rpc("confirmar_venda", { p_lead_id: leadId, p_empreendimento_id: empId, p_unidade: unidade.trim(), p_vgv: vgv, p_data: data, p_intermediacao_id: interId, p_comprovante_path: comprovante, p_observacao: obs.trim() || null });
       if (result.error) throw result.error;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["negocios-board"] }),
+        queryClient.invalidateQueries({ queryKey: ["vendas-realizadas"] }),
+        queryClient.invalidateQueries({ queryKey: ["vendas-pendencias-documentos"] }),
+      ]);
       toast.success("Venda assinada e registrada!");
       window.dispatchEvent(new CustomEvent("pipeline-reload"));
       onConfirmed();
@@ -89,7 +98,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
         {inter && <div className="flex items-start gap-2 text-sm text-muted-foreground"><FileSignature className="mt-0.5 size-4 shrink-0" /><span className="break-words min-w-0">{inter.filename || inter.comprador_nome}</span></div>}
         {unidadeDiferente && <p role="alert" className="text-sm text-destructive">Unidade diferente da intermediação: {inter?.unidade}.</p>}
         {vgvDiferente && <p className="text-sm text-muted-foreground">VGV na intermediação: {fmtMoney(Number(inter?.vgv), "exact")}. Confira o valor final.</p>}
-        <Button variant="outline" asChild className="w-full"><Link to={`/intermediacao?lead=${encodeURIComponent(leadId)}`} target="_blank"><FileSignature className="mr-2 size-4" />Gerar intermediação</Link></Button>
+        {(isGestor || isAdmin || isDiretor) && <Button variant="outline" asChild className="w-full"><Link to={`/intermediacao?lead=${encodeURIComponent(leadId)}`} target="_blank"><FileSignature className="mr-2 size-4" />Gerar intermediação</Link></Button>}
       </section>
       <section className="space-y-3 border-t border-border pt-4">
         <h3 className="text-sm font-semibold">Comprovante do pagamento do ato *</h3>
