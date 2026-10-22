@@ -54,6 +54,11 @@ const BodySchema = z.object({
   }),
   testemunhas: z.array(z.object({ nome: z.string().default(""), email: z.string().default("") })).default([]),
   dataContrato: z.string().min(1),
+  formaPagamento: z.enum(["zemo", "nota_fiscal", "pix"]).default("zemo"),
+  descontoNfPct: z.number().min(0).max(50).default(10),
+  construtora: z.string().max(120).optional(),
+  negocioId: z.string().uuid().optional(),
+  pipelineLeadId: z.string().uuid().optional(),
 });
 
 type Body = z.infer<typeof BodySchema>;
@@ -221,6 +226,19 @@ function tabelaZemo(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"
   return new Table({ width: { size: tableWidth, type: WidthType.DXA }, columnWidths, rows: [header, row] });
 }
 
+function tabelaRepasseNf(calc: ReturnType<typeof calcular>, pct: number) {
+  const w = [3226, 1900, 1900, 2000];
+  const linhas = calc.credores.map((c) => {
+    const desc = round2((c.total * pct) / 100);
+    return { nome: c.nome, bruto: c.total, desc, liq: round2(c.total - desc) };
+  });
+  const soma = (k: "bruto" | "desc" | "liq") => round2(linhas.reduce((s, l) => s + l[k], 0));
+  const header = new TableRow({ children: ["Beneficiário", "Bruto", `Desconto NF (${pct}%)`, "Valor líquido"].map((t, i) => tcell(t, { bold: true, fill: "EEEEFF", width: w[i] })) });
+  const rows = linhas.map((l) => new TableRow({ children: [tcell(l.nome, { width: w[0] }), tcell(brl(l.bruto), { width: w[1] }), tcell(`- ${brl(l.desc)}`, { width: w[2] }), tcell(brl(l.liq), { width: w[3] })] }));
+  const total = new TableRow({ children: [tcell("Total", { bold: true, fill: "F4F4F4", width: w[0] }), tcell(brl(soma("bruto")), { bold: true, fill: "F4F4F4", width: w[1] }), tcell(`- ${brl(soma("desc"))}`, { bold: true, fill: "F4F4F4", width: w[2] }), tcell(brl(soma("liq")), { bold: true, fill: "F4F4F4", width: w[3] })] });
+  return { tabela: new Table({ width: { size: 9026, type: WidthType.DXA }, columnWidths: w, rows: [header, ...rows, total] }), desconto: soma("desc"), bruto: soma("bruto") };
+}
+
 function assinatura(label: string, nome: string) {
   return new Paragraph({
     spacing: { before: 360, after: 0 },
@@ -316,6 +334,7 @@ async function montarDoc(b: Body): Promise<Document> {
 
   children.push(NORMAL("1. O(a,s) CONTRATANTE(S), por meio do presente instrumento, contrata(m) os CONTRATADOS os serviços de intermediação imobiliária, para aquisição do imóvel abaixo indicado, assumindo ele(a,es,as), CONTRATANTE(S), o compromisso de pagar aos CONTRATADOS, os valores indicados no presente instrumento."));
   children.push(NORMAL(`EMPREENDIMENTO: ${b.imovel.empreendimento.toUpperCase()}`, { bold: true }));
+  if (b.construtora?.trim()) children.push(NORMAL(`CONSTRUTORA/INCORPORADORA: ${b.construtora.trim().toUpperCase()}`, { bold: true }));
   children.push(NORMAL(`UNIDADE: ${b.imovel.unidade}`, { bold: true }));
   children.push(NORMAL(`VGV: ${brl(b.imovel.vgv)}`, { bold: true }));
 
@@ -329,7 +348,22 @@ async function montarDoc(b: Body): Promise<Document> {
   children.push(tabelaComissao(calc, b.comissao.parcelas));
 
   children.push(new Paragraph({ spacing: { before: 200, after: 120 }, children: [new TextRun({ text: "2.1 - Divisão de pagamento:", bold: true })] }));
-  children.push(tabelaZemo(calc, b.comissao.parcelas));
+  if (b.formaPagamento === "nota_fiscal") {
+    const nf = tabelaRepasseNf(calc, b.descontoNfPct);
+    children.push(runsParagraph([
+      new TextRun({ text: "Forma de pagamento: Nota fiscal. ", bold: true }),
+      new TextRun(`A UHome Negócios Imobiliários recebe o valor integral da comissão e repassa a cada beneficiário, já descontados ${b.descontoNfPct}% referentes à nota fiscal (${brl(nf.desconto)} sobre a comissão bruta de ${brl(nf.bruto)}), conforme quadro abaixo:`),
+    ]));
+    children.push(nf.tabela);
+  } else if (b.formaPagamento === "pix") {
+    children.push(runsParagraph([
+      new TextRun({ text: "Forma de pagamento: PIX. ", bold: true }),
+      new TextRun("Os valores são pagos diretamente na conta de cada beneficiário, conforme o quadro da cláusula 2."),
+    ]));
+  } else {
+    children.push(runsParagraph([new TextRun({ text: "Forma de pagamento: ZemoBank.", bold: true })]));
+    children.push(tabelaZemo(calc, b.comissao.parcelas));
+  }
   children.push(new Paragraph({ spacing: { after: 120 }, children: [] }));
 
   CLAUSULAS_FIXAS.forEach((t) => children.push(NORMAL(t)));
