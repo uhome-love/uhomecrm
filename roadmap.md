@@ -51,7 +51,13 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 ## Financeiro + Vendas Realizadas (plano aprovado 22/10)
 - [x] Fase 0.5a — Conferência vendas × intermediações × empreendimentos (planilha entregue)
 - [ ] Fase 0.5b — Gravar vínculos/limpeza após aprovação da planilha (aguarda Lucas)
-- [ ] Fase 0 — Mockups (Financeiro, Vendas Realizadas, Confirmar venda)
-- [ ] Fases 1–7 conforme plano
+- [x] Fase 0 — Mockups aprovados
+- [x] Renomear "Vendas Realizadas" para "Vendas"
+- [ ] Fase 1 — Guardar tudo certo (banco, só após 19h BRT)
+- [ ] Fase 2 — Confirmar venda com 6 itens obrigatórios + trava
+- [ ] Fase 3 — Jornada do negócio (sugestões 1–4)
+- [ ] Fase 4 — Nova página Vendas
+- [ ] Fase 5 — Financeiro (distrato só CEO/diretora)
+- [ ] Fase 6 — Validação ponta a ponta
 
 - [x] Intermediação: forma de pagamento (Zemo/NF -10%/PIX; Open padrão NF, aceita PIX), vínculo com cliente/negócio, construtora no documento

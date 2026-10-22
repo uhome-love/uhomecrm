@@ -642,7 +642,7 @@ export default function VendasRealizadas() {
           <TrendingUp size={13} strokeWidth={1.5} className="text-white" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-foreground leading-none">Vendas realizadas</h1>
+          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-foreground leading-none">Vendas</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">{dateRange.label}</p>
         </div>
 

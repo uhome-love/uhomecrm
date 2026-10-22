@@ -64,7 +64,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "LIA · Uhome",        path: "/admin/lia-hub",     icon: <MessageSquare size={15} strokeWidth={1.5} /> },
         { label: "Pipeline",           path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Visitas",            path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
+        { label: "Vendas",             path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
       ],
@@ -127,7 +127,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Negócios",
       items: [
-        { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
+        { label: "Vendas",             path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
         { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
@@ -194,7 +194,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Negócios",
       items: [
-        { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
+        { label: "Vendas",             path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
         { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
@@ -251,7 +251,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Negócios",
       items: [
-        { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
+        { label: "Vendas",             path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         
         { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
