@@ -18853,6 +18853,7 @@ export type Database = {
         Args: { p_name: string; p_secret: string }
         Returns: string
       }
+      vendas_docs_pode: { Args: { p_name: string }; Returns: boolean }
       vincular_alias_com_backfill: {
         Args: { p_empreendimento_id: string; p_texto: string; p_tipo: string }
         Returns: Json
