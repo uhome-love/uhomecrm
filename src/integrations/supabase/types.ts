@@ -16777,6 +16777,13 @@ export type Database = {
         Returns: Json
       }
       _meta_aud_phone_e164: { Args: { p_phone: string }; Returns: string }
+      _pipeline_lead_so_campos_sistema: {
+        Args: {
+          p_new: Database["public"]["Tables"]["pipeline_leads"]["Row"]
+          p_old: Database["public"]["Tables"]["pipeline_leads"]["Row"]
+        }
+        Returns: boolean
+      }
       _pipeline_referencia_estagnacao: {
         Args: { _lead_id: string }
         Returns: string
