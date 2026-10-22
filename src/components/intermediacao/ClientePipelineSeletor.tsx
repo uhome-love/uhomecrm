@@ -65,7 +65,7 @@ export function ClientePipelineSeletor({
     const q = supabase.from("negocios").select("id, empreendimento, unidade, vgv_final, vgv_estimado");
     const { data: neg } = negocioId
       ? await q.eq("id", negocioId).maybeSingle()
-      : await q.eq("pipeline_lead_id", l.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      : await q.eq("pipeline_lead_id", l.id).eq("status", "ativo").neq("fase", "ganho").order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (neg) {
       negocioId = neg.id;
       unidade = neg.unidade ?? "";
