@@ -10,14 +10,14 @@ const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", curren
 export function FormaPagamentoCard({
   forma, onChange, empreendimento, credores, pctDesconto,
 }: {
-  forma: FormaPagamento;
+  forma: FormaPagamento | null;
   onChange: (f: FormaPagamento) => void;
   empreendimento: string;
   credores: ReadonlyArray<{ nome: string; total: number }>;
   pctDesconto: number;
 }) {
   const isOpen = construtoraDoEmpreendimento(empreendimento) === "Open";
-  const r = calcularRepasse(credores, forma, pctDesconto);
+  const r = calcularRepasse(credores, forma ?? "zemo", pctDesconto);
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">2. Forma de pagamento (obrigatória)</CardTitle></CardHeader>
