@@ -1,3 +1,4 @@
+import { exigeDocumentosVenda } from "@/lib/vendaConfirmacao";
 export interface RateioVenda {
   negocio_id: string | null; corretor_auth_id: string | null; corretor_nome: string | null;
   equipe: string | null; gerente_auth_id: string | null; vgv_rateado: number | null;
@@ -25,14 +26,14 @@ export function valorVenda(v: VendaRelatorio, f: FiltrosVendas): number {
 export function filtrarVendas(vendas: VendaRelatorio[], f: FiltrosVendas): VendaRelatorio[] {
   const termo = f.busca.trim().toLocaleLowerCase("pt-BR");
   return vendas.filter(v => (f.construtora === "todos" || (v.construtora || "Não informada") === f.construtora)
-    && (f.empreendimento === "todos" || (v.empreendimento_canonico_id || v.empreendimento) === f.empreendimento)
+    && (f.empreendimento === "todos" || chaveEmpreendimento(v.empreendimento) === f.empreendimento)
     && ((f.corretor === "todos" && f.equipe === "todos") || rateiosSelecionados(v, f).length > 0)
     && (!termo || [v.nome_cliente, v.unidade, v.empreendimento, v.construtora, ...v.rateios.map(r => r.corretor_nome)].join(" ").toLocaleLowerCase("pt-BR").includes(termo)));
 }
 export function resumoVendas(vendas: VendaRelatorio[], f: FiltrosVendas) {
   const unicas = [...new Map(vendas.map(v => [v.id, v])).values()];
   const vgv = unicas.reduce((s, v) => s + valorVenda(v, f), 0);
-  return { vendas: unicas.length, vgv, ticket: unicas.length ? vgv / unicas.length : 0, semIntermediacao: unicas.filter(v => !v.intermediacao_id).length };
+  return { vendas: unicas.length, vgv, ticket: unicas.length ? vgv / unicas.length : 0, semIntermediacao: unicas.filter(v => !v.intermediacao_id && exigeDocumentosVenda(v.data_assinatura)).length };
 }
 export function rankingVendas(vendas: VendaRelatorio[], f: FiltrosVendas, porEquipe = false) {
   const grupos = new Map<string, { id: string; nome: string; vgv: number; negocios: Set<string> }>();
@@ -52,6 +53,13 @@ export function agruparVendas(vendas: VendaRelatorio[], f: FiltrosVendas, campo:
   }
   return [...grupos.values()].sort((a, b) => b.vgv - a.vgv);
 }
+/** Chave do filtro: mesmo empreendimento com grafias diferentes vira um só. */
+export function chaveEmpreendimento(nome: string | null | undefined): string {
+  const k = (nome ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/\s*-\s*v\d+\s*$/, "").replace(/\s+/g, " ").trim();
+  return k || "sem";
+}
 export function documentosVenda(v: VendaRelatorio): string[] {
+  if (!exigeDocumentosVenda(v.data_assinatura)) return [];
   return [!v.intermediacao_id ? "Intermediação" : "", !v.comprovante_ato_path ? "Comprovante do ato" : "", !v.empreendimento_canonico_id || !v.construtora ? "Cadastro oficial" : "", !v.unidade ? "Unidade" : "", !v.vgv_final ? "VGV final" : ""].filter(Boolean);
 }

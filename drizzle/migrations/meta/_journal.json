@@ -281,6 +281,13 @@
       "when": 1792772670813,
       "tag": "0039_roleta_visita_parceria_meio_ponto",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792778409752,
+      "tag": "0040_anexar_documentos_venda",
+      "breakpoints": true
     }
   ]
 }

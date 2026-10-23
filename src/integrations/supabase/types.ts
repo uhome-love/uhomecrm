@@ -17170,6 +17170,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      anexar_documentos_venda: {
+        Args: {
+          p_comprovante_path?: string
+          p_id: string
+          p_intermediacao_id?: string
+        }
+        Returns: string
+      }
       aprovar_lead_exclusivo: {
         Args: {
           p_canal: string
