@@ -10,6 +10,8 @@ describe("atalho mês/ano", () => {
 });
 describe("filtro empreendimento unificado", () => {
   it("Open Bosque - v4 = Open Bosque", () => expect(chaveEmpreendimento("Open Bosque - v4")).toBe(chaveEmpreendimento("open  bosque")));
+  it("sufixo depois do traço", () => expect(chaveEmpreendimento("Átrio - ABF")).toBe(chaveEmpreendimento("Atrio")));
+  it("apelido", () => expect(chaveEmpreendimento("connect joão wallig ")).toBe(chaveEmpreendimento("Connect JW")));
   it("acentos", () => expect(chaveEmpreendimento("Alto Lindóia")).toBe(chaveEmpreendimento("Alto Lindoia")));
 });
 describe("pendência só para vendas a partir de 22/10/2026", () => {
