@@ -85,6 +85,8 @@ export interface PipelineHeaderProps {
   ganhosFilter: boolean;
   setGanhosFilter: React.Dispatch<React.SetStateAction<boolean>>;
   // Filtro de SAÚDE do negócio (aba Negócios): "ambar" | "vermelho" | "estagnado" | null.
+  /** Divisão do pipeline ativo para o tooltip do topo. */
+  pipelineAtivoSplit?: { total: number; leads: number; negocios: number };
   negocioSaudeFilter?: "verde" | "ambar" | "vermelho" | null;
   setNegocioSaudeFilter?: (v: "verde" | "ambar" | "vermelho" | null) => void;
   hasAnyFilter: boolean;
@@ -270,8 +272,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     activeTab === "negocios"
       ? (negResumo ? `${negResumo.total} negócios · ${moneyShort(negResumo.vgvTotal)}` : "negócios")
       : activeTab === "equipes"
-      ? `${filteredLeadsCount} leads`
-      : `${filteredLeadsCount} leads`;
+      ? `${filteredLeadsCount} ativos`
+      : `${filteredLeadsCount} ativos`;
 
   // ── Colapsar a 3ª linha (ferramentas) — lembra a escolha por usuário ──
   const [compactTop, setCompactTop] = useState(false);
