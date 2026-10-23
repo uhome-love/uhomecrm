@@ -19,7 +19,7 @@ export function FormaPagamentoCard({
   const isOpen = construtoraDoEmpreendimento(empreendimento) === "Open";
   const r = calcularRepasse(credores, forma ?? "zemo", pctDesconto);
   return (
-    <Card>
+    <Card id="forma-pagamento-card" className={cn(!forma && "border-destructive/40")}>
       <CardHeader><CardTitle className="text-base">2. Forma de pagamento (obrigatória)</CardTitle></CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

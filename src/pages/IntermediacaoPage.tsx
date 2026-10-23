@@ -282,7 +282,10 @@ export default function IntermediacaoPage() {
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
     if (!cliente?.pipelineLeadId) return toast.error("Vincule um cliente do Pipeline.");
     if (gerentes.some(g=>!g.user_id||!g.percentual)) return toast.error("Selecione o gerente e o percentual.");
-    if (!formaPagamento) return toast.error("Escolha a forma de pagamento (ZemoBank, Nota fiscal ou PIX).");
+    if (!formaPagamento) {
+      document.getElementById("forma-pagamento-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return toast.error("Escolha a forma de pagamento (ZemoBank, Nota fiscal ou PIX).");
+    }
     if (parseCurrencyToNumber(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
     if (pctExcedido) return toast.error("A soma dos percentuais (corretores + gerentes + Gabrielle + Diretoria) ultrapassa 100%.");
     if (parcelas.some((p) => !p.vencimento || parseCurrencyToNumber(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
@@ -290,6 +293,7 @@ export default function IntermediacaoPage() {
     if (!testemunha2.nome.trim() || !testemunha2.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 2.");
 
     if (parcelasDivergem) return toast.error("A soma das parcelas deve ser igual à comissão bruta.");
+    if (gerentes.length === 0 && !window.confirm("Nenhum gerente com comissão nesta intermediação. A parte do gerente vai para a UHome. Gerar assim mesmo?")) return;
 
     // Comprador: envia apenas os campos do tipo selecionado.
     const normalizarComprador = (c: CompradorForm) =>
@@ -311,7 +315,7 @@ export default function IntermediacaoPage() {
     const payload = {
       comprador: compradoresPayload[0], // compat com consumidores antigos
       compradores: compradoresPayload,
-      imovel: { empreendimento, unidade, vgv: parseCurrencyToNumber(vgv) },
+      imovel: { empreendimento: empreendimento.trim(), unidade: unidade.trim(), vgv: parseCurrencyToNumber(vgv) },
       corretores: [
         { user_id: corretor1.user_id, nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
         ...(usarCorretor2 && corretor2.user_id
@@ -634,7 +638,14 @@ export default function IntermediacaoPage() {
                 ? `2.1 — Nota fiscal: a Uhome recebe o valor integral e repassa a cada beneficiário, já descontados ${DESCONTO_NF_PCT_PADRAO}% (veja o quadro de repasse acima).`
                 : formaPagamento === "pix"
                   ? "2.1 — PIX: cada beneficiário recebe direto na sua conta, conforme o quadro acima."
-                  : "2.1 — Escolha a forma de pagamento."}
+                  : "2.1 — Escolha a forma de pagamento:"}
+              {!formaPagamento && (
+                <span className="mt-2 flex flex-wrap gap-2">
+                  {FORMAS_PAGAMENTO.map((f) => (
+                    <Button key={f.value} type="button" size="sm" variant="outline" onClick={() => setFormaPagamento(f.value)}>{f.label}</Button>
+                  ))}
+                </span>
+              )}
             </p>
           ) : (
           <div>
