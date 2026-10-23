@@ -48,11 +48,11 @@ export function useMinhaEvolucao() {
       const semanas: SemanaVisitas[] = inicios.map((ini, i) => ({
         inicio: iso(ini),
         label: i === 3 ? "Atual" : ini.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-        visitas: (vis[i]?.data as number | null) ?? 0,
+        visitas: Number(vis[i]?.data ?? 0),
         atual: i === 3,
       }));
       const semanaAnterior = semanas[2].visitas;
-      const situacao: SituacaoVisitas = semanaAnterior >= meta ? "apto" : semanaAnterior >= 1 ? "evolucao" : "retomada";
+      const situacao: SituacaoVisitas = semanaAnterior >= meta ? "apto" : semanaAnterior > 0 ? "evolucao" : "retomada";
       return {
         meta, semanas, semanaAtual: semanas[3].visitas, semanaAnterior, situacao,
         bloqueio: (bloqRes.data as MinhaEvolucao["bloqueio"]) ?? null,

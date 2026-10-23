@@ -145,10 +145,8 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
               <Label className="text-xs text-muted-foreground">Parcerias existentes</Label>
               {existingPartnerships.map((p) => {
                 const parceiroNome = corretores.find((c) => c.user_id === p.corretor_parceiro_id)?.nome || "Corretor";
-                const canManage =
-                  canManageAll ||
-                  p.corretor_principal_id === user?.id ||
-                  p.criado_por === user?.id;
+                // Parceria registrada só pode ser desfeita/alterada pelo administrador.
+                const canManage = isAdmin;
                 return (
                   <div key={p.id} className="flex flex-col gap-2 rounded-md bg-accent/50 p-2 text-xs sm:flex-row sm:items-center">
                     <div className="flex min-w-0 flex-1 items-center gap-2">

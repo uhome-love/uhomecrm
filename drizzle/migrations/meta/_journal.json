@@ -274,6 +274,13 @@
       "when": 1792770980496,
       "tag": "0038_vendas_auditoria_unica_e_grants_financeiros",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792772670813,
+      "tag": "0039_roleta_visita_parceria_meio_ponto",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { fmtVisitas } from "@/lib/visitasRoleta";
 import { useNavigate } from "react-router-dom";
 import { useMinhaEvolucao } from "@/hooks/useMinhaEvolucao";
 import { useMinhaEvolucaoMes } from "@/hooks/useMinhaEvolucaoMes";
@@ -72,7 +73,7 @@ export default function MinhaEvolucaoKpis() {
       {evo && (
         <div className="flex flex-col gap-1 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
           <span className="text-foreground">
-            <b>Esta semana:</b> {evo.semanaAtual} de {evo.meta} visitas
+            <b>Esta semana:</b> {fmtVisitas(evo.semanaAtual)} de {evo.meta} visitas
             {faltam > 0 ? ` — faltam ${faltam} para a Roleta da próxima semana` : " — próxima semana garantida 🎯"}
           </span>
           <span className={cn("font-semibold", SIT[evo.situacao].c)}>

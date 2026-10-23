@@ -137,6 +137,30 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
     }
   }, [open, initialData]);
 
+  // Parceria já registrada no cliente: mostra ligada (não pode ser desfeita aqui).
+  const [parceriaExistente, setParceriaExistente] = useState<string | null>(null);
+  useEffect(() => {
+    setParceriaExistente(null);
+    const leadId = form.pipeline_lead_id;
+    if (!open || !leadId) return;
+    let cancel = false;
+    supabase
+      .from("pipeline_parcerias")
+      .select("corretor_principal_id, corretor_parceiro_id, created_at")
+      .eq("pipeline_lead_id", leadId)
+      .eq("status", "ativa")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (cancel || !data) return;
+        const p = data.find((x) => x.corretor_principal_id !== x.corretor_parceiro_id);
+        if (!p) return;
+        setParceriaExistente(p.corretor_parceiro_id);
+        setIsParceria(true);
+        setParceiroId(p.corretor_parceiro_id);
+      });
+    return () => { cancel = true; };
+  }, [open, form.pipeline_lead_id]);
+
   // Load pipeline leads + team members + empreendimentos + stages
   useEffect(() => {
     if (!user || !open) return;
@@ -336,7 +360,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
       } as any);
 
       // Create partnership if enabled and we have a pipeline_lead_id
-      if (result && isParceria && parceiroId) {
+      if (result && isParceria && parceiroId && !parceriaExistente) {
         const leadId = form.pipeline_lead_id || (result as any)?.pipeline_lead_id;
         if (leadId) {
           try {
@@ -709,6 +733,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                 <Switch
                   id="parceria-switch"
                   checked={isParceria}
+                  disabled={!!parceriaExistente}
                   onCheckedChange={(checked) => {
                     setIsParceria(checked);
                     if (!checked) setParceiroId("");
@@ -718,7 +743,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
               {isParceria && (
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">Corretor parceiro (divisão 50/50)</Label>
-                  <Select value={parceiroId} onValueChange={setParceiroId}>
+                  <Select value={parceiroId} onValueChange={setParceiroId} disabled={!!parceriaExistente}>
                     <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Selecione o corretor parceiro" />
                     </SelectTrigger>
@@ -736,7 +761,9 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                     </SelectContent>
                   </Select>
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    O lead será compartilhado no pipeline com divisão 50/50 da comissão.
+                    {parceriaExistente
+                      ? "Parceria já registrada neste cliente. Visita conta 0,5 para cada corretor na Roleta. Só o administrador pode desfazer."
+                      : "O lead será compartilhado no pipeline com divisão 50/50 da comissão. Visita conta 0,5 para cada corretor na Roleta."}
                   </p>
                 </div>
               )}

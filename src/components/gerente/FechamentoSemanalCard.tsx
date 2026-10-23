@@ -1,10 +1,11 @@
+import { fmtVisitas } from "@/lib/visitasRoleta";
 /** Fechamento semanal das visitas válidas (gravado toda segunda 00h05). Gerente vê a equipe; admin/diretor veem todos. Só leitura. */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-interface Linha { corretor_id: string; visitas_validas: number; crm_pct: number | null; situacao: "apto" | "evolucao" | "retomada"; um_a_um_pendente: boolean; nome: string }
+interface Linha { corretor_id: string; visitas_validas: number; visitas_pontos?: number | null; crm_pct: number | null; situacao: "apto" | "evolucao" | "retomada"; um_a_um_pendente: boolean; nome: string }
 
 const SIT = {
   apto: { t: "Apto", c: "bg-success-500/10 text-success-500" },
@@ -35,7 +36,7 @@ export default function FechamentoSemanalCard() {
     enabled: !!semana,
     queryFn: async (): Promise<Linha[]> => {
       const { data, error } = await supabase.from("roleta_fechamento_semanal")
-        .select("corretor_id, visitas_validas, crm_pct, situacao, um_a_um_pendente").eq("semana_inicio", semana!);
+        .select("corretor_id, visitas_validas, visitas_pontos, crm_pct, situacao, um_a_um_pendente").eq("semana_inicio", semana!);
       if (error) throw error;
       const ids = (data ?? []).map((r) => r.corretor_id);
       const { data: profs } = ids.length ? await supabase.from("profiles").select("user_id, nome").in("user_id", ids) : { data: [] };
@@ -78,7 +79,7 @@ export default function FechamentoSemanalCard() {
             {linhas.map((l) => (
               <div key={l.corretor_id} className="flex items-center gap-3 py-2">
                 <span className="min-w-0 flex-1 truncate font-medium">{l.nome}</span>
-                <span className="w-20 text-right text-xs text-muted-foreground">{l.visitas_validas} visita{l.visitas_validas === 1 ? "" : "s"}</span>
+                <span className="w-20 text-right text-xs text-muted-foreground">{fmtVisitas(l.visitas_pontos ?? l.visitas_validas)} visita{Number(l.visitas_pontos ?? l.visitas_validas) === 1 ? "" : "s"}</span>
                 <span className="w-16 text-right text-xs text-muted-foreground">CRM {l.crm_pct != null ? `${String(l.crm_pct).replace(".", ",")}%` : "—"}</span>
                 <span className={cn("w-32 rounded-full px-2 py-0.5 text-center text-xs font-semibold", SIT[l.situacao].c)}>{SIT[l.situacao].t}</span>
                 <span className="w-20 text-right text-xs font-semibold text-destructive">{l.um_a_um_pendente ? "1:1 pendente" : ""}</span>

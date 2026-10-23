@@ -1,3 +1,4 @@
+import { fmtVisitas } from "@/lib/visitasRoleta";
 import type { ReactNode } from "react";
 import { Loader2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -60,7 +61,7 @@ export function RoletaInicioCardMobile(p: Props) {
       {p.estado === "inativo" && (
         <>
           <div className="mt-3 rounded-xl bg-muted/50 px-3">
-            <Req label="Visitas realizadas" valor={vis ? `${melhorVis} de ${vis.meta} ${visOk ? "✓" : "✗"}` : "—"} ok={visOk} />
+            <Req label="Visitas realizadas" valor={vis ? `${fmtVisitas(melhorVis)} de ${vis.meta} ${visOk ? "✓" : "✗"}` : "—"} ok={visOk} />
             <Req label="CRM em dia" valor={crmPct != null ? `${crmPct}% ${crmPct >= crmMin ? "✓" : "✗"}` : "—"} ok={crmPct != null ? crmPct >= crmMin : null} />
           </div>
           {p.turnoAberto ? (
