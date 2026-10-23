@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { ParceriaSelo } from "@/components/pipeline/ParceriaSelo";
 import { ConferenciaVisitasMes } from "@/components/visitas/ConferenciaVisitasMes";
 import { useSearchParams, useLocation } from "react-router-dom";
 import {
@@ -199,6 +200,7 @@ function VisitaCompactCard({
           )}>
             {visita.nome_cliente}
           </span>
+          <ParceriaSelo leadId={visita.pipeline_lead_id} className="shrink-0" />
           {visita.empreendimento && (
             <span className="text-[11px] text-muted-foreground truncate hidden md:block max-w-[140px]">
               {visita.empreendimento}
@@ -422,6 +424,7 @@ function WeekBoard({
                         )}>
                           {v.nome_cliente}
                         </span>
+                        <ParceriaSelo leadId={v.pipeline_lead_id} className="text-[9px] px-1.5" />
                         {v.empreendimento && (
                           <span className="text-[9px] text-muted-foreground truncate">{v.empreendimento}</span>
                         )}

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import PipelineStageTransitionPopup, { type TransitionResult } from "./PipelineStageTransitionPopup";
 import { ConfirmarVendaForm } from "@/components/vendas/ConfirmarVendaForm";
 import { JornadaNegocioDialog } from "./negocio/JornadaNegocioDialog";
+import { ParceriaSelo } from "./ParceriaSelo";
 
 // Assinatura real do moveLead (aceita observação + dados da venda p/ o Ganho).
 type MoveLeadFn = (leadId: string, newStageId: string, observacao?: string, dealDetails?: { vgvFinal?: number | null; dataAssinatura?: string | null; unidade?: string | null }) => void | Promise<unknown>;
@@ -618,6 +619,7 @@ function NegCard({ n, lens, stages, onMoveLead, onClick, onDragStartCard }: { n:
           ? <span className={cn(PILL_BASE, "bg-emerald-100 text-emerald-700")}>✅ Assinado {n.dataAssinatura.slice(0, 5)}</span>
           : <span className={cn(PILL_BASE, sb.cls)}>{sb.emoji} {sb.label}</span>}
         {n.ceo && <span className={cn(PILL_BASE, "bg-amber-100 text-amber-700")}>CEO</span>}
+        <ParceriaSelo leadId={n.pipelineLeadId} />
       </div>
       {/* Nome + VGV */}
       <div className="flex items-center justify-between gap-2">
