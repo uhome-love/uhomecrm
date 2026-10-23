@@ -492,7 +492,7 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
         <JornadaNegocioDialog leadId={leadId} etapa={jornadaEtapa} onClose={() => setJornadaEtapa(null)}
           onSaved={() => { void refetch(); }} />
         <Dialog open={confirmarOpen} onOpenChange={setConfirmarOpen}>
-          <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+          <DialogContent className="sm:max-w-xl max-h-[90dvh] overflow-y-auto">
             <ConfirmarVendaForm leadId={leadId} nome={nome} onCancel={() => setConfirmarOpen(false)}
               onConfirmed={() => { setConfirmarOpen(false); refetch(); }} />
           </DialogContent>

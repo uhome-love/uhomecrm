@@ -1028,7 +1028,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
 
       <PartnershipDialog open={partnerOpen} onOpenChange={setPartnerOpen} leadId={lead.id} leadNome={lead.nome} corretorPrincipalId={lead.corretor_id} />
       <Dialog open={confirmarVendaOpen} onOpenChange={setConfirmarVendaOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+        <DialogContent className="sm:max-w-xl max-h-[90dvh] overflow-y-auto">
           {confirmarVendaOpen && <ConfirmarVendaForm leadId={lead.id} nome={lead.nome} empreendimento={lead.empreendimento} valorEstimado={lead.valor_estimado}
             onCancel={() => setConfirmarVendaOpen(false)} onConfirmed={() => { setConfirmarVendaOpen(false); onOpenChange(false); }} />}
         </DialogContent>

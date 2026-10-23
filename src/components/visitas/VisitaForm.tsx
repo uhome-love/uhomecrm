@@ -97,6 +97,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
   const isManager = isGestor || isAdmin;
 
   const [form, setForm] = useState(() => getDefaultForm(initialData));
+  const [mostrarObs, setMostrarObs] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [pipelineLeads, setPipelineLeads] = useState<PipelineLeadOption[]>([]);
@@ -412,7 +413,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <CalendarPlus className="h-5 w-5 text-primary" />
@@ -420,7 +421,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Object.values(formErrors).filter(Boolean).length > 0 && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-2">
               <p className="text-xs font-medium text-destructive">
@@ -671,6 +672,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             )}
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {/* Local da Visita */}
           <div>
             <Label className="text-xs font-semibold mb-1 block">Local da Visita</Label>
@@ -695,6 +697,8 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
           </div>
 
           {/* Corretor — only for gestores/admins */}
@@ -825,7 +829,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
               Selecione um lead da lista acima para continuar.
             </p>
           )}
-          <div className="sticky bottom-0 z-10 -mx-6 -mb-6 border-t border-border bg-background px-6 py-3">
+          <div className="sticky bottom-0 z-10 -mx-6 -mb-6 space-y-1 border-t border-border bg-background px-6 py-3">
           <Button
             className="w-full gap-2 h-10 text-sm font-semibold"
             disabled={
@@ -841,7 +845,6 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === "create" ? "📅 Agendar Visita" : "💾 Salvar Alterações"}
           </Button>
-          </div>
 
           {/* Delete (somente em edição) */}
           {mode === "edit" && onDelete && (
@@ -859,6 +862,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
               Apagar visita
             </Button>
           )}
+          </div>
         </div>
       </DialogContent>
       <AlertDialog open={confirmarParceria} onOpenChange={setConfirmarParceria}>
