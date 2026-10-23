@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import PipelineStageTransitionPopup, { type TransitionResult } from "./PipelineStageTransitionPopup";
 import { ConfirmarVendaForm } from "@/components/vendas/ConfirmarVendaForm";
+import { JornadaNegocioDialog } from "./negocio/JornadaNegocioDialog";
 
 // Assinatura real do moveLead (aceita observação + dados da venda p/ o Ganho).
 type MoveLeadFn = (leadId: string, newStageId: string, observacao?: string, dealDetails?: { vgvFinal?: number | null; dataAssinatura?: string | null; unidade?: string | null }) => void | Promise<unknown>;
@@ -129,15 +130,13 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, s
   const colInfo = (k: ColKey) => k === "pos_visita" ? { count: prontos.length, vgv: 0 } : { count: porPasso[k].length, vgv: vgvPorPasso[k] };
   const itemsOf = (k: ColKey): NegocioCard[] => k === "pos_visita" ? [] : porPasso[k];
 
-  // ---------- ARRASTAR (desktop) — FONTE ÚNICA: tudo passa pelo mesmo moveLead ----------
-  // Processo (Pós-Visita→Doc→Proposta→Contrato) = move na hora (fricção-zero, igual leads).
-  // Ganho = abre o MESMO form de venda do pipeline (VGV/data/unidade). Voltar pra Pós-Visita
-  // vindo de etapa comercial = Regredir (arquiva o negócio) via o MESMO RegredirDialog.
+  // Etapas comerciais usam a jornada compartilhada; Ganho usa confirmação completa.
   const queryClient = useQueryClient();
   const dragRef = useRef<{ leadId: string; fromTipo: string } | null>(null);
   const [dragOverCol, setDragOverCol] = useState<ColKey | null>(null);
   const [ganhoDrop, setGanhoDrop] = useState<{ leadId: string; nome: string; vgv: number | null } | null>(null);
   const [regredirDrop, setRegredirDrop] = useState<{ leadId: string; nome: string } | null>(null);
+  const [jornadaDrop, setJornadaDrop] = useState<{ leadId: string; etapa: PipelineStage } | null>(null);
   const invalidateBoard = () => queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
   const vendaStage = useMemo(() => (stages || []).find((s) => s.tipo === "venda") || null, [stages]);
 
@@ -163,7 +162,10 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, s
       setRegredirDrop({ leadId: drag.leadId, nome: card?.cliente || "" });
       return;
     }
-    // Processo → move na hora.
+    if (COMMERCIAL_TIPOS.includes(targetTipo)) {
+      setJornadaDrop({ leadId: drag.leadId, etapa: targetStage });
+      return;
+    }
     Promise.resolve(onMoveLead(drag.leadId, targetStage.id)).then(invalidateBoard);
   };
 
@@ -264,6 +266,9 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, s
           })}
         </div>
       )}
+
+      {jornadaDrop && <JornadaNegocioDialog leadId={jornadaDrop.leadId} etapa={jornadaDrop.etapa}
+        onClose={() => setJornadaDrop(null)} onSaved={() => { void invalidateBoard(); }} />}
 
       {/* Ganho por arrastar → MESMO form de venda do pipeline (VGV/data/unidade reais). */}
       {ganhoDrop && vendaStage && (
@@ -395,6 +400,7 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
   const [discardTipo, setDiscardTipo] = useState<"reengajavel" | "definitivo">("reengajavel");
   const [regredirOpen, setRegredirOpen] = useState(false);
   const [confirmarOpen, setConfirmarOpen] = useState(false);
+  const [jornadaEtapa, setJornadaEtapa] = useState<PipelineStage | null>(null);
   const queryClient = useQueryClient();
   if (!leadId) return null;
 
@@ -410,8 +416,13 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
   const canRegredir = temNegocio && !!posVisitaStage;
   const mover = async (stageId: string) => {
     if (!onMoveLead) return;
-    if (stages?.find(s => s.id === stageId)?.tipo === "venda") {
+    const etapa = stages?.find(s => s.id === stageId);
+    if (etapa?.tipo === "venda") {
       setConfirmarOpen(true);
+      return;
+    }
+    if (etapa && COMMERCIAL_TIPOS.includes(etapa.tipo)) {
+      setJornadaEtapa(etapa);
       return;
     }
     await onMoveLead(leadId, stageId);
@@ -477,6 +488,8 @@ function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpen }: { 
         </DropdownMenuContent>
       </DropdownMenu>
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
+        <JornadaNegocioDialog leadId={leadId} etapa={jornadaEtapa} onClose={() => setJornadaEtapa(null)}
+          onSaved={() => { void refetch(); }} />
         <Dialog open={confirmarOpen} onOpenChange={setConfirmarOpen}>
           <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
             <ConfirmarVendaForm leadId={leadId} nome={nome} onCancel={() => setConfirmarOpen(false)}
@@ -530,12 +543,12 @@ function CardRoot({ onClick, className, children, onDragStart }: { onClick: () =
 
 function PosCard({ p, stages, onMoveLead, onOpenLead, onDragStartCard }: { p: ProntoVirar; stages?: PipelineStage[]; onMoveLead?: MoveLeadFn; onOpenLead: (leadId: string) => void; onDragStartCard?: (leadId: string, fromTipo: string) => void }) {
   const queryClient = useQueryClient();
+  const [jornadaOpen, setJornadaOpen] = useState(false);
   const docStage = (stages || []).find((s) => s.tipo === "documentacao");
   const virar = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onMoveLead && docStage) {
-      await onMoveLead(p.id, docStage.id);
-      queryClient.invalidateQueries({ queryKey: ["negocios-board"] });
+      setJornadaOpen(true);
     } else {
       onOpenLead(p.id); // fallback: sem etapa/handler, abre o modal
     }
@@ -546,6 +559,10 @@ function PosCard({ p, stages, onMoveLead, onOpenLead, onDragStartCard }: { p: Pr
       className={stripe(p.saude)}
       onDragStart={onDragStartCard ? () => onDragStartCard(p.id, "pos_visita") : undefined}
     >
+      <div data-no-card-click onClick={e => e.stopPropagation()}>
+        <JornadaNegocioDialog leadId={p.id} etapa={jornadaOpen && docStage ? docStage : null}
+          onClose={() => setJornadaOpen(false)} onSaved={() => { void queryClient.invalidateQueries({ queryKey: ["negocios-board"] }); }} />
+      </div>
       <div className="absolute right-1.5 top-1.5 z-10">
         <NegOverflowMenu leadId={p.id} nome={p.nome} passo="pos_visita" stages={stages} onMoveLead={onMoveLead} onOpen={() => onOpenLead(p.id)} />
       </div>
