@@ -232,6 +232,13 @@
       "when": 1792767888536,
       "tag": "0032_intermediacao_persistencia_atomica",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792768018048,
+      "tag": "0033_distrato_excluir_vgv_documentos_financeiro_privados",
+      "breakpoints": true
     }
   ]
 }
