@@ -100,7 +100,6 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
   const [mostrarObs, setMostrarObs] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [mostrarObs, setMostrarObs] = useState(false);
   const [pipelineLeads, setPipelineLeads] = useState<PipelineLeadOption[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
   const [stages, setStages] = useState<StageOption[]>([]);
