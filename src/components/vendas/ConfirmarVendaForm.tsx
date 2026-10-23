@@ -104,36 +104,33 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
     } finally { ocupado.current = false; setSaving(false); }
   }
 
-  return <div className="space-y-5 min-w-0">
+  return <div className="space-y-3.5 min-w-0">
     <DialogHeader><DialogTitle className="flex items-center gap-2"><CheckCircle2 className="size-5 text-primary" />Confirmar venda</DialogTitle><DialogDescription>{nome}</DialogDescription></DialogHeader>
     {dados.loading ? <div className="flex justify-center py-8"><Loader2 className="size-6 animate-spin text-primary" /></div> : dados.error ? <div role="alert" className="text-sm text-destructive">{dados.error}<Button variant="outline" onClick={dados.recarregar} className="mt-3"><RefreshCw className="mr-2 size-4" />Tentar novamente</Button></div> : <>
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Dados da venda</h3>
-        <div className="space-y-1.5"><Label>Empreendimento *</Label><Select value={empId} onValueChange={setEmpId}><SelectTrigger aria-label="Empreendimento"><SelectValue placeholder="Selecionar empreendimento" /></SelectTrigger><SelectContent>{dados.empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select></div>
-        <div className="space-y-1.5"><Label htmlFor="venda-construtora">Construtora</Label><Input id="venda-construtora" readOnly value={emp?.construtora ?? ""} placeholder="—" className="bg-muted" /></div>
-        <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label htmlFor="venda-unidade">Unidade *</Label><Input id="venda-unidade" value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex.: 321" /></div><div className="space-y-1.5"><Label htmlFor="venda-vgv">VGV final (R$) *</Label><Input id="venda-vgv" inputMode="numeric" value={formatCurrencyInput(valor)} onChange={e => setValor(handleCurrencyChange(e.target.value))} /></div></div>
-        <div className="space-y-1.5"><Label htmlFor="venda-data">Data da assinatura *</Label><Input id="venda-data" type="date" max={hoje} value={data} onChange={e => setData(e.target.value)} /></div>
+      <section className="space-y-2.5">
+        <div className="space-y-1"><Label>Empreendimento *</Label><Select value={empId} onValueChange={setEmpId}><SelectTrigger aria-label="Empreendimento"><SelectValue placeholder="Selecionar empreendimento" /></SelectTrigger><SelectContent>{dados.empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select>{emp && <p className="text-xs text-muted-foreground">Construtora: <span className="font-medium text-foreground">{emp.construtora || "—"}</span></p>}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5"><div className="space-y-1"><Label htmlFor="venda-unidade">Unidade *</Label><Input id="venda-unidade" value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex.: 321" /></div><div className="space-y-1"><Label htmlFor="venda-vgv">VGV final *</Label><Input id="venda-vgv" inputMode="numeric" value={formatCurrencyInput(valor)} onChange={e => setValor(handleCurrencyChange(e.target.value))} /></div><div className="space-y-1 col-span-2 sm:col-span-1"><Label htmlFor="venda-data">Assinatura *</Label><Input id="venda-data" type="date" max={hoje} value={data} onChange={e => setData(e.target.value)} /></div></div>
       </section>
-      <section className="space-y-3 border-t border-border pt-4">
-        <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">Intermediação *</h3><Button variant="ghost" size="icon" aria-label="Atualizar intermediações" title="Atualizar intermediações" onClick={dados.recarregar}><RefreshCw className="size-4" /></Button></div>
-        <Select value={interId} onValueChange={id => { setInterId(id); const i = dados.intermediacoes.find(x => x.id === id); if (i?.unidade && !unidade) setUnidade(i.unidade); }}><SelectTrigger aria-label="Intermediação"><SelectValue placeholder="Selecionar documento do cliente" /></SelectTrigger><SelectContent>{dados.intermediacoes.map(i => <SelectItem key={i.id} value={i.id}>{i.empreendimento} · {i.unidade || "sem unidade"}</SelectItem>)}</SelectContent></Select>
-        {inter && <div className="flex items-start gap-2 text-sm text-muted-foreground"><FileSignature className="mt-0.5 size-4 shrink-0" /><span className="break-words min-w-0">{inter.filename || inter.comprador_nome}</span></div>}
+      <section className="space-y-2 border-t border-border pt-3">
+        <div className="flex items-center justify-between"><Label>Intermediação *</Label><Button variant="ghost" size="icon" className="size-7" aria-label="Atualizar intermediações" title="Atualizar intermediações" onClick={dados.recarregar}><RefreshCw className="size-4" /></Button></div>
+        <div className="flex gap-2"><div className="flex-1 min-w-0"><Select value={interId} onValueChange={id => { setInterId(id); const i = dados.intermediacoes.find(x => x.id === id); if (i?.unidade && !unidade) setUnidade(i.unidade); }}><SelectTrigger aria-label="Intermediação"><SelectValue placeholder="Selecionar documento do cliente" /></SelectTrigger><SelectContent>{dados.intermediacoes.map(i => <SelectItem key={i.id} value={i.id}>{i.empreendimento} · {i.unidade || "sem unidade"}</SelectItem>)}</SelectContent></Select></div>
+        {(isGestor || isAdmin || isDiretor) && <Button variant="outline" asChild className="shrink-0"><Link to={`/intermediacao?lead=${encodeURIComponent(leadId)}`} target="_blank"><FileSignature className="mr-1.5 size-4" />Gerar</Link></Button>}</div>
+        {inter && <div className="flex items-start gap-2 text-xs text-muted-foreground"><FileSignature className="mt-0.5 size-3.5 shrink-0" /><span className="break-words min-w-0">{inter.filename || inter.comprador_nome}</span></div>}
         {unidadeDiferente && <p role="alert" className="text-sm text-destructive">Unidade diferente da intermediação: {inter?.unidade}.</p>}
-        {vgvDiferente && <p className="text-sm text-muted-foreground">VGV na intermediação: {fmtMoney(Number(inter?.vgv), "exact")}. Confira o valor final.</p>}
-        {(isGestor || isAdmin || isDiretor) && <Button variant="outline" asChild className="w-full"><Link to={`/intermediacao?lead=${encodeURIComponent(leadId)}`} target="_blank"><FileSignature className="mr-2 size-4" />Gerar intermediação</Link></Button>}
+        {vgvDiferente && <p className="text-xs text-muted-foreground">VGV na intermediação: {fmtMoney(Number(inter?.vgv), "exact")}. Confira o valor final.</p>}
       </section>
-      <section className="space-y-3 border-t border-border pt-4">
-        <h3 className="text-sm font-semibold">Comprovante do pagamento do ato *</h3>
+      <section className="space-y-2 border-t border-border pt-3">
+        <Label>Comprovante do pagamento do ato *</Label>
         <input ref={input} type="file" className="hidden" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={e => {
           const f = e.target.files?.[0]; if (!f) return;
           if (!comprovantePermitido(f)) { setErro("Selecione um PDF ou imagem de até 20 MB."); return; }
           setArquivo(f); setPath(""); setErro(null);
         }} />
-        {arquivo || path ? <div className="flex items-center gap-2 border border-border rounded-lg p-3"><Paperclip className="size-4 shrink-0 text-primary" /><span className="text-sm break-all min-w-0 flex-1">{arquivo?.name || "Comprovante anexado"}</span><Button disabled={saving || (!!path && !rascunho.current)} variant="ghost" size="icon" aria-label="Remover comprovante" onClick={() => void removerComprovante()}><X className="size-4" /></Button></div> : <Button variant="outline" className="w-full h-12" onClick={() => input.current?.click()}><Upload className="mr-2 size-4" />Anexar PDF ou imagem</Button>}
+        {arquivo || path ? <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-1.5"><Paperclip className="size-4 shrink-0 text-primary" /><span className="text-sm break-all min-w-0 flex-1">{arquivo?.name || "Comprovante anexado"}</span><Button disabled={saving || (!!path && !rascunho.current)} variant="ghost" size="icon" className="size-7" aria-label="Remover comprovante" onClick={() => void removerComprovante()}><X className="size-4" /></Button></div> : <Button variant="outline" className="w-full" onClick={() => input.current?.click()}><Upload className="mr-2 size-4" />Anexar PDF ou imagem</Button>}
       </section>
-      <div className="space-y-1.5"><Label htmlFor="venda-observacao">Observação</Label><Textarea id="venda-observacao" value={obs} onChange={e => setObs(e.target.value)} rows={2} /></div>
+      {mostrarObs || obs ? <div className="space-y-1"><Label htmlFor="venda-observacao">Observação</Label><Textarea id="venda-observacao" value={obs} onChange={e => setObs(e.target.value)} rows={2} autoFocus={!obs} /></div> : <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => setMostrarObs(true)}>+ Adicionar observação</button>}
       {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
-      <DialogFooter className="gap-2"><Button variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button><Button disabled={saving || pendencias.length > 0 || unidadeDiferente || !inter} onClick={confirmar}>{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CheckCircle2 className="mr-2 size-4" />}Confirmar venda</Button></DialogFooter>
+      <DialogFooter className="sticky bottom-0 z-10 -mx-6 -mb-6 gap-2 border-t border-border bg-background px-6 py-3"><Button variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button><Button disabled={saving || pendencias.length > 0 || unidadeDiferente || !inter} onClick={confirmar}>{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CheckCircle2 className="mr-2 size-4" />}Confirmar venda</Button></DialogFooter>
     </>}
   </div>;
 }
