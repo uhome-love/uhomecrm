@@ -17539,6 +17539,11 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      financeiro_alertar_parcelas: { Args: never; Returns: number }
+      financeiro_dados: {
+        Args: { p_fim: string; p_inicio: string }
+        Returns: Json
+      }
       financeiro_exigir_acesso: { Args: never; Returns: undefined }
       financeiro_receber_parcela: {
         Args: { p_data: string; p_id: string; p_path: string }

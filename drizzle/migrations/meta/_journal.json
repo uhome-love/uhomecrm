@@ -218,6 +218,13 @@
       "when": 1792767523719,
       "tag": "0030_financeiro_operacoes_recebimentos_repasses_distrato",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792767604349,
+      "tag": "0031_financeiro_leitura_midia_avisos",
+      "breakpoints": true
     }
   ]
 }
