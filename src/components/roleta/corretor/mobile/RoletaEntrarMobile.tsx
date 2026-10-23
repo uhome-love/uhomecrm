@@ -1,3 +1,4 @@
+import { fmtVisitas } from "@/lib/visitasRoleta";
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -98,7 +99,7 @@ export function RoletaEntrarMobile(p: Props) {
       </div>
       {vis && (
         <p className="mt-1.5 px-1 text-xs text-muted-foreground">
-          Semana passada: {vis.semanaPassada} · Esta semana: {vis.semanaAtual}. Vale a maior.
+          Semana passada: {fmtVisitas(vis.semanaPassada)} · Esta semana: {fmtVisitas(vis.semanaAtual)}. Vale a maior.
         </p>
       )}
 

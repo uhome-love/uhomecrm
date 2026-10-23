@@ -1,3 +1,4 @@
+import { fmtVisitas } from "@/lib/visitasRoleta";
 /** Bloco da Roleta do turno: barra de status + as 3 regras em cartões alinhados. Só lê — não credencia. */
 import { Check, X } from "lucide-react";
 import RoletaStatusBar from "@/components/corretor/RoletaStatusBar";
@@ -40,7 +41,7 @@ export default function RoletaTurnoCard() {
     const okVis = evo.semanaAnterior >= evo.meta || evo.semanaAtual >= evo.meta;
     const falta = Math.max(0, evo.meta - evo.semanaAtual);
     regras.push({ ok: okVis, titulo: "Visitas", valor: `${evo.semanaAnterior} sem. passada`, detalhe: `/ mín. ${evo.meta}`,
-      extra: <p className="text-xs text-muted-foreground">Esta semana {evo.semanaAtual}/{evo.meta}{evo.semanaAnterior < evo.meta && falta > 0 ? ` · faltam ${falta} p/ liberar` : ""}</p> });
+      extra: <p className="text-xs text-muted-foreground">Esta semana {fmtVisitas(evo.semanaAtual)}/{evo.meta}{evo.semanaAnterior < evo.meta && falta > 0 ? ` · faltam ${fmtVisitas(falta)} p/ liberar` : ""}</p> });
     const estourou = evo.bloqueio?.codigo === "descartes";
     regras.push({ ok: !estourou, titulo: "Descartes do mês", valor: estourou ? "Limite atingido" : "Dentro do limite", detalhe: "máx. 100" });
   }

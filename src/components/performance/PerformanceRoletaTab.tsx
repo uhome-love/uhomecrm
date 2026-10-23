@@ -1,3 +1,4 @@
+import { fmtVisitas } from "@/lib/visitasRoleta";
 /** Aba "Performance da Roleta" (CEO, diretora, gerente). Só leitura — não muda nenhuma regra. */
 import { useMemo, useState } from "react";
 import { Download } from "lucide-react";
@@ -40,7 +41,7 @@ export default function PerformanceRoletaTab() {
     const m = new Map<string, CorretorPerf[]>();
     lista.forEach((c) => m.set(c.equipe, [...(m.get(c.equipe) ?? []), c]));
     return Array.from(m.entries()).map(([nome, cs]) => {
-      const sum = (f: (c: CorretorPerf) => number) => cs.reduce((a, c) => a + f(c), 0);
+      const sum = (f: (c: CorretorPerf) => number) => cs.reduce((a, c) => a + Number(f(c) ?? 0), 0);
       const verde = sum((c) => c.crm?.em_dia ?? 0), ambar = sum((c) => c.crm?.ambar ?? 0), verm = sum((c) => c.crm?.vermelho ?? 0);
       const tot = verde + ambar + verm;
       return { nome, n: cs.length, pct: tot ? Math.round((verde / tot) * 100) : null, verde, ambar, verm,
@@ -105,8 +106,8 @@ export default function PerformanceRoletaTab() {
                   <td className="py-2 font-semibold">{e.nome}</td>
                   <td className="py-2">{e.pct != null ? `${e.pct}%` : "—"}<div className="mt-1 h-1.5 w-20 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${e.pct ?? 0}%` }} /></div></td>
                   <td className="py-2"><span className="flex gap-2"><Dot c="bg-success-500" n={e.verde} /><Dot c="bg-warning" n={e.ambar} /><Dot c="bg-destructive" n={e.verm} /></span></td>
-                  <td className="py-2">{e.visAnt} / {e.n * 2}</td>
-                  <td className="py-2">{e.visAtual}</td>
+                  <td className="py-2">{fmtVisitas(e.visAnt)} / {e.n * 2}</td>
+                  <td className="py-2">{fmtVisitas(e.visAtual)}</td>
                 </tr>
               ))}
             </tbody>

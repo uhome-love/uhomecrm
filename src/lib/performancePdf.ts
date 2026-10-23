@@ -1,3 +1,4 @@
+import { fmtVisitas } from "@/lib/visitasRoleta";
 /** Relatório semanal da Performance da Roleta em PDF (gerado no navegador). */
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -22,7 +23,7 @@ export function gerarPdfPerformance(opts: { equipe: string; semanaLabel: string 
     head: [["Corretor", "Equipe", "CRM", "Verde/Amarelo/Vermelho", "Visitas sem. passada", "Esta semana", "Situação agora"]],
     body: opts.corretores.map((c) => [c.nome, c.equipe, c.crm?.pct != null ? `${c.crm.pct}%` : "—",
       `${c.crm?.em_dia ?? 0} / ${c.crm?.ambar ?? 0} / ${c.crm?.vermelho ?? 0}`,
-      String(c.visitas_semana_passada), String(c.visitas_semana_atual), c.motivo?.bloqueado ? c.motivo.titulo : "Apto"]),
+      fmtVisitas(c.visitas_semana_passada), fmtVisitas(c.visitas_semana_atual), c.motivo?.bloqueado ? c.motivo.titulo : "Apto"]),
   });
 
   if (opts.semanaLabel && opts.fechamento.length) {
