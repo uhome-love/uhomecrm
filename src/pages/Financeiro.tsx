@@ -7,7 +7,8 @@ import {Tabs,TabsContent,TabsList,TabsTrigger} from "@/components/ui/tabs";
 import {useUserRole} from "@/hooks/useUserRole";
 import {useFinanceiro} from "@/hooks/useFinanceiro";
 import {todayBRT,formatBRT} from "@/lib/brtTime";
-import {FINANCEIRO_VAZIO,resumoFinanceiro,noPeriodo} from "@/lib/financeiro";
+import {FINANCEIRO_VAZIO,resumoFinanceiro} from "@/lib/financeiro";
+import {vendasParaDistrato} from "@/lib/financeiroSelecao";
 import {FinanceiroIndicadores,dinheiro} from "@/components/financeiro/FinanceiroIndicadores";
 import {FinanceiroParcelas} from "@/components/financeiro/FinanceiroParcelas";
 import {FinanceiroGanhos} from "@/components/financeiro/FinanceiroGanhos";
@@ -17,7 +18,7 @@ import {exportarFinanceiro} from "@/lib/financeiroExport";
 export default function Financeiro(){
  const {isAdmin,isDiretor}=useUserRole();const hoje=todayBRT();const [inicio,setInicio]=useState(`${hoje.slice(0,7)}-01`);const [fim,setFim]=useState(hoje);const [busca,setBusca]=useState("");const [operacao,setOperacao]=useState<OperacaoFinanceira|null>(null);
  const q=useFinanceiro(inicio,fim);const d=q.data??FINANCEIRO_VAZIO;const resumo=useMemo(()=>resumoFinanceiro(d,inicio,fim,hoje),[d,inicio,fim,hoje]);
- const vendas=d.vendas.filter(n=>noPeriodo(n.data_assinatura,inicio,fim)&&[n.nome_cliente,n.empreendimento].join(" ").toLocaleLowerCase("pt-BR").includes(busca.toLocaleLowerCase("pt-BR")));
+ const vendas=vendasParaDistrato(d.vendas,inicio,fim,busca);
  if(!isAdmin&&!isDiretor)return <p className="text-muted-foreground py-12 text-center">Financeiro é exclusivo do CEO e da diretora.</p>;
  return <div className="space-y-5 min-w-0"><header className="flex items-center justify-between gap-3 flex-wrap"><div className="flex items-center gap-3"><Wallet className="size-6 text-primary"/><div><h1 className="font-bold text-2xl">Financeiro</h1><p className="text-sm text-muted-foreground">Comissões e balanço da Uhome</p></div></div><div className="flex gap-2"><Button size="icon" variant="outline" title="Atualizar Financeiro" aria-label="Atualizar Financeiro" onClick={()=>void q.refetch()}><RefreshCw className={q.isFetching?"animate-spin":""}/></Button><Button variant="outline" disabled={!q.data} onClick={()=>exportarFinanceiro(d,inicio,fim,hoje)}><Download/>Excel</Button></div></header>
  <section className="grid grid-cols-2 md:grid-cols-[180px_180px_1fr] gap-3 border-t border-border pt-4"><div className="space-y-1"><Label htmlFor="fin-inicio">De</Label><Input id="fin-inicio" type="date" value={inicio} onChange={e=>setInicio(e.target.value)}/></div><div className="space-y-1"><Label htmlFor="fin-fim">Até</Label><Input id="fin-fim" type="date" min={inicio} value={fim} onChange={e=>setFim(e.target.value)}/></div><div className="relative col-span-2 md:col-span-1 self-end"><Search className="absolute left-3 top-3 size-4 text-muted-foreground"/><Input className="pl-9" aria-label="Buscar no Financeiro" placeholder="Cliente, empreendimento ou pessoa" value={busca} onChange={e=>setBusca(e.target.value)}/></div></section>
