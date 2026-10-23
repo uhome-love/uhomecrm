@@ -68,11 +68,22 @@ interface Props {
   blocking?: boolean;
   /** Texto extra no topo (ex.: "Visita de hoje 15:00 · 1 de 3"). */
   subtitulo?: string;
+  /** Data/hora marcadas (YYYY-MM-DD / HH:mm) — bloqueia resultado antes do horário. */
+  dataVisita?: string | null;
+  horaVisita?: string | null;
 }
 
 const MIN_OBS = 10;
 
-export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCliente, defaultResultado, blocking, subtitulo }: Props) {
+/** True se a visita (BRT) ainda não chegou no horário marcado. */
+export function visitaAindaNaoAconteceu(data?: string | null, hora?: string | null): boolean {
+  if (!data) return false;
+  const marcada = new Date(`${data}T${(hora || "00:00").slice(0, 5)}:00-03:00`).getTime();
+  return marcada > Date.now();
+}
+
+export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCliente, defaultResultado, blocking, subtitulo, dataVisita, horaVisita }: Props) {
+  const visitaFutura = visitaAindaNaoAconteceu(dataVisita, horaVisita);
   const [selected, setSelected] = useState<ResultadoVisita | null>(null);
   const [obs, setObs] = useState("");
   const [objecao, setObjecao] = useState("");
@@ -137,12 +148,15 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
         <div className="space-y-4">
           {/* Resultado */}
           <div className="grid grid-cols-2 gap-2">
-            {RESULTADO_OPTIONS.map(opt => (
+            {RESULTADO_OPTIONS.map(opt => {
+              const bloqueado = visitaFutura && opt.value !== "reagendar";
+              return (
               <button
                 key={opt.value}
                 type="button"
+                disabled={bloqueado}
                 onClick={() => setSelected(opt.value)}
-                className={`rounded-lg border p-3 text-left transition-all hover:shadow-sm ${
+                className={`rounded-lg border p-3 text-left transition-all hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
                   selected === opt.value
                     ? "border-primary bg-primary/10 ring-2 ring-primary/30"
                     : "hover:border-muted-foreground/30"
@@ -154,7 +168,15 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">{opt.desc}</p>
               </button>
-            ))}
+              );
+            })}
+          </div>
+          {visitaFutura && (
+            <p className="text-xs font-medium text-destructive">
+              A visita ainda não aconteceu ({dataVisita!.split("-").reverse().slice(0, 2).join("/")}{horaVisita ? ` às ${horaVisita.slice(0, 5)}` : ""}). Só dá para reagendar até lá.
+            </p>
+          )}
+          <div className="hidden">
           </div>
 
           {/* Temperatura do lead */}
