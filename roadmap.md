@@ -48,9 +48,9 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [ ] Corretor: aplicar o desenho no cartão da Roleta do Início (página /roleta é só da gestão) — aguarda ok do Lucas
 - [ ] Horário da noite 18:00 x 18:30 — aguarda decisão
 
-## Financeiro + Vendas Realizadas (plano aprovado 22/10)
+## Financeiro + Vendas (plano aprovado 22/10)
 - [x] Fase 0.5a — Conferência vendas × intermediações × empreendimentos (planilha entregue)
-- [ ] Fase 0.5b — Gravar vínculos/limpeza após aprovação da planilha (aguarda Lucas)
+- [x] Fase 0.5b — Vínculos certos e limpeza autorizados e gravados; vínculos incertos permanecem pendentes, sem inferência
 - [x] Fase 0 — Mockups aprovados
 - [x] Renomear "Vendas Realizadas" para "Vendas"
 - [x] Fase 1 — estrutura (intermediação com forma/vínculo/parcelas, beneficiários, recebimentos, custos, comprovante privado)
@@ -61,9 +61,9 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [x] Fase 2 — Confirmação compartilhada com dados oficiais, intermediação e comprovante; travas no servidor, aviso após persistência, pendências históricas. Validada no computador e celular com cliente de teste, duas compras sem sobrescrever a primeira, repetição sem duplicidade e parcela vinculada sem presumir recebimento; 11 testes passaram. Legado pós-vendas sem etapa ativa não foi recriado.
 - [x] Fase 3 — Desenho e plano específicos aprovados; proposta/unidade, checklist informativo e intermediação no Contrato implementados com gravação compartilhada, inclusive cartões/arrastar/aba Negócio.
 - [x] Fase 3 — Validação ao vivo em computador/celular com cliente fictício, cancelamentos, recuperação dos dados, sugestão na confirmação e aviso de teste/dedup/link; 17 testes aprovados; fixture removido; 115 vendas e R$ 63.459.987,29 preservados.
-- [ ] Fase 3 — Proteção final do prazo do aviso contra flags antigas enviadas por edição simultânea; Lucas autorizou 23/10 executar o plano independentemente do horário. Revalidar antes da fase 4. Detalhes em `.lovable/qa/jornada-negocio-2026-10-23.md`.
-- [ ] Fase 4 — Nova página Vendas
-- [ ] Fase 5 — Financeiro (distrato só CEO/diretora)
-- [ ] Fase 6 — Validação ponta a ponta
+- [x] Fase 3 — Proteção final do prazo: referência autoritativa do negócio; snapshot antigo de tarefa conservou Em leitura e o prazo, com leitura no preview. Autorização de horário de Lucas aplicada.
+- [x] Fase 4 — Vendas: filtros, ranking, construtoras, origens, pendências, detalhes/anexos, exportação e edição auditada pelo CEO/diretora
+- [x] Fase 5 — Financeiro: parcelas, recebimentos comprovados, ganhos/repasses NF, custos, mídia diária, lucro/ROI, histórico e distrato exclusivo CEO/diretora
+- [x] Fase 6 — Validação ponta a ponta com clientes fictícios: documento NF, menu Ganho, comprovante, leitura em Vendas, recebimento, repasse, custos, distrato, exportações e filtros; 36 testes passaram, guardas e permissões checadas no servidor, preview sem erros. Todos os registros/anexos fictícios removidos; 115 vendas e R$ 63.459.987,29 preservados. Push físico não verificado. Detalhes em `.lovable/qa/financeiro-vendas-final-2026-10-23.md`.
 
 - [x] Intermediação: forma de pagamento obrigatória sem pré-seleção (Zemo/NF -10%/PIX), vínculo com cliente/negócio, construtora no documento

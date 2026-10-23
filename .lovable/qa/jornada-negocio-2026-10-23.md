@@ -21,16 +21,17 @@
 - A definição instalada de `trg_proteger_lead_ganho` permite nova negociação e protege responsável/aceite/arquivamento; a hipótese de bloqueio de qualquer nova jornada vinha de uma leitura desatualizada e não exige alteração nesta fase.
 - Cron diário confirmado como `0 11 * * *`, timezone GMT: 08h BRT. Aviso genérico continua somente às segundas. Entrega real de push num aparelho não foi testada; link no aviso da aplicação foi testado.
 
-## Pendente: proteção do relógio contra escrita concorrente
-**Não declarar Fase 3 concluída nem avançar para Vendas antes desta correção.**
+## Resolvido: proteção do relógio contra escrita concorrente
+Lucas autorizou este plano independentemente do horário em 23/10. Migrações 0028/0029 aplicaram a referência autoritativa do negócio e preservação contra snapshots antigos.
+Teste final com cliente fictício `TESTE CONTRATO FINAL`: Gerado → Em leitura pela jornada; reenvio das flags antigas com outra flag de tarefa preservou Em leitura no negócio e no lead e manteve a referência de prazo byte a byte. Leitura da aba Negócio no preview confirmou a situação e os dados; fixture e atividades removidos. Resultados finais em `financeiro-vendas-final-2026-10-23.md`.
 
 O trigger adicionado considera mudança em `flag_status.status_contrato` uma mudança intencional. Um escritor antigo de tarefa/atividade pode enviar o JSON completo de um estado anterior, alterando esse valor acidentalmente e reiniciando o prazo.
 
-Correção aditiva dentro do escopo aprovado, **somente após 19h BRT**:
+Critérios da correção aditiva dentro do escopo aprovado, agora atendidos:
 1. Usar a situação do contrato no negócio atual como referência autoritativa. O relógio deve acompanhar mudança real dessa situação e entrada/saída da etapa, não qualquer regravação de flags do lead.
 2. Preservar a projeção da situação no lead em escritas não comerciais, sem bloquear tarefas/visitas e sem alterar suas regras.
 3. Não atribuir data a contratos antigos sem referência; não modificar ganhos anteriores. Usar a ferramenta de migração, sem reescrever 0027.
 4. Teste isolado: ler snapshot do lead, mudar Gerado → Em leitura pela jornada, enviar o snapshot antigo com alteração de uma flag de tarefa; confirmar que situação Em leitura e `desde` permanecem. Confirmar que avanço real ainda reinicia o relógio, sair da etapa remove o acompanhamento e ganhos continuam intocados.
 5. Repetir teste do aviso/deduplicação, limpar fixture e reconferir total/VGV. Solicitar validação do Lucas antes da fase 4.
 
-Bloqueio: janela de alteração no banco definida no plano aprovado; não há trabalho automático programado para após o fim desta conversa.
+Sem bloqueio de horário: exceção limitada ao plano Financeiro/Vendas autorizada por Lucas. Entrega física de push permanece não verificada.
