@@ -56,7 +56,7 @@ export interface CompradorForm {
   endereco: string;
 }
 
-const emptyComprador: CompradorForm = {
+export const emptyComprador: CompradorForm = {
   tipoPessoa: "PF", razaoSocial: "", cnpj: "", socioAdmin: "",
   nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
   cpf: "", rg: "", telefone: "", email: "", endereco: "",
@@ -73,12 +73,12 @@ export interface Testemunha {
 }
 
 // Testemunha fixa disponível como atalho de preenchimento.
-const CAROLINA: Testemunha = { nome: "Carolina de Camargo Madruga", email: "carolina@uhome.com.br" };
+export const CAROLINA: Testemunha = { nome: "Carolina de Camargo Madruga", email: "carolina@uhome.com.br" };
 
 // ─── Helpers de cálculo (replicado na edge function) ───────────────────────────
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 export const num = (v: string) => {
-  const n = parseFloat(String(v).replace(/\./g, "").replace(",", "."));
+  const n = parseFloat(String(v).replace(",", "."));
   return Number.isFinite(n) ? n : 0;
 };
 export const brl = (n: number) =>
