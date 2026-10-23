@@ -211,6 +211,13 @@
       "when": 1792767157460,
       "tag": "0029_contrato_entrada_saida_preserva_prazo",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792767523719,
+      "tag": "0030_financeiro_operacoes_recebimentos_repasses_distrato",
+      "breakpoints": true
     }
   ]
 }

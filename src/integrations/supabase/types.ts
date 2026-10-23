@@ -3460,6 +3460,90 @@ export type Database = {
         }
         Relationships: []
       }
+      financeiro_historico: {
+        Row: {
+          acao: string
+          antes: Json | null
+          created_at: string
+          depois: Json | null
+          entidade: string
+          entidade_id: string
+          id: string
+          transacao: number
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          antes?: Json | null
+          created_at?: string
+          depois?: Json | null
+          entidade: string
+          entidade_id: string
+          id?: string
+          transacao?: number
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          antes?: Json | null
+          created_at?: string
+          depois?: Json | null
+          entidade?: string
+          entidade_id?: string
+          id?: string
+          transacao?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      financeiro_repasses: {
+        Row: {
+          beneficiario_id: string
+          comprovante_path: string
+          created_at: string
+          created_by: string | null
+          id: string
+          pago_em: string
+          recebimento_id: string
+          valor: number
+        }
+        Insert: {
+          beneficiario_id: string
+          comprovante_path: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pago_em: string
+          recebimento_id: string
+          valor: number
+        }
+        Update: {
+          beneficiario_id?: string
+          comprovante_path?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pago_em?: string
+          recebimento_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financeiro_repasses_beneficiario_id_fkey"
+            columns: ["beneficiario_id"]
+            isOneToOne: false
+            referencedRelation: "intermediacao_beneficiarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financeiro_repasses_recebimento_id_fkey"
+            columns: ["recebimento_id"]
+            isOneToOne: false
+            referencedRelation: "negocios_recebimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funnel_entries: {
         Row: {
           analise_ia: string | null
@@ -17455,6 +17539,35 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      financeiro_exigir_acesso: { Args: never; Returns: undefined }
+      financeiro_receber_parcela: {
+        Args: { p_data: string; p_id: string; p_path: string }
+        Returns: string
+      }
+      financeiro_registrar_repasse: {
+        Args: {
+          p_beneficiario: string
+          p_data: string
+          p_path: string
+          p_recebimento: string
+        }
+        Returns: string
+      }
+      financeiro_salvar_parcela: {
+        Args: {
+          p_forma: string
+          p_id: string
+          p_intermediacao: string
+          p_observacao?: string
+          p_valor: number
+          p_vencimento: string
+        }
+        Returns: string
+      }
+      financeiro_validar_comprovante: {
+        Args: { p_negocio: string; p_path: string }
+        Returns: undefined
+      }
       flush_page_views: { Args: { payload: Json }; Returns: undefined }
       fn_cadencia_sc_recalcular_por_tarefas: {
         Args: { p_lead_id: string }
@@ -18504,6 +18617,10 @@ export type Database = {
         Returns: number
       }
       reengajamento_worker_sweep_stale: { Args: never; Returns: number }
+      registrar_distrato: {
+        Args: { p_data: string; p_motivo: string; p_negocio: string }
+        Returns: string
+      }
       registrar_faltas_sabado: { Args: { p_data?: string }; Returns: number }
       registrar_jornada_negocio: {
         Args: {
