@@ -204,6 +204,13 @@
       "when": 1792767020565,
       "tag": "0028_contrato_prazo_autoritativo",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792767157460,
+      "tag": "0029_contrato_entrada_saida_preserva_prazo",
+      "breakpoints": true
     }
   ]
 }
