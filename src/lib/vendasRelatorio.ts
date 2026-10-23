@@ -1,3 +1,4 @@
+import { exigeDocumentosVenda } from "@/lib/vendaConfirmacao";
 export interface RateioVenda {
   negocio_id: string | null; corretor_auth_id: string | null; corretor_nome: string | null;
   equipe: string | null; gerente_auth_id: string | null; vgv_rateado: number | null;
@@ -52,6 +53,13 @@ export function agruparVendas(vendas: VendaRelatorio[], f: FiltrosVendas, campo:
   }
   return [...grupos.values()].sort((a, b) => b.vgv - a.vgv);
 }
+/** Chave do filtro: mesmo empreendimento com grafias diferentes vira um só. */
+export function chaveEmpreendimento(nome: string | null | undefined): string {
+  const k = (nome ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/\s*-\s*v\d+\s*$/, "").replace(/\s+/g, " ").trim();
+  return k || "sem";
+}
 export function documentosVenda(v: VendaRelatorio): string[] {
+  if (!exigeDocumentosVenda(v.data_assinatura)) return [];
   return [!v.intermediacao_id ? "Intermediação" : "", !v.comprovante_ato_path ? "Comprovante do ato" : "", !v.empreendimento_canonico_id || !v.construtora ? "Cadastro oficial" : "", !v.unidade ? "Unidade" : "", !v.vgv_final ? "VGV final" : ""].filter(Boolean);
 }
