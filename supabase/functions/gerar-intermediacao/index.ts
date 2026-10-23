@@ -228,8 +228,9 @@ function tabelaZemo(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"
 
 function tabelaRepasseNf(calc: ReturnType<typeof calcular>, pct: number) {
   const w = [3226, 1900, 1900, 2000];
-  const linhas = calc.credores.map((c) => {
-    const desc = round2((c.total * pct) / 100);
+  const descontos = repartirCentavos(round2(calc.totalGeral*pct/100),calc.credores.map(c=>c.total));
+  const linhas = calc.credores.map((c,index) => {
+    const desc = descontos[index];
     return { nome: c.nome, bruto: c.total, desc, liq: round2(c.total - desc) };
   });
   const soma = (k: "bruto" | "desc" | "liq") => round2(linhas.reduce((s, l) => s + l[k], 0));
@@ -502,7 +503,7 @@ Deno.serve(async (req) => {
     const saved = await supabase.rpc("intermediacao_salvar",{
       p_registro:{id:intermediacaoId,comprador_nome:compradoresBody.map(nomeComprador).join(" e "),tipo_pessoa:body.comprador.tipoPessoa,
       empreendimento:body.imovel.empreendimento,unidade:body.imovel.unidade,vgv:body.imovel.vgv,corretores:body.corretores.map(c=>c.nome),
-      arquivo_path:arquivoPath,filename,payload:body,forma_pagamento:body.formaPagamento,desconto_nf_pct:pctNf,
+      arquivo_path:arquivoPath,filename,payload:{...body,beneficiarios_validos:benef},forma_pagamento:body.formaPagamento,desconto_nf_pct:pctNf,
       negocio_id:body.negocioId??null,pipeline_lead_id:body.pipelineLeadId,valor_bruto:bruto,valor_liquido:liquido,parcelas:body.comissao.parcelas},
       p_beneficiarios:benef,p_parcelas:body.comissao.parcelas,
     });
