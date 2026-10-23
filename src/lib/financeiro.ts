@@ -33,11 +33,14 @@ export function pendenciasRepasse(d:DadosFinanceiro) {
   return d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel!=="uhome"&&b.valor_liquido>0).map(b=>({r,i,b,valor:valorAlocado(b,r,i,d.recebimentos),repasse:d.repasses.find(p=>p.recebimento_id===r.id&&p.beneficiario_id===b.id)}));
  });
 }
-export function ganhosPessoas(d:DadosFinanceiro,inicio:string,fim:string){
+export function ganhosPessoas(d:DadosFinanceiro,inicio:string,fim:string,busca="",papel="todos"){
  const grupos=new Map<string,{identidade:string;nome:string;papel:string;bruto:number;desconto:number;liquido:number;recebido:number;aReceber:number;vendas:Set<string>}>();
+ const termo=busca.trim().toLocaleLowerCase("pt-BR");
  for(const b of d.beneficiarios){
   const i=d.intermediacoes.find(x=>x.id===b.intermediacao_id);const n=d.vendas.find(x=>x.id===i?.negocio_id);
   if(!i||!n||n.status!=="ativo"||!noPeriodo(n.data_assinatura,inicio,fim))continue;
+  if(papel!=="todos"&&b.papel!==papel)continue;
+  if(![b.nome,i.comprador_nome,i.empreendimento,n.nome_cliente,n.empreendimento].join(" ").toLocaleLowerCase("pt-BR").includes(termo))continue;
   const key=`${b.user_id||b.nome.trim().toLocaleLowerCase("pt-BR")}:${b.papel}`;
   const g=grupos.get(key)??{identidade:b.user_id||b.nome,nome:b.nome,papel:b.papel,bruto:0,desconto:0,liquido:0,recebido:0,aReceber:0,vendas:new Set<string>()};
   const recebidos=d.recebimentos.filter(r=>r.intermediacao_id===i.id&&r.status==="recebido");
@@ -56,8 +59,8 @@ export function resumoFinanceiro(d:DadosFinanceiro,inicio:string,fim:string,hoje
   return s+d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel==="uhome").reduce((a,b)=>a+valorAlocado(b,r,i,d.recebimentos),0);
  },0);
  const geradaUhome=ganhosPessoas(d,inicio,fim).filter(g=>g.papel==="uhome").reduce((s,g)=>s+g.liquido,0);
- const midia=d.midia.reduce((s,m)=>s+Number(m.valor),0)+d.midia_manual.reduce((s,m)=>s+Number(m.valor),0);
- const fixos=d.custos.reduce((s,c)=>s+Number(c.valor),0);const custos=midia+fixos;
+ const midia=d.midia.filter(m=>noPeriodo(m.dia,inicio,fim)).reduce((s,m)=>s+Number(m.valor),0)+d.midia_manual.filter(m=>noPeriodo(m.competencia,inicio,fim)).reduce((s,m)=>s+Number(m.valor),0);
+ const fixos=d.custos.filter(c=>noPeriodo(c.competencia,inicio,fim)).reduce((s,c)=>s+Number(c.valor),0);const custos=midia+fixos;
  const lucro=recebidaUhome-custos;
  return {aReceber:noPrazo.reduce((s,r)=>s+Number(r.valor),0),saldoTotal:pendentes.reduce((s,r)=>s+Number(r.valor),0),vencidas:pendentes.filter(r=>!!r.vencimento&&r.vencimento<hoje).reduce((s,r)=>s+Number(r.valor),0),recebido:recebidos.reduce((s,r)=>s+Number(r.valor),0),recebidaUhome,geradaUhome,midia,fixos,custos,lucro,roi:custos>0?lucro/custos*100:null,repassesPendentes:pendenciasRepasse(d).filter(x=>!x.repasse).reduce((s,x)=>s+x.valor,0)};
 }

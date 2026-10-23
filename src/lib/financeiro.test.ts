@@ -1,5 +1,5 @@
 import {describe,it,expect} from "vitest";
-import {FINANCEIRO_VAZIO,ganhosPessoas,resumoFinanceiro,valorAlocado,diasSemCobertura,type DadosFinanceiro,type BeneficiarioFinanceiro,type IntermediacaoFinanceira,type ParcelaFinanceira,type VendaFinanceira} from "./financeiro";
+import {FINANCEIRO_VAZIO,ganhosPessoas,resumoFinanceiro,valorAlocado,diasSemCobertura,pendenciasRepasse,type DadosFinanceiro,type BeneficiarioFinanceiro,type IntermediacaoFinanceira,type ParcelaFinanceira,type VendaFinanceira,type CustoFinanceiro,type MidiaManual} from "./financeiro";
 const venda={id:"n",fase:"ganho",status:"ativo",data_assinatura:"2026-10-22"} as VendaFinanceira;
 const i={id:"i",negocio_id:"n",status:"ativa",forma_pagamento:"nota_fiscal",valor_bruto:10000,valor_liquido:9000} as IntermediacaoFinanceira;
 const b={id:"b",nome:"Corretor",papel:"corretor",intermediacao_id:"i",valor_bruto:4000,desconto:400,valor_liquido:3600} as BeneficiarioFinanceiro;
@@ -11,7 +11,17 @@ describe("Financeiro da intermediação",()=>{
  it("NF recebida na Uhome não presume repasse ao corretor",()=>expect(ganhosPessoas(d,"2026-10-01","2026-10-23")[0]).toMatchObject({liquido:3600,recebido:0,aReceber:3600}));
  it("PIX confirmado é ganho direto sem repasse presumido pela Uhome",()=>expect(ganhosPessoas({...d,intermediacoes:[{...i,forma_pagamento:"pix",valor_liquido:10000}],beneficiarios:[{...b,desconto:0,valor_liquido:4000}]},"2026-10-01","2026-10-23")[0].recebido).toBe(2000));
  it("venda sem intermediação não inventa comissão",()=>expect(resumoFinanceiro({...FINANCEIRO_VAZIO,vendas:[venda]},"2026-10-01","2026-10-23","2026-10-23").geradaUhome).toBe(0));
- it("distrato preserva recebido mas tira previsão e ganhos",()=>{const x={...d,vendas:[{...venda,status:"distratado"}]};expect(ganhosPessoas(x,"2026-10-01","2026-10-23")).toEqual([]);expect(resumoFinanceiro(x,"2026-10-01","2026-10-23","2026-10-23").recebido).toBe(5000);});
+ it("distrato preserva recebido mas tira previsão e ganhos",()=>{const x={...d,vendas:[{...venda,status:"distratado"}],recebimentos:[r,{...r,id:"pendente",status:"pendente"}]};expect(ganhosPessoas(x,"2026-10-01","2026-10-23")).toEqual([]);expect(resumoFinanceiro(x,"2026-10-01","2026-10-23","2026-10-23")).toMatchObject({recebido:5000,aReceber:0,saldoTotal:0,repassesPendentes:0});expect(pendenciasRepasse(x)).toEqual([]);});
  it("custo e lucro usam apenas parte da Uhome, não a comissão inteira",()=>{const x={...d,beneficiarios:[{...b,papel:"uhome"}],midia:[{dia:"2026-10-22",valor:100,atualizado_em:""}]};expect(resumoFinanceiro(x,"2026-10-01","2026-10-23","2026-10-23")).toMatchObject({recebidaUhome:1800,custos:100,lucro:1700,roi:1700});});
  it("ausência de mídia não significa gasto zero confirmado",()=>expect(diasSemCobertura({...d,cobertura_midia:[{since:"2026-10-22",until:"2026-10-23",atualizado_em:""}]},"2026-10-21","2026-10-23")).toEqual(["2026-10-21"]));
+ it("busca por cliente soma apenas suas vendas, não as demais da pessoa",()=>{
+  const dados={...d,vendas:[venda,{...venda,id:"n2"}],intermediacoes:[{...i,comprador_nome:"Cliente A"},{...i,id:"i2",negocio_id:"n2",comprador_nome:"Cliente B"}],beneficiarios:[b,{...b,id:"b2",intermediacao_id:"i2"}]};
+  expect(ganhosPessoas(dados,"2026-10-01","2026-10-23","Cliente A")[0]).toMatchObject({vendas:1,liquido:3600});
+  expect(ganhosPessoas(dados,"2026-10-01","2026-10-23","Corretor")[0]).toMatchObject({vendas:2,liquido:7200});
+  expect(ganhosPessoas(dados,"2026-10-01","2026-10-23","Cliente A","gerente")).toEqual([]);
+ });
+ it("custos e mídia respeitam o período mesmo com dados de outros meses",()=>{
+  const dados={...d,midia:[{dia:"2026-09-30",valor:999,atualizado_em:""},{dia:"2026-10-22",valor:100,atualizado_em:""}],custos:[{competencia:"2026-09-30",valor:888},{competencia:"2026-10-22",valor:200}] as CustoFinanceiro[],midia_manual:[{competencia:"2026-09-30",valor:777},{competencia:"2026-10-22",valor:300}] as MidiaManual[]};
+  expect(resumoFinanceiro(dados,"2026-10-01","2026-10-23","2026-10-23")).toMatchObject({midia:400,fixos:200,custos:600});
+ });
 });
