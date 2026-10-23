@@ -112,7 +112,14 @@ const PDN_GRUPO_LABEL: Record<string, string> = {
 export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete, etapaSugerida }: Props) {
   const [confirmedLead, setConfirmedLead] = useState<PipelineLead | null>(null);
   const lead = confirmedLead?.id === leadProp.id ? confirmedLead : leadProp;
-  useEffect(() => { setConfirmedLead(null); }, [leadProp.id, leadProp.stage_id, leadProp.updated_at]);
+  useEffect(() => {
+    setConfirmedLead(current => {
+      if (!current || current.id !== leadProp.id) return null;
+      const fresh = Date.parse(leadProp.updated_at ?? "");
+      const confirmed = Date.parse(current.updated_at ?? "");
+      return Number.isFinite(fresh) && Number.isFinite(confirmed) && fresh >= confirmed ? null : current;
+    });
+  }, [leadProp.id, leadProp.stage_id, leadProp.updated_at]);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
