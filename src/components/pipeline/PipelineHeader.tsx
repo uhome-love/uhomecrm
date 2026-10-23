@@ -199,7 +199,7 @@ function InfoOciosidadeNegocio() {
 
 export default function PipelineHeader(props: PipelineHeaderProps) {
   const {
-    filteredLeadsCount, displayedClientStatusCounts, campaignTagCounts, campaignTags,
+    filteredLeadsCount, pipelineAtivoSplit, displayedClientStatusCounts, campaignTagCounts, campaignTags,
     pipelineStages, pipelineSegmentos, pipelineLeads, corretorNomes, corretorOptions,
     visitaLeadIds, focusLeadsCount, filaCeoCount, filaCeoNovosCount,
     isAdmin, isDiretor = false, isGestor, canAdd,
@@ -338,7 +338,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
             <span className="text-[26px] sm:text-[16px] font-extrabold sm:font-bold text-foreground tracking-[-0.6px] sm:tracking-[-0.3px] whitespace-nowrap">Pipeline</span>
-            <PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={gestorFilter} />
+            <span title={pipelineAtivoSplit && activeTab !== "negocios" ? `${pipelineAtivoSplit.leads} em Leads · ${pipelineAtivoSplit.negocios} em Negócios (Ganhos ficam no botão Ganhos)` : undefined}><PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={gestorFilter} /></span>
           </div>
 
           <div className="ml-auto flex items-center gap-3">
