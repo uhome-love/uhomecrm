@@ -436,6 +436,7 @@ Deno.serve(async (req) => {
 
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) {
+      console.error("[gerar-intermediacao] dados inválidos:", JSON.stringify(parsed.error.flatten()));
       return new Response(JSON.stringify({ error: parsed.error.flatten() }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const body = parsed.data;
