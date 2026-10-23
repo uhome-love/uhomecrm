@@ -349,7 +349,20 @@ export default function IntermediacaoPage() {
     setGerando(true);
     try {
       const { data, error } = await supabase.functions.invoke("gerar-intermediacao", { body: payload });
-      if (error) throw error;
+      if (error) {
+        let motivo = "";
+        try {
+          const ctx = (error as { context?: Response }).context;
+          const j = ctx && typeof ctx.json === "function" ? await ctx.json() : null;
+          const err = j?.error;
+          if (typeof err === "string") motivo = err;
+          else if (err && typeof err === "object") {
+            const campos = Object.entries((err.fieldErrors ?? {}) as Record<string, string[]>).map(([k, v]) => `${k}: ${v.join(", ")}`);
+            motivo = [...((err.formErrors ?? []) as string[]), ...campos].join(" · ");
+          }
+        } catch { /* mantém erro genérico */ }
+        throw new Error(motivo || error.message);
+      }
       if (!data?.base64 || !data?.filename) throw new Error("Resposta inválida do servidor.");
 
       const bin = atob(data.base64);

@@ -436,6 +436,7 @@ Deno.serve(async (req) => {
 
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) {
+      console.error("[gerar-intermediacao] dados inválidos:", JSON.stringify(parsed.error.flatten()));
       return new Response(JSON.stringify({ error: parsed.error.flatten() }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const body = parsed.data;
@@ -517,7 +518,13 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro ao gerar documento";
-    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const msg = e instanceof Error ? e.message : (e as { message?: string })?.message ?? "Erro ao gerar documento";
+    console.error("[gerar-intermediacao] recusado:", msg);
+    try {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await admin.from("ops_events").insert({ fn: "gerar-intermediacao", level: "error", category: "intermediacao", message: msg.slice(0, 500) });
+    } catch (_) { /* best-effort */ }
+    const inesperado = /Configuração|fetch|network|timeout/i.test(msg);
+    return new Response(JSON.stringify({ error: msg }), { status: inesperado ? 500 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
