@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireCronAuth } from "../_shared/cron-auth.ts";
+import { requireAuth } from "../_shared/auth.ts";
 import { avisarContratos } from "./contratos.ts";
 
 const corsHeaders = {
@@ -26,16 +27,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const cronDenied = requireCronAuth(req);
-  if (cronDenied) return cronDenied;
+  const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+  const testLead = typeof body.test_lead_id === "string" ? body.test_lead_id : undefined;
+  if (cronDenied && !testLead) return cronDenied;
 
 
   const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
   const L = makeLogger(traceId);
 
   try {
-    // A validação restrita exercita somente um cliente de teste autenticado pelo cron.
-    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    const testLead = typeof body.test_lead_id === "string" ? body.test_lead_id : undefined;
+    // Validação restrita a um cliente fictício do próprio administrador.
     if (testLead && !/^[0-9a-f-]{36}$/i.test(testLead)) {
       return new Response(JSON.stringify({ error: "Cliente de teste inválido." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -52,8 +53,14 @@ Deno.serve(async (req) => {
     };
 
     if (testLead) {
-      const teste = await supabase.from("pipeline_leads").select("nome").eq("id", testLead).single();
+      const teste = await supabase.from("pipeline_leads").select("nome,corretor_id,gerente_id").eq("id", testLead).single();
       if (teste.error || !teste.data.nome.startsWith("TESTE JORNADA")) throw new Error("Validação permitida somente para cliente de teste.");
+      if (cronDenied) {
+        const auth = await requireAuth(req);
+        if (auth.error) return auth.error;
+        const role = await supabase.rpc("has_role", { _user_id: auth.userId, _role: "admin" });
+        if (role.error || role.data !== true || teste.data.corretor_id !== auth.userId || teste.data.gerente_id !== auth.userId) return cronDenied;
+      }
     }
     const contratos = await avisarContratos(supabase, testLead);
     // A rotina agora roda diariamente; o aviso genérico continua semanal (segunda BRT).

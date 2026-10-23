@@ -86,6 +86,10 @@ function getNotificationRoute(n: Notification): string | null {
   const categoria = n.categoria;
   const leadId = d.pipeline_lead_id || d.lead_id;
 
+  if (categoria === "contrato_parado") {
+    return typeof leadId === "string" && leadId ? `/pipeline-leads?lead=${encodeURIComponent(leadId)}` : "/pipeline-leads";
+  }
+
   // PDN — aviso do gestor: link direto para o pipeline com lead + etapa sugerida
   if (tipo === "pdn") {
     const pdnLeadId = d.pipeline_lead_id || d.pdn_lead_id || d.lead_id;

@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { logSubstatusChange } from "@/lib/pipelineAudit";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { JornadaNegocioForm } from "./negocio/JornadaNegocioForm";
 import {
   QUALIFICACAO_SUBSTATUS,
   AQUECIMENTO_SUBSTATUS,
@@ -22,6 +25,13 @@ interface Props {
 export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpdate }: Props) {
   const { user } = useAuth();
   const [flags, setFlags] = useState<Record<string, string>>(flagStatus || {});
+  const [jornadaEtapaId, setJornadaEtapaId] = useState<string | null>(null);
+
+  async function abrirJornada() {
+    const result = await supabase.from("pipeline_leads").select("stage_id").eq("id", leadId).single();
+    if (result.error || !result.data.stage_id) { toast.error("Não foi possível abrir a jornada."); return; }
+    setJornadaEtapaId(result.data.stage_id);
+  }
 
   useEffect(() => {
     setFlags(flagStatus || {});
@@ -188,55 +198,12 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
     );
   }
 
-  // ── Etapas comerciais (aba Negócios): sub-status editável, salvo no flag_status ──
-  if (stageTipo === "documentacao") {
-    return wrapper(
-      <>
-        <Label className="text-xs text-muted-foreground">Documentação:</Label>
-        <Select value={flags.status_negociacao || ""} onValueChange={(v) => setFlag("status_negociacao", v)}>
-          <SelectTrigger className="h-7 w-44 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="documentacao_pendente" className="text-xs">📄 Pendente</SelectItem>
-            <SelectItem value="documentacao_enviada" className="text-xs">📤 Enviada</SelectItem>
-            <SelectItem value="documentacao_analise" className="text-xs">🔍 Em análise</SelectItem>
-          </SelectContent>
-        </Select>
-      </>
-    );
-  }
-
-  if (stageTipo === "proposta") {
-    return wrapper(
-      <>
-        <Label className="text-xs text-muted-foreground">Proposta:</Label>
-        <Select value={flags.status_negociacao || ""} onValueChange={(v) => setFlag("status_negociacao", v)}>
-          <SelectTrigger className="h-7 w-48 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="proposta_solicitada" className="text-xs">Solicitada</SelectItem>
-            <SelectItem value="proposta_enviada" className="text-xs">Enviada</SelectItem>
-            <SelectItem value="proposta_negociacao" className="text-xs">Em negociação</SelectItem>
-            <SelectItem value="proposta_aprovada" className="text-xs">✓ Aprovada</SelectItem>
-          </SelectContent>
-        </Select>
-      </>
-    );
-  }
-
-  if (stageTipo === "contrato_gerado") {
-    return wrapper(
-      <>
-        <Label className="text-xs text-muted-foreground">Contrato:</Label>
-        <Select value={flags.status_contrato || ""} onValueChange={(v) => setFlag("status_contrato", v)}>
-          <SelectTrigger className="h-7 w-48 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="em_confeccao" className="text-xs">Em confecção</SelectItem>
-            <SelectItem value="gerado" className="text-xs">Gerado</SelectItem>
-            <SelectItem value="em_leitura" className="text-xs">Em leitura</SelectItem>
-            <SelectItem value="assinado" className="text-xs">✓ Assinado</SelectItem>
-          </SelectContent>
-        </Select>
-      </>
-    );
+  // Etapas comerciais usam o mesmo escritor atômico do cartão e do drawer.
+  if (["documentacao", "proposta", "contrato_gerado"].includes(stageTipo)) {
+    return <div className="mx-5 my-3 border-t border-border pt-3">
+      <Button variant="outline" size="sm" className="w-full" onClick={() => void abrirJornada()}>Atualizar {stageTipo === "contrato_gerado" ? "contrato" : stageTipo === "documentacao" ? "documentação" : "proposta"}</Button>
+      {jornadaEtapaId && <Dialog open onOpenChange={open => { if (!open) setJornadaEtapaId(null); }}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Jornada do negócio</DialogTitle></DialogHeader><JornadaNegocioForm leadId={leadId} etapaId={jornadaEtapaId} tipo={stageTipo} mover={false} onCancel={() => setJornadaEtapaId(null)} onSaved={() => setJornadaEtapaId(null)} /></DialogContent></Dialog>}
+    </div>;
   }
 
   return null;

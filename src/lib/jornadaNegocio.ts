@@ -18,3 +18,7 @@ export function jornadaPodeSalvar(tipo: string, empreendimentoId: string, unidad
   if (!empreendimentoId || !["proposta", "documentacao", "contrato_gerado"].includes(tipo)) return false;
   return tipo === "documentacao" || (unidade.trim().length > 0 && Number.isFinite(valor) && valor > 0 && valor <= 999999999);
 }
+
+export function situacaoAtualNegocio(passo: string, negociacao: string, contrato: string): string {
+  return passo === "contrato" ? contrato : passo === "ganho" ? "" : negociacao;
+}

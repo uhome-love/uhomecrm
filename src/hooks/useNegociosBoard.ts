@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { leadSaude, type LeadSaude } from "@/lib/leadSaude";
+import { situacaoAtualNegocio } from "@/lib/jornadaNegocio";
 
 /**
  * useNegociosBoard — PREVIEW (read-only) do novo Workspace de Negócios.
@@ -181,9 +182,10 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
       }
       const meuUserId = user?.id ?? null;
 
-      const flagDetalhe = (fs: any): string => {
-        const f = fs || {};
-        return detalheDe(String(f.status_negociacao ?? ""), String(f.status_contrato ?? ""));
+      const flagDetalhe = (fs: unknown, passo: NegPasso): string => {
+        const f = fs && typeof fs === "object" ? fs as Record<string, unknown> : {};
+        const atual = situacaoAtualNegocio(passo, String(f.status_negociacao ?? ""), String(f.status_contrato ?? ""));
+        return DETALHE[atual] ?? "";
       };
 
       // Cards EM ANDAMENTO (Proposta, Contrato) — coluna = ETAPA DO LEAD.
@@ -211,7 +213,7 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
           fase,
           sub: null,
           passo,
-          detalhe: flagDetalhe(l.flag_status),
+          detalhe: flagDetalhe(l.flag_status, passo),
           vgv,
           vgvFinal: neg ? ((neg.vgv_final as number) ?? null) : null,
           dias,

@@ -42,7 +42,7 @@ export async function avisarContratos(supabase: SupabaseClient, somenteLead?: st
         p_user_id: gerenteId, p_tipo: "alertas", p_categoria: "contrato_parado",
         p_titulo: `${lead.nome} — Contrato ${situacao} há mais de 7 dias`,
         p_mensagem: `${lead.nome}${lead.empreendimento ? ` · ${lead.empreendimento}` : ""}: contrato ${situacao} sem mudança de situação há mais de 7 dias. Confira a assinatura com o responsável.`,
-        p_dados: { pipeline_lead_id: lead.id, negocio_id: negocio.id, status_contrato: contrato.status, desde: contrato.desde },
+      p_dados: { pipeline_lead_id: lead.id, negocio_id: negocio.id, status_contrato: contrato.status, desde: contrato.desde, url: `/pipeline-leads?lead=${lead.id}` },
         p_agrupamento_key: key,
       });
       if (notificacao.error) throw notificacao.error;

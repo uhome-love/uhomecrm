@@ -33,7 +33,7 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
   const lock = useRef(false);
   const contrato = tipo === "contrato_gerado";
   useEffect(() => {
-    if (!dados.data || init.current) return;
+    if (!dados.data || dados.isFetching || init.current) return;
     init.current = true;
     const { negocio: n, lead: l, empreendimentos } = dados.data;
     const flags = l.flag_status && typeof l.flag_status === "object" && !Array.isArray(l.flag_status) ? l.flag_status : {};
@@ -47,7 +47,7 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
     const flag = contrato ? flags.status_contrato : flags.status_negociacao;
     const options = contrato ? CONTRATO_SUBSTATUS : NEGOCIACAO_SUBSTATUS;
     if (typeof flag === "string" && options.some(o => o.value === flag)) setStatus(flag);
-  }, [dados.data, contrato]);
+  }, [dados.data, dados.isFetching, contrato]);
 
   async function salvar() {
     if (lock.current) return;
@@ -63,7 +63,7 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
     } catch (e) { setErro(e instanceof Error ? e.message : String((e as { message?: string }).message ?? "Não foi possível salvar a jornada.")); }
     finally { lock.current = false; setSaving(false); }
   }
-  if (dados.isPending) return <div className="flex justify-center py-8"><Loader2 className="size-5 animate-spin text-primary" /></div>;
+  if (dados.isPending || (dados.isFetching && !init.current)) return <div className="flex justify-center py-8"><Loader2 className="size-5 animate-spin text-primary" /></div>;
   if (dados.error) return <div role="alert" className="space-y-3 text-sm text-destructive">Não foi possível carregar o negócio.<Button variant="outline" onClick={() => void dados.refetch()}><RefreshCw className="mr-2 size-4" />Tentar novamente</Button></div>;
   if (dados.data?.negocio?.fase === "ganho") return <p className="text-sm text-muted-foreground">Venda assinada. Consulte os dados em Vendas.</p>;
   const options = contrato ? CONTRATO_SUBSTATUS : NEGOCIACAO_SUBSTATUS;
