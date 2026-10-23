@@ -10,7 +10,7 @@
 
 ## O que vou fazer
 1. **Descobrir por que o gerente sumiu:** reproduzir com um cliente de teste (adicionar gerente, escolher a forma de pagamento, gerar) e ver se a tela perde a comissão do gerente ao gerar ou ao trocar a forma de pagamento. Depois corrijo a causa.
-2. **Intermediação da Cristina:** te mostro as duas versões e, com o seu ok (ou do Junior), refaço o documento com o gerente incluído e o empreendimento oficial "Essence". Até lá não mexo em nada.
+2. **Intermediação da Cristina (autorizado por você):** depois de corrigir a causa, refaço o documento com o Junior Padilha como gerente (15%), mantendo os mesmos percentuais e valores do print, a forma ZemoBank e o empreendimento oficial "Essence". A versão sem o Junior fica guardada no histórico como substituída, sem apagar. O documento novo fica anexado como intermediação da venda da Cristina (cliente e negócio dela), e as parcelas do "A receber" passam a seguir o documento novo, sem duplicar. No fim eu baixo o documento e confiro o quadro de divisão.
 3. **Escolha da forma de pagamento perto do botão:** repetir os 3 botões (ZemoBank / Nota fiscal / PIX) no rodapé. Se clicar em Gerar sem escolher, a tela rola até o bloco e destaca em vermelho.
 4. **Empreendimento oficial:** ao gerar, o nome digitado é ajustado para o nome do cadastro oficial (sem espaços sobrando), e a construtora vem do cadastro.
 5. **Validação:** gerar uma intermediação de teste com gerente em cada forma (ZemoBank, NF, PIX), conferir que o documento salvo bate com a pré-visualização da tela e apagar o teste.
