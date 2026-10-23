@@ -856,6 +856,21 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
           )}
         </div>
       </DialogContent>
+      <AlertDialog open={confirmarParceria} onOpenChange={setConfirmarParceria}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar parceria?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Registrar parceria com {teamMembers.find(m => m.user_id === parceiroId)?.nome ?? "o corretor escolhido"} neste cliente?
+              Cada um ficará com 0,5 visita na Roleta e só o administrador pode desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmarParceria(false); void handleSubmit(true); }}>Sim, registrar parceria</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
