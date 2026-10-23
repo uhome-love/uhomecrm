@@ -25,14 +25,14 @@ export function valorVenda(v: VendaRelatorio, f: FiltrosVendas): number {
 export function filtrarVendas(vendas: VendaRelatorio[], f: FiltrosVendas): VendaRelatorio[] {
   const termo = f.busca.trim().toLocaleLowerCase("pt-BR");
   return vendas.filter(v => (f.construtora === "todos" || (v.construtora || "Não informada") === f.construtora)
-    && (f.empreendimento === "todos" || (v.empreendimento_canonico_id || v.empreendimento) === f.empreendimento)
+    && (f.empreendimento === "todos" || chaveEmpreendimento(v.empreendimento) === f.empreendimento)
     && ((f.corretor === "todos" && f.equipe === "todos") || rateiosSelecionados(v, f).length > 0)
     && (!termo || [v.nome_cliente, v.unidade, v.empreendimento, v.construtora, ...v.rateios.map(r => r.corretor_nome)].join(" ").toLocaleLowerCase("pt-BR").includes(termo)));
 }
 export function resumoVendas(vendas: VendaRelatorio[], f: FiltrosVendas) {
   const unicas = [...new Map(vendas.map(v => [v.id, v])).values()];
   const vgv = unicas.reduce((s, v) => s + valorVenda(v, f), 0);
-  return { vendas: unicas.length, vgv, ticket: unicas.length ? vgv / unicas.length : 0, semIntermediacao: unicas.filter(v => !v.intermediacao_id).length };
+  return { vendas: unicas.length, vgv, ticket: unicas.length ? vgv / unicas.length : 0, semIntermediacao: unicas.filter(v => !v.intermediacao_id && exigeDocumentosVenda(v.data_assinatura)).length };
 }
 export function rankingVendas(vendas: VendaRelatorio[], f: FiltrosVendas, porEquipe = false) {
   const grupos = new Map<string, { id: string; nome: string; vgv: number; negocios: Set<string> }>();

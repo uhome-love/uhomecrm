@@ -8,6 +8,12 @@ export interface VendaConfirmacaoDados {
   comprovanteAtoPath?: string | null;
 }
 
+/** Vendas assinadas antes desta data valem só pelo VGV (decisão do Lucas): sem pendência de documentos. */
+export const CORTE_DOCUMENTOS_VENDA = "2026-10-22";
+export function exigeDocumentosVenda(dataAssinatura?: string | null): boolean {
+  return !dataAssinatura || dataAssinatura >= CORTE_DOCUMENTOS_VENDA;
+}
+
 export function pendenciasVenda(dados: VendaConfirmacaoDados, hojeBRT: string): string[] {
   const pendencias: string[] = [];
   if (!dados.empreendimentoCanonicoId || !dados.construtora?.trim()) pendencias.push("Empreendimento e construtora");
