@@ -8175,6 +8175,7 @@ export type Database = {
           id: string
           imovel_interesse: string | null
           intermediacao_id: string | null
+          jornada: Json | null
           lead_id: string | null
           lead_id_match_metodo: string | null
           lead_id_match_score: number | null
@@ -8220,6 +8221,7 @@ export type Database = {
           id?: string
           imovel_interesse?: string | null
           intermediacao_id?: string | null
+          jornada?: Json | null
           lead_id?: string | null
           lead_id_match_metodo?: string | null
           lead_id_match_score?: number | null
@@ -8265,6 +8267,7 @@ export type Database = {
           id?: string
           imovel_interesse?: string | null
           intermediacao_id?: string | null
+          jornada?: Json | null
           lead_id?: string | null
           lead_id_match_metodo?: string | null
           lead_id_match_score?: number | null
@@ -18502,6 +18505,15 @@ export type Database = {
       }
       reengajamento_worker_sweep_stale: { Args: never; Returns: number }
       registrar_faltas_sabado: { Args: { p_data?: string }; Returns: number }
+      registrar_jornada_negocio: {
+        Args: {
+          p_dados: Json
+          p_etapa_id: string
+          p_lead_id: string
+          p_mover?: boolean
+        }
+        Returns: Json
+      }
       registrar_material_recente: {
         Args: { _acao?: string; _material_id: string }
         Returns: undefined
