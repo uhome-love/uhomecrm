@@ -295,6 +295,13 @@
       "when": 1792780502911,
       "tag": "0041_financeiro_parcelas_da_intermediacao",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792786467230,
+      "tag": "0042_visita_bloqueia_realizada_futura",
+      "breakpoints": true
     }
   ]
 }
