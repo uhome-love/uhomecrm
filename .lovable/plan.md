@@ -21,7 +21,7 @@
 
 ## O que proponho
 
-1. **Cesar Rideky:** se você confirmar que é só da Larissa, eu desfaço essa parceria, porque só o administrador pode fazer isso. Fica registrado no histórico que a parceria foi desfeita, com o motivo "registrada por engano, confirmado pelo CEO". A contagem passa a ser Larissa 2,5 e Matheus menos 0,5. O Jocarli continua em parceria.
+1. **Cesar Rideky (você confirmou que foi sem querer):** desfaço essa parceria como administrador. Fica registrado no histórico que a parceria foi desfeita, com o motivo "registrada por engano, confirmado pelo CEO". A contagem passa a ser Larissa 2,5 e Matheus menos 0,5. O Jocarli continua em parceria.
 2. **Mostrar a parceria nos três lugares que você pediu:**
    - **Cartão do cliente no Pipeline:** já mostra a parceria; vou conferir que aparece no computador e no celular.
    - **Cartão do negócio:** novo selo "Parceria com Matheus".
