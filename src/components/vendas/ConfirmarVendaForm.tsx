@@ -32,6 +32,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [path, setPath] = useState("");
   const [obs, setObs] = useState("");
+  const [mostrarObs, setMostrarObs] = useState(false);
   const [saving, setSaving] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
