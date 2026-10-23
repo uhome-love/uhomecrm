@@ -85,6 +85,8 @@ export interface PipelineHeaderProps {
   ganhosFilter: boolean;
   setGanhosFilter: React.Dispatch<React.SetStateAction<boolean>>;
   // Filtro de SAÚDE do negócio (aba Negócios): "ambar" | "vermelho" | "estagnado" | null.
+  /** Divisão do pipeline ativo para o tooltip do topo. */
+  pipelineAtivoSplit?: { total: number; leads: number; negocios: number };
   negocioSaudeFilter?: "verde" | "ambar" | "vermelho" | null;
   setNegocioSaudeFilter?: (v: "verde" | "ambar" | "vermelho" | null) => void;
   hasAnyFilter: boolean;
@@ -197,7 +199,7 @@ function InfoOciosidadeNegocio() {
 
 export default function PipelineHeader(props: PipelineHeaderProps) {
   const {
-    filteredLeadsCount, displayedClientStatusCounts, campaignTagCounts, campaignTags,
+    filteredLeadsCount, pipelineAtivoSplit, displayedClientStatusCounts, campaignTagCounts, campaignTags,
     pipelineStages, pipelineSegmentos, pipelineLeads, corretorNomes, corretorOptions,
     visitaLeadIds, focusLeadsCount, filaCeoCount, filaCeoNovosCount,
     isAdmin, isDiretor = false, isGestor, canAdd,
@@ -270,8 +272,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     activeTab === "negocios"
       ? (negResumo ? `${negResumo.total} negócios · ${moneyShort(negResumo.vgvTotal)}` : "negócios")
       : activeTab === "equipes"
-      ? `${filteredLeadsCount} leads`
-      : `${filteredLeadsCount} leads`;
+      ? `${filteredLeadsCount} ativos`
+      : `${filteredLeadsCount} ativos`;
 
   // ── Colapsar a 3ª linha (ferramentas) — lembra a escolha por usuário ──
   const [compactTop, setCompactTop] = useState(false);
@@ -336,7 +338,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
             <span className="text-[26px] sm:text-[16px] font-extrabold sm:font-bold text-foreground tracking-[-0.6px] sm:tracking-[-0.3px] whitespace-nowrap">Pipeline</span>
-            <PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={gestorFilter} />
+            <span title={pipelineAtivoSplit && activeTab !== "negocios" ? `${pipelineAtivoSplit.leads} em Leads · ${pipelineAtivoSplit.negocios} em Negócios (Ganhos ficam no botão Ganhos)` : undefined}><PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={gestorFilter} /></span>
           </div>
 
           <div className="ml-auto flex items-center gap-3">

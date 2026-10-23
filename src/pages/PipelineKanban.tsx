@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect, useRef } from "react";
+import { contarPipelineAtivo } from "@/lib/pipelineAtivo";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import { usePipeline } from "@/hooks/usePipeline";
@@ -565,6 +566,9 @@ export default function PipelineKanban() {
     };
   }, [preFilteredLeads, stageTypeById, pipeline.stages.length, clientStatusCounts]);
 
+  // Fonte única do pipeline ativo (topo = soma das bolinhas; Ganho/Descarte fora).
+  const pipelineAtivo = useMemo(() => contarPipelineAtivo(filteredLeads, stageTypeById), [filteredLeads, stageTypeById]);
+
   const lastStableClientStatusCountsRef = useRef(clientStatusCounts);
   // Pronto quando: stages carregados E (sem leads OU tarefas não estão carregando).
   // Reforço anti-flash: se há leads mas o mapa de tarefas veio vazio, NÃO está
@@ -688,7 +692,8 @@ export default function PipelineKanban() {
       
       {/* ═══ HEADER (Fase 6: extraído para PipelineHeader.tsx) ═══ */}
       <PipelineHeader
-        filteredLeadsCount={filteredLeads.length}
+        filteredLeadsCount={pipelineAtivo.total}
+        pipelineAtivoSplit={pipelineAtivo}
         displayedClientStatusCounts={displayedClientStatusCounts}
         pillCounts={pillCounts}
         showEstagnado={false}
