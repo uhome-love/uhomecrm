@@ -260,6 +260,13 @@
       "when": 1792768857093,
       "tag": "0036_vendas_edicao_oficial_e_preservacao_financeira",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792770591255,
+      "tag": "0037_intermediacao_preservar_documento_permitir_vinculo_confirmado",
+      "breakpoints": true
     }
   ]
 }
