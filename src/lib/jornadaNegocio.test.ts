@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { jornadaPodeSalvar, lerDocumentos, valorSugerido } from "./jornadaNegocio";
+import { jornadaPodeSalvar, lerDocumentos, situacaoAtualNegocio, valorSugerido } from "./jornadaNegocio";
 import { contratoAtrasado, contratoChave } from "../../supabase/functions/stalled-deals-notify/contratoRegra";
 
 describe("jornada do negócio", () => {
+  it("considera a situação da etapa atual, não a negociação anterior", () => {
+    expect(situacaoAtualNegocio("contrato", "proposta_enviada", "em_leitura")).toBe("em_leitura");
+    expect(situacaoAtualNegocio("proposta", "proposta_aprovada", "em_leitura")).toBe("proposta_aprovada");
+    expect(situacaoAtualNegocio("ganho", "proposta_aprovada", "gerado")).toBe("");
+  });
   it("sugere o valor da proposta e preserva VGV final existente", () => {
     expect(valorSugerido({ proposta_valor: 298000, vgv_estimado: 250000 })).toBe(298000);
     expect(valorSugerido({ vgv_final: 300000, proposta_valor: 298000 })).toBe(300000);
