@@ -1044,7 +1044,7 @@ export default function AgendaVisitas() {
       )}
 
       {resultadoVisita && (
-        <VisitaResultadoDialog open={!!resultadoVisita} onClose={() => setResultadoVisita(null)} onSubmit={handleResultadoSubmit} defaultResultado={resultadoInicial} nomeCliente={resultadoVisita.nome_cliente} />
+        <VisitaResultadoDialog open={!!resultadoVisita} onClose={() => setResultadoVisita(null)} onSubmit={handleResultadoSubmit} defaultResultado={resultadoInicial} nomeCliente={resultadoVisita.nome_cliente} dataVisita={resultadoVisita.data_visita} horaVisita={resultadoVisita.hora_visita} />
       )}
 
       <VisitasCobrancaDialog

@@ -494,7 +494,7 @@ export function useVisitas(filters?: {
         updates,
         id,
       });
-      toast.error("Erro ao atualizar visita");
+      toast.error(error.message?.includes("ainda não aconteceu") ? error.message : "Erro ao atualizar visita");
       return false;
     }
 
