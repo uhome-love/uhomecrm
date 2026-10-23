@@ -13738,6 +13738,7 @@ export type Database = {
           semana_inicio: string
           situacao: string
           um_a_um_pendente: boolean
+          visitas_pontos: number | null
           visitas_validas: number
         }
         Insert: {
@@ -13749,6 +13750,7 @@ export type Database = {
           semana_inicio: string
           situacao: string
           um_a_um_pendente?: boolean
+          visitas_pontos?: number | null
           visitas_validas?: number
         }
         Update: {
@@ -13760,6 +13762,7 @@ export type Database = {
           semana_inicio?: string
           situacao?: string
           um_a_um_pendente?: boolean
+          visitas_pontos?: number | null
           visitas_validas?: number
         }
         Relationships: []
@@ -18751,6 +18754,7 @@ export type Database = {
         Args: { p_notificar?: boolean; p_semana_inicio?: string }
         Returns: number
       }
+      roleta_fmt_visitas: { Args: { p: number }; Returns: string }
       roleta_janela_cred_aberta: {
         Args: { p_janela: string }
         Returns: boolean
