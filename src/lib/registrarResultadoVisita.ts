@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Visita, VisitaStatus } from "@/hooks/useVisitas";
-import { RESULTADO_LABELS, type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import { RESULTADO_LABELS, visitaAindaNaoAconteceu, type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import { toast } from "sonner";
 import { routeLeadAfterVisita } from "@/lib/visitaResultadoRouting";
 
 export interface FeedbackExtra {
@@ -29,6 +30,10 @@ export async function registrarResultadoVisita(
   feedback: FeedbackExtra | undefined,
   { updateVisita, updateStatus, userId }: Deps,
 ) {
+  if (resultado !== "reagendar" && visitaAindaNaoAconteceu(visita.data_visita, visita.hora_visita)) {
+    toast.error("A visita ainda não aconteceu. Só é possível registrar resultado depois do horário marcado.");
+    throw new Error("visita_futura");
+  }
   const updates: Partial<Visita> = { resultado_visita: resultado } as Partial<Visita>;
   if (observacoes) {
     updates.observacoes = [visita.observacoes, observacoes].filter(Boolean).join(" | ");
