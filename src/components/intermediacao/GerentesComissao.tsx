@@ -1,0 +1,9 @@
+import {Plus,Trash2} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
+export interface GerenteComissao {user_id:string;nome:string;percentual:string}
+export function GerentesComissao({value,onChange,opcoes}:{value:GerenteComissao[];onChange:(v:GerenteComissao[])=>void;opcoes:{user_id:string;nome:string}[]}){
+ return <section className="space-y-3 border-t border-border pt-4"><div className="flex justify-between items-center gap-3"><Label>Comissão do gerente</Label><Button size="sm" variant="outline" disabled={value.length>=2} onClick={()=>onChange([...value,{user_id:"",nome:"",percentual:""}])}><Plus/>Gerente</Button></div>{value.map((g,i)=><div key={i} className="grid grid-cols-[1fr_90px_36px] gap-2 items-end"><div className="space-y-1"><Label className="text-xs">Gerente</Label><Select value={g.user_id} onValueChange={v=>onChange(value.map((x,j)=>j===i?{...x,user_id:v,nome:opcoes.find(o=>o.user_id===v)?.nome??""}:x))}><SelectTrigger aria-label={`Gerente ${i+1}`}><SelectValue placeholder="Selecione"/></SelectTrigger><SelectContent>{opcoes.map(o=><SelectItem key={o.user_id} value={o.user_id}>{o.nome}</SelectItem>)}</SelectContent></Select></div><div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input aria-label={`Percentual do gerente ${i+1}`} type="number" min={0} max={100} step="0.01" value={g.percentual} onChange={e=>onChange(value.map((x,j)=>j===i?{...x,percentual:e.target.value}:x))}/></div><Button variant="ghost" size="icon" aria-label={`Remover gerente ${i+1}`} onClick={()=>onChange(value.filter((_,j)=>i!==j))}><Trash2/></Button></div>)}</section>;
+}

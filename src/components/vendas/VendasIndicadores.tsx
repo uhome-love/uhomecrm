@@ -1,0 +1,6 @@
+import { Building2, FileWarning, TrendingUp, Trophy } from "lucide-react";
+import { fmtMoney } from "@/lib/fmtMoney";
+export function VendasIndicadores({ resumo }: { resumo: { vendas: number; vgv: number; ticket: number; semIntermediacao: number } }) {
+  const items = [{ label: "VGV assinado", valor: fmtMoney(resumo.vgv, "exact", { decimals: 2 }), icon: TrendingUp, cor: "text-success-500" }, { label: "Vendas", valor: resumo.vendas, icon: Trophy, cor: "text-primary" }, { label: "Ticket médio", valor: fmtMoney(resumo.ticket, "exact", { decimals: 2 }), icon: Building2, cor: "text-foreground" }, { label: "Sem intermediação", valor: resumo.semIntermediacao, icon: FileWarning, cor: "text-warning-500" }];
+  return <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 py-5">{items.map(i => <div key={i.label} className="min-w-0 border-l-2 border-border pl-4 py-1"><div className="flex items-center gap-2 text-xs text-muted-foreground"><i.icon className="size-4 shrink-0" />{i.label}</div><p className={`mt-2 text-xl font-bold tabular-nums break-words ${i.cor}`}>{i.valor}</p></div>)}</section>;
+}

@@ -3460,6 +3460,90 @@ export type Database = {
         }
         Relationships: []
       }
+      financeiro_historico: {
+        Row: {
+          acao: string
+          antes: Json | null
+          created_at: string
+          depois: Json | null
+          entidade: string
+          entidade_id: string
+          id: string
+          transacao: number
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          antes?: Json | null
+          created_at?: string
+          depois?: Json | null
+          entidade: string
+          entidade_id: string
+          id?: string
+          transacao?: number
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          antes?: Json | null
+          created_at?: string
+          depois?: Json | null
+          entidade?: string
+          entidade_id?: string
+          id?: string
+          transacao?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      financeiro_repasses: {
+        Row: {
+          beneficiario_id: string
+          comprovante_path: string
+          created_at: string
+          created_by: string | null
+          id: string
+          pago_em: string
+          recebimento_id: string
+          valor: number
+        }
+        Insert: {
+          beneficiario_id: string
+          comprovante_path: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pago_em: string
+          recebimento_id: string
+          valor: number
+        }
+        Update: {
+          beneficiario_id?: string
+          comprovante_path?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pago_em?: string
+          recebimento_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financeiro_repasses_beneficiario_id_fkey"
+            columns: ["beneficiario_id"]
+            isOneToOne: false
+            referencedRelation: "intermediacao_beneficiarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financeiro_repasses_recebimento_id_fkey"
+            columns: ["recebimento_id"]
+            isOneToOne: false
+            referencedRelation: "negocios_recebimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funnel_entries: {
         Row: {
           analise_ia: string | null
@@ -17387,6 +17471,18 @@ export type Database = {
           total_calls: number
         }[]
       }
+      editar_venda: {
+        Args: {
+          p_data: string
+          p_empreendimento: string
+          p_id: string
+          p_nome: string
+          p_observacoes?: string
+          p_unidade: string
+          p_vgv: number
+        }
+        Returns: string
+      }
       elegivel_roleta_domingo: {
         Args: { p_corretor_id: string; p_domingo: string }
         Returns: {
@@ -17454,6 +17550,40 @@ export type Database = {
       finalizar_trabalho_corretor: {
         Args: { p_user_id: string }
         Returns: Json
+      }
+      financeiro_alertar_parcelas: { Args: never; Returns: number }
+      financeiro_dados: {
+        Args: { p_fim: string; p_inicio: string }
+        Returns: Json
+      }
+      financeiro_exigir_acesso: { Args: never; Returns: undefined }
+      financeiro_receber_parcela: {
+        Args: { p_data: string; p_id: string; p_path: string }
+        Returns: string
+      }
+      financeiro_registrar_repasse: {
+        Args: {
+          p_beneficiario: string
+          p_data: string
+          p_path: string
+          p_recebimento: string
+        }
+        Returns: string
+      }
+      financeiro_salvar_parcela: {
+        Args: {
+          p_forma: string
+          p_id: string
+          p_intermediacao: string
+          p_observacao?: string
+          p_valor: number
+          p_vencimento: string
+        }
+        Returns: string
+      }
+      financeiro_validar_comprovante: {
+        Args: { p_negocio: string; p_path: string }
+        Returns: undefined
       }
       flush_page_views: { Args: { payload: Json }; Returns: undefined }
       fn_cadencia_sc_recalcular_por_tarefas: {
@@ -18170,6 +18300,29 @@ export type Database = {
         }
         Returns: undefined
       }
+      intermediacao_documento_acessivel: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
+      intermediacao_documento_pode_excluir: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
+      intermediacao_gerentes: {
+        Args: never
+        Returns: {
+          nome: string
+          user_id: string
+        }[]
+      }
+      intermediacao_salvar: {
+        Args: { p_beneficiarios: Json; p_parcelas: Json; p_registro: Json }
+        Returns: string
+      }
+      intermediacao_validar_alocacoes: {
+        Args: { p_beneficiarios: Json; p_registro: Json }
+        Returns: undefined
+      }
       is_corretor_in_my_team: {
         Args: { p_corretor_id: string }
         Returns: boolean
@@ -18504,6 +18657,10 @@ export type Database = {
         Returns: number
       }
       reengajamento_worker_sweep_stale: { Args: never; Returns: number }
+      registrar_distrato: {
+        Args: { p_data: string; p_motivo: string; p_negocio: string }
+        Returns: string
+      }
       registrar_faltas_sabado: { Args: { p_data?: string }; Returns: number }
       registrar_jornada_negocio: {
         Args: {

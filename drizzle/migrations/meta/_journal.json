@@ -197,6 +197,69 @@
       "when": 1792718520038,
       "tag": "0027_jornada_negocio_atomica",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792767020565,
+      "tag": "0028_contrato_prazo_autoritativo",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792767157460,
+      "tag": "0029_contrato_entrada_saida_preserva_prazo",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792767523719,
+      "tag": "0030_financeiro_operacoes_recebimentos_repasses_distrato",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792767604349,
+      "tag": "0031_financeiro_leitura_midia_avisos",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792767888536,
+      "tag": "0032_intermediacao_persistencia_atomica",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792768018048,
+      "tag": "0033_distrato_excluir_vgv_documentos_financeiro_privados",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792768271374,
+      "tag": "0034_financeiro_validacao_alocacoes_e_preservacao",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792768347587,
+      "tag": "0035_intermediacao_validar_transacao_completa",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792768857093,
+      "tag": "0036_vendas_edicao_oficial_e_preservacao_financeira",
+      "breakpoints": true
     }
   ]
 }
