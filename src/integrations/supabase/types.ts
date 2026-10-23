@@ -17568,6 +17568,10 @@ export type Database = {
         Returns: Json
       }
       financeiro_exigir_acesso: { Args: never; Returns: undefined }
+      financeiro_gerar_parcelas_intermediacao: {
+        Args: { p_negocio_id: string }
+        Returns: number
+      }
       financeiro_receber_parcela: {
         Args: { p_data: string; p_id: string; p_path: string }
         Returns: string

@@ -288,6 +288,13 @@
       "when": 1792778409752,
       "tag": "0040_anexar_documentos_venda",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792780502911,
+      "tag": "0041_financeiro_parcelas_da_intermediacao",
+      "breakpoints": true
     }
   ]
 }
