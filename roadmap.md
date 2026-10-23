@@ -59,7 +59,9 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [x] Fase 1 — 34 documentos do Drive conferidos: 32 registros novos e 2 já existentes (Sandro/Marco); 25 vínculos novos certos, 26 divisões certas reconciliadas e 34 anexos privados acessíveis. Sete vínculos prováveis pendentes; Marco/Skyline intacto. Nenhuma baixa/cobrança histórica presumida. Busca/download no preview e 3 testes de pagamento validados.
 - [ ] Fase 1 — Skyline R$ 32,7 mi: manter sem alteração; aguarda Lucas confirmar o VGV correto
 - [x] Fase 2 — Confirmação compartilhada com dados oficiais, intermediação e comprovante; travas no servidor, aviso após persistência, pendências históricas. Validada no computador e celular com cliente de teste, duas compras sem sobrescrever a primeira, repetição sem duplicidade e parcela vinculada sem presumir recebimento; 11 testes passaram. Legado pós-vendas sem etapa ativa não foi recriado.
-- [ ] Fase 3 — Jornada do negócio (sugestões 1–4): desenho específico aprovado; validar plano antes de alterar as telas; proposta/unidade, checklist informativo, intermediação no Contrato e aviso ao gerente após 7 dias
+- [x] Fase 3 — Desenho e plano específicos aprovados; proposta/unidade, checklist informativo e intermediação no Contrato implementados com gravação compartilhada, inclusive cartões/arrastar/aba Negócio.
+- [x] Fase 3 — Validação ao vivo em computador/celular com cliente fictício, cancelamentos, recuperação dos dados, sugestão na confirmação e aviso de teste/dedup/link; 17 testes aprovados; fixture removido; 115 vendas e R$ 63.459.987,29 preservados.
+- [ ] Fase 3 — Proteção final do prazo do aviso contra flags antigas enviadas por edição simultânea; aguarda janela após 19h BRT, conforme plano. Revalidar e obter validação de Lucas antes da fase 4. Detalhes em `.lovable/qa/jornada-negocio-2026-10-23.md`.
 - [ ] Fase 4 — Nova página Vendas
 - [ ] Fase 5 — Financeiro (distrato só CEO/diretora)
 - [ ] Fase 6 — Validação ponta a ponta
