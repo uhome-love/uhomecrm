@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useJornadaNegocio } from "@/hooks/useJornadaNegocio";
 import { CONTRATO_SUBSTATUS, NEGOCIACAO_SUBSTATUS } from "@/lib/leadHelpers";
-import { jornadaPodeSalvar, lerDocumentos, valorSugerido, type DocumentosNegocio } from "@/lib/jornadaNegocio";
+import { jornadaPodeSalvar, lerDocumentos, situacaoAutoritativa, valorSugerido, type DocumentosNegocio } from "@/lib/jornadaNegocio";
 import { numberToRawCurrency, parseCurrencyToNumber } from "@/utils/currencyFormat";
 import { PropostaCampos } from "./PropostaCampos";
 import { DocumentosChecklist } from "./DocumentosChecklist";
@@ -44,7 +44,7 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
     setDocumentos(lerDocumentos(jornada.documentos));
     setPrevisao(typeof jornada.previsao_assinatura === "string" ? jornada.previsao_assinatura : "");
     setObs(n?.observacoes ?? "");
-    const flag = contrato ? flags.status_contrato : flags.status_negociacao;
+    const flag = situacaoAutoritativa(contrato, n, contrato ? flags.status_contrato : flags.status_negociacao);
     const options = contrato ? CONTRATO_SUBSTATUS : NEGOCIACAO_SUBSTATUS;
     if (typeof flag === "string" && options.some(o => o.value === flag)) setStatus(flag);
   }, [dados.data, dados.isFetching, contrato]);

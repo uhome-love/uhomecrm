@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { jornadaPodeSalvar, lerDocumentos, situacaoAtualNegocio, valorSugerido } from "./jornadaNegocio";
+import { jornadaPodeSalvar, lerDocumentos, situacaoAtualNegocio, situacaoAutoritativa, valorSugerido } from "./jornadaNegocio";
 import { contratoAtrasado, contratoChave } from "../../supabase/functions/stalled-deals-notify/contratoRegra";
 
 describe("jornada do negócio", () => {
+  it("uma flag antiga não substitui a situação oficial do contrato", () => {
+    expect(situacaoAutoritativa(true, { contrato_situacao: "em_leitura" }, "gerado")).toBe("em_leitura");
+    expect(situacaoAutoritativa(true, null, "gerado")).toBe("gerado");
+  });
   it("considera a situação da etapa atual, não a negociação anterior", () => {
     expect(situacaoAtualNegocio("contrato", "proposta_enviada", "em_leitura")).toBe("em_leitura");
     expect(situacaoAtualNegocio("proposta", "proposta_aprovada", "em_leitura")).toBe("proposta_aprovada");

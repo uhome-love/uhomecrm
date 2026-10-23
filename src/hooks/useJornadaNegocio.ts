@@ -12,7 +12,7 @@ export function useJornadaNegocio(leadId: string) {
       ]);
       if (lead.error) throw lead.error;
       if (empreendimentos.error) throw empreendimentos.error;
-      let query = supabase.from("negocios").select("id,empreendimento_canonico_id,empreendimento,construtora,unidade,vgv_final,vgv_estimado,proposta_valor,observacoes,fase,jornada").eq("pipeline_lead_id", leadId).eq("status", "ativo");
+      let query = supabase.from("negocios").select("id,empreendimento_canonico_id,empreendimento,construtora,unidade,vgv_final,vgv_estimado,proposta_valor,proposta_situacao,contrato_situacao,observacoes,fase,jornada").eq("pipeline_lead_id", leadId).eq("status", "ativo");
       query = lead.data.negocio_id ? query.eq("id", lead.data.negocio_id) : query.neq("fase", "ganho");
       const negocio = await query.order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (negocio.error) throw negocio.error;
