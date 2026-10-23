@@ -97,6 +97,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
   const isManager = isGestor || isAdmin;
 
   const [form, setForm] = useState(() => getDefaultForm(initialData));
+  const [mostrarObs, setMostrarObs] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [pipelineLeads, setPipelineLeads] = useState<PipelineLeadOption[]>([]);
@@ -412,7 +413,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <CalendarPlus className="h-5 w-5 text-primary" />
@@ -420,7 +421,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Object.values(formErrors).filter(Boolean).length > 0 && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-2">
               <p className="text-xs font-medium text-destructive">
@@ -671,6 +672,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             )}
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {/* Local da Visita */}
           <div>
             <Label className="text-xs font-semibold mb-1 block">Local da Visita</Label>
@@ -695,6 +697,8 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
           </div>
 
           {/* Corretor — only for gestores/admins */}
@@ -773,8 +777,8 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             </div>
           )}
 
-          {/* Date + Time */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Date + Time + Telefone */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <div>
               <Label className="text-xs font-semibold mb-1 block">Data *</Label>
               <Input type="date" value={form.data_visita} onChange={e => set("data_visita", e.target.value)} className="h-9 text-sm" />
@@ -783,17 +787,21 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
               <Label className="text-xs font-semibold mb-1 block">Horário</Label>
               <Input type="time" value={form.hora_visita} onChange={e => set("hora_visita", e.target.value)} className="h-9 text-sm" />
             </div>
+            <div className="col-span-2 sm:col-span-1">
+              <Label className="text-xs font-semibold mb-1 block">Telefone</Label>
+              <Input value={form.telefone} onChange={e => set("telefone", e.target.value)} placeholder="(XX) XXXXX-XXXX" className="h-9 text-sm" />
+            </div>
           </div>
 
           {/* Quick time buttons */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 -mt-1">
             {QUICK_TIMES.map(t => (
               <button
                 key={t}
                 type="button"
                 onClick={() => set("hora_visita", t)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
+                  "px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors",
                   form.hora_visita === t
                     ? "bg-primary/10 text-primary border-primary/30"
                     : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
@@ -804,24 +812,24 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             ))}
           </div>
 
-          {/* Telefone */}
-          <div>
-            <Label className="text-xs font-semibold mb-1 block">Telefone</Label>
-            <Input value={form.telefone} onChange={e => set("telefone", e.target.value)} placeholder="(XX) XXXXX-XXXX" className="h-9 text-sm" />
-          </div>
-
           {/* Observações */}
-          <div>
-            <Label className="text-xs font-semibold mb-1 block">Observações</Label>
-            <Textarea value={form.observacoes} onChange={e => set("observacoes", e.target.value)} placeholder="Notas sobre a visita..." rows={2} className="text-sm" />
-          </div>
+          {mostrarObs || form.observacoes ? (
+            <div>
+              <Label className="text-xs font-semibold mb-1 block">Observações</Label>
+              <Textarea value={form.observacoes} onChange={e => set("observacoes", e.target.value)} placeholder="Notas sobre a visita..." rows={2} className="text-sm" autoFocus={!form.observacoes} />
+            </div>
+          ) : (
+            <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => setMostrarObs(true)}>
+              + Adicionar observação
+            </button>
+          )}
 
-          {/* Submit */}
           {mode === "create" && !UUID_REGEX.test(form.pipeline_lead_id) && form.nome_cliente.trim() && (
             <p className="text-[11px] text-amber-600 -mb-2">
               Selecione um lead da lista acima para continuar.
             </p>
           )}
+          <div className="sticky bottom-0 z-10 -mx-6 -mb-6 space-y-1 border-t border-border bg-background px-6 py-3">
           <Button
             className="w-full gap-2 h-10 text-sm font-semibold"
             disabled={
@@ -854,6 +862,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
               Apagar visita
             </Button>
           )}
+          </div>
         </div>
       </DialogContent>
       <AlertDialog open={confirmarParceria} onOpenChange={setConfirmarParceria}>
