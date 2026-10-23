@@ -8,7 +8,7 @@ const ROLETA_TIPOS = ["lead_roleta", "lead", "leads", "lead_timeout", "lead_urge
 const ROLETA_CATEGORIAS = ["lead_novo", "lead_aceito", "lead_atribuido"];
 
 const PIPELINE_TIPOS = ["lead_sem_contato", "lead_parado", "lead_alto_valor", "automacao", "sequencias", "radar_intencao"];
-const PIPELINE_CATEGORIAS = ["lead_retorno", "lead_sem_atendimento", "problema_atendimento", "volume_leads"];
+const PIPELINE_CATEGORIAS = ["lead_retorno", "lead_sem_atendimento", "problema_atendimento", "volume_leads", "contrato_parado"];
 
 const VISITA_TIPOS = ["visitas", "visita_agendada", "visita_confirmada", "visita_noshow"];
 
@@ -19,7 +19,7 @@ function matchesFilter(n: { tipo: string; categoria: string }, filter: string): 
   if (filter === "roleta") return ROLETA_TIPOS.includes(n.tipo) || ROLETA_CATEGORIAS.includes(n.categoria);
   if (filter === "pipeline") return PIPELINE_TIPOS.includes(n.tipo) || PIPELINE_CATEGORIAS.includes(n.categoria);
   if (filter === "visitas") return VISITA_TIPOS.includes(n.tipo) || n.categoria?.startsWith("visita");
-  if (filter === "performance") return PERF_TIPOS.includes(n.tipo);
+  if (filter === "performance") return n.categoria !== "contrato_parado" && PERF_TIPOS.includes(n.tipo);
   return true;
 }
 
