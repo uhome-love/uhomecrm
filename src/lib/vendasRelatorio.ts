@@ -53,11 +53,15 @@ export function agruparVendas(vendas: VendaRelatorio[], f: FiltrosVendas, campo:
   }
   return [...grupos.values()].sort((a, b) => b.vgv - a.vgv);
 }
+const ALIASES_EMPREENDIMENTO: Record<string, string> = {
+  "connect joao wallig": "connect jw", "boa vista": "boa vista country club", "lake vitoria": "lake victoria",
+  "casa tua porto alegre": "casa tua", "alto lindoia": "alto lindoia", "porto montenegro": "montenegro", "open": "open bosque",
+};
 /** Chave do filtro: mesmo empreendimento com grafias diferentes vira um só. */
 export function chaveEmpreendimento(nome: string | null | undefined): string {
   const k = (nome ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-    .replace(/\s*-\s*v\d+\s*$/, "").replace(/\s+/g, " ").trim();
-  return k || "sem";
+    .replace(/\s+[-–—]\s+.*$/, "").replace(/\s+v\d+$/, "").replace(/\s+/g, " ").trim();
+  return ALIASES_EMPREENDIMENTO[k] ?? (k || "sem");
 }
 export function documentosVenda(v: VendaRelatorio): string[] {
   if (!exigeDocumentosVenda(v.data_assinatura)) return [];
