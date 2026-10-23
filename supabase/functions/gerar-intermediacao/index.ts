@@ -517,7 +517,13 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro ao gerar documento";
-    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const msg = e instanceof Error ? e.message : (e as { message?: string })?.message ?? "Erro ao gerar documento";
+    console.error("[gerar-intermediacao] recusado:", msg);
+    try {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await admin.from("ops_events").insert({ fn: "gerar-intermediacao", level: "error", category: "intermediacao", message: msg.slice(0, 500) });
+    } catch (_) { /* best-effort */ }
+    const inesperado = /Configuração|fetch|network|timeout/i.test(msg);
+    return new Response(JSON.stringify({ error: msg }), { status: inesperado ? 500 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
