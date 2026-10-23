@@ -7,7 +7,8 @@
 - Hoje há 353 parcerias ativas; 9 visitas realizadas nas últimas 2 semanas estão em leads com parceria.
 
 ## Regra nova (confirmar)
-- Visita realizada em lead com parceria ativa conta 0,5 para o dono e 0,5 para o parceiro.
+- Mesmo cliente com várias visitas na mesma semana conta 1 visita só (hoje o sistema conta 1 por dia — Jocarli contaria 2 na semana; passa a contar 1).
+- Visita realizada em lead com parceria ativa conta 0,5 para o dono e 0,5 para o parceiro (uma vez por cliente na semana).
 - Sem parceria, continua 1 para o dono.
 - Meta continua 2 (ex.: 1 visita própria + 2 em parceria = 2,0 libera).
 - Vale para todas as janelas que usam o contador (semana anterior, semana atual, domingo). A regra "noite exige 1 visita marcada ou realizada hoje" passa a aceitar também visita em parceria onde ele é parceiro.
