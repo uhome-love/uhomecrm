@@ -34,12 +34,12 @@ export function pendenciasRepasse(d:DadosFinanceiro) {
  });
 }
 export function ganhosPessoas(d:DadosFinanceiro,inicio:string,fim:string){
- const grupos=new Map<string,{nome:string;papel:string;bruto:number;desconto:number;liquido:number;recebido:number;aReceber:number;vendas:Set<string>}>();
+ const grupos=new Map<string,{identidade:string;nome:string;papel:string;bruto:number;desconto:number;liquido:number;recebido:number;aReceber:number;vendas:Set<string>}>();
  for(const b of d.beneficiarios){
   const i=d.intermediacoes.find(x=>x.id===b.intermediacao_id);const n=d.vendas.find(x=>x.id===i?.negocio_id);
   if(!i||!n||n.status!=="ativo"||!noPeriodo(n.data_assinatura,inicio,fim))continue;
   const key=`${b.user_id||b.nome.trim().toLocaleLowerCase("pt-BR")}:${b.papel}`;
-  const g=grupos.get(key)??{nome:b.nome,papel:b.papel,bruto:0,desconto:0,liquido:0,recebido:0,aReceber:0,vendas:new Set<string>()};
+  const g=grupos.get(key)??{identidade:b.user_id||b.nome,nome:b.nome,papel:b.papel,bruto:0,desconto:0,liquido:0,recebido:0,aReceber:0,vendas:new Set<string>()};
   const recebidos=d.recebimentos.filter(r=>r.intermediacao_id===i.id&&r.status==="recebido");
   const pago=i.forma_pagamento==="nota_fiscal"&&b.papel!=="uhome"?d.repasses.filter(p=>p.beneficiario_id===b.id).reduce((s,p)=>s+Number(p.valor),0):recebidos.reduce((s,r)=>s+valorAlocado(b,r,i,d.recebimentos),0);
   g.bruto+=Number(b.valor_bruto);g.desconto+=Number(b.desconto);g.liquido+=Number(b.valor_liquido);g.recebido+=pago;g.aReceber+=Math.max(0,Number(b.valor_liquido)-pago);g.vendas.add(n.id);grupos.set(key,g);

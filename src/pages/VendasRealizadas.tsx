@@ -13,6 +13,7 @@ import { VendasTabela } from "@/components/vendas/VendasTabela";
 import { VendasAnalises } from "@/components/vendas/VendasAnalises";
 import { VendaDetalhes } from "@/components/vendas/VendaDetalhes";
 import { PendenciasVendas } from "@/components/vendas/PendenciasVendas";
+import { EditarVendaDrawer } from "@/components/vendas/EditarVendaDrawer";
 
 export default function VendasRealizadas() {
   const { isAdmin, isDiretor } = useUserRole();
@@ -21,6 +22,7 @@ export default function VendasRealizadas() {
   const [end,setEnd] = useState(hoje);
   const [filtros,setFiltros] = useState({ ...FILTROS_VENDAS });
   const [detalhe,setDetalhe] = useState<VendaRelatorio|null>(null);
+  const [editar,setEditar] = useState<VendaRelatorio|null>(null);
   const query = useVendasRelatorio(start,end);
   const vendas = query.data ?? [];
   const filtradas = useMemo(()=>filtrarVendas(vendas,filtros),[vendas,filtros]);
@@ -37,6 +39,7 @@ export default function VendasRealizadas() {
       <TabsContent value="origens"><VendasAnalises titulo="Origens e campanhas" rows={agruparVendas(filtradas,filtros,"origem")} total={resumo.vgv}/></TabsContent>
       {(isAdmin||isDiretor)&&<TabsContent value="pendencias"><PendenciasVendas/></TabsContent>}
     </Tabs>}
-    <VendaDetalhes venda={detalhe} onClose={()=>setDetalhe(null)}/>
+    <VendaDetalhes venda={detalhe} onClose={()=>setDetalhe(null)} onEditar={isAdmin||isDiretor?v=>{setDetalhe(null);setEditar(v);}:undefined}/>
+    <EditarVendaDrawer venda={editar} open={!!editar} canEdit={isAdmin||isDiretor} onOpenChange={o=>{if(!o)setEditar(null);}}/>
   </div>;
 }

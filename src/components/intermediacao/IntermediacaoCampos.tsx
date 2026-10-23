@@ -79,7 +79,7 @@ export const CAROLINA: Testemunha = { nome: "Carolina de Camargo Madruga", email
 // ─── Helpers de cálculo (replicado na edge function) ───────────────────────────
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 export const num = (v: string) => {
-  const n = parseFloat(String(v).replace(",", "."));
+  const n = parseFloat(String(v).includes(",")?String(v).replace(/\./g, "").replace(",", "."):String(v));
   return Number.isFinite(n) ? n : 0;
 };
 export const brl = (n: number) =>

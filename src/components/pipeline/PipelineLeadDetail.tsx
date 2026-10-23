@@ -58,6 +58,7 @@ import { leadSaude, diasSemToque } from "@/lib/leadSaude";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
 import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
+import { ConfirmarVendaForm } from "@/components/vendas/ConfirmarVendaForm";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
 import NextActionModal from "./NextActionModal";
@@ -189,6 +190,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
 
   const [moveObs, setMoveObs] = useState("");
   const [transitionTarget, setTransitionTarget] = useState<PipelineStage | null>(null);
+  const [confirmarVendaOpen, setConfirmarVendaOpen] = useState(false);
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
@@ -644,7 +646,10 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         <CardOverflowMenu
           lead={lead}
           stages={stages}
-          onMoveLead={(leadId, newStageId, observacao) => { onMove(leadId, newStageId, observacao); }}
+          onMoveLead={(leadId, newStageId, observacao) => {
+            if (stages.find(s => s.id === newStageId)?.tipo === "venda") { setConfirmarVendaOpen(true); return; }
+            onMove(leadId, newStageId, observacao);
+          }}
           onOpenDetail={() => { /* já está aberto */ }}
           onRegistrarAtividade={() => setRegistrarOpen(true)}
           onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
@@ -1022,6 +1027,12 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       </SheetContent>
 
       <PartnershipDialog open={partnerOpen} onOpenChange={setPartnerOpen} leadId={lead.id} leadNome={lead.nome} corretorPrincipalId={lead.corretor_id} />
+      <Dialog open={confirmarVendaOpen} onOpenChange={setConfirmarVendaOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+          {confirmarVendaOpen && <ConfirmarVendaForm leadId={lead.id} nome={lead.nome} empreendimento={lead.empreendimento} valorEstimado={lead.valor_estimado}
+            onCancel={() => setConfirmarVendaOpen(false)} onConfirmed={() => { setConfirmarVendaOpen(false); onClose(); }} />}
+        </DialogContent>
+      </Dialog>
       <CentralComunicacao open={comunicacaoOpen} onOpenChange={setComunicacaoOpen} leadId={lead.id} leadNome={lead.nome} leadTelefone={lead.telefone} leadEmpreendimento={lead.empreendimento} />
 
       {/* Dialog Inativar Lead */}
