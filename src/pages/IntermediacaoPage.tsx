@@ -24,7 +24,7 @@ import { GerentesComissao, type GerenteComissao } from "@/components/intermediac
 import { todayBRT } from "@/lib/brtTime";
 import { FormaPagamentoCard } from "@/components/intermediacao/FormaPagamentoCard";
 import {
-  DESCONTO_NF_PCT_PADRAO, construtoraDoEmpreendimento, type FormaPagamento,
+  DESCONTO_NF_PCT_PADRAO, FORMAS_PAGAMENTO, construtoraDoEmpreendimento, type FormaPagamento,
 } from "@/lib/intermediacaoPagamento";
 
 import {maskCPF,maskRG,emptyComprador,CAROLINA,num,brl,fmtDataCurta,calcularCredores,CompradorFields,type CorretorOption,type CorretorForm,type CompradorForm,type Parcela,type Testemunha} from "@/components/intermediacao/IntermediacaoCampos";
