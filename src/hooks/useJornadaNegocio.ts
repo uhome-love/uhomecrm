@@ -16,7 +16,9 @@ export function useJornadaNegocio(leadId: string) {
       query = lead.data.negocio_id ? query.eq("id", lead.data.negocio_id) : query.neq("fase", "ganho");
       const negocio = await query.order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (negocio.error) throw negocio.error;
-      return { lead: lead.data, negocio: negocio.data, empreendimentos: empreendimentos.data ?? [] };
+      const etapa = await supabase.from("pipeline_stages").select("id,tipo,nome").eq("id", lead.data.stage_id).maybeSingle();
+      if (etapa.error) throw etapa.error;
+      return { lead: lead.data, negocio: negocio.data, etapa: etapa.data, empreendimentos: empreendimentos.data ?? [] };
     },
     enabled: !!leadId,
   });
