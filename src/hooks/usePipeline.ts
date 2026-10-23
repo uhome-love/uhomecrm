@@ -690,7 +690,11 @@ export function usePipeline(
 
     if (stageError) {
       console.error("Error moving lead (stage update):", stageError, { leadId, newStageId, userId: user.id });
-      toast.error("Erro ao mover lead. Revertendo posição.", { duration: 3000 });
+      if (/Confirme a venda/i.test(stageError.message ?? "")) {
+        toast.error("Para marcar como Ganho, abra o cliente e use \"Confirmar venda\": precisa de data da assinatura, VGV, intermediação e comprovante do ato.", { duration: 8000 });
+      } else {
+        toast.error("Erro ao mover lead. Revertendo posição.", { duration: 3000 });
+      }
       // ─── Rollback: restore previous position ───
       setLeads(prev => prev.map(l =>
         l.id === leadId ? { ...l, stage_id: oldStageId, stage_changed_at: oldStageChangedAt } : l
