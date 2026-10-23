@@ -239,6 +239,13 @@
       "when": 1792768018048,
       "tag": "0033_distrato_excluir_vgv_documentos_financeiro_privados",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792768271374,
+      "tag": "0034_financeiro_validacao_alocacoes_e_preservacao",
+      "breakpoints": true
     }
   ]
 }
