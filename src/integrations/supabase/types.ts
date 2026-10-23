@@ -18288,6 +18288,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      intermediacao_documento_pode_excluir: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
+      intermediacao_gerentes: {
+        Args: never
+        Returns: {
+          nome: string
+          user_id: string
+        }[]
+      }
+      intermediacao_salvar: {
+        Args: { p_beneficiarios: Json; p_parcelas: Json; p_registro: Json }
+        Returns: string
+      }
       is_corretor_in_my_team: {
         Args: { p_corretor_id: string }
         Returns: boolean
