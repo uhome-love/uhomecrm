@@ -1,0 +1,5 @@
+import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
+import { fmtMoney } from "@/lib/fmtMoney";
+export function VendasAnalises({ rows, titulo, total }: { rows: { nome: string; vendas: number; vgv: number }[]; titulo: string; total: number }) {
+  return <section className="space-y-4"><h2 className="font-semibold">{titulo}</h2><Table><TableHeader><TableRow><TableHead>{titulo}</TableHead><TableHead className="text-right">Vendas</TableHead><TableHead className="text-right">VGV</TableHead><TableHead className="text-right">% do total</TableHead></TableRow></TableHeader><TableBody>{rows.map((r,i) => <TableRow key={r.nome}><TableCell className="font-medium text-foreground"><span className="text-muted-foreground mr-3">{i+1}.</span>{r.nome}</TableCell><TableCell className="text-right">{r.vendas}</TableCell><TableCell className="text-right font-semibold text-success-500 whitespace-nowrap">{fmtMoney(r.vgv,"exact",{decimals:2})}</TableCell><TableCell className="text-right">{total ? (100*r.vgv/total).toFixed(1) : "0"}%</TableCell></TableRow>)}</TableBody></Table></section>;
+}
