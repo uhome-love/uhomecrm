@@ -641,6 +641,10 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
     const lead = leads.find(l => l.id === result.leadId);
     const extra = result.extraData || {};
+    if (extra.jornadaSalva === true) {
+      window.dispatchEvent(new CustomEvent("pipeline-reload"));
+      return;
+    }
     if (extra.vendaConfirmada === true) {
       spawnConfetti();
       window.dispatchEvent(new CustomEvent("pipeline-reload"));

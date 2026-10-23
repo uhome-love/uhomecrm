@@ -16,6 +16,7 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUserRole } from "@/hooks/useUserRole";
+import { valorSugerido } from "@/lib/jornadaNegocio";
 
 interface Props { leadId: string; nome: string; valorEstimado?: number | null; empreendimento?: string | null; onConfirmed: () => void; onCancel: () => void }
 
@@ -48,7 +49,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
     const n = dados.negocio;
     setEmpId(n?.empreendimento_canonico_id ?? dados.empreendimentos.find(e => e.nome === empreendimento)?.id ?? "");
     setUnidade(n?.unidade ?? "");
-    setValor(numberToRawCurrency(n?.vgv_final ?? n?.vgv_estimado ?? valorEstimado ?? 0));
+    setValor(numberToRawCurrency(valorSugerido(n, valorEstimado ?? 0)));
     setData(n?.data_assinatura ?? ""); setInterId(n?.intermediacao_id ?? ""); setPath(n?.comprovante_ato_path ?? "");
   }, [dados.loading, dados.negocio, dados.empreendimentos, empreendimento, valorEstimado]);
 
