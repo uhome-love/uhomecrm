@@ -15,6 +15,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PipelineLeadOption {
   id: string;
@@ -112,6 +113,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
   // Partnership state
   const [isParceria, setIsParceria] = useState(false);
   const [parceiroId, setParceiroId] = useState("");
+  const [confirmarParceria, setConfirmarParceria] = useState(false);
 
   // Imóvel Jetimob search
   const [imovelSearch, setImovelSearch] = useState("");
@@ -334,7 +336,8 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
     return errors;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (parceriaConfirmada = false) => {
+    if (isParceria && parceiroId && !parceriaExistente && !parceriaConfirmada) { setConfirmarParceria(true); return; }
     const errors = validateForm();
     setFormErrors(errors);
 
@@ -829,7 +832,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
               submitting ||
               (isParceria && !parceiroId)
             }
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === "create" ? "📅 Agendar Visita" : "💾 Salvar Alterações"}
@@ -853,6 +856,21 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
           )}
         </div>
       </DialogContent>
+      <AlertDialog open={confirmarParceria} onOpenChange={setConfirmarParceria}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar parceria?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Registrar parceria com {teamMembers.find(m => m.user_id === parceiroId)?.nome ?? "o corretor escolhido"} neste cliente?
+              Cada um ficará com 0,5 visita na Roleta e só o administrador pode desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmarParceria(false); void handleSubmit(true); }}>Sim, registrar parceria</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

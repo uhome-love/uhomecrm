@@ -7,6 +7,7 @@ import { MapPin, Calendar, Plus, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
 import { parseDateBRTSafe } from "@/lib/utils";
+import { ParceriaSelo } from "@/components/pipeline/ParceriaSelo";
 import { groupVisitsByStatus, type VisitaLike } from "@/lib/visitGrouping";
 
 interface Visita extends VisitaLike {
@@ -130,7 +131,7 @@ export default function DrawerVisitsTab({ pipelineLeadId, onAgendarVisita, reloa
                   {countAgendadas}
                 </span>
               </div>
-              {grouped.agendadas.map(v => <VisitaCard key={v.id} visita={v} isFuture />)}
+              {grouped.agendadas.map(v => <VisitaCard key={v.id} visita={v} isFuture leadId={pipelineLeadId} />)}
             </section>
           )}
           {countRealizadas > 0 && (
@@ -143,7 +144,7 @@ export default function DrawerVisitsTab({ pipelineLeadId, onAgendarVisita, reloa
                   {countRealizadas}
                 </span>
               </div>
-              {grouped.realizadas.map(v => <VisitaCard key={v.id} visita={v} isFuture={false} />)}
+              {grouped.realizadas.map(v => <VisitaCard key={v.id} visita={v} isFuture={false} leadId={pipelineLeadId} />)}
             </section>
           )}
         </div>
@@ -152,7 +153,7 @@ export default function DrawerVisitsTab({ pipelineLeadId, onAgendarVisita, reloa
   );
 }
 
-function VisitaCard({ visita, isFuture }: { visita: Visita; isFuture: boolean }) {
+function VisitaCard({ visita, isFuture, leadId }: { visita: Visita; isFuture: boolean; leadId?: string | null }) {
   const d = parseDateBRTSafe(visita.data_visita);
   const diaSemana = d ? DOW[d.getDay()] : "--";
   const dia = d ? formatBRT(d, "dd") : "--";
@@ -187,6 +188,7 @@ function VisitaCard({ visita, isFuture }: { visita: Visita; isFuture: boolean })
             <span className={`text-[9px] px-1.5 py-0.5 rounded-md uppercase tracking-tight font-semibold ${statusCls}`}>
               {statusLabel}
             </span>
+            <ParceriaSelo leadId={leadId} />
           </div>
           {visita.empreendimento && (
             <div className="text-sm font-semibold text-zinc-900 mb-1">{visita.empreendimento}</div>
