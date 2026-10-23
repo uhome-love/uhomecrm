@@ -6,6 +6,7 @@ const b={id:"b",nome:"Corretor",papel:"corretor",intermediacao_id:"i",valor_brut
 const r={id:"r",intermediacao_id:"i",negocio_id:"n",valor:5000,status:"recebido",recebido_em:"2026-10-22",vencimento:"2026-10-22"} as ParcelaFinanceira;
 const d:DadosFinanceiro={...FINANCEIRO_VAZIO,vendas:[venda],intermediacoes:[i],beneficiarios:[b],recebimentos:[r]};
 describe("Financeiro da intermediação",()=>{
+ it("repasses parcelados conservam todos os centavos do líquido",()=>{const inter={...i,valor_bruto:1};const benef={...b,valor_liquido:0.9};const ps=[0.33,0.33,0.34].map((valor,j)=>({...r,id:`r${j}`,parcela_num:j+1,valor}));expect(ps.map(p=>valorAlocado(benef,p,inter,ps))).toEqual([0.3,0.29,0.31]);expect(ps.reduce((s,p)=>s+valorAlocado(benef,p,inter,ps),0)).toBeCloseTo(0.9,2);});
  it("NF reduz 10% e parcela de metade do bruto tem líquido proporcional",()=>expect(valorAlocado(b,r,i)).toBe(1800));
  it("NF recebida na Uhome não presume repasse ao corretor",()=>expect(ganhosPessoas(d,"2026-10-01","2026-10-23")[0]).toMatchObject({liquido:3600,recebido:0,aReceber:3600}));
  it("PIX confirmado é ganho direto sem repasse presumido pela Uhome",()=>expect(ganhosPessoas({...d,intermediacoes:[{...i,forma_pagamento:"pix",valor_liquido:10000}],beneficiarios:[{...b,desconto:0,valor_liquido:4000}]},"2026-10-01","2026-10-23")[0].recebido).toBe(2000));

@@ -1,4 +1,5 @@
 import {Input} from "@/components/ui/input";
+import {repartirCentavos} from "../../../supabase/functions/_shared/comissaoCentavos";
 import {Label} from "@/components/ui/label";
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
 // ─── Máscaras de documentos/contato ────────────────────────────────────────────
@@ -114,19 +115,10 @@ export function calcularCredores(
     { nome: "UHome", pct: pctUhome, isUhome: true },
   ];
 
-  const credores: CredorCalc[] = defs.map((d) => {
-    const total = round2((d.pct / 100) * valorTotal);
-    const ps: number[] = [];
-    let acc = 0;
-    parcelas.forEach((valorP, i) => {
-      if (i === parcelas.length - 1) {
-        ps.push(round2(total - acc));
-      } else {
-        const v = round2((d.pct / 100) * valorP);
-        ps.push(v);
-        acc = round2(acc + v);
-      }
-    });
+  const totais = repartirCentavos(valorTotal,defs.map(d=>d.pct));
+  const credores: CredorCalc[] = defs.map((d, index) => {
+    const total = totais[index];
+    const ps = repartirCentavos(total,parcelas);
     return { nome: d.nome, isUhome: d.isUhome, total, parcelas: ps };
   });
 

@@ -9,6 +9,7 @@ const credores = [
 ];
 
 describe("forma de pagamento da intermediação", () => {
+  it("desconto NF conserva o total em divisões com centavos",()=>{const r=calcularRepasse(Array.from({length:7},(_,j)=>({nome:`Pessoa ${j}`,total:1.05})),"nota_fiscal");expect(r.bruto).toBe(7.35);expect(r.desconto).toBe(0.74);expect(r.liquido).toBe(6.61);});
   it("nota fiscal desconta 10% do bruto de todos", () => {
     const r = calcularRepasse(credores, "nota_fiscal");
     expect(r.bruto).toBe(20000);

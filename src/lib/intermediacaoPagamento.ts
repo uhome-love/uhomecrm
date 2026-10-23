@@ -6,6 +6,7 @@
  *   do valor bruto de cada beneficiário.
  * - pix: direto na conta de cada beneficiário, sem desconto.
  */
+import { repartirCentavos } from "../../supabase/functions/_shared/comissaoCentavos";
 export type FormaPagamento = "zemo" | "nota_fiscal" | "pix";
 
 export const DESCONTO_NF_PCT_PADRAO = 10;
@@ -58,8 +59,9 @@ export function calcularRepasse(
   pctDesconto: number = DESCONTO_NF_PCT_PADRAO,
 ): { linhas: LinhaRepasse[]; bruto: number; desconto: number; liquido: number } {
   const pct = forma === "nota_fiscal" ? pctDesconto : 0;
-  const linhas = credores.map((c) => {
-    const desconto = round2((c.total * pct) / 100);
+  const descontos = repartirCentavos(round2(credores.reduce((s,c)=>s+c.total,0)*pct/100),credores.map(c=>c.total));
+  const linhas = credores.map((c, i) => {
+    const desconto = descontos[i];
     return { nome: c.nome, bruto: round2(c.total), desconto, liquido: round2(c.total - desconto) };
   });
   const soma = (k: keyof Omit<LinhaRepasse, "nome">) => round2(linhas.reduce((s, l) => s + l[k], 0));

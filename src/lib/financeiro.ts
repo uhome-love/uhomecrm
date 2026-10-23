@@ -21,15 +21,16 @@ export function lerFinanceiro(value: unknown): DadosFinanceiro {
 }
 export const arredondar = (n:number)=>Math.round((n+Number.EPSILON)*100)/100;
 export const noPeriodo=(d:string|null,inicio:string,fim:string)=>!!d&&d>=inicio&&d<=fim;
-export function valorAlocado(b:BeneficiarioFinanceiro,r:ParcelaFinanceira,i:IntermediacaoFinanceira){
+export function valorAlocado(b:BeneficiarioFinanceiro,r:ParcelaFinanceira,i:IntermediacaoFinanceira,parcelas:ParcelaFinanceira[] = [r]){
  const bruto=Number(i.valor_bruto??i.valor_comissao??0);
- return bruto>0?arredondar(Number(b.valor_liquido)*Number(r.valor)/bruto):0;
+ const anteriores=parcelas.filter(p=>p.intermediacao_id===i.id&&p.status!=="cancelado"&&((p.parcela_num??0)<(r.parcela_num??0)||((p.parcela_num??0)===(r.parcela_num??0)&&p.id<r.id))).reduce((s,p)=>s+Number(p.valor),0);
+ return bruto>0?arredondar(arredondar(Number(b.valor_liquido)*(anteriores+Number(r.valor))/bruto)-arredondar(Number(b.valor_liquido)*anteriores/bruto)):0;
 }
 export function pendenciasRepasse(d:DadosFinanceiro) {
  return d.recebimentos.filter(r=>r.status==="recebido").flatMap(r=>{
   const i=d.intermediacoes.find(x=>x.id===r.intermediacao_id);
   if(!i||i.forma_pagamento!=="nota_fiscal"||!d.vendas.some(n=>n.id===i.negocio_id&&n.status==="ativo"))return [];
-  return d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel!=="uhome"&&b.valor_liquido>0).map(b=>({r,i,b,valor:valorAlocado(b,r,i),repasse:d.repasses.find(p=>p.recebimento_id===r.id&&p.beneficiario_id===b.id)}));
+  return d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel!=="uhome"&&b.valor_liquido>0).map(b=>({r,i,b,valor:valorAlocado(b,r,i,d.recebimentos),repasse:d.repasses.find(p=>p.recebimento_id===r.id&&p.beneficiario_id===b.id)}));
  });
 }
 export function ganhosPessoas(d:DadosFinanceiro,inicio:string,fim:string){
@@ -40,7 +41,7 @@ export function ganhosPessoas(d:DadosFinanceiro,inicio:string,fim:string){
   const key=`${b.user_id||b.nome.trim().toLocaleLowerCase("pt-BR")}:${b.papel}`;
   const g=grupos.get(key)??{nome:b.nome,papel:b.papel,bruto:0,desconto:0,liquido:0,recebido:0,aReceber:0,vendas:new Set<string>()};
   const recebidos=d.recebimentos.filter(r=>r.intermediacao_id===i.id&&r.status==="recebido");
-  const pago=i.forma_pagamento==="nota_fiscal"&&b.papel!=="uhome"?d.repasses.filter(p=>p.beneficiario_id===b.id).reduce((s,p)=>s+Number(p.valor),0):recebidos.reduce((s,r)=>s+valorAlocado(b,r,i),0);
+  const pago=i.forma_pagamento==="nota_fiscal"&&b.papel!=="uhome"?d.repasses.filter(p=>p.beneficiario_id===b.id).reduce((s,p)=>s+Number(p.valor),0):recebidos.reduce((s,r)=>s+valorAlocado(b,r,i,d.recebimentos),0);
   g.bruto+=Number(b.valor_bruto);g.desconto+=Number(b.desconto);g.liquido+=Number(b.valor_liquido);g.recebido+=pago;g.aReceber+=Math.max(0,Number(b.valor_liquido)-pago);g.vendas.add(n.id);grupos.set(key,g);
  }
  return [...grupos.values()].map(g=>({...g,vendas:g.vendas.size})).sort((a,b)=>b.liquido-a.liquido);
@@ -52,7 +53,7 @@ export function resumoFinanceiro(d:DadosFinanceiro,inicio:string,fim:string,hoje
  const recebidos=d.recebimentos.filter(r=>r.status==="recebido"&&noPeriodo(r.recebido_em,inicio,fim));
  const recebidaUhome=recebidos.reduce((s,r)=>{
   const i=d.intermediacoes.find(x=>x.id===r.intermediacao_id);if(!i)return s;
-  return s+d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel==="uhome").reduce((a,b)=>a+valorAlocado(b,r,i),0);
+  return s+d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel==="uhome").reduce((a,b)=>a+valorAlocado(b,r,i,d.recebimentos),0);
  },0);
  const geradaUhome=ganhosPessoas(d,inicio,fim).filter(g=>g.papel==="uhome").reduce((s,g)=>s+g.liquido,0);
  const midia=d.midia.reduce((s,m)=>s+Number(m.valor),0)+d.midia_manual.reduce((s,m)=>s+Number(m.valor),0);

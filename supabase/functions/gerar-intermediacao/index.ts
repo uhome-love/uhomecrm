@@ -1,6 +1,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3";
+import { repartirCentavos } from "../_shared/comissaoCentavos.ts";
 import {
   Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun,
   Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType, HeadingLevel,
@@ -122,14 +123,10 @@ function calcular(b: Body) {
     { nome: "UHome", pct: pctUhome, isUhome: true, papel: "uhome", user_id: undefined },
   ];
 
-  const credores: CredorCalc[] = defs.map((d) => {
-    const total = round2((d.pct / 100) * valorTotal);
-    const ps: number[] = [];
-    let acc = 0;
-    valoresParcelas.forEach((vp, i) => {
-      if (i === valoresParcelas.length - 1) ps.push(round2(total - acc));
-      else { const v = round2((d.pct / 100) * vp); ps.push(v); acc = round2(acc + v); }
-    });
+  const totais = repartirCentavos(valorTotal, defs.map(d=>d.pct));
+  const credores: CredorCalc[] = defs.map((d, index) => {
+    const total = totais[index];
+    const ps = repartirCentavos(total, valoresParcelas);
     return { nome: d.nome, isUhome: d.isUhome, total, parcelas: ps, papel: d.papel, user_id: d.user_id, percentual: d.pct };
   });
 
@@ -496,8 +493,9 @@ Deno.serve(async (req) => {
     const calc = calcular(body);
     const bruto = round2(body.comissao.valorTotal);
     const pctNf = body.descontoNfPct;
-    const benef = calc.credores.map(c=>{
-      const desconto = round2(c.total*pctNf/100);
+    const descontos = repartirCentavos(round2(bruto*pctNf/100),calc.credores.map(c=>c.total));
+    const benef = calc.credores.map((c,index)=>{
+      const desconto = descontos[index];
       return {nome:c.nome,papel:c.papel,user_id:c.user_id??null,percentual:c.percentual,valor_bruto:c.total,desconto,valor_liquido:round2(c.total-desconto)};
     });
     const liquido = round2(benef.reduce((s,b)=>s+b.valor_liquido,0));
