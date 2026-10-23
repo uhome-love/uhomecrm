@@ -69,6 +69,9 @@ export function useNotifications() {
     }
 
     const leadId = dados?.pipeline_lead_id || dados?.lead_id;
+    if (notification.categoria === "contrato_parado" && typeof leadId === "string" && leadId.length > 0) {
+      return `/pipeline-leads?lead=${encodeURIComponent(leadId)}`;
+    }
     if (typeof leadId === "string" && leadId.length > 0) {
       return `/aceite?lead=${leadId}`;
     }
