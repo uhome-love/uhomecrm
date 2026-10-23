@@ -17471,6 +17471,18 @@ export type Database = {
           total_calls: number
         }[]
       }
+      editar_venda: {
+        Args: {
+          p_data: string
+          p_empreendimento: string
+          p_id: string
+          p_nome: string
+          p_observacoes?: string
+          p_unidade: string
+          p_vgv: number
+        }
+        Returns: string
+      }
       elegivel_roleta_domingo: {
         Args: { p_corretor_id: string; p_domingo: string }
         Returns: {

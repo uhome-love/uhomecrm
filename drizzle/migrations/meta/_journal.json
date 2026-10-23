@@ -253,6 +253,13 @@
       "when": 1792768347587,
       "tag": "0035_intermediacao_validar_transacao_completa",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792768857093,
+      "tag": "0036_vendas_edicao_oficial_e_preservacao_financeira",
+      "breakpoints": true
     }
   ]
 }
