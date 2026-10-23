@@ -29,19 +29,23 @@ export function valorAlocado(b:BeneficiarioFinanceiro,r:ParcelaFinanceira,i:Inte
 export function pendenciasRepasse(d:DadosFinanceiro) {
  return d.recebimentos.filter(r=>r.status==="recebido").flatMap(r=>{
   const i=d.intermediacoes.find(x=>x.id===r.intermediacao_id);
-  if(!i||i.forma_pagamento!=="nota_fiscal"||!d.vendas.some(n=>n.id===i.negocio_id&&n.status==="ativo"))return [];
-  return d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel!=="uhome"&&b.valor_liquido>0).map(b=>({r,i,b,valor:valorAlocado(b,r,i,d.recebimentos),repasse:d.repasses.find(p=>p.recebimento_id===r.id&&p.beneficiario_id===b.id)}));
+  const n=d.vendas.find(n=>n.id===i?.negocio_id&&n.id===r.negocio_id);
+  if(!i||i.status!=="ativa"||i.forma_pagamento!=="nota_fiscal"||!n)return [];
+  return d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel!=="uhome"&&b.valor_liquido>0).map(b=>({r,i,b,distratado:n.status==="distratado",valor:valorAlocado(b,r,i,d.recebimentos),repasse:d.repasses.find(p=>p.recebimento_id===r.id&&p.beneficiario_id===b.id)}));
  });
 }
-export function ganhosPessoas(d:DadosFinanceiro,inicio:string,fim:string){
+export function ganhosPessoas(d:DadosFinanceiro,inicio:string,fim:string,busca="",papel="todos"){
  const grupos=new Map<string,{identidade:string;nome:string;papel:string;bruto:number;desconto:number;liquido:number;recebido:number;aReceber:number;vendas:Set<string>}>();
+ const termo=busca.trim().toLocaleLowerCase("pt-BR");
  for(const b of d.beneficiarios){
   const i=d.intermediacoes.find(x=>x.id===b.intermediacao_id);const n=d.vendas.find(x=>x.id===i?.negocio_id);
-  if(!i||!n||n.status!=="ativo"||!noPeriodo(n.data_assinatura,inicio,fim))continue;
+  if(!i||i.status!=="ativa"||!n||n.status!=="ativo"||!noPeriodo(n.data_assinatura,inicio,fim))continue;
+  if(papel!=="todos"&&b.papel!==papel)continue;
+  if(![b.nome,i.comprador_nome,i.empreendimento,n.nome_cliente,n.empreendimento].join(" ").toLocaleLowerCase("pt-BR").includes(termo))continue;
   const key=`${b.user_id||b.nome.trim().toLocaleLowerCase("pt-BR")}:${b.papel}`;
   const g=grupos.get(key)??{identidade:b.user_id||b.nome,nome:b.nome,papel:b.papel,bruto:0,desconto:0,liquido:0,recebido:0,aReceber:0,vendas:new Set<string>()};
-  const recebidos=d.recebimentos.filter(r=>r.intermediacao_id===i.id&&r.status==="recebido");
-  const pago=i.forma_pagamento==="nota_fiscal"&&b.papel!=="uhome"?d.repasses.filter(p=>p.beneficiario_id===b.id).reduce((s,p)=>s+Number(p.valor),0):recebidos.reduce((s,r)=>s+valorAlocado(b,r,i,d.recebimentos),0);
+  const recebidos=d.recebimentos.filter(r=>r.intermediacao_id===i.id&&r.negocio_id===n.id&&r.status==="recebido");
+  const pago=i.forma_pagamento==="nota_fiscal"&&b.papel!=="uhome"?d.repasses.filter(p=>p.beneficiario_id===b.id&&recebidos.some(r=>r.id===p.recebimento_id)).reduce((s,p)=>s+Number(p.valor),0):recebidos.reduce((s,r)=>s+valorAlocado(b,r,i,d.recebimentos),0);
   g.bruto+=Number(b.valor_bruto);g.desconto+=Number(b.desconto);g.liquido+=Number(b.valor_liquido);g.recebido+=pago;g.aReceber+=Math.max(0,Number(b.valor_liquido)-pago);g.vendas.add(n.id);grupos.set(key,g);
  }
  return [...grupos.values()].map(g=>({...g,vendas:g.vendas.size})).sort((a,b)=>b.liquido-a.liquido);
@@ -56,10 +60,10 @@ export function resumoFinanceiro(d:DadosFinanceiro,inicio:string,fim:string,hoje
   return s+d.beneficiarios.filter(b=>b.intermediacao_id===i.id&&b.papel==="uhome").reduce((a,b)=>a+valorAlocado(b,r,i,d.recebimentos),0);
  },0);
  const geradaUhome=ganhosPessoas(d,inicio,fim).filter(g=>g.papel==="uhome").reduce((s,g)=>s+g.liquido,0);
- const midia=d.midia.reduce((s,m)=>s+Number(m.valor),0)+d.midia_manual.reduce((s,m)=>s+Number(m.valor),0);
- const fixos=d.custos.reduce((s,c)=>s+Number(c.valor),0);const custos=midia+fixos;
+ const midia=d.midia.filter(m=>noPeriodo(m.dia,inicio,fim)).reduce((s,m)=>s+Number(m.valor),0)+d.midia_manual.filter(m=>noPeriodo(m.competencia,inicio,fim)).reduce((s,m)=>s+Number(m.valor),0);
+ const fixos=d.custos.filter(c=>noPeriodo(c.competencia,inicio,fim)).reduce((s,c)=>s+Number(c.valor),0);const custos=midia+fixos;
  const lucro=recebidaUhome-custos;
- return {aReceber:noPrazo.reduce((s,r)=>s+Number(r.valor),0),saldoTotal:pendentes.reduce((s,r)=>s+Number(r.valor),0),vencidas:pendentes.filter(r=>!!r.vencimento&&r.vencimento<hoje).reduce((s,r)=>s+Number(r.valor),0),recebido:recebidos.reduce((s,r)=>s+Number(r.valor),0),recebidaUhome,geradaUhome,midia,fixos,custos,lucro,roi:custos>0?lucro/custos*100:null,repassesPendentes:pendenciasRepasse(d).filter(x=>!x.repasse).reduce((s,x)=>s+x.valor,0)};
+ return {aReceber:noPrazo.reduce((s,r)=>s+Number(r.valor),0),saldoTotal:pendentes.reduce((s,r)=>s+Number(r.valor),0),vencidas:pendentes.filter(r=>!!r.vencimento&&r.vencimento<hoje).reduce((s,r)=>s+Number(r.valor),0),recebido:recebidos.reduce((s,r)=>s+Number(r.valor),0),recebidaUhome,geradaUhome,midia,fixos,custos,lucro,roi:custos>0?lucro/custos*100:null,repassesPendentes:pendenciasRepasse(d).filter(x=>!x.repasse&&!x.distratado).reduce((s,x)=>s+x.valor,0)};
 }
 export const FORMAS_FINANCEIRO: Record<string,string>={pix:"PIX",zemo:"ZemoBank",nota_fiscal:"Nota fiscal"};
 export const PAPEIS_FINANCEIRO: Record<string,string>={corretor:"Corretor",gerente:"Gerente",diretora:"Diretora",diretoria:"Diretoria",administrativo:"Administrativo",uhome:"Uhome"};

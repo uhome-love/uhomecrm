@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { leadSaude } from "@/lib/leadSaude";
+import { vendaAtivaNoPeriodo } from "@/lib/vendasRelatorio";
 
 /**
  * useRelatorioGeral — o "Raio-X do Time": o caminho completo do corretor
@@ -179,7 +180,7 @@ export function useRelatorioGeral(periodo?: { start: string; end: string }) {
         if (!acc.has(id)) continue;
         if (n.created_at >= start && n.created_at < end) bump(id, "negocios_criados");
         if (n.status === "ativo") bump(id, "negocios_ativos");
-        if (n.fase === "ganho" && n.data_assinatura && n.data_assinatura >= start && n.data_assinatura < end) bump(id, "vendas");
+        if (vendaAtivaNoPeriodo(n,start,end)) bump(id, "vendas");
       }
 
       // 6) Agrupa por time (gerente), corretores em ordem alfabética

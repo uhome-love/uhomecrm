@@ -12,6 +12,9 @@ export interface VendaRelatorio {
 }
 export interface FiltrosVendas { busca: string; construtora: string; empreendimento: string; corretor: string; equipe: string }
 export const FILTROS_VENDAS: FiltrosVendas = { busca: "", construtora: "todos", empreendimento: "todos", corretor: "todos", equipe: "todos" };
+export function vendaAtivaNoPeriodo(n:{fase:string|null;status:string|null;data_assinatura:string|null},inicio:string,fimExclusivo:string){
+  return n.fase==="ganho"&&n.status==="ativo"&&!!n.data_assinatura&&n.data_assinatura>=inicio&&n.data_assinatura<fimExclusivo;
+}
 export function rateiosSelecionados(v: VendaRelatorio, f: FiltrosVendas): RateioVenda[] {
   return v.rateios.filter(r => (f.corretor === "todos" || r.corretor_auth_id === f.corretor) && (f.equipe === "todos" || (r.equipe || "Sem equipe") === f.equipe));
 }

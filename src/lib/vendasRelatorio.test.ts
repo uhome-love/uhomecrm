@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { FILTROS_VENDAS, filtrarVendas, rankingVendas, resumoVendas, type VendaRelatorio } from "./vendasRelatorio";
+import { FILTROS_VENDAS, filtrarVendas, rankingVendas, resumoVendas, vendaAtivaNoPeriodo, type VendaRelatorio } from "./vendasRelatorio";
 const venda: VendaRelatorio = { id: "v1", nome_cliente: "Cliente", empreendimento: "Connect JW", empreendimento_canonico_id: "connect", construtora: "Cyrela", unidade: "321", vgv_final: 298000, vgv_estimado: 250000, data_assinatura: "2026-10-22", corretor_id: "p1", gerente_id: null, pipeline_lead_id: null, observacoes: null, intermediacao_id: null, comprovante_ato_path: null, origem: "Manual", campanha: null,
   rateios: [{ negocio_id: "v1", corretor_auth_id: "a1", corretor_nome: "Matheus", equipe: "Bruno", gerente_auth_id: "g1", vgv_rateado: 149000, participacao: 0.5, em_parceria: true }, { negocio_id: "v1", corretor_auth_id: "a2", corretor_nome: "Rafaela", equipe: "Gabrielle", gerente_auth_id: "g2", vgv_rateado: 149000, participacao: 0.5, em_parceria: true }] };
 describe("resultados de Vendas", () => {
+  it("distrato não conta como venda assinada ativa nos relatórios",()=>{
+    const n={fase:"ganho",status:"distratado",data_assinatura:"2026-10-22"};
+    expect(vendaAtivaNoPeriodo(n,"2026-10-01","2026-11-01")).toBe(false);
+    expect(vendaAtivaNoPeriodo({...n,status:"ativo"},"2026-10-01","2026-11-01")).toBe(true);
+  });
   it("conta uma venda uma vez e reconcilia as duas metades", () => {
     expect(resumoVendas([venda, venda], FILTROS_VENDAS)).toMatchObject({ vendas: 1, vgv: 298000, semIntermediacao: 1 });
     expect(rankingVendas([venda], FILTROS_VENDAS).reduce((s, r) => s + r.vgv, 0)).toBe(298000);
