@@ -30,7 +30,7 @@ const TEST2 = { nome: "Carolina de Camargo Madruga", email: "carolina@uhome.com.
 // ─── Schemas ────────────────────────────────────────────────────────────────────
 const ParcelaSchema = z.object({ vencimento: z.string().min(1), valor: z.number().positive() });
 const CorretorSchema = z.object({
-  nome: z.string().min(1), cpf: z.string().default(""), rg: z.string().default(""),
+  nome: z.string().min(1), user_id: z.string().uuid().optional(), cpf: z.string().default(""), rg: z.string().default(""),
   email: z.string().default(""), percentual: z.number().min(0),
 });
 const CompradorSchema = z.object({
@@ -47,6 +47,7 @@ const BodySchema = z.object({
   compradores: z.array(CompradorSchema).min(1).max(6).optional(),
   imovel: z.object({ empreendimento: z.string().min(1), unidade: z.string().min(1), vgv: z.number().nonnegative() }),
   corretores: z.array(CorretorSchema).min(1).max(2),
+  gerentes: z.array(z.object({ nome: z.string().min(1), user_id: z.string().uuid(), percentual: z.number().min(0).max(100) })).max(2).default([]),
   comissao: z.object({
     valorTotal: z.number().positive(),
     pctGabrielle: z.number().min(0), pctDiretoria: z.number().min(0),
@@ -56,7 +57,7 @@ const BodySchema = z.object({
   dataContrato: z.string().min(1),
   // Obrigatório: quem cria a intermediação escolhe (nenhuma forma pré-selecionada).
   formaPagamento: z.enum(["zemo", "nota_fiscal", "pix"], { required_error: "Escolha a forma de pagamento (ZemoBank, Nota fiscal ou PIX)." }),
-  descontoNfPct: z.number().min(0).max(50).default(10),
+  descontoNfPct: z.number().default(10),
   construtora: z.string().max(120).optional(),
   negocioId: z.string().uuid().optional(),
   pipelineLeadId: z.string().uuid().optional(),
@@ -105,19 +106,20 @@ function bufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-interface CredorCalc { nome: string; isUhome: boolean; total: number; parcelas: number[]; }
+interface CredorCalc { nome: string; isUhome: boolean; total: number; parcelas: number[]; papel: string; user_id?: string; percentual: number; }
 
 function calcular(b: Body) {
   const valorTotal = b.comissao.valorTotal;
   const valoresParcelas = b.comissao.parcelas.map((p) => p.valor);
   const somaCorr = b.corretores.reduce((s, c) => s + c.percentual, 0);
-  const pctUhome = Math.max(0, 100 - somaCorr - b.comissao.pctGabrielle - b.comissao.pctDiretoria);
+  const pctUhome = Math.max(0, 100 - somaCorr - b.gerentes.reduce((s, g) => s + g.percentual, 0) - b.comissao.pctGabrielle - b.comissao.pctDiretoria);
 
   const defs = [
-    ...b.corretores.map((c) => ({ nome: c.nome, pct: c.percentual, isUhome: false })),
-    { nome: "Gabrielle Rodrigues", pct: b.comissao.pctGabrielle, isUhome: false },
-    { nome: "Diretoria", pct: b.comissao.pctDiretoria, isUhome: false },
-    { nome: "UHome", pct: pctUhome, isUhome: true },
+    ...b.corretores.map((c) => ({ nome: c.nome, pct: c.percentual, isUhome: false, papel: "corretor", user_id: c.user_id })),
+    ...b.gerentes.map((g) => ({ nome: g.nome, pct: g.percentual, isUhome: false, papel: "gerente", user_id: g.user_id })),
+    { nome: "Gabrielle Rodrigues", pct: b.comissao.pctGabrielle, isUhome: false, papel: "diretora", user_id: undefined },
+    { nome: "Diretoria", pct: b.comissao.pctDiretoria, isUhome: false, papel: "diretoria", user_id: undefined },
+    { nome: "UHome", pct: pctUhome, isUhome: true, papel: "uhome", user_id: undefined },
   ];
 
   const credores: CredorCalc[] = defs.map((d) => {
@@ -128,7 +130,7 @@ function calcular(b: Body) {
       if (i === valoresParcelas.length - 1) ps.push(round2(total - acc));
       else { const v = round2((d.pct / 100) * vp); ps.push(v); acc = round2(acc + v); }
     });
-    return { nome: d.nome, isUhome: d.isUhome, total, parcelas: ps };
+    return { nome: d.nome, isUhome: d.isUhome, total, parcelas: ps, papel: d.papel, user_id: d.user_id, percentual: d.pct };
   });
 
   const totalLinha = valoresParcelas.map((_, i) => round2(credores.reduce((s, c) => s + c.parcelas[i], 0)));
@@ -425,11 +427,12 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const [{ data: isAdmin }, { data: isGestor }] = await Promise.all([
+    const [{ data: isAdmin }, { data: isGestor }, { data: isDiretor }] = await Promise.all([
       supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
       supabase.rpc("has_role", { _user_id: userId, _role: "gestor" }),
+      supabase.rpc("has_role", { _user_id: userId, _role: "diretor" }),
     ]);
-    if (!isAdmin && !isGestor) {
+    if (!isAdmin && !isGestor && !isDiretor) {
       return new Response(JSON.stringify({ error: "Acesso restrito a administradores e gestores." }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -438,6 +441,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: parsed.error.flatten() }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const body = parsed.data;
+    body.descontoNfPct = body.formaPagamento === "nota_fiscal" ? 10 : 0;
+    const pct = body.corretores.reduce((s,c)=>s+c.percentual,0)+body.gerentes.reduce((s,g)=>s+g.percentual,0)+body.comissao.pctGabrielle+body.comissao.pctDiretoria;
+    if (pct > 100 || body.corretores.some(c=>c.percentual>100)) throw new Error("Os percentuais não podem ultrapassar 100%.");
+    if (Math.abs(body.comissao.parcelas.reduce((s,p)=>s+p.valor,0)-body.comissao.valorTotal)>0.01) throw new Error("A soma das parcelas deve ser igual à comissão bruta.");
+    if (!body.pipelineLeadId) throw new Error("Vincule a intermediação ao cliente do Pipeline.");
 
     const doc = await montarDoc(body);
     const buffer = await Packer.toBuffer(doc);
@@ -478,82 +486,32 @@ Deno.serve(async (req) => {
     const filename = `${base}.docx`;
     const filenameStorage = `intermediacao_${slug(nomeParaArquivo(compradoresBody[0].tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
 
-    // Histórico (best-effort): grava arquivo no Storage e metadados na tabela.
-    // Qualquer falha aqui NÃO bloqueia a geração/download do documento.
-    try {
-      const intermediacaoId = crypto.randomUUID();
-      const ano = new Date().getFullYear();
-      // Path único usando o id da intermediação como prefixo curto (upsert:false evita sobrescrita).
-      // O filename "bonito" é preservado no metadado para o download.
-      const storageName = `${intermediacaoId.slice(0, 8)}_${filenameStorage}`;
-      const arquivoPath = `${ano}/${storageName}`;
-
-      const compradorNome = compradoresBody.map(nomeComprador).filter((n) => n.trim()).join(" e ");
-
-      const { error: uploadErr } = await supabase.storage
-        .from("intermediacoes")
-        .upload(arquivoPath, new Uint8Array(buffer), {
-          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          upsert: false,
-        });
-      if (uploadErr) throw uploadErr;
-
-      const calc = calcular(body);
-      const pctNf = body.formaPagamento === "nota_fiscal" ? body.descontoNfPct : 0;
-      const bruto = round2(body.comissao.valorTotal);
-      const liquido = round2(bruto - (bruto * pctNf) / 100);
-      if (body.negocioId) {
-        // Nova intermediação do mesmo negócio substitui a anterior (índice único de ativa por negócio).
-        const adminSub = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-        await adminSub.from("intermediacoes").update({ status: "substituida" }).eq("negocio_id", body.negocioId).eq("status", "ativa");
-      }
-      const { error: insertErr } = await supabase.from("intermediacoes").insert({
-        id: intermediacaoId,
-        created_by: userId,
-        comprador_nome: compradorNome,
-        tipo_pessoa: body.comprador.tipoPessoa,
-        empreendimento: body.imovel.empreendimento,
-        unidade: body.imovel.unidade,
-        vgv: body.imovel.vgv,
-        valor_comissao: body.comissao.valorTotal,
-        corretores: body.corretores.map((c) => c.nome),
-        arquivo_path: arquivoPath,
-        filename,
-        payload: body,
-        forma_pagamento: body.formaPagamento,
-        desconto_nf_pct: pctNf,
-        negocio_id: body.negocioId ?? null,
-        pipeline_lead_id: body.pipelineLeadId ?? null,
-        valor_bruto: bruto,
-        valor_liquido: liquido,
-        parcelas: body.comissao.parcelas,
-      });
-      if (insertErr) throw insertErr;
-
-      // Detalhes financeiros (service role; tabelas restritas a CEO/diretora).
-      try {
-        const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-        const nCorr = body.corretores.length;
-        const benef = calc.credores.map((c, i) => {
-          const desconto = round2((c.total * pctNf) / 100);
-          const papel = c.isUhome ? "uhome" : i < nCorr ? "corretor" : i === nCorr ? "diretora" : "diretoria";
-          return { intermediacao_id: intermediacaoId, nome: c.nome, papel, valor_bruto: c.total, desconto, valor_liquido: round2(c.total - desconto) };
-        });
-        await admin.from("intermediacao_beneficiarios").insert(benef);
-        await admin.from("negocios_recebimentos").insert(body.comissao.parcelas.map((p, i) => ({
-          intermediacao_id: intermediacaoId, negocio_id: body.negocioId ?? null, parcela_num: i + 1,
-          vencimento: /^\d{4}-\d{2}-\d{2}$/.test(p.vencimento) ? p.vencimento : null,
-          valor: p.valor, forma: body.formaPagamento, created_by: userId,
-          observacao: /^\d{4}-\d{2}-\d{2}$/.test(p.vencimento) ? null : `Vencimento: ${p.vencimento}`,
-        })));
-        if (body.negocioId) {
-          await admin.from("negocios_recebimentos").update({ status: "cancelado" })
-            .eq("negocio_id", body.negocioId).eq("status", "pendente").neq("intermediacao_id", intermediacaoId);
-          await admin.from("negocios").update({ intermediacao_id: intermediacaoId }).eq("id", body.negocioId);
-        }
-      } catch (finErr) { console.error("[gerar-intermediacao] detalhes financeiros falharam", finErr); }
-    } catch (histErr) {
-      console.error("[gerar-intermediacao] Falha ao salvar histórico (ignorada):", histErr);
+    // Documento e detalhes só são entregues após a transação completa.
+    const intermediacaoId = crypto.randomUUID();
+    const arquivoPath = `${new Date().getUTCFullYear()}/${intermediacaoId}_${filenameStorage}`;
+    const upload = await supabase.storage.from("intermediacoes").upload(arquivoPath,new Uint8Array(buffer),{
+      contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",upsert:false,
+    });
+    if(upload.error) throw upload.error;
+    const calc = calcular(body);
+    const bruto = round2(body.comissao.valorTotal);
+    const pctNf = body.descontoNfPct;
+    const benef = calc.credores.map(c=>{
+      const desconto = round2(c.total*pctNf/100);
+      return {nome:c.nome,papel:c.papel,user_id:c.user_id??null,percentual:c.percentual,valor_bruto:c.total,desconto,valor_liquido:round2(c.total-desconto)};
+    });
+    const liquido = round2(benef.reduce((s,b)=>s+b.valor_liquido,0));
+    const saved = await supabase.rpc("intermediacao_salvar",{
+      p_registro:{id:intermediacaoId,comprador_nome:compradoresBody.map(nomeComprador).join(" e "),tipo_pessoa:body.comprador.tipoPessoa,
+      empreendimento:body.imovel.empreendimento,unidade:body.imovel.unidade,vgv:body.imovel.vgv,corretores:body.corretores.map(c=>c.nome),
+      arquivo_path:arquivoPath,filename,payload:body,forma_pagamento:body.formaPagamento,desconto_nf_pct:pctNf,
+      negocio_id:body.negocioId??null,pipeline_lead_id:body.pipelineLeadId,valor_bruto:bruto,valor_liquido:liquido,parcelas:body.comissao.parcelas},
+      p_beneficiarios:benef,p_parcelas:body.comissao.parcelas,
+    });
+    if(saved.error) {
+      const existe = await supabase.from("intermediacoes").select("id").eq("id",intermediacaoId).maybeSingle();
+      if(!existe.error&&!existe.data) await supabase.storage.from("intermediacoes").remove([arquivoPath]);
+      throw new Error(saved.error.message);
     }
 
     return new Response(JSON.stringify({ filename, base64 }), {

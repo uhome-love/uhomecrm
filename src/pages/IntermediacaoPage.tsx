@@ -20,223 +20,16 @@ import { toast } from "sonner";
 import { Plus, Trash2, FileSignature, Loader2, Download, Search, Pencil } from "lucide-react";
 import { formatCurrencyInput, handleCurrencyChange, parseCurrencyToNumber, numberToRawCurrency } from "@/utils/currencyFormat";
 import { ClientePipelineSeletor, type ClienteSelecionado } from "@/components/intermediacao/ClientePipelineSeletor";
+import { GerentesComissao, type GerenteComissao } from "@/components/intermediacao/GerentesComissao";
+import { todayBRT } from "@/lib/brtTime";
 import { FormaPagamentoCard } from "@/components/intermediacao/FormaPagamentoCard";
 import {
   DESCONTO_NF_PCT_PADRAO, construtoraDoEmpreendimento, type FormaPagamento,
 } from "@/lib/intermediacaoPagamento";
 
-// ─── Máscaras de documentos/contato ────────────────────────────────────────────
-const onlyDigits = (v: string) => v.replace(/\D/g, "");
-const maskCPF = (v: string) =>
-  onlyDigits(v).slice(0, 11)
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-const maskCNPJ = (v: string) =>
-  onlyDigits(v).slice(0, 14)
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
-const maskTelefone = (v: string) => {
-  const d = onlyDigits(v).slice(0, 11);
-  if (d.length <= 10) return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d{1,4})$/, "$1-$2");
-  return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
-};
-const maskRG = (v: string) => v.replace(/[^\dxX.-]/g, "").slice(0, 14);
-
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-interface CorretorOption {
-  user_id: string;
-  nome: string;
-  cpf: string | null;
-  email: string | null;
-  creci: string | null;
-}
-
-interface CorretorForm {
-  user_id: string;
-  nome: string;
-  cpf: string;
-  rg: string;
-  email: string;
-  percentual: string; // %
-}
-
-interface CompradorForm {
-  tipoPessoa: "PF" | "PJ";
-  razaoSocial: string;
-  cnpj: string;
-  socioAdmin: string;
-  nomeCompleto: string;
-  genero: string;
-  profissao: string;
-  estadoCivil: string;
-  regimeBens: string;
-  cpf: string;
-  rg: string;
-  telefone: string;
-  email: string;
-  endereco: string;
-}
-
-const emptyComprador: CompradorForm = {
-  tipoPessoa: "PF", razaoSocial: "", cnpj: "", socioAdmin: "",
-  nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
-  cpf: "", rg: "", telefone: "", email: "", endereco: "",
-};
-
-interface Parcela {
-  vencimento: string; // yyyy-mm-dd
-  valor: string;      // numérico
-}
-
-interface Testemunha {
-  nome: string;
-  email: string;
-}
-
-// Testemunha fixa disponível como atalho de preenchimento.
-const CAROLINA: Testemunha = { nome: "Carolina de Camargo Madruga", email: "carolina@uhome.com.br" };
-
-// ─── Helpers de cálculo (replicado na edge function) ───────────────────────────
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-const num = (v: string) => {
-  const n = parseFloat(String(v).replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(n) ? n : 0;
-};
-const brl = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const fmtDataCurta = (iso: string) => {
-  if (!iso) return "--/--/--";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y.slice(2)}`;
-};
-
-interface CredorCalc {
-  nome: string;
-  isUhome: boolean;
-  total: number;
-  parcelas: number[];
-}
-
-function calcularCredores(
-  valorTotal: number,
-  corretores: { nome: string; pct: number }[],
-  pctGabrielle: number,
-  pctDiretoria: number,
-  parcelas: number[],
-): { credores: CredorCalc[]; totalLinha: number[]; zemo: { total: number; parcelas: number[] } } {
-  const pctUhome = Math.max(0, 100 - corretores.reduce((s, c) => s + c.pct, 0) - pctGabrielle - pctDiretoria);
-
-  const defs: { nome: string; pct: number; isUhome: boolean }[] = [
-    ...corretores.map((c) => ({ nome: c.nome, pct: c.pct, isUhome: false })),
-    { nome: "Gabrielle Rodrigues", pct: pctGabrielle, isUhome: false },
-    { nome: "Diretoria", pct: pctDiretoria, isUhome: false },
-    { nome: "UHome", pct: pctUhome, isUhome: true },
-  ];
-
-  const credores: CredorCalc[] = defs.map((d) => {
-    const total = round2((d.pct / 100) * valorTotal);
-    const ps: number[] = [];
-    let acc = 0;
-    parcelas.forEach((valorP, i) => {
-      if (i === parcelas.length - 1) {
-        ps.push(round2(total - acc));
-      } else {
-        const v = round2((d.pct / 100) * valorP);
-        ps.push(v);
-        acc = round2(acc + v);
-      }
-    });
-    return { nome: d.nome, isUhome: d.isUhome, total, parcelas: ps };
-  });
-
-  const totalLinha = parcelas.map((_, i) =>
-    round2(credores.reduce((s, c) => s + c.parcelas[i], 0)),
-  );
-
-  // ZemoBank recebe o total da corretagem (todos os credores, inclusive a UHome).
-  const zemo = {
-    total: round2(credores.reduce((s, c) => s + c.total, 0)),
-    parcelas: totalLinha,
-  };
-
-  return { credores, totalLinha, zemo };
-}
-
-// ─── Formulário de um comprador (contratante) ──────────────────────────────────
-function CompradorFields({
-  value,
-  onChange,
-}: {
-  value: CompradorForm;
-  onChange: (patch: Partial<CompradorForm>) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Tipo de pessoa</Label>
-          <Select value={value.tipoPessoa} onValueChange={(v) => onChange({ tipoPessoa: v as "PF" | "PJ" })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="PF">Pessoa Física</SelectItem>
-              <SelectItem value="PJ">Pessoa Jurídica</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {value.tipoPessoa === "PJ" ? (
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-2"><Label>Razão Social</Label><Input value={value.razaoSocial} onChange={(e) => onChange({ razaoSocial: e.target.value })} placeholder="Ex: Empresa Exemplo LTDA." /></div>
-          <div className="space-y-2"><Label>CNPJ</Label><Input value={value.cnpj} onChange={(e) => onChange({ cnpj: maskCNPJ(e.target.value) })} inputMode="numeric" placeholder="00.000.000/0001-00" /></div>
-          <div className="space-y-2 sm:col-span-2"><Label>Nome do sócio-administrador</Label><Input value={value.socioAdmin} onChange={(e) => onChange({ socioAdmin: e.target.value })} placeholder="Ex: Carlos Souza" /></div>
-        </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-2 sm:col-span-2"><Label>Nome completo</Label><Input value={value.nomeCompleto} onChange={(e) => onChange({ nomeCompleto: e.target.value })} placeholder="Ex: João da Silva Souza" /></div>
-          <div className="space-y-2">
-            <Label>Gênero</Label>
-            <Select value={value.genero} onValueChange={(v) => onChange({ genero: v })}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="masculino">Masculino</SelectItem>
-                <SelectItem value="feminino">Feminino</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2"><Label>Profissão</Label><Input value={value.profissao} onChange={(e) => onChange({ profissao: e.target.value })} placeholder="Ex: Engenheiro" /></div>
-          <div className="space-y-2">
-            <Label>Estado civil</Label>
-            <Select value={value.estadoCivil} onValueChange={(v) => onChange({ estadoCivil: v })}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="solteiro(a)">Solteiro(a)</SelectItem>
-                <SelectItem value="casado(a)">Casado(a)</SelectItem>
-                <SelectItem value="divorciado(a)">Divorciado(a)</SelectItem>
-                <SelectItem value="viúvo(a)">Viúvo(a)</SelectItem>
-                <SelectItem value="união estável">União estável</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {value.estadoCivil === "casado(a)" && (
-            <div className="space-y-2"><Label>Regime de bens</Label><Input value={value.regimeBens} onChange={(e) => onChange({ regimeBens: e.target.value })} /></div>
-          )}
-        </div>
-      )}
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="space-y-2"><Label>CPF</Label><Input value={value.cpf} onChange={(e) => onChange({ cpf: maskCPF(e.target.value) })} inputMode="numeric" placeholder="000.000.000-00" /></div>
-        <div className="space-y-2"><Label>RG</Label><Input value={value.rg} onChange={(e) => onChange({ rg: maskRG(e.target.value) })} placeholder="0000000000" /></div>
-        <div className="space-y-2"><Label>Telefone</Label><Input value={value.telefone} onChange={(e) => onChange({ telefone: maskTelefone(e.target.value) })} inputMode="numeric" placeholder="(51) 99999-9999" /></div>
-        <div className="space-y-2"><Label>E-mail</Label><Input value={value.email} onChange={(e) => onChange({ email: e.target.value })} placeholder="nome@email.com" /></div>
-        <div className="space-y-2 sm:col-span-2"><Label>Endereço completo</Label><Input value={value.endereco} onChange={(e) => onChange({ endereco: e.target.value })} placeholder="Rua Exemplo, nº 123, Bairro, Porto Alegre/RS, CEP 90000-000" /></div>
-      </div>
-    </div>
-  );
-}
+import {maskCPF,maskRG,emptyComprador,CAROLINA,num,brl,fmtDataCurta,calcularCredores,CompradorFields,type CorretorOption,type CorretorForm,type CompradorForm,type Parcela,type Testemunha} from "@/components/intermediacao/IntermediacaoCampos";
+import {HistoricoTab} from "@/components/intermediacao/IntermediacaoHistorico";
+const round2=(n:number)=>Math.round((n+Number.EPSILON)*100)/100;
 
 // ─── Componente ────────────────────────────────────────────────────────────────
 export default function IntermediacaoPage() {
@@ -262,6 +55,10 @@ export default function IntermediacaoPage() {
   const [corretor2, setCorretor2] = useState<CorretorForm>({ ...emptyCorretor });
   const [usarCorretor2, setUsarCorretor2] = useState(false);
 
+  const [gerentes,setGerentes] = useState<GerenteComissao[]>([]);
+  const [opcoesGerentes,setOpcoesGerentes] = useState<{user_id:string;nome:string}[]>([]);
+  useEffect(()=>{void supabase.rpc("intermediacao_gerentes").then(r=>{if(r.error)toast.error("Não foi possível carregar os gerentes.");else setOpcoesGerentes(r.data??[]);});},[]);
+
   // Comissão
   const [valorTotal, setValorTotal] = useState("");
   const [pctGabrielle, setPctGabrielle] = useState("10");
@@ -269,7 +66,7 @@ export default function IntermediacaoPage() {
   const [parcelas, setParcelas] = useState<Parcela[]>([{ vencimento: "", valor: "" }]);
 
   // Data do contrato
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = todayBRT();
   const [dataContrato, setDataContrato] = useState(hoje);
 
   // Testemunhas (Testemunha 2 já vem com Carolina pré-preenchida)
@@ -350,6 +147,7 @@ export default function IntermediacaoPage() {
     if (corrs[1]) { setUsarCorretor2(true); setCorretor2(mapCorr(corrs[1])); }
     else { setUsarCorretor2(false); setCorretor2({ ...emptyCorretor }); }
 
+    setGerentes(Array.isArray(p.gerentes)?p.gerentes.map((g:GerenteComissao)=>({...g,percentual:String(g.percentual)})):[]);
     const co = p.comissao ?? {};
     setValorTotal(numberToRawCurrency(co.valorTotal ?? 0));
     setPctGabrielle(co.pctGabrielle != null ? String(co.pctGabrielle) : "10");
@@ -426,13 +224,14 @@ export default function IntermediacaoPage() {
       num(pctGabrielle),
       num(pctDiretoria),
       valoresParcelas,
+      gerentes.map(g=>({nome:g.nome||"Gerente",pct:num(g.percentual)})),
     );
-  }, [corretor1, corretor2, usarCorretor2, valorTotal, pctGabrielle, pctDiretoria, parcelas]);
+  }, [corretor1, corretor2, usarCorretor2, valorTotal, pctGabrielle, pctDiretoria, parcelas, gerentes]);
 
   const somaPercentuais = useMemo(() => {
     const somaCorr = num(corretor1.percentual) + (usarCorretor2 ? num(corretor2.percentual) : 0);
-    return somaCorr + num(pctGabrielle) + num(pctDiretoria);
-  }, [corretor1, corretor2, usarCorretor2, pctGabrielle, pctDiretoria]);
+    return somaCorr + num(pctGabrielle) + num(pctDiretoria) + gerentes.reduce((s,g)=>s+num(g.percentual),0);
+  }, [corretor1, corretor2, usarCorretor2, pctGabrielle, pctDiretoria, gerentes]);
 
   const pctUhome = useMemo(() => Math.max(0, 100 - somaPercentuais), [somaPercentuais]);
   const pctExcedido = somaPercentuais > 100 + 1e-9;
@@ -481,17 +280,16 @@ export default function IntermediacaoPage() {
     }
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
+    if (!cliente?.pipelineLeadId) return toast.error("Vincule um cliente do Pipeline.");
+    if (gerentes.some(g=>!g.user_id||!g.percentual)) return toast.error("Selecione o gerente e o percentual.");
     if (!formaPagamento) return toast.error("Escolha a forma de pagamento (ZemoBank, Nota fiscal ou PIX).");
     if (parseCurrencyToNumber(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
-    if (pctExcedido) return toast.error("A soma dos percentuais (corretores + Gabrielle + Diretoria) ultrapassa 100%.");
+    if (pctExcedido) return toast.error("A soma dos percentuais (corretores + gerentes + Gabrielle + Diretoria) ultrapassa 100%.");
     if (parcelas.some((p) => !p.vencimento || parseCurrencyToNumber(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
     if (!testemunha1.nome.trim() || !testemunha1.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 1.");
     if (!testemunha2.nome.trim() || !testemunha2.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 2.");
 
-    // Aviso não bloqueante: parcelas divergem do valor total.
-    if (parcelasDivergem) {
-      toast.warning(`Atenção: a soma das parcelas (${brl(somaParcelas)}) difere do valor total (${brl(parseCurrencyToNumber(valorTotal))}).`);
-    }
+    if (parcelasDivergem) return toast.error("A soma das parcelas deve ser igual à comissão bruta.");
 
     // Comprador: envia apenas os campos do tipo selecionado.
     const normalizarComprador = (c: CompradorForm) =>
@@ -515,11 +313,12 @@ export default function IntermediacaoPage() {
       compradores: compradoresPayload,
       imovel: { empreendimento, unidade, vgv: parseCurrencyToNumber(vgv) },
       corretores: [
-        { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
+        { user_id: corretor1.user_id, nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
         ...(usarCorretor2 && corretor2.user_id
-          ? [{ nome: corretor2.nome, cpf: corretor2.cpf, rg: corretor2.rg, email: corretor2.email, percentual: num(corretor2.percentual) }]
+          ? [{ user_id: corretor2.user_id, nome: corretor2.nome, cpf: corretor2.cpf, rg: corretor2.rg, email: corretor2.email, percentual: num(corretor2.percentual) }]
           : []),
       ],
+      gerentes: gerentes.map(g=>({...g,percentual:num(g.percentual)})),
       comissao: {
         valorTotal: parseCurrencyToNumber(valorTotal),
         pctGabrielle: num(pctGabrielle),
@@ -542,7 +341,7 @@ export default function IntermediacaoPage() {
       const { data: existentes } = await supabase
         .from("intermediacoes")
         .select("id")
-        .eq("payload->>negocioId", cliente.negocioId)
+        .eq("negocio_id", cliente.negocioId).eq("status","ativa")
         .limit(1);
       if (existentes?.length && !window.confirm("Esta venda já tem intermediação. Gerar uma nova versão mesmo assim?")) return;
     }
@@ -576,12 +375,11 @@ export default function IntermediacaoPage() {
     }
   };
 
-  const ACCENT = "#4F46E5";
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
       <header className="flex items-center gap-3">
-        <FileSignature className="h-6 w-6" style={{ color: ACCENT }} />
+        <FileSignature className="h-6 w-6 text-primary" />
         <div>
           <h1 className="text-xl font-semibold text-foreground">Instrumento de Intermediação Imobiliária</h1>
           <p className="text-sm text-muted-foreground">Gere o contrato de intermediação da Uhome em .docx</p>
@@ -719,9 +517,10 @@ export default function IntermediacaoPage() {
             <div className="space-y-2"><Label>% Diretoria</Label><Input type="number" min={0} max={100} value={pctDiretoria} onChange={(e) => setPctDiretoria(e.target.value)} /></div>
             <div className="space-y-2"><Label>% UHome (auto)</Label><Input value={`${round2(pctUhome)}%`} readOnly disabled /></div>
           </div>
+          <GerentesComissao value={gerentes} onChange={setGerentes} opcoes={opcoesGerentes}/>
           {pctExcedido && (
             <p className="text-sm font-medium text-destructive">
-              A soma dos percentuais (corretores + Gabrielle + Diretoria = {round2(somaPercentuais)}%) ultrapassa 100%.
+              A soma dos percentuais (corretores + gerentes + Gabrielle + Diretoria = {round2(somaPercentuais)}%) ultrapassa 100%.
             </p>
           )}
 
@@ -851,7 +650,7 @@ export default function IntermediacaoPage() {
       </Card>
 
           <div className="flex justify-end pb-10">
-            <Button onClick={handleGerar} disabled={gerando} style={{ backgroundColor: ACCENT }} className="text-white hover:opacity-90">
+            <Button onClick={handleGerar} disabled={gerando}>
               {gerando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSignature className="h-4 w-4 mr-2" />}
               Gerar Intermediação
             </Button>
@@ -866,208 +665,3 @@ export default function IntermediacaoPage() {
   );
 }
 
-// ─── Aba Histórico ──────────────────────────────────────────────────────────────
-interface IntermediacaoRegistro {
-  id: string;
-  created_at: string;
-  comprador_nome: string;
-  tipo_pessoa: string;
-  empreendimento: string;
-  unidade: string;
-  vgv: number;
-  valor_comissao: number;
-  corretores: string[];
-  arquivo_path: string;
-  filename: string;
-  payload: any;
-}
-
-const fmtDataHist = (iso: string) =>
-  new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
-    timeZone: "America/Sao_Paulo",
-  });
-
-function HistoricoTab({ onEditar }: { onEditar: (payload: any) => void }) {
-  const [registros, setRegistros] = useState<IntermediacaoRegistro[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busca, setBusca] = useState("");
-  const [baixando, setBaixando] = useState<string | null>(null);
-  const [apagando, setApagando] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("intermediacoes")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) {
-        toast.error("Erro ao carregar o histórico.");
-      } else {
-        setRegistros((data ?? []) as IntermediacaoRegistro[]);
-      }
-      setLoading(false);
-    })();
-  }, []);
-
-  const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    if (!q) return registros;
-    return registros.filter(
-      (r) =>
-        r.comprador_nome.toLowerCase().includes(q) ||
-        r.empreendimento.toLowerCase().includes(q),
-    );
-  }, [registros, busca]);
-
-  const baixar = async (r: IntermediacaoRegistro) => {
-    setBaixando(r.id);
-    try {
-      const { data, error } = await supabase.storage
-        .from("intermediacoes")
-        .createSignedUrl(r.arquivo_path, 300);
-      if (error || !data?.signedUrl) throw error ?? new Error("URL não gerada");
-      window.open(data.signedUrl, "_blank");
-    } catch {
-      toast.error("Não foi possível gerar o link de download.");
-    } finally {
-      setBaixando(null);
-    }
-  };
-
-  const apagar = async (r: IntermediacaoRegistro) => {
-    setApagando(r.id);
-    try {
-      if (r.arquivo_path) {
-        await supabase.storage.from("intermediacoes").remove([r.arquivo_path]);
-      }
-      const { error } = await supabase.from("intermediacoes").delete().eq("id", r.id);
-      if (error) throw error;
-      setRegistros((prev) => prev.filter((x) => x.id !== r.id));
-      toast.success("Intermediação apagada.");
-    } catch {
-      toast.error("Não foi possível apagar a intermediação.");
-    } finally {
-      setApagando(null);
-    }
-  };
-
-  return (
-    <Card>
-      <CardContent className="p-4 space-y-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por comprador ou empreendimento..."
-            className="pl-8"
-          />
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...
-          </div>
-        ) : filtrados.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            Nenhuma intermediação encontrada.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Comprador</TableHead>
-                  <TableHead>Empreendimento / Unidade</TableHead>
-                  <TableHead className="text-right">VGV</TableHead>
-                  <TableHead className="text-right">Comissão</TableHead>
-                  <TableHead>Corretores</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtrados.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="whitespace-nowrap text-sm">{fmtDataHist(r.created_at)}</TableCell>
-                    <TableCell className="text-sm font-medium">{r.comprador_nome}</TableCell>
-                    <TableCell className="text-sm">
-                      {r.empreendimento}
-                      <span className="text-muted-foreground"> / {r.unidade}</span>
-                    </TableCell>
-                    <TableCell className="text-right text-sm whitespace-nowrap">{brl(r.vgv)}</TableCell>
-                    <TableCell className="text-right text-sm whitespace-nowrap">{brl(r.valor_comissao)}</TableCell>
-                    <TableCell className="text-sm">{(r.corretores ?? []).join(", ")}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onEditar(r.payload)}
-                          disabled={!r.payload || r.payload.importacaoHistorica === true}
-                          title={r.payload?.importacaoHistorica ? "Documento histórico: divisão original preservada" : r.payload ? "Editar e gerar novamente" : "Registro antigo sem dados para edição"}
-                        >
-                          <Pencil className="h-4 w-4" />
-                          <span className="ml-1">Editar</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => baixar(r)}
-                          disabled={baixando === r.id}
-                        >
-                          {baixando === r.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                          <span className="ml-1">Download</span>
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              disabled={apagando === r.id}
-                            >
-                              {apagando === r.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Apagar intermediação?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação remove permanentemente o registro de{" "}
-                                <strong>{r.comprador_nome}</strong> e o documento gerado. Não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => apagar(r)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Apagar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
