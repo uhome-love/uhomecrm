@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireCronAuth } from "../_shared/cron-auth.ts";
+import { avisarContratos } from "./contratos.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,15 +33,34 @@ Deno.serve(async (req) => {
   const L = makeLogger(traceId);
 
   try {
+    // A validação restrita exercita somente um cliente de teste autenticado pelo cron.
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    const testLead = typeof body.test_lead_id === "string" ? body.test_lead_id : undefined;
+    if (testLead && !/^[0-9a-f-]{36}$/i.test(testLead)) {
+      return new Response(JSON.stringify({ error: "Cliente de teste inválido." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key) throw new Error("Configuração indisponível.");
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      url,
+      key
     );
 
     const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
       supabase.from("ops_events").insert({ fn: FN, level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
     };
 
+    if (testLead) {
+      const teste = await supabase.from("pipeline_leads").select("nome").eq("id", testLead).single();
+      if (teste.error || !teste.data.nome.startsWith("TESTE JORNADA")) throw new Error("Validação permitida somente para cliente de teste.");
+    }
+    const contratos = await avisarContratos(supabase, testLead);
+    // A rotina agora roda diariamente; o aviso genérico continua semanal (segunda BRT).
+    const diaBRT = new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", weekday: "short" }).format(new Date());
+    if (testLead || diaBRT !== "Mon") {
+      return new Response(JSON.stringify({ success: true, contratos }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
 
     // Get stalled deals (15+ days without stage change)
@@ -109,7 +129,7 @@ Deno.serve(async (req) => {
       notificationsCreated++;
     }
 
-    const result = { notificationsCreated, skippedIdempotent, totalStalled: stalledDeals.length, gerentes: byGerente.size };
+    const result = { notificationsCreated, skippedIdempotent, totalStalled: stalledDeals.length, gerentes: byGerente.size, contratos };
     L.info("Run complete", result as unknown as Record<string, unknown>);
     if (notificationsCreated > 0) {
       logOps("info", "business", `Stalled deals: ${notificationsCreated} gerentes notified, ${stalledDeals.length} deals total`, result as unknown as Record<string, unknown>);
@@ -121,7 +141,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     L.error("Unhandled exception", {}, error);
     try {
-      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const url = Deno.env.get("SUPABASE_URL");
+      const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (!url || !key) throw new Error("Configuração indisponível.");
+      const sb = createClient(url, key);
       sb.from("ops_events").insert({ fn: FN, level: "error", category: "system", message: "Unhandled exception", trace_id: traceId, ctx: {}, error_detail: error instanceof Error ? error.message : String(error) }).then(() => {});
     } catch {}
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
