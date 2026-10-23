@@ -22,9 +22,10 @@
 ## O que proponho
 
 1. **Cesar Rideky:** se você confirmar que é só da Larissa, eu desfaço essa parceria, porque só o administrador pode fazer isso. Fica registrado no histórico que a parceria foi desfeita, com o motivo "registrada por engano, confirmado pelo CEO". A contagem passa a ser Larissa 2,5 e Matheus menos 0,5. O Jocarli continua em parceria.
-2. **Mostrar a parceria em todo lugar onde o cliente aparece:**
-   - um selo "Parceria com Matheus" no cartão do quadro de Negócios;
-   - o mesmo selo em cada visita, na lista de visitas e na Minha Evolução.
+2. **Mostrar a parceria nos três lugares que você pediu:**
+   - **Cartão do cliente no Pipeline:** já mostra a parceria; vou conferir que aparece no computador e no celular.
+   - **Cartão do negócio:** novo selo "Parceria com Matheus".
+   - **Histórico de visitas:** novo selo em cada visita, na lista de visitas, na Minha Evolução e no histórico dentro do cliente.
 
    Assim, corretor e gestor veem na hora o que está contando como meia visita.
 3. **Evitar ligar a parceria sem querer na visita:** ao salvar uma visita com o botão ligado, aparece uma confirmação "Registrar parceria com Matheus Pasin neste cliente? Cada um ficará com 0,5 visita na Roleta e só o administrador pode desfazer." Só depois de confirmar a parceria é gravada.
