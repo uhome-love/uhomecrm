@@ -1,4 +1,5 @@
 import { ConfirmarVendaForm } from "@/components/vendas/ConfirmarVendaForm";
+import { JornadaNegocioForm } from "./negocio/JornadaNegocioForm";
 import { DISCARD_REASONS_REENGAJAVEL, reasonDisplay } from "@/lib/discardReasons";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -1268,6 +1269,17 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
 
   const stageName = targetStage.nome.toLowerCase();
   const stageType = targetStage.tipo;
+
+  if (["proposta", "documentacao", "contrato_gerado"].includes(stageType)) {
+    return <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Jornada do negócio</DialogTitle></DialogHeader>
+        <JornadaNegocioForm leadId={lead.id} etapaId={targetStage.id} tipo={stageType}
+          onCancel={onCancel}
+          onSaved={() => onConfirm({ leadId: lead.id, targetStageId: targetStage.id, extraData: { jornadaSalva: true } })} />
+      </DialogContent>
+    </Dialog>;
+  }
 
   const renderForm = () => {
     if (stageType === "sem_contato" || stageName.includes("sem contato")) {

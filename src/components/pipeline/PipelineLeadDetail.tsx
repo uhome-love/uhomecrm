@@ -1137,7 +1137,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           targetStage={transitionTarget}
           onCancel={() => setTransitionTarget(null)}
           onConfirm={async (r) => {
-            if (r.extraData?.vendaConfirmada === true) {
+            if (r.extraData?.vendaConfirmada === true || r.extraData?.jornadaSalva === true) {
               setTransitionTarget(null);
               const result = await supabase.from("pipeline_leads").select("*").eq("id", lead.id).single();
               if (result.data) setConfirmedLead(result.data as unknown as PipelineLead);

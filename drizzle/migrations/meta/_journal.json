@@ -190,6 +190,13 @@
       "when": 1792711904947,
       "tag": "0026_confirmacao_venda_preserva_vendas_anteriores",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792718520038,
+      "tag": "0027_jornada_negocio_atomica",
+      "breakpoints": true
     }
   ]
 }
