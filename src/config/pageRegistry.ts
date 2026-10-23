@@ -84,6 +84,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "base-conhecimento": lazyRetry(() => import("@/pages/BaseConhecimento")),
   
   "vendas-realizadas": lazyRetry(() => import("@/pages/VendasRealizadas")),
+  financeiro: lazyRetry(() => import("@/pages/Financeiro")),
   
   imoveis: lazyRetry(() => import("@/pages/ImoveisShell")),
   "busca-leads": lazyRetry(() => import("@/pages/BuscaLeads")),
@@ -162,6 +163,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/homi-gerente":          { key: "homi-gerente",         label: "HOMI Gerente",        icon: "Bot",           roles: ["gestor", "admin", "diretor"] },
   // "/pipeline-negocios" desativado — negócios agora vivem no Pipeline de Leads (lente Negócios). Redirect em App.tsx.
   "/vendas-realizadas":     { key: "vendas-realizadas",    label: "Vendas",              icon: "TrendingUp" },
+  "/financeiro":           { key: "financeiro",           label: "Financeiro",          icon: "Wallet", roles: ["admin", "diretor"] },
   
   "/imoveis":               { key: "imoveis",              label: "Imóveis",             icon: "Home" },
   "/busca-leads":           { key: "busca-leads",          label: "Busca Leads",         icon: "Search",        roles: ["gestor", "admin", "diretor"] },
