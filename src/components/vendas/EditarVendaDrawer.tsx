@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Lock } from "lucide-react";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { useEditarVenda } from "@/hooks/useEditarVenda";
-import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { todayBRT } from "@/lib/brtTime";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { format } from "date-fns";
 
@@ -15,6 +18,7 @@ export interface VendaEditavel {
   id: string;
   nome_cliente: string;
   empreendimento: string | null;
+  empreendimento_canonico_id?: string | null;
   unidade: string | null;
   vgv_final: number | null;
   vgv_estimado: number | null;
@@ -37,27 +41,34 @@ export function EditarVendaDrawer({ open, onOpenChange, venda, canEdit }: Props)
   const [vgv, setVgv] = useState(0);
   const [dataAssinatura, setDataAssinatura] = useState("");
   const [obs, setObs] = useState("");
+  const [empId,setEmpId] = useState("");
+  const catalogo=useQuery({queryKey:["empreendimentos-oficiais-vendas"],enabled:open,queryFn:async()=>{
+    const r=await supabase.from("empreendimentos_canonicos").select("id,nome,construtora").order("nome");if(r.error)throw r.error;return r.data;
+  }});
+  const emp=catalogo.data?.find(e=>e.id===empId);
 
   useEffect(() => {
     if (!venda) return;
     setNome(venda.nome_cliente ?? "");
     setEmpreendimento(venda.empreendimento ?? "");
+    setEmpId(venda.empreendimento_canonico_id ?? "");
     setUnidade(venda.unidade ?? "");
     setVgv(Number(venda.vgv_final ?? venda.vgv_estimado ?? 0));
-    setDataAssinatura(venda.data_assinatura ?? format(new Date(), "yyyy-MM-dd"));
+    setDataAssinatura(venda.data_assinatura ?? "");
     setObs(venda.observacoes ?? "");
   }, [venda]);
 
   if (!venda) return null;
 
-  const invalid = !nome.trim() || !empreendimento.trim() || !unidade.trim() || vgv <= 0 || !dataAssinatura;
+  const invalid = !nome.trim() || !emp?.construtora || !unidade.trim() || vgv <= 0 || !dataAssinatura || dataAssinatura>todayBRT();
 
   const handleSave = async () => {
     if (!canEdit || invalid) return;
-    await editar.mutateAsync({
+    try { await editar.mutateAsync({
       id: venda.id,
       nome_cliente: nome,
-      empreendimento,
+      empreendimento:emp?.nome ?? empreendimento,
+      empreendimento_canonico_id:empId,
       unidade,
       vgv_final: vgv,
       data_assinatura: dataAssinatura,
@@ -73,6 +84,7 @@ export function EditarVendaDrawer({ open, onOpenChange, venda, canEdit }: Props)
       },
     });
     onOpenChange(false);
+    } catch { /* A mensagem de falha permanece no formulário pelo hook. */ }
   };
 
   return (
@@ -99,17 +111,8 @@ export function EditarVendaDrawer({ open, onOpenChange, venda, canEdit }: Props)
 
               <div className="space-y-1.5">
                 <Label htmlFor="ev-emp">Empreendimento</Label>
-                <Input
-                  id="ev-emp"
-                  list="ev-emp-list"
-                  value={empreendimento}
-                  onChange={(e) => setEmpreendimento(e.target.value)}
-                  maxLength={120}
-                  placeholder="Ex: Botanique"
-                />
-                <datalist id="ev-emp-list">
-                  {EMPREENDIMENTOS.map((e) => <option key={e} value={e} />)}
-                </datalist>
+                <Select value={empId} onValueChange={setEmpId}><SelectTrigger id="ev-emp" aria-label="Empreendimento oficial"><SelectValue placeholder={empreendimento||"Selecione"}/></SelectTrigger><SelectContent>{catalogo.data?.map(e=><SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select>
+                <p className="text-sm text-muted-foreground">{emp?.construtora ?? (catalogo.error?"Não foi possível carregar o cadastro oficial.":"Selecione o cadastro oficial.")}</p>
               </div>
 
               <div className="space-y-1.5">
@@ -124,7 +127,7 @@ export function EditarVendaDrawer({ open, onOpenChange, venda, canEdit }: Props)
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="ev-data">Data de assinatura</Label>
-                  <Input id="ev-data" type="date" value={dataAssinatura} onChange={(e) => setDataAssinatura(e.target.value)} />
+                  <Input id="ev-data" type="date" max={todayBRT()} value={dataAssinatura} onChange={(e) => setDataAssinatura(e.target.value)} />
                 </div>
               </div>
 
