@@ -83,7 +83,7 @@ export function RoletaEntrarMobile(p: Props) {
       <div className="rounded-2xl bg-card px-4 shadow-sm">
         <Linha
           label="Visitas realizadas"
-          valor={vis ? `${melhorVis} de ${vis.meta} ${visOk ? "✓" : "✗"}` : "—"}
+          valor={vis ? `${fmtVisitas(melhorVis)} de ${vis.meta} ${visOk ? "✓" : "✗"}` : "—"}
           ok={visOk}
         />
         <Linha
