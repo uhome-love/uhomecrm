@@ -302,6 +302,13 @@
       "when": 1792786467230,
       "tag": "0042_visita_bloqueia_realizada_futura",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792854414306,
+      "tag": "0043_venda_empreendimento_avulso",
+      "breakpoints": true
     }
   ]
 }
