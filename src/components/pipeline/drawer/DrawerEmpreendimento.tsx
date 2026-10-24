@@ -28,12 +28,12 @@ export default function DrawerEmpreendimento({
     metrics.push({ icon: Calendar, label: "Últ. contato", value: `${diasDesdeUltimoContato}d` });
   }
 
-  if (!empreendimento && metrics.length === 0) return null;
+  if (!empreendimento && !meta && !onEdit && metrics.length === 0) return null;
 
   return (
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       {/* Header */}
-      {(empreendimento || meta) && (
+      {(empreendimento || meta || onEdit) && (
         <button
           type="button"
           onClick={onEdit}
@@ -44,8 +44,8 @@ export default function DrawerEmpreendimento({
             <Building2 className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-foreground line-clamp-2 break-words leading-tight">
-              {empreendimento || "Sem empreendimento"}
+            <div className={`text-[13px] font-semibold line-clamp-2 break-words leading-tight ${empreendimento ? "text-foreground" : "text-primary"}`}>
+              {empreendimento || (onEdit ? "+ Adicionar empreendimento ou imóvel de interesse" : "Sem empreendimento")}
             </div>
             {meta && (
               <div
