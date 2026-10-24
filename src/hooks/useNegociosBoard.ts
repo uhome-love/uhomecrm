@@ -158,7 +158,7 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
       // ── Lote 2: negócios (VGV dos em andamento) + perfis (nomes; tabela pequena) ──
       const [negRes, profsRes] = await Promise.all([
         negocioIds.length
-          ? supabase.from("negocios").select("id, vgv_estimado, vgv_final, data_assinatura, requer_aprovacao_ceo, negociacao_situacao, documentacao_situacao, proposta_situacao").in("id", negocioIds)
+          ? supabase.from("negocios").select("id, empreendimento, unidade, vgv_estimado, vgv_final, data_assinatura, requer_aprovacao_ceo, negociacao_situacao, documentacao_situacao, proposta_situacao").in("id", negocioIds)
           : Promise.resolve({ data: [] as any[] }),
         supabase.from("profiles").select("id, user_id, nome, avatar_url, avatar_gamificado_url"),
       ]);
@@ -205,7 +205,10 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
           id: (l.negocio_id as string) ?? String(l.id),
           pipelineLeadId: String(l.id),
           cliente: String(l.nome ?? "Sem nome"),
-          empreendimento: String(l.empreendimento ?? "—"),
+          // Ficha vazia → usa o empreendimento/unidade do negócio vinculado.
+          empreendimento:
+            (l.empreendimento as string)?.trim() ||
+            (neg?.empreendimento ? `${neg.empreendimento}${neg.unidade ? ` · ${neg.unidade}` : ""}` : "—"),
           corretor: (l.corretor_id && nomeByUser.get(String(l.corretor_id))) || "—",
           corretorId: (l.corretor_id as string) ?? null,
           corretorUserId: (l.corretor_id as string) ?? null,
