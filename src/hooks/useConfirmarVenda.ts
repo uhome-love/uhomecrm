@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export interface EmpreendimentoVenda { id: string; nome: string; construtora: string | null }
+export interface EmpreendimentoVenda { id: string; nome: string; construtora: string | null; ativo: boolean }
 export interface IntermediacaoVenda { id: string; comprador_nome: string; empreendimento: string | null; unidade: string | null; vgv: number | null; filename: string | null }
 export interface NegocioVenda { id: string; empreendimento_canonico_id: string | null; unidade: string | null; vgv_final: number | null; proposta_valor: number | null; vgv_estimado: number | null; data_assinatura: string | null; intermediacao_id: string | null; comprovante_ato_path: string | null }
 
@@ -18,7 +18,7 @@ export function useConfirmarVenda(leadId: string) {
       setLoading(true); setError(null);
       try {
         const [emps, ints, lead] = await Promise.all([
-          supabase.from("empreendimentos_canonicos").select("id,nome,construtora").eq("ativo", true).order("nome"),
+          supabase.from("empreendimentos_canonicos").select("id,nome,construtora,ativo").order("ativo", { ascending: false }).order("nome"),
           supabase.rpc("venda_intermediacoes", { p_lead_id: leadId }),
           supabase.from("pipeline_leads").select("negocio_id").eq("id", leadId).single(),
         ]);
@@ -38,5 +38,6 @@ export function useConfirmarVenda(leadId: string) {
     void carregar();
     return () => { ativo = false; };
   }, [leadId, revision]);
-  return { empreendimentos, intermediacoes, negocio, loading, error, recarregar: () => setRevision(v => v + 1) };
+  const adicionarEmpreendimento = (e: EmpreendimentoVenda) => setEmpreendimentos(lista => lista.some(x => x.id === e.id) ? lista : [...lista, e]);
+  return { empreendimentos, intermediacoes, negocio, loading, error, adicionarEmpreendimento, recarregar: () => setRevision(v => v + 1) };
 }

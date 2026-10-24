@@ -302,6 +302,27 @@
       "when": 1792786467230,
       "tag": "0042_visita_bloqueia_realizada_futura",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792854414306,
+      "tag": "0043_venda_empreendimento_avulso",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792854450683,
+      "tag": "0044_venda_empreendimento_avulso_fix_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1792854566260,
+      "tag": "0045_venda_empreendimento_avulso_segmento",
+      "breakpoints": true
     }
   ]
 }

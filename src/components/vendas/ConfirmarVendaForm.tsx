@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useConfirmarVenda } from "@/hooks/useConfirmarVenda";
+import { EmpreendimentoVendaPicker } from "./EmpreendimentoVendaPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { comprovantePermitido, pendenciasVenda } from "@/lib/vendaConfirmacao";
 import { formatBRT } from "@/lib/brtTime";
@@ -57,6 +58,8 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
   const pendencias = pendenciasVenda({ empreendimentoCanonicoId: empId, construtora: emp?.construtora, unidade, vgvFinal: vgv, dataAssinatura: data, intermediacaoId: interId, comprovanteAtoPath: path || (arquivo ? "novo-anexo" : null) }, hoje);
   const unidadeDiferente = !!inter && inter.unidade?.trim().toLowerCase() !== unidade.trim().toLowerCase();
   const vgvDiferente = !!inter?.vgv && Math.abs(Number(inter.vgv) - vgv) > 0.01;
+  const norm = (s: string | null | undefined) => (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const empDiferente = !!inter?.empreendimento && !!emp && !norm(inter.empreendimento).includes(norm(emp.nome)) && !norm(emp.nome).includes(norm(inter.empreendimento));
   useEffect(() => () => {
     if (rascunho.current && !confirmado.current) {
       void supabase.storage.from("vendas-docs").remove([rascunho.current]);
@@ -109,7 +112,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
     <DialogHeader><DialogTitle className="flex items-center gap-2"><CheckCircle2 className="size-5 text-primary" />Confirmar venda</DialogTitle><DialogDescription>{nome}</DialogDescription></DialogHeader>
     {dados.loading ? <div className="flex justify-center py-8"><Loader2 className="size-6 animate-spin text-primary" /></div> : dados.error ? <div role="alert" className="text-sm text-destructive">{dados.error}<Button variant="outline" onClick={dados.recarregar} className="mt-3"><RefreshCw className="mr-2 size-4" />Tentar novamente</Button></div> : <>
       <section className="space-y-2.5">
-        <div className="space-y-1"><Label>Empreendimento *</Label><Select value={empId} onValueChange={setEmpId}><SelectTrigger aria-label="Empreendimento"><SelectValue placeholder="Selecionar empreendimento" /></SelectTrigger><SelectContent>{dados.empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select>{emp && <p className="text-xs text-muted-foreground">Construtora: <span className="font-medium text-foreground">{emp.construtora || "—"}</span></p>}</div>
+        <div className="space-y-1"><Label>Empreendimento *</Label><EmpreendimentoVendaPicker value={empId} onChange={setEmpId} empreendimentos={dados.empreendimentos} onCriado={dados.adicionarEmpreendimento} />{emp && <p className="text-xs text-muted-foreground">Construtora: <span className="font-medium text-foreground">{emp.construtora || "—"}</span></p>}</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5"><div className="space-y-1"><Label htmlFor="venda-unidade">Unidade *</Label><Input id="venda-unidade" value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex.: 321" /></div><div className="space-y-1"><Label htmlFor="venda-vgv">VGV final *</Label><Input id="venda-vgv" inputMode="numeric" value={formatCurrencyInput(valor)} onChange={e => setValor(handleCurrencyChange(e.target.value))} /></div><div className="space-y-1 col-span-2 sm:col-span-1"><Label htmlFor="venda-data">Assinatura *</Label><Input id="venda-data" type="date" max={hoje} value={data} onChange={e => setData(e.target.value)} /></div></div>
       </section>
       <section className="space-y-2 border-t border-border pt-3">
@@ -119,6 +122,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
         {inter && <div className="flex items-start gap-2 text-xs text-muted-foreground"><FileSignature className="mt-0.5 size-3.5 shrink-0" /><span className="break-words min-w-0">{inter.filename || inter.comprador_nome}</span></div>}
         {unidadeDiferente && <p role="alert" className="text-sm text-destructive">Unidade diferente da intermediação: {inter?.unidade}.</p>}
         {vgvDiferente && <p className="text-xs text-muted-foreground">VGV na intermediação: {fmtMoney(Number(inter?.vgv), "exact")}. Confira o valor final.</p>}
+        {empDiferente && <p className="rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-foreground">A intermediação está como "{inter?.empreendimento}". Pode confirmar — a diferença fica registrada no histórico da venda.</p>}
       </section>
       <section className="space-y-2 border-t border-border pt-3">
         <Label>Comprovante do pagamento do ato *</Label>

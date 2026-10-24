@@ -3267,6 +3267,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          origem: string
           segmento_id: string
           updated_at: string
         }
@@ -3278,6 +3279,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          origem?: string
           segmento_id: string
           updated_at?: string
         }
@@ -3289,6 +3291,7 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          origem?: string
           segmento_id?: string
           updated_at?: string
         }
@@ -17425,6 +17428,10 @@ export type Database = {
       criar_campanha_da_base_v2: {
         Args: { p_config: Json; p_filtro: Json; p_nome: string }
         Returns: Json
+      }
+      criar_empreendimento_venda: {
+        Args: { p_construtora: string; p_nome: string; p_tipo: string }
+        Returns: string
       }
       criar_notificacao: {
         Args: {

@@ -31,7 +31,7 @@ export function OnboardingModal({ open, onClose, filters, onSave, firstTime, ses
     setSegSel(filters.segmento_ids);
     (async () => {
       const [e, s] = await Promise.all([
-        supabase.from("empreendimentos_canonicos").select("id, nome").order("nome"),
+        supabase.from("empreendimentos_canonicos").select("id, nome").neq("origem", "venda").order("nome"),
         supabase.from("roleta_segmentos").select("id, nome").eq("ativo", true).order("nome"),
       ]);
       setEmpreendimentos((e.data ?? []) as any);
