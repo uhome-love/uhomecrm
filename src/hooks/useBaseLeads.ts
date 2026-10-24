@@ -348,6 +348,7 @@ export function useEmpreendimentosCanonicos() {
       const { data, error } = await supabase
         .from("empreendimentos_canonicos")
         .select("id,nome")
+        .neq("origem", "venda")
         .order("nome");
       if (error) throw error;
       return (data ?? []) as { id: string; nome: string }[];
