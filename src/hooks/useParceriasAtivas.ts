@@ -6,7 +6,7 @@ export interface ParceriaAtiva { principalId: string; parceiroId: string; princi
 /** Mapa leadId → parcerias ativas (fonte: pipeline_parcerias status 'ativa'). Uma consulta compartilhada por todas as telas. */
 export function useParceriasAtivas() {
   return useQuery({
-    queryKey: ["parcerias-ativas-mapa"],
+    queryKey: ["parcerias-ativas-mapa-v2"],
     staleTime: 60_000,
     queryFn: async () => {
       const rows: { pipeline_lead_id: string; corretor_principal_id: string; corretor_parceiro_id: string }[] = [];
@@ -24,12 +24,13 @@ export function useParceriasAtivas() {
         if (p.error) throw p.error;
         for (const x of p.data ?? []) if (x.user_id) nomes.set(x.user_id, x.nome ?? "Corretor");
       }
-      const mapa = new Map<string, ParceriaAtiva[]>();
+      // Objeto simples (não Map): o cache persistido no aparelho não preserva Map.
+      const mapa: Record<string, ParceriaAtiva[]> = {};
       for (const r of rows) {
         if (r.corretor_principal_id === r.corretor_parceiro_id) continue; // não conta como parceria
-        const lista = mapa.get(r.pipeline_lead_id) ?? [];
+        const lista = mapa[r.pipeline_lead_id] ?? [];
         lista.push({ principalId: r.corretor_principal_id, parceiroId: r.corretor_parceiro_id, principal: nomes.get(r.corretor_principal_id) ?? "Corretor", parceiro: nomes.get(r.corretor_parceiro_id) ?? "Corretor" });
-        mapa.set(r.pipeline_lead_id, lista);
+        mapa[r.pipeline_lead_id] = lista;
       }
       return mapa;
     },
