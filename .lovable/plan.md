@@ -7,7 +7,7 @@
 - O anúncio já é salvo em cada lead que vem da Meta (exemplo de hoje: "Ad 3 - Video Aluguel" no Open Arvoredo). Ele aparece na ficha do cliente, na parte de Origem.
 
 ## O que muda
-1. **Golden Lake reconhecido:** ligo o nome da campanha ("Golden Lake") ao empreendimento oficial, para todo lead dessa campanha ser marcado como Golden Lake.
+1. **Golden Lake reconhecido:** ligo o nome da campanha "Golden Lake - v1 — Videos Novos" (e futuras versões com "Golden Lake" no nome) ao empreendimento oficial, para todo lead dessa campanha ser marcado como Golden Lake. A campanha ainda está "Em análise" na Meta, então nenhum lead chegou até agora.
 2. **Só para o CEO:** coloco o Golden Lake na mesma chave do Lake Baikal. Todo lead novo vai direto para a Fila CEO, em qualquer turno, até na distribuição forçada. Nenhum corretor recebe pela Roleta.
 3. **Anúncio de cada lead:** cada lead mostra o nome exato do criativo (um dos 10) na ficha, e no registro de entrada da linha do tempo. Se o mesmo cliente preencher de novo por outro criativo, o registro novo mostra o criativo novo.
 4. **Não muda:** os outros empreendimentos continuam indo para a Roleta; o Golden Lake não entra no Foco dos corretores.
