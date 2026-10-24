@@ -120,8 +120,8 @@ export default function PushPromptBanner() {
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-  // Step 1: Show install prompt if on mobile and not installed
-  if (isMobile && !isInstalled && !installDismissed) {
+  // Aviso "Instale o UhomeSales" desativado a pedido da direção.
+  if (false && isMobile && !isInstalled && !installDismissed) {
     return (
       <div className="mx-3 mt-2 mb-1 rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
         <div className="rounded-full bg-primary/10 p-2 shrink-0">
