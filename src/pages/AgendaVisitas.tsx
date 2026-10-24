@@ -1,4 +1,7 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, createContext, useContext } from "react";
+import { idsVisitasRepetidas } from "@/lib/visitasRoleta";
+
+const RepetidasCtx = createContext<Set<string>>(new Set());
 import { ParceriaSelo } from "@/components/pipeline/ParceriaSelo";
 import { ConferenciaVisitasMes } from "@/components/visitas/ConferenciaVisitasMes";
 import { useSearchParams, useLocation } from "react-router-dom";
@@ -166,6 +169,7 @@ function VisitaCompactCard({
   onMarkNoShow: (id: string) => void;
   onReabrir: (id: string) => void;
 }) {
+  const repetida = useContext(RepetidasCtx).has(visita.id);
   const isDone = visita.status === "realizada" || visita.status === "cancelada" || visita.status === "no_show";
   // Vencida sem desfecho: data passada e ainda marcada/confirmada
   const isOverdue = !isDone &&
@@ -201,6 +205,14 @@ function VisitaCompactCard({
             {visita.nome_cliente}
           </span>
           <ParceriaSelo leadId={visita.pipeline_lead_id} className="shrink-0" />
+          {repetida && (
+            <span
+              title="Mesmo cliente já visitado nesta semana: conta só 1 vez para a Roleta"
+              className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+            >
+              Repetida · não conta p/ Roleta
+            </span>
+          )}
           {visita.empreendimento && (
             <span className="text-[11px] text-muted-foreground truncate hidden md:block max-w-[140px]">
               {visita.empreendimento}
@@ -577,6 +589,15 @@ export default function AgendaVisitas() {
   }, [visitas]);
 
   // Group by day
+  const repetidas = useMemo(
+    () => idsVisitasRepetidas(visitas.map((v) => ({
+      id: v.id, status: v.status, data_visita: v.data_visita, hora_visita: v.hora_visita,
+      corretor_id: v.corretor_id,
+      cliente: v.pipeline_lead_id || (v.telefone ?? "").replace(/\D/g, "").slice(-8) || v.nome_cliente.trim().toLowerCase(),
+    }))),
+    [visitas],
+  );
+
   const dayGroups = useMemo(() => {
     const map = new Map<string, Visita[]>();
     for (const v of filtered) {
@@ -1007,7 +1028,8 @@ export default function AgendaVisitas() {
         ) : viewMode === "semana" ? (
           <WeekBoard from={calendarFrom} visitas={filtered} onEdit={handleEdit} showCorretor={showCorretor} />
         ) : (
-          dayGroups.map(([dateStr, dayVisitas]) => (
+          <RepetidasCtx.Provider value={repetidas}>
+          {dayGroups.map(([dateStr, dayVisitas]) => (
             <DayGroup
               key={dateStr}
               dateStr={dateStr}
@@ -1019,7 +1041,8 @@ export default function AgendaVisitas() {
               onMarkNoShow={handleMarkNoShow}
               onReabrir={handleReabrir}
             />
-          ))
+          ))}
+          </RepetidasCtx.Provider>
         )}
       </div>
 
