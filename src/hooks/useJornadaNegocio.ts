@@ -8,7 +8,7 @@ export function useJornadaNegocio(leadId: string) {
     queryFn: async () => {
       const [lead, empreendimentos] = await Promise.all([
         supabase.from("pipeline_leads").select("id,nome,negocio_id,empreendimento,empreendimento_canonico_id,stage_id,flag_status,valor_estimado").eq("id", leadId).single(),
-        supabase.from("empreendimentos_canonicos").select("id,nome,construtora").eq("ativo", true).order("nome"),
+        supabase.from("empreendimentos_canonicos").select("id,nome,construtora,ativo").order("ativo", { ascending: false }).order("nome"),
       ]);
       if (lead.error) throw lead.error;
       if (empreendimentos.error) throw empreendimentos.error;
