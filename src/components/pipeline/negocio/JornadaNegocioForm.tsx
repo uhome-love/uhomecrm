@@ -12,6 +12,7 @@ import { CONTRATO_SUBSTATUS, NEGOCIACAO_SUBSTATUS } from "@/lib/leadHelpers";
 import { jornadaPodeSalvar, lerDocumentos, situacaoAutoritativa, valorSugerido, type DocumentosNegocio } from "@/lib/jornadaNegocio";
 import { numberToRawCurrency, parseCurrencyToNumber } from "@/utils/currencyFormat";
 import { PropostaCampos } from "./PropostaCampos";
+import type { EmpreendimentoVenda } from "@/hooks/useConfirmarVenda";
 import { DocumentosChecklist } from "./DocumentosChecklist";
 import { ContratoIntermediacao } from "./ContratoIntermediacao";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
   const dados = useJornadaNegocio(leadId);
   const cache = useQueryClient();
   const [empId, setEmpId] = useState("");
+  const [extras, setExtras] = useState<EmpreendimentoVenda[]>([]);
   const [unidade, setUnidade] = useState("");
   const [valor, setValor] = useState("");
   const [status, setStatus] = useState(tipo === "contrato_gerado" ? "em_confeccao" : tipo === "documentacao" ? "documentacao_enviada" : "proposta_enviada");
@@ -73,7 +75,7 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
     <p className="text-sm text-muted-foreground">{dados.data?.lead.nome}</p>
     <fieldset disabled={saving} className="space-y-5 min-w-0">
       <div className="space-y-1.5"><Label>Situação {contrato ? "do contrato" : "da negociação"}</Label><Select value={status} onValueChange={setStatus} disabled={saving}><SelectTrigger aria-label="Situação da jornada"><SelectValue /></SelectTrigger><SelectContent>{options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select></div>
-      <PropostaCampos empreendimentos={dados.data?.empreendimentos ?? []} empreendimentoId={empId} onEmpreendimento={setEmpId} unidade={unidade} onUnidade={setUnidade} valor={valor} onValor={setValor} disabled={saving} />
+      <PropostaCampos empreendimentos={[...(dados.data?.empreendimentos ?? []), ...extras.filter(x => !dados.data?.empreendimentos.some(e => e.id === x.id))]} empreendimentoId={empId} onEmpreendimento={setEmpId} onCriado={e => setExtras(l => [...l, e])} unidade={unidade} onUnidade={setUnidade} valor={valor} onValor={setValor} disabled={saving} />
       {tipo === "documentacao" && <DocumentosChecklist value={documentos} onChange={setDocumentos} disabled={saving} />}
       {contrato && <><div className="space-y-1.5"><Label htmlFor="jornada-previsao">Previsão de assinatura</Label><Input type="date" id="jornada-previsao" value={previsao} onChange={e => setPrevisao(e.target.value)} /></div><ContratoIntermediacao leadId={leadId} /></>}
       <div className="space-y-1.5"><Label htmlFor="jornada-obs">{contrato ? "Observação" : "Condições / observação"}</Label><Textarea id="jornada-obs" value={obs} onChange={e => setObs(e.target.value)} rows={2} maxLength={5000} /></div>
