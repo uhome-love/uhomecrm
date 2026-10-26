@@ -9,6 +9,8 @@ import { substatusValueLabel } from "@/lib/pipelineAudit";
 import { DOCUMENTOS_NEGOCIO, lerDocumentos, valorSugerido } from "@/lib/jornadaNegocio";
 import { JornadaNegocioForm } from "../negocio/JornadaNegocioForm";
 import { ContratoIntermediacao } from "../negocio/ContratoIntermediacao";
+import { EditarVendaDrawer } from "@/components/vendas/EditarVendaDrawer";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Props { negocioId: string | null; pipelineLeadId?: string; corretorNome?: string }
 export default function DrawerNegocioTab({ pipelineLeadId }: Props) {
@@ -19,6 +21,8 @@ export default function DrawerNegocioTab({ pipelineLeadId }: Props) {
 function NegocioDoCliente({ leadId }: { leadId: string }) {
   const dados = useJornadaNegocio(leadId);
   const [editing, setEditing] = useState(false);
+  const [corrigir, setCorrigir] = useState(false);
+  const { isAdmin, isDiretor } = useUserRole();
   if (dados.isPending) return <div className="flex justify-center py-12"><Loader2 className="size-5 animate-spin text-primary" /></div>;
   if (dados.error) return <div className="space-y-3 p-5"><p role="alert" className="text-sm text-destructive">Não foi possível carregar o negócio.</p><Button variant="outline" onClick={() => void dados.refetch()}>Tentar novamente</Button></div>;
   const n = dados.data?.negocio;
@@ -46,6 +50,8 @@ function NegocioDoCliente({ leadId }: { leadId: string }) {
     <section className="space-y-2 border-t border-border pt-4"><h3 className="text-sm font-semibold">Documentos do cliente</h3>{DOCUMENTOS_NEGOCIO.map(doc => <p key={doc.key} className="flex items-center gap-2 text-sm"><span className={documentos[doc.key] ? "text-primary" : "text-muted-foreground"}>{documentos[doc.key] ? "✓" : "—"}</span>{doc.label}</p>)}<p className="text-xs text-muted-foreground">Conferência informativa</p></section>
     {etapa?.tipo === "contrato_gerado" && n.fase !== "ganho" && <ContratoIntermediacao leadId={leadId} />}
     {editavel && <Button variant="outline" className="w-full" onClick={() => setEditing(true)}><Pencil className="mr-2 size-4" />Editar informações do negócio</Button>}
+    {n.fase === "ganho" && (isAdmin || isDiretor) && <Button variant="outline" className="w-full" onClick={() => setCorrigir(true)}><Pencil className="mr-2 size-4" />Corrigir venda</Button>}
+    {n.fase === "ganho" && (isAdmin || isDiretor) && <EditarVendaDrawer open={corrigir} canEdit onOpenChange={o => { setCorrigir(o); if (!o) void dados.refetch(); }} venda={{ id: n.id, nome_cliente: n.nome_cliente ?? dados.data?.lead.nome ?? "", empreendimento: n.empreendimento, empreendimento_canonico_id: n.empreendimento_canonico_id, unidade: n.unidade, vgv_final: n.vgv_final, vgv_estimado: n.vgv_estimado, data_assinatura: n.data_assinatura ?? null, observacoes: n.observacoes }} />}
   </div>;
 }
 
