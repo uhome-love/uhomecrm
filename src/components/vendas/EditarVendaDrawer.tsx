@@ -9,7 +9,8 @@ import { MoneyInput } from "@/components/ui/MoneyInput";
 import { useEditarVenda } from "@/hooks/useEditarVenda";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EmpreendimentoVendaPicker } from "@/components/vendas/EmpreendimentoVendaPicker";
+import type { EmpreendimentoVenda } from "@/hooks/useConfirmarVenda";
 import { todayBRT } from "@/lib/brtTime";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { format } from "date-fns";
@@ -42,10 +43,12 @@ export function EditarVendaDrawer({ open, onOpenChange, venda, canEdit }: Props)
   const [dataAssinatura, setDataAssinatura] = useState("");
   const [obs, setObs] = useState("");
   const [empId,setEmpId] = useState("");
-  const catalogo=useQuery({queryKey:["empreendimentos-oficiais-vendas"],enabled:open,queryFn:async()=>{
-    const r=await supabase.from("empreendimentos_canonicos").select("id,nome,construtora").order("nome");if(r.error)throw r.error;return r.data;
+  const [extras,setExtras] = useState<EmpreendimentoVenda[]>([]);
+  const catalogo=useQuery({queryKey:["empreendimentos-oficiais-vendas-todos"],enabled:open,queryFn:async()=>{
+    const r=await supabase.from("empreendimentos_canonicos").select("id,nome,construtora,ativo").order("ativo",{ascending:false}).order("nome");if(r.error)throw r.error;return r.data as EmpreendimentoVenda[];
   }});
-  const emp=catalogo.data?.find(e=>e.id===empId);
+  const lista=[...(catalogo.data??[]),...extras.filter(x=>!catalogo.data?.some(e=>e.id===x.id))];
+  const emp=lista.find(e=>e.id===empId);
 
   useEffect(() => {
     if (!venda) return;
@@ -111,7 +114,7 @@ export function EditarVendaDrawer({ open, onOpenChange, venda, canEdit }: Props)
 
               <div className="space-y-1.5">
                 <Label htmlFor="ev-emp">Empreendimento</Label>
-                <Select value={empId} onValueChange={setEmpId}><SelectTrigger id="ev-emp" aria-label="Empreendimento oficial"><SelectValue placeholder={empreendimento||"Selecione"}/></SelectTrigger><SelectContent>{catalogo.data?.map(e=><SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select>
+                <EmpreendimentoVendaPicker value={empId} onChange={setEmpId} empreendimentos={lista} onCriado={e=>{setExtras(l=>[...l,e]);setEmpId(e.id);}}/>
                 <p className="text-sm text-muted-foreground">{emp?.construtora ?? (catalogo.error?"Não foi possível carregar o cadastro oficial.":"Selecione o cadastro oficial.")}</p>
               </div>
 
