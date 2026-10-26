@@ -62,7 +62,11 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
       window.dispatchEvent(new CustomEvent("pipeline-reload"));
       toast.success(contrato ? "Contrato atualizado." : tipo === "documentacao" ? "Conferência salva." : "Proposta salva.");
       onSaved();
-    } catch (e) { setErro(e instanceof Error ? e.message : String((e as { message?: string }).message ?? "Não foi possível salvar a jornada.")); }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String((e as { message?: string }).message ?? "Não foi possível salvar a jornada.");
+      setErro(msg);
+      void supabase.from("ops_events").insert({ fn: "registrar_jornada_negocio", level: "error", category: "crm", message: "Falha ao salvar jornada do negócio", error_detail: msg, ctx: { pipeline_lead_id: leadId, tipo } });
+    }
     finally { lock.current = false; setSaving(false); }
   }
   if (dados.isPending || (dados.isFetching && !init.current)) return <div className="flex justify-center py-8"><Loader2 className="size-5 animate-spin text-primary" /></div>;
@@ -81,6 +85,7 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
       <div className="space-y-1.5"><Label htmlFor="jornada-obs">{contrato ? "Observação" : "Condições / observação"}</Label><Textarea id="jornada-obs" value={obs} onChange={e => setObs(e.target.value)} rows={2} maxLength={5000} /></div>
     </fieldset>
     {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
+    {!valido && !saving && <p className="text-sm text-muted-foreground">Para salvar, preencha empreendimento{tipo === "documentacao" ? "" : ", unidade e valor"}.</p>}
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button><Button onClick={() => void salvar()} disabled={saving || !valido}>{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}{contrato ? "Salvar contrato" : tipo === "documentacao" ? "Salvar conferência" : "Salvar proposta"}</Button></div>
   </div>;
 }
