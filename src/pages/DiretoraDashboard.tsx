@@ -38,7 +38,7 @@ function Card({ children, className = "", onClick }: { children: React.ReactNode
       onClick={onClick}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
-      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
+      onKeyDown={clickable ? (e) => { if (e.target !== e.currentTarget) return; if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
       className={`group rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 ${clickable ? "cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 dark:hover:border-gray-600" : ""} ${className}`}
     >
       {children}

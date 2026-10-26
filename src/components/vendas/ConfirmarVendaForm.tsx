@@ -135,7 +135,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
       </section>
       {mostrarObs || obs ? <div className="space-y-1"><Label htmlFor="venda-observacao">Observação</Label><Textarea id="venda-observacao" value={obs} onChange={e => setObs(e.target.value)} rows={2} autoFocus={!obs} /></div> : <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => setMostrarObs(true)}>+ Adicionar observação</button>}
       {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
-      <DialogFooter className="sticky bottom-0 z-10 -mx-6 -mb-6 gap-2 border-t border-border bg-background px-6 py-3"><Button variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button><Button disabled={saving || pendencias.length > 0 || unidadeDiferente || !inter} onClick={confirmar}>{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CheckCircle2 className="mr-2 size-4" />}Confirmar venda</Button></DialogFooter>
+      <DialogFooter className="sticky bottom-0 z-10 -mx-6 -mb-6 gap-2 border-t border-border bg-background px-6 py-3"><Button variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button><Button disabled={saving || pendencias.length > 0 || !inter} onClick={confirmar}>{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CheckCircle2 className="mr-2 size-4" />}Confirmar venda</Button></DialogFooter>
     </>}
   </div>;
 }
