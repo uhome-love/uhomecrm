@@ -337,6 +337,13 @@
       "when": 1793033663238,
       "tag": "0047_venda_unidade_divergente_aviso",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793045262716,
+      "tag": "0048_lead_saude_vermelho_antes_estagnar",
+      "breakpoints": true
     }
   ]
 }

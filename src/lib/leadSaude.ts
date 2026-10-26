@@ -92,7 +92,9 @@ export function leadSaude(input: LeadSaudeInput): LeadSaude {
 
   const prazo = PRAZO_POR_ETAPA[tipo] ?? PRAZO_PADRAO;
   if (dias <= prazo) return "verde";
-  if (dias <= prazo * 2) return "ambar";
+  // Regra: toda etapa que estagna passa pelo vermelho antes (últimos 3 dias no mínimo).
+  const limiteAmbar = limiteEstagna != null ? Math.min(prazo * 2, limiteEstagna - 3) : prazo * 2;
+  if (dias <= limiteAmbar) return "ambar";
   return "vermelho";
 }
 
