@@ -35,7 +35,7 @@ export default function TarefaHojeItem({ tarefa, onClick, onConcluir }: Props) {
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget) return;
-        if (e.key === "Enter" || e.key === " ") onClick();
+        if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) onClick();
       }}
       className="w-full text-left rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all p-2.5 cursor-pointer"
     >

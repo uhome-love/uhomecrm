@@ -78,7 +78,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
   }
 
   async function confirmar() {
-    if (ocupado.current || pendencias.length || unidadeDiferente) return;
+    if (ocupado.current || pendencias.length) return;
     ocupado.current = true; setSaving(true); setErro(null);
     try {
       let comprovante = path;
@@ -120,7 +120,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
         <div className="flex gap-2"><div className="flex-1 min-w-0"><Select value={interId} onValueChange={id => { setInterId(id); const i = dados.intermediacoes.find(x => x.id === id); if (i?.unidade && !unidade) setUnidade(i.unidade); }}><SelectTrigger aria-label="Intermediação"><SelectValue placeholder="Selecionar documento do cliente" /></SelectTrigger><SelectContent>{dados.intermediacoes.map(i => <SelectItem key={i.id} value={i.id}>{i.empreendimento} · {i.unidade || "sem unidade"}</SelectItem>)}</SelectContent></Select></div>
         {(isGestor || isAdmin || isDiretor) && <Button variant="outline" asChild className="shrink-0"><Link to={`/intermediacao?lead=${encodeURIComponent(leadId)}`} target="_blank"><FileSignature className="mr-1.5 size-4" />Gerar</Link></Button>}</div>
         {inter && <div className="flex items-start gap-2 text-xs text-muted-foreground"><FileSignature className="mt-0.5 size-3.5 shrink-0" /><span className="break-words min-w-0">{inter.filename || inter.comprador_nome}</span></div>}
-        {unidadeDiferente && <p role="alert" className="text-sm text-destructive">Unidade diferente da intermediação: {inter?.unidade}.</p>}
+        {unidadeDiferente && <p className="rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-foreground">A intermediação está com unidade "{inter?.unidade || "—"}". Pode confirmar — a diferença fica registrada no histórico da venda.</p>}
         {vgvDiferente && <p className="text-xs text-muted-foreground">VGV na intermediação: {fmtMoney(Number(inter?.vgv), "exact")}. Confira o valor final.</p>}
         {empDiferente && <p className="rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-foreground">A intermediação está como "{inter?.empreendimento}". Pode confirmar — a diferença fica registrada no histórico da venda.</p>}
       </section>
@@ -135,7 +135,7 @@ export function ConfirmarVendaForm({ leadId, nome, valorEstimado, empreendimento
       </section>
       {mostrarObs || obs ? <div className="space-y-1"><Label htmlFor="venda-observacao">Observação</Label><Textarea id="venda-observacao" value={obs} onChange={e => setObs(e.target.value)} rows={2} autoFocus={!obs} /></div> : <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => setMostrarObs(true)}>+ Adicionar observação</button>}
       {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
-      <DialogFooter className="sticky bottom-0 z-10 -mx-6 -mb-6 gap-2 border-t border-border bg-background px-6 py-3"><Button variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button><Button disabled={saving || pendencias.length > 0 || unidadeDiferente || !inter} onClick={confirmar}>{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CheckCircle2 className="mr-2 size-4" />}Confirmar venda</Button></DialogFooter>
+      <DialogFooter className="sticky bottom-0 z-10 -mx-6 -mb-6 gap-2 border-t border-border bg-background px-6 py-3"><Button variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button><Button disabled={saving || pendencias.length > 0 || !inter} onClick={confirmar}>{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CheckCircle2 className="mr-2 size-4" />}Confirmar venda</Button></DialogFooter>
     </>}
   </div>;
 }
