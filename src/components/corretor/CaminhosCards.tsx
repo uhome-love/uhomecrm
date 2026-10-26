@@ -98,7 +98,7 @@ function ActionCard({ icon, title, subtitle, onClick, highlight }: ActionCardPro
         role="button"
         tabIndex={0}
         onClick={onClick}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
+        onKeyDown={(e) => e.target === e.currentTarget && (e.key === "Enter" || e.key === " ") && onClick()}
         className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary border-0"
         style={{ background: "linear-gradient(180deg, #1e1b4b, #0f0f23)", color: "white" }}
       >
@@ -115,7 +115,7 @@ function ActionCard({ icon, title, subtitle, onClick, highlight }: ActionCardPro
       role="button"
       tabIndex={0}
       onClick={onClick}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
+      onKeyDown={(e) => e.target === e.currentTarget && (e.key === "Enter" || e.key === " ") && onClick()}
       className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
     >
       <div className="p-4 flex flex-col gap-2">

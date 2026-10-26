@@ -133,7 +133,7 @@ export default function RhDashboard() {
             role="button"
             tabIndex={0}
             onClick={() => navigate(s.route)}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(s.route); } }}
+            onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(s.route); } }}
             className="bg-card cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:border-[#4969FF]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4969FF]/50"
           >
             <CardContent className="p-4 text-center">

@@ -330,6 +330,13 @@
       "when": 1792886695130,
       "tag": "0046_jornada_aceita_empreendimento_inativo",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793033663238,
+      "tag": "0047_venda_unidade_divergente_aviso",
+      "breakpoints": true
     }
   ]
 }
