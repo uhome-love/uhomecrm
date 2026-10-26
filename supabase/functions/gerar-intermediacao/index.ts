@@ -380,6 +380,10 @@ async function montarDoc(b: Body): Promise<Document> {
     children.push(assinatura("", ""));
     children.push(assinaturaLabel(`CORRETOR: ${c.nome.toUpperCase()}`));
   });
+  b.gerentes.forEach((g) => {
+    children.push(assinatura("", ""));
+    children.push(assinaturaLabel(`GERENTE: ${g.nome.toUpperCase()}`));
+  });
   children.push(assinatura("", ""));
   children.push(assinaturaLabel("DIRETORIA: GABRIELLE RODRIGUES"));
   children.push(assinatura("", ""));
