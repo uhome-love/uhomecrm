@@ -62,7 +62,11 @@ export function JornadaNegocioForm({ leadId, etapaId, tipo, mover = true, onSave
       window.dispatchEvent(new CustomEvent("pipeline-reload"));
       toast.success(contrato ? "Contrato atualizado." : tipo === "documentacao" ? "Conferência salva." : "Proposta salva.");
       onSaved();
-    } catch (e) { setErro(e instanceof Error ? e.message : String((e as { message?: string }).message ?? "Não foi possível salvar a jornada.")); }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String((e as { message?: string }).message ?? "Não foi possível salvar a jornada.");
+      setErro(msg);
+      void supabase.from("ops_events").insert({ fn: "registrar_jornada_negocio", level: "error", category: "crm", message: "Falha ao salvar jornada do negócio", error_detail: msg, ctx: { pipeline_lead_id: leadId, tipo } });
+    }
     finally { lock.current = false; setSaving(false); }
   }
   if (dados.isPending || (dados.isFetching && !init.current)) return <div className="flex justify-center py-8"><Loader2 className="size-5 animate-spin text-primary" /></div>;
