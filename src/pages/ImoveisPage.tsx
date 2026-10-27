@@ -171,6 +171,9 @@ export default function ImoveisPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [vitrineLink, setVitrineLink] = useState<string | null>(null);
+  // Guarda os dados de cada imóvel já exibido, para a vitrine incluir
+  // selecionados de buscas anteriores (não só os da busca atual).
+  const seenItemsRef = useRef<Map<string, unknown>>(new Map());
 
   // Bairro search
   const [bairroInput, setBairroInput] = useState("");
@@ -412,6 +415,9 @@ export default function ImoveisPage() {
     : allImoveis;
   // Stop loading more when current page returned no new data OR we have all items
   const hasMore = currentPageData.length > 0 && imoveis.length < total;
+  useEffect(() => {
+    imoveis.forEach((it) => seenItemsRef.current.set(it.id, it));
+  }, [imoveis]);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const isInitialListPending = page === 0 && imoveis.length === 0 && (isLoading || isFetching);
 
@@ -494,7 +500,10 @@ export default function ImoveisPage() {
   const { mutate: criarVitrine, isPending: creatingVitrine } = useCreateVitrine();
   const createVitrine = useCallback(() => {
     if (!user) return;
-    const selectedItems = imoveis.filter((it) => selectedIds.has(it.id));
+    imoveis.forEach((it) => seenItemsRef.current.set(it.id, it));
+    const selectedItems = Array.from(selectedIds)
+      .map((id) => seenItemsRef.current.get(id))
+      .filter(Boolean) as unknown as typeof imoveis;
     const codigos = selectedItems
       .map((it) => String(it.codigo || "").trim())
       .filter((c): c is string => Boolean(c));
