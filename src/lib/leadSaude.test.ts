@@ -28,3 +28,17 @@ describe("cores do lead", () => {
     }
   });
 });
+
+describe("lead que volta com distribuição antiga", () => {
+  it("aceite de hoje com toque e distribuição antigos fica verde", async () => {
+    const { leadSaude } = await import("./leadSaude");
+    const agora = new Date().toISOString();
+    expect(leadSaude({
+      ultimo_toque_at: "2026-05-22T18:49:13Z",
+      distribuido_em: "2026-03-15T17:51:02Z",
+      aceito_em: agora,
+      created_at: "2026-03-15T11:52:06Z",
+      stage_tipo: "sem_contato",
+    })).toBe("verde");
+  });
+});

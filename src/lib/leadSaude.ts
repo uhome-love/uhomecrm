@@ -61,7 +61,13 @@ function diasSem(base: string): number {
  * do novo corretor e sumia do board (bug Joyce Brazil, 31/08/2026).
  */
 function relogioBase(input: LeadSaudeInput): string | null {
-  const ref = input.distribuido_em || input.aceito_em || input.created_at || null;
+  // Lead que volta (novo interesse/reativação) pode manter distribuido_em do
+  // ciclo antigo; o aceite atual é mais recente → usar o MAIOR dos dois
+  // (bug Marie Hellen, 27/10/2026: voltou e nasceu "estagnado").
+  const dist = input.distribuido_em || null;
+  const ac = input.aceito_em || null;
+  const maisRecente = dist && ac ? (new Date(ac).getTime() > new Date(dist).getTime() ? ac : dist) : dist || ac;
+  const ref = maisRecente || input.created_at || null;
   const toque = input.ultimo_toque_at || null;
   if (!toque) return ref;
   if (!ref) return toque;
