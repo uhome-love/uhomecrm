@@ -351,6 +351,13 @@
       "when": 1793105439090,
       "tag": "0049_distribuido_em_reentrada",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793105827818,
+      "tag": "0050_reset_ciclo_reentrada",
+      "breakpoints": true
     }
   ]
 }
