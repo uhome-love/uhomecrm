@@ -171,6 +171,9 @@ export default function ImoveisPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [vitrineLink, setVitrineLink] = useState<string | null>(null);
+  // Guarda os dados de cada imóvel já exibido, para a vitrine incluir
+  // selecionados de buscas anteriores (não só os da busca atual).
+  const seenItemsRef = useRef<Map<string, any>>(new Map());
 
   // Bairro search
   const [bairroInput, setBairroInput] = useState("");
@@ -266,6 +269,8 @@ export default function ImoveisPage() {
   }, [user?.id]);
 
   const toggleSelect = useCallback((id: string) => {
+    const found = imoveisRef.current.find((it: any) => it.id === id);
+    if (found) seenItemsRef.current.set(id, found);
     setSelectedIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
     setVitrineLink(null);
   }, []);
@@ -494,7 +499,10 @@ export default function ImoveisPage() {
   const { mutate: criarVitrine, isPending: creatingVitrine } = useCreateVitrine();
   const createVitrine = useCallback(() => {
     if (!user) return;
-    const selectedItems = imoveis.filter((it) => selectedIds.has(it.id));
+    imoveis.forEach((it) => seenItemsRef.current.set(it.id, it));
+    const selectedItems = Array.from(selectedIds)
+      .map((id) => seenItemsRef.current.get(id))
+      .filter(Boolean) as typeof imoveis;
     const codigos = selectedItems
       .map((it) => String(it.codigo || "").trim())
       .filter((c): c is string => Boolean(c));
