@@ -1,5 +1,6 @@
 # Roadmap — Tarefas do corretor
-- [ ] Encerrar as 23 parcerias antigas autorizadas por Lucas, sem apagar registros; conferir históricos e leitura no CRM.
+- [x] Encerrar as 23 parcerias antigas autorizadas por Lucas: 21 clientes, 23 anotações; Vicenzo sem selo antigo no preview autenticado; clientes, visitas e pontuação das duas semanas preservados.
+- [ ] Corrigir a proteção automática da troca de corretor: o histórico exige movido_por e a função anterior omite esse campo, anulando o encerramento dentro do tratamento de erro; aguarda aprovação do plano específico.
 - [x] Página /tarefas (abas, busca, lead abre por cima, concluir com observação, criar próxima)
 - [x] Concluir tarefa = atividade + toque
 - [x] Extras: atalhos de data, "sem próximo passo", gestor vê time, aviso na hora (push+sino)
