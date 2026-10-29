@@ -11636,6 +11636,7 @@ export type Database = {
           criado_por: string
           divisao_parceiro: number
           divisao_principal: number
+          encerrada_em: string | null
           id: string
           motivo: string | null
           pipeline_lead_id: string
@@ -11649,6 +11650,7 @@ export type Database = {
           criado_por: string
           divisao_parceiro?: number
           divisao_principal?: number
+          encerrada_em?: string | null
           id?: string
           motivo?: string | null
           pipeline_lead_id: string
@@ -11662,6 +11664,7 @@ export type Database = {
           criado_por?: string
           divisao_parceiro?: number
           divisao_principal?: number
+          encerrada_em?: string | null
           id?: string
           motivo?: string | null
           pipeline_lead_id?: string

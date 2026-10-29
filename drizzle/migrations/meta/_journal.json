@@ -358,6 +358,13 @@
       "when": 1793105827818,
       "tag": "0050_reset_ciclo_reentrada",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1793295444346,
+      "tag": "0051_parceria_encerra_troca_corretor",
+      "breakpoints": true
     }
   ]
 }
