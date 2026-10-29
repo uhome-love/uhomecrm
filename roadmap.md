@@ -1,4 +1,5 @@
 # Roadmap — Tarefas do corretor
+- [ ] Encerrar as 23 parcerias antigas autorizadas por Lucas, sem apagar registros; conferir históricos e leitura no CRM.
 - [x] Página /tarefas (abas, busca, lead abre por cima, concluir com observação, criar próxima)
 - [x] Concluir tarefa = atividade + toque
 - [x] Extras: atalhos de data, "sem próximo passo", gestor vê time, aviso na hora (push+sino)
