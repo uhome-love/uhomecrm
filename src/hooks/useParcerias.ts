@@ -185,10 +185,11 @@ export function useUpdateParceria() {
   });
 }
 
-// ── 5) Delete partnership mutation ──
+// ── 5) Encerrar (desfazer) parceria — admin, diretora ou gerente da equipe ──
 interface DeleteParceriaInput {
   parceriaId: string;
   leadId: string;
+  motivo: string;
 }
 
 export function useDeleteParceria() {
@@ -196,19 +197,19 @@ export function useDeleteParceria() {
 
   return useMutation({
     mutationFn: async (input: DeleteParceriaInput) => {
-      const { error } = await supabase
-        .from("pipeline_parcerias")
-        .delete()
-        .eq("id", input.parceriaId);
+      const { error } = await supabase.rpc("encerrar_parceria", {
+        p_parceria_id: input.parceriaId,
+        p_motivo: input.motivo,
+      });
       if (error) throw error;
     },
     onSuccess: (_data, variables) => {
-      toast.success("Parceria removida");
+      toast.success("Parceria desfeita");
       queryClient.invalidateQueries({ queryKey: parceriaKeys.lead(variables.leadId) });
-      queryClient.invalidateQueries({ queryKey: parceriaKeys.map() });
+      queryClient.invalidateQueries({ queryKey: parceriaKeys.all });
     },
-    onError: () => {
-      toast.error("Erro ao remover parceria");
+    onError: (err: Error) => {
+      toast.error(err.message || "Erro ao desfazer parceria");
     },
   });
 }

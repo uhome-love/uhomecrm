@@ -49,6 +49,8 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
 
   // React Query: existing partnerships
   const { data: existingPartnerships = [] } = useLeadParcerias(open ? leadId : null);
+  const ativas = existingPartnerships.filter((p) => p.status === "ativa");
+  const [motivoDesfazer, setMotivoDesfazer] = useState("");
 
   // React Query: create mutation
   const createMutation = useCreateParceria();
@@ -140,13 +142,11 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
             </span>
           </div>
 
-          {existingPartnerships.length > 0 && (
+          {ativas.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Parcerias existentes</Label>
-              {existingPartnerships.map((p) => {
+              {ativas.map((p) => {
                 const parceiroNome = corretores.find((c) => c.user_id === p.corretor_parceiro_id)?.nome || "Corretor";
-                // Parceria registrada só pode ser desfeita/alterada pelo administrador.
-                const canManage = isAdmin;
                 return (
                   <div key={p.id} className="flex flex-col gap-2 rounded-md bg-accent/50 p-2 text-xs sm:flex-row sm:items-center">
                     <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -156,25 +156,22 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
                         {p.divisao_principal}/{p.divisao_parceiro}
                       </Badge>
                     </div>
-                    {canManage && (
-                      <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 px-2 text-xs"
-                          onClick={() => handleEdit(p)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Editar
-                        </Button>
+                    {(isAdmin || canManageAll) && (
+                      <div className="flex gap-2 sm:shrink-0">
+                        {isAdmin && (
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={() => handleEdit(p)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                            Editar
+                          </Button>
+                        )}
                         <Button
                           variant="destructive"
                           size="sm"
                           className="h-8 px-2 text-xs"
-                          onClick={() => setParceriaToDelete({ id: p.id, nome: parceiroNome })}
+                          onClick={() => { setMotivoDesfazer(""); setParceriaToDelete({ id: p.id, nome: parceiroNome }); }}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          Apagar
+                          Desfazer parceria
                         </Button>
                       </div>
                     )}
@@ -241,24 +238,29 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
       <AlertDialog open={!!parceriaToDelete} onOpenChange={(o) => !o && setParceriaToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover parceria?</AlertDialogTitle>
+            <AlertDialogTitle>Desfazer parceria com {parceriaToDelete?.nome}?</AlertDialogTitle>
             <AlertDialogDescription>
-              A parceria com <strong>{parceriaToDelete?.nome}</strong> será removida deste lead. O lead
-              ficará apenas com o corretor principal. Esta ação não pode ser desfeita.
+              O cliente fica só com o corretor principal e a visita passa a contar 1 só para ele na Roleta.
+              A parceria fica registrada no histórico.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-1">
+            <Label className="text-xs">Motivo (obrigatório)</Label>
+            <Input value={motivoDesfazer} onChange={(e) => setMotivoDesfazer(e.target.value)} placeholder="Ex: parceria registrada por engano" />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-danger-500 text-white hover:bg-danger-700"
+            <Button
+              variant="destructive"
+              disabled={motivoDesfazer.trim().length < 5 || deleteMutation.isPending}
               onClick={async () => {
                 if (!parceriaToDelete) return;
-                await deleteMutation.mutateAsync({ parceriaId: parceriaToDelete.id, leadId });
+                await deleteMutation.mutateAsync({ parceriaId: parceriaToDelete.id, leadId, motivo: motivoDesfazer.trim() });
                 setParceriaToDelete(null);
               }}
             >
-              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Remover"}
-            </AlertDialogAction>
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Desfazer"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

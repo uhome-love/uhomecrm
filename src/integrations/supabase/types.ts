@@ -17513,6 +17513,10 @@ export type Database = {
         }[]
       }
       encerrar_campanhas_expiradas: { Args: never; Returns: Json }
+      encerrar_parceria: {
+        Args: { p_motivo: string; p_parceria_id: string }
+        Returns: undefined
+      }
       enqueue_meta_capi_event: {
         Args: {
           p_action_source?: string
