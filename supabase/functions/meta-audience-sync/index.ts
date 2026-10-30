@@ -341,6 +341,7 @@ Deno.serve(async (req) => {
     .from("meta_audiences")
     .update({
       ultimo_total_elegivel: membros.length,
+      ultimo_total_enviado: enviados,
       ultima_sync_at: new Date().toISOString(),
     })
     .eq("id", audienceId);
