@@ -469,7 +469,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           feedback,
           listaId: lead.lista_id,
           empreendimento: lead.empreendimento,
-          idempotencyKey: currentIdempotencyKey,
+          idempotencyKey: idemKey,
           visitaMarcada: visitaMarcada || false,
         });
         toast.error("Sem conexão — resultado salvo localmente.");
