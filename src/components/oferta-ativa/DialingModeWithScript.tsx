@@ -336,11 +336,16 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean, dataVisita?: string, horaVisita?: string) => {
-    if (!lead || !actionTaken || submitting) return;
+  const submitLockRef = useRef(false);
+  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean, dataVisita?: string, horaVisita?: string, actionOverride?: { canal: string; key: string }) => {
+    const canal = actionOverride?.canal ?? actionTaken;
+    const idemKey = actionOverride?.key ?? currentIdempotencyKey;
+    if (!lead || !canal || submitting || submitLockRef.current) return;
+    submitLockRef.current = true;
+    setTimeout(() => { submitLockRef.current = false; }, 1500);
     setSubmitting(true);
     try {
-      const result = await registrar(lead, actionTaken, resultado, feedback, lista, currentIdempotencyKey || undefined, visitaMarcada, interesseTipo);
+      const result = await registrar(lead, canal as typeof actionTaken & string, resultado, feedback, lista, idemKey || undefined, visitaMarcada, interesseTipo);
       if (!result?.success) { setSubmitting(false); return; }
 
       if (!result.idempotent) {
@@ -645,9 +650,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       toast.error("Selecione o motivo");
       return;
     }
-    if (!actionTaken) {
-      setActionTaken("ligacao");
-      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+    let override: { canal: string; key: string } | undefined;
+    if (!actionTaken || !currentIdempotencyKey) {
+      override = { canal: actionTaken || "ligacao", key: `${user?.id}_${lead.id}_${Date.now()}` };
+      setActionTaken(override.canal as typeof actionTaken);
+      setCurrentIdempotencyKey(override.key);
     }
     const obs = inlineObs.trim();
     const motivoPrefix = selectedMotivo ? `[${selectedMotivo}] ` : "";
@@ -663,15 +670,17 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     setShowResultPopup(false);
     setSelectedResult(null);
     setSelectedMotivo(null);
-    handleResultSubmit(mapped, feedback, false, undefined, retirar);
+    handleResultSubmit(mapped, feedback, false, undefined, retirar, undefined, undefined, override);
   };
 
   // Inline result (quick buttons in right column)
   const handleInlineResult = (resultado: string) => {
     if (!lead) return;
-    if (!actionTaken) {
-      setActionTaken("ligacao");
-      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+    let override: { canal: string; key: string } | undefined;
+    if (!actionTaken || !currentIdempotencyKey) {
+      override = { canal: actionTaken || "ligacao", key: `${user?.id}_${lead.id}_${Date.now()}` };
+      setActionTaken(override.canal as typeof actionTaken);
+      setCurrentIdempotencyKey(override.key);
     }
     if (resultado === "com_interesse" || resultado === "agendar") {
       setShowResultPopup(false); // ensure only one popup
@@ -683,7 +692,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       sem_interesse: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Sem interesse no momento",
       numero_errado: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Número errado/inválido",
     };
-    handleResultSubmit(resultado, feedbackMap[resultado] || resultado);
+    handleResultSubmit(resultado, feedbackMap[resultado] || resultado, undefined, undefined, undefined, undefined, undefined, override);
   };
 
   // Auto-redirect when queue is empty
