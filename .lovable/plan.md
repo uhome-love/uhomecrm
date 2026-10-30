@@ -25,6 +25,8 @@ Continuam iguais: a fila, `claim_meta_capi_batch`, a função de envio, os gatil
   - Código do evento: `md5(lead_id|event_name)`, com `NOT EXISTS` por lead_id + event_name.
   - Na Venda: `md5(lead_id|'Venda'|negocio_id)`, com `NOT EXISTS` por `payload->'custom_data'->>'negocio_id'`. O negocio_id já chega hoje pelo gatilho de venda, sem precisar mexer nele.
   - Inclui `external_id` = sha256 do id do lead.
+  - Todas as checagens `NOT EXISTS` só consideram linhas com status `pending`, `processing` ou `sent`.
+  - O insert usa `ON CONFLICT (event_id) DO UPDATE SET status='pending', attempts=0, last_error=NULL, payload=EXCLUDED.payload WHERE meta_capi_queue.status IN ('failed','skipped')`. Quando o status é pending, processing ou sent, nada muda.
 - `supabase/functions/meta-audience-sync/index.ts`: o update final passa a incluir `ultimo_total_enviado: enviados`.
 - Não serão alterados: `_trg_visita_capi`, `_trg_negocio_capi`, `enqueue_meta_capi_event_lia`, `claim_meta_capi_batch`, a edge de envio e `capi_guarda_selftest` (esta última só será executada para conferência).
 
@@ -33,5 +35,7 @@ Continuam iguais: a fila, `claim_meta_capi_batch`, a função de envio, os gatil
 - O cliente de teste vai para Visita, volta e tem a visita remarcada: continua com 1 só evento de visita marcada na fila.
 - 2 negócios ganhos do mesmo cliente geram 2 eventos de Venda.
 - Conferir no conteúdo enviado: o código protegido do cliente, o CEP (quando houver) e a origem `UhomeSales`.
+- Uma linha de teste com status `failed` e o mesmo evento volta para `pending`. Uma linha com status `sent` não é duplicada.
 - Executar `capi_guarda_selftest`.
+- Observação: hoje a fila tem 3.510 eventos enviados, 898 pulados e 1 com falha. Com a nova regra, os pulados e o que falhou voltam para a fila se o mesmo evento acontecer de novo.
 - Rodar uma sincronização de público e conferir se o total enviado foi gravado.
