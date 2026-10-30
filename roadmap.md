@@ -70,4 +70,4 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 
 - [x] Intermediação: forma de pagamento obrigatória sem pré-seleção (Zemo/NF -10%/PIX), vínculo com cliente/negócio, construtora no documento
 
-- [ ] CAPI: envio único do passado (24 leads qualificados, últimos 6 dias) — aguarda ok do Lucas
+- [x] CAPI: envio único do passado (16 leads, primeira entrada nos últimos 6 dias)
