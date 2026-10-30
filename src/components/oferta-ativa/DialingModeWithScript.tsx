@@ -350,7 +350,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
       if (!result.idempotent) {
         const pontos = resultado === "com_interesse" ? 3 : resultado === "numero_errado" ? 0 : 1;
-        applyOptimisticUpdate(resultado, actionTaken, pontos, visitaMarcada ?? false);
+        applyOptimisticUpdate(resultado, canal, pontos, visitaMarcada ?? false);
 
         // Cross-reference: update pipeline lead card if phone matches
         if (lead.telefone && !isCustom) {
@@ -365,7 +365,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 .limit(1)
                 .maybeSingle();
               if (pipelineLead) {
-                const canalLabel = actionTaken === "ligacao" ? "Ligação" : actionTaken === "whatsapp" ? "WhatsApp" : actionTaken;
+                const canalLabel = canal === "ligacao" ? "Ligação" : canal === "whatsapp" ? "WhatsApp" : canal;
                 const resultLabel = resultado === "com_interesse" ? "Aproveitado"
                   : resultado === "nao_atendeu" ? "Não atendeu"
                   : resultado === "sem_interesse" ? "Sem interesse"
@@ -460,11 +460,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       await fetchNext();
     } catch (err: any) {
       console.error("Erro ao registrar tentativa:", err);
-      if (lead && actionTaken && currentIdempotencyKey && user) {
+      if (lead && canal && idemKey && user) {
         addPending({
           leadId: lead.id,
           corretorId: user.id,
-          canal: actionTaken,
+          canal: canal,
           resultado,
           feedback,
           listaId: lead.lista_id,
