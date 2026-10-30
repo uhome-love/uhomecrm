@@ -379,6 +379,13 @@
       "when": 1793379405352,
       "tag": "0053_bolsao_ligacoes_contam_oa",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793398919580,
+      "tag": "0054_capi_evento_unico_por_lead",
+      "breakpoints": true
     }
   ]
 }
