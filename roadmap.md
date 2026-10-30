@@ -69,3 +69,5 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 - [x] Fase 6 — Validação ponta a ponta com clientes fictícios: documento NF, menu Ganho, comprovante, leitura em Vendas, recebimento, repasse, custos, distrato, exportações e filtros; 40 testes passaram, guardas e permissões checadas no servidor, preview sem erros. Conferência final autenticada somente leitura: 20 pessoas, três gerentes no filtro e no Excel, Vendas com cartões no celular. Repasses distratados preservados para conferência, sem saldo ativo presumido. Todos os registros/anexos fictícios removidos; 115 vendas e R$ 63.459.987,29 preservados. Push físico não verificado. Detalhes em `.lovable/qa/financeiro-vendas-final-2026-10-23.md`.
 
 - [x] Intermediação: forma de pagamento obrigatória sem pré-seleção (Zemo/NF -10%/PIX), vínculo com cliente/negócio, construtora no documento
+
+- [ ] CAPI: envio único do passado (24 leads qualificados, últimos 6 dias) — aguarda ok do Lucas
