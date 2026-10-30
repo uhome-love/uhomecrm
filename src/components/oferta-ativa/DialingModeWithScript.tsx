@@ -336,16 +336,21 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean, dataVisita?: string, horaVisita?: string) => {
-    if (!lead || !actionTaken || submitting) return;
+  const submitLockRef = useRef(false);
+  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean, dataVisita?: string, horaVisita?: string, actionOverride?: { canal: string; key: string }) => {
+    const canal = actionOverride?.canal ?? actionTaken;
+    const idemKey = actionOverride?.key ?? currentIdempotencyKey;
+    if (!lead || !canal || submitting || submitLockRef.current) return;
+    submitLockRef.current = true;
+    setTimeout(() => { submitLockRef.current = false; }, 1500);
     setSubmitting(true);
     try {
-      const result = await registrar(lead, actionTaken, resultado, feedback, lista, currentIdempotencyKey || undefined, visitaMarcada, interesseTipo);
+      const result = await registrar(lead, canal as typeof actionTaken & string, resultado, feedback, lista, idemKey || undefined, visitaMarcada, interesseTipo);
       if (!result?.success) { setSubmitting(false); return; }
 
       if (!result.idempotent) {
         const pontos = resultado === "com_interesse" ? 3 : resultado === "numero_errado" ? 0 : 1;
-        applyOptimisticUpdate(resultado, actionTaken, pontos, visitaMarcada ?? false);
+        applyOptimisticUpdate(resultado, canal, pontos, visitaMarcada ?? false);
 
         // Cross-reference: update pipeline lead card if phone matches
         if (lead.telefone && !isCustom) {
@@ -360,7 +365,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 .limit(1)
                 .maybeSingle();
               if (pipelineLead) {
-                const canalLabel = actionTaken === "ligacao" ? "Ligação" : actionTaken === "whatsapp" ? "WhatsApp" : actionTaken;
+                const canalLabel = canal === "ligacao" ? "Ligação" : canal === "whatsapp" ? "WhatsApp" : canal;
                 const resultLabel = resultado === "com_interesse" ? "Aproveitado"
                   : resultado === "nao_atendeu" ? "Não atendeu"
                   : resultado === "sem_interesse" ? "Sem interesse"
@@ -455,16 +460,16 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       await fetchNext();
     } catch (err: any) {
       console.error("Erro ao registrar tentativa:", err);
-      if (lead && actionTaken && currentIdempotencyKey && user) {
+      if (lead && canal && idemKey && user) {
         addPending({
           leadId: lead.id,
           corretorId: user.id,
-          canal: actionTaken,
+          canal: canal,
           resultado,
           feedback,
           listaId: lead.lista_id,
           empreendimento: lead.empreendimento,
-          idempotencyKey: currentIdempotencyKey,
+          idempotencyKey: idemKey,
           visitaMarcada: visitaMarcada || false,
         });
         toast.error("Sem conexão — resultado salvo localmente.");
@@ -638,16 +643,18 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   };
 
   const handlePopupConfirm = () => {
-    if (!lead || !selectedResult) return;
+    if (!lead || !selectedResult || submitting) return;
     // Motivo estruturado obrigatório para nao_atendeu / sem_interesse / descarte_definitivo
     const requiresMotivo = selectedResult === "nao_atendeu" || selectedResult === "sem_interesse" || selectedResult === "descarte_definitivo";
     if (requiresMotivo && !selectedMotivo) {
       toast.error("Selecione o motivo");
       return;
     }
-    if (!actionTaken) {
-      setActionTaken("ligacao");
-      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+    let override: { canal: string; key: string } | undefined;
+    if (!actionTaken || !currentIdempotencyKey) {
+      override = { canal: actionTaken || "ligacao", key: `${user?.id}_${lead.id}_${Date.now()}` };
+      setActionTaken(override.canal as typeof actionTaken);
+      setCurrentIdempotencyKey(override.key);
     }
     const obs = inlineObs.trim();
     const motivoPrefix = selectedMotivo ? `[${selectedMotivo}] ` : "";
@@ -663,15 +670,17 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     setShowResultPopup(false);
     setSelectedResult(null);
     setSelectedMotivo(null);
-    handleResultSubmit(mapped, feedback, false, undefined, retirar);
+    handleResultSubmit(mapped, feedback, false, undefined, retirar, undefined, undefined, override);
   };
 
   // Inline result (quick buttons in right column)
   const handleInlineResult = (resultado: string) => {
     if (!lead) return;
-    if (!actionTaken) {
-      setActionTaken("ligacao");
-      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+    let override: { canal: string; key: string } | undefined;
+    if (!actionTaken || !currentIdempotencyKey) {
+      override = { canal: actionTaken || "ligacao", key: `${user?.id}_${lead.id}_${Date.now()}` };
+      setActionTaken(override.canal as typeof actionTaken);
+      setCurrentIdempotencyKey(override.key);
     }
     if (resultado === "com_interesse" || resultado === "agendar") {
       setShowResultPopup(false); // ensure only one popup
@@ -683,7 +692,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       sem_interesse: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Sem interesse no momento",
       numero_errado: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Número errado/inválido",
     };
-    handleResultSubmit(resultado, feedbackMap[resultado] || resultado);
+    handleResultSubmit(resultado, feedbackMap[resultado] || resultado, undefined, undefined, undefined, undefined, undefined, override);
   };
 
   // Auto-redirect when queue is empty
@@ -1058,107 +1067,128 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
 
   // ─── RESULT POPUP ───
+  const RESULT_OPTIONS = [
+    { key: "com_interesse", label: "Aproveitado", icon: "✅", tone: "142 71% 36%" },
+    { key: "agendar", label: "Agendar Visita", icon: "📅", tone: "32 95% 40%" },
+    { key: "nao_atendeu", label: "Não Atendeu", icon: "🔴", tone: "0 72% 46%" },
+    { key: "sem_interesse", label: "Sem Interesse", icon: "⏭️", tone: "215 14% 40%" },
+    { key: "descarte_definitivo", label: "Descarte definitivo", icon: "❌", tone: "345 83% 41%" },
+  ];
+  const popupNeedsMotivo = !!selectedResult && ["nao_atendeu", "sem_interesse", "descarte_definitivo"].includes(selectedResult);
+  const closeResultPopup = () => { if (submitting) return; setShowResultPopup(false); setSelectedResult(null); setSelectedMotivo(null); };
+
   const ResultPopup = showResultPopup && (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center p-3"
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md mx-4 rounded-xl p-6 space-y-5"
-        style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)" }}
+        className="w-full max-w-md rounded-xl flex flex-col overflow-hidden"
+        style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)", maxHeight: "90dvh" }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-center space-y-1">
-          <h3 className="text-lg font-bold" style={{ color: "var(--arena-text)" }}>📊 Resultado da Ligação</h3>
-          <p className="text-sm" style={{ color: "var(--arena-text-muted)" }}>Lead: {lead.nome} · {lead.empreendimento}</p>
-        </div>
+        <div className="overflow-y-auto overscroll-contain p-5 space-y-4">
+          <div className="text-center space-y-1">
+            <h3 className="text-lg font-bold" style={{ color: "var(--arena-text)" }}>📊 Resultado da Ligação</h3>
+            <p className="text-sm" style={{ color: "var(--arena-text-muted)" }}>Lead: {lead.nome} · {lead.empreendimento}</p>
+          </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { key: "com_interesse", label: "✅ Aproveitado", bg: "rgba(34,197,94,0.15)", border: "rgba(34,197,94,0.4)", color: "#86EFAC", hoverBg: "rgba(34,197,94,0.3)" },
-            { key: "agendar", label: "📅 Agendar Visita", bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", color: "#FCD34D", hoverBg: "rgba(245,158,11,0.3)" },
-            { key: "nao_atendeu", label: "🔴 Não Atendeu", bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)", color: "#FCA5A5", hoverBg: "rgba(239,68,68,0.3)" },
-            { key: "sem_interesse", label: "⏭️ Sem Interesse", bg: "rgba(107,114,128,0.15)", border: "rgba(107,114,128,0.4)", color: "#9CA3AF", hoverBg: "rgba(107,114,128,0.3)" },
-            { key: "descarte_definitivo", label: "❌ Descarte definitivo", bg: "rgba(190,18,60,0.15)", border: "rgba(190,18,60,0.4)", color: "#FDA4AF", hoverBg: "rgba(190,18,60,0.3)" },
-          ].map(r => (
-            <button
-              key={r.key}
-              onClick={() => handlePopupResult(r.key)}
-              disabled={submitting}
-              className="flex items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
-              style={{
-                height: 56,
-                background: selectedResult === r.key ? r.hoverBg : r.bg,
-                border: selectedResult === r.key ? `2px solid ${r.border}` : `1px solid ${r.border}`,
-                color: r.color,
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            {RESULT_OPTIONS.map(r => {
+              const active = selectedResult === r.key;
+              return (
+                <button
+                  key={r.key}
+                  type="button"
+                  onClick={() => handlePopupResult(r.key)}
+                  disabled={submitting}
+                  aria-pressed={active}
+                  className="relative flex items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                  style={{
+                    minHeight: 52,
+                    background: active ? `hsl(${r.tone})` : `hsl(${r.tone} / 0.10)`,
+                    border: `2px solid hsl(${r.tone} / ${active ? 1 : 0.45})`,
+                    color: active ? "#fff" : `hsl(${r.tone})`,
+                  }}
+                >
+                  <span>{r.icon}</span> {r.label}
+                  {active && <span className="absolute right-2 top-1 text-xs">✓</span>}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Motivo estruturado (obrigatório para nao_atendeu / sem_interesse / descarte_definitivo) */}
-        {selectedResult && ["nao_atendeu", "sem_interesse", "descarte_definitivo"].includes(selectedResult) && (() => {
-          const metaKey = selectedResult === "descarte_definitivo" ? "descarte_definitivo" : selectedResult;
-          const meta = getResultadoMeta(metaKey);
-          if (!meta) return null;
-          return (
-            <div>
-              <p className="text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: "var(--arena-text-muted)" }}>
-                Motivo <span className="rounded px-1.5 py-0.5 text-[9px] font-bold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>obrigatório</span>
-                <span className="ml-auto rounded px-1.5 py-0.5 text-[9px]" style={{ background: "var(--arena-subtle-bg)", color: "var(--arena-text-subtle)" }}>{meta.cooldownLabel}</span>
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {meta.motivos.map((m) => {
-                  const active = selectedMotivo === m;
-                  return (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setSelectedMotivo(m)}
-                      className="rounded-full border px-2.5 py-1 text-[11px] transition-colors"
-                      style={{
-                        background: active ? "rgba(96,165,250,0.15)" : "transparent",
-                        borderColor: active ? "#60A5FA" : "var(--arena-card-border)",
-                        color: active ? "#93C5FD" : "var(--arena-text-muted)",
-                      }}
-                    >
-                      {m}
-                    </button>
-                  );
-                })}
+          {popupNeedsMotivo && (() => {
+            const meta = getResultadoMeta(selectedResult as string);
+            if (!meta) return null;
+            return (
+              <div>
+                <p className="text-xs uppercase tracking-wider mb-2 flex items-center gap-2 font-semibold" style={{ color: "var(--arena-text-muted)" }}>
+                  Motivo <span className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: "hsl(0 72% 46%)" }}>obrigatório</span>
+                  <span className="ml-auto rounded px-1.5 py-0.5 text-[10px]" style={{ background: "var(--arena-subtle-bg)", color: "var(--arena-text-muted)" }}>{meta.cooldownLabel}</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {meta.motivos.map((m) => {
+                    const active = selectedMotivo === m;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setSelectedMotivo(m)}
+                        aria-pressed={active}
+                        className="rounded-full border-2 px-3.5 text-sm font-medium transition-colors"
+                        style={{
+                          minHeight: 40,
+                          background: active ? "hsl(var(--primary))" : "transparent",
+                          borderColor: active ? "hsl(var(--primary))" : "var(--arena-card-border)",
+                          color: active ? "hsl(var(--primary-foreground))" : "var(--arena-text)",
+                        }}
+                      >
+                        {active ? "✓ " : ""}{m}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
 
-        <Textarea
-          placeholder="📝 Observação (opcional)..."
-          value={inlineObs}
-          onChange={(e) => setInlineObs(e.target.value)}
-          rows={2}
-          className="resize-none text-xs"
-          style={{ background: "var(--arena-subtle-bg)", border: "1px solid var(--arena-card-border)", color: "var(--arena-text)", borderRadius: 10 }}
-        />
+          <Textarea
+            placeholder="📝 Observação (opcional)..."
+            value={inlineObs}
+            onChange={(e) => setInlineObs(e.target.value)}
+            rows={2}
+            className="resize-none"
+            style={{ background: "var(--arena-subtle-bg)", border: "1px solid var(--arena-card-border)", color: "var(--arena-text)", borderRadius: 10 }}
+          />
+        </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            className="flex-1 text-muted-foreground hover:text-foreground hover:bg-accent"
-            style={{ height: 44, border: "1px solid rgba(255,255,255,0.08)" }}
-            onClick={() => { setShowResultPopup(false); setSelectedResult(null); setSelectedMotivo(null); }}
-          >
-            Cancelar
-          </Button>
-          {selectedResult && (
-            <Button
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-foreground font-semibold"
-              style={{ height: 44 }}
-              disabled={submitting || (["nao_atendeu","sem_interesse","descarte_definitivo"].includes(selectedResult) && !selectedMotivo)}
-              onClick={handlePopupConfirm}
-            >
-              {submitting ? "Registrando..." : "Confirmar e Próximo →"}
-            </Button>
+        <div className="p-4 pt-3 space-y-2" style={{ borderTop: "1px solid var(--arena-card-border)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+          {popupNeedsMotivo && !selectedMotivo && (
+            <p className="text-xs text-center font-medium" style={{ color: "hsl(0 72% 46%)" }}>Escolha o motivo para confirmar</p>
           )}
+          {!selectedResult && (
+            <p className="text-xs text-center" style={{ color: "var(--arena-text-muted)" }}>Escolha o resultado da ligação</p>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" style={{ height: 46 }} onClick={closeResultPopup} disabled={submitting}>
+              Cancelar
+            </Button>
+            {selectedResult && (
+              <Button
+                className="flex-1 font-semibold"
+                style={{ height: 46 }}
+                disabled={submitting || (popupNeedsMotivo && !selectedMotivo)}
+                onClick={handlePopupConfirm}
+              >
+                {submitting ? "Registrando..." : "Confirmar e Próximo →"}
+              </Button>
+            )}
+          </div>
         </div>
       </motion.div>
     </div>
