@@ -12,7 +12,7 @@ export default function CeoDashboard() {
   const model = useCeoDashboardController();
   return <>
     <div className="relative">
-      <NeveSuave altura={160} />
+      <NeveSuave altura={160} fundoClaro />
       <PainelComAbas>
         <DesktopDashboardContent model={model} />
       </PainelComAbas>
