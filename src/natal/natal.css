@@ -1,0 +1,31 @@
+/* Tokens de Natal — só valem com .tema-natal no <html>. */
+.tema-natal {
+  --natal-navy: 233 66% 15%;
+  --natal-gold: 46 65% 52%;
+  --natal-red: 355 68% 39%;
+  --natal-cream: 40 60% 95%;
+  --natal-gold-grad: linear-gradient(90deg, #a97a22, #d9b04a 55%, #fbefc0);
+  --natal-night: radial-gradient(circle at 30% 20%, #1e2a7a, #0d1340 60%, #070a26);
+}
+
+.natal-luzes {
+  height: 30px;
+  flex-shrink: 0;
+  pointer-events: none;
+  background: hsl(var(--natal-navy)) url("/natal/luzes_varal_faixa_larga.svg") repeat-x center / auto 30px;
+}
+@media (max-width: 767px) {
+  .natal-luzes { height: 26px; background-size: auto 26px; }
+}
+.natal-luzes.natal-piscar { animation: natal-piscar 2.4s ease-in-out infinite; }
+@keyframes natal-piscar { 50% { filter: brightness(1.35) saturate(1.2); } }
+
+.natal-noite { background: var(--natal-night); color: hsl(0 0% 100%); }
+.natal-chip-ouro {
+  background: var(--natal-gold-grad);
+  color: hsl(var(--natal-navy));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .natal-luzes.natal-piscar { animation: none; }
+}
