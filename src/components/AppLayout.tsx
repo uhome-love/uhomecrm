@@ -41,6 +41,7 @@ import { HomiProvider } from "@/contexts/HomiContext";
 import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
+import { FaixaLuzesNatal } from "@/natal/TemaNatal";
 import MobileBottomNav from "@/components/layout/mobile/MobileBottomNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 const homiMascot = "/images/homi-mascot-official.png";
@@ -307,6 +308,7 @@ export default function AppLayout() {
             <PushPromptBanner />
             <TelefoneFaltandoBanner />
 
+            <FaixaLuzesNatal />
             {!isMobile && <TabBar />}
             
             <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-background">

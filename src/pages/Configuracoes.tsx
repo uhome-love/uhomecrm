@@ -258,6 +258,7 @@ export default function Configuracoes() {
 
       {secao === "perfil" && (
         <>
+      <EfeitosNatalToggle />
       {/* Profile Card */}
 
       <Card>
