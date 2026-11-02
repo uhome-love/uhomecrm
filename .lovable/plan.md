@@ -32,8 +32,9 @@ Ordem de trabalho (regra do projeto): para cada passo, desenho para aprovação,
 ## Passo 5 — Em 26/12
 - Confirmar que tudo sumiu em 27/12 e trazer plano para remover a decoração. As metas dos corretores ficam guardadas.
 
-## Pendente de você
-- As imagens dos enfeites (gorro, luzes, Homi de Noel, chave de ouro, selo, presentes, árvore, sino, bolas, estrela) e os desenhos 01 a 06. Não estão nos arquivos enviados. Sem elas, eu crio versões próprias e mostro antes.
+## Enfeites
+- Recebidos: gorro, Homi de Noel, árvore, luzes (2 versões), selo Natal Chave de Ouro (escuro e claro), chave de ouro com laço e urna premiada. Serão usados como estão.
+- Faltam presentes, sino, bolas e estrela: onde eles apareceriam, uso emojis (🎁 🔔) ou deixo sem. Os desenhos 01 a 06 não vieram; o desenho de cada passo eu mostro antes de construir.
 
 ## Detalhes técnicos
 - Tudo de Natal em `src/natal/` com `config.ts` (`NATAL_INICIO`, `NATAL_FIM`, `isNatal()` via helpers BRT de `@/lib/brtTime`, constantes 649000 e 13,4). Provider `<TemaNatal>` em AppLayout adiciona `.tema-natal` no `<html>`; tokens em `src/natal/natal.css` só sob essa classe. Enfeites em `public/natal/`.
