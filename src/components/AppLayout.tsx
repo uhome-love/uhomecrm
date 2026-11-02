@@ -169,6 +169,7 @@ export default function AppLayout() {
               showCampaigns={sidebarRole === "admin" || sidebarRole === "gestor"}
             />
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <FaixaLuzesNatal />
             <header
               className={cn(
                 "h-14 flex items-center justify-between sticky top-0 z-50 px-4",
@@ -308,7 +309,6 @@ export default function AppLayout() {
             <PushPromptBanner />
             <TelefoneFaltandoBanner />
 
-            <FaixaLuzesNatal />
             {!isMobile && <TabBar />}
             
             <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-background">
