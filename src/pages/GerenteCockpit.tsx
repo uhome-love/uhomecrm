@@ -123,8 +123,9 @@ function GerenteCockpitVisaoGeral() {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto bg-slate-50 dark:bg-gray-900">
-      <div className="mx-auto max-w-6xl p-4 space-y-3">
+    <div className="relative flex-1 min-h-0 overflow-auto bg-slate-50 dark:bg-gray-900">
+      <NeveSuave altura={160} />
+      <div className="relative mx-auto max-w-6xl p-4 space-y-3">
         {/* Saudação — mesmo componente do CEO (fonte única), sem filtro de data */}
         <GreetingBar
           name={nome}
