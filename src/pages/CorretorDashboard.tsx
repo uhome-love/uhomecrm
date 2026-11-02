@@ -97,9 +97,14 @@ export default function CorretorDashboard() {
       {/* 1. Saudação HOMI (gradient inline — computador) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="hidden md:block">
         <div
-          className="rounded-2xl p-5 text-primary-foreground relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary"
+          className={`rounded-2xl p-5 text-primary-foreground relative overflow-hidden ${natal.efeitos ? "natal-noite" : "bg-gradient-to-br from-primary via-primary/90 to-primary"}`}
         >
-          <div className="flex items-center gap-4">
+          {natal.efeitos && <NeveSuave altura={200} />}
+          {natal.efeitos && (
+            <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none absolute bottom-0 right-4 h-[118%] select-none" />
+          )}
+          <div className="relative flex items-center gap-4">
+            <div className="relative shrink-0">
             {avatarSrc ? (
               <img
                 src={avatarSrc}
@@ -114,6 +119,8 @@ export default function CorretorDashboard() {
                 {initials || "?"}
               </div>
             )}
+              <GorroNatal className="-left-3 -top-5 w-10" />
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-lg font-bold truncate">{saudacao}, {primeiroNome}! 👋</p>
               <p className="text-sm text-primary-foreground/80 italic leading-snug mt-0.5">"{motivation}"</p>
