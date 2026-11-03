@@ -43,6 +43,7 @@ export function KpiCard({
   onClick,
   className,
 }: KpiCardProps) {
+  const zerado = value === 0 || value === "0" || value === "R$ 0" || value === "R$ 0,00";
   const TrendIcon =
     trend?.direction === "up"   ? TrendingUp   :
     trend?.direction === "down" ? TrendingDown :
@@ -52,28 +53,27 @@ export function KpiCard({
     <div
       onClick={onClick}
       className={cn(
-        "bg-card dark:bg-card",
-        "border border-border shadow-none",
-        "border-l-[3px] border-l-primary",
-        "rounded-[14px] p-4 pl-4",
-        "flex flex-col gap-2",
-        onClick && "cursor-pointer hover:border-primary/30 hover:border-l-primary transition-colors",
+        "bg-card border border-border shadow-sm",
+        "rounded-2xl p-4",
+        "flex flex-col gap-2.5 transition-all",
+        zerado && "opacity-60",
+        onClick && "cursor-pointer hover:border-primary/40 hover:shadow-md hover:-translate-y-px",
         className
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-medium text-muted-foreground tracking-[0.01em] truncate">
+        <span className="text-[12px] font-medium text-muted-foreground truncate">
           {label}
         </span>
         {icon && (
-          <span className="text-muted-foreground flex-shrink-0">
+          <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
             {icon}
           </span>
         )}
       </div>
       <div
         className={cn(
-          "text-[26px] font-[800] leading-none tracking-[-1px]",
+          "text-[28px] font-bold leading-none tracking-[-0.8px] tabular-nums",
           VALUE_COLORS[variant]
         )}
       >
@@ -87,7 +87,7 @@ export function KpiCard({
             </span>
           )}
           {trend && (
-            <div className={cn("flex items-center gap-1 flex-shrink-0", TREND_COLORS[trend.direction])}>
+            <div className={cn("flex items-center gap-1 flex-shrink-0 rounded-full px-1.5 py-0.5", TREND_COLORS[trend.direction], trend.direction === "up" ? "bg-success-500/10" : trend.direction === "down" ? "bg-danger-500/10" : "bg-muted")}>
               <TrendIcon size={11} strokeWidth={2} />
               <span className="text-[11px] font-semibold">{trend.value}</span>
             </div>
