@@ -25,7 +25,7 @@ function useMissaoNatalEmpresa(ativo: boolean) {
         supabase.from("campanha_natal_metas").select("user_id, meta_vgv"),
       ]);
       const ativos = consolidarPorCorretor(camp).filter((c) => c.corretor_ativo);
-      const metaMap = new Map((metas.data ?? []).map((m) => [m.user_id, Number(m.meta_vgv)]));
+      const metaMap = new Map<string, number>((metas.data ?? []).map((m) => [m.user_id, Number(m.meta_vgv)]));
       const definiram = ativos.filter((c) => metaMap.has(c.corretor_auth_id)).length;
       const somaMetas = ativos.reduce((s, c) => s + (metaMap.get(c.corretor_auth_id) ?? META_VGV_MINIMA), 0);
       return {
