@@ -182,7 +182,8 @@ export const SEMANAS = [
   {
     "semana": "S4",
     "inicio": "2026-11-23",
-    "fim": "2026-11-29"
+    "fim": "2026-11-29",
+    "destaque": "Black Natal Uhome · fim de semana de fechamento 28 e 29/11"
   },
   {
     "semana": "S5",
@@ -325,7 +326,7 @@ export const EMPREENDIMENTOS = [
       },
       {
         "tipo": "3 dormitórios",
-        "valor": "R$ 610 mil"
+        "valor": "R$ 659 mil"
       },
       {
         "tipo": "3 dormitórios com terraço",
@@ -338,8 +339,8 @@ export const EMPREENDIMENTOS = [
         "tom": "dourado"
       }
     ],
-    "gancho": "Casa de 3 dormitórios a partir de R$ 610 mil, com desconto no crédito associativo. O melhor é você ver de perto. Fica melhor [dia] às [hora] ou [dia] às [hora]?",
-    "legendaDisparo": "🎄 Casa de 3 dormitórios no Casa Tua Porto Alegre a partir de R$ 610 mil, com desconto no crédito associativo.\nQuer que eu te explique o desconto?",
+    "gancho": "Casa de 3 dormitórios a partir de R$ 659 mil, com desconto no crédito associativo. O melhor é você ver de perto. Fica melhor [dia] às [hora] ou [dia] às [hora]?",
+    "legendaDisparo": "🎄 Casa de 3 dormitórios no Casa Tua Porto Alegre a partir de R$ 659 mil, com desconto no crédito associativo.\nQuer que eu te explique o desconto?",
     "arquivos": {
       "foto": "FOTO-05-Casa_Tua_Porto_Alegre",
       "card": "CARD-05-Casa_Tua_Porto_Alegre",
