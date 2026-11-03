@@ -117,11 +117,13 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "presenca-roleta": lazyRetry(() => import("@/pages/PresencaRoleta")),
   "foco-corretores": lazyRetry(() => import("@/pages/FocoCorretores")),
   "lia-hub": lazyRetry(() => import("@/pages/admin/LiaHub")),
+  "central-natal": lazyRetry(() => import("@/natal/central/CampanhaNatalPage")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
 export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/":                      { key: "home",                 label: "Home",                icon: "LayoutGrid",    closable: false },
+  "/campanha-natal":        { key: "central-natal",        label: "Campanha Natal 2026", icon: "Gift",          roles: ["corretor", "gestor", "diretor", "admin", "backoffice"] },
   "/corretor":              { key: "corretor",             label: "Minha Rotina",        icon: "LayoutGrid",    closable: false },
   "/relatorio-geral":       { key: "relatorio-geral",      label: "Raio-X do Time",      icon: "ChartColumn",     roles: ["gestor", "admin", "diretor"] },
   "/raio-x-corretor":       { key: "raio-x-corretor",      label: "Raio-X do Corretor",  icon: "UserSearch",    roles: ["gestor", "admin", "diretor"] },
