@@ -74,7 +74,7 @@ export function MissaoNatalCard({ userId }: { userId?: string }) {
               Minha Missão de Natal
               {cumpriu && <span className="natal-chip-ouro rounded-full px-2 py-0.5 text-[11px] font-bold">Missão cumprida 🔑</span>}
             </h2>
-            <p className="text-xs text-muted-foreground">Campanha de 02/11 a 18/12 · atualiza sozinho a cada visita e venda</p>
+            <p className="text-xs text-muted-foreground">Campanha de 01/11 a 18/12 · atualiza sozinho a cada visita e venda</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

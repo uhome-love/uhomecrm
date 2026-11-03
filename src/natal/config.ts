@@ -4,7 +4,7 @@ import { todayBRT } from "@/lib/brtTime";
 
 export const NATAL_INICIO = "2026-11-02";
 export const NATAL_FIM = "2026-12-26";
-export const CAMPANHA_INICIO = "2026-11-02";
+export const CAMPANHA_INICIO = "2026-11-01";
 export const CAMPANHA_FIM = "2026-12-18";
 
 /** Ritmo médio Uhome (mai–out/2026). */

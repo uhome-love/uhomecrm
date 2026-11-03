@@ -173,7 +173,7 @@ export default function CorretorDashboard() {
         </div>
       </motion.div>
 
-      <MissaoNatalCard userId={user?.id} />
+      <MissaoNatalCard userId={user?.id} recolhivel />
 
       {/* 2. Roleta do turno: barra de credenciamento + estado + regras */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="space-y-2">
