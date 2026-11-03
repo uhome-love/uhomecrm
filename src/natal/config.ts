@@ -7,6 +7,12 @@ export const NATAL_FIM = "2026-12-26";
 export const CAMPANHA_INICIO = "2026-11-01";
 export const CAMPANHA_FIM = "2026-12-18";
 
+/** Página "Campanha Natal 2026" (materiais): no menu de 01/11 a 18/12. */
+export const CENTRAL_INICIO = "2026-11-01";
+export const CENTRAL_FIM = "2026-12-18";
+export const isCentralNatal = (hoje: string = todayBRT()): boolean =>
+  hoje >= CENTRAL_INICIO && hoje <= CENTRAL_FIM;
+
 /** Ritmo médio Uhome (mai–out/2026). */
 export const TICKET_MEDIO = 649000;
 export const VISITAS_POR_VENDA = 13.4;
