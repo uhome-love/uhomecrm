@@ -110,6 +110,7 @@ export default function PeriodFilter({
           />
         </PopoverContent>
       </Popover>
+      </div>
     </div>
   );
 }
