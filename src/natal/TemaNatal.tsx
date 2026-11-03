@@ -24,7 +24,7 @@ export function GorroNatal({ className = "" }: { className?: string }) {
       src="/natal/gorro_3d.png"
       alt=""
       aria-hidden
-      className={`pointer-events-none absolute -rotate-[15deg] select-none ${className}`}
+      className={`pointer-events-none absolute -rotate-[22deg] drop-shadow-sm select-none ${className}`}
     />
   );
 }

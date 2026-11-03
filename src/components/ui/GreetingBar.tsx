@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Calendar, ChevronDown, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNatal } from "@/natal/useNatal";
+import { NeveSuave } from "@/natal/NeveSuave";
+import { GorroNatal } from "@/natal/TemaNatal";
+import { diasAte18 } from "@/natal/config";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -163,6 +167,7 @@ export function GreetingBar({
     if (!controlledRange) setInternalRange(next);
   }
 
+  const natal = useNatal();
   const initials = getInitials(name);
   const displaySubtitle = subtitle ?? getDefaultSubtitle();
   const displayTime = refreshTime ?? currentTime;
@@ -170,10 +175,12 @@ export function GreetingBar({
   return (
     <div
       className={cn(
-        "relative flex items-center gap-4 rounded-[14px] bg-primary px-6 py-[18px] overflow-hidden",
+        "relative flex items-center gap-4 rounded-[14px] px-6 py-[18px] overflow-hidden",
+        natal.efeitos ? "natal-noite natal-borda-ouro" : "bg-primary",
         className
       )}
     >
+      {natal.efeitos && <NeveSuave altura={140} flocos={22} />}
       {/* Decoração */}
       <span
         className="pointer-events-none absolute -right-16 -top-24 h-[280px] w-[280px] rounded-full border border-white/[0.07]"
@@ -185,12 +192,15 @@ export function GreetingBar({
       />
 
       {/* Avatar */}
-      <div className="relative z-10 h-[46px] w-[46px] flex-shrink-0 rounded-full border-2 border-white/30 bg-white/[0.18] overflow-hidden flex items-center justify-center">
+      <div className="relative z-10 flex-shrink-0">
+      <GorroNatal className="-left-2 -top-4 z-20 w-8" />
+      <div className="relative h-[46px] w-[46px] flex-shrink-0 rounded-full border-2 border-white/30 bg-white/[0.18] overflow-hidden flex items-center justify-center">
         {avatarUrl ? (
           <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
         ) : (
           <span className="text-[15px] font-extrabold text-white">{initials}</span>
         )}
+      </div>
       </div>
 
       {/* Texto */}
@@ -201,7 +211,13 @@ export function GreetingBar({
         <p className="mt-0.5 text-[11.5px] font-medium text-white/55">
           {displaySubtitle}
         </p>
+        {natal.efeitos && (
+          <span className="natal-chip-ouro mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
+        )}
       </div>
+      {natal.efeitos && (
+        <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none relative z-10 -my-6 hidden h-[92px] flex-shrink-0 select-none self-end sm:block" />
+      )}
 
       {/* Filtro dropdown */}
       {showFilter && (
