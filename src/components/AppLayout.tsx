@@ -40,6 +40,10 @@ import { HomiProvider } from "@/contexts/HomiContext";
 import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
+import PaginaNaoEncontrada from "@/components/layout/PaginaNaoEncontrada";
+import { resolveRoute } from "@/config/pageRegistry";
+import { normalizeLegacyPath } from "@/contexts/TabContext";
+import { useLocation } from "react-router-dom";
 import { FaixaLuzesNatal, GorroNatal } from "@/natal/TemaNatal";
 import { ComemoracaoVenda } from "@/natal/ComemoracaoVenda";
 import MobileBottomNav from "@/components/layout/mobile/MobileBottomNav";
@@ -149,10 +153,17 @@ export default function AppLayout() {
     return () => window.removeEventListener("profile-updated", handler);
   }, [fetchProfile]);
 
+  const location = useLocation();
   // Compute user initials
   const userInitials = nome
     ? nome.trim().split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
     : user?.email?.slice(0, 2).toUpperCase() || "U";
+
+  const rotaInexistente = (() => {
+    const p = normalizeLegacyPath(location.pathname).split("?")[0];
+    if (p === "/" || p === "/index" || p === "/index.html") return false;
+    return !resolveRoute(p);
+  })();
 
   return (
     <SidebarProvider defaultOpen>
@@ -301,6 +312,7 @@ export default function AppLayout() {
             {!isMobile && <TabBar />}
             
             <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative shell-canvas">
+              {rotaInexistente && <PaginaNaoEncontrada />}
               {tabs.map(tab => {
                 const Comp = PAGE_COMPONENTS[tab.componentKey];
                 if (!Comp) return null;

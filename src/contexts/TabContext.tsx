@@ -88,7 +88,7 @@ function loadFromStorage(): { tabs: Tab[]; activeTabId: string } | null {
   return null;
 }
 
-function normalizeLegacyPath(path: string): string {
+export function normalizeLegacyPath(path: string): string {
   if (path === "/pipeline") return "/pipeline-leads";
   if (path.startsWith("/pipeline?")) return path.replace("/pipeline?", "/pipeline-leads?");
   if (path === "/visitas") return "/agenda-visitas";
