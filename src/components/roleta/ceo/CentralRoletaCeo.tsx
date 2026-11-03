@@ -106,7 +106,6 @@ export function CentralRoletaCeo() {
     setActiveSub(sub);
   };
 
-  const currentGroup = NAV_GROUPS.find((g) => g.key === activeGroup) ?? NAV_GROUPS[0];
 
   const renderConteudo = (sub: string) => (
     <>
