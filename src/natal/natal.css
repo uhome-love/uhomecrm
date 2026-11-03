@@ -36,3 +36,14 @@
   background: var(--natal-gold-grad); animation: natal-cair 2.6s ease-in forwards;
 }
 @keyframes natal-cair { to { transform: translateY(420px) rotate(540deg); opacity: 0; } }
+
+/* Fase 5 — comemoração, carregamento */
+.natal-venda-card { background: var(--natal-gold-grad); color: hsl(222 47% 8%); }
+.natal-texto-ouro { background: var(--natal-gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.natal-balanca { animation: natal-balanca 1.2s ease-in-out infinite; transform-origin: top center; }
+@keyframes natal-balanca { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+.natal-flutua { animation: natal-flutua 2.4s ease-in-out infinite; }
+@keyframes natal-flutua { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.natal-carregando { animation: natal-carregando 1.3s ease-in-out infinite; }
+@keyframes natal-carregando { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { .natal-balanca, .natal-flutua, .natal-carregando { animation: none; } }
