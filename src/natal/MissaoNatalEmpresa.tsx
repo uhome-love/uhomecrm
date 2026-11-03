@@ -107,7 +107,7 @@ export function MissaoNatalEmpresa() {
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="rounded-xl border p-3">
           <p className="text-xs font-semibold uppercase text-muted-foreground">Metas dos corretores</p>
-          <p className="mt-1 text-sm"><b>{data.definiram}</b> de {data.total} já definiram · <b>{data.total - data.definiram}</b> ainda não</p>
+          <p className="mt-1 text-sm"><b>{data.definiram}</b> de {data.total} corretores com movimento já definiram · <b>{data.total - data.definiram}</b> ainda não</p>
           <p className="text-sm">Soma das metas: <b>{brlCurto(data.somaMetas)}</b></p>
           <p className="text-[11px] text-muted-foreground">Quem não definiu conta como R$ 1 mi.</p>
         </div>
