@@ -154,6 +154,7 @@ export default function PlacarDoDia() {
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       const ctx = audioCtxRef.current;
+      if (natal && tipo !== "realizada") { tocarVisitaMarcadaNatal(ctx); return; }
       const gainNode = ctx.createGain();
       gainNode.connect(ctx.destination);
       // Realizada = conquista maior: mais alto, sequência mais longa e brilhante

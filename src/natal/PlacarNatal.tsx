@@ -1,3 +1,4 @@
+import hoHoHo from "./ho_ho_ho.mp3.asset.json";
 // Placar de Natal (TV): peças visuais e faixas extras. Removível apagando src/natal/.
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,33 @@ export const NATAL_OURO = "#D4AF37";
 export const NATAL_FUNDO = "radial-gradient(ellipse at center, #141a4a 0%, #0a0a1a 60%, #06060f 100%)";
 export const NATAL_CONFETE = ["#A8202A", "#D4AF37", "#16A34A", "#FFFFFF"];
 export const NATAL_NOTAS_MARCADA = [1319, 1568, 2093];
+
+/** Visita marcada no Natal: sinos tilintando e, em seguida, "Ho ho ho!". */
+export function tocarVisitaMarcadaNatal(ctx: AudioContext) {
+  const t0 = ctx.currentTime;
+  const sinos = [1568, 2093, 1760, 2349, 2093];
+  sinos.forEach((f, i) => {
+    const start = t0 + i * 0.13;
+    [1, 2.76, 5.4].forEach((mult, k) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = f * mult;
+      g.gain.setValueAtTime(k === 0 ? 0.22 : 0.06, start);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + 0.9);
+      osc.connect(g).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.95);
+    });
+  });
+  window.setTimeout(() => {
+    try {
+      const a = new Audio(hoHoHo.url);
+      a.volume = 0.9;
+      void a.play().catch(() => {});
+    } catch (_) { /* sem voz, fica só o sino */ }
+  }, 800);
+}
 export const NATAL_NOTAS_REALIZADA = [659, 659, 659, 659, 659, 659, 659, 784, 523, 587, 659];
 export const NATAL_TITULO_GRAD = "linear-gradient(90deg, #B8860B, #F5D77A, #D4AF37, #F5D77A, #B8860B)";
 
