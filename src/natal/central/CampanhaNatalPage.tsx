@@ -89,8 +89,8 @@ export default function CampanhaNatalPage() {
         : <MissaoNatalCard userId={user?.id} recolhivel />}
 
       <div className="natal-abas-barra sticky top-0 z-20 -mx-3 border-b bg-background/95 px-3 py-2 backdrop-blur md:static md:mx-0 md:rounded-2xl md:border md:bg-card md:p-3">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-          <div className="natal-chips natal-abas-scroll flex gap-4 overflow-x-auto" role="tablist">
+        <div className="flex flex-col gap-3">
+          <div className="natal-chips natal-abas-scroll flex gap-4 overflow-x-auto md:flex-wrap md:gap-x-6 md:gap-y-3 md:overflow-visible" role="tablist">
             {GRUPOS.map((g) => (
               <div key={g.rotulo} className="flex shrink-0 flex-col gap-1">
                 <span className="hidden text-[10px] font-bold uppercase tracking-wide text-muted-foreground md:block">{g.rotulo}</span>
@@ -110,7 +110,7 @@ export default function CampanhaNatalPage() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative flex-1 lg:w-60">
+            <div className="relative flex-1 md:max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nesta aba" className="h-9 pl-8" />
             </div>

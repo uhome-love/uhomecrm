@@ -22,7 +22,7 @@
 }
 @media (min-width: 768px) { .natal-banner-luzes { height: 40px; background-size: auto 40px; } }
 .natal-abas-scroll { mask-image: linear-gradient(to right, #000 88%, transparent); }
-@media (min-width: 1024px) { .natal-abas-scroll { mask-image: none; flex-wrap: wrap; } }
+@media (min-width: 768px) { .natal-abas-scroll { mask-image: none; } }
 .natal-secao-titulo { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.01em; }
 .natal-secao-sub { font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-bottom: 0.75rem; }
 .natal-card-ouro { border-color: hsl(43 74% 60%); box-shadow: 0 6px 20px -12px hsl(43 74% 45% / 0.5); }
