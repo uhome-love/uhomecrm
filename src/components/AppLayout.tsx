@@ -158,7 +158,7 @@ export default function AppLayout() {
   return (
     <SidebarProvider defaultOpen>
       <HomiProvider>
-        <div className="flex h-screen overflow-hidden w-full bg-[#f0f0f5] dark:bg-background">
+        <div className="flex h-screen overflow-hidden w-full shell-canvas">
           <Sidebar
               role={sidebarRole}
               userId={user?.id}
@@ -174,19 +174,16 @@ export default function AppLayout() {
             <ComemoracaoVenda />
             <header
               className={cn(
-                "h-14 flex items-center justify-between sticky top-0 z-50 px-4",
-                theme === "dark"
-                  ? "bg-card border-b border-white/[0.05]"
-                  : "bg-[#f0f0f5] border-b border-[#e4e4e9]"
+                "h-14 flex items-center justify-between gap-4 sticky top-0 z-50 px-4 shell-header"
               )}
               // Área de segurança (notch/barra de status): em aparelho com notch a
               // --sat > 0 e o cabeçalho cresce p/ não ficar escondido; em desktop/sem
               // notch a --sat = 0 e nada muda. Depende de viewport-fit=cover no index.html.
               style={{ paddingTop: "var(--sat)", height: "calc(3.5rem + var(--sat))" }}
             >
-              <div className="flex items-center gap-3">
-                <SidebarTrigger className={cn("hidden md:inline-flex", theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]")} />
-                <div className="relative flex items-center">
+              <div className="flex items-center gap-3 shrink-0">
+                <SidebarTrigger title="Recolher ou abrir o menu" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" />
+                <div className="relative flex items-center md:hidden">
                   <UhomeLogo size="md" />
                   <GorroNatal className="-left-2 -top-3 w-6 md:hidden" />
                 </div>
@@ -198,53 +195,44 @@ export default function AppLayout() {
                 )}
               </div>
 
-              <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-lg"
-                style={theme === "dark"
-                  ? { color: "#52525b", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }
-                  : { color: "#52525b", background: "#f7f7fb", border: "1px solid #e8e8f0" }
-                }
+              <button
+                type="button"
                 onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+                className="shell-search hidden sm:flex flex-1 max-w-[520px] mx-auto items-center gap-2.5 h-10 px-3.5 rounded-xl text-left"
               >
-                <Search className="h-3.5 w-3.5" style={{ color: theme === "dark" ? "#71717a" : "#a1a1aa" }} />
-                <span className="text-[11px]" style={{ color: theme === "dark" ? "#52525b" : "#a1a1aa" }}>Buscar...</span>
-                <kbd className="pointer-events-none ml-1 inline-flex h-5 items-center gap-0.5 rounded px-1 font-mono text-[10px] font-medium" style={theme === "dark"
-                  ? { color: "#52525b", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }
-                  : { color: "#a1a1aa", background: "#f0f0f5", border: "1px solid #e8e8f0" }
-                }>
-                  ⌘K
-                </kbd>
-              </Button>
+                <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="flex-1 truncate text-[13px] text-muted-foreground">Buscar clientes, imóveis, páginas…</span>
+                <kbd className="shell-kbd pointer-events-none inline-flex h-6 items-center rounded-md px-1.5 font-mono text-[10.5px] font-medium">⌘K</kbd>
+              </button>
+
+              <div className="flex items-center gap-1 shrink-0">
               <HomiHeaderButton />
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <Button variant="ghost" className={cn("flex items-center gap-2.5 h-9 px-3 rounded-xl", theme === "dark" ? "hover:bg-white/5" : "hover:bg-[#f0f0f5]")}>
+                   <Button variant="ghost" className="flex items-center gap-2.5 h-10 pl-1.5 pr-2.5 rounded-xl hover:bg-[hsl(var(--shell-nav-hover))]">
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
                         alt={nome || "Avatar"}
-                        className="rounded-full object-cover shrink-0"
-                        style={{ width: 36, height: 36, border: "2px solid #4969FF" }}
+                        className="rounded-full object-cover shrink-0 ring-2 ring-primary/30"
+                        style={{ width: 32, height: 32 }}
                       />
                     ) : (
                       <div
-                        className="flex items-center justify-center rounded-full font-bold text-white text-[11px] shrink-0"
-                        style={{ width: 36, height: 36, background: "#4969FF", border: "2px solid #4969FF" }}
+                        className="flex items-center justify-center rounded-full font-bold bg-primary text-primary-foreground text-[11px] shrink-0"
+                        style={{ width: 32, height: 32 }}
                       >
                         {nome ? nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : <User className="h-4 w-4" />}
                       </div>
                     )}
                     <div className="text-left hidden sm:block">
-                      <p className="leading-tight" style={{ color: theme === "dark" ? "#fafafa" : "#0a0a0a", fontSize: 14, fontWeight: 600 }}>
+                      <p className="leading-tight text-foreground text-[13px] font-semibold">
                         {nome || user?.email?.split("@")[0]}
                       </p>
-                      <p className="leading-tight" style={{ color: theme === "dark" ? "#52525b" : "#71717a", fontSize: 12 }}>{cargoLabel}</p>
+                      <p className="leading-tight text-muted-foreground text-[11.5px]">{cargoLabel}</p>
                     </div>
-                    <ChevronDown className="h-3.5 w-3.5 hidden sm:block" style={{ color: theme === "dark" ? "#71717a" : "#a1a1aa" }} />
+                    <ChevronDown className="h-3.5 w-3.5 hidden sm:block text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -314,7 +302,7 @@ export default function AppLayout() {
 
             {!isMobile && <TabBar />}
             
-            <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-background">
+            <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative shell-canvas">
               {tabs.map(tab => {
                 const Comp = PAGE_COMPONENTS[tab.componentKey];
                 if (!Comp) return null;

@@ -1025,3 +1025,44 @@ body.arena-mode [data-sidebar] {
 
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── Shell do CRM no computador (Fase 1 do padrão desktop) ── */
+@layer base {
+  :root {
+    --shell-canvas: 228 25% 96%;
+    --shell-nav: 228 28% 98%;
+    --shell-nav-border: 228 20% 90%;
+    --shell-nav-label: 228 12% 55%;
+    --shell-nav-text: 225 18% 30%;
+    --shell-nav-hover: 228 60% 95%;
+    --shell-elevated: 0 0% 100%;
+    --shadow-shell: 0 1px 2px hsl(228 30% 20% / 0.04), 0 4px 16px -6px hsl(228 40% 30% / 0.08);
+    --shadow-active-item: 0 1px 2px hsl(228 80% 40% / 0.18), 0 6px 14px -6px hsl(228 100% 55% / 0.45);
+  }
+  .dark {
+    --shell-canvas: 220 22% 8%;
+    --shell-nav: 222 24% 10%;
+    --shell-nav-border: 218 18% 17%;
+    --shell-nav-label: 218 12% 52%;
+    --shell-nav-text: 216 16% 76%;
+    --shell-nav-hover: 220 20% 16%;
+    --shell-elevated: 220 20% 13%;
+    --shadow-shell: 0 1px 2px hsl(0 0% 0% / 0.3);
+    --shadow-active-item: 0 6px 14px -6px hsl(228 100% 60% / 0.55);
+  }
+}
+@layer components {
+  .shell-canvas { background: hsl(var(--shell-canvas)); }
+  .shell-nav { background: hsl(var(--shell-nav)); border-right: 1px solid hsl(var(--shell-nav-border)); }
+  .shell-divider { background: hsl(var(--shell-nav-border)); }
+  .shell-nav-label { color: hsl(var(--shell-nav-label)); }
+  .shell-nav-item { color: hsl(var(--shell-nav-text)); }
+  .shell-nav-item:hover { background: hsl(var(--shell-nav-hover)); color: hsl(var(--foreground)); }
+  .shell-nav-item-active { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 600; box-shadow: var(--shadow-active-item); }
+  .shell-header { background: hsl(var(--shell-canvas) / 0.85); backdrop-filter: saturate(160%) blur(12px); border-bottom: 1px solid hsl(var(--shell-nav-border)); }
+  .shell-search { background: hsl(var(--shell-elevated)); border: 1px solid hsl(var(--shell-nav-border)); box-shadow: var(--shadow-shell); transition: border-color .15s, box-shadow .15s; }
+  .shell-search:hover { border-color: hsl(var(--primary) / 0.45); box-shadow: 0 0 0 3px hsl(var(--primary) / 0.08), var(--shadow-shell); }
+  .shell-kbd { background: hsl(var(--shell-canvas)); border: 1px solid hsl(var(--shell-nav-border)); color: hsl(var(--muted-foreground)); }
+  .shell-tabs { background: hsl(var(--shell-canvas)); border-bottom: 1px solid hsl(var(--shell-nav-border)); }
+  .shell-tab-active { background: hsl(var(--shell-elevated)); color: hsl(var(--foreground)); box-shadow: var(--shadow-shell); border: 1px solid hsl(var(--shell-nav-border)); }
+}
