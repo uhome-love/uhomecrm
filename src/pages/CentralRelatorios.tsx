@@ -64,7 +64,6 @@ export default function CentralRelatorios() {
   }, [rolesLoading, disponiveis, secao, selecionar]);
 
   const atual = getUnifiedSection(secao);
-  const viewAtual = getViewOfSection(secao);
 
   const views = useMemo(
     () =>
