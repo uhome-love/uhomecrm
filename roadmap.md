@@ -1,6 +1,6 @@
 # Roadmap — qualidade visual do CRM
 
-- [ ] A — Erros e números (desenho + plano próprio antes de mexer)
+- [ ] A — Erros e números: preparar desenho e plano; construção aguarda aprovação do Lucas
 - [ ] M0 — Base de movimento e leitura
 - [ ] B — Consistência
 - [ ] M1 — Abrir e trocar (esqueleto, fade de aba)
