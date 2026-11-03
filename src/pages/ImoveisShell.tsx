@@ -22,31 +22,31 @@ export default function ImoveisShell() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center gap-1 border-b border-border bg-background px-4 py-2 shrink-0">
-        <button
-          type="button"
-          onClick={() => setView("buscar")}
-          className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
-            view === "buscar"
-              ? "bg-primary/10 text-primary font-medium"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted",
-          )}
-        >
-          <Home size={14} /> Buscar Imóveis
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("links")}
-          className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
-            view === "links"
-              ? "bg-primary/10 text-primary font-medium"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted",
-          )}
-        >
-          <Link2 size={14} /> Meus Links
-        </button>
+      <div className="flex items-center gap-3 border-b border-border bg-background px-4 py-2 md:py-3 shrink-0">
+        <div className="hidden md:flex items-center gap-3 min-w-0">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Home size={17} strokeWidth={1.6} /></span>
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold leading-tight text-foreground">Imóveis</h1>
+            <p className="truncate text-xs text-muted-foreground">Busque, selecione e compartilhe imóveis com o cliente</p>
+          </div>
+        </div>
+        <div role="tablist" aria-label="Seções de Imóveis" className="md:ml-auto inline-flex items-center gap-0.5 rounded-xl border border-border bg-muted/70 p-1">
+          {([["buscar", "Buscar imóveis", Home], ["links", "Meus links", Link2]] as const).map(([v, label, Icon]) => (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={view === v}
+              onClick={() => setView(v)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all",
+                view === v ? "bg-card font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex-1 min-h-0">
         {view === "links" ? <LinksSite /> : <ImoveisPage />}

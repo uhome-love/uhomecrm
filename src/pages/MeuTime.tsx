@@ -1,16 +1,11 @@
+import { PageHeader } from "@/components/ui/PageHeader";
+import { UsersRound } from "lucide-react";
 import UsuariosTable from "@/components/team/UsuariosTable";
 
 export default function MeuTime() {
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">
-          Meu <span className="text-primary">Time</span>
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gerencie usuários do CRM — criação, edição, perfis, equipes e transferência de dados.
-        </p>
-      </div>
+      <PageHeader title="Usuários" subtitle="Criação, edição, perfis, equipes e transferência de dados do CRM" icon={<UsersRound size={18} strokeWidth={1.5} />} />
 
       <UsuariosTable />
     </div>

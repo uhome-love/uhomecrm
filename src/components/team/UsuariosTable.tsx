@@ -233,16 +233,11 @@ export default function UsuariosTable() {
 }
 
 function StatCard({ label, value, tone }: { label: string; value: number; tone: "emerald" | "slate" | "blue" | "indigo" }) {
-  const toneClass = {
-    emerald: "text-emerald-600 bg-emerald-500/5 border-emerald-500/20",
-    slate: "text-slate-600 bg-slate-500/5 border-slate-500/20",
-    blue: "text-blue-600 bg-blue-500/5 border-blue-500/20",
-    indigo: "text-indigo-600 bg-indigo-500/5 border-indigo-500/20",
-  }[tone];
+  const dot = { emerald: "bg-success-500", slate: "bg-muted-foreground", blue: "bg-primary", indigo: "bg-primary" }[tone];
   return (
-    <div className={`rounded-lg border p-3 ${toneClass}`}>
-      <div className="text-xs uppercase tracking-wide opacity-80">{label}</div>
-      <div className="text-2xl font-semibold mt-0.5">{value}</div>
+    <div className={`rounded-2xl border border-border bg-card p-4 shadow-sm ${value === 0 ? "opacity-60" : ""}`}>
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><span className={`h-2 w-2 rounded-full ${dot}`} />{label}</div>
+      <div className="text-2xl font-bold text-foreground mt-1 tabular-nums">{value}</div>
     </div>
   );
 }
