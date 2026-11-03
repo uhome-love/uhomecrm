@@ -75,6 +75,6 @@ Validação desta etapa: 360/375/393/430px, claro/escuro, períodos e personaliz
 ## Campanha de Natal
 - [x] Passo 1: decoração (luzes, gorro, saudação, neve, botão em Configurações)
 - [x] Passo 2: Minha Missão de Natal (corretor) + metas
-- [ ] Passo 3: Corrida de Natal da equipe (gerente)
+- [x] Passo 3: Corrida de Natal da equipe (gerente) — falta conferir logado como gerente
 - [ ] Passo 4: Placar de Natal (TV)
 - [ ] Passo 5: limpeza após 26/12
