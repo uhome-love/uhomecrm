@@ -4,7 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChevronDown, MessageSquare, AlertTriangle, CheckCircle2, XCircle, HelpCircle, Loader2 } from "lucide-react";
+import { ChevronDown, MessageSquare, AlertTriangle, CheckCircle2, XCircle, HelpCircle, Loader2, Ban } from "lucide-react";
+import { KpiCard } from "@/components/ui/KpiCard";
 import { formatBRT } from "@/lib/brtTime";
 import { useState } from "react";
 
@@ -213,6 +214,16 @@ export default function RespostasRecebidasHoje({
     refetchInterval: 15000,
   });
 
+  // Opt-out não tem data gravada na Base Única: mostramos o total vigente
+  const { data: optOutTotal } = useQuery({
+    queryKey: ["reeng-optout-total"],
+    queryFn: async () => {
+      const { count } = await supabase.from("base_leads").select("id", { count: "exact", head: true }).eq("opt_out", true);
+      return count ?? 0;
+    },
+    staleTime: 60_000,
+  });
+
   const respostas = data ?? [];
   const filtered = filtroOrigem === "all" ? respostas : respostas.filter((r) => r.origem === filtroOrigem);
 
@@ -225,6 +236,13 @@ export default function RespostasRecebidasHoje({
   };
 
   return (
+    <div className="space-y-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" data-testid="reeng-kpis">
+      <KpiCard label="Respostas" value={isLoading ? "…" : stats.total} icon={<MessageSquare size={16} />} hint={`Período: ${periodLabel}`} />
+      <KpiCard label="Sim" value={isLoading ? "…" : stats.sim} icon={<CheckCircle2 size={16} />} variant={stats.sim > 0 ? "success" : "default"} hint="Quiseram receber contato" />
+      <KpiCard label="Não" value={isLoading ? "…" : stats.nao} icon={<XCircle size={16} />} variant={stats.nao > 0 ? "danger" : "default"} hint={stats.outro > 0 ? `${stats.outro} sem classificação` : "Sem interesse"} />
+      <KpiCard label="Opt-out" value={optOutTotal ?? "…"} icon={<Ban size={16} />} variant="warning" hint="Total da base · não recebem mais disparos" />
+    </div>
     <Card className="border-emerald-200 bg-emerald-50/30">
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger className="w-full">
@@ -320,5 +338,6 @@ export default function RespostasRecebidasHoje({
         </CollapsibleContent>
       </Collapsible>
     </Card>
+    </div>
   );
 }
