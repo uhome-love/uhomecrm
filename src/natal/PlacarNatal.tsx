@@ -1,3 +1,4 @@
+import hoHoHo from "./ho_ho_ho.mp3.asset.json";
 // Placar de Natal (TV): peças visuais e faixas extras. Removível apagando src/natal/.
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
