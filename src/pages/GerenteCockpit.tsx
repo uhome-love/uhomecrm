@@ -135,7 +135,7 @@ function GerenteCockpitVisaoGeral() {
           subtitle={`Time bom é time que anda junto — bora fechar o mês.${data ? ` · ${data.corretores_total} corretores` : ""}`}
           showFilter={false}
         />
-        <CorridaNatalEquipe gerenteId={user?.id} />
+        <CorridaNatalEquipe gerenteId={user?.id} recolhivel />
 
         {isLoading || !data || !d ? (
           <div className="grid gap-3 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800" />)}</div>

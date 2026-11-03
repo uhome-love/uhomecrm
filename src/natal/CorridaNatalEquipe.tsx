@@ -5,7 +5,9 @@ import { todayBRT } from "@/lib/brtTime";
 import { CAMPANHA_FIM, CAMPANHA_INICIO, isNatal } from "./config";
 import { brlCurto, META_EQUIPE, META_VGV_MINIMA, META_VISITAS_PADRAO, segundaDaSemana } from "./missao";
 import { BarraOuro } from "./MissaoNatalCard";
-import { NeveSuave } from "./NeveSuave";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import "./natal.css";
 
 type Status = "No ritmo" | "Atenção" | "Parado";
@@ -73,8 +75,9 @@ function useCorrida(gerenteId?: string) {
 }
 
 /** Quadro só de leitura no topo do painel do gerente: a equipe dele na campanha de Natal. */
-export function CorridaNatalEquipe({ gerenteId }: { gerenteId?: string }) {
+export function CorridaNatalEquipe({ gerenteId, recolhivel = false }: { gerenteId?: string; recolhivel?: boolean }) {
   const ativo = isNatal();
+  const [aberto, setAberto] = useState(!recolhivel);
   const { data } = useCorrida(ativo ? gerenteId : undefined);
   if (!ativo || !data) return null;
   const vgv = data.totais.vgv_assinado;
@@ -87,32 +90,49 @@ export function CorridaNatalEquipe({ gerenteId }: { gerenteId?: string }) {
   const abaixo = data.linhas.filter((l) => l.status === "Atenção");
   const semMeta = data.linhas.filter((l) => !l.definiu).length;
   const medalha = ["🥇", "🥈", "🥉"];
+  const pctEquipe = Math.round((vgv / META_EQUIPE) * 100);
+  const nomeEquipe = data.equipeNome ? `Equipe ${data.equipeNome}` : "Sua equipe";
+  const ouro = { color: "hsl(var(--natal-gold))" };
 
   return (
     <section className="space-y-3">
-      <div className="natal-noite natal-borda-ouro relative overflow-hidden rounded-2xl p-5">
-        <NeveSuave altura={180} flocos={20} />
-        <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none absolute bottom-0 right-3 hidden h-28 select-none lg:block" />
-        <div className="relative grid gap-5 lg:grid-cols-[1.3fr_1fr] lg:pr-28">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider opacity-70">Corrida de Natal · 02/11 a 18/12</p>
-            <p className="mt-1 text-sm font-semibold">{data.equipeNome ? `Equipe ${data.equipeNome}` : "Sua equipe"}</p>
-            <p className="mt-1 text-3xl font-extrabold" style={{ color: "hsl(var(--natal-gold))" }}>{brlCurto(vgv)}</p>
-            <p className="text-xs opacity-70">de R$ 10 mi · faltam {brlCurto(Math.max(0, META_EQUIPE - vgv))}</p>
-            <div className="mt-4"><BarraOuro pct={(vgv / META_EQUIPE) * 100} chave /></div>
-          </div>
-          <div className="space-y-2">
-            {data.outras.map((e) => (
-              <div key={e.equipe}>
-                <div className="mb-1 flex justify-between text-xs"><span>Equipe {e.equipe}</span><b>{brlCurto(e.totais.vgv_assinado)}</b></div>
-                <BarraOuro pct={(e.totais.vgv_assinado / META_EQUIPE) * 100} fina />
-              </div>
-            ))}
-            <p className="pt-1 text-[11px] opacity-80">Equipe que fizer R$ 10 mi: gerente ganha 2 diárias no Rosa com acompanhante.</p>
-          </div>
+      <div className="natal-borda-ouro rounded-2xl border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm font-bold">🎄 Corrida de Natal · {nomeEquipe}</p>
+          <p className="text-sm text-muted-foreground">
+            <b className="text-foreground">{brlCurto(vgv)}</b> de R$ 10 mi ({pctEquipe}%)
+          </p>
+          <div className="min-w-[120px] flex-1"><BarraOuro pct={pctEquipe} fina /></div>
+          {recolhivel && (
+            <Button variant="ghost" size="sm" onClick={() => setAberto((v) => !v)}>
+              {aberto ? "Recolher" : "Ver detalhes"}
+              <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${aberto ? "rotate-180" : ""}`} />
+            </Button>
+          )}
         </div>
+
+        {aberto && (
+          <div className="mt-4 grid gap-5 border-t pt-4 lg:grid-cols-[1.3fr_1fr]">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={ouro}>02/11 a 18/12</p>
+              <p className="mt-1 text-3xl font-extrabold" style={ouro}>{brlCurto(vgv)}</p>
+              <p className="text-xs text-muted-foreground">de R$ 10 mi · faltam {brlCurto(Math.max(0, META_EQUIPE - vgv))}</p>
+              <div className="mt-4"><BarraOuro pct={(vgv / META_EQUIPE) * 100} chave /></div>
+            </div>
+            <div className="space-y-2">
+              {data.outras.map((e) => (
+                <div key={e.equipe}>
+                  <div className="mb-1 flex justify-between text-xs"><span>Equipe {e.equipe}</span><b>{brlCurto(e.totais.vgv_assinado)}</b></div>
+                  <BarraOuro pct={(e.totais.vgv_assinado / META_EQUIPE) * 100} fina />
+                </div>
+              ))}
+              <p className="pt-1 text-[11px] text-muted-foreground">Equipe que fizer R$ 10 mi: gerente ganha 2 diárias no Rosa com acompanhante.</p>
+            </div>
+          </div>
+        )}
       </div>
 
+      {aberto && (<>
       <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
         {numeros.map(([rot, v]) => (
           <div key={rot} className="rounded-lg border bg-card p-2 text-center">
@@ -163,6 +183,7 @@ export function CorridaNatalEquipe({ gerenteId }: { gerenteId?: string }) {
           </div>
         </div>
       </div>
+      </>)}
     </section>
   );
 }
