@@ -75,7 +75,7 @@ export default function EscritorioKpiHeader({ escritorio, onFilterSaude, onOpenN
         </span>
       </div>
       {diferencaResumo !== 0 && (
-        <p role="status" className="text-xs text-warning-600">
+        <p role="status" className="text-xs text-warning-700">
           {Math.abs(diferencaResumo).toLocaleString("pt-BR")} {Math.abs(diferencaResumo) === 1 ? "registro de diferença" : "registros de diferença"} entre o resumo e a classificação de saúde · em revisão.
         </p>
       )}
