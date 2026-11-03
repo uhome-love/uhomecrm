@@ -393,6 +393,13 @@
       "when": 1793665427445,
       "tag": "0055_campanha_natal_metas",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1793667108185,
+      "tag": "0056_rpc_placar_natal",
+      "breakpoints": true
     }
   ]
 }
