@@ -7,6 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Medal, Phone, ThumbsUp, TrendingUp, Loader2, Flame, Filter } from "lucide-react";
 import { getLevel } from "@/lib/gamification";
+import { KpiCard } from "@/components/ui/KpiCard";
 
 const TEAM_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   default: { bg: "rgba(107,114,128,0.15)", text: "#9CA3AF", border: "rgba(107,114,128,0.3)" },
@@ -86,6 +87,15 @@ export default function RankingOfertaAtiva() {
     return ranking.filter(r => teamMembersMap[r.corretor_id] === teamFilter);
   }, [ranking, teamFilter, teamMembersMap]);
 
+  const totais = useMemo(() => {
+    const ligacoes = filteredRanking.reduce((s, r) => s + (r.tentativas || 0), 0);
+    const aproveitados = filteredRanking.reduce((s, r) => s + (r.aproveitados || 0), 0);
+    const pontos = filteredRanking.reduce((s, r) => s + (r.pontos || 0), 0);
+    const ativos = filteredRanking.filter(r => (r.tentativas || 0) > 0).length;
+    const taxa = ligacoes > 0 ? Math.round((aproveitados / ligacoes) * 100) : 0;
+    return { ligacoes, aproveitados, pontos, ativos, taxa };
+  }, [filteredRanking]);
+
   const getInitials = (nome: string) =>
     nome.split(" ").map(n => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 
@@ -161,6 +171,16 @@ export default function RankingOfertaAtiva() {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Cartões de números — soma exata das linhas do ranking exibido */}
+      {!isLoading && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" data-testid="oa-kpis">
+          <KpiCard label="Ligações" value={totais.ligacoes} icon={<Phone size={16} />} hint={teamFilter === "todos" ? "Todos os corretores" : `Equipe ${teamFilter}`} />
+          <KpiCard label="Aproveitados" value={totais.aproveitados} icon={<ThumbsUp size={16} />} variant={totais.aproveitados > 0 ? "success" : "default"} />
+          <KpiCard label="Taxa de aproveitamento" value={`${totais.taxa}%`} icon={<TrendingUp size={16} />} hint="Aproveitados ÷ ligações" />
+          <KpiCard label="Corretores ligando" value={totais.ativos} icon={<Flame size={16} />} hint={`${totais.pontos} pontos no total`} />
         </div>
       )}
 
@@ -261,9 +281,20 @@ export default function RankingOfertaAtiva() {
                     >
                       <td className="py-2.5 px-3">
                         {posIcon ? (
-                          <span className="text-base">{posIcon}</span>
+                          <span
+                            aria-label={`${i + 1}º lugar`}
+                            className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black shadow-sm ring-2 ${
+                              isTop1
+                                ? "bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 ring-amber-200"
+                                : isTop2
+                                ? "bg-gradient-to-br from-slate-200 to-slate-400 text-slate-900 ring-slate-100"
+                                : "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-950 ring-orange-200"
+                            }`}
+                          >
+                            {i + 1}
+                          </span>
                         ) : (
-                          <span className="text-sm font-bold w-5 text-center inline-block text-muted-foreground">{i + 1}</span>
+                          <span className="text-sm font-bold w-7 text-center inline-block text-muted-foreground">{i + 1}</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">
