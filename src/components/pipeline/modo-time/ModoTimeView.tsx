@@ -17,6 +17,7 @@ import ModoTimeTabela from "./ModoTimeTabela";
 import ModoTimeAlertas from "./ModoTimeAlertas";
 import ModoTimeVisitas from "./ModoTimeVisitas";
 import { loadModoTimeView, saveModoTimeView, type ModoTimeView as ViewMode } from "./ModoTimeSwitcher";
+import { modoTimeContext } from "@/lib/modoTimeContext";
 
 interface Props {
   gestorId: string;
@@ -28,6 +29,7 @@ interface Props {
   gestorOwnRow: TimeAgregadoRow | null;
   /** Click num alerta → aplica filtro no Kanban e troca aba. */
   onApplyAlertAction: (action: AlertaAction) => void;
+  onContextChange: (label: string) => void;
 }
 
 export default function ModoTimeView({
@@ -36,6 +38,7 @@ export default function ModoTimeView({
   onSelectCorretor,
   gestorOwnRow,
   onApplyAlertAction,
+  onContextChange,
 }: Props) {
   const { data: rows = [], isLoading, error } = useTimeAgregado(gestorId);
   const hasOwnLeads = ownLeadsCount > 0;
@@ -57,6 +60,14 @@ export default function ModoTimeView({
     if (view === "meus_leads") return gestorOwnRow ? [gestorOwnRow] : [];
     return rows;
   }, [view, rows, gestorOwnRow]);
+
+  useEffect(() => {
+    onContextChange(
+      isLoading ? "Time · carregando…"
+        : error ? "Time · resumo indisponível"
+        : modoTimeContext(displayRows, view === "meus_leads")
+    );
+  }, [displayRows, view, isLoading, error, onContextChange]);
 
   const subtitle =
     view === "meu_time" && rows.length > 0

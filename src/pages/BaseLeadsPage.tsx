@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Database, Users, Rocket, ListChecks } from "lucide-react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useMatch } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useBaseLeadsResumo } from "@/hooks/useBaseLeads";
@@ -25,11 +25,12 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 }
 
 export default function BaseLeadsPage() {
+  const activeSource = useMatch("/base-leads");
   const { isAdmin, isDiretor } = useUserRole();
   const [tab, setTab] = useState("base");
   const { data: resumo } = useBaseLeadsResumo();
 
-  if (!isAdmin && !isDiretor) return <Navigate to="/" replace />;
+  if (!isAdmin && !isDiretor) return activeSource ? <Navigate to="/" replace /> : null;
 
   const fmt = (n?: number) => (n ?? 0).toLocaleString("pt-BR");
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Phone, Settings2, BarChart3, Layers, Rocket, Database, Archive } from "lucide-react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import TemplateManager from "@/components/oferta-ativa/TemplateManager";
 import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel";
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
@@ -41,13 +41,15 @@ const FILTRO_VAZIO: BaseLeadsFiltro = {
 
 
 export default function OfertaAtiva() {
+  const location = useLocation();
   const { isAdmin, isGestor, isCorretor, isDiretor } = useUserRole();
   const [activeTab, setActiveTab] = useState("campanhas");
   const [configSub, setConfigSub] = useState("radar");
   const [criarOpen, setCriarOpen] = useState(false);
 
   if (isCorretor && !isGestor && !isAdmin) {
-    return <Navigate to="/corretor/call" replace />;
+    // Abas inativas ficam montadas: somente esta URL pode disparar o redirect.
+    return location.pathname === "/oferta-ativa" ? <Navigate to="/corretor/call" replace /> : null;
   }
 
   const tabs = isAdmin || isGestor ? TABS : TABS.filter((t) => t.value !== "config");

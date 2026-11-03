@@ -131,6 +131,7 @@ export default function PipelineKanban() {
     ? ["time", "kanban", "negocios"]
     : ["kanban", "negocios"];
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [timeContextLabel, setTimeContextLabel] = useState("Time · carregando…");
 
   // Default determinístico por role — sem persistência.
   // Persistir em localStorage gerava bug: um clique acidental em outra aba
@@ -730,6 +731,7 @@ export default function PipelineKanban() {
         hasAnyFilter={hasAnyFilter}
         clearAllFilters={clearAllFilters}
         activeTab={activeTab as string}
+        timeContextLabel={timeContextLabel}
         setActiveTab={setActiveTab as (v: string) => void}
         refreshing={refreshing}
         handleRefresh={handleRefresh}
@@ -830,6 +832,7 @@ export default function PipelineKanban() {
                 authUser?.id ? (
                   <ModoTimeView
                     gestorId={authUser.id}
+                    onContextChange={setTimeContextLabel}
                     ownLeadsCount={(pipeline.leads || []).filter((l) => l.corretor_id === authUser.id).length}
                     onSelectCorretor={(corretorId) => {
                       setCorretorFilter(corretorId);

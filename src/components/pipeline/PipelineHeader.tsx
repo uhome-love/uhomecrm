@@ -95,6 +95,7 @@ export interface PipelineHeaderProps {
 
   // Tabs / views
   activeTab: string;
+  timeContextLabel?: string;
   setActiveTab: (v: string) => void;
 
   // Actions
@@ -212,6 +213,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     negocioSaudeFilter = null, setNegocioSaudeFilter,
     hasAnyFilter, clearAllFilters,
     activeTab, setActiveTab,
+    timeContextLabel,
     refreshing, handleRefresh, setAddOpen, setFocusModeOpen,
     filaCeoFilter, setFilaCeoFilter, openDispatch,
     selectionMode, setSelectionMode, clearSelection,
@@ -279,6 +281,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           : equipesOverview.data
           ? `Empresa · ${equipesOverview.data.escritorio.total_leads_ativos.toLocaleString("pt-BR")} no resumo`
           : "Empresa · carregando…")
+      : activeTab === "time"
+      ? (timeContextLabel ?? "Time · carregando…")
       : `${filteredLeadsCount} ativos`;
 
   // ── Colapsar a 3ª linha (ferramentas) — lembra a escolha por usuário ──
@@ -344,7 +348,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
             <span className="text-[26px] sm:text-[16px] font-extrabold sm:font-bold text-foreground tracking-[-0.6px] sm:tracking-[-0.3px] whitespace-nowrap">Pipeline</span>
-            <span title={pipelineAtivoSplit && activeTab !== "negocios" && activeTab !== "equipes" ? `${pipelineAtivoSplit.leads} em Leads · ${pipelineAtivoSplit.negocios} em Negócios (Ganhos ficam no botão Ganhos)` : undefined}><PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={activeTab === "equipes" ? "todos" : gestorFilter} /></span>
+            <span title={pipelineAtivoSplit && activeTab === "kanban" ? `${pipelineAtivoSplit.leads} em Leads · ${pipelineAtivoSplit.negocios} em Negócios (Ganhos ficam no botão Ganhos)` : undefined}><PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={activeTab === "equipes" ? "todos" : gestorFilter} /></span>
           </div>
 
           <div className="ml-auto flex items-center gap-3">

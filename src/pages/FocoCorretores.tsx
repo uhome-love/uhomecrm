@@ -8,7 +8,7 @@ import { FocoDadosTab } from "@/components/foco/FocoDadosTab";
 import { FocoEmpreendimentosTab } from "@/components/foco/FocoEmpreendimentosTab";
 import { ProdutosNaoIdentificadosCard } from "@/components/foco/ProdutosNaoIdentificadosCard";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Navigate } from "react-router-dom";
+import { Navigate, useMatch } from "react-router-dom";
 
 type Tab = "alocacao" | "dados" | "empreendimentos";
 
@@ -18,11 +18,12 @@ type Tab = "alocacao" | "dados" | "empreendimentos";
  * habilita/desabilita empreendimentos (Empreendimentos).
  */
 export default function FocoCorretores() {
+  const activeSource = useMatch("/foco-corretores");
   const { isAdmin, isDiretor, isGestor, loading } = useUserRole();
   const [tab, setTab] = useState<Tab>("alocacao");
 
   if (loading) return null;
-  if (!(isAdmin || isDiretor || isGestor)) return <Navigate to="/" replace />;
+  if (!(isAdmin || isDiretor || isGestor)) return activeSource ? <Navigate to="/" replace /> : null;
 
   const canManageEmpreendimentos = isAdmin || isDiretor;
 
