@@ -150,21 +150,21 @@ export default function TarefasCorretor() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex flex-wrap items-start gap-3">
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-foreground">Tarefas</h1>
-          <p className="text-[13px] text-muted-foreground">Organize seus próximos passos com cada cliente</p>
+          <h1 className="text-[24px] font-bold tracking-[-0.4px] text-foreground leading-tight">Tarefas</h1>
+          <p className="text-[13px] text-muted-foreground mt-1">Organize seus próximos passos com cada cliente</p>
         </div>
         {isGestao && (
-          <select value={visao} onChange={(e) => setVisao(e.target.value)} className="rounded-lg border border-border bg-card px-2.5 py-2 text-[13px]">
+          <select value={visao} onChange={(e) => setVisao(e.target.value)} className="h-9 rounded-[10px] border border-border bg-card px-3 text-[13px] font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="me">Minhas tarefas</option>
             <option value="time">Todo o time (só ver)</option>
             {(equipe.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         )}
         {!somenteLeitura && (
-          <button type="button" onClick={() => setCriar({ open: true, lead: null })} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90">
+          <button type="button" onClick={() => setCriar({ open: true, lead: null })} className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-sm hover:bg-primary/90">
             <Plus className="h-4 w-4" /> Nova tarefa
           </button>
         )}

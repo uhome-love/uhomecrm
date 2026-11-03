@@ -37,16 +37,16 @@ export default function GlobalDateFilterBar({ variant = "inline", className }: P
   };
 
   return (
-    <div className={cn("flex items-center gap-1 flex-wrap mb-4", className)}>
+    <div className={cn("inline-flex items-center gap-0.5 p-1 rounded-xl bg-muted/70 border border-border flex-wrap mb-4", className)}>
       {PERIODS.map(p => (
         <button
           key={p.key}
           onClick={() => setPeriod(p.key)}
           className={cn(
-            "px-3 py-1.5 text-[13px] font-medium rounded-[7px] transition-all",
+            "h-7 px-3 text-[12.5px] font-medium rounded-lg transition-all whitespace-nowrap",
             period === p.key
-              ? "bg-primary text-white"
-              : "text-[#71717a] hover:text-[#0a0a0a] hover:bg-[#e8e8f0] dark:hover:text-white dark:hover:bg-white/[0.08]"
+              ? "bg-card text-foreground font-semibold shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           {p.label}
@@ -57,10 +57,10 @@ export default function GlobalDateFilterBar({ variant = "inline", className }: P
         <PopoverTrigger asChild>
           <button
             className={cn(
-              "px-3 py-1.5 text-[13px] font-medium rounded-[7px] transition-all flex items-center gap-1.5",
+              "h-7 px-3 text-[12.5px] font-medium rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap",
               period === "custom"
-                ? "bg-primary text-white"
-                : "text-[#71717a] hover:text-[#0a0a0a] hover:bg-[#e8e8f0] dark:hover:text-white dark:hover:bg-white/[0.08]"
+                ? "bg-card text-foreground font-semibold shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <CalendarRange className="h-3 w-3" />

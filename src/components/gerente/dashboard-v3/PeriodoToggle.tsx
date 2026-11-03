@@ -14,16 +14,16 @@ const OPTIONS: { value: PeriodoV3; label: string }[] = [
 
 export function PeriodoToggle({ value, onChange }: Props) {
   return (
-    <div className="inline-flex rounded-xl border border-border bg-card p-1 shadow-sm">
+    <div className="inline-flex gap-0.5 rounded-xl border border-border bg-muted/70 p-1">
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            "px-4 py-1.5 text-sm font-medium rounded-lg transition-colors",
+            "h-7 px-3.5 text-[12.5px] font-medium rounded-lg transition-all",
             value === opt.value
-              ? "bg-primary text-primary-foreground shadow-sm"
+              ? "bg-card text-foreground font-semibold shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
