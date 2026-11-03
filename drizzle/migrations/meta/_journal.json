@@ -400,6 +400,13 @@
       "when": 1793667108185,
       "tag": "0056_rpc_placar_natal",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1793671110989,
+      "tag": "0057_placar_natal_desde_01_11",
+      "breakpoints": true
     }
   ]
 }
