@@ -3,60 +3,80 @@ import { CAMPANHA, EMPREENDIMENTOS, FOLLOWUPS, PREMIOS, REGRAS, SCRIPTS, SEMANAS
 import { BotoesTexto, TextoMarcado } from "./Pecas";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Download } from "lucide-react";
+import type React from "react";
 import { baixarMaterial, type Material } from "./useMateriais";
 
 const fmt = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const bate = (busca: string, ...t: string[]) => !busca || t.join(" ").toLowerCase().includes(busca.toLowerCase());
 
-export function AbaVisaoGeral() {
+function Secao({ titulo, sub, children }: { titulo: string; sub?: string; children: React.ReactNode }) {
+  return <section><h3 className="natal-secao-titulo">{titulo}</h3>{sub ? <p className="natal-secao-sub">{sub}</p> : <div className="mb-3" />}{children}</section>;
+}
+const CORES_URNA = ["hsl(var(--muted-foreground))", "hsl(43 74% 52%)", "hsl(var(--primary))"];
+
+export function AbaVisaoGeral({ busca = "" }: { busca?: string }) {
   const hoje = todayBRT();
+  const premios = PREMIOS.filter((p) => bate(busca, p.quem, p.titulo, p.texto));
+  const regras = REGRAS.filter((r) => bate(busca, r.titulo, r.texto));
   return (
-    <div className="space-y-6">
-      <div className="natal-card p-4"><p className="text-sm font-semibold">{CAMPANHA.missao.texto}</p></div>
-      <section>
-        <h3 className="mb-2 font-bold">A conta: {CAMPANHA.conta.frase}</h3>
+    <div className="space-y-8">
+      <div className="natal-card natal-card-ouro flex items-start gap-3 p-4"><span className="text-2xl">🔑</span><p className="text-sm font-semibold md:text-base">{CAMPANHA.missao.texto}</p></div>
+      <Secao titulo="Sua meta em 3 passos" sub={`A conta: ${CAMPANHA.conta.frase}`}>
         <div className="grid gap-3 md:grid-cols-3">
-          {CAMPANHA.conta.caminhos.map((c) => (
-            <div key={c.titulo} className="natal-card p-4"><p className="font-semibold">{c.titulo}</p><p className="text-sm">{c.visitas}</p><p className="mt-1 text-xs text-muted-foreground">{c.exemplos}</p></div>
-          ))}
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">{CAMPANHA.conta.rotina}</p>
-      </section>
-      <section>
-        <h3 className="mb-2 font-bold">Prêmios</h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {PREMIOS.map((p) => (
-            <div key={p.titulo} className="natal-card p-4"><p className="text-[11px] font-bold uppercase text-muted-foreground">{p.quem}</p><p className="font-semibold">{p.titulo}</p><p className="mt-1 text-xs">{p.texto}</p></div>
-          ))}
-        </div>
-      </section>
-      <section>
-        <h3 className="mb-2 font-bold">Regras</h3>
-        <ol className="natal-card list-decimal space-y-2 p-4 pl-8 text-sm">
-          {REGRAS.map((r) => <li key={r.titulo}><b>{r.titulo}</b> {r.texto}</li>)}
-        </ol>
-      </section>
-      <section>
-        <h3 className="mb-2 font-bold">Urna Premiada · {URNA.reduce((s, n) => s + n.cartoes, 0)} cartões</h3>
-        <div className="grid gap-3 md:grid-cols-3">
-          {URNA.map((n) => (
-            <div key={n.nivel} className="natal-card p-4">
-              <p className="font-semibold">{"⭐".repeat(n.estrelas)} {n.nivel} · {n.cartoes} cartões</p>
-              <p className="text-xs text-muted-foreground">{n.faixa}</p>
-              <ul className="mt-2 space-y-1 text-sm">{n.itens.map((i) => <li key={i.nome}>{i.qtd}× {i.nome}</li>)}</ul>
+          {CAMPANHA.conta.caminhos.map((c, i) => (
+            <div key={c.titulo} className="natal-card flex gap-3 p-4">
+              <span className="natal-num">{i + 1}</span>
+              <div><p className="font-semibold">{c.titulo}</p><p className="text-sm">{c.visitas}</p><p className="mt-1 text-xs text-muted-foreground">{c.exemplos}</p></div>
             </div>
           ))}
         </div>
-      </section>
-      <section>
-        <h3 className="mb-2 font-bold">Semanas do prêmio surpresa</h3>
+        <p className="mt-3 rounded-xl bg-muted/60 p-3 text-sm">💡 {CAMPANHA.conta.rotina}</p>
+      </Secao>
+      {premios.length > 0 && (
+        <Secao titulo="Prêmios" sub="O que cada um pode ganhar até 18/12.">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {premios.map((p) => (
+              <div key={p.titulo} className="natal-card natal-card-ouro p-4">
+                <span className="natal-chip-ouro inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase">{p.quem}</span>
+                <p className="mt-2 text-base font-bold">🏆 {p.titulo}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{p.texto}</p>
+              </div>
+            ))}
+          </div>
+        </Secao>
+      )}
+      {regras.length > 0 && (
+        <Secao titulo="Regras">
+          <div className="grid gap-3 md:grid-cols-2">
+            {regras.map((r, i) => (
+              <div key={r.titulo} className="natal-card flex gap-3 p-4"><span className="natal-num">{i + 1}</span><p className="text-sm"><b>{r.titulo}</b> {r.texto}</p></div>
+            ))}
+          </div>
+        </Secao>
+      )}
+      <Secao titulo={`Urna Premiada · ${URNA.reduce((s, n) => s + n.cartoes, 0)} cartões`} sub="Cliente que assinar tira um cartão da urna.">
+        <div className="grid gap-3 md:grid-cols-3">
+          {URNA.map((n, i) => (
+            <div key={n.nivel} className="natal-card overflow-hidden">
+              <div className="natal-urna-faixa" style={{ background: CORES_URNA[i % 3] }} />
+              <div className="p-4">
+                <p className="font-bold">{"⭐".repeat(n.estrelas)} {n.nivel}</p>
+                <p className="text-xs text-muted-foreground">{n.cartoes} cartões · {n.faixa}</p>
+                <ul className="mt-3 space-y-1.5 text-sm">{n.itens.map((it) => <li key={it.nome} className="flex justify-between gap-2 border-b border-dashed pb-1 last:border-0"><span>{it.nome}</span><b>{it.qtd}×</b></li>)}</ul>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Secao>
+      <Secao titulo="Semanas do prêmio surpresa" sub="Quem mais realizar visitas na Uhome toda, de segunda a domingo.">
         <div className="flex flex-wrap gap-2">
           {SEMANAS.map((s) => {
-            const atual = hoje >= s.inicio && hoje <= s.fim;
-            return <span key={s.semana} className={`rounded-full border px-3 py-1 text-sm ${atual ? "natal-chip-ouro font-bold" : "bg-card"}`}>{s.semana} · {fmt(s.inicio)} a {fmt(s.fim)}</span>;
+            const atual = hoje >= s.inicio && hoje <= s.fim; const passou = hoje > s.fim;
+            return <span key={s.semana} className={`rounded-full border px-3 py-1 text-sm ${atual ? "natal-chip-ouro font-bold" : passou ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}>{s.semana} · {fmt(s.inicio)} a {fmt(s.fim)}{atual ? " · agora" : ""}</span>;
           })}
         </div>
-      </section>
+      </Secao>
     </div>
   );
 }
@@ -64,7 +84,7 @@ export function AbaVisaoGeral() {
 export function AbaEmpreendimentos({ busca, porChave, urls }: { busca: string; porChave: Record<string, Material>; urls: Record<string, string> }) {
   const lista = EMPREENDIMENTOS.filter((e) => bate(busca, e.nome, e.incorporadora, e.local, e.gancho));
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {lista.map((e) => {
         const foto = porChave[e.arquivos.foto]; const card = porChave[e.arquivos.card]; const disp = porChave[e.arquivos.disparo];
         return (
@@ -78,12 +98,12 @@ export function AbaEmpreendimentos({ busca, porChave, urls }: { busca: string; p
               <p className="text-sm">a partir de <b>{e.aPartirDe}</b></p>
               <ul className="text-xs text-muted-foreground">{e.linhas.map((l) => <li key={l.tipo}>{l.tipo}: {l.valor}</li>)}</ul>
               <div className="flex flex-wrap gap-1">{e.selos.map((s) => <span key={s.texto} className="rounded-md bg-destructive/10 px-1.5 py-0.5 text-[11px] text-destructive">{s.texto}</span>)}</div>
-              <div className="rounded-lg bg-muted/50 p-2"><p className="text-[11px] font-bold">Gancho pronto</p><TextoMarcado texto={e.gancho} /></div>
+              <div className="rounded-xl bg-muted/50 p-3"><p className="mb-1 text-[11px] font-bold uppercase text-muted-foreground">Gancho pronto</p><TextoMarcado texto={e.gancho} /></div>
               <div className="mt-auto space-y-2">
                 <BotoesTexto texto={e.gancho} />
                 <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" variant="outline" disabled={!card} onClick={() => card && baixarMaterial(card)}>Card</Button>
-                  <Button size="sm" variant="outline" disabled={!disp} onClick={() => disp && baixarMaterial(disp)}>Disparo</Button>
+                  <Button size="sm" variant="outline" disabled={!card} title={card ? "Baixar card" : "O card ainda não foi publicado"} onClick={() => card && baixarMaterial(card)}><Download className="mr-1 h-4 w-4" />Card</Button>
+                  <Button size="sm" variant="outline" disabled={!disp} title={disp ? "Baixar disparo" : "O disparo ainda não foi publicado"} onClick={() => disp && baixarMaterial(disp)}><Download className="mr-1 h-4 w-4" />Disparo</Button>
                 </div>
               </div>
             </div>

@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Download, Share2 } from "lucide-react";
+import { Copy, Download, MessageCircle, Share2 } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
 import { partesColchetes } from "./arquivos";
 import { abrirWhatsApp, baixarMaterial, compartilharMaterial, copiarTexto, type Material } from "./useMateriais";
 
@@ -17,7 +19,7 @@ export function BotoesTexto({ texto, rotuloWhats = "WhatsApp" }: { texto: string
   return (
     <div className="grid grid-cols-2 gap-2">
       <Button size="sm" onClick={() => copiarTexto(texto)}><Copy className="mr-1 h-4 w-4" />Copiar</Button>
-      <Button size="sm" variant="outline" className="natal-btn-whats" onClick={() => abrirWhatsApp(texto)}>{rotuloWhats}</Button>
+      <Button size="sm" variant="outline" className="natal-btn-whats" onClick={() => abrirWhatsApp(texto)}><MessageCircle className="mr-1 h-4 w-4" />{rotuloWhats}</Button>
     </div>
   );
 }
@@ -28,10 +30,16 @@ export function Vazio() {
 
 export function CardArquivo({ m, url }: { m: Material; url?: string }) {
   const pdf = m.arquivo_path.toLowerCase().endsWith(".pdf");
+  const [zoom, setZoom] = useState(false);
   return (
     <div className="natal-card overflow-hidden">
+      {url && !pdf && (
+        <Dialog open={zoom} onOpenChange={setZoom}>
+          <DialogContent className="max-w-3xl p-2"><DialogTitle className="sr-only">{m.titulo}</DialogTitle><img src={url} alt={m.titulo} className="max-h-[80vh] w-full rounded-lg object-contain" /></DialogContent>
+        </Dialog>
+      )}
       {pdf ? null : url
-        ? <img src={url} alt={m.titulo} loading="lazy" className="aspect-square w-full bg-muted object-cover" />
+        ? <button type="button" onClick={() => setZoom(true)} className="block w-full" aria-label={`Ver ${m.titulo} em tela cheia`}><img src={url} alt={m.titulo} loading="lazy" className="aspect-square w-full bg-muted object-cover transition-transform hover:scale-[1.02]" /></button>
         : <Skeleton className="aspect-square w-full" />}
       <div className="space-y-2 p-3">
         <p className="truncate text-sm font-semibold">{m.titulo}</p>

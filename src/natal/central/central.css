@@ -15,3 +15,16 @@
 }
 .natal-btn-whats:hover { background: hsl(145 60% 96%); color: hsl(145 77% 26%); }
 .natal-chips::-webkit-scrollbar { display: none; }
+.natal-banner-luzes {
+  position: absolute; left: 0; right: 0; top: 0; height: 30px; pointer-events: none;
+  background: url("/natal/luzes_varal_1600.svg") repeat-x top left / auto 30px;
+  filter: drop-shadow(0 0 4px hsl(45 90% 70% / 0.45));
+}
+@media (min-width: 768px) { .natal-banner-luzes { height: 40px; background-size: auto 40px; } }
+.natal-abas-scroll { mask-image: linear-gradient(to right, #000 88%, transparent); }
+@media (min-width: 768px) { .natal-abas-scroll { mask-image: none; } }
+.natal-secao-titulo { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.01em; }
+.natal-secao-sub { font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-bottom: 0.75rem; }
+.natal-card-ouro { border-color: hsl(43 74% 60%); box-shadow: 0 6px 20px -12px hsl(43 74% 45% / 0.5); }
+.natal-num { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; flex-shrink: 0; border-radius: 9999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-size: 0.8125rem; font-weight: 800; }
+.natal-urna-faixa { height: 4px; border-radius: 16px 16px 0 0; }

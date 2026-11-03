@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EMPREENDIMENTOS, SCRIPTS, FOLLOWUPS } from "./conteudo";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { diasAte18, isCentralNatal } from "../config";
@@ -18,8 +20,13 @@ import "./central.css";
 
 const ABAS = [
   ["visao", "Visão geral"], ["empreendimentos", "Empreendimentos"], ["cards", "Cards"], ["disparos", "Disparos"],
-  ["instagram", "Instagram"], ["scripts", "Scripts"], ["followups", "Follow-ups"], ["pdfs", "PDFs"],
+  ["instagram", "Instagram"], ["pdfs", "PDFs"], ["scripts", "Scripts"], ["followups", "Follow-ups"],
 ] as const;
+const GRUPOS: { rotulo: string; abas: string[] }[] = [
+  { rotulo: "Comece aqui", abas: ["visao"] },
+  { rotulo: "Para enviar", abas: ["empreendimentos", "cards", "disparos", "instagram", "pdfs"] },
+  { rotulo: "Para copiar", abas: ["scripts", "followups"] },
+];
 type Aba = (typeof ABAS)[number][0];
 const CHAVE_ABA = "natal-central-aba";
 
@@ -36,7 +43,16 @@ export default function CampanhaNatalPage() {
   const { data: materiais = [] } = useMateriais();
   const setAba = (a: Aba) => { setAbaState(a); try { localStorage.setItem(CHAVE_ABA, a); } catch { /* ok */ } };
 
-  const porSecao = (s: string) => materiais.filter((m) => m.secao === s);
+  const termo = busca.trim().toLowerCase();
+  const porSecao = (s: string) => materiais.filter((m) => m.secao === s && (!termo || m.titulo.toLowerCase().includes(termo)));
+  const contagem: Record<string, number> = {
+    empreendimentos: EMPREENDIMENTOS.length, cards: materiais.filter((m) => m.secao === "cards").length,
+    disparos: materiais.filter((m) => m.secao === "disparos").length,
+    instagram: materiais.filter((m) => m.secao === "instagram" || m.secao === "molduras").length,
+    pdfs: materiais.filter((m) => m.secao === "pdfs").length, scripts: SCRIPTS.length,
+    followups: FOLLOWUPS.reduce((n, g) => n + g.mensagens.length, 0),
+  };
+  const ehCorretor = !(isAdmin || isDiretor || isGestor);
   const porChave = useMemo(() => Object.fromEntries(materiais.map((m) => [m.chave, m])), [materiais]);
   const caminhos = useMemo(() => {
     const secoes: Record<Aba, string[]> = { visao: [], empreendimentos: ["fotos"], cards: ["cards"], disparos: ["disparos"], instagram: ["instagram", "molduras"], scripts: [], followups: [], pdfs: [] };
@@ -48,44 +64,62 @@ export default function CampanhaNatalPage() {
     return <div className="p-10 text-center text-lg font-semibold">A campanha de Natal terminou em 18/12. Obrigado, time! 🎄</div>;
   }
 
-  const buscaVisivel = aba === "empreendimentos" || aba === "scripts" || aba === "followups";
-
   return (
-    <div className="mx-auto max-w-7xl space-y-4 p-3 md:p-6">
-      <header className="natal-noite natal-borda-ouro relative overflow-hidden rounded-2xl p-4 md:p-6">
-        <img src="/natal/luzes_varal_1600.svg" alt="" aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-5 w-full object-cover" />
+    <div className="mx-auto max-w-7xl space-y-5 p-3 md:p-6">
+      <header className="natal-noite natal-borda-ouro relative overflow-hidden rounded-2xl">
+        <div className="natal-banner-luzes" aria-hidden />
         <NeveSuave />
-        <div className="relative pr-20 md:pr-36">
-          <h1 className="mt-2 text-xl font-extrabold md:text-3xl">🎄 Campanha Natal 2026</h1>
-          <p className="mt-1 hidden max-w-xl text-sm opacity-80 md:block">Cards, mensagens, follow-ups e regras da campanha. Toque para copiar, baixar ou mandar no WhatsApp.</p>
-          <span className="natal-chip-ouro mt-3 inline-block rounded-full px-3 py-1 text-sm font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
+        <div className="relative px-4 pb-4 pt-9 pr-24 md:px-7 md:pb-6 md:pt-12 md:pr-44">
+          <h1 className="text-xl font-extrabold leading-tight md:text-3xl">🎄 Campanha Natal 2026</h1>
+          <p className="mt-1 max-w-xl text-xs opacity-80 md:text-sm">Cards, mensagens, follow-ups e regras da campanha. Toque para copiar, baixar ou mandar no WhatsApp.</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="natal-chip-ouro inline-block rounded-full px-3 py-1 text-xs font-bold md:text-sm">🎁 Faltam {diasAte18()} dias para 18/12</span>
+            {ehCorretor && (
+              <Button size="sm" variant="secondary" className="h-8 rounded-full" onClick={() => window.dispatchEvent(new Event("natal:abrir-meta"))}>
+                <Target className="mr-1 h-4 w-4" />Minha meta
+              </Button>
+            )}
+          </div>
         </div>
-        <img src="/natal/homi_noel.png" alt="Homi de Natal" className="absolute bottom-0 right-3 h-20 md:h-32" />
+        <img src="/natal/homi_noel.png" alt="Homi de Natal" className="pointer-events-none absolute bottom-0 right-2 h-24 md:right-6 md:h-36" />
       </header>
 
       {isAdmin || isDiretor ? <MissaoNatalEmpresa recolhivel />
         : isGestor ? <CorridaNatalEquipe gerenteId={user?.id} recolhivel />
         : <MissaoNatalCard userId={user?.id} recolhivel />}
 
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div className="natal-chips -mx-3 flex gap-2 overflow-x-auto px-3 md:mx-0 md:flex-wrap md:px-0" role="tablist">
-          {ABAS.map(([k, r]) => (
-            <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${aba === k ? "border-primary bg-primary text-primary-foreground" : "bg-card"}`}>{r}</button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          {buscaVisivel && (
-            <div className="relative flex-1 md:w-60">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar" className="pl-8" />
+      <div className="natal-abas-barra sticky top-0 z-20 -mx-3 border-b bg-background/95 px-3 py-2 backdrop-blur md:static md:mx-0 md:rounded-2xl md:border md:bg-card md:p-3">
+        <div className="flex flex-col gap-3">
+          <div className="natal-chips natal-abas-scroll flex gap-4 overflow-x-auto md:flex-wrap md:gap-x-6 md:gap-y-3 md:overflow-visible" role="tablist">
+            {GRUPOS.map((g) => (
+              <div key={g.rotulo} className="flex shrink-0 flex-col gap-1">
+                <span className="hidden text-[10px] font-bold uppercase tracking-wide text-muted-foreground md:block">{g.rotulo}</span>
+                <div className="flex gap-1.5">
+                  {g.abas.map((k) => {
+                    const r = ABAS.find(([a]) => a === k)![1]; const n = contagem[k];
+                    return (
+                      <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k as Aba)}
+                        className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${aba === k ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>
+                        {r}
+                        {n ? <span className={`rounded-full px-1.5 text-[11px] font-bold ${aba === k ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>{n}</span> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 md:max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nesta aba" className="h-9 pl-8" />
             </div>
-          )}
-          {podeGerenciar(roles) && <GerenciarMateriaisSheet />}
+            {podeGerenciar(roles) && <GerenciarMateriaisSheet />}
+          </div>
         </div>
       </div>
 
-      {aba === "visao" && <AbaVisaoGeral />}
+      {aba === "visao" && <AbaVisaoGeral busca={busca} />}
       {aba === "empreendimentos" && <AbaEmpreendimentos busca={busca} porChave={porChave} urls={urls} />}
       {aba === "cards" && <AbaGrade itens={porSecao("cards")} urls={urls} />}
       {aba === "disparos" && <AbaDisparos itens={porSecao("disparos")} urls={urls} />}

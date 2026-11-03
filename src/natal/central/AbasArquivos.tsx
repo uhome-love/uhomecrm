@@ -8,7 +8,7 @@ type P = { itens: Material[]; urls: Record<string, string> };
 
 export function AbaGrade({ itens, urls }: P) {
   if (!itens.length) return <Vazio />;
-  return <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{itens.map((m) => <CardArquivo key={m.id} m={m} url={urls[m.arquivo_path]} />)}</div>;
+  return <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">{itens.map((m) => <CardArquivo key={m.id} m={m} url={urls[m.arquivo_path]} />)}</div>;
 }
 
 export function AbaDisparos({ itens, urls }: P) {
@@ -46,7 +46,7 @@ export function AbaInstagram({ itens, molduras, urls }: P & { molduras: Material
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold">Carrossel</h3>
+        <h3 className="natal-secao-titulo">Carrossel</h3>
         {itens.length > 0 && <Button size="sm" variant="outline" onClick={() => itens.forEach((m) => baixarMaterial(m))}><Download className="mr-1 h-4 w-4" />Baixar as {itens.length}</Button>}
       </div>
       <AbaGrade itens={itens} urls={urls} />
@@ -56,7 +56,7 @@ export function AbaInstagram({ itens, molduras, urls }: P & { molduras: Material
         <Button size="sm" onClick={() => copiarTexto(INSTAGRAM.legenda)}>Copiar legenda</Button>
         <p className="text-xs text-muted-foreground">💡 {INSTAGRAM.dica}</p>
       </div>
-      <h3 className="font-bold">Molduras</h3>
+      <h3 className="natal-secao-titulo">Molduras</h3>
       <AbaGrade itens={molduras} urls={urls} />
     </div>
   );
