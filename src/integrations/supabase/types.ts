@@ -18589,6 +18589,17 @@ export type Database = {
       midia_refresh_jornada: { Args: { p_dias?: number }; Returns: number }
       monitor_primeiro_contato_v1_coverage: { Args: never; Returns: undefined }
       natal_central_desagendar: { Args: never; Returns: undefined }
+      natal_mural_vendas: {
+        Args: never
+        Returns: {
+          assinado_em: string
+          corretores: Json
+          data_assinatura: string
+          empreendimento: string
+          equipe: string
+          negocio_id: string
+        }[]
+      }
       norm_empreendimento: { Args: { s: string }; Returns: string }
       normalizar_bairro: { Args: { _txt: string }; Returns: string }
       normalize_alias: { Args: { input: string }; Returns: string }

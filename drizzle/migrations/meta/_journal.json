@@ -421,6 +421,13 @@
       "when": 1793671839935,
       "tag": "0059_campanha_natal_materiais",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1793678520104,
+      "tag": "0060_migration",
+      "breakpoints": true
     }
   ]
 }
