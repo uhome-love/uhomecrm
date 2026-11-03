@@ -1,11 +1,11 @@
-// Central de Natal · conteúdo da campanha Natal Chave de Ouro (Uhome 2026)
+// Campanha Natal 2026 · conteúdo da campanha Natal Chave de Ouro (Uhome 2026)
 // TEMPORÁRIO: some do menu em 19/12/2026 e é apagado junto com src/natal/ depois de 26/12/2026.
 // Textos aprovados pelo Lucas. Não reescrever nem "melhorar" os textos: só exibir.
 // Nos scripts, o que está entre [colchetes] o corretor troca antes de mandar.
 
 export const CAMPANHA = {
-  "nome": "Natal Chave de Ouro",
-  "inicio": "2026-11-02",
+  "nome": "Campanha Natal 2026",
+  "inicio": "2026-11-01",
   "fim": "2026-12-18",
   "centralSaiDoAr": "2026-12-19",
   "arquivosApagados": "2026-12-27",
@@ -87,7 +87,7 @@ export const REGRAS = [
     "texto": "O prêmio não vira dinheiro nem passa para outra pessoa."
   },
   {
-    "titulo": "Conta o VGV assinado de 02/11 a 18/12 no Uhome Sales.",
+    "titulo": "Conta o VGV assinado de 01/11 a 18/12 no Uhome Sales.",
     "texto": "Venda em parceria: o VGV é dividido conforme a participação de cada corretor."
   }
 ];
@@ -166,7 +166,7 @@ export const URNA = [
 export const SEMANAS = [
   {
     "semana": "S1",
-    "inicio": "2026-11-02",
+    "inicio": "2026-11-01",
     "fim": "2026-11-08"
   },
   {
