@@ -134,7 +134,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/gerente/cockpit":       { key: "gerente-cockpit",      label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin", "diretor"] },
   "/raio-x":                { key: "relatorios-hub",       label: "Relatórios",          icon: "ChartColumn",     roles: ["gestor", "admin", "diretor", "corretor"] },
   "/rh":                    { key: "rh",                   label: "Dashboard RH",        icon: "LayoutGrid",    closable: false, roles: ["rh", "admin"] },
-  "/central-do-gerente":    { key: "checkpoint",           label: "Central Gerente",     icon: "CheckCircle",   roles: ["gestor", "admin", "diretor"] },
+  "/central-do-gerente":    { key: "checkpoint",           label: "Central Gerente",     icon: "CircleCheck",   roles: ["gestor", "admin", "diretor"] },
   "/relatorios":            { key: "relatorios",           label: "Relatórios 1:1",      icon: "FileText",      roles: ["gestor", "admin", "diretor"] },
   // "/ranking" e "/performance" → redirect para /central-relatorios (App.tsx)
 
@@ -153,7 +153,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/templates-comunicacao": { key: "templates",            label: "Templates",           icon: "ClipboardList", roles: ["gestor", "admin", "diretor"] },
   "/aceite":                { key: "aceite",               label: "Aceite de Leads",     icon: "UserCheck" },
   "/minhas-tarefas":        { key: "minhas-tarefas",       label: "Agenda",  icon: "ListTodo" },
-  "/tarefas":               { key: "tarefas",              label: "Tarefas", icon: "CheckSquare" },
+  "/tarefas":               { key: "tarefas",              label: "Tarefas", icon: "SquareCheck" },
   "/minhas-vitrines":       { key: "minhas-vitrines",      label: "Vitrines",            icon: "Building2" },
   "/corretor/call":         { key: "corretor-call",        label: "Oferta Ativa",        icon: "Phone" },
   "/visitas":               { key: "agenda-visitas",       label: "Visitas",      icon: "CalendarDays" },
@@ -167,7 +167,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/vendas-realizadas":     { key: "vendas-realizadas",    label: "Vendas",              icon: "TrendingUp" },
   "/financeiro":           { key: "financeiro",           label: "Financeiro",          icon: "Wallet", roles: ["admin", "diretor"] },
   
-  "/imoveis":               { key: "imoveis",              label: "Imóveis",             icon: "Home" },
+  "/imoveis":               { key: "imoveis",              label: "Imóveis",             icon: "House" },
   "/busca-leads":           { key: "busca-leads",          label: "Busca Leads",         icon: "Search",        roles: ["gestor", "admin", "diretor"] },
   "/configuracoes":         { key: "configuracoes",        label: "Configurações",       icon: "Settings" },
   
@@ -192,7 +192,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/relatorio-performance-origem":  { key: "relatorio-origem-performance", label: "Central de Marketing", icon: "ChartColumn", roles: ["admin", "gestor", "diretor"], noPadding: true },
   "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
   "/materiais/analytics":   { key: "materiais-analytics",  label: "Analytics Materiais", icon: "ChartColumn",     roles: ["gestor", "admin", "diretor"] },
-  "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor", "diretor"] },
+  "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FilePen", roles: ["admin", "gestor", "diretor"] },
   "/leads-estagnados":      { key: "leads-estagnados",     label: "Leads Estagnados",    icon: "AlarmClock",    roles: ["admin", "gestor", "diretor"] },
   "/simulador-financiamento": { key: "simulador-financiamento", label: "Simulador Financiamento", icon: "Calculator" },
   "/roleta/presenca":       { key: "presenca-roleta",      label: "Presença",     icon: "CalendarCheck", roles: ["admin", "gestor", "diretor"] },
