@@ -5,6 +5,7 @@ import { Inbox } from "lucide-react";
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
 import { GreetingBar } from "@/components/ui/GreetingBar";
 import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
+import { MissaoNatalEmpresa } from "@/natal/MissaoNatalEmpresa";
 
 export default function DesktopHeader({model}: {model:CeoDashboardController}) {
 const { user, period, range, frase, setDispatchOpen, filaCeoCount, lastUpdate, profile, reload, hoje } = model;
@@ -22,6 +23,8 @@ return <>      {/* ═══ GREETING ═══ */}
         onRefresh={reload}
         refreshTime={format(lastUpdate, "HH:mm")}
       />
+
+      <MissaoNatalEmpresa />
 
       {/* ═══ DATE FILTER + ACTION BUTTONS ═══ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">

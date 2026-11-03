@@ -1,3 +1,4 @@
+import { MissaoNatalEmpresa } from "@/natal/MissaoNatalEmpresa";
 import PainelComAbas from "@/components/performance/PainelComAbas";
 // ─────────────────────────────────────────────────────────────────
 // DiretoraDashboard — dashboard da DIRETORA (foco em NEGÓCIOS). Rota /diretora.
@@ -146,6 +147,7 @@ function DiretoraDashboardVisaoGeral() {
           subtitle="Negócio bom é negócio que anda — bora fechar o mês."
           showFilter={false}
         />
+        <MissaoNatalEmpresa />
 
         {loading ? (
           <div className="grid gap-3 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800" />)}</div>

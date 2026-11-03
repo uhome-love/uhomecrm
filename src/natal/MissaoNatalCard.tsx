@@ -8,7 +8,7 @@ import { CAMPANHA_FIM, diasAte18 } from "./config";
 
 const CHAVE_ABRIU = "natal-meta-abriu";
 
-function BarraOuro({ pct, chave = false, fina = false }: { pct: number; chave?: boolean; fina?: boolean }) {
+export function BarraOuro({ pct, chave = false, fina = false }: { pct: number; chave?: boolean; fina?: boolean }) {
   const p = Math.max(0, Math.min(100, pct));
   return (
     <div className={`relative w-full rounded-full bg-muted ${fina ? "h-1.5" : "h-3"}`}>
