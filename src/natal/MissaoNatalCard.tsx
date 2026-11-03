@@ -68,6 +68,26 @@ export function MissaoNatalCard({ userId, recolhivel = false }: { userId?: strin
   return (
     <section className={`relative overflow-hidden rounded-2xl border bg-card p-4 md:p-5 ${efeitos ? "natal-borda-ouro" : ""}`}>
       {confete && <Confete />}
+      {!expandido ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <img src="/natal/chave_de_ouro_com_laco.svg" alt="" aria-hidden className="h-7 w-7 shrink-0" />
+            <h2 className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">Minha Missão de Natal</h2>
+            {cumpriu && <span className="natal-chip-ouro shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold">🔑</span>}
+            {!encerrada && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold">🎄 {diasAte18(data.hoje)} dias</span>}
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="shrink-0 text-sm text-muted-foreground"><b className="text-foreground">{brlCurto(vgv)}</b> de {brlCurto(metaVgv)} ({Math.floor(pct)}%)</p>
+            <div className="min-w-0 flex-1"><BarraOuro pct={pct} fina /></div>
+          </div>
+          <div className={`grid gap-2 ${encerrada ? "grid-cols-1" : "grid-cols-2"}`}>
+            {!encerrada && <Button size="sm" variant="outline" onClick={() => setAberto(true)}>Minha meta</Button>}
+            <Button variant="ghost" size="sm" onClick={() => setExpandido(true)}>
+              Ver detalhes <ChevronDown className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : (
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <img src="/natal/chave_de_ouro_com_laco.svg" alt="" aria-hidden className="h-10 w-10" />
@@ -83,19 +103,12 @@ export function MissaoNatalCard({ userId, recolhivel = false }: { userId?: strin
           {!encerrada && <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">🎄 Faltam {diasAte18(data.hoje)} dias</span>}
           {!encerrada && <Button size="sm" variant="outline" onClick={() => setAberto(true)}>Minha meta</Button>}
           {recolhivel && (
-            <Button variant="ghost" size="sm" onClick={() => setExpandido((v) => !v)}>
-              {expandido ? "Recolher" : "Ver detalhes"}
-              <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${expandido ? "rotate-180" : ""}`} />
+            <Button variant="ghost" size="sm" onClick={() => setExpandido(false)}>
+              Recolher <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
             </Button>
           )}
         </div>
       </header>
-
-      {!expandido && (
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <p className="text-sm text-muted-foreground"><b className="text-foreground">{brlCurto(vgv)}</b> de {brlCurto(metaVgv)} ({Math.floor(pct)}%)</p>
-          <div className="min-w-[120px] flex-1"><BarraOuro pct={pct} fina /></div>
-        </div>
       )}
 
       {expandido && (<>
