@@ -41,7 +41,7 @@ import { HomiProvider } from "@/contexts/HomiContext";
 import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
-import { FaixaLuzesNatal } from "@/natal/TemaNatal";
+import { FaixaLuzesNatal, GorroNatal } from "@/natal/TemaNatal";
 import MobileBottomNav from "@/components/layout/mobile/MobileBottomNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 const homiMascot = "/images/homi-mascot-official.png";
@@ -184,8 +184,9 @@ export default function AppLayout() {
             >
               <div className="flex items-center gap-3">
                 <SidebarTrigger className={cn("hidden md:inline-flex", theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]")} />
-                <div className="flex items-center">
+                <div className="relative flex items-center">
                   <UhomeLogo size="md" />
+                  <GorroNatal className="-left-2 -top-3 w-6 md:hidden" />
                 </div>
                 {(isFullscreen || isSession) && (
                   <span className="hidden md:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)" }}>

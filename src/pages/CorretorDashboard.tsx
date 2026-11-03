@@ -83,6 +83,28 @@ export default function CorretorDashboard() {
       {/* 1. Celular: título grande estilo iPhone + próxima visita + atalhos redondos */}
       {isMobile && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          {natal.efeitos ? (
+            <div className="natal-noite natal-borda-ouro relative overflow-hidden rounded-2xl p-4">
+              <NeveSuave altura={170} flocos={18} />
+              <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none absolute -bottom-1 right-1 h-24 select-none" />
+              <div className="relative flex items-center gap-3 pr-20">
+                <div className="relative shrink-0">
+                  {avatarSrc ? (
+                    <img src={avatarSrc} alt={profile?.nome || "Avatar"} className="h-14 w-14 rounded-full border-2 border-primary-foreground/30 object-cover" />
+                  ) : (
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-primary-foreground/30 font-bold">{initials || "?"}</div>
+                  )}
+                  <GorroNatal className="-left-2 -top-4 w-9" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[12px] capitalize opacity-70">{dataFormatada}</p>
+                  <h1 className="text-[20px] font-bold leading-tight break-words">{saudacao}, {primeiroNome}</h1>
+                </div>
+              </div>
+              <p className="relative mt-2 pr-20 text-[13px] italic leading-snug opacity-80">"{motivation}"</p>
+              <span className="natal-chip-ouro relative mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
+            </div>
+          ) : (<>
           <div className="flex items-center justify-between gap-3 pt-1">
             <div className="min-w-0">
               <p className="text-[13px] font-medium capitalize text-muted-foreground">{dataFormatada}</p>
@@ -101,6 +123,7 @@ export default function CorretorDashboard() {
             </div>
           </div>
           <p className="text-sm italic text-muted-foreground">"{motivation}"</p>
+          </>)}
           <ProximaVisitaCard />
           <AtalhosRotina variante="redondo" />
         </motion.div>
