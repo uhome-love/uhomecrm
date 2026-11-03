@@ -209,7 +209,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Time",
       items: [
-        { label: "Usuários",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
+        { label: "Meu time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
         { label: "Meus Candidatos",    path: "/gerente/candidatos", icon: <Users       size={15} strokeWidth={1.5} /> },
         { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
@@ -526,8 +526,8 @@ export default function Sidebar({
 
         return (
           <div key={group.title}>
-            {gi > 0 && <div className={cn("h-px mx-3 my-[6px]", div)} />}
-            <div className="px-3 pt-2.5 pb-1">
+            {gi > 0 && <div className={cn("h-px mx-3 my-[4px]", div)} />}
+            <div className="px-3 pt-1.5 pb-0.5">
               {canCollapse ? (
                 <button
                   onClick={() => toggleGroup(group.title)}
@@ -556,7 +556,7 @@ export default function Sidebar({
                     key={item.path}
                     onClick={() => { go(item.path); if (isMobile) setOpenMobile(false); }}
                     className={cn(
-                      "group/item w-full flex items-center gap-[10px] px-2.5 h-9 rounded-[10px] mb-px",
+                      "group/item w-full flex items-center gap-[10px] px-2.5 h-8 rounded-[10px] mb-px",
                       "text-[13.5px] tracking-[-0.15px] transition-all duration-150 text-left",
                       active ? itemOn : itemBase
                     )}
@@ -688,8 +688,7 @@ export default function Sidebar({
   // Expanded desktop sidebar
   return (
     <aside
-      className={cn("hidden md:flex flex-col h-screen w-[244px] min-w-[244px] overflow-y-auto transition-all duration-200", sb)}
-      style={{ scrollbarWidth: "none" }}
+      className={cn("hidden md:flex flex-col h-screen w-[244px] min-w-[244px] overflow-y-auto transition-all duration-200 shell-nav-scroll", sb)}
     >
       {renderFullNav()}
     </aside>
