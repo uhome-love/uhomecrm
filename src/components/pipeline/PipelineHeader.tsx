@@ -494,12 +494,12 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
         {/* ══ ZONA 3 — Ferramentas (busca + filtros + ordenação + ações) · colapsável ══ */}
         {toolsOpen && (
-        <div className="flex min-h-12 flex-wrap items-center gap-1.5 lg:gap-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
-          <div className="relative w-full sm:w-[220px] xl:w-[260px] 2xl:w-[300px]">
+        <div className="flex min-h-12 flex-wrap lg:flex-nowrap items-center gap-1.5 lg:gap-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
+          <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[190px] sm:max-w-[360px]">
             <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               aria-label="Buscar lead, telefone ou empreendimento"
-              placeholder="Buscar lead, cliente, empreendimento…"
+              placeholder="Buscar lead ou empreendimento…"
               value={filters.search}
               onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
               className="w-full outline-none h-10 sm:h-9 rounded-full sm:rounded-lg bg-muted sm:bg-muted/40 border border-transparent sm:border-border pl-9 pr-8 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary"
