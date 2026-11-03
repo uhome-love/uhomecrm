@@ -19012,6 +19012,7 @@ export type Database = {
       }
       rpc_placar_do_dia: { Args: never; Returns: Json }
       rpc_placar_mutirao: { Args: { p_sessao_id?: string }; Returns: Json }
+      rpc_placar_natal: { Args: never; Returns: Json }
       selecionar_reengajamento_base: {
         Args: { p_filtro: Json; p_limit?: number }
         Returns: {
