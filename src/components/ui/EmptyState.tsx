@@ -1,36 +1,47 @@
 import { type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
   icon: ReactNode;
   title: string;
   description?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
+  action?: { label: string; onClick: () => void };
+  secondaryAction?: { label: string; onClick: () => void };
+  className?: string;
 }
 
-export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, secondaryAction, className }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      <div className="w-14 h-14 rounded-[16px] bg-primary/10 flex items-center justify-center mb-4 text-primary">
-        {icon}
+    <div className={cn("flex flex-col items-center justify-center py-16 px-6 text-center", className)}>
+      <div className="relative mb-5">
+        <div className="absolute inset-0 -m-3 rounded-full bg-primary/5" aria-hidden />
+        <div className="relative w-14 h-14 rounded-2xl bg-card border border-border shadow-sm flex items-center justify-center text-primary">
+          {icon}
+        </div>
       </div>
-      <h3 className="text-[15px] font-bold text-foreground tracking-[-0.3px] mb-1">
-        {title}
-      </h3>
+      <h3 className="text-[16px] font-semibold text-foreground tracking-[-0.2px] mb-1.5">{title}</h3>
       {description && (
-        <p className="text-[13px] text-muted-foreground max-w-[280px] leading-relaxed">
-          {description}
-        </p>
+        <p className="text-[13px] text-muted-foreground max-w-[340px] leading-relaxed">{description}</p>
       )}
-      {action && (
-        <button
-          onClick={action.onClick}
-          className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium px-4 py-2 rounded-[9px] transition-colors"
-        >
-          {action.label}
-        </button>
+      {(action || secondaryAction) && (
+        <div className="mt-5 flex items-center gap-2">
+          {action && (
+            <button
+              onClick={action.onClick}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-semibold h-9 px-4 rounded-[10px] shadow-sm transition-colors"
+            >
+              {action.label}
+            </button>
+          )}
+          {secondaryAction && (
+            <button
+              onClick={secondaryAction.onClick}
+              className="text-[13px] font-medium h-9 px-4 rounded-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              {secondaryAction.label}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
