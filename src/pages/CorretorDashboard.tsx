@@ -98,7 +98,7 @@ export default function CorretorDashboard() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[12px] capitalize opacity-70">{dataFormatada}</p>
-                  <h1 className="truncate text-[22px] font-bold leading-tight">{saudacao}, {primeiroNome}</h1>
+                  <h1 className="text-[20px] font-bold leading-tight break-words">{saudacao}, {primeiroNome}</h1>
                 </div>
               </div>
               <p className="relative mt-2 pr-20 text-[13px] italic leading-snug opacity-80">"{motivation}"</p>
