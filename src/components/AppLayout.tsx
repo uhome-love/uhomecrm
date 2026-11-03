@@ -31,7 +31,6 @@ import { useWhatsAppNotifications } from "@/hooks/useWhatsAppNotifications";
 import LeadAcceptanceDialog from "@/components/pipeline/LeadAcceptanceDialog";
 
 import NewLeadBanner from "@/components/notifications/NewLeadBanner";
-import PushPromptBanner from "@/components/notifications/PushPromptBanner";
 import TelefoneFaltandoBanner from "@/components/notifications/TelefoneFaltandoBanner";
 import BackendHealthBanner from "@/components/system/BackendHealthBanner";
 import GlobalSearch from "@/components/GlobalSearch";
@@ -297,7 +296,6 @@ export default function AppLayout() {
               </DropdownMenu>
               </div>
             </header>
-            <PushPromptBanner />
             <TelefoneFaltandoBanner />
 
             {!isMobile && <TabBar />}
