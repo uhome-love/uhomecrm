@@ -88,16 +88,19 @@ export default function DesktopLeads({ model }: { model: CeoDashboardController 
             </CardHeader>
             <CardContent>
               <div className={`space-y-2.5 ${showAllCorretorLeads ? "" : ""}`}>
-                {(showAllCorretorLeads ? leadsPorCorretor : leadsPorCorretor.slice(0, 6)).map((c, idx) => {
+                {(() => { const comLeads = leadsPorCorretor.filter(x => x.count > 0); return (showAllCorretorLeads ? comLeads : comLeads.slice(0, 6)); })().map((c, idx) => {
                   const max = Math.max(...leadsPorCorretor.map(x => x.count), 1);
                   const color = FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
                   return <HBar key={`${c.nome}-${idx}`} label={c.nome} value={c.count} max={max} color={color} />;
                 })}
-                {leadsPorCorretor.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                {leadsPorCorretor.filter(x => x.count > 0).length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Nenhum lead no período</p>}
+                {leadsPorCorretor.some(x => x.count === 0) && (
+                  <p className="text-[10.5px] text-muted-foreground/80">{leadsPorCorretor.filter(x => x.count === 0).length} corretores sem leads no período</p>
+                )}
               </div>
-              {leadsPorCorretor.length > 6 && (
+              {leadsPorCorretor.filter(x => x.count > 0).length > 6 && (
                 <Button variant="ghost" size="sm" className="w-full mt-2 text-[10px] text-primary hover:text-primary/80" onClick={() => setShowAllCorretorLeads(!showAllCorretorLeads)}>
-                  {showAllCorretorLeads ? "Ver menos" : `Ver mais (${leadsPorCorretor.length})`}
+                  {showAllCorretorLeads ? "Ver menos" : `Ver mais (${leadsPorCorretor.filter(x => x.count > 0).length})`}
                 </Button>
               )}
               {leadsPorCorretor.length > 0 && (
