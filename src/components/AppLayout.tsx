@@ -183,7 +183,7 @@ export default function AppLayout() {
             >
               <div className="flex items-center gap-3 shrink-0">
                 <SidebarTrigger title="Recolher ou abrir o menu" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" />
-                <div className="relative flex items-center">
+                <div className="relative flex items-center md:hidden">
                   <UhomeLogo size="md" />
                   <GorroNatal className="-left-2 -top-3 w-6 md:hidden" />
                 </div>
