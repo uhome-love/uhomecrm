@@ -14,6 +14,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2, MoreHorizontal, ChevronDown, Inbox, Briefcase, SlidersHorizontal, Trophy, HelpCircle } from "lucide-react";
 import { useNegociosBoard } from "@/hooks/useNegociosBoard";
+import { useEquipesView } from "@/hooks/useEquipesView";
 import { GERENTES_REAIS } from "@/components/pipeline/header/gerentesReais";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -247,6 +248,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
   // ── Resumo de Negócios (só busca quando na aba Negócios; cache compartilhado com o board) ──
   const negBoard = useNegociosBoard({ enabled: activeTab === "negocios" });
+  const equipesOverview = useEquipesView(activeTab === "equipes");
   const negResumo = useMemo(() => {
     const d = negBoard.data;
     if (!d) return null;
@@ -272,7 +274,11 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     activeTab === "negocios"
       ? (negResumo ? `${negResumo.total} negócios · ${moneyShort(negResumo.vgvTotal)}` : "negócios")
       : activeTab === "equipes"
-      ? `${filteredLeadsCount} ativos`
+      ? (equipesOverview.isError
+          ? "Empresa · resumo indisponível"
+          : equipesOverview.data
+          ? `Empresa · ${equipesOverview.data.escritorio.total_leads_ativos.toLocaleString("pt-BR")} no resumo`
+          : "Empresa · carregando…")
       : `${filteredLeadsCount} ativos`;
 
   // ── Colapsar a 3ª linha (ferramentas) — lembra a escolha por usuário ──
@@ -338,7 +344,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
             <span className="text-[26px] sm:text-[16px] font-extrabold sm:font-bold text-foreground tracking-[-0.6px] sm:tracking-[-0.3px] whitespace-nowrap">Pipeline</span>
-            <span title={pipelineAtivoSplit && activeTab !== "negocios" ? `${pipelineAtivoSplit.leads} em Leads · ${pipelineAtivoSplit.negocios} em Negócios (Ganhos ficam no botão Ganhos)` : undefined}><PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={gestorFilter} /></span>
+            <span title={pipelineAtivoSplit && activeTab !== "negocios" && activeTab !== "equipes" ? `${pipelineAtivoSplit.leads} em Leads · ${pipelineAtivoSplit.negocios} em Negócios (Ganhos ficam no botão Ganhos)` : undefined}><PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={activeTab === "equipes" ? "todos" : gestorFilter} /></span>
           </div>
 
           <div className="ml-auto flex items-center gap-3">

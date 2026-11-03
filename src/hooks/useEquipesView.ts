@@ -60,7 +60,7 @@ export interface EquipesOverview {
   gestores: EquipesGestor[];
 }
 
-export function useEquipesView() {
+export function useEquipesView(enabled = true) {
   const { isAdmin, isDiretor } = useUserRole();
 
   return useQuery({
@@ -73,7 +73,7 @@ export function useEquipesView() {
         em_dia: 0, atencao: 0, desatualizado: 0, estagnado: 0,
       }, gestores: [] };
     },
-    enabled: isAdmin || isDiretor,
+    enabled: enabled && (isAdmin || isDiretor),
     staleTime: 60_000,
     gcTime: 5 * 60_000,
     retry: 1,

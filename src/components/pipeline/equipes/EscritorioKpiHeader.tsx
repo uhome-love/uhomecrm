@@ -57,6 +57,7 @@ export default function EscritorioKpiHeader({ escritorio, onFilterSaude, onOpenN
     desatualizado: escritorio.desatualizado, estagnado: escritorio.estagnado,
   };
   const total = ORDER.reduce((s, k) => s + (counts[k] || 0), 0);
+  const diferencaResumo = escritorio.total_leads_ativos - total;
   const emDiaPct = total > 0 ? Math.round((counts.em_dia / total) * 100) : 0;
 
   return (
@@ -64,7 +65,7 @@ export default function EscritorioKpiHeader({ escritorio, onFilterSaude, onOpenN
       {/* Contexto (leads · pipeline · ganho no mês — o placar) */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
         <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-200">
-          <Users className="h-4 w-4 text-slate-400" /> {escritorio.total_leads_ativos.toLocaleString("pt-BR")} leads ativos
+          <Users className="h-4 w-4 text-slate-400" /> {escritorio.total_leads_ativos.toLocaleString("pt-BR")} leads no resumo da empresa
         </span>
         <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
           <TrendingUp className="h-4 w-4 text-slate-400" /> Pipeline ativo {fmtMoney(escritorio.vgv_pipeline_ativo, "short")}
@@ -73,13 +74,18 @@ export default function EscritorioKpiHeader({ escritorio, onFilterSaude, onOpenN
           <Handshake className="h-4 w-4" /> Ganho no mês {fmtMoney(escritorio.vgv_assinado_mes, "short")}
         </span>
       </div>
+      {diferencaResumo !== 0 && (
+        <p role="status" className="text-xs text-warning-700">
+          {Math.abs(diferencaResumo).toLocaleString("pt-BR")} {Math.abs(diferencaResumo) === 1 ? "registro de diferença" : "registros de diferença"} entre o resumo e a classificação de saúde · em revisão.
+        </p>
+      )}
 
       <div className="grid gap-3 lg:grid-cols-3">
         {/* Saúde do pipeline — herói */}
         <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 lg:col-span-2">
           <div className="flex items-baseline justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Saúde do pipeline</span>
-            <span className="text-[12px] text-slate-400">{total.toLocaleString("pt-BR")} leads no funil</span>
+            <span className="text-[12px] text-slate-400">{total.toLocaleString("pt-BR")} classificados</span>
           </div>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{emDiaPct}%</span>

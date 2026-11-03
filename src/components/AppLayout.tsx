@@ -309,7 +309,7 @@ export default function AppLayout() {
             </header>
             <TelefoneFaltandoBanner />
 
-            {!isMobile && <TabBar />}
+            {!isMobile && <TabBar unknownRoute={rotaInexistente} />}
             
             <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative shell-canvas">
               {rotaInexistente && <PaginaNaoEncontrada />}
@@ -324,7 +324,7 @@ export default function AppLayout() {
                       "absolute inset-0 overflow-y-auto overflow-x-hidden",
                       !tab.noPadding && "p-4 sm:p-6 lg:p-8"
                     )}
-                    style={{ display: isActiveTab ? 'block' : 'none', paddingBottom: isMobile ? "calc(6rem + var(--sab))" : undefined }}
+                    style={{ display: isActiveTab && !rotaInexistente ? 'block' : 'none', paddingBottom: isMobile ? "calc(6rem + var(--sab))" : undefined }}
                   >
                     <ErrorBoundary module={tab.componentKey}>
                       <Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
