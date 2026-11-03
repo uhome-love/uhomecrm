@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Search } from "lucide-react";
+import { CircleCheck, Loader2, Plus, Search } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
@@ -212,8 +213,13 @@ export default function TarefasCorretor() {
       ) : isLoading ? (
         <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
       ) : lista.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center text-[13px] text-muted-foreground">
-          {aba === "concluidas" ? "Nenhuma tarefa concluída nos últimos 7 dias." : "Nenhuma tarefa aqui."}
+        <div className="rounded-2xl border border-dashed border-border bg-card/50">
+          <EmptyState
+            icon={<CircleCheck className="h-6 w-6" />}
+            title={aba === "concluidas" ? "Nada concluído nos últimos 7 dias" : "Tudo em dia por aqui"}
+            description={aba === "concluidas" ? "As tarefas concluídas aparecem aqui por 7 dias." : "Nenhuma tarefa nesta lista. Crie uma para lembrar do próximo passo com o cliente."}
+            action={!somenteLeitura && aba !== "concluidas" ? { label: "Nova tarefa", onClick: () => setCriar({ open: true, lead: null }) } : undefined}
+          />
         </div>
       ) : (
         <div className="space-y-2">
