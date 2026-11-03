@@ -6,7 +6,7 @@
  *  - Placar TV (gestor/admin/diretor)
  *  - ⚙️ Configurações (admin/diretor) → AdminSessaoPanel
  */
-import { useSearchParams, Navigate } from "react-router-dom";
+import { useSearchParams, Navigate, useMatch } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useMutiraoSession } from "@/hooks/useMutiraoSession";
@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 type View = "corretor" | "painel" | "tv" | "config";
 
 export default function OfertaAtivaAoVivo() {
+  const activeSource = useMatch("/oferta-ativa-ao-vivo");
   const { user } = useAuth();
   const { isGestor, isAdmin, isDiretor, loading: roleLoading } = useUserRole();
   const [params, setParams] = useSearchParams();
@@ -32,7 +33,7 @@ export default function OfertaAtivaAoVivo() {
       </div>
     );
   }
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return activeSource ? <Navigate to="/auth" replace /> : null;
 
   const isManagerish = isGestor || isAdmin || isDiretor;
   const isAdminScope = isAdmin || isDiretor;
