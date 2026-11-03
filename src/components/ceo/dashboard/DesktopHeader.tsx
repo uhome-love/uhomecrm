@@ -24,7 +24,7 @@ return <>      {/* ═══ GREETING ═══ */}
         refreshTime={format(lastUpdate, "HH:mm")}
       />
 
-      <MissaoNatalEmpresa />
+      <MissaoNatalEmpresa recolhivel />
 
       {/* ═══ DATE FILTER + ACTION BUTTONS ═══ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">

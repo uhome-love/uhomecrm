@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { agruparPorEquipe, consolidarPorCorretor, fetchMetricas, somarMetricas } from "@/lib/metricasSSOT";
@@ -48,8 +50,9 @@ const primeiroNome = (n: string | null) => {
 };
 
 /** Quadro só de leitura: resumo da empresa na campanha de Natal (CEO/diretora). */
-export function MissaoNatalEmpresa() {
+export function MissaoNatalEmpresa({ recolhivel = false }: { recolhivel?: boolean }) {
   const ativo = isNatal();
+  const [aberto, setAberto] = useState(!recolhivel);
   const { data } = useMissaoNatalEmpresa(ativo);
   if (!ativo || !data) return null;
   const t = data.totais;
@@ -69,8 +72,18 @@ export function MissaoNatalEmpresa() {
             <p className="text-xs text-muted-foreground">Campanha de 02/11 a 18/12 · resumo da empresa</p>
           </div>
         </div>
-        {data.hoje <= CAMPANHA_FIM && <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">🎄 Faltam {diasAte18(data.hoje)} dias</span>}
+        <div className="flex items-center gap-2">
+          {data.hoje <= CAMPANHA_FIM && <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">🎄 Faltam {diasAte18(data.hoje)} dias</span>}
+          {recolhivel && (
+            <button type="button" onClick={() => setAberto((v) => !v)} aria-expanded={aberto}
+              className="flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold hover:bg-muted">
+              {aberto ? "Recolher" : `Ver missão · ${brlCurto(data.anoVgv)}`}
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${aberto ? "rotate-180" : ""}`} />
+            </button>
+          )}
+        </div>
       </header>
+      {aberto && <>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_1.6fr]">
         <div className="natal-noite rounded-xl p-4">
@@ -120,6 +133,7 @@ export function MissaoNatalEmpresa() {
           )}
         </div>
       </div>
+      </>}
     </section>
   );
 }
