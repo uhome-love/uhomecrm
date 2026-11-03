@@ -5,6 +5,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { periodoGrupoClasse, periodoBotaoClasse } from "@/components/ui/PeriodSelector";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type PeriodMode = "hoje" | "semana" | "custom";
@@ -68,32 +69,30 @@ export default function PeriodFilter({
   const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
 
   const btn = (mode: PeriodMode, label: string) => (
-    <Button
+    <button
       key={mode}
-      size="sm"
-      variant={value.mode === mode ? "default" : "outline"}
-      className="h-8 text-xs"
+      type="button"
+      role="radio"
+      aria-checked={value.mode === mode}
+      className={periodoBotaoClasse(value.mode === mode)}
       onClick={() => onChange(buildRange(mode))}
     >
       {label}
-    </Button>
+    </button>
   );
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-xs text-muted-foreground">Período:</span>
+      <div role="radiogroup" aria-label="Período" className={periodoGrupoClasse}>
       {btn("hoje", "Hoje")}
       {btn("semana", "Semana")}
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            size="sm"
-            variant={value.mode === "custom" ? "default" : "outline"}
-            className={cn("h-8 text-xs justify-start font-normal", value.mode !== "custom" && "text-muted-foreground")}
-          >
-            <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+          <button type="button" className={periodoBotaoClasse(value.mode === "custom")}>
+            <CalendarIcon className="h-3.5 w-3.5" />
             {value.mode === "custom" ? value.label : "Data personalizada"}
-          </Button>
+          </button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
