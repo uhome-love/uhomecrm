@@ -44,7 +44,7 @@ function useCorrida(gerenteId?: string) {
       const { data: metas } = ids.length
         ? await supabase.from("campanha_natal_metas").select("user_id, meta_vgv, meta_visitas_semana").in("user_id", ids)
         : { data: [] as { user_id: string; meta_vgv: number; meta_visitas_semana: number }[] };
-      const metaMap = new Map((metas ?? []).map((m) => [m.user_id, m]));
+      const metaMap = new Map<string, { meta_vgv: number; meta_visitas_semana: number }>((metas ?? []).map((m) => [m.user_id, { meta_vgv: Number(m.meta_vgv), meta_visitas_semana: m.meta_visitas_semana }]));
       const camp = new Map(consolidarPorCorretor(time).map((c) => [c.corretor_auth_id, c]));
       const sem = new Map(consolidarPorCorretor(timeSem).map((c) => [c.corretor_auth_id, c]));
       const linhas = membros.map((m) => {
