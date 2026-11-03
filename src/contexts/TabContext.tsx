@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { resolveRoute, type ResolvedRoute } from "@/config/pageRegistry";
 import { useUserRole, type AppRole } from "@/hooks/useUserRole";
 
-const MAX_TABS = 8;
+const MAX_TABS = 6;
 const STORAGE_KEY = "uhome_tabs_v1";
 
 export interface Tab {
@@ -22,6 +22,7 @@ interface TabContextValue {
   activeTabId: string;
   openTab: (path: string, skipNav?: boolean) => void;
   closeTab: (id: string) => void;
+  closeOtherTabs: () => void;
   activateTab: (id: string) => void;
 }
 
@@ -32,6 +33,7 @@ const FALLBACK: TabContextValue = {
   activeTabId: "",
   openTab: () => {},
   closeTab: () => {},
+  closeOtherTabs: () => {},
   activateTab: () => {},
 };
 
@@ -266,6 +268,12 @@ export function TabProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // ── closeOtherTabs: mantém só a aba ativa ─────────────────────────────────
+  const closeOtherTabs = useCallback(() => {
+    const keep = tabsRef.current.filter((t) => t.id === activeRef.current);
+    setTabs(keep);
+  }, []);
+
   // ── activateTab ────────────────────────────────────────────────────────────
   const activateTab = useCallback((tabId: string) => {
     const tab = tabsRef.current.find((t) => t.id === tabId);
@@ -348,7 +356,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
 
   return (
-    <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, activateTab }}>
+    <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, closeOtherTabs, activateTab }}>
       {children}
     </TabContext.Provider>
   );

@@ -460,23 +460,19 @@ export default function Sidebar({
   const collapsed = sidebarState === "collapsed";
 
   // ── tokens ──
-  const sb    = isDark ? "bg-[#091020] border-r border-white/5"       : "bg-[#e8e8f0] border-r border-[#dddde8]";
-  const tx    = isDark ? "text-[#fafafa]"     : "text-[#0a0a0a]";
-  const txm   = isDark ? "text-[#a1a1aa]"     : "text-[#52525b]";
-  const txd   = isDark ? "text-[#3f3f46]"     : "text-[#c4c4c7]";
-  const div   = isDark ? "bg-white/5"         : "bg-[#f0f0f0]";
-  const foot  = isDark ? "border-t border-white/5" : "border-t border-[#f0f0f0]";
+  const sb    = "shell-nav";
+  const tx    = "text-foreground";
+  const txm   = "text-muted-foreground";
+  const txd   = "text-muted-foreground/70";
+  const div   = "shell-divider";
+  const foot  = "border-t border-[hsl(var(--shell-nav-border))]";
   const camp  = isDark
-    ? "bg-white/[0.04] border border-white/[0.07] hover:bg-white/[0.08]"
-    : "bg-[#fafafa] border border-[#ebebeb] hover:bg-[#f3f3f3]";
-  const itemBase  = isDark
-    ? "text-[#a1a1aa] hover:bg-[rgba(99,102,241,0.08)] hover:text-[#6B84FF]"
-    : "text-[#3f3f46] hover:bg-[rgba(79,70,229,0.08)] hover:text-primary";
-  const itemOn  = isDark
-    ? "bg-primary text-white font-medium"
-    : "bg-primary text-white font-medium";
-  const iconDef   = isDark ? "text-[#6B84FF]"  : "text-primary";
-  const iconOn    = "text-white";
+    ? "bg-card border border-border hover:bg-accent"
+    : "bg-card border border-border hover:bg-accent";
+  const itemBase  = "shell-nav-item";
+  const itemOn  = "shell-nav-item-active";
+  const iconDef   = "text-muted-foreground group-hover/item:text-primary";
+  const iconOn    = "text-primary-foreground";
 
   // Render full nav content (reused in both aside and mobile sheet)
   const renderFullNav = () => (
@@ -512,7 +508,7 @@ export default function Sidebar({
                   key={c.path}
                   onClick={() => { openTab(c.path); if (isMobile) setOpenMobile(false); }}
                   className={cn("w-full flex items-center gap-2.5 px-3 py-[7px] rounded-[8px] text-left transition-colors",
-                    isDark ? "hover:bg-white/[0.05]" : "hover:bg-[#f5f5f7]")}
+                    "hover:bg-[hsl(var(--shell-nav-hover))]")}
                 >
                   <div className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: c.color }} />
                   <span className={cn("text-[12.5px] tracking-[-0.1px]", txm)}>{c.label}</span>
@@ -531,25 +527,25 @@ export default function Sidebar({
         return (
           <div key={group.title}>
             {gi > 0 && <div className={cn("h-px mx-3 my-[6px]", div)} />}
-            <div className="px-3 pt-3 pb-1">
+            <div className="px-3 pt-2.5 pb-1">
               {canCollapse ? (
                 <button
                   onClick={() => toggleGroup(group.title)}
                   className="w-full flex items-center justify-between px-2 mb-[3px] group/label"
                 >
-                  <p className="text-[10px] font-[650] tracking-[0.07em] uppercase text-[rgba(79,70,229,0.6)]">
+                  <p className="text-[10.5px] font-semibold tracking-[0.08em] uppercase shell-nav-label">
                     {group.title}
                   </p>
                   <ChevronRight
                     size={10} strokeWidth={2}
                     className={cn(
-                      "transition-transform duration-200 text-[rgba(79,70,229,0.4)]",
+                      "transition-transform duration-200 shell-nav-label opacity-60 group-hover/label:opacity-100",
                       !isGroupCollapsed && "rotate-90"
                     )}
                   />
                 </button>
               ) : (
-                <p className="text-[10px] font-[650] tracking-[0.07em] uppercase px-2 mb-[3px] text-[rgba(79,70,229,0.6)]">
+                <p className="text-[10.5px] font-semibold tracking-[0.08em] uppercase px-2 mb-[3px] shell-nav-label">
                   {group.title}
                 </p>
               )}
@@ -560,8 +556,8 @@ export default function Sidebar({
                     key={item.path}
                     onClick={() => { go(item.path); if (isMobile) setOpenMobile(false); }}
                     className={cn(
-                      "w-full flex items-center gap-[10px] px-2 py-[7px] rounded-[8px]",
-                      "text-[13.5px] tracking-[-0.15px] transition-all text-left",
+                      "group/item w-full flex items-center gap-[10px] px-2.5 h-9 rounded-[10px] mb-px",
+                      "text-[13.5px] tracking-[-0.15px] transition-all duration-150 text-left",
                       active ? itemOn : itemBase
                     )}
                   >
@@ -578,7 +574,7 @@ export default function Sidebar({
                           ? isManagerRole
                             ? "bg-orange-500 text-white"
                             : "bg-red-500 text-white"
-                          : isDark ? "bg-white/10 text-[#71717a]" : "bg-[#f0f0f0] text-[#a1a1aa]")}>
+                          : "bg-muted text-muted-foreground")}>
                         {item.path === "/whatsapp" && isManagerRole ? `⚠️ ${item.badge}` : item.badge}
                       </span>
                     )}
@@ -590,7 +586,7 @@ export default function Sidebar({
         );
       })}
       <div className={cn("mt-auto px-3 py-3 flex items-center gap-2.5", foot)}>
-        <div className="w-[28px] h-[28px] rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
+        <div className="w-[28px] h-[28px] rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground text-[10px] font-bold ring-2 ring-primary/15">
           {userInitials}
         </div>
         <div className="flex-1 min-w-0">
@@ -601,8 +597,7 @@ export default function Sidebar({
           <button
             onClick={onThemeToggle}
             className={cn("w-[26px] h-[26px] flex items-center justify-center rounded-[7px] transition-colors flex-shrink-0",
-              isDark ? "text-[#52525b] hover:bg-white/[0.07] hover:text-[#a1a1aa]"
-                     : "text-[#c4c4c7] hover:bg-[#f5f5f5] hover:text-[#71717a]")}
+              "text-muted-foreground hover:bg-[hsl(var(--shell-nav-hover))] hover:text-foreground")}
           >
             {isDark ? <Sun size={12} strokeWidth={1.5} /> : <Moon size={12} strokeWidth={1.5} />}
           </button>
@@ -639,7 +634,7 @@ export default function Sidebar({
   if (collapsed) {
     return (
       <aside
-        className={cn("hidden md:flex flex-col h-screen w-[60px] min-w-[60px] overflow-hidden transition-all duration-200", sb)}
+        className={cn("hidden md:flex flex-col h-screen w-[64px] min-w-[64px] overflow-y-auto transition-all duration-200", sb)}
       >
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
@@ -659,7 +654,7 @@ export default function Sidebar({
                 onClick={() => go(item.path)}
                 title={item.label}
                 className={cn(
-                  "mx-auto mb-0.5 w-[38px] h-[38px] flex items-center justify-center rounded-[8px] transition-all",
+                  "group/item mx-auto mb-1 w-10 h-10 flex items-center justify-center rounded-[10px] transition-all",
                   active ? itemOn : itemBase
                 )}
               >
@@ -677,13 +672,12 @@ export default function Sidebar({
             <button
               onClick={onThemeToggle}
               className={cn("w-[26px] h-[26px] flex items-center justify-center rounded-[7px] transition-colors",
-                isDark ? "text-[#52525b] hover:bg-white/[0.07] hover:text-[#a1a1aa]"
-                       : "text-[#c4c4c7] hover:bg-[#f5f5f5] hover:text-[#71717a]")}
+                "text-muted-foreground hover:bg-[hsl(var(--shell-nav-hover))] hover:text-foreground")}
             >
               {isDark ? <Sun size={12} strokeWidth={1.5} /> : <Moon size={12} strokeWidth={1.5} />}
             </button>
           )}
-          <div className="w-[28px] h-[28px] rounded-full bg-primary flex items-center justify-center text-white text-[9px] font-bold">
+          <div className="w-[28px] h-[28px] rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-bold">
             {userInitials}
           </div>
         </div>
@@ -694,7 +688,7 @@ export default function Sidebar({
   // Expanded desktop sidebar
   return (
     <aside
-      className={cn("hidden md:flex flex-col h-screen w-[228px] min-w-[228px] overflow-y-auto transition-all duration-200", sb)}
+      className={cn("hidden md:flex flex-col h-screen w-[244px] min-w-[244px] overflow-y-auto transition-all duration-200", sb)}
       style={{ scrollbarWidth: "none" }}
     >
       {renderFullNav()}
