@@ -1,0 +1,17 @@
+.natal-colchete {
+  background: hsl(43 79% 90%);
+  color: hsl(37 74% 27%);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+.natal-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 16px;
+}
+.natal-btn-whats {
+  color: hsl(145 77% 31%);
+  border-color: hsl(145 77% 31%);
+}
+.natal-btn-whats:hover { background: hsl(145 60% 96%); color: hsl(145 77% 26%); }
+.natal-chips::-webkit-scrollbar { display: none; }
