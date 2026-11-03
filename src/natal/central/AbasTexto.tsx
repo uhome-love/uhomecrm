@@ -73,7 +73,7 @@ export function AbaVisaoGeral({ busca = "" }: { busca?: string }) {
         <div className="flex flex-wrap gap-2">
           {SEMANAS.map((s) => {
             const atual = hoje >= s.inicio && hoje <= s.fim; const passou = hoje > s.fim;
-            return <span key={s.semana} className={`rounded-full border px-3 py-1 text-sm ${atual ? "natal-chip-ouro font-bold" : passou ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}>{s.semana} · {fmt(s.inicio)} a {fmt(s.fim)}{atual ? " · agora" : ""}</span>;
+            return <span key={s.semana} className={`rounded-full border px-3 py-1 text-sm ${atual ? "natal-chip-ouro font-bold" : passou ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}>{s.semana} · {fmt(s.inicio)} a {fmt(s.fim)}{atual ? " · agora" : ""}{"destaque" in s && s.destaque ? ` · ${s.destaque}` : ""}</span>;
           })}
         </div>
       </Secao>
