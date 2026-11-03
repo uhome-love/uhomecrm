@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { periodoGrupoClasse, periodoBotaoClasse } from "@/components/ui/PeriodSelector";
 import { useQuery } from "@tanstack/react-query";
 import { useOARanking } from "@/hooks/useOfertaAtiva";
 import { useAuth } from "@/hooks/useAuth";
@@ -119,17 +120,9 @@ export default function RankingOfertaAtiva() {
         </div>
 
         {/* Period tabs */}
-        <div className="flex items-center gap-2">
+        <div role="radiogroup" aria-label="Período" className={periodoGrupoClasse}>
           {(["hoje", "semana", "mes"] as const).map(p => (
-            <button
-              key={p}
-              className={`text-xs px-4 py-1.5 font-medium rounded-full transition-all border ${
-                period === p
-                  ? "bg-primary/10 text-primary border-primary/30"
-                  : "text-muted-foreground border-transparent hover:bg-muted"
-              }`}
-              onClick={() => setPeriod(p)}
-            >
+            <button key={p} role="radio" aria-checked={period === p} className={periodoBotaoClasse(period === p)} onClick={() => setPeriod(p)}>
               {p === "hoje" ? "Hoje" : p === "semana" ? "Semana" : "Mês"}
             </button>
           ))}

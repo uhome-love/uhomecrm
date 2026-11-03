@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import RelatorioOrigemPerformance from "@/components/relatorios/RelatorioOrigemPerformance";
 import type { ReportFilters } from "@/components/relatorios/reportUtils";
 import { formatBRT } from "@/lib/brtTime";
+import { periodoGrupoClasse, periodoBotaoClasse } from "@/components/ui/PeriodSelector";
 import MarketingDashboard from "@/components/marketing/MarketingDashboard";
 
 const PILLS: Array<{ id: string; label: string }> = [
@@ -158,19 +159,9 @@ export default function DadosAnunciosPage() {
             </button>
           ))}
         </div>
-        <div style={{ display: aba === "rastreamento" ? "flex" : "none", gap: 6 }}>
+        <div role="radiogroup" aria-label="Período" className={periodoGrupoClasse} style={{ display: aba === "rastreamento" ? undefined : "none" }}>
           {PILLS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setPeriodo(p.id)}
-              style={{
-                padding: "6px 12px", fontSize: 12, borderRadius: 8, cursor: "pointer",
-                border: periodo === p.id ? "none" : "0.5px solid #e5e7eb",
-                background: periodo === p.id ? "#4F46E5" : "#fff",
-                color: periodo === p.id ? "#fff" : "#6b7280",
-                fontWeight: periodo === p.id ? 600 : 400,
-              }}
-            >
+            <button key={p.id} role="radio" aria-checked={periodo === p.id} onClick={() => setPeriodo(p.id)} className={periodoBotaoClasse(periodo === p.id)}>
               {p.label}
             </button>
           ))}

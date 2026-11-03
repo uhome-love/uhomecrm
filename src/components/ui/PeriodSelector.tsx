@@ -19,6 +19,15 @@ interface PeriodSelectorProps {
   className?: string;
 }
 
+/** Classes do visual padrão, para páginas que montam seus próprios botões (ex.: com calendário). */
+export const periodoGrupoClasse = "inline-flex items-center gap-0.5 p-1 rounded-xl bg-muted/70 border border-border flex-wrap";
+export function periodoBotaoClasse(ativo: boolean) {
+  return cn(
+    "inline-flex items-center gap-1.5 h-7 px-3 rounded-lg text-[12.5px] font-medium transition-all whitespace-nowrap",
+    ativo ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+  );
+}
+
 /** Seletor de período padrão do CRM (mesmo visual em todas as páginas). */
 export function PeriodSelector({ value, onChange, opcoes, className }: PeriodSelectorProps) {
   const lista = opcoes ? OPCOES.filter((o) => opcoes.includes(o.value)) : OPCOES;
