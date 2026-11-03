@@ -428,6 +428,13 @@
       "when": 1793678520104,
       "tag": "0060_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1793681065803,
+      "tag": "0061_oa_ranking_semana_domingo",
+      "breakpoints": true
     }
   ]
 }
