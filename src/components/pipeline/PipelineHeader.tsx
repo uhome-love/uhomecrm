@@ -495,7 +495,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         {/* ══ ZONA 3 — Ferramentas (busca + filtros + ordenação + ações) · colapsável ══ */}
         {toolsOpen && (
         <div className="flex min-h-12 flex-wrap items-center gap-1.5 lg:gap-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
-          <div className="relative w-full sm:w-[150px] lg:w-[150px] xl:w-[150px] 2xl:w-[230px]">
+          <div className="relative w-full sm:w-[220px] xl:w-[260px] 2xl:w-[300px]">
             <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               aria-label="Buscar lead, telefone ou empreendimento"
