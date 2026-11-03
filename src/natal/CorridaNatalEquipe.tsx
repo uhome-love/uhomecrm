@@ -114,7 +114,7 @@ export function CorridaNatalEquipe({ gerenteId, recolhivel = false }: { gerenteI
         {aberto && (
           <div className="mt-4 grid gap-5 border-t pt-4 lg:grid-cols-[1.3fr_1fr]">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider" style={ouro}>02/11 a 18/12</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={ouro}>01/11 a 18/12</p>
               <p className="mt-1 text-3xl font-extrabold" style={ouro}>{brlCurto(vgv)}</p>
               <p className="text-xs text-muted-foreground">de R$ 10 mi · faltam {brlCurto(Math.max(0, META_EQUIPE - vgv))}</p>
               <div className="mt-4"><BarraOuro pct={(vgv / META_EQUIPE) * 100} chave /></div>

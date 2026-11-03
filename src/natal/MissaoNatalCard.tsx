@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 import { useNatal } from "./useNatal";
 import { useMetaNatal, useMissaoNatal, useSalvarMetaNatal } from "./useMissaoNatal";
 import { MetaNatalDialog } from "./MetaNatalDialog";
@@ -28,7 +29,8 @@ function Confete() {
   );
 }
 
-export function MissaoNatalCard({ userId }: { userId?: string }) {
+export function MissaoNatalCard({ userId, recolhivel = false }: { userId?: string; recolhivel?: boolean }) {
+  const [expandido, setExpandido] = useState(!recolhivel);
   const { efeitos, ativo, movimento } = useNatal();
   const { data: meta } = useMetaNatal(userId);
   const { data } = useMissaoNatal(ativo ? userId : undefined);
@@ -74,15 +76,29 @@ export function MissaoNatalCard({ userId }: { userId?: string }) {
               Minha Missão de Natal
               {cumpriu && <span className="natal-chip-ouro rounded-full px-2 py-0.5 text-[11px] font-bold">Missão cumprida 🔑</span>}
             </h2>
-            <p className="text-xs text-muted-foreground">Campanha de 02/11 a 18/12 · atualiza sozinho a cada visita e venda</p>
+            <p className="text-xs text-muted-foreground">Campanha de 01/11 a 18/12 · atualiza sozinho a cada visita e venda</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!encerrada && <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">🎄 Faltam {diasAte18(data.hoje)} dias</span>}
           {!encerrada && <Button size="sm" variant="outline" onClick={() => setAberto(true)}>Minha meta</Button>}
+          {recolhivel && (
+            <Button variant="ghost" size="sm" onClick={() => setExpandido((v) => !v)}>
+              {expandido ? "Recolher" : "Ver detalhes"}
+              <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${expandido ? "rotate-180" : ""}`} />
+            </Button>
+          )}
         </div>
       </header>
 
+      {!expandido && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-muted-foreground"><b className="text-foreground">{brlCurto(vgv)}</b> de {brlCurto(metaVgv)} ({Math.floor(pct)}%)</p>
+          <div className="min-w-[120px] flex-1"><BarraOuro pct={pct} fina /></div>
+        </div>
+      )}
+
+      {expandido && (<>
       {encerrada ? (
         <p className="mt-4 text-lg font-bold">Campanha encerrada: você fez {brlCurto(vgv)} {cumpriu ? "e bateu a meta! 🔑" : `de ${brlCurto(metaVgv)}.`}</p>
       ) : (
@@ -134,6 +150,8 @@ export function MissaoNatalCard({ userId }: { userId?: string }) {
           <BarraOuro pct={(data.uhomeVgv / META_UHOME) * 100} fina />
         </div>
       </div>
+      </>)}
+
 
       <MetaNatalDialog open={aberto} onOpenChange={setAberto} metaInicial={metaVgv} visitasInicial={metaSem} onSalvar={salvar} />
     </section>

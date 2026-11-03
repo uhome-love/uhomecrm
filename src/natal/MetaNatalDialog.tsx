@@ -50,7 +50,7 @@ export function MetaNatalDialog({ open, onOpenChange, metaInicial, visitasInicia
           <DialogTitle className="flex items-center gap-2">
             <img src="/natal/chave_de_ouro_com_laco.svg" alt="" className="h-7 w-7" /> Qual é a sua meta de Natal?
           </DialogTitle>
-          <DialogDescription>De 02/11 a 18/12. O mínimo é R$ 1 milhão: dá para mirar mais alto.</DialogDescription>
+          <DialogDescription>De 01/11 a 18/12. O mínimo é R$ 1 milhão: dá para mirar mais alto.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">

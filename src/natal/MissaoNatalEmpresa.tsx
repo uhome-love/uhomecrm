@@ -69,7 +69,7 @@ export function MissaoNatalEmpresa({ recolhivel = false }: { recolhivel?: boolea
           <img src="/natal/chave_de_ouro_com_laco.svg" alt="" aria-hidden className="h-10 w-10" />
           <div>
             <h2 className="text-base font-bold text-foreground">Missão de Natal · Uhome</h2>
-            <p className="text-xs text-muted-foreground">Campanha de 02/11 a 18/12 · resumo da empresa</p>
+            <p className="text-xs text-muted-foreground">Campanha de 01/11 a 18/12 · resumo da empresa</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
