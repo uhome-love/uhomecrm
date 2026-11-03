@@ -63,7 +63,7 @@ export function resumoFinanceiro(d:DadosFinanceiro,inicio:string,fim:string,hoje
  const midia=d.midia.filter(m=>noPeriodo(m.dia,inicio,fim)).reduce((s,m)=>s+Number(m.valor),0)+d.midia_manual.filter(m=>noPeriodo(m.competencia,inicio,fim)).reduce((s,m)=>s+Number(m.valor),0);
  const fixos=d.custos.filter(c=>noPeriodo(c.competencia,inicio,fim)).reduce((s,c)=>s+Number(c.valor),0);const custos=midia+fixos;
  const lucro=recebidaUhome-custos;
- return {aReceber:noPrazo.reduce((s,r)=>s+Number(r.valor),0),saldoTotal:pendentes.reduce((s,r)=>s+Number(r.valor),0),vencidas:pendentes.filter(r=>!!r.vencimento&&r.vencimento<hoje).reduce((s,r)=>s+Number(r.valor),0),recebido:recebidos.reduce((s,r)=>s+Number(r.valor),0),recebidaUhome,geradaUhome,midia,fixos,custos,lucro,roi:custos>0?lucro/custos*100:null,repassesPendentes:pendenciasRepasse(d).filter(x=>!x.repasse&&!x.distratado).reduce((s,x)=>s+x.valor,0)};
+ return {aReceber:noPrazo.reduce((s,r)=>s+Number(r.valor),0),saldoTotal:pendentes.reduce((s,r)=>s+Number(r.valor),0),qtdPendentes:pendentes.length,vencidas:pendentes.filter(r=>!!r.vencimento&&r.vencimento<hoje).reduce((s,r)=>s+Number(r.valor),0),recebido:recebidos.reduce((s,r)=>s+Number(r.valor),0),recebidaUhome,geradaUhome,midia,fixos,custos,lucro,roi:custos>0?lucro/custos*100:null,repassesPendentes:pendenciasRepasse(d).filter(x=>!x.repasse&&!x.distratado).reduce((s,x)=>s+x.valor,0)};
 }
 export const FORMAS_FINANCEIRO: Record<string,string>={pix:"PIX",zemo:"ZemoBank",nota_fiscal:"Nota fiscal"};
 export const PAPEIS_FINANCEIRO: Record<string,string>={corretor:"Corretor",gerente:"Gerente",diretora:"Diretora",diretoria:"Diretoria",administrativo:"Administrativo",uhome:"Uhome"};

@@ -4,13 +4,6 @@ import { BarChart3, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   UNIFIED_VIEWS,
   UNIFIED_SECTIONS,
   DEFAULT_UNIFIED_SECTION,
@@ -71,7 +64,6 @@ export default function CentralRelatorios() {
   }, [rolesLoading, disponiveis, secao, selecionar]);
 
   const atual = getUnifiedSection(secao);
-  const viewAtual = getViewOfSection(secao);
 
   const views = useMemo(
     () =>
@@ -82,7 +74,6 @@ export default function CentralRelatorios() {
     [disponiveis]
   );
 
-  const subVisoes = views.find((v) => v.id === viewAtual.id)?.ids ?? [];
 
   return (
     <div className="flex min-h-full flex-col bg-background">
@@ -104,57 +95,35 @@ export default function CentralRelatorios() {
           </div>
         </div>
 
-        {/* Navegação: visões (chips) + sub-visão (select) */}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <nav
-            aria-label="Visões da Performance"
-            className="flex items-center gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {views.map((v) => {
-              const Icon = v.icon;
-              const active = v.id === viewAtual.id;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => selecionar(v.ids[0])}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-                    active
-                      ? "border-transparent bg-primary text-primary-foreground"
-                      : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />
-                  <span>{v.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          {subVisoes.length > 1 && (
-            <Select value={secao} onValueChange={(v) => selecionar(v as UnifiedSectionId)}>
-              <SelectTrigger className="h-8 w-[210px] text-xs" aria-label="Sub-visão">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {subVisoes.map((id) => {
-                  const s = getUnifiedSection(id);
-                  const Icon = s.icon;
-                  return (
-                    <SelectItem key={id} value={id} className="text-xs">
-                      <span className="flex items-center gap-2">
-                        <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />
-                        {s.label}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        {/* Navegação única: todas as visões num só seletor, agrupadas */}
+        <nav aria-label="Visões da Performance" className="mt-3 flex flex-wrap items-center gap-1 rounded-xl border border-border bg-muted/60 p-1">
+          {views.map((v, vi) => (
+            <div key={v.id} className="flex items-center gap-0.5">
+              {vi > 0 && <span aria-hidden className="mx-1 h-4 w-px bg-border" />}
+              {v.ids.map((id) => {
+                const sec = getUnifiedSection(id);
+                const Icon = sec.icon;
+                const active = id === secao;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => selecionar(id)}
+                    aria-current={active ? "page" : undefined}
+                    title={v.label}
+                    className={cn(
+                      "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition-all",
+                      active ? "bg-card font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />
+                    <span>{sec.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
       </header>
 
       <main className="flex-1 px-4 py-5 sm:px-6">

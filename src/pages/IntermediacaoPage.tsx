@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -394,14 +395,13 @@ export default function IntermediacaoPage() {
 
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
-      <header className="flex items-center gap-3">
-        <FileSignature className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Instrumento de Intermediação Imobiliária</h1>
-          <p className="text-sm text-muted-foreground">Gere o contrato de intermediação da Uhome em .docx</p>
-        </div>
-      </header>
+    <div className="max-w-6xl mx-auto space-y-6">
+      <PageHeader
+        title="Intermediação"
+        subtitle="Gere o instrumento de intermediação da Uhome em .docx e consulte o histórico"
+        icon={<FileSignature size={18} strokeWidth={1.5} />}
+        actions={aba !== "gerar" ? <Button size="sm" onClick={() => setAba("gerar")}>Nova intermediação</Button> : undefined}
+      />
 
       <Tabs value={aba} onValueChange={setAba} className="space-y-6">
         <TabsList>

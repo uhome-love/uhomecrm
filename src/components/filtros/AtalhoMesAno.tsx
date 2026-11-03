@@ -6,12 +6,12 @@ const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julh
 
 interface Props { start: string; end: string; onChange: (start: string, end: string) => void }
 
-/** Atalho: escolhe mês/ano e preenche De/Até. Mostra a seleção quando o período bate exatamente. */
+/** Atalho: escolhe mês/ano e preenche De/Até. Mostra o mês quando o período começa no dia 1 e termina dentro dele (mês até hoje). */
 export function AtalhoMesAno({ start, end, onChange }: Props) {
   const anoAtual = Number(start.slice(0, 4)) || new Date().getFullYear();
   const anos = Array.from({ length: 5 }, (_, i) => String(new Date().getFullYear() - i));
   const mesAtual = Array.from({ length: 12 }, (_, i) => i + 1).find(m => {
-    const p = periodoMesAno(anoAtual, m); return p.start === start && p.end === end;
+    const p = periodoMesAno(anoAtual, m); return p.start === start && end >= start && end <= p.end;
   });
   const anoInteiro = periodoMesAno(anoAtual, 0);
   const mesValue = mesAtual ? String(mesAtual) : anoInteiro.start === start && anoInteiro.end === end ? "0" : "";

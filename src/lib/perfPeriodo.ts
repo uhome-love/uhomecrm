@@ -63,7 +63,23 @@ export const PERIODO_OPCOES: { tipo: PeriodoTipo; label: string }[] = [
   { tipo: "custom", label: "Personalizado" },
 ];
 
+/**
+ * Comparação justa: no período em andamento (semana/mês/trimestre/ano atual),
+ * o comparativo usa só o mesmo pedaço do período anterior até o dia equivalente
+ * a hoje (ex.: 1–3/11 contra 1–3/10). Não altera os números do período atual.
+ */
 export function resolverPeriodo(estado: PeriodoState, hoje = new Date()): PeriodoResolvido {
+  const r = resolverPeriodoBase(estado, hoje);
+  const emAndamento = ["semana", "mes", "trimestre", "ano"].includes(estado.tipo) && estado.offset === 0;
+  const hojeTxt = d(hoje);
+  if (!emAndamento || hojeTxt < r.start || hojeTxt >= r.end) return r;
+  const decorridos = differenceInCalendarDays(new Date(`${hojeTxt}T12:00:00`), new Date(`${r.start}T12:00:00`));
+  const corte = d(addDays(new Date(`${r.prevStart}T12:00:00`), decorridos));
+  const prevEnd = corte < r.prevEnd ? corte : r.prevEnd;
+  return { ...r, prevEnd, prevLabel: `${r.prevLabel} até o mesmo dia` };
+}
+
+function resolverPeriodoBase(estado: PeriodoState, hoje: Date): PeriodoResolvido {
   const { tipo, offset } = estado;
 
   if (tipo === "dia") {
