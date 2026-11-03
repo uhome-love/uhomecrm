@@ -1,3 +1,5 @@
+import { PageHeader } from "@/components/ui/PageHeader";
+import { CalendarCheck } from "lucide-react";
 // =============================================================================
 // PresencaRoleta — Central de presença da roleta.
 // 3 abas: Hoje (grid operacional), Histórico (métricas agregadas), Auditoria.
@@ -62,13 +64,7 @@ export default function PresencaRoleta() {
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto px-3 sm:px-0">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Presença</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          Validação por turno, histórico e auditoria.
-          {scope === "ceo" ? " Empresa inteira." : " Seu time."}
-        </p>
-      </div>
+      <PageHeader title="Presença" subtitle={`Validação por turno, histórico e auditoria.${scope === "ceo" ? " Empresa inteira." : " Seu time."}`} icon={<CalendarCheck size={18} strokeWidth={1.5} />} />
 
       {/* KPIs do dia (migrados do Dashboard CEO) */}
       <PresencaHeaderStats scope={scope} gestorId={gestorId} />

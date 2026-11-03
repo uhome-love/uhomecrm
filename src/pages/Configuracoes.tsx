@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -222,17 +223,12 @@ export default function Configuracoes() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Perfil, notificações, integrações e ferramentas de sistema
-        </p>
-      </div>
+    <div className="max-w-3xl mx-auto space-y-6">
+      <PageHeader title="Configurações" subtitle="Perfil, notificações, integrações e ferramentas de sistema" icon={<Settings size={18} strokeWidth={1.5} />} />
 
       <nav
         aria-label="Seções das Configurações"
-        className="flex items-center gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-xl border border-border bg-muted/70 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {CONFIG_SECTIONS.filter((s) => !s.adminOnly || isAdmin).map((s) => {
           const Icon = s.icon;
@@ -244,10 +240,10 @@ export default function Configuracoes() {
               onClick={() => selecionar(s.id)}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition-all",
                 active
-                  ? "border-transparent bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-card font-semibold text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.85} />

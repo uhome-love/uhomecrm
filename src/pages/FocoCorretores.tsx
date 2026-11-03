@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -32,15 +33,8 @@ export default function FocoCorretores() {
   ];
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-4">
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-          <Target className="h-5 w-5 text-primary" /> Foco Corretores
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Defina os empreendimentos que cada corretor atende e acompanhe a performance por produto.
-        </p>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-4">
+      <PageHeader title="Foco Corretores" subtitle="Defina os empreendimentos que cada corretor atende e acompanhe a performance por produto" icon={<Target size={18} strokeWidth={1.5} />} />
 
       <Card>
         <CardContent className="p-2">
