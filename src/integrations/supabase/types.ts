@@ -1482,6 +1482,27 @@ export type Database = {
           },
         ]
       }
+      campanha_natal_metas: {
+        Row: {
+          meta_vgv: number
+          meta_visitas_semana: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          meta_vgv?: number
+          meta_visitas_semana?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          meta_vgv?: number
+          meta_visitas_semana?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ceo_metas_mensais: {
         Row: {
           created_at: string

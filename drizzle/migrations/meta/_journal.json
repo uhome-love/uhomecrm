@@ -386,6 +386,13 @@
       "when": 1793398919580,
       "tag": "0054_capi_evento_unico_por_lead",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1793665427445,
+      "tag": "0055_campanha_natal_metas",
+      "breakpoints": true
     }
   ]
 }
