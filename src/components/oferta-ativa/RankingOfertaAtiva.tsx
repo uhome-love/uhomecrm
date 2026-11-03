@@ -246,9 +246,10 @@ export default function RankingOfertaAtiva() {
                 {filteredRanking.map((r, i) => {
                   const taxa = r.tentativas > 0 ? Math.round((r.aproveitados / r.tentativas) * 100) : 0;
                   const isMe = r.corretor_id === user?.id;
-                  const isTop1 = i === 0;
-                  const isTop2 = i === 1;
-                  const isTop3 = i === 2;
+                  const temPontos = (r.pontos || 0) > 0;
+                  const isTop1 = temPontos && i === 0;
+                  const isTop2 = temPontos && i === 1;
+                  const isTop3 = temPontos && i === 2;
                   const profile = profileMap[r.corretor_id];
                   const level = getLevel(r.pontos);
 
