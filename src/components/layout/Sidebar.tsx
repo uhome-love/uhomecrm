@@ -449,8 +449,8 @@ export default function Sidebar({
   const isMobile  = useIsMobile();
 
   // Track which groups are collapsed (by title). "Principal" always open.
-  const NON_COLLAPSIBLE = ["Principal"];
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const NON_COLLAPSIBLE = ["Principal", "Início"];
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({ Ferramentas: true });
   const toggleGroup = (title: string) => {
     setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
   };
@@ -493,7 +493,7 @@ export default function Sidebar({
             <span className={cn("text-[12px] font-medium flex-1 tracking-[-0.1px]", tx)}>
               Campanhas ativas
             </span>
-            <span className="text-[10px] font-bold bg-primary text-white rounded-full px-[7px] py-px">
+            <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full px-[7px] py-px">
               {CAMPAIGNS.length}
             </span>
             <ChevronRight
@@ -572,8 +572,8 @@ export default function Sidebar({
                           ? "natal-chip-ouro"
                           : item.path === "/whatsapp"
                           ? isManagerRole
-                            ? "bg-orange-500 text-white"
-                            : "bg-red-500 text-white"
+                            ? "bg-warning text-warning-foreground"
+                            : "bg-destructive text-destructive-foreground"
                           : "bg-muted text-muted-foreground")}>
                         {item.path === "/whatsapp" && isManagerRole ? `⚠️ ${item.badge}` : item.badge}
                       </span>
