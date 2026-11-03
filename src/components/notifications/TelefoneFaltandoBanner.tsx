@@ -20,18 +20,18 @@ export default function TelefoneFaltandoBanner() {
   const { data: telefone } = useQuery({
     queryKey: ["profile-telefone", user?.id],
     queryFn: async () => {
-      if (!user) return undefined;
+      if (!user) return null;
       const { data, error } = await supabase.rpc("get_my_profile_full");
       if (error) throw error;
       const profile = data?.[0];
-      return profile ? (profile.telefone ?? "") : undefined;
+      return profile ? (profile.telefone ?? "") : null;
     },
     enabled: !!user,
     staleTime: 60_000,
   });
 
   const digits = (telefone ?? "").replace(/\D/g, "");
-  if (dismissed || telefone === undefined || digits.length >= 10) return null;
+  if (dismissed || telefone == null || digits.length >= 10) return null;
 
   return (
     <div className="flex items-center gap-3 border-b border-amber-300/60 bg-amber-50 px-4 py-2 text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-200">

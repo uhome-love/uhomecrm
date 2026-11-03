@@ -1,6 +1,10 @@
 # Roadmap — qualidade visual do CRM
 
-- [ ] A — Erros e números: desenho e plano preparados; construção aguarda aprovação do Lucas
+- [ ] A1 — Pipeline: contexto do resumo corrigido e validado; exclusão de 2 clientes em Caiu aguarda aprovação específica
+- [x] A2 — Telefone: leitura protegida corrigida; validada ao vivo com CEO e por testes de ausência/erro
+- [x] A3 — Roteiros: título oficial e erro de carregamento corrigidos; consulta real vazia, sem criar roteiros ou campanhas
+- [x] A4 — Endereço inexistente: aba coerente e conteúdo antigo oculto; navegação e abas preservadas validadas com CEO
+- [ ] A — Cobertura gerente/corretor: aguarda autorização de sessão nas contas; não simulada com permissões de CEO
 - [ ] M0 — Base de movimento e leitura
 - [ ] B — Consistência
 - [ ] M1 — Abrir e trocar (esqueleto, fade de aba)

@@ -39,4 +39,11 @@ describe("leitura autorizada do telefone do próprio perfil", () => {
     expect(client.getQueryData(["profile-telefone", "own-user"])).toBeUndefined();
     expect(mocks.from).not.toHaveBeenCalled();
   });
+
+  it("perfil não encontrado continua desconhecido, sem inventar telefone vazio", async () => {
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
+    const client = mount();
+    await waitFor(() => expect(client.getQueryState(["profile-telefone", "own-user"])?.status).toBe("success"));
+    expect(client.getQueryData(["profile-telefone", "own-user"])).toBeNull();
+  });
 });
