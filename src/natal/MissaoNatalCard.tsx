@@ -41,8 +41,24 @@ export function MissaoNatalCard({ userId, recolhivel = false }: { userId?: strin
 
   useEffect(() => {
     if (!ativo || !meta || meta.definida || (data && data.hoje > CAMPANHA_FIM)) return;
-    try { if (!localStorage.getItem(CHAVE_ABRIU)) { localStorage.setItem(CHAVE_ABRIU, "1"); setAberto(true); } } catch { /* sem storage */ }
+    try { if (localStorage.getItem(CHAVE_ABRIU)) return; } catch { return; }
+    // Espera não haver outra janela aberta, para nunca empilhar pop-ups.
+    let tentativas = 0;
+    const id = window.setInterval(() => {
+      tentativas += 1;
+      if (document.querySelector('[role="dialog"], [role="alertdialog"]')) { if (tentativas > 40) window.clearInterval(id); return; }
+      window.clearInterval(id);
+      try { localStorage.setItem(CHAVE_ABRIU, "1"); } catch { /* ok */ }
+      setAberto(true);
+    }, 1500);
+    return () => window.clearInterval(id);
   }, [ativo, meta, data]);
+
+  useEffect(() => {
+    const abrir = () => setAberto(true);
+    window.addEventListener("natal:abrir-meta", abrir);
+    return () => window.removeEventListener("natal:abrir-meta", abrir);
+  }, []);
 
   const vgv = data?.campanha.vgv_assinado ?? 0;
   const metaVgv = meta?.meta_vgv ?? 1_000_000;
