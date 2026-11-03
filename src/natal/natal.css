@@ -38,7 +38,7 @@
 @keyframes natal-cair { to { transform: translateY(420px) rotate(540deg); opacity: 0; } }
 
 /* Fase 5 — comemoração, carregamento */
-.natal-venda-card { background: var(--natal-gold-grad); color: hsl(222 47% 8%); }
+.natal-venda-card { background: var(--natal-gold-grad); color: hsl(var(--natal-navy)); }
 .natal-texto-ouro { background: var(--natal-gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .natal-balanca { animation: natal-balanca 1.2s ease-in-out infinite; transform-origin: top center; }
 @keyframes natal-balanca { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
