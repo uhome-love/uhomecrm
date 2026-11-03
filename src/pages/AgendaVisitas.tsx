@@ -894,20 +894,25 @@ export default function AgendaVisitas() {
 
       {/* ═══════ PERIOD PILLS + VIEW TOGGLE ═══════ */}
       <div className="flex items-center gap-1 flex-nowrap md:flex-wrap overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+        <div role="radiogroup" aria-label="Período" className="contents md:inline-flex md:items-center md:gap-0.5 md:p-1 md:rounded-xl md:bg-muted/70 md:border md:border-border">
         {PERIOD_OPTIONS.map(p => (
           <button
             key={p.key}
+            role="radio"
+            aria-checked={period === p.key}
             onClick={() => setPeriod(p.key)}
             className={cn(
-              "px-3.5 py-2 md:px-3 md:py-1.5 rounded-full md:rounded-[8px] text-[13px] md:text-[12px] font-medium transition-all shrink-0 whitespace-nowrap",
+              "px-3.5 py-2 rounded-full text-[13px] font-medium transition-all shrink-0 whitespace-nowrap",
+              "md:h-7 md:py-0 md:px-3 md:rounded-lg md:text-[12.5px] md:border-0",
               period === p.key
-                ? "bg-primary text-white"
-                : "text-neutral-500 bg-white dark:bg-white/5 border border-border dark:border-white/10 hover:text-foreground dark:hover:text-white"
+                ? "bg-primary text-primary-foreground md:bg-card md:text-foreground md:shadow-sm md:font-semibold"
+                : "text-muted-foreground bg-card border border-border md:bg-transparent hover:text-foreground"
             )}
           >
             {p.label}
           </button>
         ))}
+        </div>
         <span className="text-[11px] text-muted-foreground ml-2 shrink-0 whitespace-nowrap">
           {dateRange.from === dateRange.to
             ? format(new Date(dateRange.from + "T12:00:00"), "dd/MM/yyyy")

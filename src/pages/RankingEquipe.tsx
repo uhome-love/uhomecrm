@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { PeriodSelector, type PeriodoPadrao } from "@/components/ui/PeriodSelector";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths, isSameWeek, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -176,14 +177,11 @@ export default function RankingEquipe() {
         title="Performance"
         subtitle="Visão geral, rankings e desempenho da equipe ao vivo"
         icon={<Star size={18} strokeWidth={1.5} />}
-        tabs={[
-          { label: "Hoje", value: "hoje" },
-          { label: "Semana", value: "semana" },
-          { label: "Mês", value: "mes" },
-          { label: "Personalizado", value: "personalizado" },
-        ]}
-        activeTab={period}
-        onTabChange={(v) => handlePeriodChange(v as Period)}
+      />
+      <PeriodSelector
+        value={period as PeriodoPadrao}
+        onChange={(v) => handlePeriodChange(v as Period)}
+        opcoes={["hoje", "semana", "mes", "personalizado"]}
       />
 
       {/* Period nav + filtros */}
