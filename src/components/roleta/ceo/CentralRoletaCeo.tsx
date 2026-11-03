@@ -179,7 +179,7 @@ export function CentralRoletaCeo() {
       />
 
       {/* Navegação em um nível só, agrupada por seção */}
-      <nav aria-label="Seções da Roleta" className="flex items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-sm">
+      <nav aria-label="Seções da Roleta" className="flex flex-wrap items-center gap-y-1 gap-x-1 rounded-2xl border border-border bg-card p-1.5 shadow-sm">
         {NAV_GROUPS.map((g, gi) => (
           <div key={g.key} className="flex shrink-0 items-center gap-1">
             {gi > 0 && <span aria-hidden className="mx-1 h-5 w-px bg-border" />}
