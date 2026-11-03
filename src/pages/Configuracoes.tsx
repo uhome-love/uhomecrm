@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
-import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Upload, CreditCard, BadgeCheck, Wrench, Bell, Plug, type LucideIcon } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Upload, CreditCard, BadgeCheck, Wrench, Bell, Plug, Settings, type LucideIcon } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import MetaAudiencesCard from "@/components/marketing/MetaAudiencesCard";
