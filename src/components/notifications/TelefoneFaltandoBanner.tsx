@@ -20,13 +20,11 @@ export default function TelefoneFaltandoBanner() {
   const { data: telefone } = useQuery({
     queryKey: ["profile-telefone", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("telefone")
-        .eq("user_id", user!.id)
-        .maybeSingle();
+      if (!user) return undefined;
+      const { data, error } = await supabase.rpc("get_my_profile_full");
       if (error) throw error;
-      return (data?.telefone ?? "") as string;
+      const profile = data?.[0];
+      return profile ? (profile.telefone ?? "") : undefined;
     },
     enabled: !!user,
     staleTime: 60_000,

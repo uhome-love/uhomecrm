@@ -61,7 +61,7 @@ export function CriarCampanhaDialog({ open, onOpenChange, filtroInicial }: Props
 
   const { data: emps } = useEmpreendimentosCanonicos();
   const { data: forms } = useFormulariosBase();
-  const { data: templates } = useTemplatesOA();
+  const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } = useTemplatesOA();
   const { data: opcoesEscopo } = useEscopoOpcoes();
   const { data: preview, isLoading: loadingPreview } = usePreviewCampanhaV2(filtro, open);
   const criar = useCriarCampanhaV2();
@@ -136,6 +136,9 @@ export function CriarCampanhaDialog({ open, onOpenChange, filtroInicial }: Props
               state={{ ...ident, nome: ident.nome || nomeSugerido }}
               set={(p) => setIdent((s) => ({ ...s, ...p }))}
               templates={templates ?? []}
+              templatesLoading={templatesLoading}
+              templatesError={templatesError}
+              onRetryTemplates={() => { void refetchTemplates(); }}
             />
           </TabsContent>
 

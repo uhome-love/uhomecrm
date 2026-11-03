@@ -26,10 +26,16 @@ export function PassoIdentidade({
   state,
   set,
   templates,
+  templatesLoading = false,
+  templatesError = false,
+  onRetryTemplates,
 }: {
   state: IdentidadeState;
   set: (p: Partial<IdentidadeState>) => void;
-  templates: { id: string; nome: string; empreendimento: string | null }[];
+  templates: { id: string; titulo: string; empreendimento: string | null }[];
+  templatesLoading?: boolean;
+  templatesError?: boolean;
+  onRetryTemplates?: () => void;
 }) {
   return (
     <div className="space-y-3">
@@ -53,22 +59,31 @@ export function PassoIdentidade({
       <div className="space-y-1.5">
         <Label>Roteiro / script</Label>
         <Select
+          disabled={templatesLoading || templatesError}
           value={state.template_id ?? "nenhum"}
           onValueChange={(v) => set({ template_id: v === "nenhum" ? null : v })}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Sem roteiro específico" />
+          <SelectTrigger aria-label="Roteiro / script">
+            <SelectValue placeholder={templatesLoading ? "Carregando roteiros…" : "Sem roteiro específico"} />
           </SelectTrigger>
           <SelectContent className="max-h-64">
             <SelectItem value="nenhum">Sem roteiro específico</SelectItem>
             {templates.map((t) => (
               <SelectItem key={t.id} value={t.id}>
-                {t.nome}
+                {t.titulo}
                 {t.empreendimento ? ` · ${t.empreendimento}` : ""}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {templatesError && (
+          <div role="alert" className="flex flex-wrap items-center gap-2 text-xs text-destructive">
+            <span>Não foi possível carregar os roteiros.</span>
+            <Button type="button" variant="outline" size="sm" onClick={onRetryTemplates}>
+              Tentar novamente
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

@@ -492,10 +492,10 @@ export function useTemplatesOA() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("oferta_ativa_templates")
-        .select("id,nome,empreendimento")
-        .order("nome");
+        .select("id,titulo,empreendimento")
+        .order("titulo");
       if (error) throw error;
-      return (data ?? []) as { id: string; nome: string; empreendimento: string | null }[];
+      return data ?? [];
     },
     staleTime: 10 * 60_000,
   });
