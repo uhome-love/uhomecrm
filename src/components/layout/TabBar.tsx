@@ -3,6 +3,7 @@ import { useTabContext } from "@/contexts/TabContext";
 import { icons, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 function TabIcon({ name }: { name: string }) {
   const Icon = (icons as Record<string, LucideIcon>)[name];
@@ -10,7 +11,7 @@ function TabIcon({ name }: { name: string }) {
   return <Icon size={14} strokeWidth={1.75} />;
 }
 
-export default function TabBar() {
+export default function TabBar({ unknownRoute = false }: { unknownRoute?: boolean }) {
   const { tabs, activeTabId, activateTab, closeTab, closeOtherTabs } = useTabContext();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -19,7 +20,7 @@ export default function TabBar() {
     activeEl?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   }, [activeTabId]);
 
-  if (tabs.length <= 1) return null;
+  if (tabs.length <= 1 && !unknownRoute) return null;
 
   return (
     <div className="shell-tabs flex items-center h-11 min-h-11 px-3 gap-2 select-none">
@@ -30,13 +31,15 @@ export default function TabBar() {
       >
         {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
+          const label = isActive && unknownRoute ? "Página não encontrada" : tab.label;
           const canClose = index > 0;
           return (
-            <button
+            <Button
               key={tab.id}
+              variant="ghost"
               data-active={isActive}
               onClick={() => activateTab(tab.id)}
-              title={tab.label}
+              title={isActive && unknownRoute ? `Página não encontrada · voltar para ${tab.label}` : tab.label}
               className={cn(
                 "group relative flex items-center gap-2 pl-3 pr-2 h-8 rounded-lg text-[12.5px] tracking-[-0.1px] transition-all duration-150",
                 "max-w-[190px] min-w-[96px] shrink-0 border border-transparent",
@@ -46,9 +49,9 @@ export default function TabBar() {
               )}
             >
               <span className={cn("shrink-0", isActive ? "text-primary" : "text-muted-foreground/70")}>
-                <TabIcon name={tab.icon} />
+                <TabIcon name={isActive && unknownRoute ? "Compass" : tab.icon} />
               </span>
-              <span className="truncate flex-1 text-left">{tab.label}</span>
+              <span className="truncate flex-1 text-left">{label}</span>
               {canClose ? (
                 <span
                   role="button"
@@ -63,7 +66,7 @@ export default function TabBar() {
                   <X size={11} strokeWidth={2.25} />
                 </span>
               ) : <span className="w-[18px]" />}
-            </button>
+            </Button>
           );
         })}
       </div>
