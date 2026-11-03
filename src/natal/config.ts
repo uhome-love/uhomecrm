@@ -2,7 +2,7 @@
 // Para remover depois: apagar src/natal/, public/natal/ e os imports que apontam para cá.
 import { todayBRT } from "@/lib/brtTime";
 
-export const NATAL_INICIO = "2026-11-03";
+export const NATAL_INICIO = "2026-11-02";
 export const NATAL_FIM = "2026-12-26";
 export const CAMPANHA_INICIO = "2026-11-02";
 export const CAMPANHA_FIM = "2026-12-18";
