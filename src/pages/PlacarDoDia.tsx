@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isNatal } from "@/natal/config";
+import { PlacarNatalDecor, FaixasPlacarNatal, BarraOuroTv, NATAL_FUNDO, NATAL_CONFETE, NATAL_NOTAS_MARCADA, NATAL_NOTAS_REALIZADA, NATAL_TITULO_GRAD, NATAL_OURO } from "@/natal/PlacarNatal";
 
 const DEFAULT_META = 20;
 const META_EQUIPE = 10;
@@ -60,7 +62,7 @@ function ProgressBar({ valor, meta, cor }) {
   );
 }
 
-function Confetti({ active }) {
+function Confetti({ active, cores = null }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
 
@@ -80,7 +82,7 @@ function Confetti({ active }) {
       vy: 2 + Math.random() * 3,
       vx: (Math.random() - 0.5) * 2,
       size: 6 + Math.random() * 8,
-      color: ["#9333EA", "#3350E6", "#16A34A", "#F59E0B", "#EF4444"][Math.floor(Math.random() * 5)],
+      color: (cores || ["#9333EA", "#3350E6", "#16A34A", "#F59E0B", "#EF4444"])[Math.floor(Math.random() * (cores ? cores.length : 5))],
       rot: Math.random() * 360,
       rotV: (Math.random() - 0.5) * 6,
     }));
@@ -105,7 +107,7 @@ function Confetti({ active }) {
     };
     draw();
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
-  }, [active]);
+  }, [active, cores]);
 
   if (!active) return null;
   return (
@@ -117,6 +119,7 @@ function Confetti({ active }) {
 }
 
 export default function PlacarDoDia() {
+  const natal = isNatal();
   const [dados, setDados] = useState(emptyPorEquipe());
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -156,10 +159,12 @@ export default function PlacarDoDia() {
       // Realizada = conquista maior: mais alto, sequência mais longa e brilhante
       const realizada = tipo === "realizada";
       gainNode.gain.setValueAtTime(realizada ? 0.4 : 0.3, ctx.currentTime);
-      const notas = realizada
+      const notas = natal
+        ? (realizada ? NATAL_NOTAS_REALIZADA : NATAL_NOTAS_MARCADA)
+        : realizada
         ? [523, 659, 784, 1047, 1319, 1568, 2093]
         : [523, 659, 784, 1047];
-      const passo = realizada ? 0.1 : 0.12;
+      const passo = natal ? (realizada ? 0.16 : 0.08) : realizada ? 0.1 : 0.12;
       const dur = realizada ? 0.18 : 0.15;
       notas.forEach((freq, i) => {
         const osc = ctx.createOscillator();
@@ -402,19 +407,20 @@ export default function PlacarDoDia() {
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        background: "linear-gradient(135deg, #0a0a1a 0%, #0f0f2e 50%, #0a0a1a 100%)",
+        background: natal ? NATAL_FUNDO : "linear-gradient(135deg, #0a0a1a 0%, #0f0f2e 50%, #0a0a1a 100%)",
         fontFamily: "'Bebas Neue', 'Impact', sans-serif",
         color: "#fff",
         padding: 0,
         margin: 0,
         position: "relative",
       }}>
-        <Confetti active={metaGeralAtingida} />
+        {natal && <PlacarNatalDecor />}
+        <Confetti active={metaGeralAtingida} cores={natal ? NATAL_CONFETE : null} />
 
         {/* Anúncio no meio da tela */}
         {announcement && (() => {
           const realizada = announcement.tipo === "realizada";
-          const cor = announcement.cor || "#F59E0B";
+          const cor = natal ? NATAL_OURO : (announcement.cor || "#F59E0B");
           const detalhe = [announcement.cliente, announcement.empreendimento].filter(Boolean).join(" · ");
           return (
             <div key={announcement.key} style={{
@@ -447,7 +453,7 @@ export default function PlacarDoDia() {
                   textShadow: `0 0 30px ${cor}`,
                   marginBottom: 8,
                 }}>
-                  {realizada ? "✅ Visita Realizada" : "🎯 Visita Marcada"}
+                    {natal ? (realizada ? "🔔 Visita Realizada" : "🎁 Visita Marcada") : realizada ? "✅ Visita Realizada" : "🎯 Visita Marcada"}
                 </div>
                 <div style={{
                   fontSize: "clamp(56px, 10vw, 140px)",
@@ -470,6 +476,10 @@ export default function PlacarDoDia() {
                     textTransform: "uppercase",
                   }}>{detalhe}</div>
                 )}
+                {natal && realizada && (
+                  <div style={{ fontSize: "clamp(16px, 2.4vw, 30px)", letterSpacing: 3, color: NATAL_OURO, marginTop: 12 }}>+1 CHAVE PARA A MISSÃO 🔑</div>
+                )}
+                {natal && <img src="/natal/gorro_3d.png" alt="" aria-hidden style={{ position: "absolute", top: -34, right: -26, height: 70, transform: "rotate(18deg)" }} />}
               </div>
             </div>
           );
@@ -478,7 +488,7 @@ export default function PlacarDoDia() {
 
 
         {/* Header */}
-        <div style={{ textAlign: "center", padding: "6px 24px 4px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
+        <div style={{ textAlign: "center", padding: natal ? "28px 24px 4px" : "6px 24px 4px", minHeight: natal ? 96 : undefined, borderBottom: "1px solid #ffffff14", flexShrink: 0, position: "relative", zIndex: 1 }}>
           <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff44", fontFamily: "monospace", marginBottom: 1 }}>
             UHOME NEGÓCIOS IMOBILIÁRIOS
           </div>
@@ -487,11 +497,11 @@ export default function PlacarDoDia() {
             letterSpacing: 4,
             margin: 0,
             lineHeight: 1.1,
-            background: "linear-gradient(90deg, #F59E0B, #EF4444, #9333EA)",
+            background: natal ? NATAL_TITULO_GRAD : "linear-gradient(90deg, #F59E0B, #EF4444, #9333EA)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             textTransform: "uppercase",
-          }}>⚡ Placar do Dia ⚡</h1>
+          }}>{natal ? "🎄 Placar de Natal 🎄" : "⚡ Placar do Dia ⚡"}</h1>
           <p style={{
             fontSize: "clamp(8px, 1vw, 11px)",
             letterSpacing: 6,
@@ -555,10 +565,10 @@ export default function PlacarDoDia() {
               )}
             </div>
           </div>
-          <ProgressBar valor={totalGeral} meta={meta} cor={metaGeralAtingida ? "#22c55e" : "#F59E0B"} />
+          {natal ? <BarraOuroTv valor={totalGeral} meta={meta} /> : <ProgressBar valor={totalGeral} meta={meta} cor={metaGeralAtingida ? "#22c55e" : "#F59E0B"} />}
           {metaGeralAtingida && (
             <div style={{ textAlign: "center", marginTop: 4, fontSize: "clamp(14px, 2vw, 20px)", letterSpacing: 4, color: "#22c55e", animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
-              🎉 META BATIDA! 🎉
+              {natal ? "🔔 META BATIDA! 🔔" : "🎉 META BATIDA! 🎉"}
             </div>
           )}
         </div>
@@ -619,6 +629,8 @@ export default function PlacarDoDia() {
                     <div style={{ position: "absolute", top: 8, right: 10, fontSize: 22, opacity: posGlobal === 0 ? 1 : 0.5 }}>
                       {posGlobal === 0 ? "🥇" : posGlobal === 1 ? "🥈" : "🥉"}
                     </div>
+                    {natal && <div aria-hidden style={{ position: "absolute", top: 0, left: 0, right: 0, height: 12, backgroundImage: "url(/natal/luzes_varal_1600.svg)", backgroundSize: "auto 12px", backgroundRepeat: "repeat-x", opacity: 0.8 }} />}
+                    {natal && posGlobal === 0 && <img src="/natal/gorro_3d.png" alt="" aria-hidden style={{ position: "absolute", top: -2, right: 2, height: 26, transform: "rotate(18deg)" }} />}
                     {isFloat && (
                       <div className="float-up" style={{
                         position: "absolute", top: "30%", left: "50%", transform: "translateX(-50%)",
@@ -637,7 +649,7 @@ export default function PlacarDoDia() {
                     <ProgressBar valor={total} meta={META_EQUIPE} cor={equipe.cor} />
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "#ffffff44", fontFamily: "monospace", letterSpacing: 1 }}>
                       <span>META: {META_EQUIPE}</span>
-                      <span>{metaBatida ? "✅ CONCLUÍDA" : `FALTAM: ${META_EQUIPE - total}`}</span>
+                      <span>{metaBatida ? (natal ? "✅ CONCLUÍDA 🎁" : "✅ CONCLUÍDA") : `FALTAM: ${META_EQUIPE - total}`}</span>
 
                     </div>
                     {metaBatida && (
@@ -695,7 +707,7 @@ export default function PlacarDoDia() {
               textAlign: "center",
               fontWeight: 900,
               flexShrink: 0,
-            }}>⚡ ÚLTIMAS VISITAS</div>
+            }}>{natal ? "🎁 ÚLTIMAS VISITAS" : "⚡ ÚLTIMAS VISITAS"}</div>
 
             <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 6 }}>
               {ultimasVisitas.length === 0 ? (
@@ -768,6 +780,8 @@ export default function PlacarDoDia() {
             </div>
           </div>
         </div>
+
+        {natal && <FaixasPlacarNatal />}
 
         {/* Footer */}
         <div style={{
