@@ -556,7 +556,7 @@ export default function Sidebar({
                     key={item.path}
                     onClick={() => { go(item.path); if (isMobile) setOpenMobile(false); }}
                     className={cn(
-                      "group/item w-full flex items-center gap-[10px] px-2.5 h-9 rounded-[10px] mb-px",
+                      "group/item w-full flex items-center gap-[10px] px-2.5 h-8 rounded-[10px] mb-px",
                       "text-[13.5px] tracking-[-0.15px] transition-all duration-150 text-left",
                       active ? itemOn : itemBase
                     )}
