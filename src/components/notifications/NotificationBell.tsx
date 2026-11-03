@@ -8,6 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import NotificationList from "./NotificationList";
+import AtivarPushAparelho from "./AtivarPushAparelho";
 
 export default function NotificationBell() {
   const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
@@ -41,6 +42,7 @@ export default function NotificationBell() {
             </Button>
           )}
         </div>
+        <AtivarPushAparelho />
         <div className="overflow-y-auto flex-1">
           <NotificationList
             notifications={notifications.slice(0, 20)}
