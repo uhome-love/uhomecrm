@@ -499,7 +499,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               aria-label="Buscar lead, telefone ou empreendimento"
-              placeholder="Buscar lead ou empreendimento…"
+              placeholder="Buscar lead…"
               value={filters.search}
               onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
               className="w-full outline-none h-10 sm:h-9 rounded-full sm:rounded-lg bg-muted sm:bg-muted/40 border border-transparent sm:border-border pl-9 pr-8 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary"

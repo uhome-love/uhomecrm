@@ -182,8 +182,8 @@ export function CentralRoletaCeo() {
       <nav aria-label="Seções da Roleta" className="flex items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-sm">
         {NAV_GROUPS.map((g, gi) => (
           <div key={g.key} className="flex shrink-0 items-center gap-1">
-            {gi > 0 && <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />}
-            <span className="px-1.5 text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground/70">{g.label}</span>
+            {gi > 0 && <span aria-hidden className="mx-1 h-5 w-px bg-border" />}
+            <span className="hidden 2xl:inline px-1.5 text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground/70">{g.label}</span>
             {g.subs.map((sub) => {
               const active = sub.value === activeSub;
               const badge = sub.value === "pendentes" && pendentesCount > 0 ? pendentesCount : undefined;
@@ -193,7 +193,7 @@ export function CentralRoletaCeo() {
                   onClick={() => navigate(g.key, sub.value)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
+                    "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors",
                     active
                       ? "bg-primary/10 font-semibold text-primary"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
