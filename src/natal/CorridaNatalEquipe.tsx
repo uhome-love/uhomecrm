@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { AtalhoMateriais } from "./central/AtalhoMateriais";
 import { supabase } from "@/integrations/supabase/client";
 import { agruparPorEquipe, consolidarPorCorretor, fetchMetricas, somarMetricas } from "@/lib/metricasSSOT";
 import { todayBRT } from "@/lib/brtTime";
@@ -103,6 +104,7 @@ export function CorridaNatalEquipe({ gerenteId, recolhivel = false }: { gerenteI
             <b className="text-foreground">{brlCurto(vgv)}</b> de R$ 10 mi ({pctEquipe}%)
           </p>
           <div className="min-w-[120px] flex-1"><BarraOuro pct={pctEquipe} fina /></div>
+          <AtalhoMateriais />
           {recolhivel && (
             <Button variant="ghost" size="sm" onClick={() => setAberto((v) => !v)}>
               {aberto ? "Recolher" : "Ver detalhes"}

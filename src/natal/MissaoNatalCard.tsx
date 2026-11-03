@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AtalhoMateriais } from "./central/AtalhoMateriais";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { useNatal } from "./useNatal";
@@ -102,6 +103,7 @@ export function MissaoNatalCard({ userId, recolhivel = false }: { userId?: strin
         <div className="flex flex-wrap items-center gap-2">
           {!encerrada && <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">🎄 Faltam {diasAte18(data.hoje)} dias</span>}
           {!encerrada && <Button size="sm" variant="outline" onClick={() => setAberto(true)}>Minha meta</Button>}
+          <AtalhoMateriais />
           {recolhivel && (
             <Button variant="ghost" size="sm" onClick={() => setExpandido(false)}>
               Recolher <ChevronDown className="ml-1 h-4 w-4 rotate-180" />

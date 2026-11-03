@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import UhomeLogo from "@/components/UhomeLogo";
 import { GorroNatal } from "@/natal/TemaNatal";
+import { withNatalMenu } from "@/natal/central/menuNatal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMutiraoAtivo } from "@/hooks/useMutiraoAtivo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -435,7 +436,8 @@ export default function Sidebar({
       : g,
   );
 
-  const groups = withMutirao.map(g => ({
+  const comNatal = withNatalMenu(withMutirao, role);
+  const groups = comNatal.map(g => ({
     ...g,
     items: g.items.map(item =>
       item.path === "/whatsapp" && !isManagerRole && whatsappUnread > 0
@@ -570,7 +572,9 @@ export default function Sidebar({
                     <span className="flex-1 truncate">{item.label}</span>
                     {item.badge !== undefined && (
                       <span className={cn("text-[10px] font-semibold rounded-full px-1.5 py-px",
-                        item.path === "/whatsapp"
+                        item.path === "/campanha-natal"
+                          ? "natal-chip-ouro"
+                          : item.path === "/whatsapp"
                           ? isManagerRole
                             ? "bg-orange-500 text-white"
                             : "bg-red-500 text-white"

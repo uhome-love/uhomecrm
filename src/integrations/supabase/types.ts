@@ -8261,6 +8261,51 @@ export type Database = {
         }
         Relationships: []
       }
+      natal_materiais: {
+        Row: {
+          arquivo_path: string
+          ativo: boolean
+          chave: string
+          created_at: string
+          created_by: string | null
+          id: string
+          mime: string | null
+          ordem: number
+          secao: string
+          tamanho_bytes: number | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_path: string
+          ativo?: boolean
+          chave: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mime?: string | null
+          ordem?: number
+          secao: string
+          tamanho_bytes?: number | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_path?: string
+          ativo?: boolean
+          chave?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mime?: string | null
+          ordem?: number
+          secao?: string
+          tamanho_bytes?: number | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       negocios: {
         Row: {
           auth_user_id: string | null
@@ -18543,6 +18588,7 @@ export type Database = {
       }
       midia_refresh_jornada: { Args: { p_dias?: number }; Returns: number }
       monitor_primeiro_contato_v1_coverage: { Args: never; Returns: undefined }
+      natal_central_desagendar: { Args: never; Returns: undefined }
       norm_empreendimento: { Args: { s: string }; Returns: string }
       normalizar_bairro: { Args: { _txt: string }; Returns: string }
       normalize_alias: { Args: { input: string }; Returns: string }

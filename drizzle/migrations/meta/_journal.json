@@ -414,6 +414,13 @@
       "when": 1793671131946,
       "tag": "0058_placar_natal_inicio_01_11",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1793671839935,
+      "tag": "0059_campanha_natal_materiais",
+      "breakpoints": true
     }
   ]
 }
