@@ -24,6 +24,10 @@ import ProximaVisitaCard from "@/components/corretor/rotina/ProximaVisitaCard";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
+import { useNatal } from "@/natal/useNatal";
+import { GorroNatal } from "@/natal/TemaNatal";
+import { NeveSuave } from "@/natal/NeveSuave";
+import { diasAte18 } from "@/natal/config";
 
 
 export default function CorretorDashboard() {
@@ -54,6 +58,7 @@ export default function CorretorDashboard() {
 
   const motivation = useDailyMotivation();
   const isMobile = useIsMobile();
+  const natal = useNatal();
   const [focusOpen] = useState(false);
   const { data: perf } = useRoletaPerformanceStatus();
   const horaBRT = Number(new Date().toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }));
@@ -81,12 +86,18 @@ export default function CorretorDashboard() {
             <div className="min-w-0">
               <p className="text-[13px] font-medium capitalize text-muted-foreground">{dataFormatada}</p>
               <h1 className="truncate text-[30px] font-bold leading-tight tracking-tight text-foreground">{saudacao}, {primeiroNome}</h1>
+              {natal.efeitos && (
+                <span className="natal-chip-ouro mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
+              )}
             </div>
+            <div className="relative shrink-0">
             {avatarSrc ? (
               <img src={avatarSrc} alt={profile?.nome || "Avatar"} className="h-12 w-12 shrink-0 rounded-full object-cover" />
             ) : (
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">{initials || "?"}</div>
             )}
+              <GorroNatal className="-left-2 -top-4 w-8" />
+            </div>
           </div>
           <p className="text-sm italic text-muted-foreground">"{motivation}"</p>
           <ProximaVisitaCard />
@@ -97,9 +108,14 @@ export default function CorretorDashboard() {
       {/* 1. Saudação HOMI (gradient inline — computador) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="hidden md:block">
         <div
-          className="rounded-2xl p-5 text-primary-foreground relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary"
+          className={`rounded-2xl p-5 text-primary-foreground relative overflow-hidden ${natal.efeitos ? "natal-noite" : "bg-gradient-to-br from-primary via-primary/90 to-primary"}`}
         >
-          <div className="flex items-center gap-4">
+          {natal.efeitos && <NeveSuave altura={200} />}
+          {natal.efeitos && (
+            <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none absolute bottom-0 right-4 h-[118%] select-none" />
+          )}
+          <div className="relative flex items-center gap-4">
+            <div className="relative shrink-0">
             {avatarSrc ? (
               <img
                 src={avatarSrc}
@@ -114,13 +130,18 @@ export default function CorretorDashboard() {
                 {initials || "?"}
               </div>
             )}
-            <div className="min-w-0 flex-1">
+              <GorroNatal className="-left-3 -top-5 w-10" />
+            </div>
+            <div className={`min-w-0 flex-1 ${natal.efeitos ? "pr-36" : ""}`}>
               <p className="text-lg font-bold truncate">{saudacao}, {primeiroNome}! 👋</p>
               <p className="text-sm text-primary-foreground/80 italic leading-snug mt-0.5">"{motivation}"</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-xs capitalize">{dataFormatada}</span>
                 {perf?.crm_atende && (
                   <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-xs font-semibold">🏆 Padrão Uhome conquistado</span>
+                )}
+                {natal.efeitos && (
+                  <span className="natal-chip-ouro rounded-full px-2.5 py-0.5 text-xs font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
                 )}
               </div>
             </div>

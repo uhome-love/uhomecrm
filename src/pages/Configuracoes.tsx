@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { EfeitosNatalToggle } from "@/natal/EfeitosNatalToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -258,6 +259,7 @@ export default function Configuracoes() {
 
       {secao === "perfil" && (
         <>
+      <EfeitosNatalToggle />
       {/* Profile Card */}
 
       <Card>

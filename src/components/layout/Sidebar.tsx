@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import UhomeLogo from "@/components/UhomeLogo";
+import { GorroNatal } from "@/natal/TemaNatal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMutiraoAtivo } from "@/hooks/useMutiraoAtivo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -479,7 +480,10 @@ export default function Sidebar({
   const renderFullNav = () => (
     <>
       <div className="px-5 pt-5 pb-4">
-        <UhomeLogo size="md" showTagline />
+        <div className="relative inline-block">
+          <UhomeLogo size="md" showTagline />
+          <GorroNatal className="-left-3 -top-4 w-7" />
+        </div>
       </div>
       {showCampaigns && CAMPAIGNS.length > 0 && (
         <div className="px-3 mb-2">
@@ -635,7 +639,10 @@ export default function Sidebar({
       >
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
-          <UhomeLogo size="sm" />
+          <div className="relative">
+            <UhomeLogo size="sm" />
+            <GorroNatal className="-left-2 -top-3 w-5" />
+          </div>
         </div>
 
         {/* Nav icons only */}
