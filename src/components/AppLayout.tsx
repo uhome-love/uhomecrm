@@ -42,6 +42,7 @@ import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
 import { FaixaLuzesNatal, GorroNatal } from "@/natal/TemaNatal";
+import { ComemoracaoVenda } from "@/natal/ComemoracaoVenda";
 import MobileBottomNav from "@/components/layout/mobile/MobileBottomNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 const homiMascot = "/images/homi-mascot-official.png";
@@ -170,6 +171,7 @@ export default function AppLayout() {
             />
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             <FaixaLuzesNatal />
+            <ComemoracaoVenda />
             <header
               className={cn(
                 "h-14 flex items-center justify-between sticky top-0 z-50 px-4",

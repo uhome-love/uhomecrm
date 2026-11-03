@@ -15,15 +15,16 @@ import { useMateriais, useUrlsAssinadas } from "./useMateriais";
 import { AbaEmpreendimentos, AbaFollowups, AbaScripts, AbaVisaoGeral } from "./AbasTexto";
 import { AbaDisparos, AbaGrade, AbaInstagram, AbaPdfs } from "./AbasArquivos";
 import { GerenciarMateriaisSheet } from "./GerenciarMateriaisSheet";
+import { MuralVendas } from "../MuralVendas";
 import "../natal.css";
 import "./central.css";
 
 const ABAS = [
-  ["visao", "Visão geral"], ["empreendimentos", "Empreendimentos"], ["cards", "Cards"], ["disparos", "Disparos"],
+  ["visao", "Visão geral"], ["mural", "Mural das Vendas"], ["empreendimentos", "Empreendimentos"], ["cards", "Cards"], ["disparos", "Disparos"],
   ["instagram", "Instagram"], ["pdfs", "PDFs"], ["scripts", "Scripts"], ["followups", "Follow-ups"],
 ] as const;
 const GRUPOS: { rotulo: string; abas: string[] }[] = [
-  { rotulo: "Comece aqui", abas: ["visao"] },
+  { rotulo: "Comece aqui", abas: ["visao", "mural"] },
   { rotulo: "Para enviar", abas: ["empreendimentos", "cards", "disparos", "instagram", "pdfs"] },
   { rotulo: "Para copiar", abas: ["scripts", "followups"] },
 ];
@@ -55,7 +56,7 @@ export default function CampanhaNatalPage() {
   const ehCorretor = !(isAdmin || isDiretor || isGestor);
   const porChave = useMemo(() => Object.fromEntries(materiais.map((m) => [m.chave, m])), [materiais]);
   const caminhos = useMemo(() => {
-    const secoes: Record<Aba, string[]> = { visao: [], empreendimentos: ["fotos"], cards: ["cards"], disparos: ["disparos"], instagram: ["instagram", "molduras"], scripts: [], followups: [], pdfs: [] };
+    const secoes: Record<Aba, string[]> = { visao: [], mural: [], empreendimentos: ["fotos"], cards: ["cards"], disparos: ["disparos"], instagram: ["instagram", "molduras"], scripts: [], followups: [], pdfs: [] };
     return materiais.filter((m) => secoes[aba].includes(m.secao)).map((m) => m.arquivo_path);
   }, [materiais, aba]);
   const { data: urls = {} } = useUrlsAssinadas(caminhos);
@@ -119,7 +120,8 @@ export default function CampanhaNatalPage() {
         </div>
       </div>
 
-      {aba === "visao" && <AbaVisaoGeral busca={busca} />}
+      {aba === "visao" && <div className="space-y-6"><MuralVendas limite={4} /><AbaVisaoGeral busca={busca} /></div>}
+      {aba === "mural" && <MuralVendas />}
       {aba === "empreendimentos" && <AbaEmpreendimentos busca={busca} porChave={porChave} urls={urls} />}
       {aba === "cards" && <AbaGrade itens={porSecao("cards")} urls={urls} />}
       {aba === "disparos" && <AbaDisparos itens={porSecao("disparos")} urls={urls} />}

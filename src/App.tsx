@@ -16,6 +16,8 @@ import { TabProvider } from "@/contexts/TabContext";
 import { lazy, Suspense } from "react";
 import { PageTrackingProvider } from "@/components/PageTrackingProvider";
 import { Loader2 } from "lucide-react";
+import { CarregandoNatal } from "@/natal/CarregandoNatal";
+import { isNatal } from "@/natal/config";
 
 // Retry wrapper for lazy imports — handles stale chunk errors after deployments
 function lazyRetry(factory: () => Promise<any>) {
@@ -94,6 +96,7 @@ const queryClient = new QueryClient({
 });
 
 function PageLoader() {
+  if (isNatal()) return <CarregandoNatal />;
   return (
     <div className="flex items-center justify-center py-24">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
