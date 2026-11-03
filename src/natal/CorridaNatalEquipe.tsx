@@ -60,12 +60,13 @@ function useCorrida(gerenteId?: string) {
       }).sort((a, b) => b.pct - a.pct);
       const equipeNome = membros[0]?.equipe ?? consolidarPorCorretor(time)[0]?.equipe ?? null;
       const equipes = agruparPorEquipe(todos).filter((e) => e.equipe !== "Sem equipe");
-      const lider = consolidarPorCorretor(todosSem).sort((a, b) => b.visitas_realizadas - a.visitas_realizadas)[0];
+      const topUhome = consolidarPorCorretor(todosSem).filter((c) => c.visitas_realizadas > 0)
+        .sort((a, b) => b.visitas_realizadas - a.visitas_realizadas).slice(0, 3)
+        .map((c) => ({ id: c.corretor_auth_id, nome: nomeCurto(c.corretor_nome), n: c.visitas_realizadas }));
       return {
         totais: somarMetricas(time), negocios: neg.count ?? 0, linhas, equipeNome,
         outras: equipes.filter((e) => e.equipe !== equipeNome),
-        top3: [...linhas].filter((l) => l.realizadas > 0).sort((a, b) => b.realizadas - a.realizadas).slice(0, 3),
-        lider: lider && lider.visitas_realizadas > 0 ? { nome: nomeCurto(lider.corretor_nome), n: lider.visitas_realizadas } : null,
+        topUhome,
       };
     },
   });
@@ -147,10 +148,10 @@ export function CorridaNatalEquipe({ gerenteId }: { gerenteId?: string }) {
         <div className="space-y-3">
           <div className="rounded-2xl border bg-card p-4">
             <p className="flex items-center gap-2 text-sm font-bold"><img src="/natal/urna_premiada.svg" alt="" className="h-6 w-6" /> Prêmio surpresa da semana</p>
-            {data.top3.length === 0 ? <p className="mt-1 text-sm text-muted-foreground">Ninguém do time com visita realizada nesta semana.</p> : (
-              <ol className="mt-1 space-y-0.5 text-sm">{data.top3.map((l, i) => <li key={l.id}>{medalha[i]} {nomeCurto(l.nome)} · <b>{l.realizadas}</b></li>)}</ol>
+            <p className="text-[11px] text-muted-foreground">Quem mais realizar visitas na Uhome toda, de segunda a domingo.</p>
+            {data.topUhome.length === 0 ? <p className="mt-1 text-sm text-muted-foreground">Ninguém com visita realizada nesta semana ainda.</p> : (
+              <ol className="mt-1 space-y-0.5 text-sm">{data.topUhome.map((l, i) => <li key={l.id}>{medalha[i]} {l.nome} · <b>{l.n}</b></li>)}</ol>
             )}
-            {data.lider && <p className="mt-2 text-[11px] text-muted-foreground">Na Uhome toda: {data.lider.nome} lidera com {data.lider.n}.</p>}
           </div>
           <div className="rounded-2xl border bg-card p-4">
             <p className="text-sm font-bold">Atenção hoje</p>
