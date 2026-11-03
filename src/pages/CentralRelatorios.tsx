@@ -4,13 +4,6 @@ import { BarChart3, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   UNIFIED_VIEWS,
   UNIFIED_SECTIONS,
   DEFAULT_UNIFIED_SECTION,
@@ -82,7 +75,6 @@ export default function CentralRelatorios() {
     [disponiveis]
   );
 
-  const subVisoes = views.find((v) => v.id === viewAtual.id)?.ids ?? [];
 
   return (
     <div className="flex min-h-full flex-col bg-background">
