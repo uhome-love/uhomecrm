@@ -140,6 +140,7 @@ export function CorridaNatalEquipe({ gerenteId }: { gerenteId?: string }) {
                   <td><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusCor[l.status]}`}>{l.status}</span></td>
                 </tr>
               ))}
+              {data.linhas.length === 0 && <tr><td colSpan={7} className="py-6 text-center text-muted-foreground">Nenhum corretor ativo na sua equipe.</td></tr>}
             </tbody>
           </table>
         </div>
