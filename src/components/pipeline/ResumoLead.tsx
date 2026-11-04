@@ -10,17 +10,10 @@ import type { PipelineLead } from "@/hooks/usePipeline";
 
 /**
  * ResumoLead — barra colapsável no topo da História com o que um gestor/CEO
- * precisa saber em 3 segundos: orçamento, interesse, temperatura, origem
+ * precisa saber em 3 segundos: orçamento, temperatura, próximo passo, origem
  * (Campanha · Conjunto · Anúncio) e empreendimento. Começa FECHADA (não come a
- * jornada). Orçamento, interesse e temperatura são EDITÁVEIS ali mesmo.
+ * jornada). Orçamento e temperatura são EDITÁVEIS ali mesmo.
  */
-
-const INTERESSE_OPTS: { v: string; label: string }[] = [
-  { v: "alto", label: "Alto" },
-  { v: "medio", label: "Médio" },
-  { v: "baixo", label: "Baixo" },
-];
-const INTERESSE_LABEL: Record<string, string> = { alto: "Alto", medio: "Médio", baixo: "Baixo" };
 
 const TEMP_CLS: Record<string, string> = {
   quente: "text-danger-500",
@@ -38,7 +31,7 @@ export default function ResumoLead({ lead }: { lead: PipelineLead }) {
   const [tempAtual, setTempAtual] = useState<string | null>(lead.temperatura ?? null);
   useEffect(() => setTempAtual(lead.temperatura ?? null), [lead.temperatura]);
   const [faixa, setFaixa] = useState<string | null>(null);
-  const [interesse, setInteresse] = useState<string | null>(null);
+  const [passo, setPasso] = useState<string | null>(null);
   const [editOrc, setEditOrc] = useState(false);
   const [orcDraft, setOrcDraft] = useState("");
 
@@ -47,12 +40,13 @@ export default function ResumoLead({ lead }: { lead: PipelineLead }) {
     (async () => {
       const { data } = await supabase
         .from("pipeline_leads")
-        .select("faixa_valor, nivel_interesse")
+        .select("faixa_valor, proxima_acao, data_proxima_acao")
         .eq("id", lead.id)
         .maybeSingle();
       if (cancel || !data) return;
       setFaixa((data as { faixa_valor?: string | null }).faixa_valor ?? null);
-      setInteresse((data as { nivel_interesse?: string | null }).nivel_interesse ?? null);
+      const d = data as { proxima_acao?: string | null; data_proxima_acao?: string | null };
+      setPasso(d.proxima_acao ? `${d.proxima_acao}${d.data_proxima_acao ? ` · ${d.data_proxima_acao.slice(0, 10).split("-").reverse().join("/")}` : ""}` : null);
     })();
     return () => { cancel = true; };
   }, [lead.id]);
@@ -64,12 +58,6 @@ export default function ResumoLead({ lead }: { lead: PipelineLead }) {
     const { error } = await supabase.from("pipeline_leads").update({ faixa_valor: v } as never).eq("id", lead.id);
     if (error) toast.error("Não foi possível salvar o orçamento.");
     else toast.success("Orçamento atualizado");
-  };
-
-  const salvarInteresse = async (v: string) => {
-    setInteresse(v);
-    const { error } = await supabase.from("pipeline_leads").update({ nivel_interesse: v } as never).eq("id", lead.id);
-    if (error) toast.error("Não foi possível salvar o interesse.");
   };
 
   const origemInfo = getOrigemLabel(lead.origem);
@@ -90,6 +78,7 @@ export default function ResumoLead({ lead }: { lead: PipelineLead }) {
           <div className="flex items-center gap-2.5 min-w-0 flex-wrap text-[12.5px] font-semibold text-foreground">
             <span className="whitespace-nowrap">💰 {fmtOrc(faixa)}</span>
             {temp && <><span className="text-muted-foreground/40">·</span><span className={cn("whitespace-nowrap", temp.cls)}>{temp.label}</span></>}
+            {passo && <><span className="text-muted-foreground/40">·</span><span className="truncate text-foreground">➡️ {passo}</span></>}
             {origemInfo && <><span className="text-muted-foreground/40">·</span><span className="whitespace-nowrap text-muted-foreground">{origemInfo.emoji} {origemInfo.label}</span></>}
             {lead.empreendimento && <><span className="text-muted-foreground/40">·</span><span className="truncate text-muted-foreground">🏢 {lead.empreendimento}</span></>}
           </div>
@@ -122,26 +111,6 @@ export default function ResumoLead({ lead }: { lead: PipelineLead }) {
                   {fmtOrc(faixa)} <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60" />
                 </button>
               )}
-            </div>
-
-            {/* Interesse (editável) */}
-            <div className="rounded-lg border border-border bg-background/40 px-3 py-2">
-              <div className="text-[9.5px] font-bold uppercase tracking-wide text-muted-foreground">📊 Interesse</div>
-              <div className="mt-1 flex gap-1">
-                {INTERESSE_OPTS.map((o) => (
-                  <button
-                    key={o.v}
-                    type="button"
-                    onClick={() => salvarInteresse(o.v)}
-                    className={cn(
-                      "rounded-md px-2 py-1 text-[11px] font-semibold transition-colors",
-                      interesse === o.v ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Temperatura (editável — componente pronto) */}
