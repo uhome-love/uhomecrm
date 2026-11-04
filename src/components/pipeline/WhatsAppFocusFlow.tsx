@@ -79,6 +79,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
   const phone = useMemo(() => {
     if (!lead.telefone) return "";
     const digits = lead.telefone.replace(/\D/g, "");
+    if (!digits) return "";
     return digits.startsWith("55") ? digits : `55${digits}`;
   }, [lead.telefone]);
 
@@ -97,7 +98,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
       supabase.from("pipeline_leads").update({
         ultima_acao_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      } as any).eq("id", lead.id),
+      }).eq("id", lead.id),
     ]);
     // Toque humano do corretor (aditivo)
     await registrarToque(lead.id);
@@ -151,7 +152,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
         status: "pendente",
         created_by: user.id,
         responsavel_id: user.id,
-      } as any);
+      });
 
 
       // Sync flag_status quando preset carrega status da etapa.
@@ -162,7 +163,13 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
           .select("flag_status")
           .eq("id", lead.id)
           .maybeSingle();
-        const currentFlags = ((leadRow as any)?.flag_status ?? {}) as Record<string, string>;
+        const rawFlags = leadRow?.flag_status;
+        const currentFlags: Record<string, string> = {};
+        if (rawFlags && typeof rawFlags === "object" && !Array.isArray(rawFlags)) {
+          for (const [key, value] of Object.entries(rawFlags)) {
+            if (typeof value === "string") currentFlags[key] = value;
+          }
+        }
         flagPatch = { ...currentFlags, [activePreset.syncFlagKey]: activePreset.syncFlagValue };
       }
 
@@ -171,12 +178,12 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
         data_proxima_acao: taskDate,
         updated_at: new Date().toISOString(),
         ...(flagPatch ? { flag_status: flagPatch } : {}),
-      } as any).eq("id", lead.id);
+      }).eq("id", lead.id);
       toast.success("Tarefa criada ✅");
       onRefresh();
       handleClose();
-    } catch (err: any) {
-      toast.error("Erro: " + (err.message || ""));
+    } catch (err: unknown) {
+      toast.error("Erro: " + (err instanceof Error ? err.message : "Não foi possível salvar a tarefa"));
     } finally {
       setSaving(false);
     }

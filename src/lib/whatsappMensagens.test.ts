@@ -23,7 +23,7 @@ describe("Regras de mensagens WhatsApp por etapa e produto", () => {
     expect(limparNomeEmpreendimento("Essence Canoas - Natal")).toBe("Essence Canoas");
     expect(limparNomeEmpreendimento("Open Arvoredo v1")).toBe("Open Arvoredo");
     expect(limparNomeEmpreendimento("Casa Tua Porto Alegre — Natal 2026")).toBe("Casa Tua Porto Alegre");
-    expect(limparNomeEmpreendimento("Residencial Natal")).toBe("Residencial");
+    expect(limparNomeEmpreendimento("Residencial Natal")).toBe("Residencial Natal");
   });
   it("prefere o cadastro oficial e não troca produto por correspondência parcial", () => {
     const fichas = [{ nome: "Casa Tua", valor_min: 499000 }, { nome: "Casa Tua Canoas", valor_min: 600000 }];

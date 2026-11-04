@@ -13,8 +13,8 @@ export interface WhatsAppMensagem {
 
 export function limparNomeEmpreendimento(nome?: string | null): string {
   return (nome ?? "").trim()
-    .replace(/\s*[-–—]?\s*(?:natal(?:\s+2026)?|v\d+)\s*$/i, "")
-    .replace(/\s*[-–—]?\s*(?:natal(?:\s+2026)?|v\d+)\s*$/i, "")
+    .replace(/(?:\s*[-–—]\s*natal(?:\s+2026)?|\s+(?:[-–—]\s*)?v\d+)\s*$/i, "")
+    .replace(/(?:\s*[-–—]\s*natal(?:\s+2026)?|\s+(?:[-–—]\s*)?v\d+)\s*$/i, "")
     .trim();
 }
 
