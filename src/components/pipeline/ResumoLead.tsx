@@ -21,13 +21,10 @@ const INTERESSE_OPTS: { v: string; label: string }[] = [
 ];
 const INTERESSE_LABEL: Record<string, string> = { alto: "Alto", medio: "Médio", baixo: "Baixo" };
 
-const TEMP_DISPLAY: Record<string, { label: string; cls: string }> = {
-  muito_quente: { label: "🔥 Muito quente", cls: "text-danger-500" },
-  urgente:      { label: "🔥 Urgente",      cls: "text-danger-500" },
-  quente:       { label: "⚡ Quente",        cls: "text-warning-700 dark:text-warning-500" },
-  morno:        { label: "🌡️ Morno",        cls: "text-warning-700 dark:text-warning-500" },
-  frio:         { label: "🧊 Frio",          cls: "text-sky-600" },
-  gelado:       { label: "🧊 Gelado",        cls: "text-sky-600" },
+const TEMP_CLS: Record<string, string> = {
+  quente: "text-danger-500",
+  morno: "text-warning-700 dark:text-warning-500",
+  frio: "text-sky-600",
 };
 
 function fmtOrc(v: string | null): string {
