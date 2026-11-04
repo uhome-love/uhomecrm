@@ -1081,3 +1081,13 @@ body.arena-mode [data-sidebar] {
 .shell-nav-scroll::-webkit-scrollbar { width: 6px; }
 .shell-nav-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 9999px; }
 .shell-nav-scroll:hover::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.35); }
+
+/* M0 — "Reduzir movimento" do aparelho vale no CRM inteiro (inclui enfeites de Natal) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
