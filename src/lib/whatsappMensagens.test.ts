@@ -38,4 +38,21 @@ describe("Regras de mensagens WhatsApp por etapa e produto", () => {
       expect(bodies).not.toContain("R$");
     }
   });
+  it("usa exclusivamente o valor e o diferencial da ficha selecionada", () => {
+    const mensagens = gerarMensagensWhatsApp({ ...base, stageTipo: "aquecimento",
+      produto: { nome: "Open Bosque", valorMin: 240000, diferenciais: ["Parque Linear", "100% financiável com FGTS"] } });
+    expect(mensagens[0].body).toContain("Open Bosque");
+    expect(mensagens[0].body).toContain("240.000");
+    expect(mensagens[0].body).toContain("Parque Linear");
+    expect(mensagens[0].body).not.toContain("Essence Canoas");
+    expect(mensagens[1].body).toContain("100% financiável com FGTS");
+  });
+  it("substitui os dados de cliente, remetente e nome oficial", () => {
+    const mensagens = gerarMensagensWhatsApp({ ...base, stageTipo: "novo_lead", produto: { nome: "Essence Canoas" } });
+    expect(mensagens[0].body).toContain("Andrio");
+    expect(mensagens[0].body).toContain("Pedro");
+    expect(mensagens[0].body).toContain("Essence Canoas");
+    expect(mensagens[0].body).not.toContain("Natal");
+    expect(mensagens[0].body).not.toContain("[seu nome]");
+  });
 });

@@ -208,14 +208,14 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
 
   return (
     <Dialog open={isOpen} onOpenChange={open => { if (!open && !sending && !saving) handleClose(); }}>
-      <DialogContent aria-describedby="whatsapp-lead-description"
+      <DialogContent
         className="z-[70] flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 pt-4 sm:max-w-[480px] sm:p-0">
         <DialogHeader className="shrink-0 border-b border-border px-4 py-4 pr-12 text-left sm:px-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/10 text-sm font-bold text-success">{initials}</div>
             <div className="min-w-0">
               <DialogTitle className="break-words text-base font-bold">{lead.nome}</DialogTitle>
-              <DialogDescription id="whatsapp-lead-description" className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <DialogDescription className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                 {lead.telefone || "Sem telefone"}
                 <span className="rounded bg-success/10 px-1.5 py-0.5 font-semibold text-success">{rotuloEtapaWhatsApp(stageTipo, statusVisita)}</span>
               </DialogDescription>

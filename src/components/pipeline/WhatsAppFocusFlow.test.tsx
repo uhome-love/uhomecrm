@@ -18,7 +18,7 @@ import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
 
 function mount() {
   const onClose = vi.fn();
-  render(<Dialog open><DialogContent><DialogTitle>Ficha de cliente de teste</DialogTitle>
+  render(<Dialog open><DialogContent aria-describedby={undefined}><DialogTitle>Ficha de cliente de teste</DialogTitle>
     <WhatsAppFocusFlow isOpen onClose={onClose} onRefresh={vi.fn()} stageTipo="novo_lead"
       lead={{ id: "test-client", nome: "Andrio Teste", telefone: "51999999999", empreendimento: "Essence Canoas - Natal", stage_id: "new" }} />
   </DialogContent></Dialog>);
