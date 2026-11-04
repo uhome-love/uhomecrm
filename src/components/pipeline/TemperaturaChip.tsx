@@ -80,6 +80,8 @@ export default function TemperaturaChip({ leadId, value, onChange }: Props) {
       toast.error("Não foi possível mudar a temperatura.");
       return;
     }
+    setRaw(t);
+    onChange?.(t);
     // Recarrega o board para a ordenação por prioridade refletir na hora.
     window.dispatchEvent(new CustomEvent("pipeline-reload"));
   };

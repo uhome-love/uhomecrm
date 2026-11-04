@@ -69,10 +69,9 @@ export function normalizeFilters(raw: Partial<PipelineFilters> | null | undefine
   };
 }
 
-const TEMPERATURAS_VALIDAS = ["muito_quente", "quente", "morno", "frio", "nao_definida"];
+const TEMPERATURAS_VALIDAS = ["quente", "morno", "frio", "nao_definida"];
 
 export const TEMPERATURA_LABELS: Record<string, string> = {
-  muito_quente: "🔥🔥 Muito quente",
   quente: "🔥 Quente",
   morno: "🟡 Morno",
   frio: "🔵 Frio",
@@ -122,7 +121,7 @@ const PRESETS: SavedFilter[] = [
   {
     name: "🔥 Leads quentes hoje",
     isPreset: true,
-    filters: { ...EMPTY_FILTERS, temperaturas: ["muito_quente", "quente"], periodoEntrada: "hoje" },
+    filters: { ...EMPTY_FILTERS, temperaturas: ["quente"], periodoEntrada: "hoje" },
   },
   {
     name: "🔴 Leads atrasados",
@@ -427,7 +426,6 @@ export default function PipelineAdvancedFilters({
               <Label className="text-xs font-medium">Temperatura</Label>
               <div className="flex flex-wrap gap-1.5">
                 {[
-                  { value: "muito_quente", label: TEMPERATURA_LABELS.muito_quente, color: "border-red-500 bg-red-500/15 text-red-700" },
                   { value: "quente", label: TEMPERATURA_LABELS.quente, color: "border-red-400 bg-red-500/10 text-red-700" },
                   { value: "morno", label: TEMPERATURA_LABELS.morno, color: "border-amber-400 bg-amber-500/10 text-amber-700" },
                   { value: "frio", label: TEMPERATURA_LABELS.frio, color: "border-blue-400 bg-blue-500/10 text-blue-700" },
