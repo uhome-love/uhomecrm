@@ -13,11 +13,19 @@ function prefereMenosMovimento(): boolean {
 export function useNatal() {
   const ativo = isNatal();
   const [ligado, setLigado] = useState(efeitosLigados);
+  const [menosMovimento, setMenosMovimento] = useState(prefereMenosMovimento);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const atualizar = () => setMenosMovimento(media.matches);
+    atualizar();
+    media.addEventListener("change", atualizar);
+    return () => media.removeEventListener("change", atualizar);
+  }, []);
   useEffect(() => {
     const h = () => setLigado(efeitosLigados());
     window.addEventListener(EVENTO_EFEITOS, h);
     return () => window.removeEventListener(EVENTO_EFEITOS, h);
   }, []);
   const efeitos = ativo && ligado;
-  return { ativo, efeitos, movimento: efeitos && !prefereMenosMovimento() };
+  return { ativo, efeitos, movimento: efeitos && !menosMovimento };
 }

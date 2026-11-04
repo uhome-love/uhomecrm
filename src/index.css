@@ -172,10 +172,10 @@
     --font-focus-mono:    'JetBrains Mono', 'DM Mono', monospace;
 
     /* ── Transitions ── */
-    --transition-fast:   100ms cubic-bezier(0.4,0,0.2,1);
-    --transition-normal: 180ms cubic-bezier(0.4,0,0.2,1);
-    --transition-slow:   300ms cubic-bezier(0.4,0,0.2,1);
-    --transition-bounce: 400ms cubic-bezier(0.34,1.56,0.64,1);
+    --transition-fast:   var(--motion-fast) var(--ease-move);
+    --transition-normal: var(--motion-short) var(--ease-move);
+    --transition-slow:   var(--motion-medium) var(--ease-enter);
+    --transition-bounce: var(--motion-long) var(--ease-enter);
     --transition-colors: color var(--transition-normal),
                          background-color var(--transition-normal),
                          border-color var(--transition-normal),
@@ -370,7 +370,7 @@
     background-image: linear-gradient(135deg, hsl(var(--primary-500) / 0.035), transparent 55%);
     transition: box-shadow var(--transition-normal), transform var(--transition-normal), border-color var(--transition-normal);
   }
-  .central-kpi:hover {
+  .central-kpi:is([role="button"], a, button):hover {
     box-shadow: var(--shadow-card-hover);
     transform: translateY(-2px);
     border-color: hsl(var(--primary-500) / 0.35);
@@ -384,7 +384,7 @@
     opacity: 0;
     transition: opacity var(--transition-normal);
   }
-  .central-kpi:hover::after { opacity: 1; }
+  .central-kpi:is([role="button"], a, button):hover::after { opacity: 1; }
   /* Hero do resumo executivo */
   .central-hero {
     @apply relative overflow-hidden rounded-[18px] border border-border;
@@ -500,7 +500,7 @@
     padding: 1.25rem 1.5rem;
     transition: box-shadow var(--transition-normal), transform var(--transition-normal);
   }
-  .kpi-card:hover {
+  .kpi-card:is([role="button"], a, button):hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-1px);
   }
@@ -579,7 +579,7 @@
     to   { opacity: 1; transform: translateY(0); }
   }
   .animate-fade-in {
-    animation: fade-in 220ms cubic-bezier(0.4,0,0.2,1) both;
+    animation: fade-in var(--motion-medium) var(--ease-enter) both;
   }
 
   /* ── Slide in from right ── */
@@ -587,7 +587,7 @@
     from { opacity: 0; transform: translateX(16px); }
     to   { opacity: 1; transform: translateX(0); }
   }
-  .animate-slide-in { animation: slide-in-right 220ms cubic-bezier(0.4,0,0.2,1) both; }
+  .animate-slide-in { animation: slide-in-right var(--motion-medium) var(--ease-enter) both; }
 
   /* ── Mutirão / Oferta Ativa Ao Vivo ── */
   @keyframes mutirao-hot-pulse {
@@ -1084,7 +1084,7 @@ body.arena-mode [data-sidebar] {
 
 /* M0 — "Reduzir movimento" do aparelho vale no CRM inteiro (inclui enfeites de Natal) */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  html:root *, html:root *::before, html:root *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

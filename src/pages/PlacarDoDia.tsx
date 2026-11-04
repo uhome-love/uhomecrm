@@ -63,11 +63,21 @@ function ProgressBar({ valor, meta, cor }) {
 }
 
 function Confetti({ active, cores = null }) {
+  const [menosMovimento, setMenosMovimento] = useState(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const atualizar = () => setMenosMovimento(media.matches);
+    atualizar();
+    media.addEventListener("change", atualizar);
+    return () => media.removeEventListener("change", atualizar);
+  }, []);
   const canvasRef = useRef(null);
   const animRef = useRef(null);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || menosMovimento) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       return;
     }
@@ -107,9 +117,9 @@ function Confetti({ active, cores = null }) {
     };
     draw();
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
-  }, [active, cores]);
+  }, [active, cores, menosMovimento]);
 
-  if (!active) return null;
+  if (!active || menosMovimento) return null;
   return (
     <canvas
       ref={canvasRef}
