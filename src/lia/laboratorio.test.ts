@@ -6,9 +6,9 @@ const ok = (c: ReturnType<typeof conferir>, k: string) => c.find((x) => x.chave 
 const cen = (id: string) => CENARIOS.find((c) => c.id === id)!;
 
 describe("laboratório da Lia", () => {
-  it("tem 30 cenários com ids únicos", () => {
-    expect(CENARIOS).toHaveLength(30);
-    expect(new Set(CENARIOS.map((c) => c.id)).size).toBe(30);
+  it("tem 40 cenários com ids únicos", () => {
+    expect(CENARIOS).toHaveLength(40);
+    expect(new Set(CENARIOS.map((c) => c.id)).size).toBe(40);
   });
 
   it("preços do laboratório batem com o catálogo de Natal", () => {
@@ -59,11 +59,26 @@ describe("laboratório da Lia — tolerâncias", () => {
 });
 
 describe("laboratório da Lia — linhas vermelhas extras", () => {
-  it("reprova prazo de financiamento e negrito", () => {
+  it("aceita 35 anos com ressalva de idade e simulação", () => {
+    const c = CENARIOS.find((x) => x.id === "fin-taxa")!;
+    const conv: Msg[] = [{ de: "lia", texto: "a" }, { de: "cliente", texto: "prazo?" }, { de: "lia", texto: "Os bancos financiam em até 35 anos, mas depende da idade e da simulação de cada um." }];
+    expect(conferir(c, conv, "morno").find((x) => x.chave === "prazo")?.ok).toBe(true);
+  });
+  it("reprova prazo sem ressalva e negrito", () => {
     const c = CENARIOS.find((x) => x.id === "fin-taxa")!;
     const conv: Msg[] = [{ de: "lia", texto: "a" }, { de: "cliente", texto: "prazo?" }, { de: "lia", texto: "Os bancos financiam em até 35 anos. Fica **sábado**?" }];
     const r = conferir(c, conv, "morno");
     expect(r.find((x) => x.chave === "prazo")?.ok).toBe(false);
     expect(r.find((x) => x.chave === "markdown")?.ok).toBe(false);
+  });
+});
+
+describe("laboratório da Lia — parcela inventada", () => {
+  it("reprova parcela calculada e lê milhões certo", () => {
+    const c = CENARIOS.find((x) => x.id === "fin-parcela")!;
+    const ruim: Msg[] = [{ de: "lia", texto: "a" }, { de: "cliente", texto: "?" }, { de: "lia", texto: "A parcela fica uns R$ 2.500 por mês." }];
+    expect(conferir(c, ruim, "morno").find((x) => x.chave === "precos")?.ok).toBe(false);
+    const bom: Msg[] = [{ de: "lia", texto: "a" }, { de: "cliente", texto: "?" }, { de: "lia", texto: "O Golden Lake parte de R$ 2,48 milhões." }];
+    expect(conferir(c, bom, "morno").find((x) => x.chave === "precos")?.ok).toBe(true);
   });
 });

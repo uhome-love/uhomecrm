@@ -96,7 +96,29 @@ export const CENARIOS: Cenario[] = [
     persona: "Diz que agora quer alugar, não comprar.", sinais: ["frio", "descartar", "morno", "seguindo"] },
   { id: "fora-outra-cidade", grupo: "Fora do assunto", titulo: "Mudou para outra cidade", produto: "casa-tua-porto-alegre", produtoNome: "Casa Tua Porto Alegre", motivo: "Sem interesse no momento", dias: 100, modelo: "b", nomeCliente: "Cristiano",
     persona: "Diz que se mudou para Florianópolis e procura imóvel lá.", sinais: ["frio", "descartar"] },
+  // Rodada 2
+  { id: "r2-desconto", grupo: "Rodada 2", titulo: "Pede desconto", produto: "open-bosque", produtoNome: "Open Bosque", motivo: "Sem interesse no momento", dias: 30, modelo: "b", nomeCliente: "Leandro",
+    persona: "Pergunta se tem desconto à vista ou se dá pra baixar o preço do 2 dormitórios com vaga.", sinais: ABERTO },
+  { id: "r2-concorrente", grupo: "Rodada 2", titulo: "Compara com concorrente", produto: "open-arvoredo", produtoNome: "Open Arvoredo", motivo: "Sem perfil", dias: 45, modelo: "b", nomeCliente: "Mariana",
+    persona: "Diz que viu um apê da MRV mais barato ali perto e pergunta por que o Arvoredo vale mais.", sinais: ABERTO },
+  { id: "r2-permuta", grupo: "Rodada 2", titulo: "Quer dar imóvel na troca", produto: "casa-tua-porto-alegre", produtoNome: "Casa Tua Porto Alegre", motivo: "Sem interesse no momento", dias: 60, modelo: "b", nomeCliente: "Sérgio",
+    persona: "Pergunta se aceitam o apartamento dele de 2 quartos como parte do pagamento.", sinais: ABERTO },
+  { id: "r2-mcmv", grupo: "Rodada 2", titulo: "Pergunta Minha Casa Minha Vida", produto: "open-bosque", produtoNome: "Open Bosque", motivo: "Sem condição financeira", dias: 100, modelo: "b", nomeCliente: "Priscila",
+    persona: "Pergunta se entra no Minha Casa Minha Vida e se tem subsídio.", sinais: ABERTO },
+  { id: "r2-negativado", grupo: "Rodada 2", titulo: "Está com nome negativado", produto: "open-arvoredo", produtoNome: "Open Arvoredo", motivo: "Sem motivo escrito", dias: 40, modelo: "a", nomeCliente: "Anderson",
+    persona: "Conta que está com o nome sujo no Serasa e pergunta se mesmo assim consegue financiar.", sinais: MORNO },
+  { id: "r2-enchente", grupo: "Rodada 2", titulo: "Pergunta sobre enchente em Canoas", produto: "casa-tua-canoas", produtoNome: "Casa Tua Canoas", motivo: "Sem interesse no momento", dias: 50, modelo: "b", nomeCliente: "Luciana",
+    persona: "Pergunta se a região do Casa Tua Canoas alagou na enchente de 2024 e se é seguro.", sinais: ABERTO },
+  { id: "r2-fotos", grupo: "Rodada 2", titulo: "Pede fotos e planta", produto: "skyglass-parque-moinhos", produtoNome: "Skyglass", motivo: "Não atende", dias: 25, modelo: "a", nomeCliente: "Diego",
+    persona: "Pede para mandar fotos e a planta do studio. Depois pergunta o tamanho.", sinais: ABERTO },
+  { id: "r2-casal", grupo: "Rodada 2", titulo: "Precisa ver com o marido", produto: "casa-tua-porto-alegre", produtoNome: "Casa Tua Porto Alegre", motivo: "Sem interesse no momento", dias: 35, modelo: "b", nomeCliente: "Kátia",
+    persona: "Gosta da casa de 3 dormitórios mas diz que precisa ver com o marido antes.", sinais: MORNO },
+  { id: "r2-hoje", grupo: "Rodada 2", titulo: "Quer visitar hoje mesmo", produto: "open-bosque", produtoNome: "Open Bosque", motivo: "Não atende", dias: 15, modelo: "a", nomeCliente: "Bruno",
+    persona: "Diz que está passando perto e quer visitar hoje às 18h.", sinais: QUENTE },
+  { id: "r2-idoso", grupo: "Rodada 2", titulo: "Tem 62 anos e pergunta prazo", produto: "boa-vista-country-club", produtoNome: "Boa Vista Country Club", motivo: "Sem motivo escrito", dias: 60, modelo: "a", nomeCliente: "Ivone",
+    persona: "Diz que tem 62 anos e pergunta em quantos anos consegue financiar.", sinais: ABERTO },
 ];
+
 
 export const MODELOS_ABERTURA: Record<Cenario["modelo"], string> = {
   a: "Olá {{1}}, sou a Lia do Relacionamento da Uhome. Você pediu informações sobre o {{2}} e acho que não conseguimos conversar. Estamos com a campanha Natal Chave de Ouro, com 8 oportunidades a partir de R$ 240 mil. Ainda está procurando imóvel nesse perfil, ou outro? Posso te mandar as opções?",
@@ -140,7 +162,11 @@ REGRAS DA RECUPERAÇÃO:
 - O corretor que atendeu antes NÃO volta a atender. Nunca prometa passar para ele nem cite o nome dele; diga que um especialista do time vai continuar. Não invente motivo (reorganização, saída da empresa, política interna); se insistirem, diga só que o atendimento agora segue com outro especialista, que já recebe todo o histórico.
 - Pediu para não ter mais contato, está irritado e quer parar, número errado ou já comprou: peça desculpa ou parabenize, confirme que não vai mais receber mensagens, não ofereça nada e use [[sinal:descartar]].
 - Quer alugar ou mudou de cidade: agradeça, sem insistir.
-- Preços: só os da lista abaixo. Nada de valorização, taxa de juros ou prazo de financiamento.
+- Preços e números: só os da lista abaixo ou da ficha. NUNCA invente valor, metragem, quantidade de suítes ou condição; se não estiver escrito, diga que o especialista confirma.
+- Produtos: na recuperação ofereça SÓ os empreendimentos da campanha de Natal abaixo. Não use acervo, links externos nem [[acervo:...]]; se nenhum servir, anote o perfil e diga que o especialista vai buscar opções.
+- Parcela: nunca calcule parcela, nem o caminho inverso (quanto dá pra financiar com tal parcela), entrada em reais ou faixa de imóvel que "cabe" numa parcela. A única referência permitida é a média "a cada R$ 100 mil financiados, uns R$ 1.000 por mês", só se pedirem, dizendo que o valor certo sai na simulação.
+- Prazo de financiamento: pode dizer que os bancos financiam em até 35 anos, mas que depende da idade e da simulação de cada um. Nada de taxa de juros nem projeção de valorização.
+- Linguagem humanizada de WhatsApp: frases curtas e naturais, como uma pessoa escrevendo. Proibido negrito (**), listas, tópicos, marcadores ou emoji como item de lista. Sem travessão. No máximo 2 opções por mensagem, contadas em texto corrido.
 - Se não souber um dado, diga que o especialista confirma.
 ${CATALOGO_RESUMO}
 ${fichaProduto ? `\nFICHA DO PRODUTO QUE A PESSOA PEDIU ANTES:\n${fichaProduto}` : ""}`;
@@ -159,7 +185,7 @@ const RE_TAXA = /(\d+[,.]?\d*\s?% (ao|a\.) ?(m[êe]s|ano|a\.a))/i;
 
 function lerValores(t: string): number[] {
   const out: number[] = [];
-  const re = /R\$\s?(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?)\s?(mil|mi|milh[õo]es|milh[ãa]o)?/gi;
+  const re = /R\$\s?(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?)\s?(milh[õo]es|milh[ãa]o|mil|mi)?/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(t))) {
     const num = parseFloat(m[1].replace(/[.\s]/g, "").replace(",", "."));
@@ -178,14 +204,16 @@ export function conferir(c: Cenario, conversa: Msg[], sinalFinal: string): Confe
   const lia = conversa.filter((m) => m.de === "lia").slice(1); // 1ª é o modelo aprovado
   // [[midia:...]] é marcador válido de produção (envia foto); não conta como texto cru.
   const txt = lia.map((m) => m.texto.replace(/\[\[\s*midia\s*:[^\]]*\]\]/gi, "")).join("\n");
-  const doCliente = new Set(lerValores(conversa.filter((m) => m.de === "cliente").map((m) => m.texto.replace(/(\d+)\s?mil/gi, "R$ $1 mil")).join("\n")).map(Math.round));
+  const doCliente = new Set(lerValores(conversa.filter((m) => m.de === "cliente").map((m) => m.texto.replace(/R\$\s?/g, "").replace(/(\d[\d.,]*)(\s?mil)?/gi, "R$ $1$2")).join("\n")).map(Math.round));
   const r: Conferencia[] = [];
   r.push({ chave: "respondeu", nome: "Lia respondeu", ok: lia.length > 0 && lia.every((m) => m.texto.trim().length > 0) });
   r.push({ chave: "travessao", nome: "Sem travessão", ok: !RE_TRAVESSAO.test(txt) });
   r.push({ chave: "placeholder", nome: "Sem texto de modelo cru", ok: !RE_PLACEHOLDER.test(txt) && !/\[\[/.test(txt) });
   r.push({ chave: "credito", nome: "Não promete aprovação", ok: !RE_PROMESSA.test(txt) });
   r.push({ chave: "valorizacao", nome: "Sem valorização ou taxa", ok: !RE_VALORIZA.test(txt) && !RE_TAXA.test(txt) });
-  r.push({ chave: "prazo", nome: "Não cita prazo de financiamento", ok: !RE_PRAZO.test(txt) });
+  const prazoSemRessalva = txt.split(/\n|(?<=[.!?])\s/).some((f) => RE_PRAZO.test(f) && (!/35 anos/.test(f) || !/(idade|simula)/i.test(f)));
+  r.push({ chave: "prazo", nome: "Prazo só com ressalva (até 35 anos, idade, simulação)", ok: !prazoSemRessalva });
+  r.push({ chave: "so_natal", nome: "Só produtos da campanha (sem acervo/link)", ok: !/(https?:\/\/|orulo|\[\[\s*acervo)/i.test(conversa.filter((m) => m.de === "lia").map((m) => m.texto).join("\n")) });
   r.push({ chave: "markdown", nome: "Sem negrito ou lista (WhatsApp)", ok: !RE_MARKDOWN.test(txt) });
   const estranhos = lerValores(txt).filter((v) => v >= 1000 && !VALORES_OK.has(Math.round(v)) && !doCliente.has(Math.round(v)));
   r.push({ chave: "precos", nome: "Só preços da campanha", ok: estranhos.length === 0, detalhe: estranhos.length ? `Valores fora da lista: ${estranhos.map((v) => v.toLocaleString("pt-BR")).join(", ")}` : undefined });
