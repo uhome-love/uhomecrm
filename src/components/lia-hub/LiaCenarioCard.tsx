@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, X, RotateCw, Loader2, CircleCheck, CircleAlert } from "lucide-react";
 import type { Cenario, Conferencia, Msg } from "../../../supabase/functions/_shared/liaLaboratorio";
+import { formatBRT } from "@/lib/brtTime";
 
 export interface Execucao {
   id: string;
@@ -16,6 +17,8 @@ export interface Execucao {
   avaliacao: "ok" | "ajustar" | null;
   comentario: string | null;
   created_at: string;
+  ficha_versao?: string | null;
+  ficha_hash?: string | null;
 }
 
 interface Props {
@@ -23,11 +26,12 @@ interface Props {
   execucao?: Execucao;
   rodando: boolean;
   bloqueado: boolean;
+  desatualizado?: boolean;
   onRodar: () => void;
   onAvaliar: (e: Execucao, a: "ok" | "ajustar", comentario?: string) => void;
 }
 
-export default function LiaCenarioCard({ cenario, execucao, rodando, bloqueado, onRodar, onAvaliar }: Props) {
+export default function LiaCenarioCard({ cenario, execucao, rodando, bloqueado, desatualizado, onRodar, onAvaliar }: Props) {
   const [aberto, setAberto] = useState(false);
   const [coment, setComent] = useState("");
   const [pedindoAjuste, setPedindoAjuste] = useState(false);
@@ -41,7 +45,7 @@ export default function LiaCenarioCard({ cenario, execucao, rodando, bloqueado, 
             <p className="text-sm font-medium text-foreground">{cenario.titulo}</p>
             <p className="text-[11px] text-muted-foreground">{cenario.nomeCliente} (fictício) · {cenario.produtoNome} · {cenario.motivo} · há {cenario.dias} dias</p>
           </div>
-          {execucao?.avaliacao === "ok" && <Badge className="text-[10px]">Aprovado</Badge>}
+          {execucao?.avaliacao === "ok" && <Badge variant={desatualizado ? "outline" : "default"} className="text-[10px]">{desatualizado ? "Revalidar" : "Aprovado"}</Badge>}
           {execucao?.avaliacao === "ajustar" && <Badge variant="destructive" className="text-[10px]">Ajustar</Badge>}
           {execucao && !execucao.avaliacao && (
             <Badge variant={execucao.passou_automatico ? "secondary" : "outline"} className="text-[10px]">
@@ -58,9 +62,11 @@ export default function LiaCenarioCard({ cenario, execucao, rodando, bloqueado, 
 
         {execucao && (
           <>
-            <button type="button" className="text-xs font-medium text-primary underline-offset-2 hover:underline" onClick={() => setAberto((v) => !v)}>
+            <p className="text-[11px] text-muted-foreground">Execução: {formatBRT(execucao.created_at, "dd/MM/yyyy HH:mm")} · {execucao.ficha_versao ? `Ficha: ${formatBRT(execucao.ficha_versao, "dd/MM HH:mm")}` : "Versão de ficha não registrada"}</p>
+            {desatualizado && <p className="text-xs text-warning">Reexecutar com a ficha atual antes de considerar esta aprovação vigente.</p>}
+            <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => setAberto((v) => !v)}>
               {aberto ? "Esconder conversa" : "Ver conversa"}
-            </button>
+            </Button>
             {aberto && (
               <div className="space-y-1.5 rounded-lg bg-muted/40 p-2">
                 {execucao.conversa.map((m, i) => (
@@ -85,14 +91,14 @@ export default function LiaCenarioCard({ cenario, execucao, rodando, bloqueado, 
               <div className="space-y-1.5">
                 <Textarea value={coment} onChange={(e) => setComent(e.target.value)} placeholder="O que a Lia deveria ter respondido?" className="min-h-16 text-xs" />
                 <div className="flex gap-1.5">
-                  <Button size="sm" variant="destructive" disabled={coment.trim().length < 5} onClick={() => { onAvaliar(execucao, "ajustar", coment.trim()); setPedindoAjuste(false); }}>Salvar ajuste</Button>
+                  <Button size="sm" variant="destructive" disabled={bloqueado || coment.trim().length < 5} onClick={() => { onAvaliar(execucao, "ajustar", coment.trim()); }}>Salvar ajuste</Button>
                   <Button size="sm" variant="ghost" onClick={() => setPedindoAjuste(false)}>Cancelar</Button>
                 </div>
               </div>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                <Button size="sm" variant={execucao.avaliacao === "ok" ? "default" : "outline"} onClick={() => onAvaliar(execucao, "ok")}><Check className="mr-1 h-3.5 w-3.5" />Aprovar</Button>
-                <Button size="sm" variant="outline" onClick={() => setPedindoAjuste(true)}><X className="mr-1 h-3.5 w-3.5" />Ajustar</Button>
+                <Button size="sm" disabled={bloqueado || desatualizado} variant={execucao.avaliacao === "ok" ? "default" : "outline"} onClick={() => onAvaliar(execucao, "ok")}><Check className="mr-1 h-3.5 w-3.5" />Aprovar</Button>
+                <Button size="sm" variant="outline" disabled={bloqueado} onClick={() => setPedindoAjuste(true)}><X className="mr-1 h-3.5 w-3.5" />Ajustar</Button>
                 <Button size="sm" variant="ghost" onClick={onRodar} disabled={bloqueado}>
                   {rodando ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <RotateCw className="mr-1 h-3.5 w-3.5" />}Rodar de novo
                 </Button>

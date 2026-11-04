@@ -4088,6 +4088,7 @@ export type Database = {
           instancia: string
           janela_envio_fim: string
           janela_envio_inicio: string
+          lia_envio_programado: Json | null
           lia_model: string
           max_mensagens_turno: number
           max_midias_conversa: number
@@ -4110,6 +4111,7 @@ export type Database = {
           instancia?: string
           janela_envio_fim?: string
           janela_envio_inicio?: string
+          lia_envio_programado?: Json | null
           lia_model?: string
           max_mensagens_turno?: number
           max_midias_conversa?: number
@@ -4132,6 +4134,7 @@ export type Database = {
           instancia?: string
           janela_envio_fim?: string
           janela_envio_inicio?: string
+          lia_envio_programado?: Json | null
           lia_model?: string
           max_mensagens_turno?: number
           max_midias_conversa?: number
@@ -6483,6 +6486,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lia_envio_reservas: {
+        Row: {
+          chave: string
+          criado_em: string
+          dia: string
+          id: string
+          origem: string
+          status: string
+          telefone: string
+        }
+        Insert: {
+          chave: string
+          criado_em?: string
+          dia: string
+          id?: string
+          origem: string
+          status?: string
+          telefone: string
+        }
+        Update: {
+          chave?: string
+          criado_em?: string
+          dia?: string
+          id?: string
+          origem?: string
+          status?: string
+          telefone?: string
+        }
+        Relationships: []
+      }
       lia_estado: {
         Row: {
           agendamento: string | null
@@ -6628,6 +6661,8 @@ export type Database = {
           conversa: Json
           created_at: string
           criado_por: string | null
+          ficha_hash: string | null
+          ficha_versao: string | null
           id: string
           passou_automatico: boolean
           produto_slug: string | null
@@ -6643,6 +6678,8 @@ export type Database = {
           conversa?: Json
           created_at?: string
           criado_por?: string | null
+          ficha_hash?: string | null
+          ficha_versao?: string | null
           id?: string
           passou_automatico?: boolean
           produto_slug?: string | null
@@ -6658,6 +6695,8 @@ export type Database = {
           conversa?: Json
           created_at?: string
           criado_por?: string | null
+          ficha_hash?: string | null
+          ficha_versao?: string | null
           id?: string
           passou_automatico?: boolean
           produto_slug?: string | null
@@ -18518,6 +18557,23 @@ export type Database = {
             Returns: string
           }
       lead_teve_contato_v3: { Args: { p_lead_id: string }; Returns: boolean }
+      lia_avaliar_cenario: {
+        Args: { p_avaliacao: string; p_comentario?: string; p_id: string }
+        Returns: undefined
+      }
+      lia_ler_configuracoes: { Args: never; Returns: Json }
+      lia_reservar_envio: {
+        Args: { p_chave: string; p_origem: string; p_telefone: string }
+        Returns: Json
+      }
+      lia_salvar_configuracoes: {
+        Args: { p_config: Json; p_versao: string }
+        Returns: Json
+      }
+      lia_salvar_ficha: {
+        Args: { p_ficha: string; p_id: string; p_versao: string }
+        Returns: Json
+      }
       list_empreendimentos_nao_resolvidos: {
         Args: { p_dias?: number }
         Returns: {
