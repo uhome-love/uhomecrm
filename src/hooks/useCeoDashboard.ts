@@ -403,11 +403,11 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     queryKey: ["ceo-negocios", user?.id, range.start, range.end],
     queryFn: async () => {
       const [{ data: ativos }, { data: ganhosPeriodo }] = await Promise.all([
+        // Fonte única: negócios em andamento = etapa do Pipeline (v_negocios_pipeline).
         supabase
-          .from("negocios")
-          .select("id, fase, status, vgv_estimado, vgv_final, auth_user_id, updated_at, empreendimento, created_at, data_assinatura, pipeline_lead_id")
-          .eq("status", "ativo")
-          .neq("fase", "ganho")
+          .from("v_negocios_pipeline")
+          .select("negocio_id, pipeline_lead_id, etapa, etapa_desde, vgv")
+          .in("etapa", ["documentacao", "proposta", "contrato"])
           .limit(1000),
         supabase
           .from("negocios")
@@ -427,34 +427,19 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       // (documentacao → proposta → contrato_gerado), não a coluna `fase` antiga
       // (que só tem em_negociacao/contrato e engolia a Documentação em "Em Negociação").
       // Negócio sem lead/etapa (manual) cai no mapeamento da fase.
-      const ativosRows = (ativos || []) as any[];
-      const leadIds = [...new Set(ativosRows.map((n) => n.pipeline_lead_id).filter(Boolean))] as string[];
-      const [{ data: stagesRows }, leadsStageRes] = await Promise.all([
-        supabase.from("pipeline_stages").select("id, tipo"),
-        leadIds.length
-          ? supabase.from("pipeline_leads").select("id, stage_id").in("id", leadIds)
-          : Promise.resolve({ data: [] as any[] }),
-      ]);
-      const tipoDeStage = new Map<string, string>((stagesRows || []).map((s: any) => [s.id, s.tipo]));
-      const stageDoLead = new Map<string, string>(((leadsStageRes as any).data || []).map((l: any) => [l.id, l.stage_id]));
-      const FASE_TO_TIPO: Record<string, string> = { em_negociacao: "proposta", contrato: "contrato_gerado" };
-      const etapaDoNegocio = (n: any): string => {
-        const sid = n.pipeline_lead_id ? stageDoLead.get(n.pipeline_lead_id) : null;
-        const tipo = sid ? tipoDeStage.get(sid) : null;
-        return tipo || FASE_TO_TIPO[n.fase as string] || "proposta";
-      };
-
+      const ativosRows = (ativos || []) as { etapa: string | null; etapa_desde: string | null; vgv: number | null }[];
+      const ETAPA_TO_TIPO: Record<string, string> = { documentacao: "documentacao", proposta: "proposta", contrato: "contrato_gerado" };
       const now = new Date();
       const faseMap = new Map<string, { count: number; vgv: number }>();
       let risco = 0;
       for (const n of ativosRows) {
-        const etapa = etapaDoNegocio(n);
+        const etapa = ETAPA_TO_TIPO[n.etapa || ""] || "proposta";
         const curr = faseMap.get(etapa) || { count: 0, vgv: 0 };
         curr.count++;
-        curr.vgv += vgvDe(n);
+        curr.vgv += Number(n.vgv || 0);
         faseMap.set(etapa, curr);
-        const diffDays = Math.floor((now.getTime() - new Date(n.updated_at || "").getTime()) / 86400000);
-        if (diffDays > 15) risco += vgvDe(n);
+        const diffDays = Math.floor((now.getTime() - new Date(n.etapa_desde || "").getTime()) / 86400000);
+        if (diffDays > 15) risco += Number(n.vgv || 0);
       }
       faseMap.set("ganho", {
         count: (ganhosPeriodo || []).length,
@@ -551,7 +536,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         // VGV por corretor = a METADE dele (v_fato_venda rateado). Parceria que cruza
         // dois times divide sozinha, pois cada linha já vem no corretor certo.
         supabase.from("v_fato_venda").select("corretor_auth_id, vgv_rateado").in("corretor_auth_id", allMemberUserIds).gte("data_assinatura", range.start).lte("data_assinatura", range.end),
-        supabase.from("negocios").select("id, fase, auth_user_id").in("auth_user_id", allMemberUserIds).eq("status", "ativo").in("fase", ["em_negociacao", "contrato"]).limit(1000),
+        // Fonte única: etapa do Pipeline (v_negocios_pipeline). Propostas = etapa Proposta.
+        supabase.from("v_negocios_pipeline").select("negocio_id, etapa, corretor_auth_id").in("corretor_auth_id", allMemberUserIds).eq("etapa", "proposta").limit(1000),
       ]);
 
       // Excluir backfills de conciliação (origem 'backfill_*') dos placares diários/janela
@@ -585,7 +571,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const aprov = tent.filter(t => t.resultado === "com_interesse").length;
           const vm = visMarcadasClean.filter(v => v.corretor_id === uid).length;
           const vr = visRealizadasClean.filter(v => v.corretor_id === uid && v.status === "realizada").length;
-          const prop = (allNegAtivos || []).filter(n => n.auth_user_id === uid && n.fase === "em_negociacao").length;
+          const prop = (allNegAtivos || []).filter(n => n.corretor_auth_id === uid).length;
           const vgv = (allNeg || []).filter((n: any) => n.corretor_auth_id === uid).reduce((s: number, n: any) => s + Number(n.vgv_rateado || 0), 0);
 
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;

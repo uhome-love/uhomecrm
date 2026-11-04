@@ -70,10 +70,9 @@ const COR_ETAPA: Record<string, string> = {
 const ETAPAS_ESCURAS = new Set(["Aquecimento", "Visita", "Pós-Visita", "Negócio Criado"]);
 
 const ETAPAS_NEGOCIO: Array<{ fase: string; label: string; cor: string }> = [
-  { fase: "em_negociacao", label: "Novo Negócio", cor: "#fef3c7" },
-  { fase: "em_negociacao", label: "Proposta", cor: "#fde68a" },
-  { fase: "em_negociacao", label: "Em Negociação", cor: "#fbbf24" },
-  { fase: "em_negociacao", label: "Documentação", cor: "#f59e0b" },
+  { fase: "documentacao", label: "Documentação", cor: "#fef3c7" },
+  { fase: "proposta", label: "Proposta", cor: "#fde68a" },
+  { fase: "contrato", label: "Contrato", cor: "#f59e0b" },
   { fase: "ganho", label: "Venda Realizada", cor: "#10b981" },
   { fase: "perdido", label: "Perdido", cor: "#fca5a5" },
 ];
@@ -147,17 +146,31 @@ export default function RelatorioConversao({ filters }: RelatorioConversaoProps)
       const negRows = await fetchAllRows<NegocioRow>((from, to) => {
         let nq = supabase
           .from("negocios")
-          .select("id, fase, corretor_id, created_at, data_assinatura")
+          .select("id, fase, status, corretor_id, created_at, data_assinatura")
           .gte("created_at", startDate.toISOString())
           .lte("created_at", endDate.toISOString());
         if (corretorIds) nq = nq.in("corretor_id", corretorIds);
         return nq.range(from, to);
       });
 
+      // Fonte única: etapa de negócios ativos vem do Pipeline; perdido = status não ativo.
+      const abertos = negRows.filter((r) => r.fase !== "ganho").map((r) => r.id);
+      const etapaMap = new Map<string, string>();
+      for (let i = 0; i < abertos.length; i += 300) {
+        const { data: et } = await supabase.from("v_negocios_pipeline").select("negocio_id, etapa").in("negocio_id", abertos.slice(i, i + 300));
+        (et || []).forEach((e) => { if (e.negocio_id && e.etapa) etapaMap.set(e.negocio_id, e.etapa); });
+      }
+      const negComEtapa = negRows.map((r) => {
+        const st = (r as { status?: string | null }).status;
+        if (r.fase === "ganho") return r;
+        if (st && st !== "ativo") return { ...r, fase: "perdido" };
+        return { ...r, fase: etapaMap.get(r.id) || "pos_visita" };
+      });
+
       if (!cancelled) {
         setStageNames(sMap);
         setLeads(leadRows);
-        setNegocios(negRows);
+        setNegocios(negComEtapa);
         setLoading(false);
       }
     }
@@ -208,7 +221,7 @@ export default function RelatorioConversao({ filters }: RelatorioConversaoProps)
   const taxaLeadVisita = totalLeads > 0 ? (visitaPlus / totalLeads) * 100 : 0;
   const taxaLeadVenda = totalLeads > 0 ? (negocioCriado / totalLeads) * 100 : 0;
 
-  const negociosAtivos = negocios.filter((n) => n.fase !== "em_negociacao").length;
+  const negociosAtivos = negocios.filter((n) => n.fase !== "pos_visita").length;
   const vendaRealizada = negocios.filter((n) => n.fase === "ganho").length;
   const taxaNegocioVenda = negociosAtivos > 0 ? (vendaRealizada / negociosAtivos) * 100 : 0;
 

@@ -1,3 +1,4 @@
+import { ETAPA_NEGOCIO_LABEL, type EtapaNegocio } from "@/lib/negocioEtapa";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -45,16 +46,12 @@ interface RowData {
   leadId?: string;
 }
 
-// Mapa KPI → fases canônicas. Após a consolidação (07/2026), propostas /
-// negociação / documentação viraram uma única fase "em_negociacao" e
-// assinados/vgv_assinado viraram "ganho".
-const NEGOCIO_FASES: Record<string, string[]> = {
-  negocios: [],
-  propostas: ["em_negociacao"],
-  negociacao: ["em_negociacao"],
+// Mapa KPI → etapas do Pipeline (fonte única). Pós-visita não é negócio.
+const ETAPAS_KPI: Record<string, EtapaNegocio[]> = {
+  negocios: ["documentacao", "proposta", "contrato"],
+  propostas: ["proposta"],
+  negociacao: ["documentacao", "proposta"],
   contratos: ["contrato"],
-  assinados: ["ganho"],
-  vgv_assinado: ["ganho"],
 };
 
 /** KPIs de negócio ancorados em data_assinatura (regra VGV fonte única). */
@@ -139,33 +136,34 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
       })));
 
     } else if (["negocios", "propostas", "negociacao", "contratos", "assinados", "vgv_assinado"].includes(type)) {
-      const fases = NEGOCIO_FASES[type];
       const porAssinatura = ASSINATURA_TYPES.has(type);
-      let q = supabase
-        .from("negocios")
-        .select("id, nome_cliente, fase, status, vgv_estimado, vgv_final, empreendimento, pipeline_lead_id, created_at, data_assinatura")
-        .limit(200);
-      if (porAssinatura) {
-        // Vendas: ancoradas em data_assinatura + status ativo (regra VGV fonte única)
-        q = q.eq("status", "ativo")
-          .gte("data_assinatura", start)
-          .lte("data_assinatura", end)
-          .order("data_assinatura", { ascending: false });
+      if (!porAssinatura) {
+        // Fonte única: etapa vem do Pipeline (v_negocios_pipeline).
+        const etapas = ETAPAS_KPI[type] ?? ["documentacao", "proposta", "contrato"];
+        const { data } = await supabase.from("v_negocios_pipeline")
+          .select("negocio_id, pipeline_lead_id, nome_cliente, empreendimento, etapa, etapa_desde, vgv")
+          .in("etapa", etapas).order("etapa_desde", { ascending: false }).limit(200);
+        setRows((data || []).map(n => ({
+          id: n.negocio_id || n.pipeline_lead_id || "", nome: n.nome_cliente || "Negócio",
+          sub: n.empreendimento || "", date: n.etapa_desde || undefined,
+          leadId: n.pipeline_lead_id || undefined,
+          extra: ETAPA_NEGOCIO_LABEL[n.etapa as EtapaNegocio] || n.etapa || "",
+        })));
       } else {
-        // Pipeline vivo: snapshot dos negócios ativos, coerente com o funil
-        q = q.eq("status", "ativo").order("created_at", { ascending: false });
-      }
-      if (fases && fases.length > 0) {
-        q = q.in("fase", fases);
-      }
-      const { data } = await q;
+      const { data } = await supabase
+        .from("negocios")
+        .select("id, nome_cliente, vgv_estimado, vgv_final, empreendimento, pipeline_lead_id, data_assinatura")
+        .eq("status", "ativo").eq("fase", "ganho")
+        .gte("data_assinatura", start).lte("data_assinatura", end)
+        .order("data_assinatura", { ascending: false }).limit(200);
       setRows((data || []).map(n => ({
         id: n.id, nome: n.nome_cliente || "Negócio",
         sub: n.empreendimento || "",
-        date: porAssinatura ? (n.data_assinatura ? n.data_assinatura + "T12:00:00" : undefined) : (n.created_at || undefined),
+        date: n.data_assinatura ? n.data_assinatura + "T12:00:00" : undefined,
         leadId: n.pipeline_lead_id || undefined,
-        extra: porAssinatura ? formatBRLCompact(n.vgv_final || n.vgv_estimado || 0) : (n.fase || ""),
+        extra: formatBRLCompact(n.vgv_final || n.vgv_estimado || 0),
       })));
+      }
 
     } else if (type === "tentativas" || type === "aproveitados" || type === "reaproveitados_oa") {
       let q = supabase
