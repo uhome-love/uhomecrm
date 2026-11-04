@@ -131,7 +131,7 @@ export default function ResumoLead({ lead }: { lead: PipelineLead }) {
 
             {/* Empreendimento */}
             <div className="rounded-lg border border-border bg-background/40 px-3 py-2">
-              <div className="text-[9.5px] font-bold uppercase tracking-wide text-muted-foreground">🏢 Interesse (imóvel)</div>
+              <div className="text-[9.5px] font-bold uppercase tracking-wide text-muted-foreground">🏢 Empreendimento</div>
               <div className="mt-1 text-[12.5px] font-semibold text-foreground truncate">{lead.empreendimento || "—"}</div>
             </div>
           </div>
