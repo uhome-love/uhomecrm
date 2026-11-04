@@ -66,7 +66,7 @@ export default function LiaCenarioCard({ cenario, execucao, rodando, bloqueado, 
                 {execucao.conversa.map((m, i) => (
                   <div key={i} className={`max-w-[90%] whitespace-pre-line rounded-lg px-2.5 py-1.5 text-xs ${m.de === "lia" ? "bg-card text-foreground" : "ml-auto bg-primary/10 text-foreground"}`}>
                     <span className="mb-0.5 block text-[10px] font-semibold text-muted-foreground">{m.de === "lia" ? "Lia" : cenario.nomeCliente}{m.sinal ? ` · ${m.sinal}` : ""}</span>
-                    {m.texto}
+                    {m.texto.replace(/\[\[\s*midia\s*:[^\]]*\]\]/gi, "📷 (envia foto)")}
                   </div>
                 ))}
               </div>
