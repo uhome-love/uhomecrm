@@ -442,6 +442,13 @@
       "when": 1793759030802,
       "tag": "0062_v_negocios_pipeline_fonte_unica",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1793759273522,
+      "tag": "0063_temperatura_tres_niveis",
+      "breakpoints": true
     }
   ]
 }
