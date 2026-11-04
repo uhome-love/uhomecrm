@@ -477,6 +477,13 @@
       "when": 1793764849006,
       "tag": "0067_parceria_encerra_historico_movido_por",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1793821704866,
+      "tag": "0068_ia_midias_produto_slug",
+      "breakpoints": true
     }
   ]
 }

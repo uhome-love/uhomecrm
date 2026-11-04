@@ -13,6 +13,20 @@ export type Trava = { codigo: string; detalhe: string };
 // 4 dorm: construída 116,02 | total 176,30 a 210,51
 export const AREAS_REAIS = [96.23, 116.02, 157.51, 170.74, 176.3, 210.51];
 
+// Áreas reais de todos os produtos da campanha (pacote Cérebro LIA Natal, 04/11/2026).
+export const AREAS_POR_PRODUTO: Record<string, number[]> = {
+  "open-bosque": [31, 41, 43, 45, 50, 52, 59, 63],
+  "open-arvoredo": [46.7, 53.56],
+  "skyglass-parque-moinhos": [25, 43, 50, 53, 68],
+  "casa-tua-porto-alegre": [99.16, 127.75, 176.45],
+  "casa-tua-canoas": AREAS_REAIS,
+  "boa-vista-country-club": [69, 93, 97],
+  "golden-lake": [127, 136, 139, 147, 176, 186, 197, 197.97, 200.01, 254, 254.63, 272, 299, 326, 328, 365, 418.92, 458.39, 543, 583, 660, 732, 868],
+};
+// Grandes áreas do bairro/condomínio (lago, parque) que podem ser citadas.
+export const AREAS_EXTRAS = [5000, 22000, 23584.62, 2380, 3400, 15389.84, 13328.24, 29659.14];
+const TODAS_AREAS = [...new Set([...Object.values(AREAS_POR_PRODUTO).flat(), ...AREAS_EXTRAS])];
+
 export const FRASES_PROIBIDAS = [
   "ainda tem interesse",
   "tentei contato e não obtive retorno",
@@ -55,17 +69,19 @@ export function travaFrasesProibidas(texto: string): Trava | null {
 // Só passa número de metragem que seja exatamente uma área real, ou um número
 // redondo (múltiplo de 5) MENOR OU IGUAL à área real mais próxima.
 // Pode falar 150; nunca 157; nunca nada acima da área real.
-export function travaMetragem(texto: string): Trava | null {
+export function travaMetragem(texto: string, produtoSlug?: string | null): Trava | null {
+  const doProduto = produtoSlug ? AREAS_POR_PRODUTO[produtoSlug] : undefined;
+  const referencias = doProduto && doProduto.length ? doProduto : produtoSlug ? TODAS_AREAS : AREAS_REAIS;
   const regex = /(\d{2,4}(?:[.,]\d{1,2})?)\s*(?:m²|m2|metros quadrados|m\b)/gi;
   let m: RegExpExecArray | null;
   while ((m = regex.exec(texto)) !== null) {
     const valor = Number(m[1].replace(",", "."));
-    if (!Number.isFinite(valor) || valor < 30) continue; // não é metragem de casa
+    if (!Number.isFinite(valor) || valor < (produtoSlug ? 20 : 30)) continue; // não é metragem de imóvel
 
-    const exata = AREAS_REAIS.some((a) => Math.abs(a - valor) < 0.005);
+    const exata = (produtoSlug ? TODAS_AREAS : AREAS_REAIS).some((a) => Math.abs(a - valor) < 0.005);
     if (exata) continue;
 
-    const referencia = AREAS_REAIS.reduce((prev, cur) =>
+    const referencia = referencias.reduce((prev, cur) =>
       Math.abs(cur - valor) < Math.abs(prev - valor) ? cur : prev
     );
 

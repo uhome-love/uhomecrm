@@ -44,6 +44,8 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [x] Entregas, renda Open Arvoredo, entrada 10% e FGTS no catálogo + testes
 - [x] Regra: recuperado vai para Fila CEO manual; corretor que descartou não recebe de volta (regra + teste)
 - [x] Entrega da Lia para a Fila CEO sem Roleta + contexto na janela de repasse (ligar ao disparo quando o Recupera for ativado)
-- [ ] Fichas do pacote em lia_produtos, mídias por produto, trava de metragem, prompt Recupera
-- [ ] Corrigir mensagens prontas, acervo e cardápio de agosto
+- [x] 9 fichas (com backup), 93 fotos, trava de metragem por produto, mídias por produto (desligadas), arquivo do prompt Recupera
+- [ ] Ligar prompt Recupera ao fluxo (coluna fluxo em ia_leads) e mídias filtradas por produto
+- [x] 4 mensagens prontas corrigidas/desligada
+- [ ] Acervo de preços e cardápio de agosto do Reengajar manual
 - [ ] Laboratório com a bateria de testes (aprovação do Lucas)
