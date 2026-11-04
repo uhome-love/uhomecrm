@@ -435,6 +435,13 @@
       "when": 1793681065803,
       "tag": "0061_oa_ranking_semana_domingo",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1793759030802,
+      "tag": "0062_v_negocios_pipeline_fonte_unica",
+      "breakpoints": true
     }
   ]
 }

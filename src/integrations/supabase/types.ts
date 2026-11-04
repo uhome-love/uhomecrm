@@ -16786,6 +16786,21 @@ export type Database = {
           },
         ]
       }
+      v_negocios_pipeline: {
+        Row: {
+          corretor_auth_id: string | null
+          data_assinatura: string | null
+          empreendimento: string | null
+          empreendimento_canonico_id: string | null
+          etapa: string | null
+          etapa_desde: string | null
+          negocio_id: string | null
+          nome_cliente: string | null
+          pipeline_lead_id: string | null
+          vgv: number | null
+        }
+        Relationships: []
+      }
       v_oa_campanha_resultado: {
         Row: {
           aproveitados: number | null
