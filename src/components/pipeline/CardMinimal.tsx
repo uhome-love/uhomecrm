@@ -404,7 +404,7 @@ const CardMinimal = memo(function CardMinimal({
       }}
       data-dragging={isDragging || undefined}
       className={[
-        "group relative cursor-pointer rounded-2xl shadow-sm hover:shadow-md transition-[transform,box-shadow,border-color,opacity] duration-short ease-enter [&_span]:min-[0px]:text-inherit",
+        "group relative cursor-pointer rounded-2xl shadow-sm hover:shadow-md transition-[transform,box-shadow,border-color,opacity] duration-short ease-enter",
         "px-3.5 py-3 pl-4 hover:-translate-y-px active:scale-[0.985] active:shadow-sm motion-reduce:transition-none motion-reduce:active:scale-100",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
         parceiroNome
