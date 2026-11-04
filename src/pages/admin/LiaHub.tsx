@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { useEffect, useRef, type ComponentType } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -38,49 +38,59 @@ export default function LiaHub() {
   const contagem = useConversasContagem();
   const { area, secao } = resolverArea(params.get("area"), params.get("aba"));
   const Conteudo = secao ? SECOES[secao] : null;
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = navRef.current;
+    const selected = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !selected) return;
+    const left = selected.offsetLeft - nav.offsetLeft;
+    if (left < nav.scrollLeft || left + selected.offsetWidth > nav.scrollLeft + nav.clientWidth) {
+      nav.scrollLeft = Math.max(0, left - (nav.clientWidth - selected.offsetWidth) / 2);
+    }
+  }, [area.valor]);
   const ir = (a: string, s?: string) => setParams(s ? { area: a, aba: s } : { area: a }, { replace: true });
 
   return (
-    <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4 p-3 sm:p-4 lg:flex-row">
-      <aside className="shrink-0 lg:w-56">
-        <div className="rounded-xl border border-border bg-card p-3 lg:sticky lg:top-4">
-          <div className="flex items-center gap-2.5 px-1">
+    <div className="mx-auto w-full max-w-[1500px] space-y-5 p-3 sm:p-4 lg:p-6">
+      <header className="min-w-0">
+        <div className="flex items-center justify-between gap-3 pb-4">
+          <div className="flex min-w-0 items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Bot className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <p className="text-base font-bold leading-tight text-foreground">Lia</p>
-              <p className="text-[11px] text-muted-foreground">Atendente no WhatsApp</p>
+              <p className="text-lg font-bold leading-tight text-foreground">Lia</p>
+              <p className="text-[11px] text-muted-foreground">Relacionamento Uhome</p>
             </div>
           </div>
-          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground sm:text-[11px]">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Atende só descartes
           </span>
-          <nav className="mt-3 flex gap-1 overflow-x-auto lg:flex-col [scrollbar-width:none]">
+        </div>
+          <nav ref={navRef} aria-label="Áreas da Lia" className="relative flex gap-2 overflow-x-auto border-b border-border sm:gap-4 [scrollbar-width:thin]">
             {LIA_AREAS.map((a) => {
               const Icone = ICONES[a.valor];
               const ativa = a.valor === area.valor;
               return (
-                <button key={a.valor} type="button" onClick={() => ir(a.valor)}
+                <Button key={a.valor} variant="ghost" onClick={() => ir(a.valor)}
                   aria-current={ativa ? "page" : undefined}
-                  className={cn("flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-fast",
-                    ativa ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+                  className={cn("h-12 shrink-0 gap-2 rounded-none border-b-2 px-2 text-xs transition-colors duration-fast sm:px-3 sm:text-sm",
+                    ativa ? "border-primary font-semibold text-primary" : "border-transparent font-medium text-muted-foreground hover:text-foreground")}>
                   <Icone className="h-4 w-4" /> {a.rotulo}
-                </button>
+                </Button>
               );
             })}
           </nav>
-        </div>
-      </aside>
+      </header>
 
       <main className="min-w-0 flex-1 space-y-4">
         <header className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">{area.rotulo}</h1>
             <p className="text-sm text-muted-foreground">{area.descricao}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => qc.invalidateQueries({ queryKey: ["lia-hub"] })}>
-            <RefreshCw className="mr-1.5 h-4 w-4" /> Atualizar
+          <Button variant="outline" size="sm" aria-label="Atualizar" title="Atualizar" className="shrink-0" onClick={() => qc.invalidateQueries({ queryKey: ["lia-hub"] })}>
+            <RefreshCw className="h-4 w-4" /> <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </header>
 
@@ -90,15 +100,15 @@ export default function LiaHub() {
               {area.secoes.map((s) => {
                 const n = area.valor === "conversas" ? contagem[s.valor] : undefined;
                 return (
-                  <button key={s.valor} type="button" onClick={() => ir(area.valor, s.valor)}
+                  <Button key={s.valor} variant="ghost" onClick={() => ir(area.valor, s.valor)}
                     aria-current={s.valor === secao ? "page" : undefined}
-                    className={cn("flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors duration-fast",
+                    className={cn("h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm transition-colors duration-fast",
                       s.valor === secao ? "bg-card font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
                     {s.rotulo}
                     {n !== undefined && (
                       <span className="rounded-full bg-primary/10 px-1.5 text-[11px] font-semibold tabular-nums text-primary">{n}</span>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
