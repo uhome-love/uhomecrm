@@ -18557,6 +18557,10 @@ export type Database = {
             Returns: string
           }
       lead_teve_contato_v3: { Args: { p_lead_id: string }; Returns: boolean }
+      lia_avaliar_cenario: {
+        Args: { p_avaliacao: string; p_comentario?: string; p_id: string }
+        Returns: undefined
+      }
       lia_ler_configuracoes: { Args: never; Returns: Json }
       lia_reservar_envio: {
         Args: { p_chave: string; p_origem: string; p_telefone: string }
