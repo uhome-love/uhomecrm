@@ -44,8 +44,7 @@ suite("Equipes: SQL de produção na fonte única Pipeline", () => {
     const rpc = readFileSync("drizzle/migrations/0065_equipes_negocios_fonte_pipeline.sql", "utf8");
     const isolated = (source: string) => source.replaceAll("public.", `${schema}.`)
       .replaceAll("auth.uid()", `${schema}.test_uid()`)
-      .replace("SET search_path TO 'public'", `SET search_path TO '${schema}'`)
-      .replaceAll(/\b(pipeline_leads|pipeline_stages|negocios)\b/g, "$1");
+      .replace("SET search_path TO 'public'", `SET search_path TO '${schema}'`);
     // A view usa nomes sem schema em alguns ambientes; fixa o search_path durante a criação.
     sql(`CREATE SCHEMA ${schema}; SET search_path TO ${schema};
       CREATE FUNCTION ${schema}.test_uid() RETURNS uuid LANGUAGE sql AS $$ SELECT '${broker}'::uuid $$;
@@ -109,6 +108,27 @@ suite("Equipes: SQL de produção na fonte única Pipeline", () => {
     seed("proposta");
     sql(`UPDATE ${schema}.pipeline_leads SET corretor_id='00000000-0000-0000-0000-000000000999';`);
     expect(overview().escritorio.negocios).toBe(0);
+  });
+  it("reconcilia 11 Documentação e 10 Proposta em 21 negócios", () => {
+    seed("proposta");
+    sql(`TRUNCATE ${schema}.pipeline_leads;
+      INSERT INTO ${schema}.pipeline_leads(id,stage_id,corretor_id,nome,arquivado,valor_estimado)
+      SELECT md5(i::text)::uuid,
+        (SELECT id FROM ${schema}.pipeline_stages WHERE tipo=CASE WHEN i<=11 THEN 'documentacao' ELSE 'proposta' END),
+        '${broker}', 'Teste '||i, false, 100000 FROM generate_series(1,21) i;`);
+    const result = overview();
+    expect(result.escritorio.negocios).toBe(21);
+    expect(result.gestores[0]?.negocios).toBe(21);
+    expect(result.gestores[0]?.corretores[0]?.negocios).toBe(21);
+    expect(result.escritorio.vgv_pipeline_ativo).toBe(2100000);
+  });
+  it("mantém o VGV assinado independente da nova contagem", () => {
+    seed("proposta", false, true);
+    sql(`UPDATE ${schema}.negocios SET data_assinatura=(now() AT TIME ZONE 'America/Sao_Paulo')::date,
+      equipe_gerente_auth_id='${gestor}';`);
+    const result = overview();
+    expect(result.escritorio.negocios).toBe(1);
+    expect(result.escritorio.vgv_assinado_mes).toBe(650000);
   });
   it.each(["admin", "diretor"])("permite a leitura autorizada de %s", (role) => {
     expect(sql(`SELECT set_config('app.test_role','${role}',false); SELECT (${schema}.get_pipeline_equipes_overview()->'escritorio'->>'negocios')::int;`)).toMatch(/\n0$/);
