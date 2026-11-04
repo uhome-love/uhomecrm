@@ -449,6 +449,13 @@
       "when": 1793759273522,
       "tag": "0063_temperatura_tres_niveis",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1793761870358,
+      "tag": "0064_etapa_proposta_nome",
+      "breakpoints": true
     }
   ]
 }
