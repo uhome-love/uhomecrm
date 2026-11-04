@@ -6,7 +6,9 @@
 - [x] A4 — Endereço inexistente: navegação preservada validada com CEO, Gabriel e Pedro; redirecionamentos de abas ocultas corrigidos
 - [x] A — Cobertura gerente/corretor: sessões próprias de Gabriel Vieira/Pedro Jorge; resumo do Modo Time acompanha tabela/carteira; telefone e retorno validados; 17 testes passaram
 - [x] M0 — Conferido CEO, Gabriel e Pedro; selos do card legíveis, movimento reduzido desliga neve/confete mesmo com tela aberta; 21 testes passaram; sem alterações em leads
-- [ ] B — Desenho e plano preparados: nome Meu time por perfil, topo/datas da Central de Marketing e datas desktop de Visitas; aguarda aprovação do Lucas
+- [ ] B1 — Nome Meu time por perfil: implementação aprovada em conferência
+- [ ] B2 — Topo e datas da Central de Marketing: aprovado, preservar resultados e PDF
+- [ ] B3 — Datas desktop de Visitas: aprovado, preservar limites e Aplicar
 - [ ] M1 — Abrir e trocar (esqueleto, fade de aba)
 - [ ] C — Acabamento (marca mantida: #4969FF e Inter); incluir textos auxiliares do CEO e disposição do placar em celular, observados na conferência
 - [ ] M2 — Rotina do corretor
