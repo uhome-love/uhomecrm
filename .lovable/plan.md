@@ -18,7 +18,7 @@ Descarte -> espera 24h -> Lia filtra -> 1ª mensagem (modelo aprovado pela Meta)
 - Entram: não atende, sem retorno, sem interesse no momento, corretor desligado, estagnação, sem motivo.
 - Esperam 90 dias: sem condição financeira, desistiu.
 - Nunca entram: pediu para sair, telefone inválido, já comprou, cliente ativo com outro corretor, quem já disse "não" à Lia, descarte definitivo.
-- Limite de envio por dia (começa em 40) e só das 9h às 20h, seg–sáb, para não repetir o bloqueio por spam de 13/07.
+- Limite de envio por dia (começa em 100) e só das 9h às 20h, seg–sáb, para não repetir o bloqueio por spam de 13/07.
 
 ### 2. Mensagens (precisam de aprovação da Meta)
 Quatro modelos de primeira mensagem, escolhidos pelo motivo e pelo produto:
@@ -46,20 +46,25 @@ Morno fica com a Lia recebendo opções em 15 dias. Lia nunca muda etapa nem cor
 
 ## Fases (uma por vez, cada uma validada com você)
 0. **Desenho** da aba Recupera + textos finais das mensagens para você aprovar. Nada muda no CRM.
-1. Cadastrar e aprovar os modelos na Meta.
+1. Cadastrar e aprovar os modelos na Meta (número da Lia).
 2. Filtro + espera de 24h + fila automática (desligada; só mostra quem entraria).
-3. Envio com piloto de 40/dia em um produto (sugiro Casa Tua ou Open Bosque).
-4. Conversa de qualificação da Lia.
-5. Passagem para a Roleta com ficha.
-6. Painel de resultados e testes A/B.
+3. **Validar o cérebro da Lia:** bateria de conversas de teste (preço, FGTS, entrada, "não quero", "outro perfil", fora do assunto). Você revisa e só liberamos com 100% aprovado.
+4. Envio com piloto de 100/dia; se der resultado, aumentamos.
+5. Conversa de qualificação da Lia.
+6. Passagem para a Roleta com ficha, sem o corretor que descartou.
+7. Painel de resultados e testes A/B.
 
-## O que preciso de você
-1. Número que a Lia vai usar (o oficial da Meta ou um novo?) e se aceita o custo por mensagem da Meta.
-2. Lista de produtos que a Lia pode oferecer agora, com preço "a partir de", condições de Natal e o que não pode prometer.
-3. Material curto por produto (foto/card do Natal já subidos servem) e respostas para as 10 dúvidas mais comuns (FGTS, entrada, entrega, condomínio).
-4. Regra de quem pode receber de volta: o mesmo corretor que descartou pode pegar pela Roleta, ou deve ir para outro?
-5. Horários e dias permitidos e o limite inicial por dia.
-6. Texto do "pedir para sair" (obrigatório).
+## Decisões suas (já incluídas)
+- Envio pelo número da Lia.
+- Produtos: só os da página Campanha Natal 2026, com os preços de lá.
+- Materiais: uso os já enviados; o resto pode vir depois.
+- Quem descartou não recebe o cliente de volta.
+- Piloto de 100 por dia.
+- Botão "Não quero mais contato" em toda mensagem: inativa o cliente e ele nunca mais recebe.
+
+## Ainda falta de você
+- Respostas para as dúvidas mais comuns (FGTS, entrada, entrega, condomínio) e o que a Lia não pode prometer.
+- Confirmar dias e horários (sugestão: seg–sáb, 9h às 20h).
 
 ## Parte técnica
 - Reaproveita `lia_reengajamento_elegiveis`, `lia_reengajamento_runs`/fila, `lia-reengajar-dispatch`, `lia-followup`, `lia-brain`, `lia-webhook`; nova cron `lia-recupera-tick` (15 min) arma automaticamente quem completou 24h, com dedup por lead e chave independente `system_flags.lia_recupera_enabled`.
