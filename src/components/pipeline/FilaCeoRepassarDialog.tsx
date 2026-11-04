@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, UserPlus, Search } from "lucide-react";
 import { toast } from "sonner";
+import { podeRepassarRecuperado } from "@/lia/recupera";
 
 interface Props {
   open: boolean;
@@ -40,15 +41,25 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [recupera, setRecupera] = useState<{ contexto: string; descartouId: string | null } | null>(null);
 
   useEffect(() => {
     if (!open) {
       setSelected("");
       setSearch("");
+      setRecupera(null);
       return;
     }
     setLoading(true);
     (async () => {
+      if (leadId) {
+        const { data: lead } = await supabase.from("pipeline_leads").select("tags, observacoes").eq("id", leadId).maybeSingle();
+        const tags: string[] = lead?.tags ?? [];
+        if (tags.includes("lia_recupera")) {
+          const d = tags.find((t) => t.startsWith("descartado_por:"));
+          setRecupera({ contexto: lead?.observacoes ?? "", descartouId: d ? d.slice("descartado_por:".length) : null });
+        }
+      }
       const [tmRes, profRes] = await Promise.all([
         supabase.from("team_members").select("user_id, nome, equipe").eq("status", "ativo").order("nome"),
         supabase.from("profiles").select("user_id, nome, cargo").eq("ativo", true).in("cargo", CARGOS_GESTAO).order("nome"),
@@ -68,7 +79,7 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
       setCorretores(corretoresList);
       setLoading(false);
     })();
-  }, [open]);
+  }, [open, leadId]);
 
   const match = (c: Corretor, q: string) =>
     !q || c.nome?.toLowerCase().includes(q) || c.equipe?.toLowerCase().includes(q);
@@ -81,6 +92,10 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
 
   const handleConfirm = async () => {
     if (!leadId || !selected || !user) return;
+    if (recupera && !podeRepassarRecuperado(selected, recupera.descartouId)) {
+      toast.error("Esse corretor descartou o cliente e não pode recebê-lo de volta.");
+      return;
+    }
     setSaving(true);
     try {
       const { error } = await supabase
@@ -146,6 +161,17 @@ export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, lead
         </DialogHeader>
 
         <div className="space-y-3">
+          {recupera && (
+            <div className="rounded-md border border-border bg-muted p-2.5 text-xs">
+              <p className="mb-1 font-semibold">Recuperado pela Lia</p>
+              <p className="whitespace-pre-line text-muted-foreground">{recupera.contexto || "Sem resumo."}</p>
+              {recupera.descartouId && (
+                <p className="mt-1 text-destructive">
+                  Quem descartou ({todos.find((c) => c.user_id === recupera.descartouId)?.nome || "corretor anterior"}) não pode receber de volta.
+                </p>
+              )}
+            </div>
+          )}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input

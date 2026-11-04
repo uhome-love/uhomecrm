@@ -43,7 +43,7 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 ## Lia Recupera — Fase 2 (plano aprovado 04/11)
 - [x] Entregas, renda Open Arvoredo, entrada 10% e FGTS no catálogo + testes
 - [x] Regra: recuperado vai para Fila CEO manual; corretor que descartou não recebe de volta (regra + teste)
-- [ ] Entrega da Lia para a Fila CEO sem Roleta + cartão "Recuperado pela Lia" com contexto
+- [x] Entrega da Lia para a Fila CEO sem Roleta + contexto na janela de repasse (ligar ao disparo quando o Recupera for ativado)
 - [ ] Fichas do pacote em lia_produtos, mídias por produto, trava de metragem, prompt Recupera
 - [ ] Corrigir mensagens prontas, acervo e cardápio de agosto
 - [ ] Laboratório com a bateria de testes (aprovação do Lucas)

@@ -125,3 +125,42 @@ export async function handoffEngajado(
   if (leadId && !jaTemCorretor) await empurrarRoleta(leadId);
   return leadId;
 }
+
+/**
+ * Lia Recupera: cliente descartado que reativou o interesse volta ao Pipeline SEM corretor,
+ * direto na Fila CEO, para repasse manual (nunca pela Roleta). Guarda quem descartou na tag
+ * `descartado_por:<user_id>` para a janela de repasse bloquear a devolução a esse corretor.
+ */
+export async function handoffRecupera(
+  sb: any,
+  opts: { leadId: string; nivel: string; resumo: string; perfil?: string; produtos?: string[] },
+): Promise<string | null> {
+  const map = NIVEL_MAP[opts.nivel] ?? NIVEL_MAP.morno;
+  const { data: lead } = await sb.from("pipeline_leads")
+    .select("id, corretor_id, motivo_descarte, empreendimento, tags").eq("id", opts.leadId).maybeSingle();
+  if (!lead) return null;
+  const { data: stage } = await sb.from("pipeline_stages").select("id").eq("tipo", "novo_lead").eq("ativo", true).limit(1).single();
+  if (!stage) return null;
+  const tags = ["lia_recupera", `lia_${opts.nivel}`, "reengajado"];
+  if (lead.corretor_id) tags.push(`descartado_por:${lead.corretor_id}`);
+  const contexto = [
+    `Recuperado pela Lia (${map.label})`,
+    opts.resumo?.trim() ? `Resumo: ${opts.resumo.trim()}` : null,
+    opts.perfil ? `Perfil de busca: ${opts.perfil}` : null,
+    opts.produtos?.length ? `Interesse: ${opts.produtos.join(", ")}` : null,
+    `Descarte anterior: ${lead.motivo_descarte || "sem motivo"} · ${lead.empreendimento || "sem empreendimento"}`,
+  ].filter(Boolean).join("\n");
+  const { error } = await sb.from("pipeline_leads").update({
+    arquivado: false, stage_id: stage.id, stage_changed_at: nowISO(),
+    corretor_id: null, aceite_status: "pendente_distribuicao", motivo_pendencia: "lia_recupera",
+    motivo_descarte: null, motivo_descarte_code: null, tipo_descarte: null,
+    temperatura: map.temperatura, prioridade_lead: map.prioridade, tags, observacoes: contexto,
+  }).eq("id", lead.id);
+  if (error) { console.error("[liaHandoff] recupera update falhou", error); return null; }
+  await sb.from("pipeline_atividades").insert({
+    pipeline_lead_id: lead.id, tipo: "entrada", status: "concluida",
+    titulo: `${map.emoji} Recuperado pela Lia · Fila CEO para repasse manual`, descricao: contexto,
+    created_by: "00000000-0000-0000-0000-000000000000",
+  }).then(() => {}).catch(() => {});
+  return lead.id; // sem empurrarRoleta: decisão do Lucas, repasse sempre manual
+}
