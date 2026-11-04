@@ -1,77 +1,80 @@
-# Negócios organizados — uma fonte única para classificar o cliente
+# Negócios organizados ponta a ponta: fonte única do Pós-visita ao Ganho
 
 ## O que encontrei (conferido no sistema)
-- **Temperatura com 4 escalas diferentes.** O feedback da visita grava "Muito quente". O botão do Resumo só conhece Frio / Morno / Quente e trata "Muito quente" como se já fosse "Quente". Por isso, ao clicar em "Quente", nada acontece, e o topo continua mostrando "Muito quente". É esse o problema da sua foto. O Resumo ainda mostra outra escala no topo (Urgente, Gelado...).
-- **Temperatura e Interesse repetem a mesma ideia.** O Resumo tem "Interesse Alto/Médio/Baixo" e também "Temperatura". O corretor preenche os dois sem saber qual vale.
-- **A situação do negócio fica em três lugares:** na etapa do cliente (ex.: "Proposta enviada"), na aba Negócio e no texto da proposta. No caso do Vitor, a observação diz "Cliente aprovado, vai gerar contrato", mas a situação continua "Proposta enviada".
-- **Feedback da visita fica perdido no histórico.** O resultado, a objeção e a observação aparecem só como texto na linha do tempo. A aba Negócio não mostra nada disso.
-- Hoje, entre os clientes de Visita até Contrato: 37 sem temperatura, 3 frios, 9 mornos, 4 quentes e 1 muito quente.
+- **Etapas e fases não batem.** O Pipeline tem 5 etapas de negócio: Pós-Visita, Documentação, Em Negociação (proposta), Contrato e Ganho. A ficha do negócio só conhece 3 fases e hoje tem: em negociação 274, contrato 7, ganho 128. São duas réguas contando a mesma coisa.
+- **A temperatura usa várias escalas.** O feedback da visita grava "Muito quente", mas o botão do Resumo só oferece Frio, Morno e Quente. Ele trata "Muito quente" como se já fosse "Quente", então clicar em Quente não faz nada. É o problema da sua foto. O topo do Resumo ainda usa outra escala, com Urgente e Gelado.
+- **Temperatura e Interesse se repetem.** O Resumo pede Interesse Alto/Médio/Baixo e também Temperatura.
+- **A situação do negócio está em três lugares:** na etapa, na aba Negócio e no texto da proposta. O Vitor está com "Cliente aprovado, vai gerar contrato" escrito, mas a situação continua "Proposta enviada".
+- **O feedback da visita só aparece no histórico.** A aba Negócio não mostra nada dele.
+- Entre os clientes de Visita até Contrato, 37 estão sem temperatura, 3 frios, 9 mornos, 4 quentes e 1 muito quente.
 
-## A proposta: um único "Termômetro do negócio"
-Cada cliente em negócio passa a ter **um único quadro de classificação**, igual em todos os lugares: Resumo, aba Negócio, feedback da visita e card do Pipeline.
+## 1. Régua única de etapas
+A etapa do Pipeline manda e a ficha do negócio acompanha automaticamente.
 
+| Etapa | Para entrar | Situação (escolher 1) | Para avançar |
+|---|---|---|---|
+| Pós-visita | Visita realizada com feedback | Pensando, Quer proposta, Aguardando família, Comparando | Temperatura e próximo passo |
+| Documentação | Cliente interessado | Pendente, Enviada, Em análise, Aprovada, Reprovada | RG/CPF, renda e residência marcados |
+| Proposta (Em Negociação) | Imóvel e unidade | Enviada, Contraproposta, Aprovada, Recusada | Valor e proposta aprovada |
+| Contrato gerado | Proposta aprovada | Em confecção, Gerado, Em leitura, Assinatura marcada | Data prevista de assinatura |
+| Ganho | Confirmação de venda atual (sem mudança) | — | Comprovante e intermediação, como hoje |
+
+- É possível voltar uma etapa, por exemplo de proposta recusada para Pós-visita. A volta exige motivo e fica no histórico.
+- O card do quadro de Negócios mostra a mesma coisa: etapa, situação, temperatura e próximo passo.
+
+## 2. Termômetro do negócio (em todas as etapas até Contrato)
 ```text
 +-------------------------------------------------+
 | TERMÔMETRO DO NEGÓCIO          atualizado ontem |
-| Temperatura:  Frio | Morno | Quente | Muito quente |
-| Situação:     Proposta aprovada  (por etapa)     |
+| Temperatura: Frio | Morno | Quente | Muito quente |
+| Situação:    Proposta aprovada                   |
 | Próximo passo: Gerar contrato até 06/11          |
 | Última visita: 01/11 · Quer proposta · Thalia    |
 |   "Gerar contrato unidade 512 torre 2"           |
-| Objeção:      — (ou Preço / Localização / ...)   |
-| [Reclassificar]                                  |
+| Objeção: —                                       |
 +-------------------------------------------------+
 ```
-
-### 1. Temperatura em uma escala só (corrige o bug)
-- Quatro níveis para todos: Frio, Morno, Quente e Muito quente. Também é possível deixar sem classificação.
-- O mesmo botão no Resumo, no feedback da visita, na aba Negócio e no card permite **subir ou descer a qualquer momento**.
+- **Uma escala só:** Frio, Morno, Quente e Muito quente, ou sem classificação. Dá para subir ou descer a qualquer momento: no Resumo, na aba Negócio, no feedback da visita e no card.
 - Valores antigos são convertidos: Urgente vira Muito quente, e Gelado vira Frio.
-- Cada mudança fica no histórico ("Temperatura: Muito quente → Morno · Gabriel"), assim o gestor vê quem desclassificou e quando.
+- Cada troca fica no histórico, por exemplo "Muito quente → Morno · Gabriel".
+- **O Interesse separado sai.** O valor antigo serve só para sugerir uma temperatura a quem ainda não tem.
+- **O feedback pós-visita preenche o Termômetro:** resultado, temperatura, objeção e observação. Se a temperatura ficar em branco, a anterior é mantida.
+- A observação vira **nota do negócio**, com data e autor.
 
-### 2. Interesse deixa de existir separado
-- "Interesse Alto/Médio/Baixo" sai do Resumo e a temperatura passa a ser a única régua.
-- O valor antigo continua guardado e é usado só para sugerir uma temperatura a quem ainda não tem.
-
-### 3. Situação do negócio em um só lugar
-- A situação de cada etapa usa as opções que já existem, como Proposta enviada, Aprovada, Aprovação bancária, Documentação e Contrato em confecção.
-- É editada no Termômetro e vale igual para o card, a etapa e a aba Negócio, sem um texto livre contradizendo outro.
-- A observação continua existindo, mas como **nota do negócio**, com data e autor.
-
-### 4. Feedback pós-visita alimenta o Termômetro
-- Ao registrar a visita, o resultado, a temperatura, a objeção e a observação preenchem o Termômetro.
-- Esses dados ficam visíveis como "Última visita" na aba Negócio, e não só no histórico.
-- Se a temperatura não for escolhida, a anterior é mantida. Hoje ela pode ser sobrescrita.
-
-### 5. Aba Negócio reorganizada (mesma ordem em todas as etapas)
-1. Termômetro (temperatura, situação e próximo passo)
+## 3. Aba Negócio (mesma ordem em todas as etapas)
+1. Termômetro
 2. Imóvel, unidade e valor
 3. Última visita e objeção
-4. Proposta, documentos e contrato, mostrando só a parte da etapa atual
+4. Parte da etapa atual: documentos, proposta ou contrato
 5. Notas do negócio
 
-## Ideias extras (opcionais, você escolhe)
-- **A. Alerta de classificação velha:** se a temperatura passar 7 dias sem atualização em Negociação ou Contrato, ela aparece em cinza com o aviso "reclassificar".
-- **B. Próximo passo obrigatório:** em Em Negociação e Contrato, salvar exige um próximo passo com data, que vira tarefa automaticamente.
-- **C. Filtro "Negócios quentes"** no Pipeline e no painel do gerente, para o gestor cobrar os Quentes e Muito quentes.
-- **D. Motivo ao esfriar:** ao descer de Quente para Frio, pedir um motivo rápido (Preço, Crédito, Desistiu, Concorrente).
+## 4. Teste ponta a ponta
+- Um cliente de teste chamado "TESTE Negócio Ponta a Ponta" passa pelas 5 etapas. Nele vou subir e descer a temperatura, trocar a situação, voltar uma etapa e chegar até a tela de Ganho, cancelando no final.
+- A conferência é ao vivo, no computador e no celular, em quatro lugares: Resumo, aba Negócio, card do Pipeline e quadro de Negócios.
+- Testes automáticos cobrem o que cada etapa exige para entrar e avançar, a escala de temperatura e a volta de etapa com motivo.
+- No fim, o cliente de teste é arquivado. Isso não afeta números, Roleta ou VGV.
+
+## Ideias extras (opcionais)
+- **A.** Temperatura parada há mais de 7 dias em Negociação ou Contrato fica cinza, com o aviso "reclassificar".
+- **B.** Próximo passo com data obrigatório em Negociação e Contrato, criando a tarefa automaticamente.
+- **C.** Filtro "Negócios quentes" no Pipeline e no painel do gerente.
+- **D.** Motivo rápido ao esfriar: Preço, Crédito, Desistiu ou Concorrente.
 
 ## Ordem de trabalho (padrão obrigatório)
-1. **Desenho** do Termômetro e da nova aba Negócio, no computador e no celular, para sua aprovação.
-2. Fase 1: escala única de temperatura e conversão dos valores antigos. Corrige o caso do Vitor.
-3. Fase 2: Termômetro no Resumo e na aba Negócio, com a situação unificada.
-4. Fase 3: feedback pós-visita alimentando o Termômetro.
-5. Fase 4: ideias extras que você aprovar.
-- Cada fase é conferida ao vivo com um cliente de teste, sempre cancelando, sem mexer em leads reais.
+1. Desenho da régua, do Termômetro e da aba Negócio, no computador e no celular, para sua aprovação.
+2. Fase 0: régua única de etapas, sem alterar vendas ganhas.
+3. Fase 1: escala única de temperatura. Isso corrige o caso do Vitor.
+4. Fase 2: Termômetro e aba Negócio reorganizada.
+5. Fase 3: feedback pós-visita ligado ao Termômetro.
+6. Fase 4: teste ponta a ponta completo, mais as ideias extras que você aprovar.
 
 ## Fora deste plano
-Regras da Roleta, distribuição, contagem de visitas, VGV, confirmação de venda, Financeiro e intermediação continuam iguais.
+Roleta, distribuição, contagem de visitas, VGV, confirmação de venda, Financeiro e intermediação.
 
 ## Detalhes técnicos
-- `pipeline_leads.temperatura` passa a usar um domínio único: `frio|morno|quente|muito_quente|null`. Fazer backfill de `urgente→muito_quente`, `gelado→frio` e `nao_definida→null` pela ferramenta de dados. Uma validação por trigger impede novos valores fora do domínio.
-- O helper compartilhado `src/lib/temperatura.ts` concentra rótulos, cores e ordem. É usado por TemperaturaChip, ResumoLead, VisitaResultadoDialog, CardMinimal, filtros e ordenação. Cobrir com testes: Muito quente → Quente precisa salvar, e Urgente precisa ler como Muito quente.
-- TemperaturaChip: remover a comparação por "tier" que bloqueia a troca e comparar o valor real.
-- A situação usa a fonte já existente, `flag_status` por etapa, via `registrar_jornada_negocio`. Os campos `negocios.*_situacao` passam a ser só projeção.
-- `nivel_interesse` fica deprecado, apenas com comentário e sem drop.
-- O histórico de temperatura vai para `pipeline_historico` ou atividade, sem nova tabela.
-- No máximo 1 migration, aplicada fora do horário comercial.
+- `negocios.fase` passa a ser derivada de `pipeline_stages.tipo` (pos_visita, documentacao, proposta, contrato_gerado, venda) via trigger. Registros `ganho` ficam intactos e o backfill só mexe nos ativos.
+- `pipeline_leads.temperatura` fica restrita a `frio|morno|quente|muito_quente|null`. O backfill converte `urgente`, `gelado` e `nao_definida` pela ferramenta de dados, e um trigger valida os novos valores.
+- O helper `src/lib/temperatura.ts` passa a servir TemperaturaChip, ResumoLead, VisitaResultadoDialog, CardMinimal, filtros e ordenação. TemperaturaChip vai comparar o valor real, e não mais o "tier".
+- A situação usa `flag_status` por etapa via `registrar_jornada_negocio`. Os campos `negocios.*_situacao` passam a ser só projeção.
+- `nivel_interesse` fica marcado como deprecado, sem ser apagado. O histórico de temperatura e de volta de etapa vai em `pipeline_historico`.
+- No máximo 2 migrations, aplicadas fora do horário comercial.
