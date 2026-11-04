@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Bot, RefreshCw, LayoutDashboard, MessagesSquare, RotateCcw, BarChart3, Brain, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-import LiaPainelTab from "@/components/lia-hub/LiaPainelTab";
+import LiaVisaoGeral from "@/components/lia-hub/LiaVisaoGeral";
 import LiaLeadsTab from "@/components/lia-hub/LiaLeadsTab";
 import LiaKanbanTab from "@/components/lia-hub/LiaKanbanTab";
 import LiaFollowupsTab from "@/components/lia-hub/LiaFollowupsTab";
@@ -24,7 +24,7 @@ const ICONES: Record<LiaArea, typeof Bot> = {
 };
 
 const SECOES: Record<string, ComponentType> = {
-  painel: LiaPainelTab, leads: LiaLeadsTab, kanban: LiaKanbanTab, followups: LiaFollowupsTab,
+  painel: LiaVisaoGeral, leads: LiaLeadsTab, kanban: LiaKanbanTab, followups: LiaFollowupsTab,
   transito: LiaTransitoTab, recupera: LiaRecuperaTab, reengajar: LiaReengajarTab,
   mensagens: LiaMensagensTab, qualificados: LiaQualificadosTab,
   conhecimento: LiaConhecimentoTab, laboratorio: LiaLaboratorioTab,
