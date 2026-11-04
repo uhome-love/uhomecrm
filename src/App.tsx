@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MotionConfig } from "framer-motion";
 // @ts-ignore - QueryClient is exported in @tanstack/react-query v5
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
@@ -106,7 +107,7 @@ function PageLoader() {
 
 const App = () => (
   <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-    <TooltipProvider>
+    <TooltipProvider><MotionConfig reducedMotion="user">
       <Toaster />
       <Sonner />
       <AuthProvider>
@@ -200,7 +201,7 @@ const App = () => (
           </BrowserRouter>
         </DateFilterProvider>
       </AuthProvider>
-    </TooltipProvider>
+    </MotionConfig></TooltipProvider>
   </PersistQueryClientProvider>
 );
 
