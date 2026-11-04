@@ -1,5 +1,10 @@
 # Roadmap — qualidade visual do CRM
 
+## Lia — menu superior e próxima fase (04/11)
+- [x] Desenho e plano preparados: seis áreas no topo e Recuperação; números atuais conferidos só em leitura; sem alteração no CRM
+- [ ] Aplicar o menu superior e próxima fase somente após aprovação do desenho e plano
+- [ ] Conferir navegação, dados e leitura no computador e celular, sem disparos nem alterações em clientes reais
+
 # Mensagens WhatsApp — desenho e plano aprovados 04/11
 - [x] W1 — nove etapas com três sugestões; Ganho/Descarte só livre; nome oficial e fichas reais Casa Tua/Open Bosque conferidos em leitura
 - [x] W2 — Editar e Mensagem livre recebem digitação/foco no desktop e celular; rascunho exato conferido no clipboard e link do WhatsApp
