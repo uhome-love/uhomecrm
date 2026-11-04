@@ -70,9 +70,9 @@ export default function LiaVisaoGeral() {
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2">
                 {(["quente", "morno", "frio"] as const).map((n) => (
-                  <div key={n} className={cn("rounded-lg border px-3 py-2", NIVEL_META[n].cls)}>
-                    <span className="text-xs font-semibold">{NIVEL_META[n].emoji} {NIVEL_META[n].label}</span>
-                    <span className="ml-2 font-bold tabular-nums">{f[n]}</span>
+                  <div key={n} className={cn("flex items-center justify-between gap-1 rounded-lg border px-2.5 py-2 sm:px-3", NIVEL_META[n].cls)}>
+                    <span className="truncate text-xs font-semibold">{NIVEL_META[n].label}</span>
+                    <span className="font-bold tabular-nums">{f[n]}</span>
                   </div>
                 ))}
               </div>
