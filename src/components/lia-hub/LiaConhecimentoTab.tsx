@@ -21,7 +21,7 @@ export default function LiaConhecimentoTab() {
   const produtos = (q.data ?? []).filter((p) => grupoFicha(p) === grupo && nomeFicha(p).toLocaleLowerCase("pt-BR").includes(busca.toLocaleLowerCase("pt-BR")));
   const produto = q.data?.find((p) => p.id === selecionado) ?? produtos[0];
   if (q.isLoading) return <p role="status" className="py-10 text-sm text-muted-foreground">Carregando fichas…</p>;
-  if (q.isError) return <LiaLeituraAviso texto="Não foi possível ler as fichas dos empreendimentos." onTentar={() => void q.refetch()} />;
+  if (q.isError) return <LiaLeituraAviso titulo="Não foi possível ler as fichas dos empreendimentos." tentar={() => void q.refetch()} />;
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-2 border-y border-border py-3">
       <div><p className="text-sm font-semibold">Conhecimento dos empreendimentos</p><p className="mt-1 text-xs text-muted-foreground">Fichas cadastradas · Campanha Natal até 18/12/2026</p></div>
