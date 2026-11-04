@@ -66,6 +66,37 @@ Morno fica com a Lia recebendo opções em 15 dias. Lia nunca muda etapa nem cor
 - Respostas para as dúvidas mais comuns (FGTS, entrada, entrega, condomínio) e o que a Lia não pode prometer.
 - Confirmar dias e horários (sugestão: seg–sáb, 9h às 20h).
 
+## Oferta: Natal Chave de Ouro com as 8 opções
+A recuperação sempre oferece a campanha e encaixa a pessoa numa faixa, usando o seu material (zip conferido: 38 posts, 3 vídeos, legendas, scripts e o carrossel "Oportunidades de Natal"):
+- Até R$ 300 mil: Open Bosque, Open Arvoredo
+- R$ 300 a 400 mil: Essence Canoas
+- Casas: Casa Tua Porto Alegre, Casa Tua Canoas
+- Alto padrão: Skyglass, Boa Vista Country Club, Golden Lake
+Fluxo: 1ª mensagem cita o imóvel que a pessoa pediu + Natal → se "Sim", a Lia manda o card "Oportunidades de Natal" e pergunta a faixa → manda os 3 posts do empreendimento que encaixa → oferece visita. Destaques: prêmio do cliente (urna, "assinou, pagou, ganhou") e Black Natal 23–29/11 quando a condição for definida.
+
+## Cérebro da Lia (modelo de IA)
+Hoje a Lia usa o Gemini Flash (rápido e barato). Recomendação por custo-benefício:
+- **Conversa do dia a dia: Gemini Flash** (mantém). Responde rápido, custa centavos por conversa e entende bem português.
+- **Decisão de "quente → Roleta" e resumo para o corretor: Gemini Pro**, só nesse momento. É o ponto que mais pesa em venda e acontece poucas vezes, então o custo extra é pequeno.
+- Estimativa de custo de IA no piloto (100/dia, ~20% respondendo): bem abaixo do custo das mensagens da Meta.
+- Na fase de validação, rodamos as mesmas 30 conversas de teste no Flash e no Pro, e você escolhe vendo as respostas lado a lado.
+
+## Página da Lia — estrutura completa
+Abas atuais: Painel, Leads, Kanban, Conversas, Follow-ups, Qualificados, Trânsito, Reengajar. Proposta:
+- **Painel:** ganha o funil da recuperação (descartados → enviados → responderam → quentes → visitas → vendas) e o custo do dia.
+- **Recupera (nova):** liga/desliga, limite/dia, horários, fila de hoje, quem está em cada passo da cadência.
+- **Mensagens (nova):** os modelos da Meta com situação (aprovado/em análise/recusado) e desempenho de cada um.
+- **Conhecimento (nova):** as 8 opções, preços, materiais e dúvidas frequentes que a Lia usa; você edita sem mexer em código.
+- **Laboratório (nova):** a bateria de testes do cérebro, com aprovar/reprovar resposta.
+- **Qualificados:** passa a mostrar a ficha que vai para o corretor e para quem foi pela Roleta.
+- Reengajar manual continua como está.
+
+## O que ainda falta para ficar 100%
+- Dúvidas frequentes respondidas (FGTS, entrada, entrega, condomínio) e o que a Lia não pode prometer.
+- Material do Open Arvoredo (hoje só 2 telas) e condição da Black Natal.
+- Confirmar se o número da Lia já está aprovado para modelos de marketing na Meta (confiro na Fase 1).
+- Confirmar dias e horários (sugestão seg–sáb, 9h–20h).
+
 ## Parte técnica
 - Reaproveita `lia_reengajamento_elegiveis`, `lia_reengajamento_runs`/fila, `lia-reengajar-dispatch`, `lia-followup`, `lia-brain`, `lia-webhook`; nova cron `lia-recupera-tick` (15 min) arma automaticamente quem completou 24h, com dedup por lead e chave independente `system_flags.lia_recupera_enabled`.
 - Lia continua em caixa isolada `ia_*`; a volta ao pipeline usa o caminho de reativação existente (`reactivateLead` + `reset_ciclo_reentrada` + `distribuir_lead_atomico`), nada direto.
