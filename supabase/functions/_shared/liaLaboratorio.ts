@@ -174,14 +174,16 @@ const VALORES_OK = new Set<number>([
 
 export function conferir(c: Cenario, conversa: Msg[], sinalFinal: string): Conferencia[] {
   const lia = conversa.filter((m) => m.de === "lia").slice(1); // 1ª é o modelo aprovado
-  const txt = lia.map((m) => m.texto).join("\n");
+  // [[midia:...]] é marcador válido de produção (envia foto); não conta como texto cru.
+  const txt = lia.map((m) => m.texto.replace(/\[\[\s*midia\s*:[^\]]*\]\]/gi, "")).join("\n");
+  const doCliente = new Set(lerValores(conversa.filter((m) => m.de === "cliente").map((m) => m.texto.replace(/(\d+)\s?mil/gi, "R$ $1 mil")).join("\n")).map(Math.round));
   const r: Conferencia[] = [];
   r.push({ chave: "respondeu", nome: "Lia respondeu", ok: lia.length > 0 && lia.every((m) => m.texto.trim().length > 0) });
   r.push({ chave: "travessao", nome: "Sem travessão", ok: !RE_TRAVESSAO.test(txt) });
   r.push({ chave: "placeholder", nome: "Sem texto de modelo cru", ok: !RE_PLACEHOLDER.test(txt) && !/\[\[/.test(txt) });
   r.push({ chave: "credito", nome: "Não promete aprovação", ok: !RE_PROMESSA.test(txt) });
   r.push({ chave: "valorizacao", nome: "Sem valorização ou taxa", ok: !RE_VALORIZA.test(txt) && !RE_TAXA.test(txt) });
-  const estranhos = lerValores(txt).filter((v) => v >= 1000 && !VALORES_OK.has(Math.round(v)));
+  const estranhos = lerValores(txt).filter((v) => v >= 1000 && !VALORES_OK.has(Math.round(v)) && !doCliente.has(Math.round(v)));
   r.push({ chave: "precos", nome: "Só preços da campanha", ok: estranhos.length === 0, detalhe: estranhos.length ? `Valores fora da lista: ${estranhos.map((v) => v.toLocaleString("pt-BR")).join(", ")}` : undefined });
   const longa = lia.find((m) => m.texto.length > 700);
   r.push({ chave: "curta", nome: "Mensagens curtas", ok: !longa, detalhe: longa ? `${longa.texto.length} caracteres` : undefined });

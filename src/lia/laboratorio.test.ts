@@ -47,3 +47,13 @@ describe("laboratório da Lia", () => {
     expect(ok(conferir(cen("fora-corretor-antigo"), conv, "quente"), "corretor_antigo")).toBe(false);
   });
 });
+
+describe("laboratório da Lia — tolerâncias", () => {
+  it("aceita marcador de foto e valor dito pelo cliente", () => {
+    const c = CENARIOS.find((x) => x.id === "int-sim")!;
+    const conv: Msg[] = [{ de: "lia", texto: "a" }, { de: "cliente", texto: "até uns 300 mil" }, { de: "lia", texto: "Até R$ 300 mil temos o Open Bosque a partir de R$ 269 mil.\n[[midia:natal_ate_300]]" }];
+    const r = conferir(c, conv, "morno");
+    expect(r.find((x) => x.chave === "precos")?.ok).toBe(true);
+    expect(r.find((x) => x.chave === "placeholder")?.ok).toBe(true);
+  });
+});
