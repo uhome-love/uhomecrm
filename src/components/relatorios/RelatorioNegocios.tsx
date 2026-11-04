@@ -43,6 +43,8 @@ type SortDir = "asc" | "desc";
 
 // Fases canônicas (pós-consolidação 07/2026). Perdido vive em `status`, não em `fase`.
 const FASES: Array<{ fase: string; label: string; color: string; bg: string }> = [
+  { fase: "documentacao", label: "Documentação", color: "#92400e", bg: "#fef3c7" },
+  { fase: "proposta", label: "Proposta", color: "#9a3412", bg: "#ffedd5" },
   { fase: "em_negociacao", label: "Em Negociação", color: "#92400e", bg: "#fef3c7" },
   { fase: "contrato", label: "Contrato", color: "#5b21b6", bg: "#ede9fe" },
   { fase: "ganho", label: "Ganho", color: "#065f46", bg: "#d1fae5" },
@@ -125,16 +127,25 @@ export default function RelatorioNegocios({ filters }: Props) {
         (profs || []).forEach((p) => nameMap.set(p.id, p.nome || "—"));
       }
 
+      // Fonte única: a etapa de negócios ativos vem do Pipeline (v_negocios_pipeline).
+      const negIds = cur.filter((r) => r.fase !== "ganho").map((r) => r.id);
+      const etapaMap = new Map<string, string>();
+      for (let i = 0; i < negIds.length; i += 300) {
+        const { data: et } = await supabase.from("v_negocios_pipeline").select("negocio_id, etapa").in("negocio_id", negIds.slice(i, i + 300));
+        (et || []).forEach((e) => { if (e.negocio_id && e.etapa) etapaMap.set(e.negocio_id, e.etapa); });
+      }
+
       const render: NegocioRender[] = cur.map((r) => {
-        const f = FASE_MAP.get(r.fase);
+        const faseReal = r.fase !== "ganho" ? etapaMap.get(r.id) || r.fase : r.fase;
+        const f = FASE_MAP.get(faseReal);
         return {
           id: r.id,
           cliente: r.nome_cliente || "—",
           empreendimento: r.empreendimento || "—",
           corretor: r.corretor_id ? nameMap.get(r.corretor_id) || "—" : "—",
-          fase: r.fase,
+          fase: faseReal,
           status: (r as any).status || "ativo",
-          faseLabel: f?.label || r.fase,
+          faseLabel: f?.label || faseReal,
           vgv: Math.round(r.vgv_final ?? r.vgv_estimado ?? 0),
           data: r.data_assinatura || r.created_at.slice(0, 10),
         };
