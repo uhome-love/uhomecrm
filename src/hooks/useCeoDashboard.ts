@@ -551,7 +551,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         // VGV por corretor = a METADE dele (v_fato_venda rateado). Parceria que cruza
         // dois times divide sozinha, pois cada linha já vem no corretor certo.
         supabase.from("v_fato_venda").select("corretor_auth_id, vgv_rateado").in("corretor_auth_id", allMemberUserIds).gte("data_assinatura", range.start).lte("data_assinatura", range.end),
-        supabase.from("negocios").select("id, fase, auth_user_id").in("auth_user_id", allMemberUserIds).eq("status", "ativo").in("fase", ["em_negociacao", "contrato"]).limit(1000),
+        // Fonte única: etapa do Pipeline (v_negocios_pipeline). Propostas = etapa Proposta.
+        supabase.from("v_negocios_pipeline").select("negocio_id, etapa, corretor_auth_id").in("corretor_auth_id", allMemberUserIds).eq("etapa", "proposta").limit(1000),
       ]);
 
       // Excluir backfills de conciliação (origem 'backfill_*') dos placares diários/janela
@@ -585,7 +586,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const aprov = tent.filter(t => t.resultado === "com_interesse").length;
           const vm = visMarcadasClean.filter(v => v.corretor_id === uid).length;
           const vr = visRealizadasClean.filter(v => v.corretor_id === uid && v.status === "realizada").length;
-          const prop = (allNegAtivos || []).filter(n => n.auth_user_id === uid && n.fase === "em_negociacao").length;
+          const prop = (allNegAtivos || []).filter(n => n.corretor_auth_id === uid).length;
           const vgv = (allNeg || []).filter((n: any) => n.corretor_auth_id === uid).reduce((s: number, n: any) => s + Number(n.vgv_rateado || 0), 0);
 
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
