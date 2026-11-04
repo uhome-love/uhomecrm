@@ -143,8 +143,8 @@ const PRESETS: SavedFilter[] = [
 // Temperatura efetiva: usa o valor do CRM quando ele é real; senão calcula
 // (a maioria dos leads fica em "nao_definida", que não é uma temperatura de verdade).
 function getEffectiveTemp(lead: PipelineLead): string {
-  const raw = (lead.temperatura || "").trim();
-  if (raw && raw !== "nao_definida") return raw;
+  const raw = normalizarTemperatura(lead.temperatura);
+  if (raw !== "nao_definida") return raw;
   const refDate = lead.updated_at || lead.created_at;
   const hours = differenceInHoursSafe(refDate) ?? Number.POSITIVE_INFINITY;
   const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
