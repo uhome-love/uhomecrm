@@ -95,6 +95,13 @@ export function useForecast(): ForecastData {
     let negQuery = supabase.from("negocios").select("*").gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
     if (!isAdmin && profileId) negQuery = negQuery.eq("gerente_id", profileId);
     const { data: pdnData } = await negQuery;
+    // Fonte única: negócios hoje em Documentação no Pipeline ainda não chegaram a proposta.
+    const emDocumentacao = new Set<string>();
+    const abertos = (pdnData || []).filter(p => p.fase !== "ganho").map(p => p.id as string);
+    for (let i = 0; i < abertos.length; i += 300) {
+      const { data: et } = await supabase.from("v_negocios_pipeline").select("negocio_id").in("negocio_id", abertos.slice(i, i + 300)).eq("etapa", "documentacao");
+      (et || []).forEach(e => { if (e.negocio_id) emDocumentacao.add(e.negocio_id); });
+    }
 
     // Get ceo_metas_mensais (gerente_id = auth.users.id)
     let metasQuery = supabase.from("ceo_metas_mensais").select("*").eq("mes", mesKey);
@@ -128,7 +135,7 @@ export function useForecast(): ForecastData {
         // Propostas = negócios que chegaram a proposta ou além (WIP + ganho).
         // Corrige bug antigo: o literal "em_negociacao" estava repetido 3×, o que
         // ignorava a fase "contrato" e subestimava o funil/forecast do gestor.
-        if ((FASES_TODAS as string[]).includes(fase)) {
+        if ((FASES_TODAS as string[]).includes(fase) && !emDocumentacao.has(p.id as string)) {
           propostas_reais += 1;
         }
         if (fase === "ganho") {
