@@ -1,78 +1,64 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { BOTOES_RECUPERA, MODELOS_RECUPERA } from "@/lia/recupera";
-
-type Template = { key: string; nome: string | null; descricao: string | null; corpo: string | null; dentro_24h: boolean | null; ativo: boolean | null };
+import LiaLeituraAviso from "./LiaLeituraAviso";
 
 function exemplo(texto: string) {
-  return texto.replace("{{1}}", "Andrio").replace("{{2}}", "Essence Canoas").replace("{{3}}", "a partir de R$ 289 mil");
+  return texto.replace("{{1}}", "[nome do cliente]").replace("{{2}}", "[empreendimento]").replace("{{3}}", "[condição confirmada]");
 }
 
 export default function LiaMensagensTab() {
-  const { data: atuais, isLoading } = useQuery({
+  const atuais = useQuery({
     queryKey: ["lia-hub", "templates"],
     queryFn: async () => {
-      const sb = supabase as unknown as { from: (t: string) => { select: (c: string) => { order: (c: string) => Promise<{ data: Template[] | null; error: Error | null }> } } };
-      const { data, error } = await sb.from("lia_templates").select("key, nome, descricao, corpo, dentro_24h, ativo").order("key");
+      const { data, error } = await supabase.from("lia_templates").select("key, nome, descricao, corpo, dentro_24h, ativo").order("key");
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Modelos da recuperação</CardTitle>
-          <CardDescription className="text-xs">
-            Textos aprovados no plano. Precisam da aprovação da Meta no número da Lia antes do primeiro envio. Toda mensagem leva os botões abaixo.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
-          {MODELOS_RECUPERA.map((m) => (
-            <div key={m.chave} className="flex flex-col rounded-xl border border-border p-3">
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{m.titulo}</p>
-                  <p className="text-[11px] text-muted-foreground">{m.quando}</p>
-                </div>
-                <Badge variant="outline" className="shrink-0 text-[10px]">Enviar à Meta</Badge>
-              </div>
-              <p className="flex-1 rounded-lg bg-muted/60 p-3 text-xs leading-relaxed text-foreground">{exemplo(m.texto)}</p>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {BOTOES_RECUPERA.map((b) => (
-                  <span key={b} className="rounded-md border border-primary/30 px-2 py-0.5 text-[11px] text-primary">{b}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Modelos já cadastrados na Lia</CardTitle>
-          <CardDescription className="text-xs">Usados hoje no atendimento e no reengajamento manual.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {isLoading && <Skeleton className="h-24 w-full" />}
-          {!isLoading && !atuais?.length && <p className="text-xs text-muted-foreground">Nenhum modelo cadastrado.</p>}
-          {atuais?.map((t) => (
-            <div key={t.key} className="rounded-lg border border-border p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-medium text-foreground">{t.nome ?? t.key}</p>
-                <Badge variant={t.ativo ? "default" : "secondary"} className="text-[10px]">{t.ativo ? "Ativo" : "Desligado"}</Badge>
-                <Badge variant="outline" className="text-[10px]">{t.dentro_24h ? "Conversa aberta" : "Modelo Meta"}</Badge>
-              </div>
-              {t.descricao && <p className="mt-1 text-[11px] text-muted-foreground">{t.descricao}</p>}
-              {t.corpo && <p className="mt-2 line-clamp-3 text-xs text-foreground/80">{t.corpo}</p>}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <div className="space-y-7">
+    <section>
+      <header className="mb-4">
+        <h2 className="text-sm font-semibold text-foreground">Propostas de recuperação</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Prévia dos textos planejados. Aprovação da Meta não verificada.</p>
+      </header>
+      <div className="grid gap-3 md:grid-cols-2">
+        {MODELOS_RECUPERA.map((m) => <article key={m.chave} className="min-w-0 rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0"><h3 className="text-sm font-semibold text-foreground">{m.titulo}</h3><p className="mt-1 text-[11px] text-muted-foreground">{m.quando}</p></div>
+            <Badge variant="secondary" className="text-[10px]">Proposta</Badge>
+          </div>
+          <p className="text-xs leading-relaxed text-foreground">{exemplo(m.texto)}</p>
+          <div className="mt-4 flex flex-wrap gap-1.5 border-t border-border pt-3">
+            {BOTOES_RECUPERA.map((b) => <span key={b} className="text-[10px] text-muted-foreground">{b}{b !== BOTOES_RECUPERA[BOTOES_RECUPERA.length - 1] && <span className="ml-1.5 text-border">·</span>}</span>)}
+          </div>
+        </article>)}
+      </div>
+    </section>
+    <section className="border-t border-border pt-5">
+      <header className="mb-3 flex items-center justify-between gap-3">
+        <div><h2 className="text-sm font-semibold text-foreground">Modelos cadastrados na Lia</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Cadastro e disponibilidade no CRM; não indicam aprovação da Meta.</p></div>
+        {atuais.data && <span className="text-sm font-semibold tabular-nums text-muted-foreground">{atuais.data.length}</span>}
+      </header>
+      {atuais.isLoading && <Skeleton className="h-24 w-full" />}
+      {atuais.isError && <LiaLeituraAviso titulo="Não foi possível consultar os modelos cadastrados." tentar={() => { void atuais.refetch(); }} />}
+      {!atuais.isLoading && !atuais.isError && !atuais.data?.length && <p className="py-8 text-sm text-muted-foreground">Nenhum modelo cadastrado.</p>}
+      {!atuais.isError && <Accordion type="multiple">
+        {atuais.data?.map((t) => <AccordionItem key={t.key} value={t.key}>
+          <AccordionTrigger className="gap-3 text-left hover:no-underline">
+            <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-foreground">{t.nome ?? t.key}</span>{t.descricao && <span className="mt-1 block text-[11px] font-normal leading-relaxed text-muted-foreground">{t.descricao}</span>}</span>
+            <Badge variant="secondary" className="shrink-0 text-[10px]">{t.ativo ? "Disponível" : "Desligado"}</Badge>
+          </AccordionTrigger>
+          <AccordionContent>
+            <Badge variant="outline" className="mb-3 text-[10px]">{t.dentro_24h ? "Conversa aberta" : "Modelo Meta"}</Badge>
+            <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground">{t.corpo}</p>
+          </AccordionContent>
+        </AccordionItem>)}
+      </Accordion>}
+    </section>
+  </div>;
 }
