@@ -1,5 +1,10 @@
 # Roadmap — qualidade visual do CRM
 
+# Mensagens WhatsApp — desenho e plano aprovados 04/11
+- [x] W1 — nove etapas com três sugestões; Ganho/Descarte só livre; nome oficial e fichas reais Casa Tua/Open Bosque conferidos em leitura
+- [x] W2 — Editar e Mensagem livre recebem digitação/foco no desktop e celular; rascunho exato conferido no clipboard e link do WhatsApp
+- [x] W3 — 45 testes passaram; preview desktop/celular sem erros; clientes reais apenas leitura/cancelar; ensaio de Copiar/Abrir no cliente de teste com gravações e envio isolados (sem testar persistência real); segunda etapa recebe digitação
+
 - [x] A1 — Pipeline: contexto do resumo validado; Edna e Thays inativadas e etapa Caiu aposentada (03/11, decisão do Lucas)
 - [x] A2 — Telefone: leitura protegida validada ao vivo com CEO, Gabriel Vieira e Pedro Jorge; testes de ausência/erro
 - [x] A3 — Roteiros: título oficial e erro de carregamento corrigidos; consulta real vazia, sem criar roteiros ou campanhas
