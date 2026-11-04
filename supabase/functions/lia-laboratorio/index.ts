@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-3.8-flash",
           temperature: 0.7,
           messages: [
             { role: "system", content: `Você interpreta ${cenario.nomeCliente}, um cliente brasileiro respondendo no WhatsApp a uma imobiliária. Roteiro do personagem: ${cenario.persona}\nResponda como pessoa real: curto, informal, uma mensagem só, sem emoji em excesso. Siga o roteiro aos poucos, uma coisa por vez. Se a conversa já terminou para você (despediu-se, foi atendido ou pediu para parar e a Lia confirmou), responda exatamente FIM.` },
