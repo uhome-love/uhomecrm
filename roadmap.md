@@ -5,8 +5,8 @@
 - [x] A3 — Roteiros: título oficial e erro de carregamento corrigidos; consulta real vazia, sem criar roteiros ou campanhas
 - [x] A4 — Endereço inexistente: navegação preservada validada com CEO, Gabriel e Pedro; redirecionamentos de abas ocultas corrigidos
 - [x] A — Cobertura gerente/corretor: sessões próprias de Gabriel Vieira/Pedro Jorge; resumo do Modo Time acompanha tabela/carteira; telefone e retorno validados; 17 testes passaram
-- [x] M0 — Base de movimento e leitura (tempos padrão, reduzir movimento global, selos do card do Pipeline 11px; falta conferência ao vivo logada)
-- [ ] B — Consistência
+- [ ] M0 — Conferir ao vivo CEO, Pipeline, Minha Rotina e Placar; validar leitura, claro/escuro, celular e Reduzir movimento (pedido do Lucas 03/11 à noite)
+- [ ] B — Consistência: preparar desenho e plano para aprovação antes de alterar páginas
 - [ ] M1 — Abrir e trocar (esqueleto, fade de aba)
 - [ ] C — Acabamento (marca mantida: #4969FF e Inter, decisão do Lucas 03/11)
 - [ ] M2 — Rotina do corretor
