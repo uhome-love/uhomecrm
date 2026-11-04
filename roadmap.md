@@ -20,7 +20,7 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 # Roadmap — Negócios com verdade única (plano aprovado 04/11)
 - [x] N-desenho — aprovado 04/11
 - [x] N0 — fonte única criada (Documentação 11, Proposta 10, Contrato 0, Ganho 122); troca dos painéis fica na N4 após aprovar antes/depois
-- [ ] N1 — três temperaturas (Frio/Morno/Quente) + conversão dos antigos
+- [x] N1 — três temperaturas: 56 "Muito quente" viraram Quente sem mexer nos relógios; botão troca nível de verdade; Vitor conferido ao vivo
 - [ ] N2 — formulário Pós-visita
 - [ ] N3 — modal do lead na fase negócio
 - [ ] N4 — relatórios na fonte única + teste ponta a ponta

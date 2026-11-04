@@ -41,8 +41,7 @@ const OBJECAO_OPTIONS = [
 ];
 
 const TEMPERATURA_OPTIONS = [
-  { value: "muito_quente", label: "🔥 Muito quente", desc: "Alto interesse, decisão próxima" },
-  { value: "quente", label: "⚡ Quente", desc: "Interessado, precisa de follow-up" },
+  { value: "quente", label: "🔥 Quente", desc: "Alto interesse, decisão próxima" },
   { value: "morno", label: "🌡️ Morno", desc: "Interesse moderado" },
   { value: "frio", label: "🧊 Frio", desc: "Pouco interesse" },
 ];

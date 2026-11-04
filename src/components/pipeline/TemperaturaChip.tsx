@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Flame, Snowflake, Thermometer, Check, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { normalizarTemperatura } from "@/lib/temperatura";
 
 /**
  * TemperaturaChip — Nova Gestão. O corretor MARCA a temperatura do lead (valor:
@@ -21,11 +22,7 @@ import { toast } from "sonner";
 type Tier = "nao_definida" | "frio" | "morno" | "quente";
 
 function tierOf(v?: string | null): Tier {
-  const s = (v || "").toLowerCase();
-  if (s === "quente" || s === "muito_quente" || s === "urgente") return "quente";
-  if (s === "frio" || s === "gelado") return "frio";
-  if (s === "morno") return "morno";
-  return "nao_definida";
+  return normalizarTemperatura(v);
 }
 
 const META: Record<Tier, { label: string; icon: LucideIcon; chip: string; item: string }> = {
@@ -58,14 +55,18 @@ const META: Record<Tier, { label: string; icon: LucideIcon; chip: string; item: 
 interface Props {
   leadId: string;
   value?: string | null;
+  /** Avisa quem mostra a temperatura em outro lugar (ex.: topo do Resumo). */
+  onChange?: (t: string) => void;
 }
 
-export default function TemperaturaChip({ leadId, value }: Props) {
+export default function TemperaturaChip({ leadId, value, onChange }: Props) {
   const [tier, setTier] = useState<Tier>(tierOf(value));
+  // Valor gravado de fato (pode ser legado, ex.: muito_quente) — comparar com ele, não com o nível.
+  const [raw, setRaw] = useState<string>((value || "nao_definida").toLowerCase());
   const [busy, setBusy] = useState(false);
 
   const set = async (t: Exclude<Tier, "nao_definida">) => {
-    if (busy || t === tier) return;
+    if (busy || t === raw) return;
     const prev = tier;
     setTier(t); // otimista
     setBusy(true);
@@ -79,6 +80,8 @@ export default function TemperaturaChip({ leadId, value }: Props) {
       toast.error("Não foi possível mudar a temperatura.");
       return;
     }
+    setRaw(t);
+    onChange?.(t);
     // Recarrega o board para a ordenação por prioridade refletir na hora.
     window.dispatchEvent(new CustomEvent("pipeline-reload"));
   };

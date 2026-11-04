@@ -19,7 +19,7 @@ interface Deps {
 }
 
 const TEMPERATURA_LABEL: Record<string, string> = {
-  muito_quente: "🔥 Muito quente", quente: "⚡ Quente", morno: "🌡️ Morno", frio: "🧊 Frio",
+  muito_quente: "🔥 Quente", quente: "🔥 Quente", morno: "🌡️ Morno", frio: "🧊 Frio",
 };
 
 /** Fluxo único de registro do resultado da visita (agenda + bloqueio de visita pendente). */
