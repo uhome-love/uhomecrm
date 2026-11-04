@@ -456,6 +456,13 @@
       "when": 1793761870358,
       "tag": "0064_etapa_proposta_nome",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1793763417897,
+      "tag": "0065_equipes_negocios_fonte_pipeline",
+      "breakpoints": true
     }
   ]
 }
