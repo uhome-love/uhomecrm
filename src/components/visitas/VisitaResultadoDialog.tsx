@@ -52,6 +52,7 @@ export interface FeedbackCompleto {
   objecao?: string;
   temperatura?: string;
   proxima_acao?: string;
+  data_proxima_acao?: string;
   nova_data?: string;
   nova_hora?: string;
 }
@@ -294,7 +295,7 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
 
           <Button
             className="w-full gap-2"
-            disabled={!selected || obs.trim().length < MIN_OBS || faltaReagenda || submitting}
+            disabled={!selected || obs.trim().length < MIN_OBS || faltaReagenda || faltaDetalhes || submitting}
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
