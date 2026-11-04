@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useReducedMotion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { isNatal } from "@/natal/config";
 import { PlacarNatalDecor, FaixasPlacarNatal, BarraOuroTv, NATAL_FUNDO, NATAL_CONFETE, NATAL_NOTAS_MARCADA, NATAL_NOTAS_REALIZADA, NATAL_TITULO_GRAD, NATAL_OURO } from "@/natal/PlacarNatal";
@@ -63,11 +64,12 @@ function ProgressBar({ valor, meta, cor }) {
 }
 
 function Confetti({ active, cores = null }) {
+  const menosMovimento = useReducedMotion();
   const canvasRef = useRef(null);
   const animRef = useRef(null);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || menosMovimento) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       return;
     }
@@ -107,9 +109,9 @@ function Confetti({ active, cores = null }) {
     };
     draw();
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
-  }, [active, cores]);
+  }, [active, cores, menosMovimento]);
 
-  if (!active) return null;
+  if (!active || menosMovimento) return null;
   return (
     <canvas
       ref={canvasRef}

@@ -404,7 +404,7 @@ const CardMinimal = memo(function CardMinimal({
       }}
       data-dragging={isDragging || undefined}
       className={[
-        "group relative cursor-pointer rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
+        "group relative cursor-pointer rounded-2xl shadow-sm hover:shadow-md transition-[transform,box-shadow,border-color,opacity] duration-short ease-enter [&_span]:min-[0px]:text-inherit",
         "px-3.5 py-3 pl-4 hover:-translate-y-px active:scale-[0.985] active:shadow-sm motion-reduce:transition-none motion-reduce:active:scale-100",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
         parceiroNome
@@ -444,7 +444,7 @@ const CardMinimal = memo(function CardMinimal({
               </span>
             )}
             {substatus && (
-              <span className={`shrink-0 ${substatus.className}`}>
+              <span className={`shrink-0 ${substatus.className} !text-[11px]`}>
                 {substatus.label}
               </span>
             )}
@@ -456,7 +456,7 @@ const CardMinimal = memo(function CardMinimal({
             </span>
             {parceiroNome && (
               <span
-                className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200 px-1.5 py-px text-[9.5px] font-semibold"
+                className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200 px-1.5 py-px text-[11px] font-semibold"
                 title={`Parceria com ${parceiroNome}`}
               >
                 <Handshake className="h-2.5 w-2.5" />
@@ -574,7 +574,7 @@ const CardMinimal = memo(function CardMinimal({
               loading="lazy"
             />
           ) : (
-            <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">
+            <div className="w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-[11px] shrink-0">
               {getInitials(corretorNome)}
             </div>
           )}
