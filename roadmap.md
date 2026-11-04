@@ -18,8 +18,8 @@
 Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não estão autorizadas para construção nesta entrega.
 
 # Roadmap — Negócios com verdade única (plano aprovado 04/11)
-- [ ] N-desenho — fluxo, Pós-visita e modal na fase negócio (aguardando aprovação do Lucas)
-- [ ] N0 — régua única Pipeline → negócio + fonte única de relatórios
+- [x] N-desenho — aprovado 04/11
+- [x] N0 — fonte única criada (Documentação 11, Proposta 10, Contrato 0, Ganho 122); troca dos painéis fica na N4 após aprovar antes/depois
 - [ ] N1 — três temperaturas (Frio/Morno/Quente) + conversão dos antigos
 - [ ] N2 — formulário Pós-visita
 - [ ] N3 — modal do lead na fase negócio
