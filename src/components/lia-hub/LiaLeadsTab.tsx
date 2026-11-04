@@ -110,7 +110,7 @@ export default function LiaLeadsTab() {
   const linhas = useMemo(() => {
     const q = buscaDeb.trim().toLowerCase();
     const filtrados = (estados ?? []).filter((e) => {
-      if (produto !== "todos" && (e.produto_slug ?? "") !== produto) return false;
+      if (produto !== "todos" && chaveImovel(e.produto_slug) !== produto) return false;
       // "ativos" = só o que a LIA está lidando AGORA (novo + em conversa). Qualificado já foi
       // pro corretor (tem aba própria), descartado/opt-out saem daqui.
       if (status === "ativos") {

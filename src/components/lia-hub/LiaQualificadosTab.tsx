@@ -46,7 +46,7 @@ export default function LiaQualificadosTab() {
   const [produto, setProduto] = useState("todos");
   const produtos = useMemo(() => produtosDeEstados(estadosRaw), [estadosRaw]);
   const estados = useMemo(
-    () => (produto === "todos" ? estadosRaw : (estadosRaw ?? []).filter((e) => (e.produto_slug ?? "") === produto)),
+    () => (produto === "todos" ? estadosRaw : (estadosRaw ?? []).filter((e) => chaveImovel(e.produto_slug) === produto)),
     [estadosRaw, produto],
   );
   const stages = data?.stages;

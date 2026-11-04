@@ -16,7 +16,7 @@ export function useLiaPainelDados(produto: string) {
   const produtos = useMemo(() => produtosDeEstados(estadosRaw), [estadosRaw]);
   // filtra na fonte: com um imóvel escolhido, TODOS os KPIs/funil abaixo recalculam sozinhos.
   const estados = useMemo(
-    () => (produto === "todos" ? estadosRaw : (estadosRaw ?? []).filter((e) => (e.produto_slug ?? "") === produto)),
+    () => (produto === "todos" ? estadosRaw : (estadosRaw ?? []).filter((e) => chaveImovel(e.produto_slug) === produto)),
     [estadosRaw, produto],
   );
   const pipe = useMemo(() => {

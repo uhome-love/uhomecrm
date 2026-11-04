@@ -52,7 +52,7 @@ export default function LiaKanbanTab() {
     () =>
       filtroProduto === "todos"
         ? (estados ?? [])
-        : (estados ?? []).filter((e) => (e.produto_slug ?? "") === filtroProduto),
+        : (estados ?? []).filter((e) => chaveImovel(e.produto_slug) === filtroProduto),
     [estados, filtroProduto]
   );
 
