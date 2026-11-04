@@ -1,8 +1,8 @@
 # Roadmap — qualidade visual do CRM
 
 ## Lia — Conhecimento, Laboratório e Configurações (04/11)
-- [ ] Desenhos de computador e celular para aprovação, com informações reais separadas de exemplos
-- [ ] Plano: atualização do conhecimento usado nos follow-ups, revisão das simulações e controles reais de limites/horários/regras
+- [x] Desenhos de computador e celular preparados e inspecionados, com informações reais separadas de exemplos; aguardam aprovação
+- [x] Plano preparado: atualização do conhecimento usado nos follow-ups, revisão das simulações e controles reais de limites/horários/regras; aguarda aprovação
 - [ ] Construção por etapas após aprovação; salvar configurações nunca ativa ou retoma disparos
 - [ ] Validar leitura, edição segura, cancelamento e permissões; conferir computador/celular sem mensagens a clientes
 
