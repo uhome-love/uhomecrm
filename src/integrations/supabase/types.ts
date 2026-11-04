@@ -4394,6 +4394,7 @@ export type Database = {
           gatilho: string
           id: string
           ordem: number
+          produto_slug: string | null
           rotulo: string
           tipo: string
           updated_at: string
@@ -4405,6 +4406,7 @@ export type Database = {
           gatilho: string
           id?: string
           ordem?: number
+          produto_slug?: string | null
           rotulo: string
           tipo?: string
           updated_at?: string
@@ -4416,6 +4418,7 @@ export type Database = {
           gatilho?: string
           id?: string
           ordem?: number
+          produto_slug?: string | null
           rotulo?: string
           tipo?: string
           updated_at?: string
