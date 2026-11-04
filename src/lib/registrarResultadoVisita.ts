@@ -8,6 +8,7 @@ export interface FeedbackExtra {
   objecao?: string;
   temperatura?: string;
   proxima_acao?: string;
+  data_proxima_acao?: string;
   nova_data?: string;
   nova_hora?: string;
 }
@@ -51,6 +52,7 @@ export async function registrarResultadoVisita(
     feedback?.temperatura ? `Temperatura: ${TEMPERATURA_LABEL[feedback.temperatura] || feedback.temperatura}` : null,
     resultado === "reagendar" && feedback?.nova_data ? `Nova data: ${feedback.nova_data.split("-").reverse().join("/")} ${feedback.nova_hora || ""}` : null,
     feedback?.objecao ? `Objeção: ${feedback.objecao}` : null,
+    feedback?.proxima_acao ? `Próximo passo: ${feedback.proxima_acao}${feedback.data_proxima_acao ? ` (${feedback.data_proxima_acao.split("-").reverse().join("/")})` : ""}` : null,
     observacoes || null,
   ].filter(Boolean).join(" · ");
   await updateStatus(visita.id, statusVisita, feedbackHist, userId);
@@ -72,6 +74,7 @@ export async function registrarResultadoVisita(
     const leadUpdates: Record<string, string> = {};
     if (feedback.temperatura) leadUpdates.temperatura = feedback.temperatura;
     if (feedback.proxima_acao) leadUpdates.proxima_acao = feedback.proxima_acao;
+    if (feedback.data_proxima_acao) leadUpdates.data_proxima_acao = feedback.data_proxima_acao;
     if (feedback.objecao) {
       leadUpdates.observacoes = [visita.observacoes, `Objeção: ${feedback.objecao}`].filter(Boolean).join(" | ");
     }
