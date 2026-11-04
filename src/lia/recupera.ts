@@ -33,7 +33,7 @@ export const CADENCIA = [
   { dia: "D+3", titulo: "Lembrete com oferta", texto: "Uma oportunidade concreta do Natal com preço real e foto." },
   { dia: "D+10", titulo: "Última mensagem", texto: "\"Posso encerrar seu atendimento?\" — sem resposta, encerra." },
   { dia: "Resposta", titulo: "Conversa da Lia", texto: "Entende momento, faixa, região e prazo; manda as opções certas." },
-  { dia: "Quente", titulo: "Roleta", texto: "Volta ao pipeline com ficha pronta, nunca para quem descartou." },
+  { dia: "Interesse recuperado", titulo: "Fila CEO", texto: "Perfil e contexto para repasse manual, nunca para quem descartou." },
 ] as const;
 
 export interface ModeloRecupera { chave: string; titulo: string; quando: string; texto: string }

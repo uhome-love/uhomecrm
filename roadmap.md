@@ -2,8 +2,8 @@
 
 ## Lia — menu superior e próxima fase (04/11)
 - [x] Desenho e plano preparados: seis áreas no topo e Recuperação; números atuais conferidos só em leitura; sem alteração no CRM
-- [ ] Aplicar o menu superior e próxima fase somente após aprovação do desenho e plano
-- [ ] Conferir navegação, dados e leitura no computador e celular, sem disparos nem alterações em clientes reais
+- [x] Menu superior e Recuperação aplicados conforme desenho e plano aprovados; Descartes, Reengajamento e Mensagens organizados
+- [x] Seis áreas, links antigos e conversa em leitura conferidos em 1280/390/360px; 29 testes passaram; totais e registros idênticos, sem gravações ou ativação; falha e vazio isolados no navegador
 
 # Mensagens WhatsApp — desenho e plano aprovados 04/11
 - [x] W1 — nove etapas com três sugestões; Ganho/Descarte só livre; nome oficial e fichas reais Casa Tua/Open Bosque conferidos em leitura
