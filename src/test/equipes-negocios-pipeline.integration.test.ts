@@ -131,6 +131,7 @@ suite("Equipes: SQL de produção na fonte única Pipeline", () => {
     expect(result.escritorio.vgv_assinado_mes).toBe(650000);
   });
   it.each(["admin", "diretor"])("permite a leitura autorizada de %s", (role) => {
+    seed("visita");
     expect(sql(`SELECT set_config('app.test_role','${role}',false); SELECT (${schema}.get_pipeline_equipes_overview()->'escritorio'->>'negocios')::int;`)).toMatch(/\n0$/);
   });
   it.each(["gerente", "corretor"])("nega a leitura executiva a %s", (role) => {
