@@ -27,33 +27,44 @@ export interface ProdutoNatal {
   liaSlug: string | null;
   pendencia?: string;
   naoCitar?: string[];
+  /** Entrega confirmada pelo Lucas em 04/11/2026. */
+  entrega: string;
+  /** Renda de referência por tipologia (sempre dependente de entrada e FGTS). */
+  rendaReferencia?: string;
 }
+
+/** Regras financeiras confirmadas pelo Lucas (04/11/2026), valem para todos os produtos. */
+export const REGRAS_FINANCEIRAS = {
+  entrada: "Entrada padrão de 10%, mas montamos proposta caso a caso em cada empreendimento.",
+  fgts: "Pode usar FGTS. Nos empreendimentos Open depende da análise de cadastro com aprovação de crédito.",
+  naoPrometer: "A Lia nunca promete aprovação de crédito.",
+} as const;
 
 export const PRODUTOS_NATAL: ProdutoNatal[] = [
   { slug: "open-bosque", nome: "Open Bosque", incorporadora: "Open Construtora", local: "Passo d'Areia, Porto Alegre", situacao: "Em obras", faixa: "ate_300",
     tipologias: [{ nome: "1 dormitório", valor: 240000 }, { nome: "2 dorm. sem vaga", valor: 269000 }, { nome: "2 dorm. com vaga", valor: 292000 }],
-    condicao: "3 dormitórios esgotado.", liaSlug: "open-bosque", pendencia: "Ficha da Lia desligada desde julho — aguardando sua decisão." },
+    condicao: "3 dormitórios esgotado.", liaSlug: "open-bosque", entrega: "Novembro de 2028" },
   { slug: "essence-canoas", nome: "Essence Canoas", incorporadora: "Ábaco Urbanizadora", local: "São José, Canoas", situacao: "Em obras", faixa: "ate_300",
     tipologias: [{ nome: "Lotes", valor: 289000 }], condicao: "Faixa de R$ 289 a 500 mil conforme o lote.", liaSlug: null,
-    pendencia: "Pouco material (3 fotos, sem book/tabela)." },
+    entrega: "Conforme e-book do empreendimento", pendencia: "Ficha montada a partir do e-book e da apresentação do time." },
   { slug: "open-arvoredo", nome: "Open Arvoredo", incorporadora: "Open Construtora", local: "Passo d'Areia, Porto Alegre", situacao: "Lançamento", faixa: "300_400",
     tipologias: [{ nome: "2 dorm. com suíte", valor: 329000 }, { nome: "3 dorm. com suíte", valor: 392000 }], liaSlug: null,
-    pendencia: "Renda mínima diverge (R$ 9.000 x R$ 6.900)." },
+    entrega: "A confirmar", rendaReferencia: "Cerca de R$ 7.000 (2 dorm.) e R$ 9.000 (3 dorm.), conforme entrada e FGTS" },
   { slug: "skyglass-parque-moinhos", nome: "Skyglass", incorporadora: "Cyrela Goldsztein", local: "Rio Branco, Porto Alegre", situacao: "Pronto para morar", faixa: "300_400",
     tipologias: [{ nome: "Studio e 1 dorm.", valor: 369000 }], condicao: "ITBI e registro grátis + 1 ano de condomínio.", liaSlug: null,
-    naoCitar: ["Fechadura digital"] },
+    naoCitar: ["Fechadura digital"], entrega: "Pronto para morar" },
   { slug: "casa-tua-porto-alegre", nome: "Casa Tua Porto Alegre", incorporadora: "Encorp", local: "Alto Petrópolis, Porto Alegre", situacao: "Em obras", faixa: "casas",
     tipologias: [{ nome: "Casa 2 dorm.", valor: 520000 }, { nome: "Casa 3 dorm.", valor: 659000 }, { nome: "Casa 3 dorm. c/ terraço", valor: 750000 }],
-    condicao: "Desconto no crédito associativo.", liaSlug: "casa-tua-porto-alegre", naoCitar: ["Piscina com raia"] },
+    condicao: "Desconto no crédito associativo.", liaSlug: "casa-tua-porto-alegre", naoCitar: ["Piscina com raia"], entrega: "Abril de 2028" },
   { slug: "casa-tua-canoas", nome: "Casa Tua Canoas", incorporadora: "Encorp", local: "Marechal Rondon, Canoas", situacao: "Lançamento", faixa: "casas",
     tipologias: [{ nome: "Sobrado 3 dorm.", valor: 735000 }, { nome: "Sobrado 4 dorm.", valor: 879000 }],
-    condicao: "Desconto no crédito associativo.", liaSlug: "casa-tua-canoas" },
+    condicao: "Desconto no crédito associativo.", liaSlug: "casa-tua-canoas", entrega: "Novembro de 2029" },
   { slug: "boa-vista-country-club", nome: "Boa Vista Country Club", incorporadora: "Cyrela Goldsztein", local: "Boa Vista, Porto Alegre", situacao: "Pronto para morar", faixa: "alto_padrao",
     tipologias: [{ nome: "2 dorm. c/ varanda", valor: 849000 }, { nome: "3 dorm. c/ varanda", valor: 978000 }], liaSlug: null,
-    pendencia: "Inativo no CRM — aguardando sua decisão." },
+    entrega: "Pronto para morar" },
   { slug: "golden-lake", nome: "Golden Lake", incorporadora: "Multiplan", local: "Cristal, Porto Alegre", situacao: "Pronto / em obras / lançamento", faixa: "alto_padrao",
     tipologias: [{ nome: "Lake Eyre · 127 m²", valor: 2480000 }, { nome: "Lake Baikal · 197 m²", valor: 3800000 }, { nome: "Lake Victoria · 299 m²", valor: 5900000 }],
-    liaSlug: "lake-baikal", pendencia: "Lake Eyre inativo e Lake Victoria sem cadastro; só 1 foto.", naoCitar: ["Wellness com mais de 3.500 m²"] },
+    liaSlug: "lake-baikal", entrega: "Lake Victoria pronto · Lake Eyre 2028 · Lake Baikal julho de 2030", naoCitar: ["Wellness com mais de 3.500 m²"] },
 ];
 
 export function precoAPartir(p: ProdutoNatal): number {

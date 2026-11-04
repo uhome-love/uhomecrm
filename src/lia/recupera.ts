@@ -62,3 +62,11 @@ export const CENARIOS_LABORATORIO = [
   { grupo: "Recusa e limites", itens: ["Responde \"não quero mais contato\"", "Fica irritado com a mensagem", "Já comprou com outra imobiliária"] },
   { grupo: "Fora do assunto", itens: ["Pergunta se é robô", "Manda áudio", "Pede para falar com o corretor antigo"] },
 ];
+
+/** Lead recuperado pela Lia vai sempre para a Fila CEO, sem Roleta, para repasse manual. */
+export const DESTINO_RECUPERADO = "fila_ceo_manual" as const;
+
+/** O corretor que descartou nunca recebe o cliente de volta. */
+export function podeRepassarRecuperado(corretorDestinoId: string, corretorQueDescartouId: string | null): boolean {
+  return !corretorQueDescartouId || corretorDestinoId !== corretorQueDescartouId;
+}
