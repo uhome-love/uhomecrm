@@ -197,7 +197,7 @@ export default function LiaReengajarTab() {
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="produto">Produto (direciona)</SelectItem>
-                  <SelectItem value="cardapio">Cardápio (curadoria)</SelectItem>
+                  <SelectItem value="cardapio">Cardápio de empreendimentos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -251,7 +251,7 @@ export default function LiaReengajarTab() {
           </div>
           {modo === "cardapio" && (
             <p className="flex items-center gap-1.5 text-[11px] text-emerald-700">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Cérebro do cardápio pronto: o lead responde o número do menu (1 Flow, 2 Casa Tua POA, 3 AWA, 4 Lake Baikal, 5 seleção personalizada) e a LIA atende o imóvel certo, ou faz a curadoria e passa pro corretor.
+              <CheckCircle2 className="h-3.5 w-3.5" /> Cérebro do cardápio pronto: o lead responde o número do menu e a LIA atende o empreendimento escolhido ou entende o perfil e passa para a Fila CEO.
             </p>
           )}
         </CardContent>

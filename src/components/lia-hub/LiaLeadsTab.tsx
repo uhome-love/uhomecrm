@@ -29,6 +29,7 @@ import {
   useLiaPipelineLeads,
   useLiaUltimasMensagens,
   type LiaEstado,
+  chaveImovel,
 } from "./useLiaHub";
 
 const PILULAS: { valor: string; rotulo: string }[] = [

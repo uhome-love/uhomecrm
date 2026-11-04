@@ -9,6 +9,7 @@ import {
   useLiaConversao,
   produtosDeEstados,
   type LiaEstado,
+  chaveImovel,
 } from "./useLiaHub";
 
 /** Mediana de uma lista de números (dias). Retorna null se vazia. */

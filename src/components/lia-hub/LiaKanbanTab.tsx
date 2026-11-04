@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
 import LiaConversaDrawer from "./LiaConversaDrawer";
 import LiaLeadAcoesMenu from "./LiaLeadAcoesMenu";
-import { NIVEL_META, origemDoReferral, produtoLabel, useLiaEstados, type LiaEstado } from "./useLiaHub";
+import { NIVEL_META, chaveImovel, produtosDeEstados, origemDoReferral, produtoLabel, useLiaEstados, type LiaEstado } from "./useLiaHub";
 
 // Kanban pela SITUAÇÃO do lead no pré-atendimento (não por temperatura): reflete onde ele está
 // no fluxo da LIA, do primeiro oi até o repasse. Descartado/Opt-out ficam no fim, fora do fluxo ativo.
@@ -42,11 +42,7 @@ export default function LiaKanbanTab() {
   const qc = useQueryClient();
 
   // produtos presentes na base (pra montar os botões de filtro)
-  const produtos = useMemo(() => {
-    const set = new Set<string>();
-    for (const e of estados ?? []) if (e.produto_slug) set.add(e.produto_slug);
-    return Array.from(set).sort();
-  }, [estados]);
+  const produtos = useMemo(() => produtosDeEstados(estados), [estados]);
 
   const filtrados = useMemo(
     () =>

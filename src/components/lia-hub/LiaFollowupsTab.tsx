@@ -9,7 +9,7 @@ import { Check, X, Clock, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRT } from "@/lib/brtTime";
-import { produtoLabel, useLiaEstados, useLiaFollowups, useLiaTemplates } from "./useLiaHub";
+import { chaveImovel, produtosDeEstados, produtoLabel, useLiaEstados, useLiaFollowups, useLiaTemplates } from "./useLiaHub";
 
 // Rótulo amigável da cadência: mostra QUAL toque (e o tempo) cada lead está recebendo.
 // Régua: 1º contato na entrada → +24h → +48h → +72h → +96h (despedida).
@@ -45,14 +45,10 @@ export default function LiaFollowupsTab() {
     return m;
   }, [estados]);
 
-  const produtos = useMemo(() => {
-    const set = new Set<string>();
-    (estados ?? []).forEach((e) => e.produto_slug && set.add(e.produto_slug));
-    return Array.from(set).sort();
-  }, [estados]);
+  const produtos = useMemo(() => produtosDeEstados(estados), [estados]);
 
   const passaProduto = (tel: string | null) =>
-    filtroProduto === "todos" || (produtoPorTelefone.get(tel ?? "") ?? "") === filtroProduto;
+    filtroProduto === "todos" || chaveImovel(produtoPorTelefone.get(tel ?? "")) === filtroProduto;
 
   // "agendados" = próximos toques automáticos (aprovado, ainda não enviado). Sem trava manual:
   // aparecem aqui só para acompanhamento e para você poder PAUSAR (cancelar) se quiser.

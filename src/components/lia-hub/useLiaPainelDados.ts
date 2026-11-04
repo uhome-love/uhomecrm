@@ -3,6 +3,7 @@ import { todayBRT, dateToBRT } from "@/lib/brtTime";
 import {
   useLiaConversasHoje, useLiaEstados, useLiaFollowups, useLiaPipelineLeads, useLiaCusto,
   produtosDeEstados, type LiaEstado,
+  chaveImovel,
 } from "./useLiaHub";
 
 // Fonte única dos números da Visão geral da Lia (mesmas contas do painel antigo).

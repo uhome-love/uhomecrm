@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRT } from "@/lib/brtTime";
 import FiltroImovel from "./FiltroImovel";
-import { NIVEL_META, produtoLabel, produtosDeEstados, useLiaEstados, useLiaPipelineLeads } from "./useLiaHub";
+import { NIVEL_META, chaveImovel, produtoLabel, produtosDeEstados, useLiaEstados, useLiaPipelineLeads } from "./useLiaHub";
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
