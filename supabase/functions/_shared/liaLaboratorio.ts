@@ -163,7 +163,8 @@ REGRAS DA RECUPERAÇÃO:
 - Pediu para não ter mais contato, está irritado e quer parar, número errado ou já comprou: peça desculpa ou parabenize, confirme que não vai mais receber mensagens, não ofereça nada e use [[sinal:descartar]].
 - Quer alugar ou mudou de cidade: agradeça, sem insistir.
 - Preços e números: só os da lista abaixo ou da ficha. NUNCA invente valor, metragem, quantidade de suítes ou condição; se não estiver escrito, diga que o especialista confirma.
-- Parcela: nunca calcule parcela, entrada em reais ou faixa de imóvel que "cabe" numa parcela. A única referência permitida é a média "a cada R$ 100 mil financiados, uns R$ 1.000 por mês", só se pedirem, dizendo que o valor certo sai na simulação.
+- Produtos: na recuperação ofereça SÓ os empreendimentos da campanha de Natal abaixo. Não use acervo, links externos nem [[acervo:...]]; se nenhum servir, anote o perfil e diga que o especialista vai buscar opções.
+- Parcela: nunca calcule parcela, nem o caminho inverso (quanto dá pra financiar com tal parcela), entrada em reais ou faixa de imóvel que "cabe" numa parcela. A única referência permitida é a média "a cada R$ 100 mil financiados, uns R$ 1.000 por mês", só se pedirem, dizendo que o valor certo sai na simulação.
 - Prazo de financiamento: pode dizer que os bancos financiam em até 35 anos, mas que depende da idade e da simulação de cada um. Nada de taxa de juros nem projeção de valorização.
 - Linguagem humanizada de WhatsApp: frases curtas e naturais, como uma pessoa escrevendo. Proibido negrito (**), listas, tópicos, marcadores ou emoji como item de lista. Sem travessão. No máximo 2 opções por mensagem, contadas em texto corrido.
 - Se não souber um dado, diga que o especialista confirma.
@@ -212,6 +213,7 @@ export function conferir(c: Cenario, conversa: Msg[], sinalFinal: string): Confe
   r.push({ chave: "valorizacao", nome: "Sem valorização ou taxa", ok: !RE_VALORIZA.test(txt) && !RE_TAXA.test(txt) });
   const prazoSemRessalva = txt.split(/\n|(?<=[.!?])\s/).some((f) => RE_PRAZO.test(f) && (!/35 anos/.test(f) || !/(idade|simula)/i.test(f)));
   r.push({ chave: "prazo", nome: "Prazo só com ressalva (até 35 anos, idade, simulação)", ok: !prazoSemRessalva });
+  r.push({ chave: "so_natal", nome: "Só produtos da campanha (sem acervo/link)", ok: !/(https?:\/\/|orulo|\[\[\s*acervo)/i.test(conversa.filter((m) => m.de === "lia").map((m) => m.texto).join("\n")) });
   r.push({ chave: "markdown", nome: "Sem negrito ou lista (WhatsApp)", ok: !RE_MARKDOWN.test(txt) });
   const estranhos = lerValores(txt).filter((v) => v >= 1000 && !VALORES_OK.has(Math.round(v)) && !doCliente.has(Math.round(v)));
   r.push({ chave: "precos", nome: "Só preços da campanha", ok: estranhos.length === 0, detalhe: estranhos.length ? `Valores fora da lista: ${estranhos.map((v) => v.toLocaleString("pt-BR")).join(", ")}` : undefined });
