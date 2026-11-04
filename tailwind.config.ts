@@ -141,6 +141,19 @@ export default {
         elevated: "var(--shadow-elevated)",
         homi: "var(--shadow-homi)",
       },
+      transitionDuration: {
+        DEFAULT: "var(--motion-short)",
+        fast: "var(--motion-fast)",
+        short: "var(--motion-short)",
+        medium: "var(--motion-medium)",
+        long: "var(--motion-long)",
+      },
+      transitionTimingFunction: {
+        DEFAULT: "var(--ease-move)",
+        enter: "var(--ease-enter)",
+        exit: "var(--ease-exit)",
+        move: "var(--ease-move)",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

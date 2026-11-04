@@ -430,14 +430,14 @@ const CardMinimal = memo(function CardMinimal({
               stage?.tipo ?? ""
             ) && <TemperaturaChip leadId={lead.id} value={lead.temperatura} />}
             {stage?.tipo === "novo_lead" && (
-              <span className="shrink-0 inline-block bg-[#4F46E5] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+              <span className="shrink-0 inline-block bg-[#4F46E5] text-white text-[11px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Novo
               </span>
             )}
             {/* Parceria vira chip compacto ao lado do nome (linha do nome), não mais banner cheio. */}
             {cadenciaBadge && (
               <span
-                className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums ${cadenciaBadge.tone}`}
+                className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[11px] font-bold tabular-nums ${cadenciaBadge.tone}`}
                 title={`Cadência Sem Contato — próxima ${cadenciaBadge.label}${cadenciaBadge.when ? ` em ${cadenciaBadge.when}` : ""}`}
               >
                 📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
@@ -471,7 +471,7 @@ const CardMinimal = memo(function CardMinimal({
           )}
           {negocioBadge && (
             <div
-              className={`inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-px text-[9px] font-semibold ${negocioBadge.tone}`}
+              className={`inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-px text-[11px] font-semibold ${negocioBadge.tone}`}
               title={`Negócio · ${negocioBadge.text}${negocioBadge.aging != null ? ` · ${negocioBadge.aging}d na fase` : ""}`}
             >
               ◆ {negocioBadge.text}
