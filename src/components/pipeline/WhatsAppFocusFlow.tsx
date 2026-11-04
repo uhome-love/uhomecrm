@@ -1,14 +1,16 @@
 import { registrarAtividadeComAviso } from "@/lib/registrarAtividade";
-import { useState, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
-import { X, Copy, ExternalLink, Check, Pencil, MessageSquarePlus } from "lucide-react";
+import { useState, useCallback, useMemo, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { dateToBRT } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useProfileNames } from "@/hooks/useProfileNames";
+import { useWhatsAppProduto } from "@/hooks/useWhatsAppProduto";
+import { gerarMensagensWhatsApp, rotuloEtapaWhatsApp } from "@/lib/whatsappMensagens";
+import { WhatsAppMessagePicker } from "./WhatsAppMessagePicker";
+import { WhatsAppNextTask, WHATSAPP_TASK_TYPES } from "./WhatsAppNextTask";
 import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
 import { registrarToque } from "@/lib/registrarToque";
 
@@ -27,67 +29,12 @@ interface WhatsAppFocusFlowProps {
   onRefresh: () => void;
 }
 
-interface StageMessage {
-  title: string;
-  body: string;
-}
-
-const STAGE_MESSAGES: Record<string, StageMessage[]> = {
-  novo: [
-    { title: "🎯 Versão direta", body: "Fala {{nome}}, tudo bem? Vi que tu pediu info do {{empreendimento}} e resolvi te mandar uma msg rápido — posso te explicar melhor?" },
-    { title: "📱 Apresentação consultiva", body: "Oi {{nome}}! 😊 Me chamo [seu nome], da UHome. Vi teu interesse em {{empreendimento}} e queria te mostrar algo que faz sentido pro teu momento. Posso te contar mais?" },
-    { title: "🔄 Reativação criativa", body: "{{nome}}, sei que a rotina é corrida! Mas não queria que tu perdesse as condições especiais de {{empreendimento}}. Qual o melhor horário pra gente trocar uma ideia rápida? 📞" },
-  ],
-  sem_contato: [
-    { title: "🎯 Versão direta", body: "Fala {{nome}}, tudo bem? Vi que tu pediu info do {{empreendimento}} e resolvi te mandar uma msg rápido — posso te explicar melhor?" },
-    { title: "📱 Apresentação consultiva", body: "Oi {{nome}}! 😊 Me chamo [seu nome], da UHome. Vi teu interesse em {{empreendimento}} e queria te mostrar algo que faz sentido pro teu momento. Posso te contar mais?" },
-    { title: "🔄 Reativação criativa", body: "{{nome}}, sei que a rotina é corrida! Mas não queria que tu perdesse as condições especiais de {{empreendimento}}. Qual o melhor horário pra gente trocar uma ideia rápida? 📞" },
-  ],
-  contato_iniciado: [
-    { title: "🎯 Diagnóstico UHOME", body: "{{nome}}, queria entender melhor teu momento pra te mostrar algo que realmente faça sentido. Tu tá buscando pra morar ou investir?" },
-    { title: "🔥 Oferta direcionada", body: "{{nome}}, baseado no que conversamos, separei 2 opções que fazem mais sentido pra ti. Posso te mandar? Uma delas é bem diferente do que tu tá vendo no mercado 😊" },
-    { title: "📋 Follow-up conexão", body: "Oi {{nome}}! Separei umas opções que combinam com o que conversamos. Tem uma em especial que acho que tu vai gostar — posso te mandar? 😊" },
-  ],
-  qualificacao: [
-    { title: "🎯 Versão direta", body: "{{nome}}, hoje tu tá mais olhando ou já pensando em fechar algo? Pergunto pra saber como te ajudar melhor 😊" },
-    { title: "💰 Qualificação Investidor", body: "{{nome}}, tu tá pensando mais em renda ou valorização? Pergunto porque tenho opções diferentes pra cada objetivo 📊" },
-    { title: "🏠 Qualificação Moradia", body: "{{nome}}, o que mais pesa pra ti hoje: espaço, localização ou valor? Assim consigo filtrar o que faz mais sentido 😊" },
-  ],
-  possivel_visita: [
-    { title: "🎯 Convite direto", body: "{{nome}}, faz muito mais sentido ver isso pessoalmente — tenho dois horários livres, qual encaixa melhor pra ti?" },
-    { title: "📅 Convite com urgência", body: "{{nome}}, as unidades de {{empreendimento}} que combinam contigo estão disponíveis pra visita! Fica melhor pra ti durante a semana ou no sábado? 📅" },
-    { title: "🏠 Prova Social", body: "{{nome}}, vários clientes que visitaram {{empreendimento}} ficaram surpresos com o espaço ao vivo. Vale muito ver pessoalmente — quando fica bom pra ti? 🏠" },
-  ],
-  visita_marcada: [
-    { title: "📹 D-2: Vídeo + Expectativa", body: "{{nome}}, olha esse vídeo rápido de {{empreendimento}} — amanhã tu vai ver isso ao vivo, é outro nível! 🎥" },
-    { title: "🏆 D-1: Autoridade", body: "{{nome}}, separei as melhores unidades pra te mostrar amanhã. Algumas delas têm poucas disponíveis — vai ser ótimo ver ao vivo! Confirma pra mim? 😊" },
-    { title: "📍 Dia: Lembrete + Mapa", body: "Bom dia, {{nome}}! Tudo pronto pra nossa visita hoje em {{empreendimento}}! 📍 Te espero lá. Se precisar reagendar, me avise! 😊" },
-  ],
-  visita_realizada: [
-    { title: "🎯 Follow-up MESMO DIA", body: "{{nome}}, o que pesou mais pra ti na visita? Quero te mandar uma simulação certeira 😊" },
-    { title: "🏠 Agradecimento + proposta", body: "{{nome}}, foi um prazer te receber em {{empreendimento}}! 🏠 Preparei uma simulação personalizada — posso te enviar pra analisar com calma?" },
-    { title: "💭 Follow-up emocional", body: "{{nome}}, imagina tu morando ali, com toda aquela estrutura no dia a dia... Preparei as condições especiais — posso te mostrar? 😊" },
-  ],
-  negociacao: [
-    { title: "📋 Follow-up proposta", body: "{{nome}}, conseguiu analisar a proposta de {{empreendimento}}? Tô aqui pra tirar qualquer dúvida ou ajustar as condições 🤝" },
-    { title: "⚡ Urgência", body: "{{nome}}, as condições especiais de {{empreendimento}} estão chegando ao fim! As unidades mais procuradas tão sendo reservadas. Vamos fechar? 🏠🔑" },
-    { title: "💰 Condições especiais", body: "{{nome}}, consegui uma condição diferenciada pra ti em {{empreendimento}}. Posso te explicar? Acho que vai fazer sentido 😊" },
-  ],
-  proposta: [
-    { title: "📋 Follow-up proposta", body: "{{nome}}, conseguiu analisar a proposta de {{empreendimento}}? Tô aqui pra tirar qualquer dúvida ou ajustar as condições 🤝" },
-    { title: "⚡ Urgência", body: "{{nome}}, as condições especiais de {{empreendimento}} estão chegando ao fim! As unidades mais procuradas tão sendo reservadas. Vamos fechar? 🏠🔑" },
-    { title: "💰 Condições especiais", body: "{{nome}}, consegui uma condição diferenciada pra ti em {{empreendimento}}. Posso te explicar? Acho que vai fazer sentido 😊" },
-  ],
-};
-
-const TASK_TYPES = [
-  { value: "whatsapp", label: "WhatsApp", emoji: "💬" },
-  { value: "ligar", label: "Ligar", emoji: "📞" },
-  { value: "follow_up", label: "Follow-up", emoji: "📋" },
-];
-
 export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, onRefresh }: WhatsAppFocusFlowProps) {
   const { user } = useAuth();
+  const profileNames = useProfileNames();
+  const productQuery = useWhatsAppProduto(isOpen, lead.id, lead.empreendimento);
+  const sendingRef = useRef(false);
+  const [sending, setSending] = useState(false);
   const [phase, setPhase] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [obs, setObs] = useState("");
@@ -98,11 +45,6 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
     return d.toISOString().split("T")[0];
   });
   const [taskTime, setTaskTime] = useState("10:00");
-  const [showFreeText, setShowFreeText] = useState(false);
-  const [freeText, setFreeText] = useState("");
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editedBody, setEditedBody] = useState("");
-
   // Presets Fase B — chips por etapa (Qualif/Aquec/Negoc)
   const stagePresets = useMemo(() => getPresetsForStage(stageTipo), [stageTipo]);
   const hasPresets = stagePresets.length > 0;
@@ -111,7 +53,6 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
     () => stagePresets.find((p) => p.id === selectedPresetId) ?? null,
     [stagePresets, selectedPresetId],
   );
-  const freeMode = !hasPresets || selectedPresetId === PRESET_OUTRO_ID;
 
   const handlePickPreset = (p: TaskPreset) => {
     setSelectedPresetId(p.id);
@@ -124,16 +65,16 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
   };
 
 
-  const nome = lead.nome?.split(" ")[0] || "cliente";
-  const emp = lead.empreendimento || "nosso empreendimento";
-
-  const messages = useMemo(() => {
-    const key = stageTipo || "sem_contato";
-    return (STAGE_MESSAGES[key] || STAGE_MESSAGES.sem_contato).map(m => ({
-      ...m,
-      body: m.body.replace(/\{\{nome\}\}/g, nome).replace(/\{\{empreendimento\}\}/g, emp),
-    }));
-  }, [stageTipo, nome, emp]);
+  const flags = productQuery.data?.flagStatus;
+  const statusVisita = flags && typeof flags === "object" && !Array.isArray(flags)
+    && typeof flags.status_visita === "string" ? flags.status_visita : undefined;
+  const metadataNome: unknown = user?.user_metadata?.nome;
+  const corretorNome = (user ? profileNames[user.id] : undefined)
+    || (typeof metadataNome === "string" ? metadataNome : undefined);
+  const messages = useMemo(() => gerarMensagensWhatsApp({
+    stageTipo, statusVisita, nome: lead.nome, corretorNome,
+    empreendimento: lead.empreendimento, produto: productQuery.data?.produto,
+  }), [stageTipo, statusVisita, lead.nome, corretorNome, lead.empreendimento, productQuery.data?.produto]);
 
   const phone = useMemo(() => {
     if (!lead.telefone) return "";
@@ -163,17 +104,26 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
   }, [user, lead.id]);
 
 
-  const handleCopy = async (msg: string) => {
-    navigator.clipboard.writeText(msg);
-    toast.success("Mensagem copiada!");
-    await registerActivity();
-    setPhase(2);
-  };
-
-  const handleOpenWa = async (msg: string) => {
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-    await registerActivity();
-    setPhase(2);
+  const sendMessage = async (msg: string, action: "copy" | "open") => {
+    if (!msg.trim() || sendingRef.current || !user || (action === "open" && !phone)) return;
+    sendingRef.current = true;
+    setSending(true);
+    try {
+      if (action === "copy") {
+        await navigator.clipboard.writeText(msg);
+        toast.success("Mensagem copiada!");
+      } else {
+        // Abrir antes de aguardar o registro evita o bloqueio de pop-up.
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+      }
+      await registerActivity();
+      setPhase(2);
+    } catch {
+      toast.error(action === "copy" ? "Não foi possível copiar ou registrar o contato. Tente novamente." : "Não foi possível registrar o contato. Tente novamente.");
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
   };
 
   const handleSaveTask = async () => {
@@ -187,7 +137,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
       const activePreset = selectedPreset && selectedPreset.id !== PRESET_OUTRO_ID ? selectedPreset : null;
       const titulo = activePreset
         ? activePreset.label
-        : `${TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${lead.nome}`;
+        : `${WHATSAPP_TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${lead.nome}`;
       // Em Visita: presets manuais coexistem com automação da Agenda
       // (confirmar/reagendar/feedback continuam sendo criados automaticamente).
       await supabase.from("pipeline_tarefas").insert({
@@ -237,10 +187,6 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
     setObs("");
     setTaskType("whatsapp");
     setTaskTime("10:00");
-    setShowFreeText(false);
-    setFreeText("");
-    setEditingIdx(null);
-    setEditedBody("");
     setSelectedPresetId(null);
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -253,363 +199,42 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
 
   const initials = lead.nome?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "??";
 
-  const STAGE_LABELS: Record<string, string> = {
-    novo: "Novo", sem_contato: "Sem Contato", contato_iniciado: "Atendimento",
-    qualificacao: "Qualificação", possivel_visita: "Possível Visita",
-    visita_marcada: "Visita Marcada", visita_realizada: "Visita Realizada",
-    negociacao: "Negociação", proposta: "Proposta",
-  };
-
-  return createPortal(
-    <div
-      style={{
-        position: "fixed", inset: 0, zIndex: 70 /* Z.focusOverlay */,
-        background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-        pointerEvents: "auto",
-      }}
-      onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (e.target === e.currentTarget) handleClose(); }}
-      onPointerDown={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
-      <div
-        style={{
-          background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480,
-          maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column",
-          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
-          borderBottom: "1px solid #e8e8f0",
-        }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: "50%",
-            background: "linear-gradient(135deg, #16a34a, #22c55e)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 14, fontWeight: 700, color: "#fff",
-          }}>
-            {initials}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>{lead.nome}</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>
-              {lead.telefone || "Sem telefone"}
-              {stageTipo && (
-                <span style={{
-                  marginLeft: 8, fontSize: 10, fontWeight: 600,
-                  background: "#f0fdf4", color: "#16a34a",
-                  padding: "2px 6px", borderRadius: 4,
-                }}>
-                  {STAGE_LABELS[stageTipo] || stageTipo}
-                </span>
-              )}
+  return (
+    <Dialog open={isOpen} onOpenChange={open => { if (!open && !sending && !saving) handleClose(); }}>
+      <DialogContent aria-describedby="whatsapp-lead-description"
+        className="z-[70] flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 pt-4 sm:max-w-[480px] sm:p-0">
+        <DialogHeader className="shrink-0 border-b border-border px-4 py-4 pr-12 text-left sm:px-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/10 text-sm font-bold text-success">{initials}</div>
+            <div className="min-w-0">
+              <DialogTitle className="break-words text-base font-bold">{lead.nome}</DialogTitle>
+              <DialogDescription id="whatsapp-lead-description" className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                {lead.telefone || "Sem telefone"}
+                <span className="rounded bg-success/10 px-1.5 py-0.5 font-semibold text-success">{rotuloEtapaWhatsApp(stageTipo, statusVisita)}</span>
+              </DialogDescription>
             </div>
           </div>
-          <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleClose(); }} style={{
-            width: 32, height: 32, borderRadius: 8, border: "none",
-            background: "transparent", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#94a3b8",
-          }}>
-            <X style={{ width: 18, height: 18 }} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, overflow: "auto", padding: "16px 20px" }}>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
           {phase === 1 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-                  💬 {showFreeText ? "Escreva sua mensagem:" : "Escolha ou edite a mensagem:"}
-                </p>
-                <button
-                  onClick={() => { setShowFreeText(!showFreeText); setEditingIdx(null); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 4,
-                    fontSize: 11, fontWeight: 600, color: showFreeText ? "#64748b" : "hsl(var(--primary))",
-                    background: "none", border: "none", cursor: "pointer",
-                  }}
-                >
-                  {showFreeText ? (
-                    <><MessageSquarePlus style={{ width: 13, height: 13 }} /> Mensagens prontas</>
-                  ) : (
-                    <><Pencil style={{ width: 13, height: 13 }} /> Mensagem livre</>
-                  )}
-                </button>
-              </div>
-
-              {showFreeText ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <Textarea
-                    className="text-[12px] min-h-[120px]"
-                    placeholder={`Oi ${nome}, escreva sua mensagem aqui...`}
-                    value={freeText}
-                    onChange={(e) => setFreeText(e.target.value)}
-                    autoFocus
-                  />
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => freeText.trim() && handleCopy(freeText.trim())}
-                      disabled={!freeText.trim()}
-                      style={{
-                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        padding: "8px 12px", borderRadius: 8, border: "1px solid #e8e8f0",
-                        background: "#fff", cursor: freeText.trim() ? "pointer" : "not-allowed",
-                        fontSize: 12, fontWeight: 600, color: "#52525b",
-                        opacity: freeText.trim() ? 1 : 0.5,
-                      }}
-                    >
-                      <Copy style={{ width: 13, height: 13 }} /> Copiar
-                    </button>
-                    <button
-                      onClick={() => freeText.trim() && handleOpenWa(freeText.trim())}
-                      disabled={!lead.telefone || !freeText.trim()}
-                      style={{
-                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        padding: "8px 12px", borderRadius: 8, border: "none",
-                        background: "#16a34a", cursor: (lead.telefone && freeText.trim()) ? "pointer" : "not-allowed",
-                        fontSize: 12, fontWeight: 600, color: "#fff",
-                        opacity: (lead.telefone && freeText.trim()) ? 1 : 0.5,
-                      }}
-                    >
-                      <ExternalLink style={{ width: 13, height: 13 }} /> Abrir WhatsApp
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                messages.map((msg, i) => (
-                  <div key={i} style={{
-                    border: editingIdx === i ? "1px solid #4969FF" : "1px solid #e8e8f0",
-                    borderRadius: 10, padding: "12px 14px",
-                    background: editingIdx === i ? "#f5f3ff" : "#fafafa",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#0a0a0a" }}>
-                        {msg.title}
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (editingIdx === i) {
-                            setEditingIdx(null);
-                            setEditedBody("");
-                          } else {
-                            setEditingIdx(i);
-                            setEditedBody(msg.body);
-                          }
-                        }}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 3,
-                          fontSize: 10, fontWeight: 600,
-                          color: editingIdx === i ? "hsl(var(--primary))" : "#94a3b8",
-                          background: "none", border: "none", cursor: "pointer",
-                        }}
-                      >
-                        <Pencil style={{ width: 11, height: 11 }} />
-                        {editingIdx === i ? "Cancelar" : "Editar"}
-                      </button>
-                    </div>
-                    {editingIdx === i ? (
-                      <Textarea
-                        className="text-[12px] min-h-[80px] mb-2"
-                        value={editedBody}
-                        onChange={(e) => setEditedBody(e.target.value)}
-                        autoFocus
-                      />
-                    ) : (
-                      <p style={{
-                        fontSize: 12, color: "#52525b", lineHeight: 1.5,
-                        display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}>
-                        {msg.body}
-                      </p>
-                    )}
-                    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                      <button
-                        onClick={() => handleCopy(editingIdx === i ? editedBody.trim() || msg.body : msg.body)}
-                        style={{
-                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                          padding: "8px 12px", borderRadius: 8, border: "1px solid #e8e8f0",
-                          background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#52525b",
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        <Copy style={{ width: 13, height: 13 }} /> Copiar
-                      </button>
-                      <button
-                        onClick={() => handleOpenWa(editingIdx === i ? editedBody.trim() || msg.body : msg.body)}
-                        disabled={!lead.telefone}
-                        style={{
-                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                          padding: "8px 12px", borderRadius: 8, border: "none",
-                          background: "#16a34a", cursor: lead.telefone ? "pointer" : "not-allowed",
-                          fontSize: 12, fontWeight: 600, color: "#fff",
-                          opacity: lead.telefone ? 1 : 0.5,
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        <ExternalLink style={{ width: 13, height: 13 }} /> Abrir WhatsApp
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Success chip */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: "#f0fdf4", border: "1px solid #bbf7d0",
-                borderRadius: 8, padding: "10px 14px",
-              }}>
-                <Check style={{ width: 16, height: 16, color: "#16a34a" }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#16a34a" }}>
-                  WhatsApp enviado ✓
-                </span>
-              </div>
-
-              {/* Observação */}
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#52525b", display: "block", marginBottom: 6 }}>
-                  Observação (opcional)
-                </label>
-                <Textarea
-                  className="text-[12px] min-h-[60px]"
-                  placeholder="Ex: enviou interesse no Fase 3, aguardando resposta..."
-                  value={obs}
-                  onChange={(e) => setObs(e.target.value)}
-                />
-              </div>
-
-              {/* Próxima tarefa */}
-              {stageTipo === "visita" ? (
-                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-[11px] text-amber-700 dark:text-amber-300">
-                  <p className="font-semibold mb-0.5">Etapa Visita — tarefas automáticas</p>
-                  <p className="opacity-90">Confirmação, remarcação e feedback são geradas pelo sistema.</p>
-                </div>
-              ) : (
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#52525b", display: "block", marginBottom: 8 }}>
-                  📋 Próxima tarefa
-                </label>
-                {hasPresets ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-                    {stagePresets.map((p) => {
-                      const Icon = p.Icon;
-                      const active = selectedPresetId === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          onClick={() => handlePickPreset(p)}
-                          className={cn(
-                            "text-[11px] px-3 py-1.5 rounded-full border transition-colors font-semibold inline-flex items-center gap-1",
-                            active
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-background border-border hover:border-primary/50",
-                          )}
-                        >
-                          <Icon className="h-3 w-3" />
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                    {TASK_TYPES.map(t => (
-                      <button
-                        key={t.value}
-                        onClick={() => setTaskType(t.value)}
-                        className={cn(
-                          "text-[11px] px-3 py-1.5 rounded-md border transition-colors font-semibold",
-                          taskType === t.value
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background border-border hover:border-primary/50"
-                        )}
-                      >
-                        {t.emoji} {t.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {hasPresets && freeMode && (
-                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                    {TASK_TYPES.map(t => (
-                      <button
-                        key={t.value}
-                        onClick={() => setTaskType(t.value)}
-                        className={cn(
-                          "text-[11px] px-3 py-1.5 rounded-md border transition-colors font-semibold",
-                          taskType === t.value
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background border-border hover:border-primary/50"
-                        )}
-                      >
-                        {t.emoji} {t.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Input type="date" className="h-8 text-[12px] flex-1" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} />
-                  <Input type="time" className="h-8 text-[12px] w-28" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} />
-                </div>
-              </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          borderTop: "1px solid #e8e8f0", padding: "12px 20px",
-          display: "flex", gap: 8, justifyContent: "flex-end",
-        }}>
-          {phase === 1 ? (
-            <button
-              onClick={handleClose}
-              style={{
-                padding: "8px 20px", borderRadius: 8, border: "1px solid #e8e8f0",
-                background: "#fff", fontSize: 12, fontWeight: 600, color: "#64748b", cursor: "pointer",
-              }}
-            >
-              Cancelar
-            </button>
-          ) : (
             <>
-              <button
-                onClick={handleClose}
-                style={{
-                  padding: "8px 16px", borderRadius: 8, border: "1px solid #e8e8f0",
-                  background: "#fff", fontSize: 12, fontWeight: 600, color: "#64748b", cursor: "pointer",
-                }}
-              >
-                Fechar sem tarefa
-              </button>
-              <button
-                onClick={handleSaveTask}
-                disabled={saving}
-                style={{
-                  padding: "8px 20px", borderRadius: 8, border: "none",
-                  background: "hsl(var(--primary))", fontSize: 12, fontWeight: 600, color: "#fff",
-                  cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1,
-                }}
-              >
-                {saving ? "Salvando..." : "✅ Salvar e fechar"}
-              </button>
+              {productQuery.isFetching && <div role="status" className="mb-2 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />Conferindo empreendimento…</div>}
+              <WhatsAppMessagePicker key={lead.id} messages={messages} hasPhone={!!phone} busy={sending || !user}
+                onCopy={msg => void sendMessage(msg, "copy")} onOpen={msg => void sendMessage(msg, "open")} />
             </>
+          ) : (
+            <WhatsAppNextTask stageTipo={stageTipo} obs={obs} onObs={setObs} presets={stagePresets}
+              selectedPresetId={selectedPresetId} onPreset={handlePickPreset} taskType={taskType} onTaskType={setTaskType}
+              taskDate={taskDate} onTaskDate={setTaskDate} taskTime={taskTime} onTaskTime={setTaskTime} />
           )}
         </div>
-      </div>
-    </div>,
-    document.body
+        <div className="flex shrink-0 justify-end gap-2 border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
+          {phase === 1 ? <Button variant="outline" disabled={sending} onClick={handleClose}>Cancelar</Button> : <>
+            <Button variant="outline" disabled={saving} onClick={handleClose}>Fechar sem tarefa</Button>
+            <Button disabled={saving} onClick={handleSaveTask}>{saving ? "Salvando…" : "Salvar e fechar"}</Button>
+          </>}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
