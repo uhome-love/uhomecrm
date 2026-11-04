@@ -30,7 +30,7 @@ export default function LiaLaboratorioTab() {
     return (data ?? []) as unknown as Execucao[];
   } });
   const ultima = ultimasExecucoes(q.data ?? []);
-  const atual = (slug: string | null) => conhecimento.data?.find((p) => p.slug === slug)?.updated_at;
+  const atual = (slug: string | null) => slug ? conhecimento.data?.find((p) => p.slug === slug)?.updated_at : "sem-produto";
   const vigente = (id: string,slug: string | null) => fichaVigente(ultima.get(id),atual(slug));
   const cenarios = CENARIOS.filter((c) => {
     const e = ultima.get(c.id);

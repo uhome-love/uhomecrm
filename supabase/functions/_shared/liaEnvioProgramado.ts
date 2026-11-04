@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { dentroJanelaEnvio, validarEnvio, type EnvioProgramado } from "../../../src/lia/envioProgramado.ts";
+import { dentroJanelaEnvio, validarEnvio, type EnvioProgramado } from "./liaEnvioRegras.ts";
 
 export async function horarioEnvioLia(sb: SupabaseClient, ignorarLegado = false) {
   const { data,error } = await sb.from("ia_config").select("lia_envio_programado").eq("id",true).maybeSingle();

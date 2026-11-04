@@ -9,5 +9,6 @@ export function ultimasExecucoes(execs: Execucao[]) {
 }
 export function fichaVigente(e: Execucao | undefined, atual: string | undefined) {
   if (!e) return false;
+  if (atual === "sem-produto") return !!e.ficha_hash;
   return !!atual && !!e.ficha_versao && new Date(e.ficha_versao).getTime() === new Date(atual).getTime();
 }
