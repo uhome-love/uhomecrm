@@ -21,11 +21,11 @@ export default function MobileNegocios({ model: m }: { model: CeoDashboardContro
       { label: "Propostas", value: m.kpis.propostas, delta: m.delta(m.kpis.propostas, m.prevKpis?.propostas), sub: (m.ceoMetas.meta_propostas ?? 0) > 0 ? `meta: ${m.ceoMetas.meta_propostas}` : `no período ${m.periodoLabel}`, onClick: detail("propostas", "Propostas") },
     ]} />
     <MobileDisclosure title="Funil de Negócios e conversões">
-      <p className="mb-3 text-xs leading-relaxed text-muted-foreground">Documentação, Em Negociação e Contrato = situação atual do pipeline (não filtram por período) · Ganho = vendas assinadas em {m.periodoLabel}</p>
+      <p className="mb-3 text-xs leading-relaxed text-muted-foreground">Documentação, Proposta e Contrato = situação atual do pipeline (não filtram por período) · Ganho = vendas assinadas em {m.periodoLabel}</p>
       <StateWrapper error={m.errors.negocios} onRetry={m.reload} errorTitle="Falha ao carregar o funil de negócios">
         {m.negFunnelOrder.map((fase) => {
           const data = m.negocioFases.find((f) => f.fase === fase);
-          const type: KpiDetailType | null = fase === "proposta" ? "negociacao" : fase === "contrato_gerado" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
+          const type: KpiDetailType | null = fase === "proposta" ? "propostas" : fase === "contrato_gerado" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
           const content = <MobileDataRow label={m.negFunnelLabels[fase] || fase} value={data?.count ?? 0} sub={data?.vgv ? money(data.vgv) : "—"} />;
           return type ? <Button key={fase} variant="ghost" onClick={detail(type, m.negFunnelLabels[fase] || fase)} className="block h-auto w-full rounded-none p-0 text-left [&>div]:w-full">{content}</Button> : <div key={fase}>{content}</div>;
         })}

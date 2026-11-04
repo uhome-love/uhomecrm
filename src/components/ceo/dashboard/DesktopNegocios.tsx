@@ -39,7 +39,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
           <CardHeader className="pb-4">
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
             <p className="text-[10px] text-muted-foreground">
-              Documentação, Em Negociação e Contrato = situação atual do pipeline (não filtram por período) · Ganho = vendas assinadas em {periodoLabel}
+              Documentação, Proposta e Contrato = situação atual do pipeline (não filtram por período) · Ganho = vendas assinadas em {periodoLabel}
             </p>
           </CardHeader>
 
@@ -60,7 +60,7 @@ export default function DesktopNegocios({ model }: { model: CeoDashboardControll
                 const color = negFunnelColors[fase] || "var(--ceo-chart-fallback)";
                 const isCaiu = fase.toLowerCase().includes("caiu") || fase.toLowerCase().includes("perdid");
                 const detailType: KpiDetailType | null =
-                  fase === "proposta" ? "negociacao" : fase === "contrato_gerado" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
+                  fase === "proposta" ? "propostas" : fase === "contrato_gerado" ? "contratos" : fase === "ganho" ? "vgv_assinado" : null;
                 return (
                   <button
                     key={fase}
