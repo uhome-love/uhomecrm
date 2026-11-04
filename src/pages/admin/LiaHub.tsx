@@ -16,6 +16,7 @@ import LiaMensagensTab from "@/components/lia-hub/LiaMensagensTab";
 import LiaConhecimentoTab from "@/components/lia-hub/LiaConhecimentoTab";
 import LiaLaboratorioTab from "@/components/lia-hub/LiaLaboratorioTab";
 import { useLiaRealtime } from "@/components/lia-hub/useLiaHub";
+import { useConversasContagem } from "@/components/lia-hub/useConversasContagem";
 import { LIA_AREAS, resolverArea, type LiaArea } from "@/components/lia-hub/liaAreas";
 
 const ICONES: Record<LiaArea, typeof Bot> = {
@@ -34,6 +35,7 @@ export default function LiaHub() {
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
   useLiaRealtime();
+  const contagem = useConversasContagem();
   const { area, secao } = resolverArea(params.get("area"), params.get("aba"));
   const Conteudo = secao ? SECOES[secao] : null;
   const ir = (a: string, s?: string) => setParams(s ? { area: a, aba: s } : { area: a }, { replace: true });
@@ -83,14 +85,23 @@ export default function LiaHub() {
         </header>
 
         {area.secoes.length > 1 && (
-          <div className="inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1">
-            {area.secoes.map((s) => (
-              <button key={s.valor} type="button" onClick={() => ir(area.valor, s.valor)}
-                className={cn("rounded-md px-3 py-1.5 text-sm transition-colors duration-fast",
-                  s.valor === secao ? "bg-card font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-                {s.rotulo}
-              </button>
-            ))}
+          <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0 [scrollbar-width:none]">
+            <div className="inline-flex gap-1 rounded-lg bg-muted p-1">
+              {area.secoes.map((s) => {
+                const n = area.valor === "conversas" ? contagem[s.valor] : undefined;
+                return (
+                  <button key={s.valor} type="button" onClick={() => ir(area.valor, s.valor)}
+                    aria-current={s.valor === secao ? "page" : undefined}
+                    className={cn("flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors duration-fast",
+                      s.valor === secao ? "bg-card font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                    {s.rotulo}
+                    {n !== undefined && (
+                      <span className="rounded-full bg-primary/10 px-1.5 text-[11px] font-semibold tabular-nums text-primary">{n}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

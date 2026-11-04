@@ -18,7 +18,7 @@ export default function FiltroImovel({
 }) {
   if (produtos.length <= 1) return null;
   return (
-    <div className={`flex flex-wrap items-center gap-1.5 ${className ?? ""}`}>
+    <div className={`-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0 [scrollbar-width:none] [&>*]:shrink-0 ${className ?? ""}`}>
       <span className="mr-1 text-xs font-medium text-muted-foreground">Imóvel:</span>
       <Button
         size="sm"

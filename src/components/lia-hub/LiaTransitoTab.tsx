@@ -9,6 +9,7 @@ import {
   useLiaConversao,
   produtosDeEstados,
   type LiaEstado,
+  chaveImovel,
 } from "./useLiaHub";
 
 /** Mediana de uma lista de números (dias). Retorna null se vazia. */
@@ -90,7 +91,7 @@ export default function LiaTransitoTab() {
   const estados = useMemo(
     () =>
       (estadosRaw ?? []).filter((e) => {
-        if (produto !== "todos" && (e.produto_slug ?? "") !== produto) return false;
+        if (produto !== "todos" && chaveImovel(e.produto_slug) !== produto) return false;
         const dt = e.created_at ?? e.last_msg_em;
         if (desde && dt && new Date(dt).getTime() < desde) return false;
         return true;

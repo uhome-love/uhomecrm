@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRT } from "@/lib/brtTime";
 import FiltroImovel from "./FiltroImovel";
-import { NIVEL_META, produtoLabel, produtosDeEstados, useLiaEstados, useLiaPipelineLeads } from "./useLiaHub";
+import { NIVEL_META, chaveImovel, produtoLabel, produtosDeEstados, useLiaEstados, useLiaPipelineLeads } from "./useLiaHub";
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -46,7 +46,7 @@ export default function LiaQualificadosTab() {
   const [produto, setProduto] = useState("todos");
   const produtos = useMemo(() => produtosDeEstados(estadosRaw), [estadosRaw]);
   const estados = useMemo(
-    () => (produto === "todos" ? estadosRaw : (estadosRaw ?? []).filter((e) => (e.produto_slug ?? "") === produto)),
+    () => (produto === "todos" ? estadosRaw : (estadosRaw ?? []).filter((e) => chaveImovel(e.produto_slug) === produto)),
     [estadosRaw, produto],
   );
   const stages = data?.stages;

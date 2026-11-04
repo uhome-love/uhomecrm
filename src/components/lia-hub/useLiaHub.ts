@@ -87,9 +87,27 @@ export const PRODUTO_LABEL: Record<string, string> = {
   "casa-tua-porto-alegre": "Casa Tua POA",
   "connect-joao-wallig": "Connect JW",
   "awa-wellness": "AWA",
+  "open-bosque": "Open Bosque",
+  "open-arvoredo": "Open Arvoredo",
+  "essence-canoas": "Essence Canoas",
+  "golden-lake": "Golden Lake",
+  "skyglass": "Skyglass",
+  "boa-vista": "Boa Vista",
 };
-export const produtoLabel = (slug?: string | null) =>
-  slug ? (PRODUTO_LABEL[slug] ?? slug) : "Sem produto";
+/** Chave usada no filtro para conversas sem empreendimento real. */
+export const SEM_IMOVEL = "sem-imovel";
+/** Slugs internos da Lia que não são empreendimentos (cardápio/curadoria antigos). */
+const SLUGS_INTERNOS = /^(curadoria|cardapio|flow.*)$/i;
+
+/** Chave de filtro do imóvel: slug real ou SEM_IMOVEL. */
+export const chaveImovel = (slug?: string | null) =>
+  !slug || SLUGS_INTERNOS.test(slug) ? SEM_IMOVEL : slug;
+
+export const produtoLabel = (slug?: string | null) => {
+  const k = chaveImovel(slug);
+  if (k === SEM_IMOVEL) return "Sem imóvel definido";
+  return PRODUTO_LABEL[k] ?? k.split("-").map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
+};
 
 export interface LiaConversa {
   telefone: string;
@@ -173,8 +191,9 @@ export function useLiaEstados() {
 /** Lista de slugs de imóvel presentes na base (para montar o FiltroImovel). */
 export function produtosDeEstados(estados?: { produto_slug?: string | null }[] | null): string[] {
   const set = new Set<string>();
-  for (const e of estados ?? []) if (e.produto_slug) set.add(e.produto_slug);
-  return Array.from(set).sort();
+  for (const e of estados ?? []) set.add(chaveImovel(e.produto_slug));
+  const lista = Array.from(set).filter((s) => s !== SEM_IMOVEL).sort();
+  return set.has(SEM_IMOVEL) ? [...lista, SEM_IMOVEL] : lista;
 }
 
 /** Últimas mensagens (para preview de "última mensagem" na tabela). */
