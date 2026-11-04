@@ -91,6 +91,20 @@ Abas atuais: Painel, Leads, Kanban, Conversas, Follow-ups, Qualificados, Trânsi
 - **Qualificados:** passa a mostrar a ficha que vai para o corretor e para quem foi pela Roleta.
 - Reengajar manual continua como está.
 
+## Base de inteligência dos empreendimentos (material novo)
+O segundo zip traz as fichas completas dos 8 produtos (tipologias, lazer, localização, argumentos, objeções, preços de Natal com vigência 02/11–18/12 e 194 imagens/plantas). Ele vira o "conhecimento" da Lia:
+- **Fase 0.5 (antes das mensagens):** importador na página da Lia/Admin — você sobe o zip, vê a prévia produto por produto e só grava ao confirmar. Preço fica separado da ficha, com data de validade; quando vence, a Lia para de citar.
+- A Lia só responde com o que está nessas fichas; o que não está, ela diz que o corretor confirma.
+- As imagens viram o que a Lia manda no WhatsApp (capa, planta, lazer) por produto.
+
+### Decisões que preciso antes de ligar (vieram nos alertas do seu material)
+1. Boa Vista Country Club e Lake Eyre estão **inativos** no CRM e Lake Victoria **não existe**: posso ativar/cadastrar para a Lia oferecer? (sem entrar na Roleta até você mandar)
+2. Open Bosque estava "fora do ar" na Lia desde julho: volta a ser ofertado?
+3. Casa Tua Porto Alegre: vale R$ 520 mil (campanha) e não R$ 499 mil, certo?
+4. Open Arvoredo: renda mínima R$ 9.000 ou R$ 6.900?
+5. Itens não confirmados (Wellness 3.500 m² do Golden Lake, fechadura digital do Skyglass, "piscina com raia" do Casa Tua): a Lia **não** cita até confirmação.
+6. Essence Canoas e Golden Lake têm pouco material: a Lia oferece com o que há, ou espera o book?
+
 ## O que ainda falta para ficar 100%
 - Dúvidas frequentes respondidas (FGTS, entrada, entrega, condomínio) e o que a Lia não pode prometer.
 - Material do Open Arvoredo (hoje só 2 telas) e condição da Black Natal.
