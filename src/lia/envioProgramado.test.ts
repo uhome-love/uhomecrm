@@ -18,5 +18,6 @@ describe("conhecimento e versão de simulação",()=>{
  it("backup não vira ficha da campanha",()=>expect(grupoFicha({...p,slug:'golden-lake__backup-20261104'})).toBe('anteriores'));
  const e:Execucao={id:'a',cenario_id:'c',conversa:[],conferencias:[],sinal_final:null,passou_automatico:true,avaliacao:'ok',comentario:null,created_at:'2026-11-04T20:00:00Z',ficha_versao:p.updated_at};
  it("nova ficha invalida aprovação antiga sem apagar execução",()=>{expect(fichaVigente(e,p.updated_at)).toBe(true);expect(fichaVigente(e,'2026-11-04T21:00:00Z')).toBe(false);expect(e.avaliacao).toBe('ok');});
+ it("cenário sem produto requer registro de versão antes de aprovação vigente",()=>{expect(fichaVigente({...e,ficha_versao:null,ficha_hash:null},'sem-produto')).toBe(false);expect(fichaVigente({...e,ficha_versao:null,ficha_hash:'digest'},'sem-produto')).toBe(true);});
  it("empate das datas tem ordenação determinística",()=>expect(ultimasExecucoes([e,{...e,id:'b'}]).get('c')?.id).toBe('b'));
 });

@@ -38,7 +38,7 @@ export default function LiaLaboratorioTab() {
     return `${c.titulo} ${c.produtoNome} ${c.grupo}`.toLocaleLowerCase("pt-BR").includes(busca.toLocaleLowerCase("pt-BR")) &&
       (filtro === "todos" || (filtro === "alertas" && e && !e.passou_automatico) || (filtro === "aprovados" && e?.avaliacao === "ok" && v) || (filtro === "revisar" && (!e || !e.avaliacao || !v)));
   });
-  const cenario = CENARIOS.find((c) => c.id === selecao) ?? cenarios[0];
+  const cenario = cenarios.find((c) => c.id === selecao) ?? cenarios[0];
   const executar = async (id: string) => {
     setRodando(id);
     const { data,error } = await supabase.functions.invoke("lia-laboratorio", { body: { cenario_id:id } });
