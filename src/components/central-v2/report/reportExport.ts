@@ -127,7 +127,7 @@ export function exportRelatorioPdf(input: ExportInput): void {
     pdf.addPage();
     pdf.setFontSize(16);
     pdf.setTextColor(20);
-    pdf.text("Negócios em andamento (Documentação, Proposta e Contrato)", 14, 20);
+    pdf.text("Negócios em andamento (etapa Proposta)", 14, 20);
     autoTable(pdf, {
       head: [["Equipe", "Corretor", "Cliente", "Empreendimento", "Valor estimado", "Dias na etapa"]],
       body: data.negocios_andamento.map((n) => [
@@ -210,7 +210,7 @@ export function exportRelatorioExcel(input: ExportInput): void {
 
   // Aba Negócios em Andamento
   const negAoa: (string | number)[][] = [
-    ["Negócios em andamento (Documentação, Proposta e Contrato)"],
+    ["Negócios em andamento (etapa Proposta)"],
     [],
     ["Equipe", "Corretor", "Cliente", "Empreendimento", "Valor estimado", "Dias na etapa"],
     ...data.negocios_andamento.map((n: NegocioAndamento) => [
