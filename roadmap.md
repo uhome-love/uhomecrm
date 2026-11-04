@@ -1,5 +1,10 @@
 # Roadmap — qualidade visual do CRM
 
+# Mensagens WhatsApp — desenho e plano aprovados 04/11
+- [ ] W1 — mensagens por etapa do Pipeline e produto oficial, sem condições inventadas
+- [ ] W2 — Editar e Mensagem livre recebem digitação; Copiar/Abrir usam o texto personalizado
+- [ ] W3 — testes e validação desktop/celular sem alterar clientes reais; segunda etapa preservada
+
 - [x] A1 — Pipeline: contexto do resumo validado; Edna e Thays inativadas e etapa Caiu aposentada (03/11, decisão do Lucas)
 - [x] A2 — Telefone: leitura protegida validada ao vivo com CEO, Gabriel Vieira e Pedro Jorge; testes de ausência/erro
 - [x] A3 — Roteiros: título oficial e erro de carregamento corrigidos; consulta real vazia, sem criar roteiros ou campanhas
