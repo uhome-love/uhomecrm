@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { limparNomeEmpreendimento, normalizarNomeProduto, selecionarFichaProduto, type WhatsAppProduto } from "@/lib/whatsappMensagens";
 
 /** Só leitura: dados de produto nunca alteram o cadastro ou a atribuição do cliente. */
@@ -32,7 +33,8 @@ export function useWhatsAppProduto(open: boolean, leadId: string, empreendimento
       const nome = canonico.data.nome;
       // Falha na ficha mantém o nome oficial, mas nunca inventa preço/condição.
       const ficha = !fichas.error && !aliases.error
-        ? selecionarFichaProduto(fichas.data ?? [], nome, aliases.data?.map(a => a.alias_raw)) : undefined;
+        ? selecionarFichaProduto<Pick<Tables<"empreendimento_overrides">, "nome" | "valor_min" | "diferenciais" | "argumentos_venda">>(
+          fichas.data ?? [], nome, aliases.data?.map(a => a.alias_raw)) : undefined;
       const produto: WhatsAppProduto = {
         nome, valorMin: ficha?.valor_min, diferenciais: ficha?.diferenciais, argumentosVenda: ficha?.argumentos_venda,
       };
