@@ -484,6 +484,13 @@
       "when": 1793821704866,
       "tag": "0068_ia_midias_produto_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1793822457922,
+      "tag": "0069_lia_laboratorio_execucoes",
+      "breakpoints": true
     }
   ]
 }

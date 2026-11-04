@@ -6617,6 +6617,54 @@ export type Database = {
           },
         ]
       }
+      lia_laboratorio_execucoes: {
+        Row: {
+          avaliacao: string | null
+          avaliado_em: string | null
+          avaliado_por: string | null
+          cenario_id: string
+          comentario: string | null
+          conferencias: Json
+          conversa: Json
+          created_at: string
+          criado_por: string | null
+          id: string
+          passou_automatico: boolean
+          produto_slug: string | null
+          sinal_final: string | null
+        }
+        Insert: {
+          avaliacao?: string | null
+          avaliado_em?: string | null
+          avaliado_por?: string | null
+          cenario_id: string
+          comentario?: string | null
+          conferencias?: Json
+          conversa?: Json
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          passou_automatico?: boolean
+          produto_slug?: string | null
+          sinal_final?: string | null
+        }
+        Update: {
+          avaliacao?: string | null
+          avaliado_em?: string | null
+          avaliado_por?: string | null
+          cenario_id?: string
+          comentario?: string | null
+          conferencias?: Json
+          conversa?: Json
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          passou_automatico?: boolean
+          produto_slug?: string | null
+          sinal_final?: string | null
+        }
+        Relationships: []
+      }
       lia_produtos: {
         Row: {
           ativo: boolean
