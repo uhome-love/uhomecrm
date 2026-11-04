@@ -28,13 +28,31 @@ Deno.serve(async (req) => {
     if (!(roles ?? []).some((r: { role: string }) => r.role === "admin" || r.role === "diretor")) return json({ error: "Sem permissão" }, 403);
 
     const body = await req.json().catch(() => ({}));
+    if (body?.modo === "followup") {
+      const slug = typeof body.produto_slug === "string" ? body.produto_slug : "";
+      const contexto = typeof body.contexto === "string" ? body.contexto.trim() : "";
+      if (contexto.length < 10 || contexto.length > 5000) return json({ error: "Contexto fictício inválido" }, 400);
+      const { data: produto, error } = await admin.from("lia_produtos").select("slug,nome_publico,nome,ficha,updated_at").eq("slug",slug).eq("ativo",true).maybeSingle();
+      if (error || !produto?.ficha) return json({ error: "Ficha do produto indisponível" }, 400);
+      const r = await fetch(`${url}/functions/v1/lia-chat`, {
+        method:"POST", headers:{ Authorization:`Bearer ${anon}`, apikey:anon,"Content-Type":"application/json" },
+        body:JSON.stringify({ mode:"reengajar", messages:[{ role:"user",content:contexto }], ficha:produto.ficha }),
+      });
+      if (!r.ok) return json({ error:"Não foi possível gerar a simulação" },502);
+      const resultado=await r.json();
+      const bytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(produto.ficha));
+      const hash=Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,"0")).join("");
+      return json({texto:String(resultado.content??""),produto:produto.nome_publico||produto.nome,ficha_versao:produto.updated_at,ficha_hash:hash});
+    }
     const cenario = CENARIOS.find((c) => c.id === body?.cenario_id);
     if (!cenario) return json({ error: "Cenário inválido" }, 400);
 
     let ficha = "";
+    let fichaVersao: string | null = null;
     if (cenario.produto) {
-      const { data } = await admin.from("lia_produtos").select("ficha").eq("slug", cenario.produto).eq("ativo", true).maybeSingle();
+      const { data } = await admin.from("lia_produtos").select("ficha,updated_at").eq("slug", cenario.produto).eq("ativo", true).maybeSingle();
       ficha = String(data?.ficha ?? "");
+      fichaVersao = data?.updated_at ?? null;
     }
     const fichaRecupera = contextoRecuperacao(cenario, ficha);
 
@@ -78,10 +96,13 @@ Deno.serve(async (req) => {
     }
 
     const conferencias = conferir(cenario, conversa, sinal);
+    const fichaDigest = await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ficha));
+    const fichaHash = Array.from(new Uint8Array(fichaDigest),b=>b.toString(16).padStart(2,"0")).join("");
     const passou = conferencias.every((c) => c.ok);
     const { data: exec, error } = await admin.from("lia_laboratorio_execucoes").insert({
       cenario_id: cenario.id, produto_slug: cenario.produto, conversa, conferencias,
       sinal_final: sinal, passou_automatico: passou, criado_por: auth.userId,
+      ficha_versao: fichaVersao, ficha_hash: fichaHash,
     }).select().single();
     if (error) return json({ error: error.message }, 500);
     return json({ execucao: exec });

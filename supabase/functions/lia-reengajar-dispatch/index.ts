@@ -15,6 +15,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -157,6 +158,7 @@ serve(async (req) => {
         const nome = primeiroNome(f.nome);
         const bodyParams = bodyParamsPara(f.template_key, nome, nomePorProduto[f.produto_slug ?? ""]);
 
+        if (!await reservarEnvioLia(sb, `reeng:${f.id}`, f.telefone, "reengajamento")) continue;
         const res = await sendTemplate(toWa(f.telefone), f.template_key, bodyParams);
         if (res.ok) {
           await sb.from("lia_reengajamento_fila").update({
