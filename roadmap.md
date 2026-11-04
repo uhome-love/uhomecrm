@@ -24,4 +24,4 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [ ] N2 — formulário Pós-visita
 - [ ] N3 — modal do lead na fase negócio
 - [ ] N4 — relatórios na fonte única + teste ponta a ponta
-- [ ] N4-Equipes — ajuste autorizado: quadro Negócios, equipes e corretores passam a contar Documentação/Proposta/Contrato pelo Pipeline; conferir antes/depois, Ganho e demais números sem alterar clientes
+- [x] N4-Equipes — 20→21 no quadro; Gabriel 8→9 e William Ferreira 0→1; Documentação 11/Proposta 10/Contrato 0, Ganho 122 preservado; VGV e demais indicadores idênticos, fingerprints de clientes/negócios iguais; desktop e quatro etapas mobile conferidos, 19 testes passaram
