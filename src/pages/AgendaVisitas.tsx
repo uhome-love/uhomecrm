@@ -14,6 +14,8 @@ import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw, 
 import { useCalendarIntegration } from "@/hooks/useCalendarIntegration";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { VisitasPeriodoPersonalizado } from "@/components/visitas/VisitasPeriodoPersonalizado";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { StatCard } from "@/components/ui/StatCard";
 import { cn } from "@/lib/utils";
 import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
@@ -458,6 +460,7 @@ function WeekBoard({
 
 /* ═══════ MAIN PAGE ═══════ */
 export default function AgendaVisitas() {
+  const isMobile = useIsMobile();
   const { isAdmin, isGestor } = useUserRole();
   const { integration, connect, disconnect, connecting, disconnecting } = useCalendarIntegration();
   const { user } = useAuth();
@@ -961,7 +964,7 @@ export default function AgendaVisitas() {
       </div>
 
       {/* ═══════ CUSTOM DATE RANGE ═══════ */}
-      {period === "personalizado" && (
+      {period === "personalizado" && (isMobile ? (
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <label className="text-[12px] font-medium text-neutral-500">De:</label>
@@ -997,7 +1000,16 @@ export default function AgendaVisitas() {
             <p className="text-[11px] text-danger-500 px-1">{customError}</p>
           )}
         </div>
-      )}
+      ) : (
+        <VisitasPeriodoPersonalizado
+          from={customFrom}
+          to={customTo}
+          onFromChange={setCustomFrom}
+          onToChange={setCustomTo}
+          onApply={() => setAppliedCustom({ from: customFrom, to: customTo })}
+          error={customError}
+        />
+      ))}
       {showWeekCalendar && (
         <div className="bg-card border border-border rounded-[12px] p-3">
           <MiniWeekCalendar
