@@ -16,6 +16,7 @@ export default function LiaReengajamentoLotes({ runs, countsPorRun, countsIndisp
 }) {
  return <div className="space-y-3">{
 runs.map((run) => {
+              const contagemAusente = countsIndisponiveis || !countsPorRun.has(run.id);
               const c = countsPorRun.get(run.id) ?? {};
               const enviados = c.enviado ?? 0;
               const pendentes = c.pendente ?? 0;
@@ -49,9 +50,9 @@ runs.map((run) => {
                   <Separator className="my-2" />
                   <div className="flex flex-wrap gap-x-5 gap-y-1 text-[12px]">
                     <span>Lote: <b>{run.lote_total}</b></span>
-                    <span className="text-success-700 dark:text-success">Enviados: <b>{countsIndisponiveis ? "—" : enviados}</b></span>
-                    <span className="text-muted-foreground">Pendentes: <b>{countsIndisponiveis ? "—" : pendentes}</b></span>
-                    {!countsIndisponiveis && erros > 0 && <span className="text-danger">Erros: <b>{erros}</b></span>}
+                    <span className="text-success-700 dark:text-success">Enviados: <b>{contagemAusente ? "—" : enviados}</b></span>
+                    <span className="text-muted-foreground">Pendentes: <b>{contagemAusente ? "—" : pendentes}</b></span>
+                    {!contagemAusente && erros > 0 && <span className="text-danger">Erros: <b>{erros}</b></span>}
                   </div>
                 </div>
               );

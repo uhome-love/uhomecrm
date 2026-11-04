@@ -49,6 +49,12 @@ export default function LiaHub() {
     }
   }, [area.valor]);
   const ir = (a: string, s?: string) => setParams(s ? { area: a, aba: s } : { area: a }, { replace: true });
+  const atualizar = () => {
+    void qc.invalidateQueries({ queryKey: ["lia-hub"] });
+    for (const key of ["lia-reeng-resumo", "lia-reeng-runs", "lia-reeng-fila-counts", "lia-reeng-flag"]) {
+      void qc.invalidateQueries({ queryKey: [key] });
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-3 sm:p-4 lg:p-6">
@@ -89,7 +95,7 @@ export default function LiaHub() {
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">{area.rotulo}</h1>
             <p className="text-sm text-muted-foreground">{area.descricao}</p>
           </div>
-          <Button variant="outline" size="sm" aria-label="Atualizar" title="Atualizar" className="shrink-0" onClick={() => qc.invalidateQueries({ queryKey: ["lia-hub"] })}>
+          <Button variant="outline" size="sm" aria-label="Atualizar" title="Atualizar" className="shrink-0" onClick={atualizar}>
             <RefreshCw className="h-4 w-4" /> <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </header>

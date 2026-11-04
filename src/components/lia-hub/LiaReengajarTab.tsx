@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Power, Send, Users, CheckCircle2 } from "lucide-react";
+import { Power, Send, Users } from "lucide-react";
 import { produtoLabel } from "./useLiaHub";
 import { RECUPERA_CONFIG } from "@/lia/recupera";
 import { BALDES, useLiaReengajamento } from "./useLiaReengajamento";
@@ -66,7 +66,7 @@ export default function LiaReengajarTab() {
                 <SelectContent>
                   {BALDES.map((b) => (
                     <SelectItem key={b.valor} value={b.valor}>
-                      {b.rotulo} ({contagemPorBalde.get(b.valor) ?? 0})
+                      {b.rotulo} ({loadingResumo || errorResumo ? "—" : contagemPorBalde.get(b.valor) ?? 0})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -95,8 +95,8 @@ export default function LiaReengajarTab() {
             </div>
           </div>
           {modo === "cardapio" && (
-            <p className="flex items-center gap-1.5 text-[11px] text-success-700 dark:text-success">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Cérebro do cardápio pronto: o lead responde o número do menu e a LIA atende o empreendimento escolhido ou entende o perfil e passa para a Fila CEO.
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Cardápio utiliza o modelo cadastrado no lote. O fluxo de recuperação de Natal permanece em validação, com destino planejado para a Fila CEO.
             </p>
           )}
         </div>

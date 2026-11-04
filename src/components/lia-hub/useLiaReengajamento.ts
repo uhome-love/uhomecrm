@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLiaResumoRecupera } from "./useLiaRecuperaDados";
 
 export const BALDES: { valor: string; rotulo: string }[] = [
   { valor: "sem_interesse_momento", rotulo: "Sem interesse no momento" },
@@ -14,7 +15,6 @@ export const BALDES: { valor: string; rotulo: string }[] = [
 ];
 const TEMPLATE_POR_MODO: Record<string, string> = { produto: "lia_reengajar_produto", cardapio: "lia_reengajar_cardapio" };
 
-type ResumoRow = { balde: string; produto_slug: string | null; produto_ativo: boolean; n: number };
 export type ReengajamentoRun = {
   id: string; nome: string | null; modo: string; produto_slug: string | null; template_key: string;
   cap_dia: number; lote_total: number; status: string; criado_em: string; iniciado_em: string | null;
@@ -25,14 +25,7 @@ export function useLiaReengajamento() {
   const qc = useQueryClient();
 
   // ----- dados -----
-  const { data: resumo, isLoading: loadingResumo, isError: errorResumo, refetch: refetchResumo } = useQuery({
-    queryKey: ["lia-reeng-resumo"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("lia_reengajamento_resumo").select("balde, produto_slug, produto_ativo, n");
-      if (error) throw error;
-      return (data ?? []) as ResumoRow[];
-    },
-  });
+  const { data: resumo, isLoading: loadingResumo, isError: errorResumo, refetch: refetchResumo } = useLiaResumoRecupera();
   const { data: runs, isLoading: loadingRuns, isError: errorRuns, refetch: refetchRuns } = useQuery({
     queryKey: ["lia-reeng-runs"],
     queryFn: async () => {
