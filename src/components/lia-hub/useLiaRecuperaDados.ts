@@ -9,7 +9,10 @@ export function useLiaResumoRecupera() {
     queryFn: async () => {
       const { data, error } = await supabase.from("lia_reengajamento_resumo").select("balde, produto_slug, produto_ativo, n");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((row) => {
+        if (row.balde === null || row.n === null) throw new Error("Resumo indisponível");
+        return { ...row, balde: row.balde, n: row.n };
+      });
     },
   });
 }
