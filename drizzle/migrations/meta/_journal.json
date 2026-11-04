@@ -463,6 +463,13 @@
       "when": 1793763417897,
       "tag": "0065_equipes_negocios_fonte_pipeline",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1793764524601,
+      "tag": "0066_parceria_encerra_reentrada",
+      "breakpoints": true
     }
   ]
 }
