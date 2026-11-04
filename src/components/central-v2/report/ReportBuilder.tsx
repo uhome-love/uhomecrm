@@ -600,7 +600,7 @@ function NegociosAndamentoCard({
     <Card className="overflow-hidden">
       <div className="border-b border-border bg-muted/30 px-4 py-3">
         <h2 className="text-base font-semibold text-foreground">
-          Negócios em andamento (etapa Em Negociação)
+          Negócios em andamento (Documentação, Proposta e Contrato)
         </h2>
         <p className="text-xs text-muted-foreground">{rows.length} negócios</p>
       </div>

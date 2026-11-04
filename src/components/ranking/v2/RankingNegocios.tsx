@@ -29,7 +29,7 @@ export default function RankingNegocios({ filters, currentUserId }: { filters: R
     .sort((a, b) => b.vgv_vendido - a.vgv_vendido);
 
   const columns: Column<Row>[] = [
-    { key: "negociacao", label: "Em Negociação", align: "center", hint: "WIP na etapa Em Negociação hoje", render: r => <span className="font-mono">{r.qtd_negociacao}</span>, sortValue: r => r.qtd_negociacao },
+    { key: "negociacao", label: "Proposta", align: "center", hint: "Clientes na etapa Proposta hoje", render: r => <span className="font-mono">{r.qtd_negociacao}</span>, sortValue: r => r.qtd_negociacao },
     { key: "contrato", label: "Em Contrato", align: "center", hint: "WIP na etapa Contrato hoje", render: r => <span className="font-mono">{r.qtd_contrato}</span>, sortValue: r => r.qtd_contrato },
     { key: "ganho", label: "Ganhos", align: "center", hint: "Vendas assinadas no período", render: r => <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{r.qtd_ganho}</span>, sortValue: r => r.qtd_ganho },
   ];

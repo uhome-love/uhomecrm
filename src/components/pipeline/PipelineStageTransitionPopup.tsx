@@ -986,7 +986,7 @@ function PropostaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   return (
     <div className="max-w-lg mx-auto w-full">
       <DialogHeader>
-        <DialogTitle className="text-base flex items-center gap-2">🤝 Em Negociação</DialogTitle>
+        <DialogTitle className="text-base flex items-center gap-2">🤝 Proposta</DialogTitle>
       </DialogHeader>
       <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{lead.nome}</strong></p>
       <p className="text-[10px] text-muted-foreground">Registre a negociação — fica salva no histórico do lead.</p>

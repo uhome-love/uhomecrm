@@ -335,7 +335,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
     if (!obsValida) return;
     const negociacaoId = stages["proposta"];
     if (!negociacaoId) {
-      toast.error("Etapa Em Negociação não encontrada.");
+      toast.error("Etapa Proposta não encontrada.");
       return;
     }
     onSaving(true);
@@ -358,7 +358,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
         movido_por: userId,
         observacao: "Movido via fluxo Visita (feedback positivo)",
       } as never);
-      await finish("Lead avançou para Em Negociação — preencha valor/status no card 🤝");
+      await finish("Lead avançou para Proposta — preencha valor/status no card 🤝");
     } catch (err) {
       console.error("[VisitaFlow.feedback+]", err);
       toast.error("Erro ao avançar lead");
@@ -778,7 +778,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               size="sm"
             >
               <Handshake className="w-3.5 h-3.5" />
-              ✅ Vai evoluir — avançar p/ Em Negociação
+              ✅ Vai evoluir — avançar p/ Proposta
             </Button>
             <Button
               onClick={handleAgendouOk}

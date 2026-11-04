@@ -10,6 +10,7 @@ export const STAGE_TO_CATEGORIAS: Record<string, MarketplaceCategory[]> = {
   Aquecimento:        ["argumento_empreendimento", "quebra_objecao", "whatsapp"],
   Visita:             ["whatsapp", "script_ligacao"],
   "Pós-Visita":       ["quebra_objecao", "template_proposta"],
+  "Proposta":         ["quebra_objecao", "template_proposta"],
   "Em Negociação":    ["quebra_objecao", "template_proposta"],
   Contrato:           ["template_proposta"],
 };

@@ -547,7 +547,7 @@ export function useVisitas(filters?: {
 
       if (newStatus === "realizada" && visita?.pipeline_lead_id) {
         toast("✅ Visita realizada — lead em Pós-Visita", {
-          description: "Alinhe com o gerente se evolui para Em Negociação ou regride.",
+          description: "Alinhe com o gerente se evolui para Documentação/Proposta ou regride.",
           duration: 5000,
         });
       }

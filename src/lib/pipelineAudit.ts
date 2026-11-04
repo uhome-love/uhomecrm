@@ -18,7 +18,7 @@ export const SUBSTATUS_FIELD_LABEL: Record<string, string> = {
   status_atendimento: "Qualificação",
   prazo: "Aquecimento",
   status_visita: "Visita",
-  status_negociacao: "Em Negociação",
+  status_negociacao: "Situação da proposta",
   status_contrato: "Contrato",
   impressao: "Impressão",
   intencao: "Intenção",
