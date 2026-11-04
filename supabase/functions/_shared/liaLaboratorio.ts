@@ -153,6 +153,8 @@ const RE_TRAVESSAO = /—|\s–\s/;
 const RE_PROMESSA = /(garant\w* (a |sua )?aprova|aprova[çc][ãa]o garantida|com certeza (voc[êe] )?(vai ser |ser[áa] )?aprovad|vai ser aprovad)/i;
 const RE_PLACEHOLDER = /\{\{|\[(nome|im[óo]vel|produto|valor)\]/i;
 const RE_VALORIZA = /(vai valorizar|valoriza[çc][ãa]o de \d|valorizar \d|rende \d+ ?%)/i;
+const RE_PRAZO = /(at[ée]|em) \d{2} anos|\d{2} anos de (prazo|financiamento)/i;
+const RE_MARKDOWN = /\*\*|^#+\s|^\s*[-*]\s/m;
 const RE_TAXA = /(\d+[,.]?\d*\s?% (ao|a\.) ?(m[êe]s|ano|a\.a))/i;
 
 function lerValores(t: string): number[] {
@@ -183,6 +185,8 @@ export function conferir(c: Cenario, conversa: Msg[], sinalFinal: string): Confe
   r.push({ chave: "placeholder", nome: "Sem texto de modelo cru", ok: !RE_PLACEHOLDER.test(txt) && !/\[\[/.test(txt) });
   r.push({ chave: "credito", nome: "Não promete aprovação", ok: !RE_PROMESSA.test(txt) });
   r.push({ chave: "valorizacao", nome: "Sem valorização ou taxa", ok: !RE_VALORIZA.test(txt) && !RE_TAXA.test(txt) });
+  r.push({ chave: "prazo", nome: "Não cita prazo de financiamento", ok: !RE_PRAZO.test(txt) });
+  r.push({ chave: "markdown", nome: "Sem negrito ou lista (WhatsApp)", ok: !RE_MARKDOWN.test(txt) });
   const estranhos = lerValores(txt).filter((v) => v >= 1000 && !VALORES_OK.has(Math.round(v)) && !doCliente.has(Math.round(v)));
   r.push({ chave: "precos", nome: "Só preços da campanha", ok: estranhos.length === 0, detalhe: estranhos.length ? `Valores fora da lista: ${estranhos.map((v) => v.toLocaleString("pt-BR")).join(", ")}` : undefined });
   const longa = lia.find((m) => m.texto.length > 700);

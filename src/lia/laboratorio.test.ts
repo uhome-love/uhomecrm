@@ -57,3 +57,13 @@ describe("laboratório da Lia — tolerâncias", () => {
     expect(r.find((x) => x.chave === "placeholder")?.ok).toBe(true);
   });
 });
+
+describe("laboratório da Lia — linhas vermelhas extras", () => {
+  it("reprova prazo de financiamento e negrito", () => {
+    const c = CENARIOS.find((x) => x.id === "fin-taxa")!;
+    const conv: Msg[] = [{ de: "lia", texto: "a" }, { de: "cliente", texto: "prazo?" }, { de: "lia", texto: "Os bancos financiam em até 35 anos. Fica **sábado**?" }];
+    const r = conferir(c, conv, "morno");
+    expect(r.find((x) => x.chave === "prazo")?.ok).toBe(false);
+    expect(r.find((x) => x.chave === "markdown")?.ok).toBe(false);
+  });
+});
