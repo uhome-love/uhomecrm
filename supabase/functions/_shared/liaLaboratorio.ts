@@ -204,7 +204,7 @@ export function conferir(c: Cenario, conversa: Msg[], sinalFinal: string): Confe
   const lia = conversa.filter((m) => m.de === "lia").slice(1); // 1ª é o modelo aprovado
   // [[midia:...]] é marcador válido de produção (envia foto); não conta como texto cru.
   const txt = lia.map((m) => m.texto.replace(/\[\[\s*midia\s*:[^\]]*\]\]/gi, "")).join("\n");
-  const doCliente = new Set(lerValores(conversa.filter((m) => m.de === "cliente").map((m) => m.texto.replace(/(\d+)\s?mil/gi, "R$ $1 mil")).join("\n")).map(Math.round));
+  const doCliente = new Set(lerValores(conversa.filter((m) => m.de === "cliente").map((m) => m.texto.replace(/R\$\s?/g, "").replace(/(\d[\d.,]*)(\s?mil)?/gi, "R$ $1$2")).join("\n")).map(Math.round));
   const r: Conferencia[] = [];
   r.push({ chave: "respondeu", nome: "Lia respondeu", ok: lia.length > 0 && lia.every((m) => m.texto.trim().length > 0) });
   r.push({ chave: "travessao", nome: "Sem travessão", ok: !RE_TRAVESSAO.test(txt) });
