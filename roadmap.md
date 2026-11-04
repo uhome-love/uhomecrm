@@ -1,7 +1,7 @@
 # Roadmap — qualidade visual do CRM
 
 ## Lia — menu superior e próxima fase (04/11)
-- [ ] Desenho e plano: seis áreas no topo, restante aprovado preservado; preparar próxima fase de Recuperação sem alterar o CRM
+- [x] Desenho e plano preparados: seis áreas no topo e Recuperação; números atuais conferidos só em leitura; sem alteração no CRM
 - [ ] Aplicar o menu superior e próxima fase somente após aprovação do desenho e plano
 - [ ] Conferir navegação, dados e leitura no computador e celular, sem disparos nem alterações em clientes reais
 
