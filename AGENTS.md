@@ -28,3 +28,4 @@
 - Redirect-only presentations in persistent tabs must check that their source URL is current before navigating. Why: hidden pages must not steal navigation from the active tab or unknown-route overlay.
 - The missing-phone notice reads only get_my_profile_full and preserves failed/loading reads as unknown. Why: private contact columns are protected and a failed read does not mean the user has no phone.
 - Unknown app paths use a transient not-found presentation over preserved tabs, hiding old page content without changing stored tab destinations or consuming another tab. Why: address, visible content and tab label must agree without discarding user context.
+- Motion uses only the --motion-*/--ease-* tokens (Tailwind duration-fast/short/medium/long, ease-enter/exit/move) and a global prefers-reduced-motion rule plus MotionConfig reducedMotion="user". Why: one rhythm across pages and respect for the device's reduce-motion setting.
