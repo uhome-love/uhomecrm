@@ -88,11 +88,17 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
   const [objecao, setObjecao] = useState("");
   const [temperatura, setTemperatura] = useState("");
   const [proximaAcao, setProximaAcao] = useState("");
+  const [dataProxima, setDataProxima] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [novaData, setNovaData] = useState("");
   const [novaHora, setNovaHora] = useState("");
   const hojeBRT = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
   const faltaReagenda = selected === "reagendar" && (!novaData || !novaHora);
+  const exigeDetalhes = !!selected && !["nao_compareceu", "reagendar"].includes(selected);
+  const faltaDetalhes = exigeDetalhes && (
+    !temperatura || proximaAcao.trim().length < 3 || !dataProxima ||
+    (selected !== "gostou_quer_proposta" && !objecao)
+  );
 
   useEffect(() => {
     if (open) {
@@ -101,6 +107,7 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
       setObjecao("");
       setTemperatura("");
       setProximaAcao("");
+      setDataProxima("");
       setNovaData("");
       setNovaHora("");
       setSubmitting(false);
@@ -114,7 +121,8 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
       const feedbackExtra = {
         objecao: objecao || undefined,
         temperatura: temperatura || undefined,
-        proxima_acao: proximaAcao || undefined,
+        proxima_acao: proximaAcao.trim() || undefined,
+        data_proxima_acao: exigeDetalhes ? dataProxima : undefined,
         nova_data: selected === "reagendar" ? novaData : undefined,
         nova_hora: selected === "reagendar" ? novaHora : undefined,
       };
@@ -179,9 +187,9 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
           </div>
 
           {/* Temperatura do lead */}
-          {selected && selected !== "nao_compareceu" && (
+          {selected && selected !== "nao_compareceu" && selected !== "reagendar" && (
             <div>
-              <Label className="text-xs font-semibold">🌡️ Temperatura atualizada do lead</Label>
+              <Label className="text-xs font-semibold">🌡️ Temperatura atualizada do lead <span className="text-destructive">*</span></Label>
               <div className="grid grid-cols-2 gap-1.5 mt-1.5">
                 {TEMPERATURA_OPTIONS.map(t => (
                   <button
@@ -203,9 +211,11 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
           )}
 
           {/* Objeção principal */}
-          {selected && !["nao_compareceu", "gostou_quer_proposta"].includes(selected) && (
+          {selected && !["nao_compareceu", "reagendar"].includes(selected) && (
             <div>
-              <Label className="text-xs font-semibold">🚧 Objeção principal (opcional)</Label>
+              <Label className="text-xs font-semibold">
+                🚧 Objeção principal {selected === "gostou_quer_proposta" ? "(opcional)" : <span className="text-destructive">*</span>}
+              </Label>
               <Select value={objecao} onValueChange={setObjecao}>
                 <SelectTrigger className="h-9 text-xs mt-1.5">
                   <SelectValue placeholder="Selecione a objeção..." />
@@ -219,10 +229,12 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
             </div>
           )}
 
-          {/* Próxima ação */}
+          {/* Próximo passo */}
           {selected && (
             <div>
-              <Label className="text-xs font-semibold">📋 Próxima ação</Label>
+              <Label className="text-xs font-semibold">
+                📋 Próximo passo {exigeDetalhes && <span className="text-destructive">*</span>}
+              </Label>
               <Textarea
                 value={proximaAcao}
                 onChange={e => setProximaAcao(e.target.value)}
@@ -230,7 +242,20 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
                 rows={2}
                 className="mt-1.5 text-xs"
               />
+              {exigeDetalhes && (
+                <div className="mt-2">
+                  <Label className="text-xs">Quando? <span className="text-destructive">*</span></Label>
+                  <input type="date" min={hojeBRT} value={dataProxima} onChange={e => setDataProxima(e.target.value)}
+                    className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm" />
+                </div>
+              )}
             </div>
+          )}
+          {faltaDetalhes && (
+            <p className="text-[11.5px] font-medium text-destructive">
+              Para visita realizada, informe temperatura, próximo passo e quando
+              {selected !== "gostou_quer_proposta" ? " e a objeção principal" : ""}.
+            </p>
           )}
 
           {selected === "reagendar" && (
