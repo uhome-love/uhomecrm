@@ -6,7 +6,8 @@
  *
  * VGV: a RPC entrega DOIS valores monetários por nível —
  *  - vgv_assinado_mes  → base da meta (compara com meta_vgv de ceo_metas_mensais)
- *  - vgv_pipeline_ativo → SUM(negocios status='ativo'), número secundário
+ *  - vgv_pipeline_ativo → SUM(v_negocios_pipeline.vgv) em Documentação/Proposta/Contrato
+ * Negócios conta essas mesmas etapas no escopo das equipes ativas, mesmo sem ficha complementar.
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
