@@ -201,7 +201,7 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
   // Etapas comerciais usam o mesmo escritor atômico do cartão e do drawer.
   if (["documentacao", "proposta", "contrato_gerado"].includes(stageTipo)) {
     return <div className="mx-5 my-3 border-t border-border pt-3">
-      <Button variant="outline" size="sm" className="w-full" onClick={() => void abrirJornada()}>Atualizar {stageTipo === "contrato_gerado" ? "contrato" : stageTipo === "documentacao" ? "documentação" : "proposta"}</Button>
+      <Button size="sm" className="w-full" onClick={() => void abrirJornada()}>Atualizar {stageTipo === "contrato_gerado" ? "contrato" : stageTipo === "documentacao" ? "documentação" : "proposta"}</Button>
       {jornadaEtapaId && <Dialog open onOpenChange={open => { if (!open) setJornadaEtapaId(null); }}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Jornada do negócio</DialogTitle></DialogHeader><JornadaNegocioForm leadId={leadId} etapaId={jornadaEtapaId} tipo={stageTipo} mover={false} onCancel={() => setJornadaEtapaId(null)} onSaved={() => setJornadaEtapaId(null)} /></DialogContent></Dialog>}
     </div>;
   }
