@@ -35,6 +35,7 @@ export default function LiaHub() {
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
   useLiaRealtime();
+  const contagem = useConversasContagem();
   const { area, secao } = resolverArea(params.get("area"), params.get("aba"));
   const Conteudo = secao ? SECOES[secao] : null;
   const ir = (a: string, s?: string) => setParams(s ? { area: a, aba: s } : { area: a }, { replace: true });
