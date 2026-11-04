@@ -19,7 +19,7 @@ export default function LiaConhecimentoTab() {
   const [editar, setEditar] = useState<FichaLia | null>(null);
   const [simular, setSimular] = useState<FichaLia | null>(null);
   const produtos = (q.data ?? []).filter((p) => grupoFicha(p) === grupo && nomeFicha(p).toLocaleLowerCase("pt-BR").includes(busca.toLocaleLowerCase("pt-BR")));
-  const produto = q.data?.find((p) => p.id === selecionado) ?? produtos[0];
+  const produto = produtos.find((p) => p.id === selecionado) ?? produtos[0];
   if (q.isLoading) return <p role="status" className="py-10 text-sm text-muted-foreground">Carregando fichas…</p>;
   if (q.isError) return <LiaLeituraAviso titulo="Não foi possível ler as fichas dos empreendimentos." tentar={() => void q.refetch()} />;
   return <div className="space-y-4">

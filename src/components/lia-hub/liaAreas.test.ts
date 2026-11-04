@@ -16,4 +16,7 @@ describe("resolverArea", () => {
   it("área sem aba abre a primeira seção", () => {
     expect(resolverArea("cerebro", null).secao).toBe("conhecimento");
   });
+  it("Configurações abre parâmetros reais", () => {
+    expect(resolverArea("config", null).secao).toBe("configuracoes");
+  });
 });

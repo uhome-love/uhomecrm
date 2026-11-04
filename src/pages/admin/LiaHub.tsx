@@ -15,6 +15,7 @@ import LiaRecuperaTab from "@/components/lia-hub/LiaRecuperaTab";
 import LiaMensagensTab from "@/components/lia-hub/LiaMensagensTab";
 import LiaConhecimentoTab from "@/components/lia-hub/LiaConhecimentoTab";
 import LiaLaboratorioTab from "@/components/lia-hub/LiaLaboratorioTab";
+import LiaConfiguracoesTab from "@/components/lia-hub/LiaConfiguracoesTab";
 import { useLiaRealtime } from "@/components/lia-hub/useLiaHub";
 import { useConversasContagem } from "@/components/lia-hub/useConversasContagem";
 import { LIA_AREAS, resolverArea, type LiaArea } from "@/components/lia-hub/liaAreas";
@@ -29,6 +30,7 @@ const SECOES: Record<string, ComponentType> = {
   transito: LiaTransitoTab, recupera: LiaRecuperaTab, reengajar: LiaReengajarTab,
   mensagens: LiaMensagensTab, qualificados: LiaQualificadosTab,
   conhecimento: LiaConhecimentoTab, laboratorio: LiaLaboratorioTab,
+  configuracoes: LiaConfiguracoesTab,
 };
 
 export default function LiaHub() {
@@ -51,6 +53,7 @@ export default function LiaHub() {
   const ir = (a: string, s?: string) => setParams(s ? { area: a, aba: s } : { area: a }, { replace: true });
   const atualizar = () => {
     void qc.invalidateQueries({ queryKey: ["lia-hub"] });
+    void qc.invalidateQueries({ queryKey: ["lia-lab-execucoes"] });
     for (const key of ["lia-reeng-resumo", "lia-reeng-runs", "lia-reeng-fila-counts", "lia-reeng-flag"]) {
       void qc.invalidateQueries({ queryKey: [key] });
     }

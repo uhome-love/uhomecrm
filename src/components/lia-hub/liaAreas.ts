@@ -23,7 +23,7 @@ export const LIA_AREAS: LiaAreaDef[] = [
     { valor: "conhecimento", rotulo: "Conhecimento" },
     { valor: "laboratorio", rotulo: "Laboratório" },
   ] },
-  { valor: "config", rotulo: "Configurações", descricao: "Número, campanhas e limites da Lia", secoes: [] },
+  { valor: "config", rotulo: "Configurações", descricao: "Limites, horários e proteção dos envios", secoes: [{ valor: "configuracoes", rotulo: "Parâmetros" }] },
 ];
 
 export function resolverArea(area: string | null, aba: string | null): { area: LiaAreaDef; secao: string | null } {

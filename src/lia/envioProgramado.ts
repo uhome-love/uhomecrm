@@ -1,0 +1,1 @@
+export { PROPOSTA_ENVIO, validarEnvio, dentroJanelaEnvio, type EnvioProgramado } from "../../supabase/functions/_shared/liaEnvioRegras";

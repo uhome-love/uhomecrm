@@ -1,10 +1,11 @@
 # Roadmap — qualidade visual do CRM
 
 ## Lia — Conhecimento, Laboratório e Configurações (04/11)
-- [x] Desenhos de computador e celular preparados e inspecionados, com informações reais separadas de exemplos; aguardam aprovação
-- [x] Plano preparado: atualização do conhecimento usado nos follow-ups, revisão das simulações e controles reais de limites/horários/regras; aguarda aprovação
-- [ ] Construção por etapas após aprovação; salvar configurações nunca ativa ou retoma disparos
-- [ ] Validar leitura, edição segura, cancelamento e permissões; conferir computador/celular sem mensagens a clientes
+- [x] Desenhos de computador e celular preparados, inspecionados e aprovados
+- [x] Plano de Conhecimento, Laboratório e Configurações aprovado
+- [x] Fichas reais, revisão antes/depois, simulação de follow-up, versões e parâmetros de envio implantados; sem ativação ou retomada
+- [x] 48 testes da Lia + 4 regressões de Pipeline passaram; fichas/configuração/permissões/teto testados em transações desfeitas; revisão/cancelamento e simulação real com cliente fictício conferidos no preview; desktop 1280 e celular 390/360, claro/escuro e teclado conferidos; nenhum envio externo, motor/lotes/configuração inicial preservados
+- [ ] Aprovação das simulações com fichas atuais e ativação do piloto — dependem de autorização específica do Lucas, fora desta entrega
 
 ## Lia — menu superior e próxima fase (04/11)
 - [x] Desenho e plano preparados: seis áreas no topo e Recuperação; números atuais conferidos só em leitura; sem alteração no CRM

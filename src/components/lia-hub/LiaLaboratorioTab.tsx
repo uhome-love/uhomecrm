@@ -30,7 +30,7 @@ export default function LiaLaboratorioTab() {
     return (data ?? []) as unknown as Execucao[];
   } });
   const ultima = ultimasExecucoes(q.data ?? []);
-  const atual = (slug: string | null) => conhecimento.data?.find((p) => p.slug === slug)?.updated_at;
+  const atual = (slug: string | null) => slug ? conhecimento.data?.find((p) => p.slug === slug)?.updated_at : "sem-produto";
   const vigente = (id: string,slug: string | null) => fichaVigente(ultima.get(id),atual(slug));
   const cenarios = CENARIOS.filter((c) => {
     const e = ultima.get(c.id);
@@ -38,7 +38,7 @@ export default function LiaLaboratorioTab() {
     return `${c.titulo} ${c.produtoNome} ${c.grupo}`.toLocaleLowerCase("pt-BR").includes(busca.toLocaleLowerCase("pt-BR")) &&
       (filtro === "todos" || (filtro === "alertas" && e && !e.passou_automatico) || (filtro === "aprovados" && e?.avaliacao === "ok" && v) || (filtro === "revisar" && (!e || !e.avaliacao || !v)));
   });
-  const cenario = CENARIOS.find((c) => c.id === selecao) ?? cenarios[0];
+  const cenario = cenarios.find((c) => c.id === selecao) ?? cenarios[0];
   const executar = async (id: string) => {
     setRodando(id);
     const { data,error } = await supabase.functions.invoke("lia-laboratorio", { body: { cenario_id:id } });

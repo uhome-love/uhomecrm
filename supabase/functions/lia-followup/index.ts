@@ -15,6 +15,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handoffEngajado } from "../_shared/liaHandoff.ts";
+import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -100,12 +101,13 @@ async function send360Doc(to: string, link: string, filename: string) {
 // Material de VALOR por produto pro cutucão (fachada + infra + ebook). Usa a midia do produto;
 // no Canoas (sem midia no banco) cai no acervo hardcoded do Casa Tua.
 const CANOAS_EBOOK = `${MEDIA_BASE}/guia-casa-tua-santos-ferreira.pdf`;
-function materialReeng(midias: Record<string, string> | null | undefined) {
+function materialReeng(midias: Record<string, string> | null | undefined, slug?: string | null) {
   const m = midias ?? {};
+  const fallback = !slug || slug === "casa-tua-canoas";
   return {
-    fachada: m.fachada || FOTO_FACHADA,
-    infra: m.clube || m.piscina || m.rooftop || m.infra || FOTO_INFRA,
-    ebook: m.ebook || m.apresentacao || CANOAS_EBOOK,
+    fachada: m.fachada || (fallback ? FOTO_FACHADA : ""),
+    infra: m.clube || m.piscina || m.rooftop || m.infra || (fallback ? FOTO_INFRA : ""),
+    ebook: m.ebook || m.apresentacao || (fallback ? CANOAS_EBOOK : ""),
   };
 }
 
@@ -458,8 +460,7 @@ async function passarEngajadosParaTime(
  * contextual; onda 2 (algumas horas depois, se seguir mudo) = ebook/apresentação + pergunta.
  * O texto é do cérebro da LIA (modo reengajar), específico ao que o lead falou. */
 async function reengajarProativo(sb: any): Promise<number> {
-  const h = horaBRT();
-  if (h < HORA_INI || h >= HORA_FIM) return 0; // só horário comercial
+  if (!await horarioEnvioLia(sb)) return 0;
   const agora = Date.now();
 
   // candidatos das 2 ondas: onda 1 (sem reengajado_em) OU onda 2 (com reengajado_em, sem reengajado2_em)
@@ -541,15 +542,16 @@ async function reengajarProativo(sb: any): Promise<number> {
     }
 
     // O CUTUCÃO DÁ VALOR: manda material do produto e DEPOIS a pergunta contextual.
-    const mat = materialReeng(midiasPorProduto[c.produto_slug ?? ""]);
+    if (!await reservarEnvioLia(sb, `proativo:${c.telefone}:${onda}`, c.telefone, "proativo")) continue;
+    const mat = materialReeng(midiasPorProduto[c.produto_slug ?? ""], c.produto_slug);
     let mandouMat = false;
     if (onda === 1) {
-      if (await send360Image(c.telefone, mat.fachada)) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[foto] Fachada do empreendimento" }); mandouMat = true; }
+      if (mat.fachada && await send360Image(c.telefone, mat.fachada)) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[foto] Fachada do empreendimento" }); mandouMat = true; }
       await sleep(1200);
-      if (await send360Image(c.telefone, mat.infra)) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[foto] Infraestrutura/lazer" }); mandouMat = true; }
+      if (mat.infra && await send360Image(c.telefone, mat.infra)) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[foto] Infraestrutura/lazer" }); mandouMat = true; }
       await sleep(1200);
     } else {
-      if (await send360Doc(c.telefone, mat.ebook, "Material Uhome.pdf")) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[material] Apresentação/ebook" }); mandouMat = true; }
+      if (mat.ebook && await send360Doc(c.telefone, mat.ebook, "Material Uhome.pdf")) { await sb.from("lia_conversas").insert({ telefone: c.telefone, role: "assistant", conteudo: "[material] Apresentação/ebook" }); mandouMat = true; }
       await sleep(1200);
     }
 
@@ -567,8 +569,7 @@ async function reengajarProativo(sb: any): Promise<number> {
  * opts.ignorarHorario: envia mesmo fora da janela (só no envio direcionado).
  * opts.soTelefone: envia só pra este número. */
 async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: string } = {}): Promise<number> {
-  const h = horaBRT();
-  if (!opts.ignorarHorario && (h < HORA_INI || h >= HORA_FIM)) return 0; // fora da janela: tenta na próxima rodada
+  if (!await horarioEnvioLia(sb,opts.ignorarHorario === true)) return 0;
 
   // nome público do imóvel por produto (vira o {{2}} do template). Sem produto → Casa Tua Santos Ferreira.
   const nomePorProduto: Record<string, string> = {};
@@ -633,6 +634,7 @@ async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: 
       .replace(/\[nome\]/gi, nomeLead || "você")
       .replace(/\[im[oó]vel\]/gi, empPublico);
     let ok = false;
+    if (!await reservarEnvioLia(sb, `followup:${f.id}`, f.telefone, "followup")) continue;
     if (ehTemplate) {
       const res = await sendTemplate(f.telefone, WA_TEMPLATES[f.template_key], [nomeLead, empPublico]);
       ok = res.ok;
