@@ -31,7 +31,7 @@ export const METRICS: MetricDef[] = [
   { key: "visitas_marcadas", label: "Visitas marcadas", short: "Vis. marc.", descricao: "Visitas agendadas (criadas) no período." },
   { key: "visitas_realizadas", label: "Visitas realizadas", short: "Vis. real.", descricao: "Visitas com status realizada no período." },
   { key: "pipeline_ativo", label: "Pipeline ativo", short: "Pipeline", snapshot: true, descricao: "Leads ativos no funil agora (exclui Descarte, Caiu e Ganho)." },
-  { key: "negocios_andamento", label: "Negócios em andamento", short: "Em neg.", snapshot: true, descricao: "Leads na etapa Em Negociação agora." },
+  { key: "negocios_andamento", label: "Negócios em andamento", short: "Proposta", snapshot: true, descricao: "Leads na etapa Proposta agora." },
   { key: "descartes", label: "Descartes", short: "Descartes", descricao: "Leads movidos para Descarte/Caiu no período." },
   { key: "estagnados", label: "Estagnados", short: "Estag.", snapshot: true, descricao: "Leads marcados como estagnados agora." },
   { key: "vendas_assinadas", label: "Vendas assinadas", short: "Vendas", descricao: "Negócios com contrato assinado no período." },

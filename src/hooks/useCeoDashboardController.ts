@@ -262,7 +262,7 @@ export function useCeoDashboardController() {
   const negFunnelOrder = ["documentacao", "proposta", "contrato_gerado", "ganho"];
   const negFunnelLabels: Record<string,string> = {
     documentacao: "Documentação",
-    proposta: "Em Negociação",
+    proposta: "Proposta",
     contrato_gerado: "Contrato",
     ganho: "Ganho",
   };

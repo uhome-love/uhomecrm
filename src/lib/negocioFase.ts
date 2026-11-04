@@ -54,7 +54,7 @@ export function canonicalizarFase(input?: string | null): NegocioFase | null {
 
 /** Label amigável por fase canônica. */
 export const FASE_LABEL: Record<NegocioFase, string> = {
-  em_negociacao: "Em Negociação",
+  em_negociacao: "Em andamento",
   contrato: "Contrato",
   ganho: "Ganho",
 };

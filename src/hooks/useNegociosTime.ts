@@ -21,7 +21,7 @@ export interface NegocioTime {
   corretor_nome: string;
   empreendimento: string | null;
   valor: number | null;
-  etapa: "Em Negociação" | "Contrato";
+  etapa: "Proposta" | "Contrato";
   etapaTipo: "proposta" | "contrato_gerado";
 }
 
@@ -107,7 +107,7 @@ export function useNegociosTime(enabled: boolean) {
           corretor_nome: l.corretor_id ? (nomeDe.get(l.corretor_id as string) ?? "Corretor") : "Sem dono",
           empreendimento: (l.empreendimento as string) ?? null,
           valor: valor && valor > 0 ? valor : null,
-          etapa: tipo === "contrato_gerado" ? "Contrato" : "Em Negociação",
+          etapa: tipo === "contrato_gerado" ? "Contrato" : "Proposta",
           etapaTipo: (tipo === "contrato_gerado" ? "contrato_gerado" : "proposta"),
         } as NegocioTime;
       });

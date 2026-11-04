@@ -37,7 +37,7 @@ export interface CorretorInfo {
 // Fases canônicas (pós-consolidação 07/2026). Ver src/lib/negocioFase.ts.
 // Status separado ('ativo'|'perdido'|'arquivado') vive em coluna própria.
 export const NEGOCIOS_FASES = [
-  { key: FASE_EM_NEGOCIACAO, label: "Em Negociação", cor: "#F59E0B", icon: "🤝" },
+  { key: FASE_EM_NEGOCIACAO, label: "Em andamento", cor: "#F59E0B", icon: "🤝" },
   { key: FASE_CONTRATO, label: "Contrato", cor: "#8B5CF6", icon: "📄" },
   { key: FASE_GANHO, label: "Ganho", cor: "#22C55E", icon: "🏆" },
 ] as const;

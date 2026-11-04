@@ -45,7 +45,7 @@ type SortDir = "asc" | "desc";
 const FASES: Array<{ fase: string; label: string; color: string; bg: string }> = [
   { fase: "documentacao", label: "Documentação", color: "#92400e", bg: "#fef3c7" },
   { fase: "proposta", label: "Proposta", color: "#9a3412", bg: "#ffedd5" },
-  { fase: "em_negociacao", label: "Em Negociação", color: "#92400e", bg: "#fef3c7" },
+  { fase: "em_negociacao", label: "Em andamento", color: "#92400e", bg: "#fef3c7" },
   { fase: "contrato", label: "Contrato", color: "#5b21b6", bg: "#ede9fe" },
   { fase: "ganho", label: "Ganho", color: "#065f46", bg: "#d1fae5" },
 ];
