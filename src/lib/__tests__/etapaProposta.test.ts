@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-vi.stubGlobal("AudioContext", class { createOscillator() { return {}; } createGain() { return {}; } });
+vi.hoisted(() => { (window as unknown as { AudioContext: unknown }).AudioContext = class {}; });
 import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS, PIPELINE_STAGE_BG } from "@/lib/celebrations";
 import { getCategoriasForStage } from "@/lib/stageToCategoria";
 import { ETAPAS_NEGOCIO, ETAPA_NEGOCIO_LABEL } from "@/lib/negocioEtapa";
