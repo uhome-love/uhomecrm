@@ -2,10 +2,11 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { UsersRound } from "lucide-react";
 import UsuariosTable from "@/components/team/UsuariosTable";
 import { useUserRole } from "@/hooks/useUserRole";
+import { teamPresentationContext } from "@/lib/teamPresentation";
 
 export default function MeuTime() {
-  const { isAdmin, isDiretor } = useUserRole();
-  const ehGerente = !isAdmin && !isDiretor;
+  const { roles } = useUserRole();
+  const ehGerente = teamPresentationContext(roles) === "team";
   return (
     <div className="space-y-4">
       <PageHeader

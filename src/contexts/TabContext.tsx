@@ -2,6 +2,7 @@ import { createContext, useContext, useCallback, useEffect, useRef, useState, ty
 import { useNavigate, useLocation } from "react-router-dom";
 import { resolveRoute, type ResolvedRoute } from "@/config/pageRegistry";
 import { useUserRole, type AppRole } from "@/hooks/useUserRole";
+import { tabPresentationLabel } from "@/lib/teamPresentation";
 
 const MAX_TABS = 6;
 const STORAGE_KEY = "uhome_tabs_v1";
@@ -144,8 +145,11 @@ export function TabProvider({ children }: { children: ReactNode }) {
       const resolved = resolveRoute(tab.path.split("?")[0].split("#")[0]);
       if (!resolved) return true; // keep unknown tabs
       return hasAccess(resolved);
+    }).map((tab) => {
+      const label = tabPresentationLabel(tab.componentKey, tab.label, roles);
+      return label === tab.label ? tab : { ...tab, label };
     });
-    if (filtered.length !== currentTabs.length) {
+    if (filtered.length !== currentTabs.length || filtered.some((tab, index) => tab !== currentTabs[index])) {
       setTabs(filtered);
       if (!filtered.some((t) => t.id === activeRef.current) && filtered.length > 0) {
         setActiveTabId(filtered[0].id);
@@ -168,7 +172,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
     if (current.some((t) => t.id === resolved.key)) return; // home já presente
     const homeTab: Tab = {
       id: resolved.key,
-      label: resolved.label,
+      label: tabPresentationLabel(resolved.componentKey, resolved.label, roles),
       icon: resolved.icon,
       path: homePath,
       closable: false,
@@ -204,10 +208,12 @@ export function TabProvider({ children }: { children: ReactNode }) {
       // Tab already open — sync stored path (query string may have changed)
       const existing = currentTabs[existingIdx];
       const pathChanged = existing.path !== path;
+      const label = tabPresentationLabel(resolved.componentKey, resolved.label, rolesRef.current);
+      const labelChanged = existing.label !== label;
       const tabChanged = activeRef.current !== resolved.key;
 
-      if (pathChanged) {
-        setTabs(currentTabs.map((t) => (t.id === resolved.key ? { ...t, path } : t)));
+      if (pathChanged || labelChanged) {
+        setTabs(currentTabs.map((t) => (t.id === resolved.key ? { ...t, path, label } : t)));
       }
       if (tabChanged) {
         setActiveTabId(resolved.key);
@@ -222,7 +228,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
     // Build new tab
     const newTab: Tab = {
       id: resolved.key,
-      label: resolved.label,
+      label: tabPresentationLabel(resolved.componentKey, resolved.label, rolesRef.current),
       icon: resolved.icon,
       path,
       closable: resolved.closable !== false,

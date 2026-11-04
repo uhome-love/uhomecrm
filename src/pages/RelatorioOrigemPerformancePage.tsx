@@ -7,6 +7,10 @@ import type { ReportFilters } from "@/components/relatorios/reportUtils";
 import { formatBRT } from "@/lib/brtTime";
 import { periodoGrupoClasse, periodoBotaoClasse } from "@/components/ui/PeriodSelector";
 import MarketingDashboard from "@/components/marketing/MarketingDashboard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { CampoDataBR } from "@/components/filtros/CampoDataBR";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PILLS: Array<{ id: string; label: string }> = [
   { id: "hoje", label: "Hoje" },
@@ -28,6 +32,7 @@ const ABAS = [
 type AbaId = (typeof ABAS)[number]["id"];
 
 export default function DadosAnunciosPage() {
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const abaParam = searchParams.get("aba");
   const aba: AbaId = abaParam === "investimento" ? "investimento" : "rastreamento";
@@ -136,8 +141,8 @@ export default function DadosAnunciosPage() {
   };
 
   return (
-    <div style={{ height: "100vh", overflowY: "auto", background: "#f0f0f5" }}>
-      <div style={{ background: "#fff", borderBottom: "0.5px solid #e5e7eb", padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+    <div className="h-full min-h-0 overflow-y-auto bg-background">
+      {isMobile ? <div style={{ background: "#fff", borderBottom: "0.5px solid #e5e7eb", padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div style={{ marginRight: "auto" }}>
           <h1 style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Central de Marketing</h1>
           <p style={{ fontSize: 12, color: "#6b7280" }}>Leads, anúncios e investimento: campanha, conjunto, criativo, formulário e conversões</p>
@@ -188,8 +193,43 @@ export default function DadosAnunciosPage() {
           PDF A4 paisagem
         </button>
         )}
-      </div>
-      <div style={{ padding: 16 }} ref={contentRef}>
+      </div> : (
+        <div className="border-b border-border px-6 pt-6 pb-4">
+          <PageHeader
+            title="Central de Marketing"
+            subtitle="Leads, anúncios e investimento: campanha, conjunto, criativo, formulário e conversões"
+            homi={false}
+            className="mb-4"
+            tabs={ABAS.map((a) => ({ value: a.id, label: a.label }))}
+            activeTab={aba}
+            onTabChange={(value) => { if (value === "rastreamento" || value === "investimento") setAba(value); }}
+            actions={aba === "rastreamento" ? (
+              <Button variant="outline" onClick={exportPdf} disabled={exportingPdf} className="duration-short ease-move">
+                {exportingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
+                PDF A4 paisagem
+              </Button>
+            ) : undefined}
+          />
+          {aba === "rastreamento" && (
+            <div className="space-y-4">
+              <div role="radiogroup" aria-label="Período" className={periodoGrupoClasse}>
+                {PILLS.map((p) => (
+                  <Button key={p.id} variant="ghost" role="radio" aria-checked={periodo === p.id} onClick={() => setPeriodo(p.id)} className={`${periodoBotaoClasse(periodo === p.id)} duration-short ease-move`}>
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
+              {periodo === "custom" && (
+                <div className="flex flex-wrap gap-3">
+                  <div className="w-48"><CampoDataBR id="marketing-de" label="De" value={de} onChange={setDe} /></div>
+                  <div className="w-48"><CampoDataBR id="marketing-ate" label="Até" value={ate} onChange={setAte} /></div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="p-4 md:p-6" ref={contentRef}>
         {aba === "rastreamento"
           ? <RelatorioOrigemPerformance filters={filters} userRole="admin" />
           : <MarketingDashboard />}
