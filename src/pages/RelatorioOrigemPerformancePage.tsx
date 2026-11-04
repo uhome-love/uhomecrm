@@ -229,7 +229,7 @@ export default function DadosAnunciosPage() {
           )}
         </div>
       )}
-      <div className="p-4 md:p-6" ref={contentRef}>
+      <div className={aba === "rastreamento" ? "p-4 md:p-6 bg-neutral-50" : "p-4 md:p-6"} ref={contentRef}>
         {aba === "rastreamento"
           ? <RelatorioOrigemPerformance filters={filters} userRole="admin" />
           : <MarketingDashboard />}
