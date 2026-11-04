@@ -15,7 +15,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handoffEngajado } from "../_shared/liaHandoff.ts";
-import { reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
+import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -460,8 +460,7 @@ async function passarEngajadosParaTime(
  * contextual; onda 2 (algumas horas depois, se seguir mudo) = ebook/apresentação + pergunta.
  * O texto é do cérebro da LIA (modo reengajar), específico ao que o lead falou. */
 async function reengajarProativo(sb: any): Promise<number> {
-  const h = horaBRT();
-  if (h < HORA_INI || h >= HORA_FIM) return 0; // só horário comercial
+  if (!await horarioEnvioLia(sb)) return 0;
   const agora = Date.now();
 
   // candidatos das 2 ondas: onda 1 (sem reengajado_em) OU onda 2 (com reengajado_em, sem reengajado2_em)
@@ -570,8 +569,7 @@ async function reengajarProativo(sb: any): Promise<number> {
  * opts.ignorarHorario: envia mesmo fora da janela (só no envio direcionado).
  * opts.soTelefone: envia só pra este número. */
 async function disparar(sb: any, opts: { ignorarHorario?: boolean; soTelefone?: string } = {}): Promise<number> {
-  const h = horaBRT();
-  if (!opts.ignorarHorario && (h < HORA_INI || h >= HORA_FIM)) return 0; // fora da janela: tenta na próxima rodada
+  if (!await horarioEnvioLia(sb,opts.ignorarHorario === true)) return 0;
 
   // nome público do imóvel por produto (vira o {{2}} do template). Sem produto → Casa Tua Santos Ferreira.
   const nomePorProduto: Record<string, string> = {};

@@ -15,7 +15,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
+import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -113,8 +113,7 @@ serve(async (req) => {
     if (!flag?.flag_value) return new Response(JSON.stringify({ ok: true, skip: "desligado" }), { headers: { ...cors, "Content-Type": "application/json" } });
 
     // 2) HORÁRIO COMERCIAL
-    const h = horaBRT();
-    if (h < HORA_INI || h >= HORA_FIM) return new Response(JSON.stringify({ ok: true, skip: "fora de horario" }), { headers: { ...cors, "Content-Type": "application/json" } });
+    if (!await horarioEnvioLia(sb)) return new Response(JSON.stringify({ ok: true, skip: "fora de horario ou configuracao indisponivel" }), { headers: { ...cors, "Content-Type": "application/json" } });
 
     // nome público por produto (pro {{2}})
     const nomePorProduto: Record<string, string> = {};
