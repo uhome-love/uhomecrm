@@ -63,6 +63,8 @@ export default function LiaConhecimentoTab() {
                       ))}
                     </ul>
                     {p.condicao && <p className="text-[11px] text-foreground/80">{p.condicao}</p>}
+                    <p className="text-[11px]"><span className="text-muted-foreground">Entrega:</span> {p.entrega}</p>
+                    {p.rendaReferencia && <p className="text-[11px]"><span className="text-muted-foreground">Renda:</span> {p.rendaReferencia}</p>}
                     {p.pendencia && (
                       <p className="mt-auto flex gap-1 rounded-md bg-muted p-2 text-[11px] text-muted-foreground"><AlertTriangle className="h-3.5 w-3.5 shrink-0" />{p.pendencia}</p>
                     )}
