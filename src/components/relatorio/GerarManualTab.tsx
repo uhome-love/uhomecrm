@@ -182,7 +182,14 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
 
       // Deal metrics — use fase and date filters
       const negociosAtivos = negocios.filter(n => n.fase && n.status === "ativo" && n.fase !== "ganho").length;
-      const propostas = negocios.filter(n => n.fase && ["em_negociacao"].includes(n.fase)).length;
+      // Fonte única: propostas = negócios na etapa Proposta do Pipeline.
+      const abertosIds = negocios.filter(n => n.status === "ativo" && n.fase !== "ganho").map(n => n.id as string);
+      let propostas = 0;
+      for (let i = 0; i < abertosIds.length; i += 300) {
+        const { count } = await supabase.from("v_negocios_pipeline").select("negocio_id", { count: "exact", head: true })
+          .in("negocio_id", abertosIds.slice(i, i + 300)).eq("etapa", "proposta");
+        propostas += count || 0;
+      }
       const vendasPeriodo = negocios.filter(n =>
         n.fase && ["ganho"].includes(n.fase) &&
         n.data_assinatura && n.data_assinatura >= dataInicio && n.data_assinatura <= dataFim
