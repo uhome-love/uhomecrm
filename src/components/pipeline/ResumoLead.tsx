@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ChevronDown, ChevronUp, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import TemperaturaChip from "./TemperaturaChip";
+import { normalizarTemperatura, rotuloTemperatura } from "@/lib/temperatura";
 import { getOrigemLabel } from "./LeadHistoricoTab";
 import type { PipelineLead } from "@/hooks/usePipeline";
 
@@ -34,6 +35,8 @@ function fmtOrc(v: string | null): string {
 
 export default function ResumoLead({ lead }: { lead: PipelineLead }) {
   const [aberto, setAberto] = useState(false);
+  const [tempAtual, setTempAtual] = useState<string | null>(lead.temperatura ?? null);
+  useEffect(() => setTempAtual(lead.temperatura ?? null), [lead.temperatura]);
   const [faixa, setFaixa] = useState<string | null>(null);
   const [interesse, setInteresse] = useState<string | null>(null);
   const [editOrc, setEditOrc] = useState(false);
@@ -71,7 +74,8 @@ export default function ResumoLead({ lead }: { lead: PipelineLead }) {
 
   const origemInfo = getOrigemLabel(lead.origem);
   const anuncioLinha = [lead.campanha, lead.conjunto_anuncio, lead.anuncio].filter(Boolean).join(" · ");
-  const temp = TEMP_DISPLAY[lead.temperatura || ""];
+  const tempKey = normalizarTemperatura(tempAtual);
+  const temp = tempKey === "nao_definida" ? null : { label: rotuloTemperatura(tempKey), cls: TEMP_CLS[tempKey] };
 
   return (
     <div className="px-7 pt-4">
@@ -143,7 +147,7 @@ export default function ResumoLead({ lead }: { lead: PipelineLead }) {
             {/* Temperatura (editável — componente pronto) */}
             <div className="rounded-lg border border-border bg-background/40 px-3 py-2">
               <div className="text-[9.5px] font-bold uppercase tracking-wide text-muted-foreground mb-1">🔥 Temperatura</div>
-              <TemperaturaChip leadId={lead.id} value={lead.temperatura} />
+              <TemperaturaChip leadId={lead.id} value={tempAtual} onChange={setTempAtual} />
             </div>
 
             {/* Origem (Campanha · Conjunto · Anúncio) */}
