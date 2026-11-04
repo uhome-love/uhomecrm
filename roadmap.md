@@ -1,6 +1,6 @@
 # Roadmap — qualidade visual do CRM
 
-- [ ] A1 — Pipeline: contexto do resumo corrigido e validado; exclusão de 2 clientes em Caiu aguarda aprovação específica
+- [x] A1 — Pipeline: contexto do resumo validado; Edna e Thays inativadas e etapa Caiu aposentada (03/11, decisão do Lucas)
 - [x] A2 — Telefone: leitura protegida validada ao vivo com CEO, Gabriel Vieira e Pedro Jorge; testes de ausência/erro
 - [x] A3 — Roteiros: título oficial e erro de carregamento corrigidos; consulta real vazia, sem criar roteiros ou campanhas
 - [x] A4 — Endereço inexistente: navegação preservada validada com CEO, Gabriel e Pedro; redirecionamentos de abas ocultas corrigidos
