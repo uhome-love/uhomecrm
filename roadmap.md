@@ -30,3 +30,12 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [ ] N3 — modal do lead na fase negócio
 - [ ] N4 — relatórios na fonte única + teste ponta a ponta
 - [x] N4-Equipes — 20→21 no quadro; Gabriel 8→9 e William Ferreira 0→1; Documentação 11/Proposta 10/Contrato 0, Ganho 122 preservado; VGV e demais indicadores idênticos, fingerprints de clientes/negócios iguais; desktop e quatro etapas mobile conferidos, 19 testes passaram
+
+## Lia Recupera (descartados)
+- [x] Fase 0 — desenho da aba Recupera + mensagem A
+- [ ] Decisões do usuário (produtos inativos, Open Bosque, preços Casa Tua/Arvoredo, itens não confirmados, dúvidas frequentes) — aguardando
+- [ ] 0.5 Importador da base de empreendimentos
+- [ ] 1 Modelos Meta no número da Lia
+- [ ] 2 Filtro + 24h + fila (desligada)
+- [ ] 3 Laboratório do cérebro (Flash x Pro)
+- [ ] 4 Piloto 100/dia · 5 Qualificação · 6 Roleta sem quem descartou · 7 Painel
