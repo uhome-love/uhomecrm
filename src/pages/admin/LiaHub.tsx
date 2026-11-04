@@ -10,16 +10,30 @@ import LiaFollowupsTab from "@/components/lia-hub/LiaFollowupsTab";
 import LiaQualificadosTab from "@/components/lia-hub/LiaQualificadosTab";
 import LiaReengajarTab from "@/components/lia-hub/LiaReengajarTab";
 import LiaTransitoTab from "@/components/lia-hub/LiaTransitoTab";
+import LiaRecuperaTab from "@/components/lia-hub/LiaRecuperaTab";
+import LiaMensagensTab from "@/components/lia-hub/LiaMensagensTab";
+import LiaConhecimentoTab from "@/components/lia-hub/LiaConhecimentoTab";
+import LiaLaboratorioTab from "@/components/lia-hub/LiaLaboratorioTab";
 import { useLiaRealtime } from "@/components/lia-hub/useLiaHub";
 
-const ABAS = [
-  { valor: "painel", rotulo: "Painel" },
-  { valor: "transito", rotulo: "Trânsito" },
-  { valor: "leads", rotulo: "Leads e conversas" },
-  { valor: "kanban", rotulo: "Kanban" },
-  { valor: "followups", rotulo: "Follow-ups" },
-  { valor: "qualificados", rotulo: "Qualificados" },
-  { valor: "reengajar", rotulo: "Reengajamento" },
+const GRUPOS = [
+  { grupo: "Atendimento", abas: [
+    { valor: "painel", rotulo: "Painel" },
+    { valor: "transito", rotulo: "Trânsito" },
+    { valor: "leads", rotulo: "Leads e conversas" },
+    { valor: "kanban", rotulo: "Kanban" },
+    { valor: "followups", rotulo: "Follow-ups" },
+    { valor: "qualificados", rotulo: "Qualificados" },
+  ] },
+  { grupo: "Recuperação", abas: [
+    { valor: "recupera", rotulo: "Recupera" },
+    { valor: "reengajar", rotulo: "Reengajamento" },
+    { valor: "mensagens", rotulo: "Mensagens" },
+  ] },
+  { grupo: "Inteligência", abas: [
+    { valor: "conhecimento", rotulo: "Conhecimento" },
+    { valor: "laboratorio", rotulo: "Laboratório" },
+  ] },
 ];
 
 export default function LiaHub() {
@@ -58,10 +72,16 @@ export default function LiaHub() {
       >
         <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabsList className="flex w-max min-w-full justify-start gap-1">
-            {ABAS.map((a) => (
-              <TabsTrigger key={a.valor} value={a.valor} className="h-9 shrink-0 px-3 text-xs sm:text-sm">
-                {a.rotulo}
-              </TabsTrigger>
+            {GRUPOS.map((g, gi) => (
+              <div key={g.grupo} className="flex items-center gap-1">
+                {gi > 0 && <span className="mx-1 h-5 w-px bg-border" aria-hidden />}
+                <span className="hidden px-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground 2xl:inline">{g.grupo}</span>
+                {g.abas.map((a) => (
+                  <TabsTrigger key={a.valor} value={a.valor} className="h-9 shrink-0 px-3 text-xs sm:text-sm">
+                    {a.rotulo}
+                  </TabsTrigger>
+                ))}
+              </div>
             ))}
           </TabsList>
         </div>
@@ -86,6 +106,18 @@ export default function LiaHub() {
         </TabsContent>
         <TabsContent value="reengajar" className="mt-3">
           <LiaReengajarTab />
+        </TabsContent>
+        <TabsContent value="recupera" className="mt-3">
+          <LiaRecuperaTab />
+        </TabsContent>
+        <TabsContent value="mensagens" className="mt-3">
+          <LiaMensagensTab />
+        </TabsContent>
+        <TabsContent value="conhecimento" className="mt-3">
+          <LiaConhecimentoTab />
+        </TabsContent>
+        <TabsContent value="laboratorio" className="mt-3">
+          <LiaLaboratorioTab />
         </TabsContent>
       </Tabs>
     </div>
