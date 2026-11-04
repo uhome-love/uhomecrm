@@ -75,7 +75,7 @@ export default function LiaHub() {
             {GRUPOS.map((g, gi) => (
               <div key={g.grupo} className="flex items-center gap-1">
                 {gi > 0 && <span className="mx-1 h-5 w-px bg-border" aria-hidden />}
-                <span className="hidden px-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground lg:inline">{g.grupo}</span>
+                <span className="hidden px-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground 2xl:inline">{g.grupo}</span>
                 {g.abas.map((a) => (
                   <TabsTrigger key={a.valor} value={a.valor} className="h-9 shrink-0 px-3 text-xs sm:text-sm">
                     {a.rotulo}
