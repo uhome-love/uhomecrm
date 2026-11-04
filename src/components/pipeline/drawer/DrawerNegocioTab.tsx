@@ -8,6 +8,7 @@ import { formatBRT } from "@/lib/brtTime";
 import { substatusValueLabel } from "@/lib/pipelineAudit";
 import { DOCUMENTOS_NEGOCIO, lerDocumentos, valorSugerido } from "@/lib/jornadaNegocio";
 import { JornadaNegocioForm } from "../negocio/JornadaNegocioForm";
+import { TermometroNegocio } from "./TermometroNegocio";
 import { ContratoIntermediacao } from "../negocio/ContratoIntermediacao";
 import { EditarVendaDrawer } from "@/components/vendas/EditarVendaDrawer";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -40,15 +41,14 @@ function NegocioDoCliente({ leadId }: { leadId: string }) {
       <p className="text-sm text-muted-foreground">{n.construtora}{n.unidade ? ` · Unidade ${n.unidade}` : ""}</p>
       <p className="text-lg font-semibold text-primary">{fmtMoney(valorSugerido(n), "exact")}</p>
     </header>
+    {n.fase !== "ganho" && <TermometroNegocio leadId={leadId} situacao={etapa?.tipo === "contrato_gerado" && typeof flags.status_contrato === "string" ? substatusValueLabel("status_contrato", flags.status_contrato) : typeof flags.status_negociacao === "string" ? substatusValueLabel("status_negociacao", flags.status_negociacao) : null} />}
     <dl className="space-y-3 text-sm">
-      {typeof flags.status_negociacao === "string" && <Info label="Negociação" value={substatusValueLabel("status_negociacao", flags.status_negociacao)} />}
-      {typeof flags.status_contrato === "string" && <Info label="Contrato" value={substatusValueLabel("status_contrato", flags.status_contrato)} />}
       {n.proposta_valor && <Info label="Valor da proposta" value={fmtMoney(n.proposta_valor, "exact")} />}
       {typeof jornada.previsao_assinatura === "string" && <Info label="Previsão de assinatura" value={formatBRT(`${jornada.previsao_assinatura}T12:00:00-03:00`, "dd/MM/yyyy")} />}
-      {n.observacoes && <Info label="Condições / observação" value={n.observacoes} />}
-    </dl>
+      </dl>
     <section className="space-y-2 border-t border-border pt-4"><h3 className="text-sm font-semibold">Documentos do cliente</h3>{DOCUMENTOS_NEGOCIO.map(doc => <p key={doc.key} className="flex items-center gap-2 text-sm"><span className={documentos[doc.key] ? "text-primary" : "text-muted-foreground"}>{documentos[doc.key] ? "✓" : "—"}</span>{doc.label}</p>)}<p className="text-xs text-muted-foreground">Conferência informativa</p></section>
     {etapa?.tipo === "contrato_gerado" && n.fase !== "ganho" && <ContratoIntermediacao leadId={leadId} />}
+    {n.observacoes && <section className="space-y-1 border-t border-border pt-4"><h3 className="text-sm font-semibold">Notas do negócio</h3><p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{n.observacoes}</p></section>}
     {editavel && <Button variant="outline" className="w-full" onClick={() => setEditing(true)}><Pencil className="mr-2 size-4" />Editar informações do negócio</Button>}
     {n.fase === "ganho" && (isAdmin || isDiretor) && <Button variant="outline" className="w-full" onClick={() => setCorrigir(true)}><Pencil className="mr-2 size-4" />Corrigir venda</Button>}
     {n.fase === "ganho" && (isAdmin || isDiretor) && <EditarVendaDrawer open={corrigir} canEdit onOpenChange={o => { setCorrigir(o); if (!o) void dados.refetch(); }} venda={{ id: n.id, nome_cliente: n.nome_cliente ?? dados.data?.lead.nome ?? "", empreendimento: n.empreendimento, empreendimento_canonico_id: n.empreendimento_canonico_id, unidade: n.unidade, vgv_final: n.vgv_final, vgv_estimado: n.vgv_estimado, data_assinatura: n.data_assinatura ?? null, observacoes: n.observacoes }} />}
