@@ -19,7 +19,7 @@ export function Panel({ title, subtitle, icon: Icon, actions, footer, className,
         <header className="flex items-start justify-between gap-3 px-5 pt-5">
           <div className="min-w-0">
             {title && (
-              <h3 className="flex items-center gap-2 font-display text-[15px] font-bold text-foreground">
+              <h3 className="flex items-center gap-2 font-sans text-[15px] font-semibold text-foreground">
                 {Icon && <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />}
                 {title}
               </h3>
