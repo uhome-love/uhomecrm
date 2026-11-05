@@ -286,7 +286,7 @@ export default function Auth() {
 
         {/* Logo — text-based, no image tint issues */}
         <div className="flex flex-col items-center anim-fis" style={{ marginBottom: 4 }}>
-          <UhomeLogo size="lg" showTagline />
+          <UhomeLogo size="lg" showTagline theme="white" />
         </div>
 
         {/* Subtitle */}

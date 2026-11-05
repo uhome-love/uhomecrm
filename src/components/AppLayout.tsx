@@ -44,7 +44,7 @@ import PaginaNaoEncontrada from "@/components/layout/PaginaNaoEncontrada";
 import { resolveRoute } from "@/config/pageRegistry";
 import { normalizeLegacyPath } from "@/contexts/TabContext";
 import { useLocation } from "react-router-dom";
-import { FaixaLuzesNatal, GorroNatal } from "@/natal/TemaNatal";
+import { FaixaLuzesNatal } from "@/natal/TemaNatal";
 import { ComemoracaoVenda } from "@/natal/ComemoracaoVenda";
 import MobileBottomNav from "@/components/layout/mobile/MobileBottomNav";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -195,7 +195,6 @@ export default function AppLayout() {
                 <SidebarTrigger title="Recolher ou abrir o menu" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" />
                 <div className="relative flex items-center md:hidden">
                   <UhomeLogo size="md" />
-                  <GorroNatal className="-left-2 -top-3 w-6 md:hidden" />
                 </div>
                 {(isFullscreen || isSession) && (
                   <span className="hidden md:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)" }}>
