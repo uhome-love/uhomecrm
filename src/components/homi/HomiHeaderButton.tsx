@@ -2,37 +2,32 @@ import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useHomi } from "@/contexts/HomiContext";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/hooks/useTheme";
+import { HomiAvatar } from "@/components/brand/HomiAvatar";
 
+/** Botão "Perguntar ao Homi" (DS v4): azul de ação com avatar plano; anel ciano quando há alerta. */
 function HomiHeaderButtonInner() {
   const { unseenCount, isLoading } = useHomi();
-  const { theme } = useTheme();
   const navigate = useNavigate();
+  const alerta = unseenCount > 0 && !isLoading;
 
   return (
     <button
       onClick={() => navigate("/homi")}
       className={cn(
-        "relative flex items-center justify-center h-11 w-11 sm:h-9 sm:w-9 rounded-xl transition-colors shrink-0 touch-manipulation",
-        theme === "dark" ? "hover:bg-white/5" : "hover:bg-[#f0f0f5]"
+        "relative inline-flex items-center gap-2 h-9 pl-1 pr-1 sm:pr-3 rounded-[9px] shrink-0 touch-manipulation",
+        "bg-primary text-primary-foreground hover:bg-primary-700 transition-colors text-sm font-semibold",
       )}
-      title="Falar com o HOMI"
-      aria-label="Abrir HOMI"
+      title="Perguntar ao Homi"
+      aria-label="Perguntar ao Homi"
     >
-      <span className="flex items-center justify-center h-7 w-7 rounded-full bg-white shadow-sm overflow-hidden">
-        <img
-          src="/images/homi-3d-icon.png"
-          alt="HOMI"
-          className="h-5 w-5 object-contain pointer-events-none"
-        />
-      </span>
+      <HomiAvatar size={28} circle ring={alerta} />
+      <span className="hidden sm:inline">Perguntar ao Homi</span>
 
       {isLoading && (
-        <span className="absolute bottom-0.5 right-0.5 h-2 w-2 rounded-full bg-primary animate-pulse" />
+        <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-homi-cyan animate-pulse" />
       )}
-
-      {unseenCount > 0 && !isLoading && (
-        <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-md">
+      {alerta && (
+        <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
           {unseenCount > 9 ? "9+" : unseenCount}
         </span>
       )}
