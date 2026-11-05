@@ -29,6 +29,7 @@ export default function WidgetMarketing({ model }: { model: CeoDashboardControll
           </div>
           <BarList items={leadsPorEmpreendimento.map((l) => ({ label: l.emp, value: l.count }))} limit={5} />
         </div>
+      </div>
     </Panel>
   );
 }
