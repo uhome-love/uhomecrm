@@ -1012,10 +1012,11 @@ export async function executeHomiTool(
         ultima_interacao: ultima ? `${ultima.titulo || "atividade"}${ultima.data ? " · " + ultima.data : ""}` : null,
         sugestao_proxima_acao: sugestao,
       };
+      const resumoDossie = await loadDossier(userClient, String(lead.id));
       return {
         result: out,
-        modelResult: (await loadDossier(userClient, String(lead.id)))
-          ? dossierForAI((await loadDossier(userClient, String(lead.id))) || {})
+        modelResult: resumoDossie
+          ? dossierForAI(resumoDossie)
           : `Resumo de ${lead.nome} exibido no cartão. Comente em 1 frase a próxima ação recomendada.`,
       };
     }
