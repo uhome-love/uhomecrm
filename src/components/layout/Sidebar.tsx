@@ -471,7 +471,7 @@ export default function Sidebar({
   const itemBase  = "shell-nav-item";
   const itemOn  = "shell-nav-item-active";
   const iconDef   = "text-muted-foreground group-hover/item:text-primary";
-  const iconOn    = "text-primary-foreground";
+  const iconOn    = "text-current";
 
   // Render full nav content (reused in both aside and mobile sheet)
   const renderFullNav = () => (
