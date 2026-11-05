@@ -20,8 +20,8 @@ Montar no CRM as peças do pacote reaproveitando as que já temos (PageHeader, K
 ## Fase 3 — Dashboard CEO (primeira tela no padrão)
 Seguindo `telas.md`, só a parte de aparência:
 - Banner azul vira saudação em texto com linha de contexto; sai o "Hoje ▾" duplicado do banner (fica um seletor de período só).
-- Cartões sem borda colorida lateral; listas por empreendimento/origem/corretor em uma cor, com "Ver todos".
-- Funis em uma cor (Ganho verde, Descarte vermelho); conversões com vírgula ("15,8%").
+- Cartões sem borda colorida lateral; listas por empreendimento/origem/corretor **mantêm as cores variadas** (decisão sua), ganhando "Ver todos".
+- Funis e demais gráficos **mantêm a variação de cores**; conversões com vírgula ("15,8%").
 - Tabelas de equipe/top corretores com linha de total; "Fila CEO" como botão com contador.
 - Aba Performance da Roleta: medidor de CRM com meta 80%, bolinhas de saúde com legenda.
 - Celular segue o painel já aprovado, só com as cores novas.
@@ -29,11 +29,12 @@ Seguindo `telas.md`, só a parte de aparência:
 ## Fase 4 — Demais telas, uma por vez
 Agenda, Tarefas, Pipeline, Visitas, Roleta, Relatórios, Financeiro, Oferta Ativa, Lia, Configurações — mesma receita, página por página, conferindo números antes/depois.
 
-## Pontos para você decidir
-1. **Emojis:** o pacote proíbe emoji na interface (🆕 📵 🔥 🏠 🤝 📄 🏆 nas etapas do Pipeline, 👋 na saudação). Hoje as etapas usam emoji por regra sua. Trocar por ícones de traço?
-2. **Natal:** o pacote diz gorro de 1º/12 a 6/1; você pediu de agora até 31/12. Mantenho o seu.
-3. **Rótulos (A-Dependent)** como "Leads Gerados (Mkt)" → "Leads gerados", "Reaproveitados (OA)" → "Reaproveitados": aprovo junto na Fase 3?
-4. **Cockpit do CEO** (placar do mês com meta R$ 4,5 mi, "Precisa de você agora"): é uma tela nova proposta no pacote — fica para depois das fases acima?
+## Decisões suas (exceções ao pacote)
+1. **Cores variadas** em listas (empreendimento, origem, corretor), funis e gráficos: mantidas — ajudam a enxergar.
+2. **Emojis** mantidos (etapas do Pipeline, saudação etc.).
+3. **Natal** como está: de agora até 31/12.
+4. **Rótulos** mais limpos ("Leads gerados", "Reaproveitados", "Enviados à roleta") aprovados na Fase 3.
+5. **Cockpit do CEO** fica para depois destas fases.
 
 ## O que não muda
 Nenhum dado, conta, regra, permissão ou rota. Itens "B" só com aprovação própria.
