@@ -1106,3 +1106,14 @@ body.arena-mode [data-sidebar] {
     scroll-behavior: auto !important;
   }
 }
+
+/* Login — painel da marca (azul-noite → azul da marca) */
+:root {
+  --auth-panel: radial-gradient(120% 90% at 85% 0%, hsl(229 66% 48%) 0%, hsl(var(--brand-dark)) 45%, hsl(225 44% 7%) 100%);
+}
+.auth-panel-bg { background: var(--auth-panel); }
+.auth-panel-grid {
+  background-image: linear-gradient(hsl(0 0% 100% / .05) 1px, transparent 1px), linear-gradient(90deg, hsl(0 0% 100% / .05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 70% 30%, #000, transparent 70%);
+}
