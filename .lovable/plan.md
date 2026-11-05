@@ -1,53 +1,70 @@
-# HOMI — Passo 1b: segurança das listas e da consulta externa
+# Passo 2 — Dossiê do lead + memória do lead + bateria de testes de dado
 
-Este passo não muda nenhuma tela do CRM nem o HOMI dentro do CRM.
+Somente leitura dos dados do CRM. Nada muda em etapa, corretor, tarefa ou distribuição. Nenhuma tela nova para o corretor neste passo.
 
-## a) As outras 6 listas `homi_*`
+## 1. O que o dossiê junta (por lead, só se o corretor pode ver o lead)
 
-**Situação conferida hoje:**
-- `homi_corretores`, `homi_equipe`, `homi_leads_etapa`, `homi_negocios`, `homi_vendas` e `homi_visitas` estão todas liberadas para leitura (e até escrita tentada) por visitante sem login (anon) e por qualquer usuário logado.
-- Elas não respeitam a proteção do banco (sem `security_invoker`).
+| Bloco | Fonte | Como liga | Regra |
+|---|---|---|---|
+| Ficha e etapa | `pipeline_leads` + `pipeline_stages` | id | nome, produto, etapa, temperatura, substatus, saúde e dias sem toque pela mesma régua de `leadSaude.ts` (relógio do ciclo atual) |
+| Qualificação | `form_respostas`, `objetivo_cliente`, `faixa_valor`, `prazo_decisao`, `forma_pagamento`, `radar_*`, `campanha`, `anuncio`, `formulario` | id | campo vazio vira "lacuna", nunca é inventado |
+| Timeline inteira | `pipeline_atividades` | pipeline_lead_id | contagem por tipo + primeira/última data + marcos (entrada, estagnação, repasse) |
+| Atividades recentes | `pipeline_atividades` | pipeline_lead_id | as 8 mais recentes na íntegra |
+| Anotações | `pipeline_anotacoes` | pipeline_lead_id | fixadas primeiro, depois as 5 mais recentes na íntegra |
+| Lia | `lia_estado` | **lead_id** | status, nível, resumo, qualificado/repassado em, produto, opt-out |
+| Conversa da Lia | `lia_conversas` | telefone normalizado | só contagem + datas + últimas 3 falas do cliente, resumidas |
+| Respostas a disparos | `whatsapp_respostas` | telefone normalizado | campanha, data, resposta |
+| Ligações da Oferta Ativa | `oferta_ativa_tentativas` → `oferta_ativa_leads` | telefone normalizado | resultado, feedback, data |
+| Visitas, tarefas, negócio, parceria | tabelas atuais | pipeline_lead_id | próxima visita, faltas, tarefas atrasadas, fase do negócio |
+| Memória | `homi_memoria_lead` | lead_id | fatos confirmados pelo corretor |
 
-**Quem usa:**
-- Código das telas e funções do servidor: **ninguém**. A busca no projeto não encontrou nenhum uso.
-- Banco: só `homi_consulta`. Ela roda com permissão do dono, então continua funcionando depois do corte.
-- Acesso de leitura: `homi_ro`.
+Cada fato sai com **data, fonte e ciclo** (atual / anterior). O que for de ciclo anterior ou de outro corretor vem marcado.
 
-**Mudança (1 migration):**
-```sql
-REVOKE ALL ON public.homi_corretores, public.homi_equipe, public.homi_leads_etapa,
-  public.homi_negocios, public.homi_vendas, public.homi_visitas FROM anon, authenticated;
+## 2. Telefone normalizado (uma regra só)
+Hoje os formatos variam: Lia 10–13 dígitos, disparos 11–13, Pipeline com lixo (1 a 30 caracteres). Regra: tirar tudo que não é número, tirar o 55 do início quando sobrar 12–13, chave = **DDD + últimos 8 dígitos** (ignora o 9º dígito). Telefone com menos de 10 dígitos não liga nada (vira lacuna). Se a chave bater em mais de um lead ativo, não junta (evita misturar clientes).
+
+## 3. Memória do lead (`homi_memoria_lead`, hoje 0 linhas)
+- Problema encontrado: a chave única é (lead, assunto), mas a regra de acesso é "só o próprio usuário". Em parceria, o segundo corretor não vê nem consegue gravar o mesmo assunto. Ajuste: chave única passa a ser (lead, usuário, assunto); leitura para quem pode ver o lead; escrita só do próprio usuário.
+- Só grava após o corretor confirmar (prévia). Proibido: CPF, renda, documento, telefone, e-mail.
+- Assuntos fixos: decisor, objeção, prazo, orçamento, preferência, observação.
+
+## 4. Onde roda
+Uma função do banco de leitura (`homi_dossie_lead(lead_id)`), que roda com as permissões do corretor logado e confere `can_access_lead` antes de tudo. A função `homi-chat` passa a usá-la no lugar de `readLeadHistory()` e manda para a IA só o resumo. Nada de chave fixa, nada de acesso anônimo, sem chamadas para fora.
+
+## 5. Bateria de testes de dado (arquivo 10)
+- 8 leads reais de um corretor de teste: no-show, visita amanhã, pós-visita com objeção, veio da Lia, Sem Contato, respondeu disparo, com negócio, com parceria.
+- Para cada um, o "esperado" é tirado do banco por consulta direta e comparado com o dossiê (campo a campo), não com outra IA.
+- Testes de segurança: corretor sem acesso recebe recusa; telefone que bate em 2 leads não junta; dossiê não traz CPF/renda/documento; texto de anexo/conversa com "ignore as regras" fica como dado.
+- Meta: 100% nos testes de dado e segurança antes de ligar no HOMI.
+
+## 6. Exemplo real anonimizado (lead em Qualificação, Casa Tua)
+```json
+{
+  "lead": {"id": "adff…f23", "nome": "G***", "produto": "Casa Tua Porto Alegre", "etapa": "Qualificação",
+           "temperatura": "morno", "ultimo_toque": "2026-11-03", "ciclo_atual_desde": "2026-10-20"},
+  "perfil": {"origem": "Instagram — anúncio 'Vídeo Tour 2D 509 mil'", "pediu": "casa 3 dorm. 130 m²",
+             "objetivo": null, "faixa_valor": null, "prazo": null, "pagamento": null},
+  "timeline_resumo": {"total": 17, "por_tipo": {"whatsapp": 13, "entrada": 2, "sistema": 2},
+                      "primeira": "2026-08-09", "ultima": "2026-11-03",
+                      "marcos": ["estagnou em 14/09", "repassado via Busca em 20/10"]},
+  "atividades_recentes": ["8 itens na íntegra: 4 WhatsApp no ciclo atual (21/10 a 03/11), 1 estagnação, 3 WhatsApp enviados em set."],
+  "anotacoes": [{"data": "2026-10-20", "texto": "Lead repassado via Busca", "fixada": false}],
+  "lia": {"status": "qualificado", "nivel": "morno", "repassado_em": "2026-09-06", "ciclo": "anterior",
+          "resumo": "Interesse nas casas de 3 dorm., dúvidas sobre condomínio e mobília, mora em apartamento.",
+          "mensagens": 17},
+  "disparos": [], "oferta_ativa": [],
+  "pendencias": {"tarefas_pendentes": 0, "proxima_visita": null}, "negocio": null, "parceria": null,
+  "memoria": [],
+  "lacunas": ["orçamento", "forma de pagamento", "prazo", "sem tarefa futura", "WhatsApps do ciclo atual sem resultado registrado"]
+}
 ```
-`homi_ro` e `service_role` continuam com acesso.
+Observação: das 249 conversas da Lia, só 152 têm lead ligado e só 22 estão em leads ativos — por isso a ligação por telefone é necessária.
 
-## b) Chave fixa da `homi_consulta`
+## Detalhes técnicos
+- 1 migration (DDL): função `homi_normaliza_tel(text)` imutável; índice de expressão em `pipeline_leads`, `lia_conversas`, `whatsapp_respostas`, `oferta_ativa_leads` pela chave; função `homi_dossie_lead(uuid)` SECURITY INVOKER, `STABLE`, retorna jsonb; troca da chave única e das políticas de `homi_memoria_lead`. Horário 08–19h BRT.
+- `homi-tools.ts`: `readLeadHistory` chama a RPC com o JWT do corretor; registra uso em `homi_ia_uso`.
+- Testes: vitest para a normalização do telefone (casos 10–13 dígitos, com 55, sem 9º dígito, lixo) e script SQL da bateria com resultado salvo.
+- Desfazer: migration guarda a definição antiga da chave/políticas; função nova pode ser removida sem afetar telas.
 
-**Situação conferida hoje:**
-- A chave está escrita dentro da própria função.
-- A função pode ser chamada por qualquer pessoa com a chave pública do app (anon tem permissão de execução).
-- Testei hoje: com a chave fixa, um visitante sem login lê os dados.
-
-**Mudança (mesma migration ou a seguinte, máx. 2/dia):**
-1. Gerar uma chave nova e guardar no Vault (`homi_consulta_chave`). Ninguém vê o valor no código.
-2. A função passa a comparar com o valor do Vault. A chave antiga para de funcionar.
-3. Nova tabela `homi_consulta_log`, que guarda só acréscimos:
-   - quando foi o uso;
-   - quem chamou (papel);
-   - quais listas foram lidas;
-   - quantas linhas voltaram;
-   - se deu certo ou erro.
-   - O texto da consulta é guardado no máximo com 500 caracteres. Não guarda nomes de clientes.
-   - Leitura só para admin e diretor.
-4. `REVOKE EXECUTE` de anon e authenticated. Só `service_role` e `homi_ro` (ou o usuário externo combinado) chamam a função.
-5. **Atenção:** quem usa a consulta externa (ex.: o HOMI fora do CRM) para de funcionar até receber a chave nova. Preciso que você me diga quem é esse consumidor antes de trocar.
-
-## c) Como desfazer
-- **Listas:** `GRANT SELECT ON <lista> TO authenticated;` só para a lista que quebrar.
-- **Chave:** recolocar a comparação antiga na função (definição atual guardada) e devolver `GRANT EXECUTE` a anon.
-- **Log:** `DROP TABLE public.homi_consulta_log;`, porque é uma tabela nova.
-
-## Como testar
-1. Visitante sem login e corretor logado recebem "sem permissão" nas 6 listas.
-2. `homi_ro` continua lendo as 6 listas.
-3. A chave antiga é recusada, a chave nova funciona, e cada chamada gera 1 linha no log.
-4. Abrir o `/homi`, o Painel CEO e o Pipeline e confirmar que não aparece nenhum erro.
+## Pendência registrada
+Passo 1c (fechar de vez a `homi_consulta`) para planejar a partir de 12/11/2026, se ninguém aparecer no log.
