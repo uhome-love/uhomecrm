@@ -63,4 +63,5 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [ ] Laboratório com a bateria de testes (aprovação do Lucas)
 
 - [ ] HOMI Passo 1c (a partir de 12/11/2026, MODO PLANO): se homi_consulta_log não mostrar consumidor, REVOKE EXECUTE anon/authenticated e remover homi_consulta + auxiliares guardando definições. Consumidor que aparecer entra direto com login homi_ro. Aguarda data.
-- [ ] HOMI Passo 2 aprovado: dossiê SECURITY DEFINER com can_access_lead, saúde do banco, timeline completa, privacidade e OA limitada ao corretor atual; memória por autor; system_flags desligada; testes autenticados em parceria e Bolsão.
+- [x] HOMI Passo 2 aprovado construído: dossiê autorizado, saúde do banco, timeline, qualificação, Lia/telefone, OA atual e memória por autor; 76 verificações autenticadas + 2 conflitos + 8 testes unitários e ferramenta/parceria passaram; Cancelar/Confirmar ao vivo com persistência; conta e registros fictícios removidos.
+- [ ] HOMI dossiê: ativação real e avaliação das respostas aguardam liberação explícita do Lucas; homi_dossie_ativo permanece false. Passos seguintes não autorizados.
