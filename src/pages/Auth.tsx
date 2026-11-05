@@ -343,10 +343,7 @@ export default function Auth() {
 
           {/* Toggle */}
           <p className="text-center text-sm mt-4">
-            <span style={{ color: "rgba(255,255,255,0.4)" }}>{isLogin ? "Não tem conta?" : "Já tem conta?"} </span>
-            <button onClick={() => setIsLogin(!isLogin)} className="font-semibold transition-colors" style={{ color: "#60A5FA" }}>
-              {isLogin ? "Criar conta" : "Entrar"}
-            </button>
+            <span style={{ color: "rgba(255,255,255,0.4)" }}>Acesso liberado pela gestão da Uhome.</span>
           </p>
 
           {/* Motivational */}
