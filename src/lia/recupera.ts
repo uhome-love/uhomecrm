@@ -48,9 +48,9 @@ export const MODELOS_RECUPERA: ModeloRecupera[] = [
   { chave: "lia_recupera_d", titulo: "D · Sem produto conhecido", quando: "Lead sem empreendimento",
     texto: "Olá {{1}}, sou a Lia do Relacionamento da Uhome. Você falou com nosso time sobre imóveis e estamos com a campanha Natal Chave de Ouro: apartamentos, casas e alto padrão em Porto Alegre e Canoas. Ainda está procurando? Me conta o perfil e eu te mando as opções." },
   { chave: "lia_recupera_lembrete", titulo: "Lembrete D+3", quando: "Sem resposta à 1ª mensagem",
-    texto: "{{1}}, separei uma oportunidade do Natal que pode combinar com você: {{2}}, {{3}}. Quer que eu te mande fotos e a planta?" },
+    texto: "Oi {{1}}, separei uma oportunidade do Natal que pode combinar com você: {{2}}, {{3}}. Quer que eu te mande fotos e a planta?" },
   { chave: "lia_recupera_final", titulo: "Última D+10", quando: "Sem resposta ao lembrete",
-    texto: "{{1}}, não quero te incomodar. Posso encerrar seu atendimento ou prefere que eu te mande as opções do Natal?" },
+    texto: "Oi {{1}}, não quero te incomodar. Posso encerrar seu atendimento ou prefere que eu te mande as opções do Natal?" },
 ];
 
 export const BOTOES_RECUPERA = ["Sim, quero ver", "Outro perfil", "Não quero mais contato"] as const;
