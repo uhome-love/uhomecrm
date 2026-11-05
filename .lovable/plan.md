@@ -31,6 +31,8 @@ CREATE TABLE public.homi_ia_uso (
   lead_id uuid,
   missao text,
   latencia_ms int,
+  versao_prompt text,
+  tokens_raciocinio int NOT NULL DEFAULT 0,
   sucesso boolean NOT NULL DEFAULT true,
   erro text
 );
@@ -44,7 +46,7 @@ CREATE POLICY "uso: admin/diretor leem" ON public.homi_ia_uso FOR SELECT TO auth
 ```
 - Só as funções do servidor gravam nesta tabela.
 - O corretor não lê esta tabela, porque o custo é informação da gestão.
-- O teto diário e o alerta entram no Passo 5. Neste passo, só o valor fica guardado em `ia_config` ou `roleta_config`, ainda sem efeito.
+- O teto diário fica para o Passo 5, numa configuração própria do HOMI. Este passo não grava nada em `ia_config` nem em `roleta_config`.
 
 ### 2. Tabela `homi_missao_eventos`: registro de uso das missões
 ```sql
@@ -66,13 +68,17 @@ ALTER TABLE public.homi_missao_eventos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "eventos: grava o próprio" ON public.homi_missao_eventos FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 CREATE POLICY "eventos: lê o próprio ou gestão" ON public.homi_missao_eventos FOR SELECT TO authenticated
-  USING (user_id = auth.uid() OR has_role(auth.uid(),'admin') OR has_role(auth.uid(),'diretor') OR has_role(auth.uid(),'gestor'));
+  USING (user_id = auth.uid() OR has_role(auth.uid(),'admin') OR has_role(auth.uid(),'diretor')
+         OR (has_role(auth.uid(),'gestor') AND is_corretor_in_my_team(user_id)));
+COMMENT ON COLUMN public.homi_missao_eventos.detalhes IS 'Proibido: telefone, e-mail ou texto de mensagem.';
 ```
+- Assinatura confirmada: `is_corretor_in_my_team(p_corretor_id uuid) RETURNS boolean`. Ela usa `resolve_managed_brokers(auth.uid())`, que compara pelo `user_id` de login, o mesmo campo desta tabela.
 - Os eventos só podem ser acrescentados. Não há permissão para editar nem apagar.
 
 ### 3. `homi_saude_leads` passa a excluir leads arquivados
-- Vou recriar a view igual à atual, com uma linha a mais no filtro: `AND COALESCE(l.arquivado,false) = false`.
-- Nada mais muda: as colunas, a ordem e o uso de `lead_saude_status` continuam iguais.
+- Vou usar `CREATE OR REPLACE VIEW`, mantendo as mesmas colunas e a mesma ordem. Só entra no filtro: `AND COALESCE(l.arquivado,false) = false`.
+- Na mesma migration: `REVOKE ALL ON public.homi_saude_leads FROM anon, authenticated;`. O acesso de `homi_ro` e de `service_role` continua.
+- **Motivo:** conferi que a view ignora a proteção do banco (`security_invoker=off`). Hoje qualquer visitante (anon) e qualquer usuário logado podem ler e até tentar alterar por ela.
 
 ## Quem pode ver números mudarem
 - **Telas do CRM:** nenhuma. Não há uso da view no código das telas nem nas funções do servidor.
@@ -95,10 +101,22 @@ CREATE POLICY "eventos: lê o próprio ou gestão" ON public.homi_missao_eventos
    - ler `homi_ia_uso` tem que voltar vazio.
 3. Como admin, ler as duas tabelas tem que funcionar.
 4. Abrir o `/homi` e o Painel CEO e confirmar que não aparece nenhum erro.
+5. `homi_saude_leads`:
+   - anon e um corretor logado NÃO conseguem ler;
+   - `homi_ro` continua lendo;
+   - `homi_consulta` continua funcionando.
+6. O gestor de um time não lê eventos de corretor de outro time.
+
+## Depois de publicado
+Planejo o Passo 1b (segurança), sem editar nada:
+- as outras 6 views `homi_*`;
+- a chave de `homi_consulta` no Vault, com troca da chave e registro de cada uso;
+- como desfazer cada item.
 
 ## Como desfazer
 ```sql
 -- view: recria sem a linha do arquivado (definição atual guardada no plano)
+-- acessos: GRANT SELECT ON public.homi_saude_leads TO authenticated; (só se algo quebrar)
 DROP TABLE IF EXISTS public.homi_missao_eventos;
 DROP TABLE IF EXISTS public.homi_ia_uso;
 ```
