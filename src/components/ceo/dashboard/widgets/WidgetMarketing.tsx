@@ -11,7 +11,7 @@ export default function WidgetMarketing({ model }: { model: CeoDashboardControll
     <Panel title="Marketing" subtitle="Origem dos leads e empreendimentos" icon={Megaphone}
       actions={isAdmin ? <Button variant="outline" size="sm" onClick={() => navigate("/marketing")}>Ver Marketing</Button> : undefined}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="grid grid-cols-1 gap-3 content-start">
+      <div className="grid grid-cols-2 gap-3 content-start [&>*:first-child]:col-span-2">
         <StatCard size="sm" label="Leads gerados" value={fmtNum(totalLeadsPeriodo)} accent
           onClick={() => setKpiDetail({ type: "total_leads", label: "Leads Gerados" })} />
         <StatCard size="sm" label="Reaproveitados (OA)" value={fmtNum(leadsReaproveitadosOA)}
