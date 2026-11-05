@@ -3756,6 +3756,51 @@ export type Database = {
           },
         ]
       }
+      homi_consulta_log: {
+        Row: {
+          consulta: string | null
+          created_at: string
+          id: string
+          ip: string | null
+          papel: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          consulta?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          papel?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          consulta?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          papel?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      homi_consulta_segredo: {
+        Row: {
+          atualizado_em: string
+          chave_sha256: string
+          id: number
+        }
+        Insert: {
+          atualizado_em?: string
+          chave_sha256: string
+          id?: number
+        }
+        Update: {
+          atualizado_em?: string
+          chave_sha256?: string
+          id?: number
+        }
+        Relationships: []
+      }
       homi_conversations: {
         Row: {
           acao: string | null
@@ -18498,6 +18543,11 @@ export type Database = {
         Returns: Json
       }
       homi_consulta: { Args: { p_chave: string; p_sql: string }; Returns: Json }
+      homi_consulta_chave_ok: { Args: { p_chave: string }; Returns: boolean }
+      homi_consulta_registrar: {
+        Args: { p_consulta: string }
+        Returns: undefined
+      }
       homi_criar_lembrete: {
         Args: {
           p_chave: string
