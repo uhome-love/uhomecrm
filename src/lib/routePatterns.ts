@@ -11,6 +11,7 @@ export const PUBLIC_ROUTES: string[] = [
   "/oauth/google/callback",
   "/placar-do-dia",
   "/diagnostico-rede",
+  "/design-system",
   "/visita/:token",
   "/indica/:codigo",
   "/vitrine/:id",
