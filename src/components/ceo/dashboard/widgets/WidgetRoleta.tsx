@@ -10,7 +10,8 @@ export default function WidgetRoleta({ model }: { model: CeoDashboardController 
   return (
     <Panel title="Roleta e Leads" subtitle="Distribuição e presença dos corretores" icon={Target}
       footer={semLeads > 0 ? `${semLeads} corretores sem leads no período` : undefined}>
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-3 content-start">
         <StatCard size="sm" label="Enviados p/ Roleta" value={fmtNum(Math.max(leadsDistribuidos, 0))}
           onClick={() => setKpiDetail({ type: "enviados_roleta", label: "Enviados p/ Roleta" })} />
         <StatCard size="sm" label="Fila CEO" value={fmtNum(filaCeoCount)} tone={filaCeoCount > 0 ? "warning" : undefined}
@@ -20,8 +21,11 @@ export default function WidgetRoleta({ model }: { model: CeoDashboardController 
           onClick={() => setKpiDetail({ type: "presentes_hoje", label: "Corretores na Roleta" })} />
         <StatCard size="sm" label="Novo interesse" value={fmtNum(novoInteresse)} />
       </div>
+      <div className="lg:col-span-2">
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Leads por corretor</p>
       <BarList items={comLeads.map((c) => ({ label: c.nome, value: c.count }))} emptyText="Nenhum lead no período." />
+      </div>
+      </div>
     </Panel>
   );
 }
