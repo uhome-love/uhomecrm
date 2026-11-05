@@ -519,6 +519,13 @@
       "when": 1793911345027,
       "tag": "0073_homi_base_medicao",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1793912585160,
+      "tag": "0074_homi_seguranca_1b",
+      "breakpoints": true
     }
   ]
 }
