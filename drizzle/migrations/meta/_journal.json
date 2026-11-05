@@ -505,6 +505,13 @@
       "when": 1793835170618,
       "tag": "0071_lia_avaliacao_versionada_e_reserva_guardas",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1793898700298,
+      "tag": "0072_remove_auto_role_signup",
+      "breakpoints": true
     }
   ]
 }
