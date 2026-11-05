@@ -87,19 +87,21 @@ export default function DesktopLeads({ model }: { model: CeoDashboardController 
         </Panel>
 
         <Panel title="Leads por Corretor" icon={Users}
-          actions={media ? <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{comLeads.length} com leads · média {media}</span> : undefined}
-          footer={<Soma total={somaCor} totalMkt={totalLeadsPeriodo} />}>
+          actions={media ? <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary" title={semLeads > 0 ? `${semLeads} corretores sem leads no período` : undefined}>{comLeads.length} com leads · média {media}</span> : undefined}
+          footer={<div className="flex items-center justify-between gap-2">
+            {comLeads.length > 6 ? (
+              <button className="font-medium text-primary hover:underline" onClick={() => setShowAllCorretorLeads(!showAllCorretorLeads)}>
+                {showAllCorretorLeads ? "Ver menos" : `Ver mais (${comLeads.length})`}
+              </button>
+            ) : <span />}
+            <Soma total={somaCor} totalMkt={totalLeadsPeriodo} />
+          </div>}>
           <div className={listaH}>
             {(showAllCorretorLeads ? comLeads : comLeads.slice(0, 6)).map((c, i) => (
               <Barra key={`${c.nome}-${i}`} label={c.nome} value={c.count} max={maxCor} color={FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
             ))}
             {comLeads.length === 0 && <p className="py-4 text-sm text-muted-foreground">Nenhum lead no período.</p>}
-            {comLeads.length > 6 && (
-              <button className="text-xs font-medium text-primary hover:underline" onClick={() => setShowAllCorretorLeads(!showAllCorretorLeads)}>
-                {showAllCorretorLeads ? "Ver menos" : `Ver mais (${comLeads.length})`}
-              </button>
-            )}
-            {semLeads > 0 && <p className="text-xs text-muted-foreground">{semLeads} corretores sem leads no período</p>}
+            {semLeads > 0 && (showAllCorretorLeads || comLeads.length <= 6) && <p className="text-xs text-muted-foreground">{semLeads} corretores sem leads no período</p>}
           </div>
         </Panel>
       </div>
