@@ -37,3 +37,7 @@
 - Lia knowledge reads server sheets; edits/settings use version-checked audited transactions, simulations record sheet versions, and recovery sends share `_shared/liaEnvioRegras` with conservative atomic attempt reservations separate from activation. Why: prevent stale approvals, duplicate sends and cross-box changes.
 - DS v4: --primary = action blue, --brand = logo blue, Homi cyan only via homi-* tokens, logo only via components/brand. Why: AA contrast and one brand.
 - HOMI measurement: AI calls log to `homi_ia_uso` (server-only writes, admin/diretor read) and mission telemetry to append-only `homi_missao_eventos` (own insert; gestor reads own team via is_corretor_in_my_team; no phone/email/message text in detalhes); `homi_*` views are for homi_ro/service_role only, never anon/authenticated. Why: cost control and usage data without exposing lead names via the public key.
+<!-- LOVABLE:BEGIN -->
+- Keep `homi_consulta` CLOSED with its hash table empty; never register a hash or reopen it without Lucas's new explicit approval. Why: the owner change failed and function calls/http/pg_net bypass the table check; any future external consumer uses direct read-only homi_ro login.
+- HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
+<!-- LOVABLE:END -->

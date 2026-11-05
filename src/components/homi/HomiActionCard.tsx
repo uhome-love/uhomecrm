@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { HomiAction, HomiResult } from "@/contexts/HomiContext";
 import { LeadsParadosCard, FollowupLoteCard, RelatorioMetricasCard } from "@/components/homi/cards/HomiFase3Cards";
 import { DesempenhoTimeCard, RiscoMetaCard, DiagnosticoCorretorCard } from "@/components/homi/cards/HomiFase7Cards";
+import { MemoriaLeadCard } from "@/components/homi/cards/MemoriaLeadCard";
 
 
 
@@ -1091,6 +1092,7 @@ export function HomiActionsRenderer({ actions }: { actions?: HomiAction[] }) {
   return (
     <div className="space-y-2 mt-1">
       {actions.map((a, i) => {
+        if (a.tipo === "lembrar_lead") return <MemoriaLeadCard key={i} leadId={a.lead_id} nome={a.lead_nome} chave={String(a.chave || "")} valor={String(a.valor || "")} />;
         if (a.tipo === "criar_tarefa") return <TarefaCard key={i} action={a} />;
         if (a.tipo === "criar_visita") return <VisitaCard key={i} action={a} />;
         if (a.tipo === "anotar_lead") return <AnotacaoCard key={i} action={a} />;
