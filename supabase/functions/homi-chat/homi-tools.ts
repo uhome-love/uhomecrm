@@ -1014,7 +1014,9 @@ export async function executeHomiTool(
       };
       return {
         result: out,
-        modelResult: `Resumo de ${lead.nome} exibido no cartão. Comente em 1 frase a próxima ação recomendada.`,
+        modelResult: (await loadDossier(userClient, String(lead.id)))
+          ? dossierForAI((await loadDossier(userClient, String(lead.id))) || {})
+          : `Resumo de ${lead.nome} exibido no cartão. Comente em 1 frase a próxima ação recomendada.`,
       };
     }
 

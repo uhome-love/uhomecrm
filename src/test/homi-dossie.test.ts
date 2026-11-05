@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeDossier, dossierForAI, dossierEnabled } from "../../supabase/functions/_shared/homiDossie";
+import { sanitizeDossier, dossierForAI, dossierEnabled, loadDossier } from "../../supabase/functions/_shared/homiDossie";
 
 describe("Privacidade e ativação do dossiê HOMI", () => {
   it("não envia telefone, e-mail, CPF, renda nem documento", () => {
@@ -25,5 +25,14 @@ describe("Privacidade e ativação do dossiê HOMI", () => {
     expect(await dossierEnabled(client({flag_value:false},null) as Parameters<typeof dossierEnabled>[0])).toBe(false);
     expect(await dossierEnabled(client(null,{message:"falha"}) as Parameters<typeof dossierEnabled>[0])).toBe(false);
     expect(await dossierEnabled(client({flag_value:true},null) as Parameters<typeof dossierEnabled>[0])).toBe(true);
+  });
+  it("flag desligada impede qualquer chamada de dossiê", async () => {
+    let calls=0;
+    const client={from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{flag_value:false},error:null})})})}),rpc:async()=>{calls++;return {data:{},error:null};}};
+    expect(await loadDossier(client as Parameters<typeof loadDossier>[0],"lead")).toBeNull();
+    expect(calls).toBe(0);
+  });
+  it("dados indisponíveis não viram zeros na projeção", () => {
+    expect(dossierForAI({oferta_ativa:{status:"indisponível",dados:null}})).toContain('"status":"indisponível","dados":null');
   });
 });

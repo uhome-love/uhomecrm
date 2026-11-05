@@ -46,8 +46,10 @@ export function dossierForAI(dossier: Dossie): string {
 }
 
 export async function dossierEnabled(client: SupabaseClient): Promise<boolean> {
-  const { data, error } = await client.from("system_flags").select("flag_value").eq("flag_name", "homi_dossie_ativo").maybeSingle();
-  return !error && data?.flag_value === true;
+  try {
+    const { data, error } = await client.from("system_flags").select("flag_value").eq("flag_name", "homi_dossie_ativo").maybeSingle();
+    return !error && data?.flag_value === true;
+  } catch { return false; }
 }
 
 export async function loadDossier(client: SupabaseClient, id: string): Promise<Dossie | null> {
