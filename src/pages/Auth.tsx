@@ -90,7 +90,7 @@ export default function Auth() {
     <div className="min-h-screen flex flex-col lg:flex-row bg-background text-foreground">
       <AuthMobileHeader />
 
-      <main className="flex flex-1 flex-col justify-center px-6 py-8 lg:max-w-[620px] lg:px-[72px]">
+      <main className="flex flex-1 flex-col justify-start lg:justify-center px-6 py-8 lg:max-w-[620px] lg:px-[72px]">
         <div className="mb-14 hidden lg:block"><UhomeSalesLogo height={48} /></div>
 
         <span className="inline-flex items-center gap-2 self-start rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
