@@ -10,14 +10,14 @@ export default function WidgetMarketing({ model }: { model: CeoDashboardControll
   return (
     <Panel title="Marketing" subtitle="Origem dos leads e empreendimentos" icon={Megaphone}
       actions={isAdmin ? <Button variant="outline" size="sm" onClick={() => navigate("/marketing")}>Ver Marketing</Button> : undefined}>
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-3 content-start">
         <StatCard size="sm" label="Leads gerados" value={fmtNum(totalLeadsPeriodo)} accent
           onClick={() => setKpiDetail({ type: "total_leads", label: "Leads Gerados" })} />
         <StatCard size="sm" label="Reaproveitados (OA)" value={fmtNum(leadsReaproveitadosOA)}
           onClick={() => setKpiDetail({ type: "reaproveitados_oa", label: "Reaproveitados (OA)" })} />
         <StatCard size="sm" label="Origens ativas" value={fmtNum(origens.length)} sub={origens[0] ? `Top: ${origens[0].origem}` : undefined} />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Por origem</p>
           <BarList items={origens.map((o) => ({ label: o.origem, value: o.count }))} limit={5} />
@@ -29,7 +29,6 @@ export default function WidgetMarketing({ model }: { model: CeoDashboardControll
           </div>
           <BarList items={leadsPorEmpreendimento.map((l) => ({ label: l.emp, value: l.count }))} limit={5} />
         </div>
-      </div>
     </Panel>
   );
 }
