@@ -45,7 +45,7 @@ export default function UhomeLogo({ size = "md", showTagline = false, theme, cla
       />
       {showTagline && size !== "sm" && (
         <span
-          className={cn("mt-1.5 inline-flex items-center gap-1.5 text-sm", tema === "light" ? "text-slate-600" : "text-slate-300")}
+          className={cn("mt-1.5 inline-flex items-center gap-1.5 text-sm", tema === "white" ? "text-primary-foreground/80" : "text-muted-foreground")}
         >
           com <HomiAvatar size={18} circle={false} /> <span className="font-semibold">Homi IA</span>
         </span>

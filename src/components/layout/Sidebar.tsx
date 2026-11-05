@@ -17,7 +17,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import UhomeLogo from "@/components/UhomeLogo";
-import { GorroNatal } from "@/natal/TemaNatal";
 import { withNatalMenu } from "@/natal/central/menuNatal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMutiraoAtivo } from "@/hooks/useMutiraoAtivo";
