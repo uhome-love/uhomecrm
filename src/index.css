@@ -28,16 +28,16 @@
     --brand-homi: 187 100% 42%;      /* #00BCD4 ciano-homi */
 
     /* Primary (UHome Indigo #4969FF) */
-    --primary-50:  228 100% 97%;     /* #F0F2FF */
-    --primary-100: 228 100% 93%;     /* #DEE3FF */
-    --primary-200: 228 100% 86%;     /* #BCC7FF */
-    --primary-300: 228 100% 76%;     /* #8D9FFF */
-    --primary-400: 228 100% 70%;     /* #6B84FF */
-    --primary-500: 228 100% 64%;     /* #4969FF */
-    --primary-600: 228 90% 55%;      /* #3350E6 */
-    --primary-700: 228 80% 46%;      /* #2640BF */
-    --primary-800: 228 70% 37%;      /* #1E3399 */
-    --primary-900: 228 50% 18%;      /* #17204D */
+    --primary-50:  229 100% 97%;     /* #EEF1FF */
+    --primary-100: 229 100% 94%;     /* #DFE5FF */
+    --primary-200: 229 100% 88%;     /* #C2CDFF */
+    --primary-300: 230 100% 81%;     /* #9DAEFF */
+    --primary-400: 229 100% 73%;     /* #7790FF */
+    --primary-500: 229 100% 66%;     /* #5271FF — Azul Uhome (marca) */
+    --primary-600: 231 77% 57%;      /* #3D57E6 — ação/botões */
+    --primary-700: 231 60% 47%;      /* #3045BF — hover */
+    --primary-800: 230 59% 38%;      /* #283A99 */
+    --primary-900: 230 58% 29%;      /* #1F2D73 */
 
     /* Success */
     --success-50:  142  76% 97%;
@@ -89,9 +89,15 @@
     --popover:             0 0% 100%;
     --popover-foreground:  var(--neutral-900);
 
-    --primary:             var(--primary-500);
+    --primary:             var(--primary-600);   /* DS v4: ação #3D57E6 (contraste AA); marca = --brand */
     --primary-foreground:  0 0% 100%;
-    --primary-dark:        var(--primary-600);
+    --primary-dark:        var(--primary-700);
+    --brand:               var(--primary-500);
+    --homi-cyan:           188 86% 53%;
+    --homi-soft:           183 100% 96%;
+    --homi-border:         186 94% 82%;
+    --homi-text:           193 82% 31%;
+    --shadow-homi:         0 0 0 2px hsl(188 86% 53% / 0.9), 0 4px 16px hsl(188 86% 53% / 0.25);
 
     --secondary:           var(--neutral-100);
     --secondary-foreground: var(--neutral-600);
@@ -269,8 +275,11 @@
     --card-foreground:     214 30% 95%;
     --popover:             218 20% 17%;     /* #222833 */
     --popover-foreground:  214 30% 95%;
-    --primary:             var(--primary-500);
+    --primary:             var(--primary-600);
     --primary-foreground:  0 0% 100%;
+    --homi-soft:           189 49% 17%;
+    --homi-border:         194 70% 27%;
+    --homi-text:           188 86% 53%;
     --secondary:           217 17% 20%;     /* #2A313B */
     --secondary-foreground: 216 24% 85%;    /* #CFD6E1 */
     --muted:               216 17% 23%;     /* #313945 — inset (caixa) visível sobre o card */
@@ -1037,24 +1046,28 @@ body.arena-mode [data-sidebar] {
 /* ── Shell do CRM no computador (Fase 1 do padrão desktop) ── */
 @layer base {
   :root {
-    --shell-canvas: 228 25% 96%;
-    --shell-nav: 228 28% 98%;
-    --shell-nav-border: 228 20% 90%;
-    --shell-nav-label: 228 12% 55%;
-    --shell-nav-text: 225 18% 30%;
-    --shell-nav-hover: 228 60% 95%;
+    --shell-canvas: 210 40% 98%;      /* surface-page #F8FAFC */
+    --shell-nav: 0 0% 100%;           /* surface-card */
+    --shell-nav-border: 214 32% 91%;  /* border #E2E8F0 */
+    --shell-nav-label: 215 16% 47%;   /* ink-muted */
+    --shell-nav-text: 215 19% 35%;    /* ink-secondary #475569 */
+    --shell-nav-hover: 210 40% 96%;   /* surface-sunken */
     --shell-elevated: 0 0% 100%;
+    --shell-selected: 229 100% 97%;   /* surface-selected #EEF1FF */
+    --shell-selected-text: 231 77% 57%; /* accent-text #3D57E6 */
     --shadow-shell: 0 1px 2px hsl(228 30% 20% / 0.04), 0 4px 16px -6px hsl(228 40% 30% / 0.08);
     --shadow-active-item: 0 1px 2px hsl(228 80% 40% / 0.18), 0 6px 14px -6px hsl(228 100% 55% / 0.45);
   }
   .dark {
-    --shell-canvas: 220 22% 8%;
-    --shell-nav: 222 24% 10%;
-    --shell-nav-border: 218 18% 17%;
-    --shell-nav-label: 218 12% 52%;
-    --shell-nav-text: 216 16% 76%;
-    --shell-nav-hover: 220 20% 16%;
-    --shell-elevated: 220 20% 13%;
+    --shell-canvas: 219 21% 13%;      /* surface-page #1B2029 */
+    --shell-nav: 217 19% 18%;         /* surface-card #262D38 */
+    --shell-nav-border: 217 14% 32%;  /* border #454E5C */
+    --shell-nav-label: 217 18% 73%;
+    --shell-nav-text: 216 24% 85%;
+    --shell-nav-hover: 216 17% 23%;
+    --shell-elevated: 217 19% 18%;
+    --shell-selected: 229 39% 27%;    /* #2A3460 */
+    --shell-selected-text: 230 100% 81%; /* #9DAEFF */
     --shadow-shell: 0 1px 2px hsl(0 0% 0% / 0.3);
     --shadow-active-item: 0 6px 14px -6px hsl(228 100% 60% / 0.55);
   }
@@ -1066,7 +1079,9 @@ body.arena-mode [data-sidebar] {
   .shell-nav-label { color: hsl(var(--shell-nav-label)); }
   .shell-nav-item { color: hsl(var(--shell-nav-text)); }
   .shell-nav-item:hover { background: hsl(var(--shell-nav-hover)); color: hsl(var(--foreground)); }
-  .shell-nav-item-active { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 600; box-shadow: var(--shadow-active-item); }
+  .shell-nav-item-active { background: hsl(var(--shell-selected)); color: hsl(var(--shell-selected-text)); font-weight: 600; }
+  .font-display, h1, h2 { font-family: Montserrat, Inter, system-ui, sans-serif; }
+  .tabular-nums-all { font-variant-numeric: tabular-nums; }
   .shell-header { background: hsl(var(--shell-canvas) / 0.85); backdrop-filter: saturate(160%) blur(12px); border-bottom: 1px solid hsl(var(--shell-nav-border)); }
   .shell-search { background: hsl(var(--shell-elevated)); border: 1px solid hsl(var(--shell-nav-border)); box-shadow: var(--shadow-shell); transition: border-color .15s, box-shadow .15s; }
   .shell-search:hover { border-color: hsl(var(--primary) / 0.45); box-shadow: 0 0 0 3px hsl(var(--primary) / 0.08), var(--shadow-shell); }

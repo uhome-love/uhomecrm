@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "Arial", "system-ui", "sans-serif"],
-        display: ["Inter", "Arial", "system-ui", "sans-serif"],
+        display: ["Montserrat", "Inter", "system-ui", "sans-serif"],
       },
       fontSize: {
         "2xs": ["0.6875rem", { lineHeight: "1rem" }],       /* 11px — tagline HOMI */
@@ -32,6 +32,13 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        brand: "hsl(var(--brand))",
+        homi: {
+          cyan: "hsl(var(--homi-cyan))",
+          soft: "hsl(var(--homi-soft))",
+          border: "hsl(var(--homi-border))",
+          text: "hsl(var(--homi-text))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
