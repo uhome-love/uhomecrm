@@ -49,7 +49,9 @@ export default function DesktopLeads({ model }: { model: CeoDashboardController 
   return (
     <section>
       <SectionLabel icon={Target}>Roleta de Leads</SectionLabel>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
+        <StatCard size="sm" label="Leads gerados" value={fmtNum(totalLeadsPeriodo)} accent sub="Meta, TikTok, LP, ImovelWeb..."
+          onClick={() => setKpiDetail({ type: "total_leads", label: "Leads Gerados" })} />
         <StatCard size="sm" label="Fila CEO" value={fmtNum(filaCeoCount)} tone={filaCeoCount > 0 ? "warning" : undefined}
           sub={filaCeoCount > 0 ? "aguardando · clique para distribuir" : "Fila vazia"}
           onClick={filaCeoCount > 0 ? () => setDispatchOpen(true) : undefined} />

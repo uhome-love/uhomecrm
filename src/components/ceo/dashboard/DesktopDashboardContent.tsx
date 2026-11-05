@@ -2,7 +2,6 @@ import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
 import { StateWrapper } from "@/components/ui/StateWrapper";
 import { CeoDashboardSkeleton } from "@/components/ui/skeleton-dashboard";
 import DesktopHeader from "./DesktopHeader";
-import DesktopTopKpis from "./DesktopTopKpis";
 import DesktopApprovals from "./DesktopApprovals";
 import DesktopLeads from "./DesktopLeads";
 import DesktopVisitas from "./DesktopVisitas";
@@ -18,7 +17,6 @@ export default function DesktopDashboardContent({ model: m }: { model: CeoDashbo
       <StateWrapper error={m.dashError} loading={m.loading && !m.profile} skeleton={<CeoDashboardSkeleton />} stale={m.partial}
         staleMessage={`Alguns dados não carregaram (${m.partialSources.join(", ")}). Os números abaixo podem estar incompletos.`}
         onRetry={m.reload} errorTitle="Não foi possível carregar o dashboard" errorDescription="Uma das consultas essenciais falhou. Os números não são confiáveis agora." className="space-y-5">
-        <DesktopTopKpis model={m} />
         <DesktopApprovals model={m} />
         <DesktopLeads model={m} />
         <DesktopVisitas model={m} />
