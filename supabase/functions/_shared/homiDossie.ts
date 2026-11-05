@@ -15,7 +15,12 @@ export function sanitizeText(text: string): string {
 }
 
 export function sanitizeDossier(value: Json): Json {
-  if (typeof value === "string") return sanitizeText(value);
+  if (typeof value === "string") {
+    // Dates and UUID references are facts, not contact identifiers.
+    if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:[\d.:+Z-]+)?$/.test(value)
+      || /^[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}$/i.test(value)) return value;
+    return sanitizeText(value);
+  }
   if (Array.isArray(value)) return value
     .filter(item => !(item && typeof item === "object" && !Array.isArray(item)
       && typeof item.pergunta === "string" && privateKey.test(normalize(item.pergunta))))

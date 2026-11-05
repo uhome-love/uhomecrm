@@ -1162,10 +1162,10 @@ export async function executeHomiTool(
           ultima: hist.ultima || null,
         };
         leads.push(item);
-        linhas.push(
+        linhas.push(hist.dossieResumo || (
           `- ${item.nome} · etapa ${item.etapa} · ${item.dias_parado ?? "?"} dias parado · último: ${item.ultima || "sem registro"}` +
             (hist.anotacoes.length ? ` · anotações: ${hist.anotacoes.slice(0, 2).map((n: any) => n.conteudo).join(" | ").slice(0, 240)}` : ""),
-        );
+        ));
       }
       return {
         result: { tipo: "leads_parados", dias, leads },
