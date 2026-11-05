@@ -1012,9 +1012,12 @@ export async function executeHomiTool(
         ultima_interacao: ultima ? `${ultima.titulo || "atividade"}${ultima.data ? " · " + ultima.data : ""}` : null,
         sugestao_proxima_acao: sugestao,
       };
+      const resumoDossie = await loadDossier(userClient, String(lead.id));
       return {
         result: out,
-        modelResult: `Resumo de ${lead.nome} exibido no cartão. Comente em 1 frase a próxima ação recomendada.`,
+        modelResult: resumoDossie
+          ? dossierForAI(resumoDossie)
+          : `Resumo de ${lead.nome} exibido no cartão. Comente em 1 frase a próxima ação recomendada.`,
       };
     }
 
@@ -1164,7 +1167,7 @@ export async function executeHomiTool(
         leads.push(item);
         linhas.push(hist.dossieResumo || (
           `- ${item.nome} · etapa ${item.etapa} · ${item.dias_parado ?? "?"} dias parado · último: ${item.ultima || "sem registro"}` +
-            (hist.anotacoes.length ? ` · anotações: ${hist.anotacoes.slice(0, 2).map((n: any) => n.conteudo).join(" | ").slice(0, 240)}` : ""),
+            (hist.anotacoes.length ? ` · anotações: ${hist.anotacoes.slice(0, 2).map((n: any) => n.conteudo).join(" | ").slice(0, 240)}` : "")
         ));
       }
       return {

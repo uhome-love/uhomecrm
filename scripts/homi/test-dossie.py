@@ -68,6 +68,11 @@ for n in range(1,9):
   r2=rpc('homi_memoria_confirmar',{'p_lead':lead,'p_chave':'decisor','p_valor':'decide com cônjuge','p_confirmado':True});check(r2.ok and r2.json()==r.json(),'memória idempotente por autor')
   r=rpc('homi_memoria_confirmar',{'p_lead':lead,'p_chave':'observacao','p_valor':'CPF 12345678901','p_confirmado':True});check(not r.ok,'memória recusa dados pessoais')
 r=rpc('homi_dossie_lead',{'p_lead':str(uuid.uuid4())});check(not r.ok and 'sem acesso' in r.text,'lead fora do escopo recusado')
+foreign=read('homi_memoria_lead',{'lead_id':'eq.f2050000-0000-4000-8000-000000000008','user_id':'neq.'+uid,'select':'id,valor'})[0]
+r=requests.patch(url+'/rest/v1/homi_memoria_lead',headers={**headers,'Prefer':'return=representation'},params={'id':'eq.'+foreign['id']},json={'valor':'alteração indevida'},timeout=30)
+check(r.ok and r.json()==[],'não edita memória de outro autor')
+r=requests.post(url+'/rest/v1/homi_memoria_lead',headers=headers,json={'lead_id':'f2050000-0000-4000-8000-000000000008','user_id':uid,'chave':'observacao','valor':'CPF 12345678901'},timeout=30)
+check(not r.ok,'escrita direta também recusa dados pessoais')
 r=requests.post(url+'/rest/v1/rpc/homi_dossie_lead',headers={'apikey':key,'Authorization':'Bearer '+key},json={'p_lead':'f2050000-0000-4000-8000-000000000001'},timeout=30);check(not r.ok,'anon sem EXECUTE')
 check(read('system_flags',{'flag_name':'eq.homi_dossie_ativo','select':'flag_value'})[0]['flag_value'] is False,'dossiê permanece desligado')
 print('TOTAL',count,'PASS')
