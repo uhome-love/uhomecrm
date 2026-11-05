@@ -61,3 +61,6 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [x] 4 mensagens prontas corrigidas/desligada
 - [ ] Acervo de preços e cardápio de agosto do Reengajar manual
 - [ ] Laboratório com a bateria de testes (aprovação do Lucas)
+
+- [ ] HOMI Passo 1c (a partir de 12/11/2026, MODO PLANO): se homi_consulta_log não mostrar consumidor, REVOKE EXECUTE anon/authenticated e remover homi_consulta + auxiliares guardando definições. Consumidor que aparecer entra direto com login homi_ro. Aguarda data.
+- [ ] HOMI Passo 2 (dossiê + memória + testes de dado): plano aguardando aprovação do Lucas.
