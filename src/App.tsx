@@ -78,6 +78,7 @@ const PreviewRelatorioVisitas = lazyRetry(() => import("./pages/PreviewRelatorio
 const PlacarTvPage = lazyRetry(() => import("./pages/PlacarTvPage"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
 const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"));
+const DesignSystemPage = lazyRetry(() => import("./pages/admin/DesignSystemPage"));
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
 const IngestaoPanel = lazyRetry(() => import("./pages/admin/IngestaoPanel"));
 const LiaConexao = lazyRetry(() => import("./pages/admin/LiaConexao"));
@@ -138,6 +139,7 @@ const App = () => (
               <Route path="/preview-relatorio-visitas" element={<Suspense fallback={<PageLoader />}><PreviewRelatorioVisitas /></Suspense>} />
               <Route path="/placar-tv" element={<Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense>} />
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
+              <Route path="/design-system" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><DesignSystemPage /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/diagnostico-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/ceo/telemetria-rede" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
               <Route path="/admin/ingestao" element={<ProtectedRoute><RoleProtectedRoute allowedRoles={["admin"]}><Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense></RoleProtectedRoute></ProtectedRoute>} />
