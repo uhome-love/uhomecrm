@@ -117,6 +117,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "presenca-roleta": lazyRetry(() => import("@/pages/PresencaRoleta")),
   "foco-corretores": lazyRetry(() => import("@/pages/FocoCorretores")),
   "lia-hub": lazyRetry(() => import("@/pages/admin/LiaHub")),
+  "design-system": lazyRetry(() => import("@/pages/admin/DesignSystemPage")),
   "central-natal": lazyRetry(() => import("@/natal/central/CampanhaNatalPage")),
 };
 
@@ -176,6 +177,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/admin":                 { key: "admin",                label: "Admin",               icon: "Users",         roles: ["admin"] },
   "/integracao":            { key: "integracao",           label: "Integração",          icon: "Layers",        roles: ["admin"] },
   
+  "/design-system":         { key: "design-system",        label: "Peças da marca",      icon: "Palette",       roles: ["admin"] },
   "/admin/diagnostico-site":{ key: "diagnostico-site",     label: "Diagnóstico",         icon: "Database",      roles: ["admin"] },
   "/disparador-whatsapp":   { key: "disparador-whatsapp",  label: "Disparador WA",       icon: "MessageSquare", roles: ["admin"] },
   "/central-nutricao":      { key: "central-nutricao",     label: "Reengajamento",       icon: "RefreshCw",     roles: ["admin"] },
