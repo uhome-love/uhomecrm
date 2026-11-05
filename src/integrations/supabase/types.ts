@@ -18521,6 +18521,7 @@ export type Database = {
           ultima_atualizacao: string
         }[]
       }
+      homi_bloco: { Args: { d: Json }; Returns: Json }
       homi_briefing_corretor: {
         Args: { p_chave: string; p_momento?: string; p_telefone: string }
         Returns: Json
@@ -18542,6 +18543,7 @@ export type Database = {
         Args: { p_chave: string; p_telefone: string; p_termo: string }
         Returns: Json
       }
+      homi_campos: { Args: { campos: string[]; j: Json }; Returns: Json }
       homi_consulta: { Args: { p_chave: string; p_sql: string }; Returns: Json }
       homi_consulta_chave_ok: { Args: { p_chave: string }; Returns: boolean }
       homi_consulta_registrar: {
@@ -18560,6 +18562,7 @@ export type Database = {
         }
         Returns: Json
       }
+      homi_dossie_lead: { Args: { p_lead: string }; Returns: Json }
       homi_f_equipe: {
         Args: never
         Returns: {
@@ -18596,11 +18599,24 @@ export type Database = {
           vgv_rateado: number
         }[]
       }
+      homi_fato: {
+        Args: { a: string; c: string; d: string; f: string; r: string }
+        Returns: Json
+      }
       homi_historia_lead: {
         Args: { p_chave: string; p_lead_id: string; p_telefone: string }
         Returns: Json
       }
       homi_id_corretor: { Args: { p_telefone: string }; Returns: string }
+      homi_memoria_confirmar: {
+        Args: {
+          p_chave: string
+          p_confirmado?: boolean
+          p_lead: string
+          p_valor: string
+        }
+        Returns: string
+      }
       homi_meus_leads: {
         Args: {
           p_chave: string
@@ -18610,6 +18626,7 @@ export type Database = {
         }
         Returns: Json
       }
+      homi_normaliza_tel: { Args: { p_tel: string }; Returns: string }
       homi_quem_e: {
         Args: { p_chave: string; p_telefone: string }
         Returns: Json
