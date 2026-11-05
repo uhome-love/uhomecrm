@@ -1,28 +1,25 @@
-# Novo logo UhomeSales no CRM
+# Nova marca UhomeSales no CRM
 
-Usar o logo escolhido no guia enviado (Conceito A — símbolo da casa com "U" + "HomeSales." em azul #5271FF e cinza #64748B), aplicado exatamente como na seção "Aplicação no CRM".
+Conferi o pacote: **está completo** (53 arquivos) — logo claro/escuro/branco, símbolo, favicon, ícones do app/iPhone, versão de Natal, avatar do Homi e os componentes prontos. Só identidade visual: nenhum dado, regra, rota ou permissão muda.
 
-## Onde o logo entra
-1. **Menu lateral (computador)** — tema claro: "Home" azul + "Sales" cinza; tema escuro: "Sales" cinza claro #AEB7C6. Menu fechado mostra só o símbolo.
-2. **Celular** — topo e menu com o mesmo logo/símbolo.
-3. **Ícone da aba do navegador** — símbolo azul (32/16 px), substitui o ícone atual.
-4. **Ícone do app instalado (celular)** — símbolo branco em quadrado azul arredondado, nome "UhomeSales".
-5. **Tela de entrada** — logo "HomeSales." com "com Homi IA" embaixo, encaixado no desenho de login já aprovado (que ainda vai ser construído na Fase 2).
-6. **Natal** — durante a campanha, o gorro passa a ser o do guia (encostado no topo da casa), substituindo o gorro atual do logo. Some sozinho quando a campanha acabar.
+## O que vai mudar
+1. **Menu lateral aberto** — sai o Homi com gorro + "UhomeSales" + "Powered by Homi AI"; entra o logo oficial "HomeSales." (claro ou escuro conforme o tema). Aparece uma vez só.
+2. **Menu lateral fechado** — só o símbolo.
+3. **Celular** — topo/menu com o mesmo logo.
+4. **Aba do navegador** — novo favicon (sem gorro, como pede o guia).
+5. **Ícone do app instalado / iPhone** — novos ícones azuis "UhomeSales".
+6. **Tela de entrada** — logo + "com Homi IA" embaixo.
+7. **Botão "Perguntar ao Homi"** — azul #3D57E6 com o avatar plano do Homi; balão de fala ciano claro (e versão escura).
+8. **Natal** — logo e símbolo com o gorro oficial do pacote.
 
-## Regras do guia respeitadas
-- Não esticar, não trocar cores, não inclinar/sombrear, não colocar o Homi em cima do símbolo.
-- Tamanho mínimo: logo 24 px de altura, símbolo 16 px.
-- Cores e fonte do logo (Montserrat 800) só no logo; o resto do CRM segue igual.
-
-## O que NÃO muda
-- Nenhuma tela, botão, dado ou regra do CRM; só a marca.
-- Os conceitos B, C e D do guia não são usados.
+## Dois ajustes ao pacote (para não quebrar o CRM)
+- **Gorro de Natal**: o pacote liga o gorro só de 1º/12 a 6/1, mas a campanha Natal do CRM já está no ar desde 02/11. Vou ligar o gorro junto com a campanha atual (mesma chave da decoração) — some sozinho quando ela acabar.
+- **Arquivo do app instalado**: o CRM já tem um arquivo de app usado pelas notificações push. Vou manter esse arquivo e trocar só nome, cor e ícones, em vez de criar um segundo (evita quebrar o push).
 
 ## Validação
-- Conferir no preview: menu aberto/fechado, tema claro/escuro, celular, aba do navegador, tela de entrada e versão de Natal.
+Preview: menu aberto/fechado, tema claro/escuro, celular, tela de entrada, favicon, botão do Homi e gorro de Natal. Depois, conferir no site publicado.
 
 ## Detalhes técnicos
-- Extrair os SVGs do símbolo/logotipo do HTML enviado (renderizado) e salvar como componente `UhomeSalesLogo` (variantes: completo, símbolo, negativo, natal) usando tokens `shell-*`/marca em `index.css`.
-- Favicon `public/favicon.svg` + PNG 192/512 para o manifesto PWA; remover `favicon.ico` antigo; atualizar `index.html` e manifest.
-- Gorro natalino só em `src/natal/` (wrapper), mantendo o padrão de remoção da campanha.
+- Criar `src/components/brand/` com `brandPaths.ts`, `UhomeSalesLogo.tsx`, `HomiAvatar.tsx` sem alterar conteúdo; `natal` recebe `isNatal()` de `src/natal/` (não `isNatalSeason`).
+- `public/`: `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`; atualizar `public/manifest.json` (nome, theme_color #5271FF, ícones) em vez de `site.webmanifest`; trocar tags de ícone no `index.html`; remover `favicon-app.png`/`favicon.png` antigos só se não houver outras referências (push usa ícone — conferir `sw.js`).
+- Editar `Sidebar.tsx` (aberto/fechado, remover gorro antigo do logo em `natal.css`), topo mobile, `Auth.tsx` e o botão do Homi.
