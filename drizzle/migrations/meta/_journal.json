@@ -512,6 +512,13 @@
       "when": 1793898700298,
       "tag": "0072_remove_auto_role_signup",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793911345027,
+      "tag": "0073_homi_base_medicao",
+      "breakpoints": true
     }
   ]
 }

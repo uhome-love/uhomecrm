@@ -3867,6 +3867,66 @@ export type Database = {
         }
         Relationships: []
       }
+      homi_ia_uso: {
+        Row: {
+          created_at: string
+          custo_estimado_usd: number
+          erro: string | null
+          funcao: string
+          id: string
+          latencia_ms: number | null
+          lead_id: string | null
+          missao: string | null
+          modelo: string
+          papel: string | null
+          sucesso: boolean
+          tokens_cache: number
+          tokens_entrada: number
+          tokens_raciocinio: number
+          tokens_saida: number
+          user_id: string | null
+          versao_prompt: string | null
+        }
+        Insert: {
+          created_at?: string
+          custo_estimado_usd?: number
+          erro?: string | null
+          funcao: string
+          id?: string
+          latencia_ms?: number | null
+          lead_id?: string | null
+          missao?: string | null
+          modelo: string
+          papel?: string | null
+          sucesso?: boolean
+          tokens_cache?: number
+          tokens_entrada?: number
+          tokens_raciocinio?: number
+          tokens_saida?: number
+          user_id?: string | null
+          versao_prompt?: string | null
+        }
+        Update: {
+          created_at?: string
+          custo_estimado_usd?: number
+          erro?: string | null
+          funcao?: string
+          id?: string
+          latencia_ms?: number | null
+          lead_id?: string | null
+          missao?: string | null
+          modelo?: string
+          papel?: string | null
+          sucesso?: boolean
+          tokens_cache?: number
+          tokens_entrada?: number
+          tokens_raciocinio?: number
+          tokens_saida?: number
+          user_id?: string | null
+          versao_prompt?: string | null
+        }
+        Relationships: []
+      }
       homi_memoria_lead: {
         Row: {
           chave: string
@@ -3927,6 +3987,42 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valor?: string
+        }
+        Relationships: []
+      }
+      homi_missao_eventos: {
+        Row: {
+          acao: string | null
+          created_at: string
+          detalhes: Json
+          evento: string
+          id: string
+          idempotency_key: string | null
+          lead_id: string | null
+          missao: string
+          user_id: string
+        }
+        Insert: {
+          acao?: string | null
+          created_at?: string
+          detalhes?: Json
+          evento: string
+          id?: string
+          idempotency_key?: string | null
+          lead_id?: string | null
+          missao: string
+          user_id?: string
+        }
+        Update: {
+          acao?: string | null
+          created_at?: string
+          detalhes?: Json
+          evento?: string
+          id?: string
+          idempotency_key?: string | null
+          lead_id?: string | null
+          missao?: string
+          user_id?: string
         }
         Relationships: []
       }
