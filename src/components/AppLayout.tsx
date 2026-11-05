@@ -194,8 +194,7 @@ export default function AppLayout() {
               <div className="flex items-center gap-3 shrink-0">
                 <SidebarTrigger title="Recolher ou abrir o menu" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" />
                 <div className="relative flex items-center md:hidden">
-                  <UhomeLogo size="md" />
-                  <GorroNatal className="-left-2 -top-3 w-6 md:hidden" />
+                  <UhomeLogo size="sm" />
                 </div>
                 {(isFullscreen || isSession) && (
                   <span className="hidden md:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)" }}>

@@ -479,8 +479,7 @@ export default function Sidebar({
     <>
       <div className="px-5 pt-5 pb-4">
         <div className="relative inline-block">
-          <UhomeLogo size="md" showTagline />
-          <GorroNatal className="left-[2px] -top-[15px] z-10 w-9" />
+          <UhomeLogo size="md" />
         </div>
       </div>
       {showCampaigns && CAMPAIGNS.length > 0 && (
@@ -640,7 +639,6 @@ export default function Sidebar({
         <div className="flex items-center justify-center pt-5 pb-4">
           <div className="relative">
             <UhomeLogo size="sm" />
-            <GorroNatal className="-left-[2px] -top-[13px] z-10 w-7" />
           </div>
         </div>
 
