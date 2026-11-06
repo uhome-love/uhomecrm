@@ -69,6 +69,6 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [x] Lia Recupera — envio dos 6 modelos: regras de modelo/nome/empreendimento/lembrete compartilhadas, trava pós-18/12, arm recusa lia_recupera_* nesta fase, simulação na aba Recupera (37 testes).
 - [x] Piloto Lia — Fase 0 (conferência) e Fase 1 (Laboratório com ação esperada, 15 cenários rodados)
 - [x] Piloto Lia — Fase 1 aprovada (trava de números + financiamento + áudio; entrada 10/10, idoso 10/10)
-- [ ] Piloto Lia — Fase 2 (liberada 06/11): "Já comprei" marca e tira de todos os envios; saída pelo botão (payload) + frases, válida no CRM inteiro (Lia, Reengajar, modelos, bolsão OA, listas de ligação), volta só com novo lead, histórico com data/canal/mensagem; Fila CEO sem Roleta; resposta cancela lembretes; reaviso 30 min
+- [ ] Piloto Lia — Fase 2 (retomada autorizada 06/11): "Já comprei" marca e tira de todos os envios; saída pelo botão (payload) + frases, válida no CRM inteiro (Lia, Reengajar, modelos, bolsão OA, listas de ligação), volta só com contato novo iniciado pelo cliente, histórico com data/canal/mensagem; Fila CEO sem Roleta; resposta cancela lembretes; reaviso 30 min. Piloto e lote antigo permanecem desligados; testar somente clientes fictícios e transações desfeitas.
 - [ ] Piloto Lia — Fases 3 a 5 (cadência/conferência no envio, proteção do número, painel)
 - [ ] Piloto Lia — Fase 6 teste ponta a ponta com o número do Lucas (inclui clicar em "Não quero mais contato" e reativar no fim)
