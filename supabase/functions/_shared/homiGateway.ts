@@ -1,6 +1,6 @@
 import type {} from "./generated/ai-gateway/models.d.ts";
 import { generateChatCompletion, streamChatCompletion, generateEmbeddings, GatewayError,
-  type ChatRequest, type EmbeddingsRequest } from "npm:@lovable.dev/ai-gateway@0.1.11";
+  type ChatRequest, type EmbeddingsRequest } from "@lovable.dev/ai-gateway";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { usageStart, usageFinish, type HomiCallContext } from "./homiUsage.ts";
 
