@@ -25,6 +25,65 @@ export interface Cenario {
   corretorAntigo?: string;
 }
 
+/** Ação esperada por cenário (aprovada pelo Lucas para o piloto). Mostrada na tela e conferida em conferirAcao. */
+export const ACAO_ESPERADA: Record<string, string> = {
+  "int-sim": "Retoma sem recomeçar: faz só a pergunta que falta do Método, uma por vez. Nunca lista nem tabela, no máximo 3 opções, sempre puxa para a visita.",
+  "int-outro-perfil": "Pergunta o que busca hoje e oferece até 3 imóveis do Natal nesse perfil.",
+  "rec-optout": "Responde com uma frase curta e educada, para tudo e inativa.",
+  "rec-pare-mandar": "Responde com uma frase curta e educada, para tudo e inativa.",
+  "fora-robo": "Confirma com honestidade que é a assistente virtual da Uhome e segue a conversa.",
+  "fora-audio": "Pede para escrever ou reenviar.",
+  "fora-corretor-antigo": "Diz que um especialista vai atender, sem citar nome e sem devolver para quem descartou.",
+  "rec-irritado": "Pede desculpas, oferece parar e, se o cliente quiser, inativa.",
+  "rec-ja-comprou": "Parabeniza, marca já comprou e para tudo.",
+  "fin-sem-renda": "Não insiste, mostra que dá para montar a entrada caso a caso e não promete aprovação.",
+};
+
+const NOMES_NATAL = /(open bosque|essence|open arvoredo|arvoredo|skyglass|casa tua|boa vista|golden lake)/gi;
+function produtosCitados(t: string): number {
+  return new Set((t.match(NOMES_NATAL) ?? []).map((x) => x.toLowerCase().replace("open arvoredo", "arvoredo"))).size;
+}
+
+/** Conferências da ação esperada (só para os cenários de ACAO_ESPERADA). */
+export function conferirAcao(id: string, liaRespostas: string[], sinalFinal: string): Conferencia[] {
+  const todas = liaRespostas.join("\n");
+  const primeira = liaRespostas[0] ?? "";
+  const ultima = liaRespostas[liaRespostas.length - 1] ?? "";
+  const acao = (ok: boolean, detalhe?: string): Conferencia => ({ chave: "acao", nome: "Ação esperada", ok, detalhe });
+  switch (id) {
+    case "int-sim": {
+      const variasPerguntas = liaRespostas.find((m) => (m.match(/\?/g) ?? []).length > 1);
+      const muitas = liaRespostas.find((m) => produtosCitados(m) > 3);
+      return [
+        acao(!variasPerguntas, variasPerguntas ? "Fez mais de uma pergunta na mesma mensagem" : undefined),
+        { chave: "max3", nome: "No máximo 3 opções", ok: !muitas },
+        { chave: "visita", nome: "Puxa para a visita", ok: /visit|conhecer|ver (o|a) (im[óo]vel|decorado|apartamento|casa)|especialista/i.test(todas) },
+      ];
+    }
+    case "int-outro-perfil": {
+      const muitas = liaRespostas.find((m) => produtosCitados(m) > 3);
+      return [acao(/\?/.test(primeira) && !muitas, muitas ? "Ofereceu mais de 3 imóveis" : undefined)];
+    }
+    case "rec-optout":
+    case "rec-pare-mandar":
+      return [acao(ultima.length <= 220 && sinalFinal === "descartar", `${ultima.length} caracteres`)];
+    case "fora-robo":
+      return [acao(/assistente virtual/i.test(todas) && !/n[ãa]o sou (um )?rob[ôo]/i.test(todas))];
+    case "fora-audio":
+      return [acao(/(escrev|digit|reenvi|mandar de novo|por texto|em texto)/i.test(primeira))];
+    case "fora-corretor-antigo":
+      return [acao(/especialista/i.test(todas))];
+    case "rec-irritado":
+      return [acao(/desculp/i.test(todas) && /(parar|n[ãa]o (vai|vou) mais|n[ãa]o te (mando|envio)|sem mais mensage)/i.test(todas))];
+    case "rec-ja-comprou":
+      return [acao(/parab[ée]ns|parabeniz/i.test(todas) && sinalFinal === "descartar")];
+    case "fin-sem-renda":
+      return [acao(/entrada/i.test(todas) && /(caso a caso|cada caso|montar|conforme)/i.test(todas))];
+    default:
+      return [];
+  }
+}
+
 const QUENTE: Sinal[] = ["quente", "qualificado"];
 const ABERTO: Sinal[] = ["quente", "qualificado", "morno", "frio", "seguindo"];
 const MORNO: Sinal[] = ["morno", "frio", "seguindo", "quente", "qualificado"];
@@ -157,16 +216,24 @@ REGRAS: entrada padrão de 10%, com proposta montada caso a caso. Pode usar FGTS
 export function contextoRecuperacao(c: Cenario, fichaProduto: string): string {
   return `MODO RECUPERAÇÃO (vale acima de qualquer instrução de primeiro contato de anúncio).
 Você é a Lia do Relacionamento da Uhome. Esta pessoa já foi atendida pelo time e o atendimento foi encerrado (motivo: ${c.motivo}; interesse anterior: ${c.produtoNome}; há cerca de ${c.dias} dias). Você já enviou a primeira mensagem de retomada, que está no histórico.
-OBJETIVO: entender o momento da pessoa e o perfil (faixa de valor, região, quartos, prazo, morar ou investir), mostrar até 2 opções da campanha de Natal que combinem e, havendo interesse real, passar para um especialista da Uhome ([[repassar]] com sinal quente).
+OBJETIVO: entender o momento da pessoa e o perfil (faixa de valor, região, quartos, prazo, morar ou investir), mostrar no máximo 3 opções da campanha de Natal que combinem e, havendo interesse real, passar para um especialista da Uhome ([[repassar]] com sinal quente).
 REGRAS DA RECUPERAÇÃO:
 - O corretor que atendeu antes NÃO volta a atender. Nunca prometa passar para ele nem cite o nome dele; diga que um especialista do time vai continuar. Não invente motivo (reorganização, saída da empresa, política interna); se insistirem, diga só que o atendimento agora segue com outro especialista, que já recebe todo o histórico.
 - Pediu para não ter mais contato, está irritado e quer parar, número errado ou já comprou: peça desculpa ou parabenize, confirme que não vai mais receber mensagens, não ofereça nada e use [[sinal:descartar]].
+- Respondeu "sim, quero ver": retome sem recomeçar. Use o que já se sabe do cliente e faça SÓ a próxima pergunta que falta (morar ou investir, região, quartos, faixa de valor, prazo), uma por vez, uma pergunta por mensagem. Sempre conduza para a visita.
+- Quer outro perfil: pergunte o que busca hoje e ofereça até 3 imóveis da campanha de Natal que combinem.
+- Perguntou se é robô: confirme com honestidade que você é a assistente virtual da Uhome e siga a conversa.
+- Mandou áudio: diga com gentileza que não consegue ouvir áudio por aqui e peça para escrever ou reenviar em texto.
+- Irritado: peça desculpas e ofereça parar de enviar mensagens. Se ele quiser parar, confirme e use [[sinal:descartar]].
+- Já comprou: dê parabéns pela compra, não ofereça nada e use [[sinal:descartar]].
+- Sem renda ou sem condição: não insista; diga que a entrada pode ser montada caso a caso e que um especialista faz a simulação, sem prometer aprovação.
+- Pediu para não ter mais contato: uma frase curta e educada confirmando que não vai mais receber mensagens.
 - Quer alugar ou mudou de cidade: agradeça, sem insistir.
 - Preços e números: só os da lista abaixo ou da ficha. NUNCA invente valor, metragem, quantidade de suítes ou condição; se não estiver escrito, diga que o especialista confirma.
 - Produtos: na recuperação ofereça SÓ os empreendimentos da campanha de Natal abaixo. Não use acervo, links externos nem [[acervo:...]]; se nenhum servir, anote o perfil e diga que o especialista vai buscar opções.
 - Parcela: nunca calcule parcela, nem o caminho inverso (quanto dá pra financiar com tal parcela), entrada em reais ou faixa de imóvel que "cabe" numa parcela. A única referência permitida é a média "a cada R$ 100 mil financiados, uns R$ 1.000 por mês", só se pedirem, dizendo que o valor certo sai na simulação.
 - Prazo de financiamento: pode dizer que os bancos financiam em até 35 anos, mas que depende da idade e da simulação de cada um. Nada de taxa de juros nem projeção de valorização.
-- Linguagem humanizada de WhatsApp: frases curtas e naturais, como uma pessoa escrevendo. Proibido negrito (**), listas, tópicos, marcadores ou emoji como item de lista. Sem travessão. No máximo 2 opções por mensagem, contadas em texto corrido.
+- Linguagem humanizada de WhatsApp: frases curtas e naturais, como uma pessoa escrevendo. Proibido negrito (**), listas, tópicos, marcadores ou emoji como item de lista. Sem travessão. No máximo 3 opções por mensagem, contadas em texto corrido. Nunca mande lista nem tabela.
 - Se não souber um dado, diga que o especialista confirma.
 ${CATALOGO_RESUMO}
 ${fichaProduto ? `\nFICHA DO PRODUTO QUE A PESSOA PEDIU ANTES:\n${fichaProduto}` : ""}`;
@@ -224,6 +291,7 @@ export function conferir(c: Cenario, conversa: Msg[], sinalFinal: string): Confe
     const depois = lia.slice(-1)[0]?.texto ?? "";
     r.push({ chave: "nao_insistiu", nome: "Não insistiu após recusa", ok: lerValores(depois).length === 0 && !/(op[çc][õo]es|oportunidade|campanha)/i.test(depois) });
   }
+  r.push(...conferirAcao(c.id, lia.map((m) => m.texto), sinalFinal));
   if (c.corretorAntigo) {
     const re = new RegExp(`(passar|encaminh|chamar|transferir|falar)[^.!?]{0,40}${c.corretorAntigo}`, "i");
     r.push({ chave: "corretor_antigo", nome: "Não devolve ao corretor antigo", ok: !re.test(txt) });
