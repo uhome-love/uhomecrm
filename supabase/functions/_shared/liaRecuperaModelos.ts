@@ -88,21 +88,37 @@ export interface ResultadoEmpreendimento { nome: string | null; canonico: string
  * Converte o texto do lead ("Casa Tua Canoas v6 - Videos Novos - Tst") para o nome oficial.
  * 1) empreendimento_aliases; 2) nome canônico no começo do texto (o mais longo); "Casa Tua" sozinho = Porto Alegre.
  */
+interface Indice { porAlias: Map<string, string>; canon: Array<{ nome: string; k: string }> }
+const indices = new WeakMap<Canonico[], WeakMap<Alias[], Indice>>();
+function indice(canonicos: Canonico[], aliases: Alias[]): Indice {
+  let m = indices.get(canonicos); if (!m) { m = new WeakMap(); indices.set(canonicos, m); }
+  let ix = m.get(aliases);
+  if (!ix) {
+    const porId = new Map(canonicos.map((c) => [c.id, c.nome]));
+    const porAlias = new Map<string, string>();
+    for (const a of aliases) { const nome = porId.get(a.empreendimento_id); const k = norm(a.alias_norm); if (nome && k && !porAlias.has(k)) porAlias.set(k, nome); }
+    const canon = canonicos.map((c) => ({ nome: c.nome, k: norm(c.nome) })).filter((c) => c.k).sort((a, b) => b.k.length - a.k.length);
+    ix = { porAlias, canon }; m.set(aliases, ix);
+  }
+  return ix;
+}
+
+/**
+ * Converte o texto do lead ("Casa Tua Canoas v6 - Videos Novos - Tst") para o nome oficial.
+ * 1) empreendimento_aliases; 2) nome canônico no começo do texto (o mais longo); "Casa Tua" sozinho = Porto Alegre.
+ */
 export function converterEmpreendimento(raw: string | null | undefined, canonicos: Canonico[], aliases: Alias[]): ResultadoEmpreendimento {
   const n = norm(raw || "");
   if (!n) return { nome: null, canonico: null, via: "nenhum" };
-  const porId = new Map(canonicos.map((c) => [c.id, c.nome]));
-  let canon: string | null = null; let via: ResultadoEmpreendimento["via"] = "nenhum";
-  const al = aliases.find((a) => norm(a.alias_norm) === n);
-  if (al && porId.has(al.empreendimento_id)) { canon = porId.get(al.empreendimento_id)!; via = "alias"; }
+  const ix = indice(canonicos, aliases);
+  let canon: string | null = ix.porAlias.get(n) ?? null;
+  let via: ResultadoEmpreendimento["via"] = canon ? "alias" : "nenhum";
   if (!canon) {
     for (const [ap, nome] of APELIDOS_INICIO) if (n === ap || n.startsWith(ap + " ")) { canon = nome; via = "inicio"; break; }
   }
   if (!canon) {
-    const cands = canonicos.map((c) => ({ c, k: norm(c.nome) }))
-      .filter(({ k }) => k && (n === k || n.startsWith(k + " ")))
-      .sort((a, b) => b.k.length - a.k.length);
-    if (cands[0]) { canon = cands[0].c.nome; via = "inicio"; }
+    const c = ix.canon.find(({ k }) => n === k || n.startsWith(k + " "));
+    if (c) { canon = c.nome; via = "inicio"; }
   }
   if (!canon && (n === "casa tua" || n.startsWith("casa tua "))) { canon = "Casa Tua Porto Alegre"; via = "inicio"; }
   if (!canon || IGNORAR.has(norm(canon))) return { nome: null, canonico: canon, via: canon ? via : "nenhum" };

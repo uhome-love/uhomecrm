@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       const esc = escolherModelo({ nome: e.nome, balde: e.balde, empreendimentoRaw: empRaw, teveContatoHumano: teveContato, corretorInativo }, canon, als);
       if (!esc.ok) { totais.sem_nome++; continue; }
       totais[esc.base]++;
-      const conv = converterEmpreendimento(empRaw, canon, als);
+      const conv = converterEmpreendimento(empRaw, canon, als); // memoizado pelo índice
       if (!esc.empreendimento && empRaw && empRaw.trim()) { const k = empRaw.trim(); naoConverteu.set(k, (naoConverteu.get(k) ?? 0) + 1); }
       const lem = imovelLembrete(conv.nome ? conv.canonico : null);
       caminhos[lem.caminho]++;
