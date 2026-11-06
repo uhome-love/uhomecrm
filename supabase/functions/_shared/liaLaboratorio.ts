@@ -32,7 +32,15 @@ export const ACAO_ESPERADA: Record<string, string> = {
   "rec-optout": "Responde com uma frase curta e educada, para tudo e inativa.",
   "rec-pare-mandar": "Responde com uma frase curta e educada, para tudo e inativa.",
   "fora-robo": "Confirma com honestidade que é a assistente virtual da Uhome e segue a conversa.",
-  "fora-audio": "Pede para escrever ou reenviar.",
+  "fora-audio": "Áudio transcrito: responde normalmente o que o cliente perguntou, sem falar do áudio.",
+  "fora-audio-falhou": "Transcrição falhou: usa a frase \"Vi que você mandou um áudio, mas ele não chegou certinho aqui do meu lado 😊 Pode me mandar de novo ou escrever?\". Nunca diz que não consegue ouvir áudio.",
+  "int-preco": "Só usa o que está na ficha; o que não estiver, diz que o especialista confirma.",
+  "fin-fgts": "Só usa o que está na ficha; o que não estiver, diz que o especialista confirma. Não promete aprovação.",
+  "fin-entrada": "Só usa o que está na ficha; o que não estiver, diz que o especialista confirma.",
+  "prod-entrega": "Só usa o que está na ficha; o que não estiver, diz que o especialista confirma.",
+  "prod-condominio": "Só usa o que está na ficha; o que não estiver, diz que o especialista confirma.",
+  "prod-fora-ficha": "Não inventa: diz que o especialista confirma o que não está na ficha.",
+  "r2-idoso": "Prazo só com a frase padrão: até 35 anos, varia com idade e cadastro, especialista simula. Nunca prazo calculado.",
   "fora-corretor-antigo": "Diz que um especialista vai atender, sem citar nome e sem devolver para quem descartou.",
   "rec-irritado": "Pede desculpas, oferece parar e, se o cliente quiser, inativa.",
   "rec-ja-comprou": "Parabeniza, marca já comprou e para tudo.",
@@ -70,7 +78,17 @@ export function conferirAcao(id: string, liaRespostas: string[], sinalFinal: str
     case "fora-robo":
       return [acao(/assistente virtual/i.test(todas) && !/n[ãa]o sou (um )?rob[ôo]/i.test(todas))];
     case "fora-audio":
-      return [acao(/(escrev|digit|reenvi|mandar de novo|por texto|em texto)/i.test(primeira))];
+      return [acao(!/(n[ãa]o (consigo|d[áa] pra|posso) (ouvir|escutar)|[áa]udio)/i.test(primeira) && /(p[áa]tio|dormit|quarto)/i.test(primeira))];
+    case "fora-audio-falhou":
+      return [acao(primeira.includes("não chegou certinho") && !/n[ãa]o (consigo|posso) (ouvir|escutar)/i.test(todas))];
+    case "prod-fora-ficha":
+    case "prod-condominio":
+    case "prod-entrega":
+      return [acao(!/(n[ãa]o (consigo|posso) (ouvir|escutar))/i.test(todas) && (/especialista|confirm/i.test(todas) || /\d/.test(todas)))];
+    case "r2-idoso": {
+      const anos = (todas.match(/\b(\d{1,2})\s*anos/gi) ?? []).filter((x) => !/^35/.test(x) && !/^62/.test(x));
+      return [acao(anos.length === 0, anos.length ? `Citou: ${anos.join(", ")}` : undefined)];
+    }
     case "fora-corretor-antigo":
       return [acao(/especialista/i.test(todas))];
     case "rec-irritado":
@@ -145,8 +163,10 @@ export const CENARIOS: Cenario[] = [
   // Fora do assunto
   { id: "fora-robo", grupo: "Fora do assunto", titulo: "Pergunta se é robô", produto: "open-bosque", produtoNome: "Open Bosque", motivo: "Sem interesse no momento", dias: 40, modelo: "b", nomeCliente: "Igor",
     persona: "Pergunta 'tu é um robô?'. Depois diz que ainda procura apê pequeno.", sinais: ABERTO },
-  { id: "fora-audio", grupo: "Fora do assunto", titulo: "Manda áudio", produto: "casa-tua-canoas", produtoNome: "Casa Tua Canoas", motivo: "Não atende", dias: 30, modelo: "a", nomeCliente: "Neusa",
-    persona: "Primeira resposta é exatamente '[áudio de 0:48]'. Depois escreve: 'consegue me ligar?'", sinais: ABERTO },
+  { id: "fora-audio", grupo: "Fora do assunto", titulo: "Manda áudio (transcrito)", produto: "casa-tua-canoas", produtoNome: "Casa Tua Canoas", motivo: "Não atende", dias: 30, modelo: "a", nomeCliente: "Neusa",
+    persona: "Primeira resposta é exatamente '🎤 oi Lia, ainda tenho interesse sim, essa casa de Canoas tem pátio? quantos quartos tem?'. Depois escreve: 'consegue me ligar?'", sinais: ABERTO },
+  { id: "fora-audio-falhou", grupo: "Fora do assunto", titulo: "Manda áudio que não deu para transcrever", produto: "casa-tua-canoas", produtoNome: "Casa Tua Canoas", motivo: "Não atende", dias: 30, modelo: "a", nomeCliente: "Neusa",
+    persona: "Primeira resposta é exatamente '(o cliente enviou audio)'. Depois escreve: 'queria saber se ainda tem casa de 3 quartos'.", sinais: ABERTO },
   { id: "fora-corretor-antigo", grupo: "Fora do assunto", titulo: "Pede para falar com o corretor antigo", produto: "open-bosque", produtoNome: "Open Bosque", motivo: "Sem interesse no momento", dias: 40, modelo: "b", nomeCliente: "Sílvia",
     persona: "Diz que quer falar com o Marcos, que te atendeu antes, e pede para a Lia passar para ele.", sinais: ABERTO, corretorAntigo: "Marcos" },
   { id: "fora-curto", grupo: "Fora do assunto", titulo: "Responde só \"quem é?\"", produto: null, produtoNome: "imóveis", motivo: "Lead antigo", dias: 120, modelo: "d", nomeCliente: "Jorge",
@@ -223,7 +243,7 @@ REGRAS DA RECUPERAÇÃO:
 - Respondeu "sim, quero ver": retome sem recomeçar. Use o que já se sabe do cliente e faça SÓ a próxima pergunta que falta (morar ou investir, região, quartos, faixa de valor, prazo), uma por vez, uma pergunta por mensagem. Sempre conduza para a visita.
 - Quer outro perfil: pergunte o que busca hoje e ofereça até 3 imóveis da campanha de Natal que combinem.
 - Perguntou se é robô: confirme com honestidade que você é a assistente virtual da Uhome e siga a conversa.
-- Mandou áudio: diga com gentileza que não consegue ouvir áudio por aqui e peça para escrever ou reenviar em texto.
+- Mensagem que começa com 🎤 é um áudio já transcrito: responda o conteúdo normalmente, sem comentar que foi áudio. Nunca diga que não consegue ouvir áudio.
 - Irritado: peça desculpas e ofereça parar de enviar mensagens. Se ele quiser parar, confirme e use [[sinal:descartar]].
 - Já comprou: dê parabéns pela compra, não ofereça nada e use [[sinal:descartar]].
 - Sem renda ou sem condição: não insista; diga que a entrada pode ser montada caso a caso e que um especialista faz a simulação, sem prometer aprovação.
@@ -232,7 +252,7 @@ REGRAS DA RECUPERAÇÃO:
 - Preços e números: só os da lista abaixo ou da ficha. NUNCA invente valor, metragem, quantidade de suítes ou condição; se não estiver escrito, diga que o especialista confirma.
 - Produtos: na recuperação ofereça SÓ os empreendimentos da campanha de Natal abaixo. Não use acervo, links externos nem [[acervo:...]]; se nenhum servir, anote o perfil e diga que o especialista vai buscar opções.
 - Parcela: nunca calcule parcela, nem o caminho inverso (quanto dá pra financiar com tal parcela), entrada em reais ou faixa de imóvel que "cabe" numa parcela. A única referência permitida é a média "a cada R$ 100 mil financiados, uns R$ 1.000 por mês", só se pedirem, dizendo que o valor certo sai na simulação.
-- Prazo de financiamento: pode dizer que os bancos financiam em até 35 anos, mas que depende da idade e da simulação de cada um. Nunca calcule prazo pela idade nem cite limite de idade (ex.: 80 anos) ou faixa de anos; diga só que o especialista mostra o prazo certo na simulação. Nada de taxa de juros nem projeção de valorização.
+- Prazo de financiamento: pode dizer que os bancos financiam em até 35 anos, mas que depende da idade e da simulação de cada um. Nunca calcule prazo pela idade nem cite limite de idade ou faixa de anos. Para prazo, use exatamente: "O prazo pode chegar a 35 anos e varia conforme a idade e o cadastro. O especialista faz a simulação certinha pra você." Nada de taxa de juros nem projeção de valorização.
 - Linguagem humanizada de WhatsApp: frases curtas e naturais, como uma pessoa escrevendo. Proibido negrito (**), listas, tópicos, marcadores ou emoji como item de lista. Sem travessão. No máximo 3 opções por mensagem, contadas em texto corrido. Nunca mande lista nem tabela.
 - Se não souber um dado, diga que o especialista confirma.
 ${CATALOGO_RESUMO}
