@@ -9,6 +9,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { numerosFora, permitidos, substituirBolhas } from "../_shared/liaTravaNumeros.ts";
 import { aplicarTravaFinanciamento, RE_AUDIO_SEM_TRANSCRICAO, FRASE_AUDIO_FALHOU } from "../_shared/liaTravaFinanciamento.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -746,7 +747,36 @@ serve(async (req) => {
         }
       } catch (eG) { console.error("[lia-chat] guarda de convite falhou (nao critico)", eG); }
     }
+    // TRAVA DE NÚMEROS (regra do Lucas): número só sai se estiver na ficha/catálogo (prompt) ou na
+    // conversa. Fora disso: refaz UMA vez pedindo sem o número; se insistir, troca a bolha pela frase.
+    {
+      const fontes = [systemPrompt, ...(messages as any[]).map((m) => String(m?.content ?? ""))];
+      const ok = permitidos(fontes);
+      const fora = numerosFora(raw, ok);
+      if (fora.length) {
+        console.log("[lia-chat] trava números: refazendo sem", fora.join(", "));
+        try {
+          const NUDGE_NUM = `\n\nATENÇÃO NESTE TURNO: sua resposta citou número(s) que NÃO estão na ficha, no catálogo nem na conversa (${fora.join(", ")}). Reescreva a mesma resposta SEM esses números e sem nenhum outro número inventado. Se o dado não está escrito, diga que o especialista confirma. Mantenha os marcadores.`;
+          const rN = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model: (typeof (body as any).model === "string" && (body as any).model) || MODEL, messages: [{ role: "system", content: systemPrompt + NUDGE_NUM }, ...messages], stream: false, temperature: 0.3 }),
+          });
+          if (rN.ok) {
+            const dN = await rN.json();
+            const novo = String(dN?.choices?.[0]?.message?.content ?? "").replace(/```+/g, "").trim();
+            if (novo && !pareceGlitch(novo)) raw = novo;
+          }
+        } catch (eN) { console.error("[lia-chat] trava números: refazer falhou", eN); }
+        if (numerosFora(raw, ok).length) {
+          console.log("[lia-chat] trava números: frase padrão");
+          raw = substituirBolhas(raw, ok);
+        }
+      }
+    }
+
     // ACERVO AO VIVO: se o cerebro emitiu [[acervo:filtro]], troca pelo resultado real das 420
+    // (vem depois da trava de números: preços do acervo são dados reais, não invenção da Lia)
     const _ac = await resolverAcervo(raw);
     raw = _ac.raw;
 
@@ -770,6 +800,8 @@ serve(async (req) => {
         .replace(/\[\[\s*sinal\s*:\s*\w+\s*\]\]/ig, "")
         .replace(/\[\[\s*repassar\s*\]\]/ig, "")
         .replace(/\[\[\s*acervo\s*:[^\]]*\]\]/ig, "")
+        .replace(/\*\*/g, "") // WhatsApp da Lia nunca leva negrito de markdown
+        .replace(/\s*[—–]\s*/g, ", ") // nunca travessão
         .trim();
       if (clean) kept.push(clean);
     }
