@@ -392,7 +392,13 @@ serve(async (req) => {
 
         // idempotência: já processado?
         const { data: dup } = await sb.from("lia_conversas").select("id").eq("wa_message_id", waId).limit(1);
-        if (dup && dup.length) continue;
+        if (dup && dup.length) {
+          // Uma falha de proteção deve poder ser repetida, sem repetir IA/envio.
+          const { data: salva } = await sb.from("lia_conversas").select("conteudo").eq("wa_message_id",waId).maybeSingle();
+          const payloadRetry = m.button?.payload ?? m.interactive?.button_reply?.id ?? null;
+          await registrarResposta(sb,{telefone:from,mensagem:salva?.conteudo ?? texto,payload:payloadRetry,evento:waId,novoContato:novoContatoWhatsApp(texto,m.context?.id,payloadRetry)});
+          continue;
+        }
 
         // áudio/voz: transcreve com o gateway (Gemini) e trata como se a pessoa tivesse digitado.
         // Se a transcrição falhar, cai no placeholder (nunca quebra o atendimento).
@@ -540,7 +546,7 @@ serve(async (req) => {
           .eq("telefone", from).order("created_at", { ascending: true }).limit(40);
         const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
 
-        const recuperacao = await contextoRealRecupera(sb,from,produto?.ficha ?? "");
+        const recuperacao = await contextoRealRecupera(sb,from,produto?.ficha ?? "",m.context?.id);
         if (recuperacao) {
           est.recuperacao = true;
           est.lead_id = recuperacao.leadId;

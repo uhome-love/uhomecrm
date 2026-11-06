@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hmacSha256Hex, timingSafeEqual, logAuthMissing } from "../_shared/webhook-signature.ts";
 import { registrarResposta } from "../_shared/contatoEnvio.ts";
 import { novoContatoWhatsApp } from "../_shared/liaRecuperaRespostas.ts";
+import { contextoRealRecupera } from "../_shared/liaRecuperaContexto.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -532,10 +533,8 @@ Deno.serve(async (req) => {
             });
             if (decisao.bloqueado || decisao.acao !== "seguir") continue;
             // Resposta ao piloto pertence à Lia; nunca ao roteamento legado/Roleta.
-            const { data: recuperacao } = await supabase.from("lia_reengajamento_fila")
-              .select("template_key").eq("tel8", String(from).replace(/\D/g, "").slice(-8))
-              .eq("status", "enviado").order("enviado_em", { ascending: false }).limit(1).maybeSingle();
-            if (recuperacao?.template_key?.startsWith("lia_recupera_")) continue;
+            const recuperacao = await contextoRealRecupera(supabase,from,"",repliedToWamid);
+            if (recuperacao) continue;
 
             // ── Campanha Átrio: verifica se wamid ou telefone bate com evento Átrio recente ──
             try {

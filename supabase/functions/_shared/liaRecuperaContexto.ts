@@ -3,16 +3,21 @@ import { CENARIOS, contextoRecuperacao } from "./liaLaboratorio.ts";
 import { handoffRecupera } from "./liaHandoff.ts";
 
 /** Identificação pelo disparo efetivo ou estado; nunca presume que todo WhatsApp é Recupera. */
-export async function contextoRealRecupera(sb: SupabaseClient, telefone: string, ficha: string) {
+export async function contextoRealRecupera(sb: SupabaseClient, telefone: string, ficha: string, mensagemRespondida?: string | null) {
   const tel8 = telefone.replace(/\D/g, "").slice(-8);
-  const { data: linha, error } = await sb.from("lia_reengajamento_fila")
+  const { data: estado, error: estadoErr } = await sb.from("lia_estado").select("recuperacao,lead_id").eq("telefone",telefone).maybeSingle();
+  if (estadoErr) throw new Error("Estado da recuperação indisponível");
+  let query = sb.from("lia_reengajamento_fila")
     .select("pipeline_lead_id,template_key").eq("tel8",tel8).eq("status","enviado")
-    .order("enviado_em",{ascending:false}).limit(1).maybeSingle();
+    .order("enviado_em",{ascending:false}).limit(1);
+  if (mensagemRespondida) query = query.eq("wa_message_id",mensagemRespondida);
+  const { data: linha, error } = await query.maybeSingle();
   if (error) throw new Error("Origem da recuperação indisponível");
-  if (!linha?.template_key?.startsWith("lia_recupera_")) return null;
+  const leadId = estado?.recuperacao ? estado.lead_id : linha?.template_key?.startsWith("lia_recupera_") ? linha.pipeline_lead_id : null;
+  if (!leadId) return null;
   const { data: lead, error: leadErr } = await sb.from("pipeline_leads")
     .select("id,nome,empreendimento,motivo_descarte,stage_changed_at,objetivo_cliente,bairro_regiao,radar_quartos,radar_valor_max,prazo_decisao,forma_pagamento")
-    .eq("id",linha.pipeline_lead_id).maybeSingle();
+    .eq("id",leadId).maybeSingle();
   if (leadErr || !lead) throw new Error("Histórico da recuperação indisponível");
   const base = CENARIOS[0];
   if (!base) return null;
