@@ -74,7 +74,7 @@ export function conferirAcao(id: string, liaRespostas: string[], sinalFinal: str
     case "fora-corretor-antigo":
       return [acao(/especialista/i.test(todas))];
     case "rec-irritado":
-      return [acao(/desculp/i.test(todas) && /(parar|pare|paro|n[ãa]o (vai|vou) mais|n[ãa]o te (mando|envio)|sem mais mensage)/i.test(todas))];
+      return [acao(/desculp/i.test(todas) && /(parar|pare|paro|tirar|n[ãa]o receb|n[ãa]o (vai|vou) mais|n[ãa]o te (mando|envio)|sem mais mensage)/i.test(todas))];
     case "rec-ja-comprou":
       return [acao(/parab[ée]ns|parabeniz/i.test(todas) && sinalFinal === "descartar")];
     case "fin-sem-renda":
