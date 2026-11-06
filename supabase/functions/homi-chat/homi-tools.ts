@@ -10,7 +10,7 @@
  * confirms in the UI.
  */
 
-import { loadDossier, dossierForAI, dossierEnabled } from "../_shared/homiDossie.ts";
+import { loadDossier, dossierForAI, dossierEnabled, dossiersForList } from "../_shared/homiDossie.ts";
 
 // OpenAI-compatible tool definitions
 export const HOMI_TOOLS = [
@@ -558,8 +558,8 @@ async function resolveLead(userClient: any, uid: string, nome: string) {
 }
 
 // Reads a lead's history (stage, substatus, timeline, notes) — read-only, RLS-scoped.
-async function readLeadHistory(userClient: any, lead: any) {
-  const dossie = await loadDossier(userClient, String(lead.id));
+async function readLeadHistory(userClient: any, lead: any, legacyOnly = false) {
+  const dossie = legacyOnly ? null : await loadDossier(userClient, String(lead.id));
   const dossieResumo = dossie ? dossierForAI(dossie) : null;
   let stageNome = "";
   let flagStatus = "";
@@ -1151,10 +1151,12 @@ export async function executeHomiTool(
         return { modelResult: `Nenhum lead parado há mais de ${dias} dias. Comente em 1 frase.` };
       }
       const ctx = await leadContextoCurto(userClient, base.map((l: any) => l.id));
+      const summaries = await dossiersForList(userClient, base.map((l: {id:string}) => l.id));
       const leads: any[] = [];
       const linhas: string[] = [];
-      for (const l of base) {
-        const hist = await readLeadHistory(userClient, l);
+      const histories = await Promise.all(base.map((l: Parameters<typeof readLeadHistory>[1]) => readLeadHistory(userClient,l,true)));
+      for (const [index,l] of base.entries()) {
+        const hist = histories[index];
         const c = ctx.get(l.id) || {};
         const item = {
           id: l.id,
@@ -1165,7 +1167,7 @@ export async function executeHomiTool(
           ultima: hist.ultima || null,
         };
         leads.push(item);
-        linhas.push(hist.dossieResumo || (
+        linhas.push(summaries.get(l.id) || (
           `- ${item.nome} · etapa ${item.etapa} · ${item.dias_parado ?? "?"} dias parado · último: ${item.ultima || "sem registro"}` +
             (hist.anotacoes.length ? ` · anotações: ${hist.anotacoes.slice(0, 2).map((n: any) => n.conteudo).join(" | ").slice(0, 240)}` : "")
         ));
@@ -1360,9 +1362,10 @@ export async function executeHomiTool(
           };
         }
         const resumo = itens.slice(0, lote).map((i: any) => `${i.lead_nome} (${i.stage_nome || "sem etapa"}, ${i.titulo}, ${i.atraso_dias}d de atraso, empreendimento ${i.empreendimento || "—"})`).join(" | ");
+        const dossiers = await dossiersForList(userClient,itens.slice(0,lote).map((i: {lead_id:string}) => i.lead_id));
         return {
           result: { tipo: "fila_execucao", fila, lote, total: itens.length, itens },
-          modelResult: `Fila de ${itens.length} tarefas atrasadas montada, mostrando ${lote} por vez. Primeiros: ${resumo}. Para CADA um desses, escreva em 1-2 linhas a sugestão de ação + a mensagem de WhatsApp pronta (curta, natural, terminando em pergunta que puxe visita). Não repita a lista inteira nem dados que já estão nos cartões.`,
+          modelResult: `Fila de ${itens.length} tarefas atrasadas montada, mostrando ${lote} por vez. Primeiros: ${resumo}.\n${[...dossiers.values()].join("\n")}\nPara CADA um desses, escreva em 1-2 linhas a sugestão de ação + a mensagem de WhatsApp pronta (curta, natural, terminando em pergunta que puxe visita). Não repita a lista inteira nem dados que já estão nos cartões.`,
         };
       }
 
@@ -1405,9 +1408,10 @@ export async function executeHomiTool(
         };
       }
       const resumo = itens.slice(0, lote).map((i: any) => `${i.lead_nome} (${i.stage_nome || "sem etapa"}, ${i.empreendimento || "—"}, parado há ${i.dias_parado ?? "?"}d)`).join(" | ");
+      const dossiers = await dossiersForList(userClient,itens.slice(0,lote).map((i: {lead_id:string}) => i.lead_id));
       return {
         result: { tipo: "fila_execucao", fila, lote, total: itens.length, itens },
-        modelResult: `Fila de ${itens.length} leads SEM próxima tarefa, mostrando ${lote} por vez. Primeiros: ${resumo}. Para CADA um, sugira em 1 linha qual próxima tarefa criar (tipo e prazo) e já entregue a mensagem de WhatsApp pronta. Não repita a lista.`,
+        modelResult: `Fila de ${itens.length} leads SEM próxima tarefa, mostrando ${lote} por vez. Primeiros: ${resumo}.\n${[...dossiers.values()].join("\n")}\nPara CADA um, sugira em 1 linha qual próxima tarefa criar (tipo e prazo) e já entregue a mensagem de WhatsApp pronta. Não repita a lista.`,
       };
     }
 

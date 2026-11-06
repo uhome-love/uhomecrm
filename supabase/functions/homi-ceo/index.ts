@@ -1,3 +1,4 @@
+import { homiGateway } from "../_shared/homiGateway.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadEnterpriseKnowledge, getEmpreendimentoNames, getKnowledgeSourceHeader } from "../_shared/enterprise-knowledge.ts";
@@ -52,10 +53,7 @@ serve(async (req) => {
         });
       }
 
-      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const aiResp = await homiGateway({
           model: "google/gemini-2.5-flash",
           messages: [
             {
@@ -69,8 +67,7 @@ Seja direto, use dados concretos. Máximo 300 palavras. Período: ${periodo || "
             },
             { role: "user", content: `Dados das equipes:\n${teamContext}` },
           ],
-        }),
-      });
+        }, { funcao: "homi-ceo", userId: user.id, leadId: null, versaoPrompt: "homi-ceo-2026-11-06" }, false);
 
       if (!aiResp.ok) {
         const status = aiResp.status;
@@ -284,21 +281,13 @@ ${quickActionContext}`;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const response = await homiGateway({
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           ...(messages || []),
         ],
-        stream: true,
-      }),
-    });
+      }, { funcao: "homi-ceo", userId: user.id, leadId: null, versaoPrompt: "homi-ceo-2026-11-06" }, true);
 
     if (!response.ok) {
       const t = await response.text();

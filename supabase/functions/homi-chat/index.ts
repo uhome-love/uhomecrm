@@ -1,3 +1,4 @@
+import { homiGateway } from "../_shared/homiGateway.ts";
 /**
  * homi-chat — assistente conversacional do HOMI com RAG unificado.
  *
@@ -23,11 +24,12 @@ serve(async (req) => {
     // ── Auth: usuário real obrigatório (anon key rejeitada) ──
     const _auth = await requireRealUser(req, {});
     if (_auth.error) return _auth.error;
+    if (!_auth.userId) return new Response(JSON.stringify({error:"Não autenticado"}),{status:401,headers:{...corsHeaders,"Content-Type":"application/json"}});
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    let leadForUsage: string | null = null;
     const { messages, empreendimento, stream: wantStream = true, system: customSystem, enableTools = false, perfil = "corretor" } = await req.json();
     const shouldStream = wantStream !== false;
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
 
     // ── Load enterprise knowledge from DB (cached 5min) ──
     const supabase = createServiceClient();
@@ -115,6 +117,7 @@ serve(async (req) => {
         limit: 10,
         threshold: 0.3,
         empreendimento: null,
+        usageContext: {funcao:"homi-chat:rag",userId:_auth.userId,versaoPrompt:"rag-2026-11-06"},
       });
       ragContext = formatKnowledgeBlock(chunks);
     }
@@ -246,6 +249,7 @@ VERACIDADE COMERCIAL — REGRA DURA:
         materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
           limit: 4,
           empreendimentoNome: empreendimentoValidado ?? undefined,
+          usageContext: {funcao:"homi-chat:materiais",userId:_auth.userId,leadId:leadForUsage,versaoPrompt:"materiais-2026-11-06"},
         });
       }
 
@@ -260,10 +264,10 @@ VERACIDADE COMERCIAL — REGRA DURA:
 
     // ── Copilot mode: function-calling (non-streaming JSON) ──
     if (enableTools) {
-      const uid = _auth.userId as string;
+      const uid = _auth.userId;
       const userClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
         { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } },
       );
 
@@ -367,16 +371,12 @@ REGRAS DO COPILOTO:
       let finalContent = "";
 
       for (let iter = 0; iter < 4; iter++) {
-        const tr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const tr = await homiGateway({
             model: HOMI_CHAT_MODEL,
             messages: toolMessages,
             tools: HOMI_TOOLS,
             tool_choice: "auto",
-          }),
-        });
+          }, { funcao: "homi-chat", userId: _auth.userId, leadId: leadForUsage, versaoPrompt: "homi-chat-2026-11-06" }, false);
         if (!tr.ok) {
           const t = await tr.text();
           console.error("AI gateway (tools) error:", tr.status, t);
@@ -397,6 +397,8 @@ REGRAS DO COPILOTO:
           let parsedArgs: Record<string, any> = {};
           try { parsedArgs = JSON.parse(call.function?.arguments || "{}"); } catch { /* ignore */ }
           const outcome = await executeHomiTool(call.function?.name, parsedArgs, userClient, uid);
+          const resolvedLead = outcome.action?.lead_id ?? (outcome.result?.lead as { id?: unknown } | undefined)?.id;
+          if (typeof resolvedLead === "string") leadForUsage = resolvedLead;
           if (outcome.action) collectedActions.push(outcome.action);
           if (outcome.result) collectedResults.push(outcome.result);
           toolMessages.push({ role: "tool", tool_call_id: call.id, content: outcome.modelResult });
@@ -409,21 +411,13 @@ REGRAS DO COPILOTO:
       );
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const response = await homiGateway({
         model: HOMI_CHAT_MODEL,
         messages: [
           { role: "system", content: finalSystemPromptWithMateriais },
           ...messages,
         ],
-        stream: shouldStream,
-      }),
-    });
+      }, { funcao: "homi-chat", userId: _auth.userId, leadId: leadForUsage, versaoPrompt: "homi-chat-2026-11-06" }, shouldStream);
 
     if (!response.ok) {
       const t = await response.text();

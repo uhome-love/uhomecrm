@@ -13,7 +13,8 @@ export const HOMI_EMBEDDING_DIMS = 1536;
 export const HOMI_CHAT_MODEL = "google/gemini-3.6-flash";
 export const HOMI_REASONING_MODEL = "google/gemini-3.1-pro-preview";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1";
+import { homiEmbeddings } from "./homiGateway.ts";
+import type { HomiCallContext } from "./homiUsage.ts";
 
 import { classificarChunk, sanitizeC4, sanitizeMetadado, METADADO_NEUTRO } from "./homi-fontes.ts";
 
@@ -50,32 +51,19 @@ export interface HomiChunk {
 }
 
 /** Gera embeddings via Lovable AI Gateway. Lança erro em falha terminal. */
-export async function embedTexts(inputs: string[]): Promise<number[][]> {
-  const key = Deno.env.get("LOVABLE_API_KEY");
-  if (!key) throw new Error("LOVABLE_API_KEY não configurada");
+export async function embedTexts(inputs: string[], context: HomiCallContext = {funcao:"homi-reindex",versaoPrompt:"embeddings-2026-11-06"}): Promise<number[][]> {
   if (inputs.length === 0) return [];
 
-  const res = await fetch(`${GATEWAY}/embeddings`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: HOMI_EMBEDDING_MODEL, input: inputs }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Embeddings falharam [${res.status}]: ${body}`);
-  }
-
-  const data = await res.json();
+  const data = await homiEmbeddings({ model: HOMI_EMBEDDING_MODEL, input: inputs },context);
   const rows = (data.data ?? []) as Array<{ index: number; embedding: number[] }>;
   const out: number[][] = new Array(inputs.length);
   for (const row of rows) out[row.index ?? 0] = row.embedding;
   return out;
 }
 
-export async function embedText(input: string): Promise<number[] | null> {
+export async function embedText(input: string, context?: HomiCallContext): Promise<number[] | null> {
   try {
-    const [vec] = await embedTexts([input.slice(0, 6000)]);
+    const [vec] = await embedTexts([input.slice(0, 6000)],context);
     return vec ?? null;
   } catch (e) {
     console.error("[homi-brain] embedText:", e);
@@ -92,10 +80,11 @@ export async function searchKnowledge(
     threshold?: number;
     empreendimento?: string | null;
     sourceTypes?: HomiSourceType[] | null;
+    usageContext?: HomiCallContext;
   } = {},
 ): Promise<HomiChunk[]> {
   if (!query?.trim()) return [];
-  const embedding = await embedText(query);
+  const embedding = await embedText(query,opts.usageContext);
   if (!embedding) return [];
 
   const { data, error } = await supabase.rpc("buscar_conhecimento", {

@@ -7,7 +7,8 @@ import { sanitizeC4, sanitizeMetadado, METADADO_NEUTRO } from "./homi-fontes.ts"
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1";
+import { homiEmbeddings } from "./homiGateway.ts";
+import type { HomiCallContext } from "./homiUsage.ts";
 
 export interface MaterialSuggestion {
   id: string;
@@ -34,39 +35,26 @@ export interface MaterialSuggestion {
  */
 export async function searchMateriaisForHomi(
   query: string,
-  opts: { limit?: number; minSimilarity?: number; empreendimentoNome?: string } = {},
+  opts: { limit?: number; minSimilarity?: number; empreendimentoNome?: string; usageContext?: HomiCallContext } = {},
 ): Promise<MaterialSuggestion[]> {
   const limit = opts.limit ?? 4;
   const minSimilarity = opts.minSimilarity ?? 0.35;
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey || !query || query.trim().length < 3) return [];
+  if (!query || query.trim().length < 3) return [];
 
   try {
-    const embResp = await fetch(`${AI_GATEWAY}/embeddings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": apiKey,
-      },
-      body: JSON.stringify({
+    const embJson = await homiEmbeddings({
         model: "google/gemini-embedding-001",
         input: query.slice(0, 2000),
-      }),
-    });
-    if (!embResp.ok) {
-      console.error("materiais-context: embedding failed", embResp.status);
-      return [];
-    }
-    const embJson = await embResp.json();
+    },opts.usageContext ?? {funcao:"homi:materiais",versaoPrompt:"materiais-2026-11-06"});
     const vector = embJson.data?.[0]?.embedding;
-    if (!vector) return [];
+    if (!Array.isArray(vector)) return [];
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
 
     const { data: matches, error } = await admin.rpc("match_materiais", {
-      query_embedding: `[${vector.join(",")}]` as any,
+      query_embedding: `[${vector.join(",")}]`,
       match_count: Math.max(limit * 4, 20),
     });
     if (error) {
@@ -95,7 +83,7 @@ export async function searchMateriaisForHomi(
 
     const empNorm = opts.empreendimentoNome?.trim().toLowerCase() ?? "";
     const enriched: MaterialSuggestion[] = (mats ?? []).map((m: any) => {
-      const s = byMaterial.get(m.id)!;
+      const s = byMaterial.get(m.id) ?? {similarity:0,snippet:""};
       const empNome = m.materiais_empreendimentos?.nome ?? null;
       // boost 0.15 quando empreendimento bate
       const boost = empNorm && empNome && empNome.toLowerCase().includes(empNorm) ? 0.15 : 0;

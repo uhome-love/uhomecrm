@@ -18608,6 +18608,7 @@ export type Database = {
         Returns: Json
       }
       homi_id_corretor: { Args: { p_telefone: string }; Returns: string }
+      homi_lacunas: { Args: { j: Json }; Returns: Json }
       homi_memoria_confirmar: {
         Args: {
           p_chave: string
