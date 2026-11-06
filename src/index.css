@@ -1113,7 +1113,7 @@ body.arena-mode [data-sidebar] {
 }
 .auth-panel-bg { background: var(--auth-panel); }
 /* Login claro (marca-2): painel azul suave com a casa/U ao fundo */
-:root { --auth-soft: 229 100% 97%; --auth-soft-mark: 229 90% 91%; }
+:root { --auth-soft: 229 100% 97%; --auth-soft-mark: 229 90% 93%; }
 .dark { --auth-soft: 225 35% 13%; --auth-soft-mark: 225 35% 20%; }
 .auth-soft-bg { background: hsl(var(--auth-soft)); }
 .auth-soft-mark { fill: hsl(var(--auth-soft-mark)); }

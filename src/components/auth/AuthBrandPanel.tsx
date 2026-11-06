@@ -36,7 +36,7 @@ function Marca({ className }: { className?: string }) {
 export function AuthLogo({ height = 44 }: { height?: number }) {
   return (
     <div>
-      <UhomeSalesLogo height={height} />
+      <UhomeSalesLogo height={height} natal={loginNatal() !== null} />
       <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
         com <img src="/images/homi-48.png" alt="" className="h-4 w-4" /> <b className="font-semibold text-foreground">Homi IA</b>
       </p>
@@ -73,7 +73,7 @@ export function AuthBrandPanel() {
       </div>
 
       <h1 className="relative font-display text-[58px] font-extrabold leading-[1.02] tracking-tight text-foreground">
-        Cada lead,<br /><span className="text-brand">uma chave.</span>
+        Cada lead,<br /><span className="text-primary">uma chave.</span>
       </h1>
     </aside>
   );
