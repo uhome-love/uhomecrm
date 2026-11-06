@@ -273,6 +273,13 @@ Deno.serve(async (req) => {
     let existingCorretorId: string | null = null
 
     if (tipo === 'lead' || tipo === 'agendamento' || tipo === 'captacao') {
+      if (leadTelefone && record.site_lead_id) {
+        const { error: retornoErr } = await supabase.rpc("registrar_resposta_recuperacao", {
+          p_telefone: leadTelefone, p_mensagem: "Cliente iniciou novo contato pelo site",
+          p_payload: null, p_evento: `site:${record.site_lead_id}`, p_canal: "site", p_novo_contato: true,
+        });
+        if (retornoErr) console.error("[crm-webhook] retorno não confirmado", retornoErr.code);
+      }
       // ── Dedup by phone (suffix-based, tolerates DDI residues) ──
       let existingLead: {
         id: string

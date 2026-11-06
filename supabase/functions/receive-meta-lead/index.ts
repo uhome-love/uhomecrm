@@ -648,6 +648,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Novo cadastro confirmado (external id ainda não processado) é iniciativa do cliente.
+    // Nunca reabre por backfill duplicado ou por mero telefone sem identificador novo.
+    if (externalLeadId) {
+      const { error: retornoErr } = await supabase.rpc("registrar_resposta_recuperacao", {
+        p_telefone: telefone, p_mensagem: "Cliente iniciou novo cadastro por anúncio",
+        p_payload: null, p_evento: `meta:${externalLeadId}`, p_canal: "anuncio", p_novo_contato: true,
+      });
+      if (retornoErr) L.warn("Proteção de retorno indisponível", { code: retornoErr.code });
+    }
+
     // Check jetimob_processed too (permanent dedup registry by phone)
     const { data: alreadyProcessed, error: alreadyProcessedError } = await supabase
       .from("jetimob_processed")

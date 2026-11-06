@@ -33,6 +33,7 @@ import HomiObjectionHelper from "./HomiObjectionHelper";
 import FichaRapida from "./FichaRapida";
 import ListaEmpreendimentoFiltro, { lerFiltroLista, salvarFiltroLista } from "./ListaEmpreendimentoFiltro";
 import { getResultadoMeta } from "@/lib/motivosLigacao";
+import { contatoPermitido } from "@/lib/contatoPermitido";
 
 /** Format Brazilian phone */
 function formatPhone(phone: string): string {
@@ -288,8 +289,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     toast.success(`${label} copiado!`);
   };
 
-  const handleAction = (canal: string) => {
+  const handleAction = async (canal: string) => {
     if (!lead) return;
+    if (!await contatoPermitido(lead.telefone)) return;
     if (canal === "ligacao") {
       setActionTaken("ligacao");
       startTimer();
@@ -325,8 +327,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     setShowModal(true);
   };
 
-  const handleWhatsAppDuringCall = () => {
+  const handleWhatsAppDuringCall = async () => {
     if (!lead?.telefone) return;
+    if (!await contatoPermitido(lead.telefone)) return;
     const phone = lead.telefone.replace(/\D/g, "");
     const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
     const template = templates.find(t => t.canal === "whatsapp" && t.tipo === "primeiro_contato");
