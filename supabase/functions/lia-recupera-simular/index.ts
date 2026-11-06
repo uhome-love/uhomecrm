@@ -45,36 +45,59 @@ Deno.serve(async (req) => {
 
     type Eleg = { pipeline_lead_id: string; nome: string | null; empreendimento: string | null; balde: string; stage_changed_at: string | null };
     const [eleg, canon, als] = await Promise.all([
-      todas<Eleg>((a, b) => sb.from("lia_reengajamento_elegiveis").select("pipeline_lead_id, nome, empreendimento, balde, stage_changed_at").range(a, b)),
-      todas<Canonico>((a, b) => sb.from("empreendimentos_canonicos").select("id, nome").range(a, b)),
-      todas<Alias>((a, b) => sb.from("empreendimento_aliases").select("alias_norm, empreendimento_id").range(a, b)),
+      todas<Eleg>((a, b) => sb.from("lia_reengajamento_elegiveis").select("pipeline_lead_id, nome, empreendimento, balde, stage_changed_at").order("pipeline_lead_id").range(a, b)),
+      todas<Canonico>((a, b) => sb.from("empreendimentos_canonicos").select("id, nome").order("id").range(a, b)),
+      todas<Alias>((a, b) => sb.from("empreendimento_aliases").select("alias_norm, empreendimento_id").order("alias_norm").order("empreendimento_id").range(a, b)),
     ]);
 
     const limite90 = Date.now() - 90 * 86400000;
     const base = eleg.filter((e) => !NUNCA.has(e.balde) && (!ESPERA_90.has(e.balde) || (e.stage_changed_at && Date.parse(e.stage_changed_at) <= limite90)));
     const ids = base.map((e) => e.pipeline_lead_id);
 
-    // corretor e produto atual do lead
-    const leadInfo = new Map<string, { corretor_id: string | null; empreendimento: string | null }>();
-    const contato = new Map<string, string[]>(); // datas de ação humana
-    for (let i = 0; i < ids.length; i += 300) {
-      const lote = ids.slice(i, i + 300);
-      const [{ data: ls }, at] = await Promise.all([
-        sb.from("pipeline_leads").select("id, corretor_id, empreendimento").in("id", lote),
-        todas<{ pipeline_lead_id: string; created_at: string }>((a, b) => sb.from("pipeline_atividades").select("pipeline_lead_id, created_at")
-          .in("pipeline_lead_id", lote).in("tipo", TIPOS_HUMANOS).not("created_by", "is", null).neq("created_by", SISTEMA).range(a, b)),
+    // corretor, produto, telefone e entrada do lead + ações humanas (paginação sempre ordenada; lotes pequenos)
+    const leadInfo = new Map<string, { corretor_id: string | null; empreendimento: string | null; created_at: string | null; tel8: string | null }>();
+    const contato = new Map<string, string>(); // data mais antiga de ação humana por lead
+    const marca = (id: string, d: string) => { const c = contato.get(id); if (!c || d < c) contato.set(id, d); };
+    const tel8 = (t: string | null) => { const d = (t ?? "").replace(/\D/g, ""); return d.length >= 8 ? d.slice(-8) : null; };
+    for (let i = 0; i < ids.length; i += 100) {
+      const lote = ids.slice(i, i + 100);
+      const [{ data: ls, error: le }, at, wa] = await Promise.all([
+        sb.from("pipeline_leads").select("id, corretor_id, empreendimento, created_at, telefone").in("id", lote),
+        todas<{ id: string; pipeline_lead_id: string; created_at: string }>((a, b) => sb.from("pipeline_atividades").select("id, pipeline_lead_id, created_at")
+          .in("pipeline_lead_id", lote).in("tipo", TIPOS_HUMANOS).not("created_by", "is", null).neq("created_by", SISTEMA).order("id").range(a, b)),
+        todas<{ id: string; lead_id: string; timestamp: string }>((a, b) => sb.from("whatsapp_mensagens").select("id, lead_id, timestamp")
+          .in("lead_id", lote).eq("direction", "sent").order("id").range(a, b)),
       ]);
-      for (const l of ls ?? []) leadInfo.set(l.id, { corretor_id: l.corretor_id, empreendimento: l.empreendimento });
-      for (const a of at) { const arr = contato.get(a.pipeline_lead_id) ?? []; arr.push(a.created_at); contato.set(a.pipeline_lead_id, arr); }
+      if (le) throw new Error(le.message);
+      for (const l of ls ?? []) leadInfo.set(l.id, { corretor_id: l.corretor_id, empreendimento: l.empreendimento, created_at: l.created_at, tel8: tel8(l.telefone) });
+      for (const a of at) marca(a.pipeline_lead_id, a.created_at);
+      for (const w of wa) marca(w.lead_id, w.timestamp);
     }
+    // Oferta Ativa: tentativa ligada ao lead pelo telefone (últimos 8 dígitos)
+    const tels = new Set([...leadInfo.values()].map((l) => l.tel8).filter(Boolean) as string[]);
+    const tent = await todas<{ id: string; lead_id: string; created_at: string }>((a, b) => sb.from("oferta_ativa_tentativas").select("id, lead_id, created_at").order("id").range(a, b));
+    const tentMin = new Map<string, string>();
+    for (const t of tent) { const c = tentMin.get(t.lead_id); if (!c || t.created_at < c) tentMin.set(t.lead_id, t.created_at); }
+    const oaIds = [...tentMin.keys()];
+    const oaPorTel = new Map<string, string>();
+    for (let i = 0; i < oaIds.length; i += 300) {
+      const { data, error } = await sb.from("oferta_ativa_leads").select("id, telefone_normalizado").in("id", oaIds.slice(i, i + 300));
+      if (error) throw new Error(error.message);
+      for (const o of data ?? []) {
+        const t = tel8(o.telefone_normalizado); if (!t || !tels.has(t)) continue;
+        const d = tentMin.get(o.id)!; const c = oaPorTel.get(t); if (!c || d < c) oaPorTel.set(t, d);
+      }
+    }
+    for (const [id, l] of leadInfo) if (l.tel8 && oaPorTel.has(l.tel8)) marca(id, oaPorTel.get(l.tel8)!);
     const corretores = [...new Set([...leadInfo.values()].map((l) => l.corretor_id).filter(Boolean))] as string[];
-    const ativos = new Set<string>();
+    const inativos = new Set<string>(); // sem perfil = desconhecido, não conta como inativo
     for (let i = 0; i < corretores.length; i += 300) {
       const { data } = await sb.from("profiles").select("user_id, ativo").in("user_id", corretores.slice(i, i + 300));
-      for (const p of data ?? []) if (p.ativo !== false) ativos.add(p.user_id);
+      for (const p of data ?? []) if (p.ativo === false) inativos.add(p.user_id);
     }
 
     const totais = { A: 0, B: 0, C: 0, D: 0, sem_nome: 0 };
+    const cSep = { C_sem_contato: 0, C_corretor_inativo: 0, D_seria_C_sem_contato: 0, D_seria_C_corretor_inativo: 0 };
     const caminhos: Record<CaminhoLembrete, number> = { proprio: 0, tabela: 0, open_bosque: 0 };
     const naoConverteu = new Map<string, number>();
     const exemplos: Record<ModeloKey, unknown[]> = { lia_recupera_a: [], lia_recupera_b: [], lia_recupera_c: [], lia_recupera_d: [], lia_recupera_lembrete: [], lia_recupera_final: [] };
@@ -83,11 +106,13 @@ Deno.serve(async (req) => {
       const info = leadInfo.get(e.pipeline_lead_id);
       const empRaw = e.empreendimento ?? info?.empreendimento ?? null;
       const limiteData = e.stage_changed_at ?? new Date().toISOString();
-      const teveContato = (contato.get(e.pipeline_lead_id) ?? []).some((d) => d <= limiteData);
-      const corretorInativo = !!info?.corretor_id && !ativos.has(info.corretor_id);
-      const esc = escolherModelo({ nome: e.nome, balde: e.balde, empreendimentoRaw: empRaw, teveContatoHumano: teveContato, corretorInativo }, canon, als);
+      const primeiro = contato.get(e.pipeline_lead_id);
+      const teveContato = !!primeiro && Date.parse(primeiro) <= Date.parse(limiteData);
+      const corretorInativo = !!info?.corretor_id && inativos.has(info.corretor_id);
+      const esc = escolherModelo({ nome: e.nome, balde: e.balde, empreendimentoRaw: empRaw, teveContatoHumano: teveContato, corretorInativo, leadCriadoEm: info?.created_at ?? null }, canon, als);
       if (!esc.ok) { totais.sem_nome++; continue; }
       totais[esc.base]++;
+      if (esc.porqueC) { const k = `${esc.base === "D" ? "D_seria_" : ""}C_${esc.porqueC}` as keyof typeof cSep; cSep[k]++; }
       const conv = converterEmpreendimento(empRaw, canon, als); // memoizado pelo índice
       if (!esc.empreendimento && empRaw && empRaw.trim()) { const k = empRaw.trim(); naoConverteu.set(k, (naoConverteu.get(k) ?? 0) + 1); }
       const lem = imovelLembrete(conv.nome ? conv.canonico : null);
@@ -111,7 +136,7 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true, gerado_em: new Date().toISOString(), vigente: recuperaVigente(hojeBRT()), base_total: base.length,
-      totais, caminhos_lembrete: caminhos,
+      totais, c_separado: cSep, caminhos_lembrete: caminhos,
       nao_converteu: [...naoConverteu.entries()].sort((a, b) => b[1] - a[1]).map(([nome, n]) => ({ nome, n })),
       exemplos,
     });

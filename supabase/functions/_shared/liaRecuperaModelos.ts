@@ -134,28 +134,39 @@ export interface ClienteRecupera {
   nome: string | null;
   balde: Motivo;
   empreendimentoRaw: string | null;
+  /** Ação humana antes do descarte: atividade do corretor, WhatsApp enviado ou tentativa da Oferta Ativa. */
   teveContatoHumano: boolean;
   corretorInativo: boolean;
+  /** Data de entrada do lead (ISO). Antes de CRM_INICIO o histórico não foi migrado. */
+  leadCriadoEm?: string | null;
+}
+
+/** Entrada do CRM: atividades anteriores não foram migradas. */
+export const CRM_INICIO_BRT = "2026-03-09";
+export function leadAntesDoCrm(criadoEm: string | null | undefined): boolean {
+  if (!criadoEm) return false;
+  return Date.parse(criadoEm) < Date.parse(`${CRM_INICIO_BRT}T00:00:00-03:00`);
 }
 
 export type Escolha =
-  | { ok: true; modelo: ModeloKey; base: "A" | "B" | "C" | "D"; nome: string; empreendimento: string | null; motivo: string }
+  | { ok: true; modelo: ModeloKey; base: "A" | "B" | "C" | "D"; nome: string; empreendimento: string | null; motivo: string; porqueC: "sem_contato" | "corretor_inativo" | null }
   | { ok: false; motivo: "sem_nome" };
 
 /** Ordem aprovada: sem contato → C; sem interesse/financeiro/desistiu → B; corretor saiu → C; demais → A; sem empreendimento → D. */
 export function escolherModelo(c: ClienteRecupera, canonicos: Canonico[], aliases: Alias[]): Escolha {
   const nome = primeiroNomeValido(c.nome);
   if (!nome) return { ok: false, motivo: "sem_nome" };
-  let base: "A" | "B" | "C"; let motivo: string;
-  if (!c.teveContatoHumano) { base = "C"; motivo = "Descartado sem tentativa de contato do corretor"; }
+  let base: "A" | "B" | "C"; let motivo: string; let porqueC: "sem_contato" | "corretor_inativo" | null = null;
+  // Sem tentativa só vale como motivo do C para lead que entrou depois do início do CRM.
+  if (!c.teveContatoHumano && !leadAntesDoCrm(c.leadCriadoEm)) { base = "C"; porqueC = "sem_contato"; motivo = "Descartado sem tentativa de contato do corretor"; }
   else if (MOTIVOS_B.has(c.balde)) { base = "B"; motivo = `Motivo: ${c.balde}`; }
-  else if (c.corretorInativo) { base = "C"; motivo = "Corretor desligado/inativo"; }
+  else if (c.corretorInativo) { base = "C"; porqueC = "corretor_inativo"; motivo = "Corretor desligado/inativo"; }
   else { base = "A"; motivo = `Motivo: ${c.balde}`; }
   const emp = converterEmpreendimento(c.empreendimentoRaw, canonicos, aliases);
   if (!emp.nome) {
-    return { ok: true, modelo: "lia_recupera_d", base: "D", nome, empreendimento: null, motivo: `${motivo} · sem empreendimento válido (seria ${base})` };
+    return { ok: true, modelo: "lia_recupera_d", base: "D", nome, empreendimento: null, motivo: `${motivo} · sem empreendimento válido (seria ${base})`, porqueC };
   }
-  return { ok: true, modelo: `lia_recupera_${base.toLowerCase()}` as ModeloKey, base, nome, empreendimento: emp.nome, motivo };
+  return { ok: true, modelo: `lia_recupera_${base.toLowerCase()}` as ModeloKey, base, nome, empreendimento: emp.nome, motivo, porqueC };
 }
 
 // ---------- Lembrete D+3 ----------
