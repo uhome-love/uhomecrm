@@ -126,6 +126,9 @@ Deno.serve(async (req) => {
 
 
   try {
+    // Aviso interno, sem mensagens ao cliente e sem ligar Recupera/captura.
+    const { error: reavisoErr } = await supabase.rpc("lia_reavisar_fila_ceo");
+    if (reavisoErr) console.error("[lia-cron] reaviso pendente", reavisoErr.code);
     const { data: cfg } = await supabase
       .from("ia_config")
       .select("captura_lia")
