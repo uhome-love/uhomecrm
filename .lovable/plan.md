@@ -1,67 +1,45 @@
-# Lia Recupera — envio dos 6 modelos com as informações certas + simulação
+# Piloto da Lia Recupera — plano (nada é ligado sem aprovação final do Lucas)
 
-## O que a conferência mostrou
-- A chave `lia_recupera_enabled` **não existe**. O envio da Lia é controlado pela chave `lia_reengajamento_enabled`, que hoje está **ligada**. Mesmo assim nada sai, porque não há lote ativo (1 pausado, 1 concluído). Nesta fase não mexo em chave nem em lote.
-- Hoje o sistema não escolhe A/B/C/D sozinho: quem arma o lote escolhe um modelo para todos. E o envio manda só o nome.
-- O campo de empreendimento do cliente vem com nome de campanha ("Casa Tua Canoas v6 - Videos Novos - Tst").
-- Não há etapa automática D+3/D+10. Esta fase prepara as mensagens; a cadência automática fica para outra fase.
+Fases pequenas, cada uma conferida antes da próxima. Todas as regras ficam no arquivo compartilhado da Recupera (vale para simulação, Laboratório e envio).
 
-## O que vai ser feito (sem banco, sem migration, sem disparo)
+## Fase 0 — Conferência inicial (só leitura)
+- Mapear como a Lia hoje recebe respostas (botões e texto), como inativa opt-out, como manda para a Fila CEO e como mede qualidade do número na Meta.
+- Listar o que já existe e o que falta antes de construir. Resultado vai para o Lucas antes da Fase 1.
 
-1. **Informações de cada modelo**
-   - A, B, C: primeiro nome + empreendimento. D e Final: primeiro nome. Lembrete: primeiro nome + imóvel de Natal + oferta. Nenhum com cabeçalho/imagem; nada para os botões. Idioma pt_BR.
-   - Nome: só o primeiro, com primeira letra maiúscula ("MARIA SILVA" → "Maria"). Sem nome válido: o cliente não entra na fila e fica marcado "sem_nome".
-   - Nenhuma informação com quebra de linha ou espaços seguidos.
+## Fase 1 — Laboratório das respostas (trava antes de ligar)
+- Cenários no Laboratório usando clientes reais da simulação (sem enviar nada):
+  - "Sim, quero ver": Lia lê o histórico do CRM e faz só a pergunta que falta do Método, uma por vez; nunca lista/tabela; no máximo 3 opções; sempre puxa para a visita.
+  - "Outro perfil": pergunta o que busca hoje e oferece até 3 imóveis do Natal nesse perfil.
+  - "Não quero mais contato": frase curta e educada + inativação.
+  - Texto livre: vários exemplos (dúvida de preço, "já comprei", pergunta sobre financiamento — 35 anos com ressalva, nunca inventar valor).
+- Tela mostra a resposta de cada cenário para o Lucas aprovar. Sem aprovação, o piloto não liga.
 
-2. **Nome do empreendimento**
-   - Converte pelo cadastro de apelidos → nome oficial. Se não achar, procura o nome oficial no começo do texto (ignora maiúsculas e acentos, pega o mais longo). "Casa Tua Alto Petrópolis" e "Casa Tua" sem cidade → "Casa Tua Porto Alegre".
-   - Avulso, imóvel de terceiros ou nome que não converteu → modelo D.
-   - A tabela de apelidos não é alterada.
+## Fase 2 — Respostas reais (construído, mas desligado)
+- Qualquer resposta para a cadência na hora.
+- Opt-out: inativa na hora e entra na lista de nunca enviar.
+- Interesse recuperado: Fila CEO com cartão "Recuperado pela Lia" (resumo da conversa), aviso imediato (sino + push) para Lucas e Gabrielle; nunca volta para o corretor que descartou.
 
-3. **Qual modelo cada cliente recebe** (vale a primeira regra que bater)
-   - a) Descartado sem nenhuma tentativa de contato humana → **C**
-   - b) Motivo sem interesse no momento, sem condição financeira ou desistiu (estes dois só depois da espera de 90 dias) → **B**
-   - c) Corretor desligado/inativado → **C**
-   - d) Demais motivos (não atende, sem motivo, outro, sem perfil, lead antigo) → **A**
-   - Em qualquer caso, sem empreendimento de verdade → **D**.
-   - Quem disse "sem interesse" nunca recebe o C, mesmo que o corretor tenha saído.
-   - **Tentativa de contato** = só ação humana do corretor/equipe: ligação, WhatsApp enviado pelo corretor, atividade registrada por ele. Não contam distribuição da Roleta, mudança automática de etapa, disparos, nutrição, mensagens da Lia e avisos do sistema.
-   - **Nome válido**: pelo menos 2 letras, sem números nem emoji, e não pode ser palavra genérica ("cliente", "lead", "wpp", "teste", "sem nome"). Se não passar → "sem_nome".
-   - As regras de exclusão continuam iguais (opt-out, já comprou, cliente ativo, espera de 90 dias).
+## Fase 3 — Cadência e fila de envio (desligada)
+- 1ª mensagem (A/B/C/D) → lembrete D+3 → final D+10, só sem resposta.
+- Segunda a sábado, 9h–20h BRT. Máximo 100 primeiras mensagens/dia (lembrete e final fora do limite).
+- 1ª mensagem só até 07/12; após 18/12 nenhum dos 6 modelos sai.
+- Ordem: descartados nos últimos 90 dias (mais recente primeiro), dentro disso C → B → A → D; depois o restante na mesma lógica.
+- A trava atual que recusa lotes lia_recupera_* só é retirada no momento da liberação, pela chave própria do piloto (desligada). Reengajar manual segue igual; o lote antigo pausado continua pausado.
 
-   **Segurança (a chave `lia_reengajamento_enabled` está ligada)**
-   - Nesta fase não é possível armar lote com modelos `lia_recupera_*`. Eles servem só para a simulação e serão liberados na fase do piloto.
-   - A escolha de modelo por cliente vale só para lotes da Recupera. O Reengajar manual continua exatamente como hoje.
-   - O lote pausado (cardápio de agosto) continua pausado.
+## Fase 4 — Proteção do número
+- Pausa automática e aviso ao Lucas se, no dia, "Não quero mais contato" + bloqueios > 5% das entregues, ou se a qualidade do número na Meta cair.
 
-4. **Imóvel do lembrete (tabela fixa, sem preço do CRM)**
-   - Se for um dos 8 do Natal, manda ele mesmo (Lake Eyre, Lake Baikal e Lake Victoria contam como Golden Lake).
-   - Senão, segue a sua tabela: Connect JW, Shift, Átrio, Casa Bastian, Skyline Menino Deus, The Arch, AWA → Skyglass; Orygem → Casa Tua Canoas; Terrace, Alto Lindóia, Vivid → Open Arvoredo; Flow, Isla → Open Bosque; Vértice Las Casas → Essence Canoas; High Garden Iguatemi, Grand Park Moinhos → Boa Vista Country Club; Seen Três Figueiras → Golden Lake.
-   - Qualquer outro, avulso ou sem empreendimento → Open Bosque.
-   - Oferta: os 8 textos fixos que você mandou, sem montar frase na hora. Depois de 18/12 o lembrete não é enviado.
+## Fase 5 — Painel do piloto
+- Por modelo (A, B, C, D, lembrete, final), sempre sobre ENTREGUES: % resposta, % "Sim, quero ver", % "Outro perfil", % "Não quero mais contato", enviados à Fila CEO, visitas marcadas.
 
-5. **Botão "Simular envio" na aba Recupera** (só leitura, nada é enviado)
-   - 5 clientes reais por modelo (A, B, C, D, lembrete, final), com a mensagem final completa.
-   - Ao lado de cada um: modelo escolhido e por quê (motivo do descarte, empreendimento original → convertido, imóvel do lembrete e caminho).
-   - Total de clientes em cada modelo (A, B, C, D) e quantos ficaram "sem_nome".
-   - Quantos clientes caem em cada caminho do lembrete (próprio, tabela, Open Bosque).
-   - Lista dos nomes de empreendimento que não converteram, com a quantidade de cada um.
-   - Só admin/diretoria.
+## Liberação
+- Só depois de: Laboratório aprovado + conferência ao vivo de cada fase + "pode ligar" do Lucas.
 
-6. **Testes**: quantidade e ordem das informações de cada modelo; regra do nome; A/B/C sem empreendimento → D; regra do C; conversão de nomes de campanha; escolha do imóvel do lembrete; oferta sem começar com "com" ou "o"; lembrete bloqueado depois de 18/12.
+## Testes
+- Ordem de envio, limite 100/dia, horário e dias, datas 07/12 e 18/12, cadência parando com resposta, opt-out nunca mais recebe, Fila CEO sem voltar ao corretor anterior, pausa nos 5%.
 
-7. No fim, mando prints da simulação dos 6 modelos. O piloto só liga depois da sua revisão.
-
-## Arquivos
-- Novo `supabase/functions/_shared/liaRecuperaModelos.ts`: regras de nome, conversão do empreendimento, escolha do modelo, tabela do lembrete, ofertas, montagem das informações.
-- Novo `src/lia/recuperaLembrete.ts` (ao lado de `catalogoNatal.ts`): tabela de imóveis e ofertas do lembrete, que o envio também usa.
-- `supabase/functions/lia-reengajar-dispatch/index.ts`: modelos `lia_recupera_*` com as informações certas; os modelos antigos ficam iguais.
-- `supabase/functions/lia-reengajar-arm/index.ts`: recusa lote com modelos `lia_recupera_*` nesta fase; o restante do arm continua igual.
-- Nova função `supabase/functions/lia-recupera-simular/index.ts`: só lê dados e devolve a simulação (confere o login e o papel).
-- `src/components/lia-hub/LiaRecuperaTab.tsx` + novo `LiaRecuperaSimulacao.tsx`: botão e tela da simulação.
-- Testes: `src/lia/recupera-envio.test.ts`.
-
-## Técnico
-- Contato humano (regra do C) = atividade em `pipeline_atividades` criada por usuário humano (sem autor de sistema/Lia), tentativa em `oferta_ativa_tentativas` ou WhatsApp de saída enviado pelo corretor, antes do descarte. A fonte exata de cada uma é conferida no banco antes de escrever a regra. Corretor inativo pelo cadastro de perfil.
-- Para a montagem ser igual na simulação e no envio, as duas funções usam o mesmo arquivo compartilhado. Os testes do site importam esse mesmo arquivo.
-- Sem migration, sem alterar `lia_reengajamento_enabled`, sem criar ou ativar lote.
+## Detalhes técnicos
+- Regras em `_shared/liaRecuperaModelos.ts` + novo módulo de cadência compartilhado; chave independente `lia_recupera_piloto_ativo` (desligada).
+- Envio via o disparador existente, com reserva atômica por tentativa (regra `_shared/liaEnvioRegras`).
+- Painel lê agregados no servidor (admin/diretor).
+- Migrations respeitando limite de 2/dia em horário comercial.
