@@ -1,3 +1,4 @@
+import { homiGateway } from "../_shared/homiGateway.ts";
 /**
  * homi-assistant — AI sales coaching assistant for corretores
  * 
@@ -854,6 +855,7 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
       materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
         limit: 4,
         empreendimentoNome: empreendimento,
+          usageContext: {funcao:"homi-assistant:materiais",userId:_auth.userId,leadId:null,versaoPrompt:"materiais-2026-11-06"},
       });
       const block = formatMateriaisBlock(materiaisSuggestions);
       if (block) systemPrompt += block;
@@ -861,20 +863,13 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
       console.error("materiais context skipped:", e);
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const response = await homiGateway({
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-      }),
-    });
+      }, { funcao: "homi-assistant", userId: _auth.userId, leadId: null, versaoPrompt: "homi-assistant-2026-11-06" }, false);
 
     if (!response.ok) {
       const t = await response.text();

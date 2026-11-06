@@ -1,3 +1,4 @@
+import { homiGateway } from "../_shared/homiGateway.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { requireRealUser } from "../_shared/ai-auth.ts";
 
@@ -60,21 +61,14 @@ ${lista.map((e, i) => `${i + 1}. ${e.nome}${e.segmento ? ` [${e.segmento}]` : ""
 
 Retorne JSON: { "empreendimento_id": "uuid_ou_null", "confianca": "alta|media|baixa", "motivo": "breve explicação" }`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": LOVABLE_API_KEY,
-      },
-      body: JSON.stringify({
+    const res = await homiGateway({
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
         response_format: { type: "json_object" },
-      }),
-    });
+      }, { funcao: "homi-suggest-empreendimento-match", userId: _auth.userId, leadId: null, versaoPrompt: "homi-suggest-empreendimento-match-2026-11-06" }, false);
 
     if (!res.ok) {
       const errText = await res.text();

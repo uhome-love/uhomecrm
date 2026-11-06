@@ -1,3 +1,4 @@
+import { homiGateway } from "../_shared/homiGateway.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -67,17 +68,13 @@ Regras:
     const userPrompt = `Dados do dashboard CEO de hoje:
 ${JSON.stringify(dashboardData, null, 2)}`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const aiResp = await homiGateway({
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-      }),
-    });
+      }, { funcao: "homi-briefing", userId: user.id, leadId: null, versaoPrompt: "homi-briefing-2026-11-06" }, false);
 
     if (!aiResp.ok) {
       const status = aiResp.status;

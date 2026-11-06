@@ -1,3 +1,4 @@
+import { homiGateway } from "../_shared/homiGateway.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { searchMateriaisForHomi } from '../_shared/materiais-context.ts';
@@ -104,6 +105,7 @@ Deno.serve(async (req) => {
     const enc = await searchMateriaisForHomi(searchQuery, {
       limit: 3,
       empreendimentoNome: body.empreendimento_nome,
+          usageContext: {funcao:"homi-follow-up-message:materiais",userId:userId,leadId:body.lead_id ?? null,versaoPrompt:"materiais-2026-11-06"},
     });
     materiaisSugeridos = enc.map((m) => ({
       titulo: m.titulo,
@@ -177,21 +179,14 @@ REGRAS:
 Responda EXATAMENTE neste JSON (sem markdown, sem texto extra):
 {"mensagens":[{"titulo":"Curta e direta","texto":"..."},{"titulo":"Consultiva","texto":"..."},{"titulo":"Com pergunta","texto":"..."}]}`;
 
-  const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Lovable-API-Key': LOVABLE_API_KEY,
-    },
-    body: JSON.stringify({
+  const resp = await homiGateway({
       model: 'google/gemini-3.6-flash',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-    }),
-  });
+    }, { funcao: "homi-follow-up-message", userId: userId, leadId: body.lead_id ?? null, versaoPrompt: "homi-follow-up-message-2026-11-06" }, false);
 
   if (resp.status === 402) return json({ error: 'Créditos IA esgotados' }, 402);
   if (resp.status === 429) return json({ error: 'Muitas requisições, aguarde' }, 429);
