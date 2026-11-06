@@ -4,14 +4,18 @@ import { conferirAcao, ACAO_ESPERADA } from "../../supabase/functions/_shared/li
 const ok = (id: string, msgs: string[], sinal = "seguindo") => conferirAcao(id, msgs, sinal).every((c) => c.ok);
 
 describe("ação esperada do Laboratório", () => {
-  it("tem os 10 cenários combinados", () => expect(Object.keys(ACAO_ESPERADA)).toHaveLength(10));
+  it("tem os 18 cenários combinados", () => expect(Object.keys(ACAO_ESPERADA)).toHaveLength(18));
   it("robô: precisa assumir assistente virtual", () => {
     expect(ok("fora-robo", ["Sou a assistente virtual da Uhome! Ainda procura apê?"])).toBe(true);
     expect(ok("fora-robo", ["Não sou robô, sou a Lia."])).toBe(false);
   });
-  it("áudio: pede para escrever", () => {
-    expect(ok("fora-audio", ["Não consigo ouvir áudio, pode escrever?"])).toBe(true);
-    expect(ok("fora-audio", ["Que bom! O Casa Tua tem pátio."])).toBe(false);
+  it("áudio transcrito: responde o conteúdo, nunca diz que não ouve", () => {
+    expect(ok("fora-audio", ["Tem pátio sim, e são 3 dormitórios."])).toBe(true);
+    expect(ok("fora-audio", ["Não consigo ouvir áudio, pode escrever?"])).toBe(false);
+  });
+  it("áudio que falhou: frase aprovada", () => {
+    expect(ok("fora-audio-falhou", ["Vi que você mandou um áudio, mas ele não chegou certinho aqui do meu lado 😊 Pode me mandar de novo ou escrever?"])).toBe(true);
+    expect(ok("fora-audio-falhou", ["Não consigo ouvir áudio."])).toBe(false);
   });
   it("sim quero ver: uma pergunta por vez e puxa visita", () => {
     expect(ok("int-sim", ["Que bom! É para morar ou investir?", "Dá para marcar uma visita no sábado."])).toBe(true);
