@@ -6664,6 +6664,7 @@ export type Database = {
           agendou_em: string | null
           created_at: string
           descartado_em: string | null
+          fila_ceo_em: string | null
           followup_count: number
           last_msg_em: string | null
           last_user_at: string | null
@@ -6674,10 +6675,14 @@ export type Database = {
           optout: boolean
           produto_slug: string | null
           qualificado_em: string | null
+          reaviso_em: string | null
+          reaviso_previsto_em: string | null
+          recuperacao: boolean
           reengajado_em: string | null
           reengajado2_em: string | null
           referral: Json | null
           repassado_em: string | null
+          resposta_recuperacao_em: string | null
           resumo: string | null
           status: string
           telefone: string
@@ -6689,6 +6694,7 @@ export type Database = {
           agendou_em?: string | null
           created_at?: string
           descartado_em?: string | null
+          fila_ceo_em?: string | null
           followup_count?: number
           last_msg_em?: string | null
           last_user_at?: string | null
@@ -6699,10 +6705,14 @@ export type Database = {
           optout?: boolean
           produto_slug?: string | null
           qualificado_em?: string | null
+          reaviso_em?: string | null
+          reaviso_previsto_em?: string | null
+          recuperacao?: boolean
           reengajado_em?: string | null
           reengajado2_em?: string | null
           referral?: Json | null
           repassado_em?: string | null
+          resposta_recuperacao_em?: string | null
           resumo?: string | null
           status?: string
           telefone: string
@@ -6714,6 +6724,7 @@ export type Database = {
           agendou_em?: string | null
           created_at?: string
           descartado_em?: string | null
+          fila_ceo_em?: string | null
           followup_count?: number
           last_msg_em?: string | null
           last_user_at?: string | null
@@ -6724,10 +6735,14 @@ export type Database = {
           optout?: boolean
           produto_slug?: string | null
           qualificado_em?: string | null
+          reaviso_em?: string | null
+          reaviso_previsto_em?: string | null
+          recuperacao?: boolean
           reengajado_em?: string | null
           reengajado2_em?: string | null
           referral?: Json | null
           repassado_em?: string | null
+          resposta_recuperacao_em?: string | null
           resumo?: string | null
           status?: string
           telefone?: string
@@ -7886,11 +7901,15 @@ export type Database = {
       }
       meta_supressao: {
         Row: {
+          canal_pedido: string | null
           codigo: string | null
           created_at: string
           id: string
+          mensagem_pedido: string | null
           motivo: string
           ocorrencias: number
+          pedido_em: string | null
+          retorno_cliente_em: string | null
           suprimir_ate: string | null
           telefone: string
           telefone_last8: string
@@ -7898,11 +7917,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          canal_pedido?: string | null
           codigo?: string | null
           created_at?: string
           id?: string
+          mensagem_pedido?: string | null
           motivo: string
           ocorrencias?: number
+          pedido_em?: string | null
+          retorno_cliente_em?: string | null
           suprimir_ate?: string | null
           telefone: string
           telefone_last8: string
@@ -7910,11 +7933,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          canal_pedido?: string | null
           codigo?: string | null
           created_at?: string
           id?: string
+          mensagem_pedido?: string | null
           motivo?: string
           ocorrencias?: number
+          pedido_em?: string | null
+          retorno_cliente_em?: string | null
           suprimir_ate?: string | null
           telefone?: string
           telefone_last8?: string
@@ -17707,6 +17734,7 @@ export type Database = {
         Args: { p_corretor_id: string }
         Returns: number
       }
+      contato_bloqueado: { Args: { p_telefone: string }; Returns: boolean }
       corretor_pode_entrar_roleta: {
         Args: { p_corretor_id: string; p_janela?: string }
         Returns: boolean
@@ -18726,6 +18754,17 @@ export type Database = {
         Returns: undefined
       }
       lia_ler_configuracoes: { Args: never; Returns: Json }
+      lia_prazo_reaviso: { Args: { p_entrada: string }; Returns: string }
+      lia_reavisar_fila_ceo: { Args: never; Returns: number }
+      lia_recuperar_para_fila_ceo: {
+        Args: {
+          p_lead_id: string
+          p_nivel: string
+          p_resumo: string
+          p_telefone: string
+        }
+        Returns: Json
+      }
       lia_reservar_envio: {
         Args: { p_chave: string; p_origem: string; p_telefone: string }
         Returns: Json
@@ -19067,6 +19106,17 @@ export type Database = {
       registrar_material_recente: {
         Args: { _acao?: string; _material_id: string }
         Returns: undefined
+      }
+      registrar_resposta_recuperacao: {
+        Args: {
+          p_canal?: string
+          p_evento?: string
+          p_mensagem: string
+          p_novo_contato?: boolean
+          p_payload?: string
+          p_telefone: string
+        }
+        Returns: Json
       }
       rejeitar_lead: {
         Args: { p_corretor_id: string; p_lead_id: string; p_motivo?: string }
