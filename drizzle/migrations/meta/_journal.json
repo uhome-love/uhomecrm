@@ -547,6 +547,13 @@
       "when": 1793928351312,
       "tag": "0077_homi_dossie_lacunas_autor",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1793985361444,
+      "tag": "0078_parceiro_le_historico_lead",
+      "breakpoints": true
     }
   ]
 }
