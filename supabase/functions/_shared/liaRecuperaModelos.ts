@@ -73,6 +73,7 @@ export interface Alias { alias_norm: string; empreendimento_id: string }
 /** Nomes que vão para o cliente em vez do nome canônico interno. */
 const NOME_COMERCIAL: Record<string, string> = {
   "connect jw": "Connect João Wallig",
+  "boa vista": "Boa Vista Country Club",
 };
 const IGNORAR = new Set(["avulso", "curadoria", "melnick day"]);
 const APELIDOS_INICIO: Array<[string, string]> = [
