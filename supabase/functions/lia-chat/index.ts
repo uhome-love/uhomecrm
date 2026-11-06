@@ -9,6 +9,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { aplicarTravaFinanciamento, RE_AUDIO_SEM_TRANSCRICAO, FRASE_AUDIO_FALHOU } from "../_shared/liaTravaFinanciamento.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MODEL = "google/gemini-3.6-flash";
@@ -637,6 +638,13 @@ serve(async (req) => {
       : `\n\nNOME DO LEAD: não veio um nome utilizável. Na abertura, pergunte o nome com naturalidade ("com quem eu falo?") junto da 1ª pergunta de interesse, e emita [[nome:PrimeiroNome]] quando a pessoa disser.`;
     const systemPrompt = (fichaProduto ? `${COMMON_SKELETON}\n${fichaProduto}` : LIA_SYSTEM) + ctxHora + ctxPosRepasse + ctxNome;
 
+    // ÁUDIO QUE NÃO TRANSCREVEU: o lia-whatsapp grava "(o cliente enviou audio ...)". Resposta fixa,
+    // aprovada pelo Lucas; nunca dizer que não consegue ouvir áudio.
+    const ultimaFala = String([...(messages as any[])].reverse().find((m) => m?.role === "user")?.content ?? "");
+    if (RE_AUDIO_SEM_TRANSCRICAO.test(ultimaFala)) {
+      return new Response(JSON.stringify({ content: FRASE_AUDIO_FALHOU, sinal: "seguindo", repassar: false }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -741,6 +749,11 @@ serve(async (req) => {
     // ACERVO AO VIVO: se o cerebro emitiu [[acervo:filtro]], troca pelo resultado real das 420
     const _ac = await resolverAcervo(raw);
     raw = _ac.raw;
+
+    // TRAVA DE FINANCIAMENTO: prazo em anos (fora 35), parcela, taxa ou renda fora da ficha
+    // nunca chegam ao cliente. A bolha vira a frase padrão aprovada pelo Lucas.
+    const trava = aplicarTravaFinanciamento(raw, systemPrompt);
+    if (trava.trocou) { console.log("[lia-chat] trava financiamento:", trava.motivo); raw = trava.texto; }
 
     // Extrai o sinal de triagem interno (o cliente NUNCA vê) e limpa o texto.
     const VALID = new Set(["quente", "morno", "frio", "descartar", "seguindo"]);
