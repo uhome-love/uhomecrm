@@ -1,0 +1,4 @@
+CREATE POLICY "Partners can view partner atividades" ON public.pipeline_atividades FOR SELECT TO authenticated USING (pipeline_lead_id IS NOT NULL AND public.is_my_partner_lead(pipeline_lead_id));
+CREATE POLICY "Partners can view partner anotacoes" ON public.pipeline_anotacoes FOR SELECT TO authenticated USING (pipeline_lead_id IS NOT NULL AND public.is_my_partner_lead(pipeline_lead_id));
+CREATE POLICY "Partners can view partner tarefas" ON public.pipeline_tarefas FOR SELECT TO authenticated USING (pipeline_lead_id IS NOT NULL AND public.is_my_partner_lead(pipeline_lead_id));
+CREATE POLICY "Partners can view partner historico" ON public.pipeline_historico FOR SELECT TO authenticated USING (pipeline_lead_id IS NOT NULL AND public.is_my_partner_lead(pipeline_lead_id));
