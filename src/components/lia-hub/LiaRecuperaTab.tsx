@@ -4,6 +4,7 @@ import { Clock, Filter, Hourglass, PauseCircle, ShieldCheck } from "lucide-react
 import { BALDE_ROTULO, CADENCIA, RECUPERA_CONFIG, grupoDoBalde } from "@/lia/recupera";
 import { useLiaAguardando24h, useLiaResumoRecupera } from "./useLiaRecuperaDados";
 import LiaLeituraAviso from "./LiaLeituraAviso";
+import LiaRecuperaSimulacao from "./LiaRecuperaSimulacao";
 
 export default function LiaRecuperaTab() {
   const resumo = useLiaResumoRecupera();
@@ -76,6 +77,7 @@ export default function LiaRecuperaTab() {
           </section>
         </div>
       </div>
+      <LiaRecuperaSimulacao />
       <footer className="flex gap-2 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="h-4 w-4 shrink-0 text-success" />
         <p>Quem pediu para sair, já comprou ou tem telefone inválido não recebe contato. Clientes ativos permanecem com seus corretores.</p>

@@ -10,6 +10,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isModeloRecupera } from "../_shared/liaRecuperaModelos.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +33,8 @@ serve(async (req) => {
     const lote = Number.isFinite(Number(body.lote)) ? Math.max(1, Math.min(500, Number(body.lote))) : 100;
 
     if (!template_key) return new Response(JSON.stringify({ ok: false, error: "template_key obrigatório" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+    // Fase de simulação (aprovada 05/11): modelos da Lia Recupera ainda não podem virar lote.
+    if (isModeloRecupera(template_key)) return new Response(JSON.stringify({ ok: false, error: "Modelos da Lia Recupera só liberados na fase do piloto" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
     if (modo === "produto" && !produto_slug) return new Response(JSON.stringify({ ok: false, error: "produto_slug obrigatório no modo produto" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
 
     const sb = svc();

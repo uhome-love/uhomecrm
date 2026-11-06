@@ -14,6 +14,7 @@
  * Público (verify_jwt=false), chamado pelo pg_cron. NÃO toca no fluxo dos leads Meta.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isModeloRecupera } from "../_shared/liaRecuperaModelos.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
 
@@ -28,6 +29,8 @@ const HORA_INI = 9, HORA_FIM = 20;
 const LOTE_INTERVALO_MS = 20000; // 20s entre envios (proteção do número, sem rajada)
 const MAX_POR_EXECUCAO = 3;      // poucos por rodada; com o cron de 10 min sai espaçado no dia (decisão do Lucas: nada de rajada)
 const TEMPLATE_LANG = "pt_BR";
+// Modelos lia_recupera_* nunca saem por aqui nesta fase (o arm recusa). Trava extra: se aparecer
+// algum na fila, é cancelado sem envio; a montagem das informações fica em _shared/liaRecuperaModelos.ts.
 const TEMPLATE_VARS: Record<string, number> = {
   lia_reengajar_produto: 2,   // {{1}} nome, {{2}} imóvel
   lia_reengajar_cardapio: 5,  // {{1}} nome + {{2}}..{{5}} os 4 imóveis do menu
@@ -154,6 +157,7 @@ serve(async (req) => {
         const { data: vivo } = await sb.from("pipeline_leads").select("id").ilike("telefone", `%${tel8}`).eq("arquivado", false).limit(1);
         if (vivo && vivo.length) { await sb.from("lia_reengajamento_fila").update({ status: "cancelado", erro: "ja_tem_lead_vivo" }).eq("id", f.id); continue; }
 
+        if (isModeloRecupera(f.template_key)) { await sb.from("lia_reengajamento_fila").update({ status: "cancelado", erro: "recupera_nao_liberado" }).eq("id", f.id); continue; }
         const nome = primeiroNome(f.nome);
         const bodyParams = bodyParamsPara(f.template_key, nome, nomePorProduto[f.produto_slug ?? ""]);
 
