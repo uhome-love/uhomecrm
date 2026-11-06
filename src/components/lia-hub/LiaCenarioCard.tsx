@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, X, RotateCw, Loader2, CircleCheck, CircleAlert } from "lucide-react";
 import type { Cenario, Conferencia, Msg } from "../../../supabase/functions/_shared/liaLaboratorio";
+import { ACAO_ESPERADA } from "../../../supabase/functions/_shared/liaLaboratorio";
 import { formatBRT } from "@/lib/brtTime";
 
 export interface Execucao {
