@@ -30,27 +30,27 @@ export const BALDE_ROTULO: Record<string, string> = {
 
 export const CADENCIA = [
   { dia: "D+1", titulo: "1ª mensagem", texto: "Cita o imóvel que a pessoa pediu + campanha de Natal, com 3 botões." },
-  { dia: "D+3", titulo: "Lembrete com oferta", texto: "Uma oportunidade concreta do Natal com preço real e foto." },
-  { dia: "D+10", titulo: "Última mensagem", texto: "\"Posso encerrar seu atendimento?\" — sem resposta, encerra." },
+  { dia: "D+3", titulo: "Lembrete com oferta", texto: "Uma oportunidade concreta do Natal com preço real." },
+  { dia: "D+10", titulo: "Última mensagem", texto: "Avisa que vai encerrar e oferece uma última olhada no Natal; sem resposta, encerra." },
   { dia: "Resposta", titulo: "Conversa da Lia", texto: "Entende momento, faixa, região e prazo; manda as opções certas." },
   { dia: "Interesse recuperado", titulo: "Fila CEO", texto: "Perfil e contexto para repasse manual, nunca para quem descartou." },
 ] as const;
 
-export interface ModeloRecupera { chave: string; titulo: string; quando: string; texto: string }
+export interface ModeloRecupera { chave: string; titulo: string; quando: string; texto: string; aprovadoMeta?: string }
 
 export const MODELOS_RECUPERA: ModeloRecupera[] = [
   { chave: "lia_recupera_a", titulo: "A · Não chegou a conversar", quando: "Não atende, sem retorno, sem motivo",
-    texto: "Olá {{1}}, sou a Lia do Relacionamento da Uhome. Você pediu informações sobre o {{2}} e acho que não conseguimos conversar. Estamos com a campanha Natal Chave de Ouro, com 8 oportunidades a partir de R$ 240 mil. Ainda está procurando imóvel nesse perfil, ou outro? Posso te mandar as opções?" },
+    texto: "Olá {{1}}, tudo bem? Aqui é a Lia, do Relacionamento da Uhome 😊\n\nVocê pediu informações sobre o {{2}} e eu trouxe uma novidade: começou o *Natal Chave de Ouro*, com a melhor condição do ano em 8 imóveis de Porto Alegre e Canoas, a partir de R$ 240 mil. E quem fecha na campanha ainda ganha um presente de Natal 🎁\n\nQuer ver as opções? Se hoje você busca outro perfil, também te ajudo 👇", aprovadoMeta: "05/11/2026" },
   { chave: "lia_recupera_b", titulo: "B · Sem interesse no momento", quando: "Sem interesse no momento",
-    texto: "Olá {{1}}, sou a Lia do Relacionamento da Uhome. Você conversou com nosso time sobre o {{2}} e estamos com novas oportunidades, inclusive nossa campanha de Natal! Você ainda está buscando imóvel nesse perfil, ou algum outro? Posso te mandar as opções e ver se faz sentido?" },
+    texto: "Olá {{1}}, tudo bem? Aqui é a Lia, do Relacionamento da Uhome 😊\n\nVocê conversou com o nosso time sobre o {{2}}, e agora no fim do ano surgiu algo novo: no *Natal Chave de Ouro*, as construtoras liberaram a melhor condição do ano em 8 imóveis. Se na época o que pesou foi entrada ou parcela, vale olhar de novo.\n\nE quem fecha na campanha ainda ganha um presente de Natal 🎁\n\nAinda faz sentido para você? Posso te mostrar nesse perfil ou em outro 👇", aprovadoMeta: "05/11/2026" },
   { chave: "lia_recupera_c", titulo: "C · Atendimento ficou parado", quando: "Corretor desligado ou inativado",
-    texto: "Olá {{1}}, sou a Lia do Relacionamento da Uhome. Seu atendimento sobre o {{2}} ficou parado e queremos retomar com um especialista. Ainda está procurando imóvel? Posso te mostrar as oportunidades da nossa campanha de Natal?" },
+    texto: "Olá {{1}}, tudo bem? Aqui é a Lia, do Relacionamento da Uhome 😊\n\nVi que o seu atendimento sobre o {{2}} ficou parado, e te peço desculpas por isso. Quero retomar do jeito certo, com um especialista acompanhando você.\n\nE chegou numa boa hora: no *Natal Chave de Ouro* temos 8 imóveis com a melhor condição do ano, e quem fecha ainda ganha um presente de Natal 🎁\n\nPosso te mostrar as opções? 👇", aprovadoMeta: "05/11/2026" },
   { chave: "lia_recupera_d", titulo: "D · Sem produto conhecido", quando: "Lead sem empreendimento",
-    texto: "Olá {{1}}, sou a Lia do Relacionamento da Uhome. Você falou com nosso time sobre imóveis e estamos com a campanha Natal Chave de Ouro: apartamentos, casas e alto padrão em Porto Alegre e Canoas. Ainda está procurando? Me conta o perfil e eu te mando as opções." },
+    texto: "Olá {{1}}, tudo bem? Aqui é a Lia, do Relacionamento da Uhome 😊\n\nVocê falou com o nosso time sobre imóveis, e eu trouxe uma novidade: começou o *Natal Chave de Ouro*. São 8 imóveis entre apartamentos, casas e alto padrão em Porto Alegre e Canoas, a partir de R$ 240 mil, com a melhor condição do ano.\n\nE quem fecha na campanha ainda ganha um presente de Natal 🎁\n\nQuer ver as opções? Se preferir, me conta o que você busca que eu separo o que combina 👇", aprovadoMeta: "05/11/2026" },
   { chave: "lia_recupera_lembrete", titulo: "Lembrete D+3", quando: "Sem resposta à 1ª mensagem",
-    texto: "Oi {{1}}, separei uma oportunidade do Natal que pode combinar com você: {{2}}, {{3}}. Quer que eu te mande fotos e a planta?" },
+    texto: "Oi {{1}}, separei uma oportunidade do Natal que pode combinar com você: o {{2}}, com {{3}} 🏡\n\nA condição é só de fim de ano. Quer que eu te conte como funciona?", aprovadoMeta: "05/11/2026" },
   { chave: "lia_recupera_final", titulo: "Última D+10", quando: "Sem resposta ao lembrete",
-    texto: "Oi {{1}}, não quero te incomodar. Posso encerrar seu atendimento ou prefere que eu te mande as opções do Natal?" },
+    texto: "Oi {{1}}, não quero te incomodar 🙂\n\nVou encerrar seu atendimento por aqui. Só não queria que você perdesse o *Natal Chave de Ouro* sem nem dar uma olhada: as condições valem só até o fim do ano.\n\nQuer ver as opções antes de eu encerrar? 👇", aprovadoMeta: "05/11/2026" },
 ];
 
 export const BOTOES_RECUPERA = ["Sim, quero ver", "Outro perfil", "Não quero mais contato"] as const;
