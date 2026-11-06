@@ -17,6 +17,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handoffEngajado } from "../_shared/liaHandoff.ts";
 import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
 import { contatoPodeReceber } from "../_shared/contatoEnvio.ts";
+import { handoffRecuperaSeAplicavel } from "../_shared/liaRecuperaContexto.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -442,7 +443,8 @@ async function passarEngajadosParaTime(
     } catch (e) { console.error("[lia-followup] resumo p/ handoff falhou", c.telefone, e); }
 
     const produto = prodBySlug[c.produto_slug ?? ""] ?? null;
-    const leadId = await handoffEngajado(sb, { telefone: c.telefone, nome: c.nome, nivel: c.nivel, produto, resumo });
+    const recuperacao = await handoffRecuperaSeAplicavel(sb,c.telefone,c.nivel,resumo);
+    const leadId = recuperacao.recupera ? recuperacao.leadId : await handoffEngajado(sb, { telefone: c.telefone, nome: c.nome, nivel: c.nivel, produto, resumo });
     if (!leadId) continue;
 
     // passagem de bastão calorosa pro lead: reengaja e enquadra o humano como CONTINUAÇÃO da LIA.

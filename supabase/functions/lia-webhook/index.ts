@@ -42,6 +42,8 @@ function extractBody(message: Record<string, any> | null | undefined): string | 
   if (!message) return null;
   return (
     message.conversation ||
+    message.buttonsResponseMessage?.selectedButtonId ||
+    message.templateButtonReplyMessage?.selectedId ||
     message.extendedTextMessage?.text ||
     message.imageMessage?.caption ||
     message.videoMessage?.caption ||

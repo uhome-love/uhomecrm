@@ -20,6 +20,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { contatoPodeReceber, registrarResposta } from "../_shared/contatoEnvio.ts";
 import { encerramento, novoContatoWhatsApp } from "../_shared/liaRecuperaRespostas.ts";
 import { handoffRecupera } from "../_shared/liaHandoff.ts";
+import { contextoRealRecupera } from "../_shared/liaRecuperaContexto.ts";
 
 const cors = corsHeaders;
 
@@ -539,12 +540,10 @@ serve(async (req) => {
           .eq("telefone", from).order("created_at", { ascending: true }).limit(40);
         const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
 
-        const { data: recuperacaoFila } = await sb.from("lia_reengajamento_fila")
-          .select("pipeline_lead_id, template_key").eq("tel8", from.slice(-8))
-          .eq("status", "enviado").order("enviado_em", { ascending: false }).limit(1).maybeSingle();
-        if (recuperacaoFila?.template_key?.startsWith("lia_recupera_")) {
+        const recuperacao = await contextoRealRecupera(sb,from,produto?.ficha ?? "");
+        if (recuperacao) {
           est.recuperacao = true;
-          est.lead_id = recuperacaoFila.pipeline_lead_id;
+          est.lead_id = recuperacao.leadId;
           await sb.from("lia_estado").update({ recuperacao: true, lead_id: est.lead_id }).eq("telefone", from);
         }
         let reply = "";
@@ -555,7 +554,7 @@ serve(async (req) => {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
-            body: JSON.stringify({ messages: msgs, nome: (est?.nome ?? contactName) || null, ...(produto?.ficha ? { ficha: produto.ficha + _blocoMidias } : {}), ...(posRepasse ? { pos_repasse: true } : {}) }),
+            body: JSON.stringify({ messages: msgs, nome: (est?.nome ?? contactName) || null, ...(recuperacao ? { ficha: recuperacao.ficha } : produto?.ficha ? { ficha: produto.ficha + _blocoMidias } : {}), ...(posRepasse ? { pos_repasse: true } : {}) }),
           });
           if (!r.ok) { erroChat = true; console.error("[lia-whatsapp] lia-chat HTTP", r.status); }
           else {
