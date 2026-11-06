@@ -100,3 +100,19 @@ describe("prazo e trava", () => {
     expect(isModeloRecupera("lia_reengajar_cardapio")).toBe(false);
   });
 });
+
+describe("modelo C — lead anterior ao CRM (09/03/2026)", () => {
+  const m = (o: Partial<Parameters<typeof escolherModelo>[0]>) => { const r = escolherModelo(cli(o), canon, []); return r.ok ? [r.modelo, r.porqueC] : [r.motivo, null]; };
+  it("lead novo sem contato vai para C por sem_contato", () => {
+    expect(m({ teveContatoHumano: false, leadCriadoEm: "2026-03-09T03:00:00Z" })).toEqual(["lia_recupera_c", "sem_contato"]);
+  });
+  it("lead antigo sem contato não vai para C por sem_contato: A", () => {
+    expect(m({ teveContatoHumano: false, leadCriadoEm: "2026-03-08T12:00:00Z" })).toEqual(["lia_recupera_a", null]);
+  });
+  it("lead antigo sem contato com motivo de B fica no B", () => {
+    expect(m({ teveContatoHumano: false, leadCriadoEm: "2025-10-01T12:00:00Z", balde: "sem_interesse_momento" })).toEqual(["lia_recupera_b", null]);
+  });
+  it("lead antigo sem contato com corretor inativo vai para C por corretor_inativo", () => {
+    expect(m({ teveContatoHumano: false, leadCriadoEm: "2025-10-01T12:00:00Z", corretorInativo: true })).toEqual(["lia_recupera_c", "corretor_inativo"]);
+  });
+});
