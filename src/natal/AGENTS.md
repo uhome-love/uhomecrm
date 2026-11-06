@@ -1,0 +1,1 @@
+- Christmas campaign code lives only in `src/natal/` (assets in `public/natal/`), gated by `isNatal()` in BRT and a per-device effects toggle; existing pages only import small wrappers. Why: temporary theme must be removable by deleting the folder without touching business logic.
