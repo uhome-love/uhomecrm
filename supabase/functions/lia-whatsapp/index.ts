@@ -21,6 +21,7 @@ import { contatoPodeReceber, registrarResposta } from "../_shared/contatoEnvio.t
 import { encerramento, novoContatoWhatsApp } from "../_shared/liaRecuperaRespostas.ts";
 import { handoffRecupera } from "../_shared/liaHandoff.ts";
 import { contextoRealRecupera } from "../_shared/liaRecuperaContexto.ts";
+import { webhookLiaAutorizado } from "../_shared/liaWebhookAuth.ts";
 
 const cors = corsHeaders;
 
@@ -365,7 +366,9 @@ serve(async (req) => {
   if (req.method !== "POST") return new Response("no", { status: 405, headers: cors });
 
   try {
-    const body = await req.json().catch(() => ({} as any));
+    const raw = await req.text();
+    if (!await webhookLiaAutorizado(req,raw)) return new Response(JSON.stringify({error:"Unauthorized"}),{status:401,headers:{...cors,"Content-Type":"application/json"}});
+    const body = JSON.parse(raw);
     const sb = svc();
 
     const changes = (body?.entry ?? []).flatMap((e: any) => e?.changes ?? []);
