@@ -12,6 +12,7 @@
 // - Grava heartbeat em reengajamento_worker_heartbeat a cada execução.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { contatoPodeReceber } from "../_shared/contatoEnvio.ts";
 import {
   sendMetaTemplate,
   uploadMetaMediaFromUrl,
@@ -271,6 +272,11 @@ Deno.serve(async (req) => {
 
   const toPhone: string = item.phone_normalized || item.telefone;
   const nome: string = (item.nome || "").split(" ")[0] || "tudo bem";
+
+  if (!await contatoPodeReceber(supabase, toPhone, item.lead_id, templateName)) {
+    await supabase.from("reengajamento_dispatch_queue").update({ status: "suppressed", error_text: "contato_bloqueado", locked_at: null, locked_by: null }).eq("id", item.id);
+    return respond({ skipped: true, reason: "contato_bloqueado" }, { status: "skipped", reason: "contato_bloqueado" });
+  }
 
   const sendRes = await sendMetaTemplate({
     phoneNumberId: metaPhoneId,

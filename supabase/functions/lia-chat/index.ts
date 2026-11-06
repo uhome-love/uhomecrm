@@ -12,6 +12,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { numerosFora, permitidos, substituirBolhas } from "../_shared/liaTravaNumeros.ts";
 import { aplicarTravaFinanciamento, RE_AUDIO_SEM_TRANSCRICAO, FRASE_AUDIO_FALHOU } from "../_shared/liaTravaFinanciamento.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { classificarResposta, encerramento } from "../_shared/liaRecuperaRespostas.ts";
 
 const MODEL = "google/gemini-3.6-flash";
 
@@ -552,6 +553,14 @@ serve(async (req) => {
     const messages = incoming
       .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
       .map((m: any) => ({ role: m.role, content: m.content }));
+
+    if (!body.mode) {
+      const falas = messages as Array<{ role: string; content: string }>;
+      const ultima = [...falas].reverse().find(m => m.role === "user");
+      const acao = classificarResposta(ultima?.content ?? "", typeof body.payload === "string" ? body.payload : null);
+      const fim = encerramento(acao);
+      if (fim) return new Response(JSON.stringify({ content: fim, sinal: "descartar", repassar: false, acao }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Modo resumo: devolve { resumo } (pro corretor), sem conversar.
     // A conversa vai como TRANSCRIÇÃO dentro de uma única mensagem do usuário.

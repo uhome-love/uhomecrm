@@ -16,12 +16,12 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { contatoPodeReceber, registrarResposta } from "../_shared/contatoEnvio.ts";
+import { encerramento, novoContatoWhatsApp } from "../_shared/liaRecuperaRespostas.ts";
+import { handoffRecupera } from "../_shared/liaHandoff.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
+const cors = corsHeaders;
 
 const D360_URL = "https://waba-v2.360dialog.io/messages";
 const EDGE_BASE = "https://hunbxqzhvuemgntklyzb.supabase.co";
@@ -125,9 +125,10 @@ const NIVEL_MAP: Record<string, { temperatura: string; prioridade: string; emoji
 const svc = () =>
   createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-async function send360(to: string, payload: Record<string, unknown>): Promise<boolean> {
+async function send360(to: string, payload: Record<string, unknown>, confirmarEncerramento = false): Promise<boolean> {
   const key = Deno.env.get("D360_API_KEY");
   if (!key) { console.error("[lia-whatsapp] D360_API_KEY ausente"); return false; }
+  if (!confirmarEncerramento && !await contatoPodeReceber(svc(), to)) return false;
   try {
     const r = await fetch(D360_URL, {
       method: "POST",
@@ -444,6 +445,27 @@ serve(async (req) => {
         // REENGAJAMENTO: registra que este disparo teve resposta, e se foi gente ou robô.
         await marcarRespostaReengajamento(sb, from, conteudo);
 
+        // Persistência antes de IA/envio/repasse. Uma resposta cancela toda a cadência.
+        const payload = m.button?.payload ?? m.interactive?.button_reply?.id ?? null;
+        const decisao = await registrarResposta(sb, {
+          telefone: from, mensagem: conteudo, payload, evento: waId,
+          novoContato: novoContatoWhatsApp(texto, m.context?.id, payload),
+        });
+        if (decisao.acao !== "seguir") {
+          const fim = encerramento(decisao.acao);
+          if (fim && !decisao.duplicada) {
+            // Única confirmação do pedido; nunca material, venda ou nova pergunta.
+            await send360(from, { type: "text", text: { body: fim } }, true);
+            await sb.from("lia_conversas").insert({ telefone: from, role: "assistant", conteudo: fim });
+          }
+          continue;
+        }
+        if (decisao.bloqueado) continue;
+        if (decisao.novo_contato) {
+          const { data: atual } = await sb.from("lia_estado").select("*").eq("telefone", from).maybeSingle();
+          est = atual ?? est;
+        }
+
         // TRAVA DE OPT-OUT: quem já saiu não recebe mais resposta.
         if (est?.optout) continue;
 
@@ -517,6 +539,14 @@ serve(async (req) => {
           .eq("telefone", from).order("created_at", { ascending: true }).limit(40);
         const msgs = (hist ?? []).map((h: any) => ({ role: h.role, content: h.conteudo }));
 
+        const { data: recuperacaoFila } = await sb.from("lia_reengajamento_fila")
+          .select("pipeline_lead_id, template_key").eq("tel8", from.slice(-8))
+          .eq("status", "enviado").order("enviado_em", { ascending: false }).limit(1).maybeSingle();
+        if (recuperacaoFila?.template_key?.startsWith("lia_recupera_")) {
+          est.recuperacao = true;
+          est.lead_id = recuperacaoFila.pipeline_lead_id;
+          await sb.from("lia_estado").update({ recuperacao: true, lead_id: est.lead_id }).eq("telefone", from);
+        }
         let reply = "";
         let sinal = "seguindo";
         let repassar = false;
@@ -690,6 +720,10 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
     }
 
     let leadId: string | null = est.lead_id ?? null;
+    if (est.recuperacao) {
+      if (!leadId) return null;
+      return await handoffRecupera(sb, { leadId, telefone: from, nivel, resumo: resumo || "Cliente pediu atendimento com um especialista." });
+    }
     if (!leadId) {
       leadId = await criarLeadFila(sb, from, est.nome ?? nome, referral, nivel, resumo, produto);
       // Se NÃO conseguiu criar o lead, aborta: não marca qualificado nem manda a passagem de bastão
