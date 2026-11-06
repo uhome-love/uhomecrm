@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, LockKeyhole, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import UhomeSalesLogo from "@/components/brand/UhomeSalesLogo";
-import { AuthBrandPanel, AuthMobileHeader } from "@/components/auth/AuthBrandPanel";
+import { AuthBrandPanel, AuthMobileHeader, AuthLogo, AuthRecadoCurto } from "@/components/auth/AuthBrandPanel";
 
 function handleHardRecovery() {
   // Botão "Corrigir acesso" — limpa tudo e recarrega via flag de recuperação.
@@ -90,13 +89,10 @@ export default function Auth() {
     <div className="min-h-screen flex flex-col lg:flex-row bg-background text-foreground">
       <AuthMobileHeader />
 
-      <main className="lg:order-2 flex flex-1 flex-col justify-start lg:justify-center px-6 py-8 lg:max-w-[620px] lg:px-[72px]">
-        <div className="mb-14 hidden lg:block"><UhomeSalesLogo height={48} /></div>
+      <main className="lg:order-2 flex flex-1 flex-col justify-start lg:justify-center px-6 py-7 lg:max-w-[620px] lg:px-[72px]">
+        <div className="mb-12 hidden lg:block"><AuthLogo height={46} /></div>
 
-        <span className="inline-flex items-center gap-2 self-start rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
-          <i className="block h-[7px] w-[7px] rounded-full bg-success" />CRM da equipe Uhome
-        </span>
-        <h2 className="mt-4 mb-2 font-display text-[26px] font-extrabold tracking-tight lg:text-[34px]">Bem-vindo de volta</h2>
+        <h2 className="mb-2 font-display text-[26px] font-extrabold tracking-tight lg:text-[34px]">Que bom te ver de novo</h2>
         <p className="mb-7 text-[15px] text-muted-foreground">Entre para ver seus leads, visitas e tarefas de hoje.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -131,10 +127,15 @@ export default function Auth() {
           )}
         </form>
 
-        <p className="mt-7 text-xs text-muted-foreground">🔐 Acesso restrito à equipe Uhome</p>
-        <button type="button" onClick={handleHardRecovery} className="mt-2 self-start text-[11px] text-muted-foreground/80 hover:underline">
-          Está preso na tela de login? Corrigir acesso neste dispositivo
-        </button>
+        <AuthRecadoCurto />
+
+        <div className="mt-auto pt-8 text-center text-xs text-muted-foreground lg:mt-8 lg:border-t lg:border-border lg:text-left">
+          <p className="flex items-center justify-center gap-2 lg:justify-start"><LockKeyhole className="h-3.5 w-3.5" />Acesso restrito à equipe Uhome</p>
+          <p className="mt-1.5">
+            <span className="hidden lg:inline">Está preso na tela de login? </span>
+            <button type="button" onClick={handleHardRecovery} className="font-semibold text-primary hover:underline">Corrigir acesso neste dispositivo</button>
+          </p>
+        </div>
       </main>
 
       <AuthBrandPanel />
