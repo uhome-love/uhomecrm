@@ -18,12 +18,21 @@
    - Avulso, imóvel de terceiros ou nome que não converteu → modelo D.
    - A tabela de apelidos não é alterada.
 
-3. **Qual modelo cada cliente recebe**
-   - **C**: corretor desligado/inativado OU descartado sem nenhuma tentativa de contato (ligação, WhatsApp ou atividade).
-   - **B**: motivo "sem interesse no momento".
-   - **A**: os demais motivos que permitem recuperação (não atende, sem motivo, outro, sem perfil, lead antigo).
-   - **D**: no lugar de A/B/C quando não há empreendimento de verdade.
+3. **Qual modelo cada cliente recebe** (vale a primeira regra que bater)
+   - a) Descartado sem nenhuma tentativa de contato humana → **C**
+   - b) Motivo sem interesse no momento, sem condição financeira ou desistiu (estes dois só depois da espera de 90 dias) → **B**
+   - c) Corretor desligado/inativado → **C**
+   - d) Demais motivos (não atende, sem motivo, outro, sem perfil, lead antigo) → **A**
+   - Em qualquer caso, sem empreendimento de verdade → **D**.
+   - Quem disse "sem interesse" nunca recebe o C, mesmo que o corretor tenha saído.
+   - **Tentativa de contato** = só ação humana do corretor/equipe: ligação, WhatsApp enviado pelo corretor, atividade registrada por ele. Não contam distribuição da Roleta, mudança automática de etapa, disparos, nutrição, mensagens da Lia e avisos do sistema.
+   - **Nome válido**: pelo menos 2 letras, sem números nem emoji, e não pode ser palavra genérica ("cliente", "lead", "wpp", "teste", "sem nome"). Se não passar → "sem_nome".
    - As regras de exclusão continuam iguais (opt-out, já comprou, cliente ativo, espera de 90 dias).
+
+   **Segurança (a chave `lia_reengajamento_enabled` está ligada)**
+   - Nesta fase não é possível armar lote com modelos `lia_recupera_*`. Eles servem só para a simulação e serão liberados na fase do piloto.
+   - A escolha de modelo por cliente vale só para lotes da Recupera. O Reengajar manual continua exatamente como hoje.
+   - O lote pausado (cardápio de agosto) continua pausado.
 
 4. **Imóvel do lembrete (tabela fixa, sem preço do CRM)**
    - Se for um dos 8 do Natal, manda ele mesmo (Lake Eyre, Lake Baikal e Lake Victoria contam como Golden Lake).
@@ -34,6 +43,7 @@
 5. **Botão "Simular envio" na aba Recupera** (só leitura, nada é enviado)
    - 5 clientes reais por modelo (A, B, C, D, lembrete, final), com a mensagem final completa.
    - Ao lado de cada um: modelo escolhido e por quê (motivo do descarte, empreendimento original → convertido, imóvel do lembrete e caminho).
+   - Total de clientes em cada modelo (A, B, C, D) e quantos ficaram "sem_nome".
    - Quantos clientes caem em cada caminho do lembrete (próprio, tabela, Open Bosque).
    - Lista dos nomes de empreendimento que não converteram, com a quantidade de cada um.
    - Só admin/diretoria.
@@ -46,12 +56,12 @@
 - Novo `supabase/functions/_shared/liaRecuperaModelos.ts`: regras de nome, conversão do empreendimento, escolha do modelo, tabela do lembrete, ofertas, montagem das informações.
 - Novo `src/lia/recuperaLembrete.ts` (ao lado de `catalogoNatal.ts`): tabela de imóveis e ofertas do lembrete, que o envio também usa.
 - `supabase/functions/lia-reengajar-dispatch/index.ts`: modelos `lia_recupera_*` com as informações certas; os modelos antigos ficam iguais.
-- `supabase/functions/lia-reengajar-arm/index.ts`: escolhe o modelo por cliente e marca "sem_nome" quando for o caso.
+- `supabase/functions/lia-reengajar-arm/index.ts`: recusa lote com modelos `lia_recupera_*` nesta fase; o restante do arm continua igual.
 - Nova função `supabase/functions/lia-recupera-simular/index.ts`: só lê dados e devolve a simulação (confere o login e o papel).
 - `src/components/lia-hub/LiaRecuperaTab.tsx` + novo `LiaRecuperaSimulacao.tsx`: botão e tela da simulação.
 - Testes: `src/lia/recupera-envio.test.ts`.
 
 ## Técnico
-- Contato registrado (regra do C) = existe `pipeline_atividades`, `oferta_ativa_tentativas` ou mensagem de saída no WhatsApp para o lead antes do descarte. Corretor inativo pelo cadastro de perfil.
+- Contato humano (regra do C) = atividade em `pipeline_atividades` criada por usuário humano (sem autor de sistema/Lia), tentativa em `oferta_ativa_tentativas` ou WhatsApp de saída enviado pelo corretor, antes do descarte. A fonte exata de cada uma é conferida no banco antes de escrever a regra. Corretor inativo pelo cadastro de perfil.
 - Para a montagem ser igual na simulação e no envio, as duas funções usam o mesmo arquivo compartilhado. Os testes do site importam esse mesmo arquivo.
 - Sem migration, sem alterar `lia_reengajamento_enabled`, sem criar ou ativar lote.
