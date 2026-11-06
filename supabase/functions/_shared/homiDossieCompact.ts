@@ -6,7 +6,7 @@ const norm = (v: Json | undefined) => String(v ?? "").normalize("NFD").replace(/
 const noReturn = (f: Dossie) => {
   const text = norm([f.tipo, f.titulo, f.descricao_resumo].join(" "));
   return !/visita|objecao|proximo passo|entrada|etapa|proposta|documentacao/.test(text)
-    && (/nao_atendeu|sem_resposta|sem_retorno/.test(norm(f.resultado))
+    && (/nao[_ ]atendeu|sem[_ ]resposta|sem[_ ]retorno/.test(norm(f.resultado))
       || (!f.resultado && /nao atendeu|sem (resposta|retorno)|tentativa/.test(text)));
 };
 
@@ -71,7 +71,7 @@ function squeeze(v: Json, limit: number, key = ""): Json {
   if (typeof v === "string" && proseKeys.has(key)) return abbreviate(v,limit);
   if (Array.isArray(v)) return v.map(x => squeeze(x,limit));
   if (v && typeof v === "object") return Object.fromEntries(Object.entries(v)
-    .filter(([k]) => !["id", "created_at"].includes(k))
+    .filter(([k,x]) => !["id", "created_at"].includes(k) && x !== null)
     .map(([k,x]) => [k,squeeze(x,limit,k)]));
   return v;
 }
@@ -83,14 +83,30 @@ export function boundedJson(d: Dossie, maxBytes = DOSSIER_MAX_BYTES): string {
   if (size(text) <= maxBytes) return text;
   // Full recent texts are kept whenever possible. Reduce duplicate/auxiliary prose first.
   const work = structuredClone(d);
+  const authors = new Map<string,string>();
+  const aliasAuthors = (v: Json): Json => {
+    if (Array.isArray(v)) return v.map(aliasAuthors);
+    if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k,x])=> {
+      if (k === "autor_id" && typeof x === "string") {
+        if (!authors.has(x)) authors.set(x,`autor_${authors.size+1}`);
+        return ["autor_ref",authors.get(x) ?? "sistema"];
+      }
+      return [k,aliasAuthors(x)];
+    }));
+    return v;
+  };
   const recent = rows(record(work.atividades_recentes).dados);
   const ids = new Set(recent.map(f => f.id).filter(Boolean));
   const timeline = record(record(work.timeline).dados);
-  if (Array.isArray(timeline.fatos)) timeline.fatos = rows(timeline.fatos).map(f => ids.has(f.id)
-    ? { ...f, descricao_resumo: "Texto integral em atividades_recentes" } : f);
+  if (Array.isArray(timeline.fatos)) timeline.fatos = rows(timeline.fatos).map(f => {
+    if (!ids.has(f.id)) return f;
+    const {descricao_resumo, ...rest} = f;
+    return {...rest,texto_em:"atividades_recentes"};
+  });
   work.compactacao = { textos_abreviados: true, marcos_preservados: true };
   for (const limit of [400, 240, 120, 60]) {
-    text = JSON.stringify(squeeze(work,limit));
+    const aliased = aliasAuthors(squeeze(work,limit));
+    text = JSON.stringify({...record(aliased),autores:Object.fromEntries([...authors].map(([id,ref])=>[ref,id]))});
     if (size(text) <= maxBytes) return text;
   }
   // Never silently drop stage changes, visits, objections or results to force an envelope.

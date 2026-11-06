@@ -52,14 +52,23 @@ export function dossierForAI(dossier: Dossie, short = false, maxBytes = DOSSIER_
 /** One flag read, parallel authorized reads. Failures remain explicit, never empty facts. */
 export async function dossiersForList(client: SupabaseClient, ids: string[]): Promise<Map<string,string>> {
   const output = new Map<string,string>();
-  const unique = [...new Set(ids)];
+  const unique = [...new Set(ids)].slice(0,10);
   if (!unique.length || !await dossierEnabled(client)) return output;
   const budget = Math.floor((DOSSIER_MAX_BYTES - 1024) / unique.length);
   await Promise.all(unique.map(async id => {
     try {
       const { data, error } = await client.rpc("homi_dossie_lead", { p_lead: id });
       if (error || !data || typeof data !== "object" || Array.isArray(data)) throw new Error("indisponível");
-      output.set(id, dossierForAI(data as Dossie,true,budget));
+      const clean = sanitizeDossier(data as Dossie) as Dossie;
+      const short = shortDossier(clean);
+      // A short projection may use fewer than five facts when the whole list is large.
+      for (let count=5;count>=0;count--) {
+        try {
+          const facts = Array.isArray(short.fatos) ? short.fatos.slice(0,count) : [];
+          output.set(id,boundedJson({...short,fatos:facts},budget));
+          break;
+        } catch { if(count===0) throw new Error("Resumo excede orçamento"); }
+      }
     } catch { output.set(id, "Dossiê indisponível; não inferir lacunas nem fatos."); }
   }));
   return output;
