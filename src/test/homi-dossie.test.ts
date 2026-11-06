@@ -83,4 +83,12 @@ describe("Privacidade e ativação do dossiê HOMI", () => {
     const list=await dossiersForList(client as Parameters<typeof dossiersForList>[0],["a","b","c"]);
     expect(list.size).toBe(3); expect(maxActive).toBe(3); expect(flags).toBe(1);
   });
+  it("lista de dez leads tem até 12 KB, cinco fatos no máximo e lacunas em todos", async () => {
+    const ids=Array.from({length:10},(_,i)=>`lead${i}`);
+    const data={lead:{status:"ok",dados:{id:"lead",nome:"Cliente teste",etapa:"Documentação"}},timeline:{status:"ok",dados:{fatos:Array.from({length:10},(_,i)=>({data:`2026-11-${i+1}`,resultado:"agendou_proximo",descricao_resumo:"Cliente gostou"}))}},lacunas:["objetivo_cliente: não informado","sem tarefa futura"]};
+    const client={from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{flag_value:true},error:null})})})}),rpc:async()=>({data,error:null})};
+    const list=await dossiersForList(client as Parameters<typeof dossiersForList>[0],ids);
+    expect(new TextEncoder().encode([...list.values()].join("\n")).byteLength).toBeLessThanOrEqual(12*1024);
+    for(const text of list.values()){const row=JSON.parse(text);expect(row.fatos.length).toBeLessThanOrEqual(5);expect(row.lacunas).toEqual(data.lacunas);}
+  });
 });

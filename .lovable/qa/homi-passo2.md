@@ -23,3 +23,14 @@
 
 ## Estrutura de saída
 `lead`, `qualificacao`, `timeline`, `atividades_recentes`, `anotacoes`, `mudancas_etapa`, `visitas`, `tarefas`, `lia_estado`, `lia_conversas`, `whatsapp_respostas`, `oferta_ativa`, `negocios`, `parceria`, `memoria`: cada bloco tem `status` (ok/vazio/indisponível) e `dados`; fatos têm data/fonte/ciclo/autor. Últimas oito atividades e cinco anotações permanecem integrais no dossiê; projeção à IA sanitiza dados pessoais e resume prosa.
+
+## Correções solicitadas em 05/11 — conferência 06/11 UTC
+- Sanitização preserva documentação/anexo comercial, datas, objeção, próximo passo e feedback da visita real 05/11; identificadores redigidos, frases de renda/salário excluídas.
+- Lacunas calculadas no banco para os quatro campos vazios e pendências comprovadas; fontes indisponíveis não viram ausência. Dois dossiês reais relidos autenticados, sem alterações nos clientes.
+- Autor zero/sistemas não são outro corretor; Lia tem autor_tipo próprio.
+- Timeline agrupa tentativas sem resposta por fonte/autor/ciclo/tipo/resultado; marcos mantidos. Projeção UTF-8 dos dois dossiês reais: 11.195 e 11.587 bytes. Textos essenciais preservados; envelope que não caiba mesmo após compactação falha explicitamente, não descarta marcos silenciosamente.
+- Listas carregam dossiês autorizados em paralelo, até cinco fatos por lead, lacunas e orçamento conjunto. Listas grandes podem usar menos fatos para preservar lacunas.
+- Todas as chamadas de chat/embeddings dos caminhos HOMI usam SDK com início durável em homi_ia_uso e finalização pelo usage real; cache/raciocínio/latência/versão/sucesso conferidos em chamadas JSON e SSE reais. Sem custo estimado inventado.
+- Oito funções implantadas; contratos Deno conferidos. Preview /homi: envio pela caixa e resposta OK verificados; nenhuma ação em lead real.
+- 23 testes unitários; SQL de oito regras de lacunas guardado para execução pelo dono da função (ferramenta read-only não tem permissão para helper privado). Sem ampliar acesso ao helper para testar.
+- Flag permanece false; consulta externa permanece fechada. Avaliação de respostas com dossiê ativo continua aguardando Lucas.
