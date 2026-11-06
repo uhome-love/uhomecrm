@@ -10,6 +10,8 @@ export const FRASE_ENTRADA = "O especialista monta o parcelamento da entrada cer
 export const FRASE_GENERICA = "Esse detalhe o especialista confirma certinho pra você.";
 export const PERGUNTA_DIRECIONAMENTO = "Quer que eu já peça pra ele te chamar por aqui?";
 
+const HORA = 1e12;
+const VEZES = 2e12;
 const RE_NUM = /(\d+(?:[.,]\d+)*)(\s*(?:milh[õo]es|milh[ãa]o|mil|mi)\b)?/gi;
 
 function parseNumero(bruto: string): number[] {
@@ -32,7 +34,10 @@ export function numerosDe(texto: string): number[] {
   while ((m = RE_NUM.exec(t))) {
     const unidade = (m[2] || "").trim().toLowerCase();
     const mult = unidade === "mil" ? 1000 : unidade.startsWith("mi") ? 1_000_000 : 1;
-    for (const n of parseNumero(m[1])) out.push(Math.round(n * mult * 100) / 100);
+    // unidades que mudam o sentido do número ganham "espaço" próprio: 9h ≠ R$ 9 mil, 24 vezes ≠ 24 m²
+    const depois = t.slice(RE_NUM.lastIndex, RE_NUM.lastIndex + 10).toLowerCase();
+    const ns = /^\s*(h\b|h\d|hs\b|horas?\b)/.test(depois) ? HORA : /^\s*(x\b|vezes\b|parcelas?\b|presta[çc])/.test(depois) ? VEZES : 0;
+    for (const n of parseNumero(m[1])) out.push(ns + Math.round(n * mult * 100) / 100);
   }
   return out;
 }
@@ -46,7 +51,7 @@ export function permitidos(fontes: string[]): Set<number> {
 
 /** Números da resposta que não estão nas fontes. */
 export function numerosFora(resposta: string, ok: Set<number>): number[] {
-  return [...new Set(numerosDe(resposta).filter((n) => !ok.has(n)))];
+  return [...new Set(numerosDe(resposta).filter((n) => !ok.has(n)))].map((n) => n >= VEZES ? n - VEZES : n >= HORA ? n - HORA : n);
 }
 
 /** Troca as bolhas com número fora pela frase do assunto; garante uma pergunta de direcionamento no fim. */

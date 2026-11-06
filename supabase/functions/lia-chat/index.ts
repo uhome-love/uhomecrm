@@ -800,6 +800,7 @@ serve(async (req) => {
         .replace(/\[\[\s*sinal\s*:\s*\w+\s*\]\]/ig, "")
         .replace(/\[\[\s*repassar\s*\]\]/ig, "")
         .replace(/\[\[\s*acervo\s*:[^\]]*\]\]/ig, "")
+        .replace(/\*\*/g, "") // WhatsApp da Lia nunca leva negrito de markdown
         .trim();
       if (clean) kept.push(clean);
     }

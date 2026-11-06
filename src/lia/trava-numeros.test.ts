@@ -26,5 +26,10 @@ describe("trava de números", () => {
     const r = substituirBolhas("O condomínio fica R$ 850.|||Quer conhecer no sábado?", ok());
     expect(r.split("|||")).toEqual([FRASE_GENERICA, "Quer conhecer no sábado?"]);
   });
+  it("horário e vezes não aproveitam número de outro assunto", () => {
+    const k = permitidos([FICHA, "renda de R$ 9 mil, 24 m²"]);
+    expect(numerosFora("Abre às 9h aos sábados.", k)).toEqual([9]);
+    expect(numerosFora("Parcela em 24 vezes.", k)).toEqual([24]);
+  });
   it("ignora dígitos de marcadores", () => expect(numerosFora("[[midia:natal_ate_300]]", ok())).toEqual([]));
 });
