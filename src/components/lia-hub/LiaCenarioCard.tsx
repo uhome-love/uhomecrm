@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, X, RotateCw, Loader2, CircleCheck, CircleAlert } from "lucide-react";
 import type { Cenario, Conferencia, Msg } from "../../../supabase/functions/_shared/liaLaboratorio";
+import { ACAO_ESPERADA } from "../../../supabase/functions/_shared/liaLaboratorio";
 import { formatBRT } from "@/lib/brtTime";
 
 export interface Execucao {
@@ -44,6 +45,7 @@ export default function LiaCenarioCard({ cenario, execucao, rodando, bloqueado, 
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">{cenario.titulo}</p>
             <p className="text-[11px] text-muted-foreground">{cenario.nomeCliente} (fictício) · {cenario.produtoNome} · {cenario.motivo} · há {cenario.dias} dias</p>
+            {ACAO_ESPERADA[cenario.id] && <p className="mt-1 text-[11px] text-foreground"><span className="font-medium">Ação esperada:</span> {ACAO_ESPERADA[cenario.id]}</p>}
           </div>
           {execucao?.avaliacao === "ok" && <Badge variant={desatualizado ? "outline" : "default"} className="text-[10px]">{desatualizado ? "Revalidar" : "Aprovado"}</Badge>}
           {execucao?.avaliacao === "ajustar" && <Badge variant="destructive" className="text-[10px]">Ajustar</Badge>}
