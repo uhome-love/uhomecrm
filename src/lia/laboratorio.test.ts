@@ -6,9 +6,9 @@ const ok = (c: ReturnType<typeof conferir>, k: string) => c.find((x) => x.chave 
 const cen = (id: string) => CENARIOS.find((c) => c.id === id)!;
 
 describe("laboratório da Lia", () => {
-  it("tem 40 cenários com ids únicos", () => {
-    expect(CENARIOS).toHaveLength(40);
-    expect(new Set(CENARIOS.map((c) => c.id)).size).toBe(40);
+  it("tem 41 cenários com ids únicos", () => {
+    expect(CENARIOS).toHaveLength(41);
+    expect(new Set(CENARIOS.map((c) => c.id)).size).toBe(41);
   });
 
   it("preços do laboratório batem com o catálogo de Natal", () => {
