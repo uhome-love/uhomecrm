@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ChevronLeft, Phone, MessageCircle, CheckCircle2, PhoneMissed, XCircle, Loader2 } from "lucide-react";
 import { formatBRT } from "@/lib/brtTime";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   porta: "estagnados" | "descartados";
@@ -11,6 +12,7 @@ interface Props {
   onNaoAtendeu: () => void;
   onSemInteresse: () => void;
   onSair: () => void;
+  onContatar: (canal: "ligacao" | "whatsapp") => Promise<void>;
 }
 
 function iniciais(nome: string) {
@@ -18,7 +20,7 @@ function iniciais(nome: string) {
   return ((p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase() || "?";
 }
 
-export default function BolsaoClienteMobile({ porta, lead, restantes, busy, onAproveitar, onNaoAtendeu, onSemInteresse, onSair }: Props) {
+export default function BolsaoClienteMobile({ porta, lead, restantes, busy, onAproveitar, onNaoAtendeu, onSemInteresse, onSair, onContatar }: Props) {
   const topo = useRef<HTMLDivElement>(null);
   useEffect(() => { topo.current?.scrollIntoView({ block: "start" }); }, [lead.nome]);
   const fone = (lead.telefone ?? "").replace(/\D/g, "");
@@ -47,14 +49,14 @@ export default function BolsaoClienteMobile({ porta, lead, restantes, busy, onAp
       </div>
 
       <div className="mt-6 flex justify-center gap-8">
-        <a href={fone ? `tel:+${fone}` : undefined} aria-disabled={!fone} className="text-center text-xs font-semibold text-foreground">
+        <Button variant="ghost" disabled={!fone || busy} onClick={() => void onContatar("ligacao")} className="h-auto flex-col text-center text-xs font-semibold text-foreground">
           <span className={`${redondo} bg-primary text-primary-foreground`}><Phone className="h-6 w-6" /></span>
           <span className="mt-1.5 block">Ligar</span>
-        </a>
-        <a href={fone ? `https://wa.me/${fone}` : undefined} target="_blank" rel="noreferrer" aria-disabled={!fone} className="text-center text-xs font-semibold text-foreground">
+        </Button>
+        <Button variant="ghost" disabled={!fone || busy} onClick={() => void onContatar("whatsapp")} className="h-auto flex-col text-center text-xs font-semibold text-foreground">
           <span className={`${redondo} bg-success text-primary-foreground`}><MessageCircle className="h-6 w-6" /></span>
           <span className="mt-1.5 block">WhatsApp</span>
-        </a>
+        </Button>
       </div>
 
       <p className="mx-1 mt-6 rounded-2xl bg-card p-3.5 text-sm leading-snug text-muted-foreground shadow-sm">

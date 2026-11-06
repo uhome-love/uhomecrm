@@ -486,6 +486,7 @@ export const STATUS_META: Record<string, { label: string; cls: string }> = {
   qualificado: { label: "Qualificado", cls: "bg-success/10 text-success border-success/20" },
   descartado: { label: "Descartado", cls: "bg-muted text-muted-foreground border-border" },
   opt_out: { label: "Opt-out", cls: "bg-destructive/10 text-destructive border-destructive/20" },
+  ja_comprou: { label: "Já comprou", cls: "bg-muted text-muted-foreground border-border" },
 };
 
 /** Meta de status do lead considerando o MOTIVO: quem foi devolvido pro corretor recebe uma flag

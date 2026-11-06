@@ -17,6 +17,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { isModeloRecupera } from "../_shared/liaRecuperaModelos.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
+import { contatoPodeReceber } from "../_shared/contatoEnvio.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -79,6 +80,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const toWa = (raw: string) => { let d = (raw || "").replace(/\D/g, ""); if (d.startsWith("55")) d = d.slice(2); return "55" + d; };
 
 async function sendTemplate(to: string, name: string, bodyParams: string[]): Promise<{ ok: boolean; err?: string; waId?: string }> {
+  if (!await contatoPodeReceber(svc(), to, null, name)) return { ok: false, err: "contato_bloqueado" };
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const components: any[] = [];

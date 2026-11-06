@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Bookmark, Phone, RotateCcw, Undo2, Clock, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { contatoPermitido } from "@/lib/contatoPermitido";
 
 type SubAba = "retornos" | "separados" | "vencidos";
 
@@ -364,8 +365,9 @@ function TimingPill({ agendado_para, vencido }: { agendado_para: string | null; 
   );
 }
 
-function callLead(telefone: string | null | undefined) {
+async function callLead(telefone: string | null | undefined) {
   if (!telefone) return;
+  if (!await contatoPermitido(telefone)) return;
   const clean = telefone.replace(/\D/g, "");
   window.location.href = `tel:${clean}`;
 }

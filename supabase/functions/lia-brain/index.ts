@@ -15,6 +15,7 @@ import { ETAPAS_IA_EMISSIVEIS, isEtapaIaEmissivel, LIA_PROMPT_VERSAO } from "./e
 import { avaliarTravasDeSaida, type Trava } from "./travas.ts";
 import { alertarAdminsLia } from "../_shared/liaAlert.ts";
 import { LIA_PROMPT_B64 } from "./prompt/lia-canoas-v3.1.b64.ts";
+import { contatoPodeReceber } from "../_shared/contatoEnvio.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -213,6 +214,7 @@ async function urlDeEnvio(supabase: SupabaseClient, url: string): Promise<string
 }
 
 async function enviarTexto(numero: string, instancia: string, texto: string) {
+  if (!await contatoPodeReceber(createClient(SUPABASE_URL,SERVICE_KEY),numero)) return { ok:false,body:"contato_bloqueado" };
   const res = await fetch(`${EVO_URL}/message/sendText/${instancia}`, {
     method: "POST",
     headers: { apikey: EVO_KEY!, "Content-Type": "application/json" },
@@ -222,6 +224,7 @@ async function enviarTexto(numero: string, instancia: string, texto: string) {
 }
 
 async function enviarMidia(numero: string, instancia: string, url: string, legenda?: string) {
+  if (!await contatoPodeReceber(createClient(SUPABASE_URL,SERVICE_KEY),numero)) return { ok:false,body:"contato_bloqueado" };
   const res = await fetch(`${EVO_URL}/message/sendMedia/${instancia}`, {
     method: "POST",
     headers: { apikey: EVO_KEY!, "Content-Type": "application/json" },

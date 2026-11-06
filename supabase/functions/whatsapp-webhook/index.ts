@@ -1,5 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hmacSha256Hex, timingSafeEqual, logAuthMissing } from "../_shared/webhook-signature.ts";
+import { registrarResposta } from "../_shared/contatoEnvio.ts";
+import { novoContatoWhatsApp } from "../_shared/liaRecuperaRespostas.ts";
+import { contextoRealRecupera } from "../_shared/liaRecuperaContexto.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -521,6 +524,17 @@ Deno.serve(async (req) => {
             const repliedToWamid = msg?.context?.id || null;
             const buttonId = msg?.interactive?.button_reply?.id || msg?.button?.payload || null;
             const buttonTitle = msg?.interactive?.button_reply?.title || msg?.button?.text || "";
+
+            if (msg.type === "reaction" || msg.type === "system") continue;
+            const decisao = await registrarResposta(supabase, {
+              telefone: from, mensagem: mensagemTexto, payload: buttonId,
+              evento: msg.id ?? `resposta:${Date.now()}`,
+              novoContato: novoContatoWhatsApp(mensagemTexto, repliedToWamid, buttonId),
+            });
+            if (decisao.bloqueado || decisao.acao !== "seguir") continue;
+            // Resposta ao piloto pertence à Lia; nunca ao roteamento legado/Roleta.
+            const recuperacao = await contextoRealRecupera(supabase,from,"",repliedToWamid);
+            if (recuperacao) continue;
 
             // ── Campanha Átrio: verifica se wamid ou telefone bate com evento Átrio recente ──
             try {

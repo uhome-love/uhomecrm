@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 import { useIsMobile } from "@/hooks/use-mobile";
 import BolsaoClienteMobile from "./BolsaoClienteMobile";
+import { contatoPermitido } from "@/lib/contatoPermitido";
 
 export type PortaBolsao = "estagnados" | "descartados";
 
@@ -53,6 +54,12 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
   const [lead, setLead] = useState<BolsaoLead | null>(null);
   const [vazio, setVazio] = useState(false);
   const [busy, setBusy] = useState(false);
+  const contatar = async (canal: "ligacao" | "whatsapp") => {
+    if (!lead?.telefone || !await contatoPermitido(lead.telefone)) return;
+    const fone = soDigitos(lead.telefone);
+    if (canal === "ligacao") window.location.href = `tel:+${fone}`;
+    else window.open(`https://wa.me/${fone}`, "_blank", "noopener,noreferrer");
+  };
 
   const contagens = useQuery({
     queryKey: ["bolsao-contagens", porta],
@@ -140,6 +147,7 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
       : total;
     return (
       <BolsaoClienteMobile porta={porta} lead={lead} restantes={restantes} busy={busy}
+        onContatar={contatar}
         onAproveitar={aproveitar} onNaoAtendeu={() => registrar("nao_atendeu")}
         onSemInteresse={() => registrar("sem_interesse")} onSair={() => registrar("liberar")} />
     );
@@ -165,13 +173,11 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
           {TEXTO_PORTA[porta]}
         </p>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm" disabled={!fone}>
-            <a href={`tel:+${fone}`}><Phone className="mr-1 h-4 w-4" /> Ligar</a>
+          <Button variant="outline" size="sm" disabled={!fone} onClick={() => void contatar("ligacao")}>
+            <Phone className="mr-1 h-4 w-4" /> Ligar
           </Button>
-          <Button asChild variant="outline" size="sm" disabled={!fone}>
-            <a href={`https://wa.me/${fone}`} target="_blank" rel="noreferrer">
-              <MessageCircle className="mr-1 h-4 w-4" /> WhatsApp
-            </a>
+          <Button variant="outline" size="sm" disabled={!fone} onClick={() => void contatar("whatsapp")}>
+            <MessageCircle className="mr-1 h-4 w-4" /> WhatsApp
           </Button>
         </div>
         <div className="flex flex-wrap gap-2 border-t pt-4">

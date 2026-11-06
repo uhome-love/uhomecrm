@@ -16,6 +16,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handoffEngajado } from "../_shared/liaHandoff.ts";
 import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
+import { contatoPodeReceber } from "../_shared/contatoEnvio.ts";
+import { handoffRecuperaSeAplicavel } from "../_shared/liaRecuperaContexto.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +59,7 @@ const horaBRT = () => {
 };
 
 async function send360Text(to: string, body: string) {
+  if (!await contatoPodeReceber(svc(), to)) return false;
   const key = Deno.env.get("D360_API_KEY");
   if (!key) { console.error("[lia-followup] D360_API_KEY ausente"); return false; }
   try {
@@ -71,6 +74,7 @@ async function send360Text(to: string, body: string) {
 }
 
 async function send360Image(to: string, link: string) {
+  if (!await contatoPodeReceber(svc(), to)) return false;
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return false;
   try {
@@ -85,6 +89,7 @@ async function send360Image(to: string, link: string) {
 }
 
 async function send360Doc(to: string, link: string, filename: string) {
+  if (!await contatoPodeReceber(svc(), to)) return false;
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return false;
   try {
@@ -145,6 +150,7 @@ const MAX_CUTUCOES = CADENCIA.length;   // esgotou a cadência = recebeu todos o
 
 // Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
 async function sendTemplate(to: string, tpl: { name: string; lang: string; vars?: number; headerDoc?: { link: string; filename: string } }, bodyParams: string[]): Promise<{ ok: boolean; err?: string }> {
+  if (!await contatoPodeReceber(svc(), to, null, tpl.name)) return { ok: false, err: "contato_bloqueado" };
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const components: any[] = [];
@@ -437,7 +443,8 @@ async function passarEngajadosParaTime(
     } catch (e) { console.error("[lia-followup] resumo p/ handoff falhou", c.telefone, e); }
 
     const produto = prodBySlug[c.produto_slug ?? ""] ?? null;
-    const leadId = await handoffEngajado(sb, { telefone: c.telefone, nome: c.nome, nivel: c.nivel, produto, resumo });
+    const recuperacao = await handoffRecuperaSeAplicavel(sb,c.telefone,c.nivel,resumo);
+    const leadId = recuperacao.recupera ? recuperacao.leadId : await handoffEngajado(sb, { telefone: c.telefone, nome: c.nome, nivel: c.nivel, produto, resumo });
     if (!leadId) continue;
 
     // passagem de bastão calorosa pro lead: reengaja e enquadra o humano como CONTINUAÇÃO da LIA.

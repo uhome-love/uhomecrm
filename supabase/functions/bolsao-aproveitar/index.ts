@@ -5,6 +5,7 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { reactivateLead, NOVO_LEAD_STAGE_ID } from "../_shared/reactivateLead.ts";
+import { contatoPodeReceber } from "../_shared/contatoEnvio.ts";
 
 async function logEvento(admin: SupabaseClient, level: string, message: string, ctx: Record<string, unknown>) {
   try {
@@ -27,6 +28,8 @@ Deno.serve(async (req) => {
     const acao = "aproveitar";
     if (!leadId || !/^[0-9a-f-]{36}$/i.test(leadId)) return errorResponse("pipeline_lead_id required", 400);
     ctx = { lead_id: leadId, user_id: userId, acao };
+    const { data: leadContato, error: contatoErr } = await admin.from("pipeline_leads").select("telefone").eq("id",leadId).maybeSingle();
+    if (contatoErr || !leadContato?.telefone || !await contatoPodeReceber(admin,leadContato.telefone,leadId)) return jsonResponse({ ok:false,error:"CONTATO_BLOQUEADO" });
 
     const { data: reserva } = await admin
       .from("bolsao_reservas")
