@@ -24,15 +24,15 @@ export default function LiaMensagensTab() {
     <section>
       <header className="mb-4">
         <h2 className="text-sm font-semibold text-foreground">Propostas de recuperação</h2>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Prévia dos textos planejados. Aprovação da Meta não verificada.</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Textos aprovados na Meta no número da Lia (Marketing, pt_BR). Disparos seguem desligados.</p>
       </header>
       <div className="grid gap-3 md:grid-cols-2">
         {MODELOS_RECUPERA.map((m) => <article key={m.chave} className="min-w-0 rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0"><h3 className="text-sm font-semibold text-foreground">{m.titulo}</h3><p className="mt-1 text-[11px] text-muted-foreground">{m.quando}</p></div>
-            <Badge variant="secondary" className="text-[10px]">Proposta</Badge>
+            <Badge variant={m.aprovadoMeta ? "default" : "secondary"} className="text-[10px]">{m.aprovadoMeta ? `Aprovado na Meta · ${m.aprovadoMeta.slice(0, 5)}` : "Proposta"}</Badge>
           </div>
-          <p className="text-xs leading-relaxed text-foreground">{exemplo(m.texto)}</p>
+          <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground">{exemplo(m.texto)}</p>
           <div className="mt-4 flex flex-wrap gap-1.5 border-t border-border pt-3">
             {BOTOES_RECUPERA.map((b) => <span key={b} className="text-[10px] text-muted-foreground">{b}{b !== BOTOES_RECUPERA[BOTOES_RECUPERA.length - 1] && <span className="ml-1.5 text-border">·</span>}</span>)}
           </div>

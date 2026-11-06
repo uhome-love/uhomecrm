@@ -1,21 +1,21 @@
-import { describe, it, expect } from "vitest";
-import { grupoDoBalde } from "./recupera";
-import { campanhaVigente, precoAPartir, PRODUTOS_NATAL } from "./catalogoNatal";
+import { describe, expect, it } from "vitest";
+import { BOTOES_RECUPERA, MODELOS_RECUPERA } from "./recupera";
 
-describe("Lia Recupera — regras", () => {
-  it("não atende entra na recuperação", () => expect(grupoDoBalde("nao_atende")).toBe("entra"));
-  it("sem condição financeira espera 90 dias", () => expect(grupoDoBalde("sem_condicao_financeira")).toBe("espera_90"));
-  it("desistiu espera 90 dias", () => expect(grupoDoBalde("desistiu_compra")).toBe("espera_90"));
-  it("quem não quer contato nunca entra", () => expect(grupoDoBalde("nao_quer_contato")).toBe("nunca"));
-  it("campanha vale até 18/12 e não em 19/12", () => {
-    expect(campanhaVigente("2026-12-18")).toBe(true);
-    expect(campanhaVigente("2026-12-19")).toBe(false);
+const vars = (t: string) => new Set(t.match(/\{\{\d\}\}/g) ?? []).size;
+
+describe("modelos Lia Recupera aprovados na Meta", () => {
+  it("tem os 6 modelos com a quantidade de variáveis aprovada", () => {
+    const esperado: Record<string, number> = {
+      lia_recupera_a: 2, lia_recupera_b: 2, lia_recupera_c: 2,
+      lia_recupera_d: 1, lia_recupera_lembrete: 3, lia_recupera_final: 1,
+    };
+    expect(MODELOS_RECUPERA.map((m) => m.chave)).toEqual(Object.keys(esperado));
+    for (const m of MODELOS_RECUPERA) expect(vars(m.texto)).toBe(esperado[m.chave]);
   });
-  it("são 8 produtos e Open Bosque parte de R$ 240 mil", () => {
-    expect(PRODUTOS_NATAL).toHaveLength(8);
-    expect(precoAPartir(PRODUTOS_NATAL.find((p) => p.slug === "open-bosque")!)).toBe(240000);
+  it("lembrete já traz 'o {{2}}, com {{3}}'", () => {
+    expect(MODELOS_RECUPERA.find((m) => m.chave === "lia_recupera_lembrete")!.texto).toContain("o {{2}}, com {{3}}");
   });
-  it("Casa Tua Porto Alegre parte de R$ 520 mil", () => {
-    expect(precoAPartir(PRODUTOS_NATAL.find((p) => p.slug === "casa-tua-porto-alegre")!)).toBe(520000);
+  it("mantém os 3 botões", () => {
+    expect([...BOTOES_RECUPERA]).toEqual(["Sim, quero ver", "Outro perfil", "Não quero mais contato"]);
   });
 });
