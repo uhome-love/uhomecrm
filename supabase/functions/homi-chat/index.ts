@@ -24,6 +24,7 @@ serve(async (req) => {
     // ── Auth: usuário real obrigatório (anon key rejeitada) ──
     const _auth = await requireRealUser(req, {});
     if (_auth.error) return _auth.error;
+    if (!_auth.userId) return new Response(JSON.stringify({error:"Não autenticado"}),{status:401,headers:{...corsHeaders,"Content-Type":"application/json"}});
 
     let leadForUsage: string | null = null;
     const { messages, empreendimento, stream: wantStream = true, system: customSystem, enableTools = false, perfil = "corretor" } = await req.json();

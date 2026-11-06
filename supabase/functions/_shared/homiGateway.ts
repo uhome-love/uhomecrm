@@ -23,7 +23,9 @@ async function startUsage(context: HomiCallContext, model: string) {
     finished = true;
     const { error: updateError } = await client.from("homi_ia_uso")
       .update(usageFinish(usage,performance.now()-started,success,code)).eq("id",data.id);
-    if (updateError) { console.error("[homi-usage] finalização indisponível",data.id); throw new Error("Medição HOMI não finalizada."); }
+    // The durable start remains explicitly unsuccessful/in-progress if finalization fails.
+    // Do not swallow the stream's real error or interrupt its cleanup with a logging error.
+    if (updateError) console.error("[homi-usage] finalização indisponível",data.id);
   };
 }
 

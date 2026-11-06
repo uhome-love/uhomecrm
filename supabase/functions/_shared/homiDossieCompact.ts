@@ -16,7 +16,7 @@ export function groupAttempts(facts: Dossie[]): Dossie[] {
   const retained: Dossie[] = [];
   for (const fact of facts) {
     if (!noReturn(fact)) { retained.push(fact); continue; }
-    const key = JSON.stringify([fact.fonte, fact.autor_id, fact.ciclo, fact.resultado]);
+    const key = JSON.stringify([fact.fonte, fact.autor_id, fact.ciclo, fact.tipo, fact.resultado]);
     groups.set(key, [...(groups.get(key) ?? []), fact]);
   }
   for (const attempts of groups.values()) {
@@ -48,18 +48,30 @@ export function shortDossier(clean: Dossie): Dossie {
     ...rows(record(d.visitas).dados), ...rows(record(d.mudancas_etapa).dados),
     ...rows(record(record(d.timeline).dados).fatos), ...rows(record(d.memoria).dados),
   ].sort((a,b) => String(b.data).localeCompare(String(a.data)));
-  return { lead: d.lead ?? null, qualificacao: d.qualificacao ?? null,
-    fatos: facts.slice(0, 5), lacunas: d.lacunas ?? [],
-    fontes: Object.fromEntries(Object.entries(d).filter(([,v]) => record(v).status)
-      .map(([k,v]) => [k,record(v).status ?? null])) };
+  const lead = record(record(d.lead).dados);
+  const qual = record(record(d.qualificacao).dados);
+  return { lead: Object.fromEntries(["id","nome","etapa","empreendimento","saude"].filter(k => k in lead).map(k => [k,lead[k]])),
+    qualificacao: Object.fromEntries(["objetivo_cliente","faixa_valor","prazo_decisao","forma_pagamento"].filter(k=>k in qual).map(k=>[k,qual[k]])),
+    fatos: facts.slice(0, 5).map(f => Object.fromEntries(Object.entries(f)
+      .filter(([k]) => ["data","fonte","autor_tipo","outro_corretor","ciclo","titulo","resultado","resultado_visita","objecao","para","quantidade","descricao_resumo","valor"].includes(k))
+      .map(([k,v]) => [k,typeof v === "string" && ["descricao_resumo","valor"].includes(k) ? abbreviate(v,100) : v]))),
+    lacunas: d.lacunas ?? [],
+    fontes_indisponiveis: Object.entries(d).filter(([,v])=>record(v).status==="indisponível").map(([k])=>k) };
 }
 
 const proseKeys = new Set(["descricao", "descricao_resumo", "conteudo", "resumo", "observacao", "feedback", "valor", "mensagem"]);
+/** Abbreviate neutral prose but retain complete commercial outcome/objection/next-step sentences. */
+function abbreviate(text: string, limit: number): string {
+  if (text.length <= limit) return text;
+  const fragments = text.split(/\n| · |(?<=[.!?])\s+/);
+  const important = fragments.filter(s=>/objecao|proximo passo|resultado|feedback|documentacao|proposta|pagamento|parcela|gostou|quer |decis|retorno|visitar/.test(norm(s)));
+  return [text.slice(0,limit),...important.filter(s=>!text.slice(0,limit).includes(s)),"[trecho abreviado]"].join(" · ");
+}
 function squeeze(v: Json, limit: number, key = ""): Json {
-  if (typeof v === "string" && proseKeys.has(key) && v.length > limit) return v.slice(0, limit) + " [trecho abreviado]";
+  if (typeof v === "string" && proseKeys.has(key)) return abbreviate(v,limit);
   if (Array.isArray(v)) return v.map(x => squeeze(x,limit));
   if (v && typeof v === "object") return Object.fromEntries(Object.entries(v)
-    .filter(([k]) => !["id", "autor_id", "created_at"].includes(k))
+    .filter(([k]) => !["id", "created_at"].includes(k))
     .map(([k,x]) => [k,squeeze(x,limit,k)]));
   return v;
 }

@@ -47,7 +47,7 @@ export async function searchMateriaisForHomi(
         input: query.slice(0, 2000),
     },opts.usageContext ?? {funcao:"homi:materiais",versaoPrompt:"materiais-2026-11-06"});
     const vector = embJson.data?.[0]?.embedding;
-    if (!vector) return [];
+    if (!Array.isArray(vector)) return [];
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
