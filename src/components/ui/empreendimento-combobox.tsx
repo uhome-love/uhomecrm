@@ -16,6 +16,7 @@ const DEFAULT_EMPREENDIMENTOS = [
   "Casa Tua",
   "Duetto - Morana",
   "High Garden Iguatemi",
+  "Investimento Cyrela",
   "Lake Eyre",
   "Las Casas",
   "Me Day",

@@ -15,7 +15,7 @@ const EMPREENDIMENTOS_PADRAO = [
   "Open Bosque", "Casa Tua", "Las Casas", "Orygem", "Me Day", "Alto Lindóia",
   "Terrace", "Alfa", "Duetto", "Salzburg", "Lake Eyre", "Seen Menino Deus",
   "Boa Vista Country Club", "Shift", "Casa Bastian", "Melnick Day",
-  "Melnick Day Compactos",
+  "Melnick Day Compactos", "Investimento Cyrela",
 ];
 
 interface Props {
