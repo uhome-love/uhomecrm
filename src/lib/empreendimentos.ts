@@ -24,6 +24,7 @@ export const EMPREENDIMENTOS: string[] = [
   "Go Carlos Bosque",
   "Go Carlos Gomes",
   "High Garden Iguatemi",
+  "Investimento Cyrela",
   "High Garden Rio Branco",
   "Lake Baikal",
   "Lake Eyre",
