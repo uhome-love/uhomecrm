@@ -1,7 +1,7 @@
 // =============================================================================
 // useElegibilidadeDomingo — Consulta elegibilidade para Roleta de Domingo.
 // Regras: >=4 presenças (manhã/tarde na_empresa) + >=2 visitas realizadas
-// na semana Seg→Sáb anterior ao domingo alvo.
+// na semana Seg→Dom (inclui o próprio domingo alvo; visitas via fonte canônica).
 // =============================================================================
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
