@@ -1,18 +1,19 @@
-# Roni: aviso "Não elegível · domingo" mesmo incluído na Roleta
+# Roleta de domingo: a visita feita no domingo conta para a semana atual
 
-## Situação atual
-- Pela regra, o Roni **não cumpre** o requisito de domingo: precisa de 2 visitas realizadas de segunda a sábado da semana anterior (02 a 07/11) e teve 1 (05/11). A visita de 06/11 foi No Show, e a de hoje (08/11) conta para a semana seguinte.
-- Ele está **ativo na Roleta** porque você o incluiu manualmente. A inclusão manual passa por cima da regra, mas o aviso continua mostrando o resultado da regra.
-- O cartão "Visitas" confunde: mostra um sinal verde com "0 sem. passada / mín. 2" e "Esta semana 2/2". O "2/2" vale para o **próximo** domingo, não para hoje.
+## O que acontece hoje
+- A regra de domingo conta só as visitas realizadas de **segunda a sábado** (02 a 07/11). O Roni teve 1 nesse período (05/11), então aparece "Não elegível · domingo".
+- A visita realizada **hoje, domingo 08/11**, fica fora da conta. Por isso o cartão mostra "Esta semana 2/2", mas o aviso continua dizendo que ele não é elegível.
 
-## Proposta (somente a tela, sem mudar distribuição nem regras)
-1. Quando o corretor for incluído manualmente, trocar o aviso para "Incluído manualmente · domingo" (em azul). Assim fica claro que ele está na Roleta por decisão da gestão.
-2. No cartão Visitas, mostrar o sinal verde só quando a meta da semana anterior foi cumprida. Trocar "Esta semana 2/2" por "Para o próximo domingo: 2/2".
-3. Fazer o cartão usar a mesma contagem da regra de domingo. Hoje o cartão mostra 0 e a regra conta 1.
+## Mudança (regra decidida por você)
+1. A semana passa a ser de **segunda a domingo, incluindo hoje**. Visita realizada no domingo conta para a semana atual e libera o domingo assim que é registrada.
+2. Assim que a 2ª visita for registrada, o aviso muda para elegível. No caso do Roni, as visitas de 05/11 e 08/11 somam 2.
+3. O cartão Visitas e o aviso passam a usar a mesma contagem e o mesmo período. Isso acaba com o "0 sem. passada" ao lado de "2/2".
+4. A distribuição de leads, as outras regras e a inclusão manual continuam iguais.
 
 ## Ordem
-Mockup para aprovação → plano → construção → conferência ao vivo com o Roni.
+Plano aprovado → construção → conferência ao vivo na tela do Roni → testes com casos de sábado e domingo.
 
 ## Detalhes técnicos
-- `elegivel_roleta_domingo` conta direto em `visitas`; o cartão usa `roleta_visitas_realizadas_periodo`. Alinhar a tela à fonte canônica (`roleta_visitas_realizadas_periodo`) e verificar se o 0 vs 1 vem de parceria (0,5) ou do id do corretor.
-- A inclusão manual é detectada pelo registro de credenciamento manual. Não alterar `distribuir_lead_atomico`.
+- Em `elegivel_roleta_domingo`, mudar a janela de `seg..sáb` para `seg..domingo` (p_domingo inclusive). Para contar as visitas, usar a fonte canônica `roleta_visitas_realizadas_periodo`, com 0,5 por parceria e 1 por cliente, em vez de contar direto em `visitas`.
+- Conferir `roleta_apto_janela` e o painel de credenciamento para que usem a mesma janela. Também verificar se o fechamento semanal (`roleta_fechar_semana`, segunda 00h05) já inclui o domingo.
+- Será uma única migration de função (`CREATE OR REPLACE`), aplicada hoje, mais um ajuste no texto do cartão.
