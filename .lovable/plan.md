@@ -44,8 +44,11 @@ Conclusão: a ferramenta existe, mas está espalhada, com dois placares e sem um
 - Nas abas atuais (sem redesenho): quem está fora da Roleta e quanto cada um ligou hoje/semana.
 - Relatórios, checkpoint, Painel CEO, relatório executivo e 1:1 automático seguem lendo os mesmos lugares; só o volume cresce.
 
-## Decisão necessária: pontuação
-Hoje a pontuação gravada não é a que a tela mostra. Proposta: **adotar 0 / 5 / 30 (a regra do Mutirão) nas pontuações novas**, sem reescrever o histórico, e o ranking passa a calcular pela mesma régua para as duas Ofertas. Se preferir, mantemos o que está gravado e só corrigimos a legenda.
+## Regras definidas por você
+- **Ranking de ligações = número de ligações** (dia e semana), sem prêmio, sempre visível. Aproveitados e visitas aparecem ao lado só como informação; visita marcada já conta no placar do Mutirão, que não muda.
+- **Mínimo do dia: 30 ligações · 3 aproveitados · 1 visita agendada.** Vira o padrão das metas diárias (hoje 30/5/3).
+- **Todas as listas liberadas e com clientes disponíveis entram na Arena**, além de estagnados, descartados e reservados.
+- A pontuação gravada hoje não é alterada; a legenda que promete 0/5/30 na Oferta do dia a dia será corrigida para não confundir.
 
 ## O que NÃO muda
 - Regras da Roleta, distribuição, Fila CEO, Bolsão e envio do aproveitado ao Pipeline.
@@ -54,7 +57,7 @@ Hoje a pontuação gravada não é a que a tela mostra. Proposta: **adotar 0 / 5
 
 ## Fases (cada uma validada antes da próxima)
 0. **Mockups** desktop e celular: cartão do painel, Arena, ranking e bloco da TV. Sem código até aprovar.
-1. Fonte única de placar/ranking juntando as duas Ofertas, com a pontuação decidida, e conferência de que os relatórios não mudam de regra.
+1. Fonte única de placar/ranking juntando as duas Ofertas (por número de ligações) e conferência de que os relatórios não mudam de regra.
 2. Cartão "Volte pra Roleta" no painel.
 3. Arena: cliente, roteiro, resultado em 1 toque, próximo automático, celular.
 4. Placar do dia, metas, sequência e comemorações.
@@ -63,15 +66,13 @@ Hoje a pontuação gravada não é a que a tela mostra. Proposta: **adotar 0 / 5
 7. **Validação ponta a ponta no preview** com lead de teste (sempre cancelando), desktop, celular e TV; conferir ranking, relatórios e Pipeline. Entrega só depois disso.
 
 ## Para decidir no mockup
-- Pontuação (acima).
-- Metas do dia: manter 30 ligações / 5 aproveitados / 3 visitas?
 - Roteiros: usar os cadastrados ou você revisa por empreendimento.
-- Quais das 7 listas liberadas entram na Arena.
 
 ## Detalhes técnicos
 - Status Roleta/visitas faltantes: `useMinhaEvolucao` (mesma conta do RoletaTurnoCard) + `roleta_apto_janela`/`roleta_visitas_realizadas_periodo`.
 - Fontes da fila: `fetch_next_lead`/`fetch_next_lead_campaign` + locks (`renew_lead_lock`), `bolsao_contagens`/`bolsao_puxar`/`bolsao_registrar` + edge `bolsao-aproveitar`, `oferta_ativa_reservados`. Registro via `finalizar_tentativa_v2` (listas) e caminhos atuais do Bolsão; nada de escrita direta nova.
-- Placar/ranking: novo RPC só de leitura unindo `oferta_ativa_tentativas` e `oferta_ativa_ligacoes`, escopo por papel no servidor, consumido por Arena, painel, Ao Vivo e PlacarTv. Pontuação 0/5/30 (se aprovada) ajustando `finalizar_tentativa_v2` e `useCustomListQueue` para novas tentativas; histórico intacto. Até 2 migrations, respeitando o limite diário.
+- Placar/ranking: novo RPC só de leitura unindo `oferta_ativa_tentativas` e `oferta_ativa_ligacoes`, ordenado por quantidade de ligações (aproveitados/visitas como colunas), escopo por papel no servidor, consumido por Arena, painel, Ao Vivo e PlacarTv. Nenhuma mudança em `finalizar_tentativa_v2` nem em pontos gravados; só ajuste da legenda (ScoringLegend). Metas padrão em `useCorretorDailyStats` passam a 30/3/1. Fila da Arena inclui toda lista com status `liberada` e leads disponíveis. Até 1 migration.
+- Salvar em memória: ranking por nº de ligações sem prêmio, mínimo diário 30/3/1, todas as listas liberadas na Arena.
 - Revisar e aplicar `contatoPermitido`/`check_send_allowed` em Mutirão (LeadCard), listas próprias e DialingMobileView.
 - Arena em pasta própria com componentes <300 linhas; não aumentar `DialingModeWithScript` (1.418 linhas) nem `PlacarTv` (573) — bloco da TV em componente separado. Tokens DS v4, tema Natal, motion tokens e "reduzir movimento".
-- Testes: pontuação, contagem do ranking unificado e visitas faltantes.
+- Testes: contagem do ranking unificado, metas 30/3/1, listas liberadas na fila e visitas faltantes.
