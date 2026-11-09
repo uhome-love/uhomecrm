@@ -1,5 +1,5 @@
 /** Cartão do cliente: nome, telefone grande, empreendimento, contexto e botões Ligar/WhatsApp. */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Phone, MessageCircle, Copy, Building2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,9 @@ import { contatoPermitido } from "@/lib/contatoPermitido";
 import { formatBRT } from "@/lib/brtTime";
 import { ORIGEM_INFO, foneInternacional, formatarFone, haQuanto, primeiroNome, type ClienteOA, type OrigemOA } from "./tipos";
 
-interface Props { cliente: ClienteOA; origem: OrigemOA; onLigou: () => void }
+interface Props { cliente: ClienteOA; origem: OrigemOA; onLigou: () => void; children?: ReactNode }
 
-export default function ClientePainel({ cliente, origem, onLigou }: Props) {
+export default function ClientePainel({ cliente, origem, onLigou, children }: Props) {
   const fone = foneInternacional(cliente.telefone);
   const [verificando, setVerificando] = useState(false);
   const quando = haQuanto(cliente.entrouEm);
@@ -69,6 +69,7 @@ export default function ClientePainel({ cliente, origem, onLigou }: Props) {
           </CollapsibleContent>
         </Collapsible>
       )}
+      {children}
     </section>
   );
 }
