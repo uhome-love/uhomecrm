@@ -36,14 +36,14 @@ export default function OfertaAtivaCorretor() {
 
   if (sessao) {
     return (
-      <div className="mx-auto w-full max-w-[1500px] px-3 py-1 md:-mt-6 md:px-5 md:py-2">
+      <div className="mx-auto w-full max-w-[1500px] py-1">
         <TelaLigacao key={`${sessao.origem}-${sessao.listaIds.join()}-${sessao.empreendimentos.join()}`} {...sessao} onSair={() => setSessao(null)} />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] px-3 py-4 md:px-5 md:py-6">
+    <div className="mx-auto w-full max-w-[1500px] py-2">
       <motion.header initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><Phone className="h-6 w-6 text-primary" aria-hidden /> Oferta Ativa</h1>
