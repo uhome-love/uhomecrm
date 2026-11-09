@@ -1,0 +1,1 @@
+- Corretor's Oferta Ativa is one module (`src/components/oferta-ativa-v2`, page `OfertaAtivaCorretor` on /corretor/call and /arena-ligacoes): one call screen for Listas/Estagnados/Descartados via the `useFilaOA` adapter, writing only through existing server functions. Why: one UI and one data path so panels, ranking, TV and reports never diverge.
