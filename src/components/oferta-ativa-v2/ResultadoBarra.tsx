@@ -21,7 +21,7 @@ export default function ResultadoBarra({ origem, gravando, fixo, destacar, ultim
     const Icon = v.icon;
     return (
       <motion.button key={r} type="button" whileTap={{ scale: 0.95 }} disabled={gravando} onClick={() => onResultado(r)}
-        className={cn("relative flex min-h-[52px] items-center justify-center gap-1.5 rounded-xl border px-2 text-sm font-semibold transition-colors duration-fast disabled:opacity-60",
+        className={cn("relative flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 text-sm font-semibold transition-colors duration-fast disabled:opacity-60",
           "flex-row", v.classe, fixo && r === "numero_errado" && "hidden")}>
         {gravando && ultimo === r ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Icon className="h-4 w-4 shrink-0" aria-hidden />}
         <span className="leading-tight">{ROTULO_RESULTADO[r] === "Aproveitado" ? "Aproveitar" : ROTULO_RESULTADO[r]}</span>
@@ -41,7 +41,7 @@ export default function ResultadoBarra({ origem, gravando, fixo, destacar, ultim
   }
 
   return (
-    <section className={cn("mt-4 rounded-xl border-t border-border pt-3 transition-shadow duration-medium", destacar && "rounded-xl p-2 ring-2 ring-primary")} aria-label="Resultado da ligação">
+    <section className={cn("mt-3 border-t border-border pt-3 transition-shadow duration-medium", destacar && "rounded-xl p-2 ring-2 ring-primary")} aria-label="Resultado da ligação">
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Como foi a ligação?</p>
       <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2">{botoes}</div>
     </section>
