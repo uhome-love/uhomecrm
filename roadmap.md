@@ -73,4 +73,5 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [ ] Piloto Lia — Fases 3 a 5 (cadência/conferência no envio, proteção do número, painel)
 - [ ] Piloto Lia — Fase 6 teste ponta a ponta com o número do Lucas (inclui clicar em "Não quero mais contato" e reativar no fim)
 - [x] Arena de Ligações — mockup e plano aprovados; telas, cartão, metas 30/3/1 e ranking na TV implantados
-- [ ] Arena de Ligações — validação completa autorizada: conferir contagens/relatórios, listas/Bolsão/reservados, tentativas/aproveitamento/visitas, bloqueios, TV ativa/inativa, computador/celular; remover exclusivamente dados fictícios criados no teste
+- [x] Arena de Ligações — listas: Não atendeu/Aproveitado/Visita persistidos e avanço automático; Bolsão: Estagnado registrado, repetição idempotente, Descartado aproveitado pelo celular; placar 5 ligações/3 aproveitados/1 visita confirmado; 30 testes e preview sem erros; TV sem sessão e com sessão simulada conferida; contagens e proteção corrigidas
+- [ ] Arena de Ligações — cobertura restante: operação autenticada de corretor e Mutirão real/retornos/relatórios ponta a ponta; sem criar evento real nem alterar contas existentes nesta conferência. TV ativa foi simulada, não um Mutirão real
