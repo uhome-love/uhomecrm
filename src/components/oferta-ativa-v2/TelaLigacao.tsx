@@ -91,7 +91,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
         <div className="flex min-w-0 flex-1 justify-center"><PlacarCompacto /></div>
         <div role="tablist" aria-label="Visão" className="flex shrink-0 rounded-full bg-muted p-0.5">
           {(["ligar", "ranking"] as const).map((a) => (
-            <button key={a} type="button" role="tab" aria-selected={aba === a} onClick={() => setAba(a)}
+            <button key={a} type="button" role="tab" aria-label={a === "ligar" ? "Ligar" : "Ranking"} aria-selected={aba === a} onClick={() => setAba(a)}
               className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors duration-fast sm:px-3 ${aba === a ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               {a === "ligar" ? <><Phone className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">Ligar</span></> : <><Trophy className="h-3.5 w-3.5 text-warning-500" aria-hidden /><span className="hidden sm:inline">Ranking</span></>}
             </button>
