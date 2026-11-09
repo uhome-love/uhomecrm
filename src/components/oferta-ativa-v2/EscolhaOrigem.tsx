@@ -13,7 +13,7 @@ export default function EscolhaOrigem({ onEscolher }: { onEscolher: (o: OrigemOA
   const { campanhas, statsMap, isLoading } = useCampanhasDisponiveis();
   const naFila = campanhas.reduce((s, c) => s + (statsMap[c.id]?.naFila ?? 0), 0);
   const itens: { o: OrigemOA; n: number | undefined; erro: boolean; extra?: string }[] = [
-    { o: "listas", n: isLoading ? undefined : naFila, erro: false, extra: `${campanhas.length} ${campanhas.length === 1 ? "campanha" : "campanhas"}` },
+    { o: "listas", n: isLoading ? undefined : naFila, erro: false, extra: campanhas.length === 1 ? "1 campanha liberada" : `${campanhas.length} campanhas liberadas` },
     { o: "estagnados", n: est.data, erro: est.isError },
     { o: "descartados", n: desc.data, erro: desc.isError },
   ];
@@ -36,7 +36,7 @@ export default function EscolhaOrigem({ onEscolher }: { onEscolher: (o: OrigemOA
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-base font-semibold">{info.titulo}</span>
-              <span className="block text-sm text-muted-foreground">{extra ? `${extra} liberadas` : info.desc}</span>
+              <span className="block text-sm text-muted-foreground">{extra ?? info.desc}</span>
             </span>
             <span className="hidden items-center justify-center gap-1.5 sm:mt-auto rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground sm:flex">
               {semClientes ? "Sem clientes agora" : "Ligar daqui"} {!semClientes && <ArrowRight className="h-4 w-4 transition-transform duration-fast group-hover:translate-x-0.5" aria-hidden />}
