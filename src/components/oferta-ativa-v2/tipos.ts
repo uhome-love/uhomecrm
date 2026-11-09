@@ -84,3 +84,10 @@ export const META_MIN_LIGACOES = 30;
 export function metaValida(v: number) {
   return Number.isFinite(v) ? Math.min(500, Math.max(META_MIN_LIGACOES, Math.round(v))) : META_MIN_LIGACOES;
 }
+
+/** "1min42s" / "38s" — duração da ligação para a observação da tentativa. */
+export function formatarDuracao(seg: number): string {
+  const s = Math.max(0, Math.floor(seg));
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m}min${String(s % 60).padStart(2, "0")}s` : `${s}s`;
+}

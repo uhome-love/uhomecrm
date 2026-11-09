@@ -36,7 +36,7 @@ export default function OfertaAtivaCorretor() {
 
   if (sessao) {
     return (
-      <div className="mx-auto w-full max-w-[1500px] px-3 py-2 md:px-5 md:py-4">
+      <div className="mx-auto w-full max-w-[1500px] px-3 py-1 md:-mt-6 md:px-5 md:py-2">
         <TelaLigacao key={`${sessao.origem}-${sessao.listaIds.join()}-${sessao.empreendimentos.join()}`} {...sessao} onSair={() => setSessao(null)} />
       </div>
     );

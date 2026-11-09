@@ -1,6 +1,6 @@
 /** Cartão do cliente: nome, telefone grande, empreendimento, contexto e botões Ligar/WhatsApp. */
 import { useState, type ReactNode } from "react";
-import { Phone, MessageCircle, Copy, Building2, ChevronDown } from "lucide-react";
+import { Phone, PhoneOff, MessageCircle, Copy, Building2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -8,12 +8,23 @@ import { contatoPermitido } from "@/lib/contatoPermitido";
 import { formatBRT } from "@/lib/brtTime";
 import { ORIGEM_INFO, foneInternacional, formatarFone, haQuanto, primeiroNome, type ClienteOA, type OrigemOA } from "./tipos";
 
-interface Props { cliente: ClienteOA; origem: OrigemOA; onLigou: () => void; children?: ReactNode }
+interface Props { cliente: ClienteOA; origem: OrigemOA; onLigou: () => void; chamadaSeg: number | null; onFinalizar: () => void; children?: ReactNode }
 
-export default function ClientePainel({ cliente, origem, onLigou, children }: Props) {
+/** Abre o discador por um link real (mesmo comportamento de tocar num link tel:). */
+function abrirDiscador(href: string) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+export default function ClientePainel({ cliente, origem, onLigou, chamadaSeg, onFinalizar, children }: Props) {
   const fone = foneInternacional(cliente.telefone);
   const [verificando, setVerificando] = useState(false);
   const quando = haQuanto(cliente.entrouEm);
+  const formatarCronometro = (t: number) => `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 
   const contatar = async (canal: "ligacao" | "whatsapp") => {
     if (!fone || verificando) return;
@@ -21,7 +32,7 @@ export default function ClientePainel({ cliente, origem, onLigou, children }: Pr
     const ok = await contatoPermitido(cliente.telefone);
     setVerificando(false);
     if (!ok) return;
-    if (canal === "ligacao") { onLigou(); window.location.href = `tel:+${fone}`; return; }
+    if (canal === "ligacao") { onLigou(); abrirDiscador(`tel:+${fone}`); return; }
     const msg = `Oi ${primeiroNome(cliente.nome)}, tudo bem? Aqui é da Uhome${cliente.empreendimento ? `, sobre o ${cliente.empreendimento}` : ""}. Podemos conversar rapidinho?`;
     window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   };
@@ -47,10 +58,18 @@ export default function ClientePainel({ cliente, origem, onLigou, children }: Pr
       <p className="mt-2 text-sm text-muted-foreground">{ORIGEM_INFO[origem].contexto}</p>
 
       <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-        <Button size="lg" onClick={() => void contatar("ligacao")} disabled={!fone || verificando}
-          className="h-12 gap-2 bg-success text-lg font-bold text-primary-foreground shadow-sm hover:bg-success-600">
-          <Phone className="h-5 w-5" aria-hidden /> Ligar agora
-        </Button>
+        {chamadaSeg === null ? (
+          <Button size="lg" onClick={() => void contatar("ligacao")} disabled={!fone || verificando}
+            className="h-12 gap-2 bg-success text-lg font-bold text-primary-foreground shadow-sm hover:bg-success-600">
+            <Phone className="h-5 w-5" aria-hidden /> Ligar agora
+          </Button>
+        ) : (
+          <Button size="lg" onClick={onFinalizar} variant="destructive" className="h-12 gap-2 text-base font-bold shadow-sm" aria-label="Finalizar ligação">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-destructive-foreground" aria-hidden />
+            <span className="tabular-nums" aria-live="off">{formatarCronometro(chamadaSeg)}</span>
+            <PhoneOff className="h-5 w-5" aria-hidden /> Finalizar
+          </Button>
+        )}
         <Button variant="secondary" onClick={() => void contatar("whatsapp")} disabled={!fone || verificando} className="h-12 gap-2 px-4" aria-label="WhatsApp">
           <MessageCircle className="h-4 w-4" aria-hidden /><span className="hidden sm:inline">WhatsApp</span>
         </Button>
