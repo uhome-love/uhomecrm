@@ -422,7 +422,7 @@ export function useOARegistrarTentativa() {
     idempotencyKey?: string,
     visitaMarcada?: boolean,
     interesseTipo?: string
-  ): Promise<{ success: boolean; reason?: string; idempotent?: boolean }> => {
+  ): Promise<{ success: boolean; reason?: string; idempotent?: boolean; attempt_id?: string; pipeline_lead_id?: string }> => {
     if (!user) return { success: false, reason: "no_user" };
 
     const idemKey = idempotencyKey || `${user.id}_${lead.id}_${Date.now()}`;
@@ -469,6 +469,7 @@ export function useOARegistrarTentativa() {
     queryClient.invalidateQueries({ queryKey: ["oa-stats"] });
     queryClient.invalidateQueries({ queryKey: ["oa-ranking"] });
     queryClient.invalidateQueries({ queryKey: ["oa-aproveitados"] });
+    queryClient.invalidateQueries({ queryKey: ["oa-ranking-ligacoes"] });
 
     if (resultado === "com_interesse") {
       toast.success("🎉 Lead aproveitado com exclusividade!");
@@ -476,7 +477,7 @@ export function useOARegistrarTentativa() {
       toast.success("Tentativa registrada");
     }
 
-    return { success: true };
+    return { success: true, attempt_id: result.attempt_id, pipeline_lead_id: result.pipeline_lead_id };
   }, [user, queryClient]);
 
   return { registrar };

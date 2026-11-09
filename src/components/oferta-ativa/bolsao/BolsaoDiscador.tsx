@@ -109,6 +109,8 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     if (resultado === "sem_interesse") toast.success("Cliente marcado como sem interesse.");
     setLead(null);
     qc.invalidateQueries({ queryKey: ["bolsao-contagens", porta] });
+    qc.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
+    qc.invalidateQueries({ queryKey: ["oa-ranking-ligacoes"] });
     if (resultado !== "liberar") puxar();
   };
 
@@ -138,6 +140,8 @@ export default function BolsaoDiscador({ porta }: { porta: PortaBolsao }) {
     toast.success(`${lead.nome} agora está no seu pipeline, em Novo Lead.`);
     setLead(null);
     qc.invalidateQueries({ queryKey: ["bolsao-contagens", porta] });
+    qc.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
+    qc.invalidateQueries({ queryKey: ["oa-ranking-ligacoes"] });
   };
 
 

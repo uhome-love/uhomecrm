@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { format } from "date-fns";
+import { consultarEventosOA } from "@/lib/oaEventosConsulta";
 
 export interface CorretorDailyStats {
   ligacoes: number;
@@ -24,6 +24,7 @@ export function useCorretorDailyStats() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["corretor-daily-stats", user?.id],
     queryFn: async () => {
+      if (!user) throw new Error("Sessão necessária");
       // Compute today's BRT boundaries reliably (America/Sao_Paulo = UTC-3)
       // Using Intl to get the actual date in BRT, avoiding DST issues
       const nowUtc = new Date();
@@ -32,21 +33,16 @@ export function useCorretorDailyStats() {
 
       // Paraleliza tentativas + visitas (independentes) — reduz 1 RTT
       const [tentativasRes, visitasRes] = await Promise.all([
+        consultarEventosOA(dayStartUtc, nowUtc.toISOString(), user.id),
         supabase
-          .from("oferta_ativa_tentativas")
-          .select("canal, resultado, pontos")
-          .eq("corretor_id", user!.id)
-          .gte("created_at", dayStartUtc),
-        supabase
-          .from("visitas_unicas" as any)
+          .from("visitas_unicas")
           .select("id")
-          .eq("corretor_id", user!.id)
+          .eq("corretor_id", user.id)
           .gte("created_at", dayStartUtc)
           .in("status", ["marcada", "confirmada", "realizada", "reagendada"]),
       ]);
 
-      const { data, error } = tentativasRes;
-      if (error) throw error;
+      const data = tentativasRes;
 
       const s: CorretorDailyStats = {
         ligacoes: 0, whatsapps: 0, emails: 0,
@@ -57,7 +53,7 @@ export function useCorretorDailyStats() {
 
       for (const t of data || []) {
         s.tentativas++;
-        s.pontos += t.pontos;
+        s.pontos += t.pontos ?? 0;
         if (t.canal === "ligacao") s.ligacoes++;
         if (t.canal === "whatsapp") s.whatsapps++;
         if (t.canal === "email") s.emails++;
@@ -74,7 +70,7 @@ export function useCorretorDailyStats() {
       if (visitasRes.error) {
         console.error("Erro ao buscar visitas marcadas:", visitasRes.error);
         const { data: visitasCount } = await supabase
-          .rpc("get_corretor_daily_visitas", { p_user_id: user!.id });
+          .rpc("get_corretor_daily_visitas", { p_user_id: user.id });
         s.visitas_marcadas = Number(visitasCount || 0);
       } else {
         s.visitas_marcadas = visitasRes.data?.length || 0;
