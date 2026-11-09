@@ -20,13 +20,18 @@ Ao tocar em **Aproveitar**:
    - O cliente está **ativo** com outro corretor? → mostra "Já está com Fulano" e não muda nada.
    - O cliente está ativo comigo? → mostra "Já está no seu Pipeline" e abre ele.
    - Outro corretor está ligando para ele **agora** (reserva ativa)? → mostra "Outro corretor está falando com ele agora".
-   - Pelo Histórico, só aproveita quem **eu** liguei nos últimos 30 dias, e só se ninguém tiver mexido no cliente depois.
+   - Pelo Histórico, só aproveita quem **eu** liguei nas **últimas 24 horas**, e só se ninguém tiver mexido no cliente depois. Passou de 24h, o botão some e o cliente volta para a fila normal. Assim ninguém fica segurando clientes.
 3. Se passar em tudo:
    - Se o cliente já existe no Pipeline, mas arquivado, descartado ou estagnado, ele é **trazido de volta** para mim em Novo Lead, sem criar cópia. As parcerias antigas encerram pela regra de reentrada que já existe.
    - Se o cliente não existe no Pipeline, ele é criado para mim.
 4. Tudo acontece numa única operação: ou grava tudo, ou não grava nada.
 5. Tocar duas vezes devolve o mesmo cliente, sem duplicar nem somar ponto de novo.
 6. O placar não muda de regra: aproveitado pelo Histórico conta como aproveitado, mas não como ligação.
+
+## Prazo do Histórico e papel do gerente
+- O Histórico mostra só as ligações das **últimas 24 horas**, e o botão Aproveitar só vale dentro desse prazo. A trava fica no servidor, não só na tela.
+- Recomendação: **manter o corretor aproveitando dentro das 24h**. É quem ligou e quem o cliente procura de volta, e as 24h, a trava por telefone e a regra de um dono só tiram o risco de segurar clientes ou duplicar.
+- Depois de 24h, só o **gerente** decide, pela busca de clientes que já existe. Nada muda nessa parte.
 
 ## Tela (mudança pequena)
 O Histórico passa a mostrar também Estagnados e Descartados, com uma etiqueta de origem:
