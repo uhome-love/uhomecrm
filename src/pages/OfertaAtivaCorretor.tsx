@@ -53,12 +53,12 @@ export default function OfertaAtivaCorretor() {
       </motion.header>
 
       <Tabs value={aba} onValueChange={setAba}>
-        <TabsList className="mb-4 flex h-10 w-full justify-start overflow-x-auto md:inline-flex md:w-auto" style={{ scrollbarWidth: "none" }}>
-          <TabsTrigger value="ligar" className="shrink-0 gap-1.5"><Phone className="h-3.5 w-3.5" aria-hidden /> Ligar</TabsTrigger>
-          <TabsTrigger value="reservados" className="shrink-0 gap-1.5"><Bookmark className="h-3.5 w-3.5" aria-hidden /> Reservados</TabsTrigger>
-          <TabsTrigger value="aproveitados" className="shrink-0 gap-1.5"><CheckCircle className="h-3.5 w-3.5" aria-hidden /> Aproveitados</TabsTrigger>
-          <TabsTrigger value="historico" className="shrink-0 gap-1.5"><History className="h-3.5 w-3.5" aria-hidden /> Histórico</TabsTrigger>
-          <TabsTrigger value="resultados" className="shrink-0 gap-1.5"><BarChart3 className="h-3.5 w-3.5" aria-hidden /> Meus resultados</TabsTrigger>
+        <TabsList className="mb-4 grid h-auto w-full grid-cols-5 gap-0.5 p-1 md:inline-flex md:h-10 md:w-auto">
+          <TabsTrigger value="ligar" className="flex-col gap-0.5 px-1 py-1.5 text-[11px] md:flex-row md:gap-1.5 md:px-3 md:text-sm"><Phone className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden /><span className="md:hidden">Ligar</span><span className="hidden md:inline">Ligar</span></TabsTrigger>
+          <TabsTrigger value="reservados" className="flex-col gap-0.5 px-1 py-1.5 text-[11px] md:flex-row md:gap-1.5 md:px-3 md:text-sm"><Bookmark className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden /><span className="md:hidden">Reserv.</span><span className="hidden md:inline">Reservados</span></TabsTrigger>
+          <TabsTrigger value="aproveitados" className="flex-col gap-0.5 px-1 py-1.5 text-[11px] md:flex-row md:gap-1.5 md:px-3 md:text-sm"><CheckCircle className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden /><span className="md:hidden">Aproveit.</span><span className="hidden md:inline">Aproveitados</span></TabsTrigger>
+          <TabsTrigger value="historico" className="flex-col gap-0.5 px-1 py-1.5 text-[11px] md:flex-row md:gap-1.5 md:px-3 md:text-sm"><History className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden /><span className="md:hidden">Histórico</span><span className="hidden md:inline">Histórico</span></TabsTrigger>
+          <TabsTrigger value="resultados" className="flex-col gap-0.5 px-1 py-1.5 text-[11px] md:flex-row md:gap-1.5 md:px-3 md:text-sm"><BarChart3 className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden /><span className="md:hidden">Result.</span><span className="hidden md:inline">Meus resultados</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="ligar" className="mt-0">
