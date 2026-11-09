@@ -10,6 +10,16 @@ import { ORIGEM_INFO, foneInternacional, formatarFone, haQuanto, primeiroNome, t
 
 interface Props { cliente: ClienteOA; origem: OrigemOA; onLigou: () => void; chamadaSeg: number | null; onFinalizar: () => void; children?: ReactNode }
 
+/** Abre o discador por um link real (mesmo comportamento de tocar num link tel:). */
+function abrirDiscador(href: string) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 export default function ClientePainel({ cliente, origem, onLigou, chamadaSeg, onFinalizar, children }: Props) {
   const fone = foneInternacional(cliente.telefone);
   const [verificando, setVerificando] = useState(false);
@@ -22,7 +32,7 @@ export default function ClientePainel({ cliente, origem, onLigou, chamadaSeg, on
     const ok = await contatoPermitido(cliente.telefone);
     setVerificando(false);
     if (!ok) return;
-    if (canal === "ligacao") { onLigou(); window.location.href = `tel:+${fone}`; return; }
+    if (canal === "ligacao") { onLigou(); abrirDiscador(`tel:+${fone}`); return; }
     const msg = `Oi ${primeiroNome(cliente.nome)}, tudo bem? Aqui é da Uhome${cliente.empreendimento ? `, sobre o ${cliente.empreendimento}` : ""}. Podemos conversar rapidinho?`;
     window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   };
