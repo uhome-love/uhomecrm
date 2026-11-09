@@ -86,18 +86,18 @@ export function MissaoNatalCard({ userId, recolhivel = false }: { userId?: strin
     <section className={`relative overflow-hidden rounded-2xl border bg-card p-4 md:p-5 ${efeitos ? "natal-borda-ouro" : ""}`}>
       {confete && <Confete />}
       {!expandido ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+          <div className="flex min-w-0 items-center gap-2 md:shrink-0">
             <img src="/natal/chave_de_ouro_com_laco.svg" alt="" aria-hidden className="h-7 w-7 shrink-0" />
             <h2 className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">Minha Missão de Natal</h2>
             {cumpriu && <span className="natal-chip-ouro shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold">🔑</span>}
             {!encerrada && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold">🎄 {diasAte18(data.hoje)} dias</span>}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <p className="shrink-0 text-sm text-muted-foreground"><b className="text-foreground">{brlCurto(vgv)}</b> de {brlCurto(metaVgv)} ({Math.floor(pct)}%)</p>
             <div className="min-w-0 flex-1"><BarraOuro pct={pct} fina /></div>
           </div>
-          <div className={`grid gap-2 ${encerrada ? "grid-cols-1" : "grid-cols-2"}`}>
+          <div className={`grid gap-2 md:flex md:shrink-0 ${encerrada ? "grid-cols-1" : "grid-cols-2"}`}>
             {!encerrada && <Button size="sm" variant="outline" onClick={() => setAberto(true)}>Minha meta</Button>}
             <Button variant="ghost" size="sm" onClick={() => setExpandido(true)}>
               Ver detalhes <ChevronDown className="ml-1 h-4 w-4" />
