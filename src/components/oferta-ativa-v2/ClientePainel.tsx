@@ -1,5 +1,5 @@
 /** Cartão do cliente: nome, telefone grande, empreendimento, contexto e botões Ligar/WhatsApp. */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Phone, MessageCircle, Copy, Building2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,9 @@ import { contatoPermitido } from "@/lib/contatoPermitido";
 import { formatBRT } from "@/lib/brtTime";
 import { ORIGEM_INFO, foneInternacional, formatarFone, haQuanto, primeiroNome, type ClienteOA, type OrigemOA } from "./tipos";
 
-interface Props { cliente: ClienteOA; origem: OrigemOA; onLigou: () => void }
+interface Props { cliente: ClienteOA; origem: OrigemOA; onLigou: () => void; children?: ReactNode }
 
-export default function ClientePainel({ cliente, origem, onLigou }: Props) {
+export default function ClientePainel({ cliente, origem, onLigou, children }: Props) {
   const fone = foneInternacional(cliente.telefone);
   const [verificando, setVerificando] = useState(false);
   const quando = haQuanto(cliente.entrouEm);
@@ -44,21 +44,21 @@ export default function ClientePainel({ cliente, origem, onLigou }: Props) {
           <Building2 className="h-4 w-4 shrink-0" aria-hidden /><span className="truncate">{cliente.empreendimento}</span>
         </span>
       )}
-      <p className="mt-3 text-sm text-muted-foreground">{ORIGEM_INFO[origem].contexto}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{ORIGEM_INFO[origem].contexto}</p>
 
-      <div className="mt-4 grid gap-2">
+      <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
         <Button size="lg" onClick={() => void contatar("ligacao")} disabled={!fone || verificando}
-          className="h-14 gap-2 bg-success text-lg font-bold text-primary-foreground shadow-sm hover:bg-success-600">
+          className="h-12 gap-2 bg-success text-lg font-bold text-primary-foreground shadow-sm hover:bg-success-600">
           <Phone className="h-5 w-5" aria-hidden /> Ligar agora
         </Button>
-        <Button variant="secondary" onClick={() => void contatar("whatsapp")} disabled={!fone || verificando} className="h-11 gap-2">
-          <MessageCircle className="h-4 w-4" aria-hidden /> WhatsApp
+        <Button variant="secondary" onClick={() => void contatar("whatsapp")} disabled={!fone || verificando} className="h-12 gap-2 px-4" aria-label="WhatsApp">
+          <MessageCircle className="h-4 w-4" aria-hidden /><span className="hidden sm:inline">WhatsApp</span>
         </Button>
-        {!fone && <p className="text-center text-xs text-destructive">Telefone inválido. Use "Número errado" ou pule.</p>}
+        {!fone && <p className="col-span-2 text-center text-xs text-destructive">Telefone inválido. Use "Número errado" ou pule.</p>}
       </div>
 
       {(cliente.observacoes || cliente.entrouEm || cliente.tentativas > 0) && (
-        <Collapsible className="mt-4 border-t border-border pt-3">
+        <Collapsible className="mt-3 border-t border-border pt-3">
           <CollapsibleTrigger className="group flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground">
             Mais detalhes <ChevronDown className="h-4 w-4 transition-transform duration-fast group-data-[state=open]:rotate-180" aria-hidden />
           </CollapsibleTrigger>
@@ -69,6 +69,7 @@ export default function ClientePainel({ cliente, origem, onLigou }: Props) {
           </CollapsibleContent>
         </Collapsible>
       )}
+      {children}
     </section>
   );
 }

@@ -1,10 +1,9 @@
 /** Tela de ligação única para Listas, Estagnados e Descartados: cliente, roteiro, resultado e ranking. */
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, SkipForward, Trophy, Loader2, PartyPopper } from "lucide-react";
+import { ArrowLeft, SkipForward, Trophy, Phone, Loader2, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { playSoundSuccess, getCelebrationEnabled } from "@/lib/celebrations";
@@ -34,7 +33,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
   const [ultimo, setUltimo] = useState<ResultadoOA | null>(null);
   const [ligou, setLigou] = useState(false);
   const [destacar, setDestacar] = useState(false);
-  const [rankingAberto, setRankingAberto] = useState(false);
+  const [aba, setAba] = useState<"ligar" | "ranking">("ligar");
   const corretorNome = String((user?.user_metadata as { nome?: string } | undefined)?.nome ?? "");
 
   useEffect(() => { void proximo(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -68,7 +67,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
 
   // Atalhos de teclado no computador: 1–5 resultados, P pula.
   useEffect(() => {
-    if (isMobile || !cliente) return;
+    if (isMobile || !cliente || aba !== "ligar") return;
     const opcoes = resultadosDaOrigem(origem);
     const ordem: ResultadoOA[] = ["nao_atendeu", "sem_interesse", "numero_errado", "aproveitar", "visita"];
     const onKey = (e: KeyboardEvent) => {
@@ -80,27 +79,37 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isMobile, cliente, origem, visitaAberta, gravando, onResultado, pular]);
+  }, [aba, isMobile, cliente, origem, visitaAberta, gravando, onResultado, pular]);
 
   const sairTela = async () => { await sair(); onSair(); };
 
   return (
-    <div className={isMobile && cliente ? "pb-36" : ""}>
+    <div className={isMobile && cliente && aba === "ligar" ? "pb-36" : ""}>
       <div className="sticky top-0 z-30 -mx-3 mb-3 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-2 backdrop-blur md:mx-0 md:rounded-2xl md:border md:bg-card md:px-4">
-        <Button variant="ghost" size="sm" onClick={() => void sairTela()} className="gap-1 px-2"><ArrowLeft className="h-4 w-4" aria-hidden /> Sair</Button>
+        <Button variant="ghost" size="sm" onClick={() => void sairTela()} className="shrink-0 gap-1 px-2" aria-label="Sair"><ArrowLeft className="h-4 w-4" aria-hidden /><span className="hidden sm:inline">Sair</span></Button>
         <span className="hidden truncate rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary sm:inline">{ORIGEM_INFO[origem].emoji} {ORIGEM_INFO[origem].titulo}</span>
-        <div className="flex min-w-0 flex-1 justify-center"><PlacarCompacto /></div>
-        {isMobile && <Button variant="ghost" size="icon" onClick={() => setRankingAberto(true)} aria-label="Ver ranking"><Trophy className="h-4 w-4 text-warning-500" /></Button>}
-        <Button variant="ghost" size="sm" onClick={() => void pular()} disabled={!cliente || gravando || carregando} className="gap-1 px-2">
+        <div className="flex min-w-0 flex-1 justify-center overflow-hidden"><PlacarCompacto /></div>
+        <div role="tablist" aria-label="Visão" className="flex shrink-0 rounded-full bg-muted p-0.5">
+          {(["ligar", "ranking"] as const).map((a) => (
+            <button key={a} type="button" role="tab" aria-label={a === "ligar" ? "Ligar" : "Ranking"} aria-selected={aba === a} onClick={() => setAba(a)}
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors duration-fast sm:px-3 ${aba === a ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              {a === "ligar" ? <><Phone className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">Ligar</span></> : <><Trophy className="h-3.5 w-3.5 text-warning-500" aria-hidden /><span className="hidden sm:inline">Ranking</span></>}
+            </button>
+          ))}
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => void pular()} disabled={!cliente || gravando || carregando || aba !== "ligar"} className="gap-1 px-2">
           Pular <SkipForward className="h-4 w-4" aria-hidden />
         </Button>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(280px,340px)_1fr] xl:grid-cols-[minmax(280px,340px)_1fr_320px]">
+      {aba === "ranking" && <div className="mx-auto max-w-2xl"><ArenaRanking /></div>}
+      <div className={aba === "ranking" ? "hidden" : "grid items-start gap-3 lg:grid-cols-[minmax(320px,400px)_1fr]"}>
         <AnimatePresence mode="wait">
           {cliente ? (
             <motion.div key={cliente.id} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.22 }} className="contents">
-              <ClientePainel cliente={cliente} origem={origem} onLigou={() => setLigou(true)} />
+              <ClientePainel cliente={cliente} origem={origem} onLigou={() => setLigou(true)}>
+                {!isMobile && <ResultadoBarra origem={origem} gravando={gravando} fixo={false} destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
+              </ClientePainel>
               <div className="min-w-0 space-y-3">
                 <RoteiroPainel cliente={cliente} corretorNome={corretorNome} />
                 {isMobile && origem === "listas" && (
@@ -109,7 +118,6 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
                   </button>
                 )}
               </div>
-              {!isMobile && <div className="lg:col-span-2 lg:sticky lg:bottom-3 z-20"><ResultadoBarra origem={origem} gravando={gravando} fixo={false} destacar={destacar} ultimo={ultimo} onResultado={onResultado} /></div>}
             </motion.div>
           ) : (
             <motion.div key="estado" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-8 text-center lg:col-span-2">
@@ -126,20 +134,13 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
             </motion.div>
           )}
         </AnimatePresence>
-        <aside className="hidden xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:block"><div className="sticky top-16"><ArenaRanking compacto /></div></aside>
       </div>
 
-      {isMobile && cliente && <ResultadoBarra origem={origem} gravando={gravando} fixo destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
+      {isMobile && cliente && aba === "ligar" && <ResultadoBarra origem={origem} gravando={gravando} fixo destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
 
       <VisitaDialog aberto={visitaAberta} nome={cliente?.nome ?? ""} gravando={gravando} onFechar={() => setVisitaAberta(false)}
         onConfirmar={async (dataVisita, horaVisita, nota) => { setUltimo("visita"); if (await concluir("visita", { dataVisita, horaVisita, nota })) setVisitaAberta(false); }} />
 
-      <Sheet open={rankingAberto} onOpenChange={setRankingAberto}>
-        <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl">
-          <SheetHeader><SheetTitle className="sr-only">Ranking de ligações</SheetTitle></SheetHeader>
-          <ArenaRanking />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
