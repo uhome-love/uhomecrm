@@ -103,13 +103,13 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
               <ClientePainel cliente={cliente} origem={origem} onLigou={() => setLigou(true)} />
               <div className="min-w-0 space-y-3">
                 <RoteiroPainel cliente={cliente} corretorNome={corretorNome} />
-                {!isMobile && <ResultadoBarra origem={origem} gravando={gravando} fixo={false} destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
                 {isMobile && origem === "listas" && (
                   <button type="button" onClick={() => onResultado("numero_errado")} disabled={gravando} className="w-full py-2 text-center text-sm text-muted-foreground underline-offset-2 hover:underline">
                     Número errado?
                   </button>
                 )}
               </div>
+              {!isMobile && <div className="lg:col-span-2 lg:sticky lg:bottom-3 z-20"><ResultadoBarra origem={origem} gravando={gravando} fixo={false} destacar={destacar} ultimo={ultimo} onResultado={onResultado} /></div>}
             </motion.div>
           ) : (
             <motion.div key="estado" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-8 text-center lg:col-span-2">
@@ -126,7 +126,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
             </motion.div>
           )}
         </AnimatePresence>
-        <aside className="hidden xl:block"><div className="sticky top-16"><ArenaRanking compacto /></div></aside>
+        <aside className="hidden xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:block"><div className="sticky top-16"><ArenaRanking compacto /></div></aside>
       </div>
 
       {isMobile && cliente && <ResultadoBarra origem={origem} gravando={gravando} fixo destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
