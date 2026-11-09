@@ -73,9 +73,9 @@ export default function RoteiroPainel({ cliente, corretorNome }: { cliente: Clie
         <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold"><ScrollText className="h-4 w-4 shrink-0 text-primary" aria-hidden /><span className="truncate">{roteiro.titulo}</span>{"natal" in roteiro && roteiro.natal && <span className="natal-chip-ouro shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">🎄 Natal</span>}</h3>
         {!editando && (
           <div className="flex shrink-0 items-center gap-3">
-            {meu && <button type="button" onClick={restaurar} className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"><RotateCcw className="h-3.5 w-3.5" aria-hidden /> Voltar ao padrão</button>}
-            <button type="button" onClick={() => { setRascunho(roteiro.modelo); setEditando(true); }} className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" aria-hidden /> Editar</button>
-            <button type="button" onClick={() => { void navigator.clipboard.writeText(roteiro.texto); toast.success("Roteiro copiado"); }} className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"><Copy className="h-3.5 w-3.5" aria-hidden /> Copiar</button>
+            {meu && <button type="button" onClick={restaurar} aria-label="Voltar ao padrão" className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"><RotateCcw className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">Voltar ao padrão</span></button>}
+            <button type="button" onClick={() => { setRascunho(roteiro.modelo); setEditando(true); }} aria-label="Editar roteiro" className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">Editar</span></button>
+            <button type="button" onClick={() => { void navigator.clipboard.writeText(roteiro.texto); toast.success("Roteiro copiado"); }} aria-label="Copiar roteiro" className="flex p-1 items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"><Copy className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">Copiar</span></button>
           </div>
         )}
       </header>

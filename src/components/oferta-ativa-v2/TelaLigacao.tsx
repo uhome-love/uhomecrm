@@ -15,6 +15,7 @@ import VisitaDialog from "./VisitaDialog";
 import PlacarCompacto from "./PlacarCompacto";
 import { useFilaOA } from "./useFilaOA";
 import ResultadoDialog from "./ResultadoDialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ORIGEM_INFO, formatarDuracao, resultadosDaOrigem, type OrigemOA, type ResultadoOA } from "./tipos";
 
 interface Props { origem: OrigemOA; listaIds: string[]; empreendimentos: string[]; onSair: () => void }
@@ -37,6 +38,8 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
   const [agora, setAgora] = useState(Date.now());
   const [dialogo, setDialogo] = useState(false);
   const [duracao, setDuracao] = useState(0);
+  const [sessao, setSessao] = useState({ ligacoes: 0, aproveitados: 0, visitas: 0, segundos: 0, inicio: Date.now() });
+  const [resumo, setResumo] = useState(false);
   const [destacar, setDestacar] = useState(false);
   const [aba, setAba] = useState<"ligar" | "ranking">("ligar");
   const corretorNome = String((user?.user_metadata as { nome?: string } | undefined)?.nome ?? "");
@@ -73,6 +76,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     const nota = [extras.nota?.trim(), tempo].filter(Boolean).join(" · ") || undefined;
     const ok = await registrar(r, { ...extras, nota });
     if (!ok) return false;
+    setSessao((x) => ({ ...x, ligacoes: x.ligacoes + 1, aproveitados: x.aproveitados + (r === "aproveitar" || r === "visita" ? 1 : 0), visitas: x.visitas + (r === "visita" ? 1 : 0), segundos: x.segundos + duracao }));
     if (r === "aproveitar" || r === "visita") {
       toast.success(r === "visita" ? "Visita marcada e cliente no seu Pipeline! 🎉" : "Aproveitado! O cliente agora está no seu Pipeline. 🎉");
       if (getCelebrationEnabled()) playSoundSuccess();
@@ -103,7 +107,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     return () => window.removeEventListener("keydown", onKey);
   }, [aba, isMobile, cliente, origem, visitaAberta, dialogo, gravando, onResultado, pular]);
 
-  const sairTela = async () => { await sair(); onSair(); };
+  const sairTela = async () => { await sair(); if (sessao.ligacoes > 0) setResumo(true); else onSair(); };
 
   return (
     <div className={isMobile && cliente && aba === "ligar" ? "pb-36" : ""}>
@@ -159,6 +163,22 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
       </div>
 
       {isMobile && cliente && aba === "ligar" && <ResultadoBarra origem={origem} gravando={gravando} fixo destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
+
+      <Dialog open={resumo} onOpenChange={(o) => { if (!o) onSair(); }}>
+        <DialogContent className="max-w-sm rounded-2xl text-center">
+          <DialogHeader className="items-center">
+            <PartyPopper className="h-9 w-9 text-primary" aria-hidden />
+            <DialogTitle>Boa sessão! 👏</DialogTitle>
+            <DialogDescription>{Math.max(1, Math.round((Date.now() - sessao.inicio) / 60000))} min ligando{sessao.segundos > 0 ? ` · ${formatarDuracao(sessao.segundos)} em ligação` : ""}</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-2">
+            {([["Ligações", sessao.ligacoes], ["Aproveitados", sessao.aproveitados], ["Visitas", sessao.visitas]] as const).map(([r, n]) => (
+              <div key={r} className="rounded-xl bg-muted/60 p-3"><p className="text-2xl font-bold tabular-nums">{n}</p><p className="text-[11px] text-muted-foreground">{r}</p></div>
+            ))}
+          </div>
+          <Button onClick={onSair} className="w-full">Voltar ao início</Button>
+        </DialogContent>
+      </Dialog>
 
       <ResultadoDialog aberto={dialogo} nome={cliente?.nome ?? ""} segundos={duracao} origem={origem} gravando={gravando} ultimo={ultimo} onFechar={() => setDialogo(false)} onResultado={onResultado} />
 

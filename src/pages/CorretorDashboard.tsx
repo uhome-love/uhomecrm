@@ -71,7 +71,7 @@ export default function CorretorDashboard() {
   });
 
   return (
-    <div className="px-0 pt-0 md:px-2 space-y-4 max-w-7xl mx-auto pb-10">
+    <div className="space-y-5 max-w-7xl mx-auto pb-10">
       <OnboardingWidget />
 
 
@@ -129,7 +129,7 @@ export default function CorretorDashboard() {
       {/* 1. Saudação HOMI (gradient inline — computador) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="hidden md:block">
         <div
-          className={`rounded-2xl px-5 py-3.5 text-primary-foreground relative overflow-hidden gradient-brand`}
+          className={`rounded-2xl px-6 py-5 text-primary-foreground relative overflow-hidden gradient-brand`}
         >
           {natal.efeitos && <NeveSuave altura={120} />}
           {natal.efeitos && (
