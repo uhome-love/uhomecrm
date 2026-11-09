@@ -43,7 +43,7 @@ export default function MobileBottomNav({ role }: { role: Role }) {
   };
 
   const [a, b, c] = itensPorCargo(role);
-  const ofertaAtiva = role === "corretor" ? "/arena-ligacoes" : "/oferta-ativa";
+  const ofertaAtiva = role === "corretor" ? "/corretor/call" : "/oferta-ativa";
 
   const atalhos: Item[] = [
     { label: "Oferta Ativa", path: ofertaAtiva, icon: Phone },

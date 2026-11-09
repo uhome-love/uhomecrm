@@ -79,9 +79,9 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 
 # Oferta Ativa nova — módulo único (09/11)
 - [x] Fase 1 — Mockup desktop/celular apresentado
-- [ ] Aprovação do mockup pelo Lucas (aguardando)
-- [ ] Levantar todas as telas/relatórios com números de OA e migrar para fonte única
-- [ ] Entrada (meta preenchível + 3 origens) e remoção do banner grande
-- [ ] Tela de Ligação única (Listas, Descartados, Estagnados)
-- [ ] Celular com barra fixa de resultados
-- [ ] Teste ponta a ponta com clientes fictícios e limpeza
+- [x] Mockup aprovado
+- [x] Gravação só pelas funções já unificadas (ranking/TV/relatórios mesma fonte)
+- [x] Entrada (meta preenchível + 3 origens), banner removido, Arena fora do painel inicial
+- [x] Tela de Ligação única (Listas, Descartados, Estagnados)
+- [x] Celular com barra fixa de resultados
+- [x] Teste com clientes fictícios (4 resultados + visita) e limpeza
