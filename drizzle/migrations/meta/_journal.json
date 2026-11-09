@@ -610,6 +610,13 @@
       "when": 1794194561146,
       "tag": "0086_oa_historico_aproveitar",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1794196676091,
+      "tag": "0087_oa_aproveitar_seguro",
+      "breakpoints": true
     }
   ]
 }
