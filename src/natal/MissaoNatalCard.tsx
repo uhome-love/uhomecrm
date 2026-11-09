@@ -83,10 +83,10 @@ export function MissaoNatalCard({ userId, recolhivel = false }: { userId?: strin
   ];
 
   return (
-    <section className={`relative overflow-hidden rounded-2xl border bg-card p-4 md:p-5 ${efeitos ? "natal-borda-ouro" : ""}`}>
+    <section className={`relative overflow-hidden rounded-2xl border bg-card p-3 md:p-4 ${efeitos ? "natal-borda-ouro" : ""}`}>
       {confete && <Confete />}
       {!expandido ? (
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
           <div className="flex min-w-0 items-center gap-2 md:shrink-0">
             <img src="/natal/chave_de_ouro_com_laco.svg" alt="" aria-hidden className="h-7 w-7 shrink-0" />
             <h2 className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">Minha Missão de Natal</h2>

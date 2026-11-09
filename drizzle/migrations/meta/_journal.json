@@ -603,6 +603,13 @@
       "when": 1794189996258,
       "tag": "0085_arena_bolsao_bloqueios_busca_unica",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1794194561146,
+      "tag": "0086_oa_historico_aproveitar",
+      "breakpoints": true
     }
   ]
 }

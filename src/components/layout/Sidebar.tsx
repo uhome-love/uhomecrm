@@ -12,14 +12,13 @@ import {
   Trophy, GraduationCap, Lightbulb, Layers,
   Building2, Wallet, ListTodo, CheckSquare, Database,
   BarChart2, GitBranch, Award, BellRing,
-  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock, Calculator, CalendarCheck, Radio,
+  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock, Calculator, CalendarCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import UhomeLogo from "@/components/UhomeLogo";
 import { withNatalMenu } from "@/natal/central/menuNatal";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useMutiraoAtivo } from "@/hooks/useMutiraoAtivo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import MobileMaisMenu from "@/components/layout/mobile/MobileMaisMenu";
 
@@ -409,9 +408,6 @@ export default function Sidebar({
     return () => window.removeEventListener("storage", handler);
   }, [isManagerRole]);
 
-  // "Mutirão ao vivo" é item fixo no menu; a flag só controla o selo "AO VIVO".
-  const { mutiraoAtivo } = useMutiraoAtivo();
-
   const baseGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
   const showCorretorMode =
     !!userId &&
@@ -420,22 +416,7 @@ export default function Sidebar({
   const rawGroups = showCorretorMode
     ? [baseGroups[0], MODO_CORRETOR_GROUP, ...baseGroups.slice(1)]
     : baseGroups;
-  const mutiraoItem: NavItem = {
-    label: "⚡ Mutirão ao vivo",
-    path: "/oferta-ativa-ao-vivo",
-    icon: <Radio size={15} strokeWidth={1.5} />,
-    ...(mutiraoAtivo ? { badge: "AO VIVO" } : {}),
-  };
-  // Corretor não tem "Mutirão ao vivo" no menu — ele só aparece como banner na
-  // Minha Rotina no dia em que há mutirão. Demais papéis mantêm o item fixo.
-  const withMutirao: NavGroup[] = role === "corretor" ? rawGroups : rawGroups.map((g) =>
-    (g.title === "Leads" || g.title === "Leads & Visitas" || g.title === "Modo Corretor") &&
-    !g.items.some((i) => i.path === mutiraoItem.path)
-      ? { ...g, items: [...g.items, mutiraoItem] }
-      : g,
-  );
-
-  const comNatal = withNatalMenu(withMutirao, role);
+  const comNatal = withNatalMenu(rawGroups, role);
   const groups = comNatal.map(g => ({
     ...g,
     items: g.items.map(item =>
