@@ -17473,6 +17473,19 @@ export type Database = {
         Returns: Json
       }
       _meta_aud_phone_e164: { Args: { p_phone: string }; Returns: string }
+      _oa_cliente_pipeline: {
+        Args: { p_email: string; p_excluir: string; p_tel: string }
+        Returns: {
+          ativo: boolean
+          corretor_id: string
+          id: string
+        }[]
+      }
+      _oa_nome_curto: { Args: { p_uid: string }; Returns: string }
+      _oa_reativar_lead: {
+        Args: { p_descricao: string; p_pl_id: string; p_uid: string }
+        Returns: undefined
+      }
       _pipeline_lead_so_campos_sistema: {
         Args: {
           p_new: Database["public"]["Tables"]["pipeline_leads"]["Row"]
@@ -18934,7 +18947,24 @@ export type Database = {
         Returns: boolean
       }
       oa_ao_vivo_my_profile_id: { Args: never; Returns: string }
+      oa_aproveitar: {
+        Args: { p_lead_id: string; p_origem: string; p_via?: string }
+        Returns: Json
+      }
       oa_historico_aproveitar: { Args: { p_lead_id: string }; Returns: Json }
+      oa_historico_bolsao: {
+        Args: never
+        Returns: {
+          empreendimento: string
+          lead_id: string
+          no_meu_pipeline: boolean
+          nome: string
+          porta: string
+          quando: string
+          resultado: string
+          telefone: string
+        }[]
+      }
       oa_lista_empreendimentos: {
         Args: { p_lista_id: string }
         Returns: {
