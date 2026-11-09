@@ -83,7 +83,7 @@ export function MissaoNatalCard({ userId, recolhivel = false }: { userId?: strin
   ];
 
   return (
-    <section className={`relative overflow-hidden rounded-2xl border bg-card p-3 md:p-4 ${efeitos ? "natal-borda-ouro" : ""}`}>
+    <section className={`relative overflow-hidden rounded-2xl border bg-card p-4 md:px-5 ${efeitos ? "natal-borda-ouro" : ""}`}>
       {confete && <Confete />}
       {!expandido ? (
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">

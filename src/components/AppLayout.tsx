@@ -321,7 +321,7 @@ export default function AppLayout() {
                     key={tab.id}
                     className={cn(
                       "absolute inset-0 overflow-y-auto overflow-x-hidden",
-                      !tab.noPadding && "px-4 pt-2 pb-6 sm:px-6 lg:px-8 lg:pb-8"
+                      !tab.noPadding && "px-4 pt-4 pb-6 sm:px-6 lg:px-8 lg:pt-6 lg:pb-8"
                     )}
                     style={{ display: isActiveTab && !rotaInexistente ? 'block' : 'none', paddingBottom: isMobile ? "calc(6rem + var(--sab))" : undefined }}
                   >
