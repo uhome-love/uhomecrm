@@ -575,6 +575,13 @@
       "when": 1794187694914,
       "tag": "0081_oa_ranking_ligacoes",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1794189354408,
+      "tag": "0082_arena_validacao_contagens_e_contato",
+      "breakpoints": true
     }
   ]
 }
