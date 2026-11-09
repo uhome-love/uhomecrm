@@ -38,7 +38,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
   const ehLista = origem === "listas";
 
   const atualizarPlacar = useCallback(() => {
-    for (const k of ["corretor-daily-stats", "oa-ranking-ligacoes", "bolsao-contagens", "oa-listas-batch-stats", "oa-ranking", "oa-aproveitados", "visitas", "pipeline"]) {
+    for (const k of ["corretor-daily-stats", "oa-ranking-ligacoes", "bolsao-contagens", "oa-listas-batch-stats", "oa-ranking", "oa-aproveitados", "visitas", "pipeline", "oa-historico"]) {
       qc.invalidateQueries({ queryKey: [k] });
     }
   }, [qc]);

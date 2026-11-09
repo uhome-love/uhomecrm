@@ -70,9 +70,7 @@ export default function HistoricoLigacoes() {
     const res = r as { ok: boolean; status: string; corretor_nome?: string; pipeline_lead_id?: string };
     if (res.ok) {
       toast.success(`${l.lead?.nome ?? "Cliente"} agora está no seu Pipeline! 🎉`);
-      void qc.invalidateQueries({ queryKey: ["oa-historico"] });
-      void qc.invalidateQueries({ queryKey: ["oa-ranking-ligacoes"] });
-      void qc.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
+      for (const k of ["oa-historico", "oa-ranking-ligacoes", "corretor-daily-stats", "oa-aproveitados", "pipeline", "oa-ranking"]) void qc.invalidateQueries({ queryKey: [k] });
       return;
     }
     if (res.status === "com_outro") toast.warning(`Este cliente já está com ${res.corretor_nome ?? "outro corretor"}.`);
