@@ -72,7 +72,7 @@ export default function CorretorDashboard() {
   });
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto pb-10">
+    <div className="px-0 pt-0 md:px-2 space-y-4 max-w-7xl mx-auto pb-10">
       <OnboardingWidget />
 
       {/* CTA Mutirão Inteligente (aparece quando ao vivo ou janela típica) */}
@@ -84,25 +84,25 @@ export default function CorretorDashboard() {
       {isMobile && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {natal.efeitos ? (
-            <div className="natal-noite natal-borda-ouro relative overflow-hidden rounded-2xl p-4">
-              <NeveSuave altura={170} flocos={18} />
-              <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none absolute -bottom-1 right-1 h-24 select-none" />
-              <div className="relative flex items-center gap-3 pr-20">
+            <div className="gradient-brand relative overflow-hidden rounded-2xl p-3.5 text-primary-foreground shadow-sm">
+              <NeveSuave altura={120} flocos={12} />
+              <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none absolute bottom-0 right-2 h-[78px] select-none" />
+              <div className="relative flex items-center gap-3 pr-16">
                 <div className="relative shrink-0">
                   {avatarSrc ? (
-                    <img src={avatarSrc} alt={profile?.nome || "Avatar"} className="h-14 w-14 rounded-full border-2 border-primary-foreground/30 object-cover" />
+                    <img src={avatarSrc} alt={profile?.nome || "Avatar"} className="h-11 w-11 rounded-full border-2 border-primary-foreground/40 object-cover" />
                   ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-primary-foreground/30 font-bold">{initials || "?"}</div>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-primary-foreground/40 font-bold">{initials || "?"}</div>
                   )}
-                  <GorroNatal className="-left-2 -top-4 w-9" />
+                  <GorroNatal className="-left-2 -top-3 w-7" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] capitalize opacity-70">{dataFormatada}</p>
-                  <h1 className="text-[20px] font-bold leading-tight break-words">{saudacao}, {primeiroNome}</h1>
+                  <p className="text-[11px] capitalize text-primary-foreground/75">{dataFormatada}</p>
+                  <h1 className="truncate text-[18px] font-bold leading-tight">{saudacao}, {primeiroNome}! 👋</h1>
                 </div>
               </div>
-              <p className="relative mt-2 pr-20 text-[13px] italic leading-snug opacity-80">"{motivation}"</p>
-              <span className="natal-chip-ouro relative mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
+              <p className="relative mt-1.5 line-clamp-2 pr-16 text-[12px] italic leading-snug text-primary-foreground/85">"{motivation}"</p>
+              <span className="natal-chip-ouro relative mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
             </div>
           ) : (<>
           <div className="flex items-center justify-between gap-3 pt-1">
@@ -132,11 +132,11 @@ export default function CorretorDashboard() {
       {/* 1. Saudação HOMI (gradient inline — computador) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="hidden md:block">
         <div
-          className={`rounded-2xl p-5 text-primary-foreground relative overflow-hidden gradient-brand`}
+          className={`rounded-2xl px-5 py-3.5 text-primary-foreground relative overflow-hidden gradient-brand`}
         >
-          {natal.efeitos && <NeveSuave altura={200} />}
+          {natal.efeitos && <NeveSuave altura={120} />}
           {natal.efeitos && (
-            <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none absolute bottom-0 right-6 h-[92%] select-none" />
+            <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none absolute bottom-0 right-6 h-[94%] select-none" />
           )}
           <div className="relative flex items-center gap-4">
             <div className="relative shrink-0">
@@ -144,22 +144,22 @@ export default function CorretorDashboard() {
               <img
                 src={avatarSrc}
                 alt={profile?.nome || "Avatar"}
-                className="h-16 w-16 shrink-0 rounded-full object-cover border-2 border-primary-foreground/30"
+                className="h-12 w-12 shrink-0 rounded-full object-cover border-2 border-primary-foreground/30"
               />
             ) : (
               <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-primary-foreground font-black text-xl select-none border-2 border-primary-foreground/30"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-primary-foreground font-black text-lg select-none border-2 border-primary-foreground/30"
                 style={{ background: "hsl(var(--primary-foreground) / 0.15)" }}
               >
                 {initials || "?"}
               </div>
             )}
-              <GorroNatal className="-left-3 -top-5 w-10" />
+              <GorroNatal className="-left-2.5 -top-4 w-8" />
             </div>
             <div className={`min-w-0 flex-1 ${natal.efeitos ? "pr-36" : ""}`}>
               <p className="text-lg font-bold truncate">{saudacao}, {primeiroNome}! 👋</p>
-              <p className="text-sm text-primary-foreground/80 italic leading-snug mt-0.5">"{motivation}"</p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <p className="truncate text-sm text-primary-foreground/80 italic leading-snug">"{motivation}"</p>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-xs capitalize">{dataFormatada}</span>
                 {perf?.crm_atende && (
                   <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-xs font-semibold">🏆 Padrão Uhome conquistado</span>
