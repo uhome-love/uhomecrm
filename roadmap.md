@@ -76,3 +76,12 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [x] Arena de Ligações — listas: Não atendeu/Aproveitado/Visita persistidos e avanço automático; Bolsão: Estagnado registrado, repetição idempotente, Descartado aproveitado pelo celular; placar 5 ligações/3 aproveitados/1 visita confirmado; 30 testes e preview sem erros; TV sem sessão e com sessão simulada conferida; contagens e proteção corrigidas
 - [x] Arena de Ligações — lista, clientes, visita, tentativas e reservas fictícios removidos; consulta final confirmou zero registros de teste nessas fontes
 - [ ] Arena de Ligações — cobertura restante: operação autenticada de corretor e Mutirão real/retornos/relatórios ponta a ponta; sem criar evento real nem alterar contas existentes nesta conferência. TV ativa foi simulada, não um Mutirão real
+
+# Oferta Ativa nova — módulo único (09/11)
+- [x] Fase 1 — Mockup desktop/celular apresentado
+- [ ] Aprovação do mockup pelo Lucas (aguardando)
+- [ ] Levantar todas as telas/relatórios com números de OA e migrar para fonte única
+- [ ] Entrada (meta preenchível + 3 origens) e remoção do banner grande
+- [ ] Tela de Ligação única (Listas, Descartados, Estagnados)
+- [ ] Celular com barra fixa de resultados
+- [ ] Teste ponta a ponta com clientes fictícios e limpeza
