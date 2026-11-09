@@ -61,9 +61,9 @@ export default function PlacarTvPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
-    <div className="min-h-0 flex-1">
+    <>
     <PlacarTv
+      rodapePx={52}
       sessaoId={sessao.id}
       overrideData={{
         corretores: q.data?.corretores ?? [],
@@ -71,8 +71,7 @@ export default function PlacarTvPage() {
         feed: q.data?.feed ?? [],
       }}
     />
-    </div>
-    <TvRankingLigacoes faixa />
-    </div>
+    <div className="fixed inset-x-0 bottom-0 z-50 h-[52px]"><TvRankingLigacoes faixa /></div>
+    </>
   );
 }

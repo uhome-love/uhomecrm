@@ -90,7 +90,7 @@ interface OverrideData {
   feed?: any[];
 }
 
-export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; overrideData?: OverrideData }) {
+export function PlacarTv({ sessaoId, overrideData, rodapePx = 0 }: { sessaoId: string | null; overrideData?: OverrideData; rodapePx?: number }) {
   const isPublic = !!overrideData;
   const rankAuth = useMutiraoRanking(isPublic ? null : sessaoId);
   const rank = isPublic
@@ -124,12 +124,13 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
   useEffect(() => {
     const calc = () => {
       // Preenche a largura inteira da TV; excedente vertical fica centralizado (bordas já vazias).
-      setStageScale((window.innerWidth / STAGE_W) * scaleAdjust);
+      const porLargura = window.innerWidth / STAGE_W;
+      setStageScale((rodapePx > 0 ? Math.min(porLargura, (window.innerHeight - rodapePx) / STAGE_H) : porLargura) * scaleAdjust);
     };
     calc();
     window.addEventListener("resize", calc);
     return () => window.removeEventListener("resize", calc);
-  }, [scaleAdjust]);
+  }, [scaleAdjust, rodapePx]);
 
 
 
@@ -274,7 +275,7 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
       `}</style>
 
       <div style={{
-        position: "fixed", inset: 0, overflow: "hidden", background: "#05050f",
+        position: "fixed", top: 0, left: 0, right: 0, bottom: rodapePx, overflow: "hidden", background: "#05050f",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
       <div style={{
