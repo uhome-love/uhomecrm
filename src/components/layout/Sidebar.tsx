@@ -19,7 +19,6 @@ import { useSidebar } from "@/components/ui/sidebar";
 import UhomeLogo from "@/components/UhomeLogo";
 import { withNatalMenu } from "@/natal/central/menuNatal";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useMutiraoAtivo } from "@/hooks/useMutiraoAtivo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import MobileMaisMenu from "@/components/layout/mobile/MobileMaisMenu";
 
