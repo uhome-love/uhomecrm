@@ -36,9 +36,9 @@ export default function EscolhaOrigem({ onEscolher }: { onEscolher: (o: OrigemOA
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-base font-semibold">{info.titulo}</span>
-              <span className="block text-sm text-muted-foreground">{extra ? `${extra} · ` : ""}{info.desc}</span>
+              <span className="block text-sm text-muted-foreground">{extra ? `${extra} liberadas` : info.desc}</span>
             </span>
-            <span className="hidden items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground sm:flex">
+            <span className="hidden items-center justify-center gap-1.5 sm:mt-auto rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground sm:flex">
               {semClientes ? "Sem clientes agora" : "Ligar daqui"} {!semClientes && <ArrowRight className="h-4 w-4 transition-transform duration-fast group-hover:translate-x-0.5" aria-hidden />}
             </span>
             <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground sm:hidden" aria-hidden />
