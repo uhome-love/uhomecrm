@@ -35,16 +35,23 @@ export default function HistoricoLigacoes() {
   const [busca, setBusca] = useState("");
   const [aproveitando, setAproveitando] = useState<string | null>(null);
 
-  const { data = [], isLoading } = useQuery({
+  const { data = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["oa-historico", user?.id],
     enabled: !!user,
     queryFn: async () => {
       const desde = new Date(Date.now() - 30 * 864e5).toISOString();
       const { data, error } = await supabase.from("oferta_ativa_tentativas")
-        .select("id, lead_id, resultado, feedback, created_at, empreendimento, canal, lead:oferta_ativa_leads(nome, telefone, status, corretor_id)")
+        .select("id, lead_id, resultado, feedback, created_at, empreendimento, canal")
         .eq("corretor_id", user!.id).gte("created_at", desde).order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
-      return (data ?? []) as unknown as Linha[];
+      const ids = [...new Set((data ?? []).map((t) => t.lead_id).filter(Boolean))] as string[];
+      const leads = new Map<string, Linha["lead"]>();
+      for (let i = 0; i < ids.length; i += 100) {
+        const { data: ls, error: e2 } = await supabase.from("oferta_ativa_leads").select("id, nome, telefone, status, corretor_id").in("id", ids.slice(i, i + 100));
+        if (e2) throw e2;
+        for (const l of ls ?? []) leads.set(l.id, { nome: l.nome, telefone: l.telefone, status: l.status, corretor_id: l.corretor_id });
+      }
+      return (data ?? []).filter((t) => leads.has(t.lead_id)).map((t) => ({ ...t, lead: leads.get(t.lead_id) ?? null })) as Linha[];
     },
   });
 
@@ -99,6 +106,11 @@ export default function HistoricoLigacoes() {
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden /></div>
+      ) : isError ? (
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card py-10 text-center">
+          <p className="text-sm text-muted-foreground">Não foi possível carregar o histórico agora.</p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>Tentar de novo</Button>
+        </div>
       ) : linhas.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card py-12 text-center">
           <History className="h-8 w-8 text-muted-foreground" aria-hidden />
