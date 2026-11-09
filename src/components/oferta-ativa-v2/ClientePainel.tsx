@@ -40,7 +40,7 @@ export default function ClientePainel({ cliente, origem, onLigou, chamadaSeg, on
   return (
     <section className="flex flex-col rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5" aria-label="Cliente">
       <p className="text-xs font-medium text-muted-foreground">
-        {ORIGEM_INFO[origem].titulo}{cliente.origemLead ? ` · ${cliente.origemLead}` : ""}
+        {ORIGEM_INFO[origem].titulo}
       </p>
       <h2 className="mt-1 break-words text-2xl font-bold leading-tight">{cliente.nome || "Cliente sem nome"}</h2>
 
