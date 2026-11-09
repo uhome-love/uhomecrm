@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlacarTv } from "@/components/oferta-ativa-ao-vivo/PlacarTv";
 import { Loader2, Radio } from "lucide-react";
+import { TvRankingLigacoes } from "@/components/oferta-ativa-ao-vivo/TvRankingLigacoes";
 
 export default function PlacarTvPage() {
   const q = useQuery({
@@ -48,17 +49,21 @@ export default function PlacarTvPage() {
   if (!sessao) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-white flex items-center justify-center p-8">
-        <div className="text-center">
-          <Radio className="w-16 h-16 mx-auto mb-6 text-white/40" />
-          <h1 className="text-4xl font-black mb-3">Nenhum Mutirão ao vivo agora</h1>
-          <p className="text-white/60 text-lg">O placar aparecerá aqui automaticamente quando um mutirão começar.</p>
+        <div className="flex w-full flex-col items-center gap-8 text-center">
+          <TvRankingLigacoes />
+          <div className="flex items-center gap-3 text-white/60">
+            <Radio className="h-6 w-6 text-white/40" />
+            <p className="text-lg">Nenhum Mutirão ao vivo agora. O placar do Mutirão aparece aqui quando começar.</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
+    <>
     <PlacarTv
+      rodapePx={52}
       sessaoId={sessao.id}
       overrideData={{
         corretores: q.data?.corretores ?? [],
@@ -66,5 +71,7 @@ export default function PlacarTvPage() {
         feed: q.data?.feed ?? [],
       }}
     />
+    <div className="fixed inset-x-0 bottom-0 z-50 h-[52px]"><TvRankingLigacoes faixa /></div>
+    </>
   );
 }

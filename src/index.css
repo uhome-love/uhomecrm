@@ -1122,3 +1122,26 @@ body.arena-mode [data-sidebar] {
   background-size: 44px 44px;
   mask-image: radial-gradient(circle at 70% 30%, #000, transparent 70%);
 }
+
+/* ── Arena de Ligações (Oferta Ativa) — só tokens ── */
+.arena-hero {
+  background:
+    radial-gradient(circle at 85% 10%, hsl(var(--brand-homi) / 0.28), transparent 45%),
+    radial-gradient(circle at 10% 90%, hsl(var(--brand-medium) / 0.35), transparent 50%),
+    linear-gradient(135deg, hsl(var(--brand-dark)), hsl(var(--primary-900)));
+  color: hsl(var(--primary-foreground));
+}
+.tema-natal .arena-hero { background: var(--natal-night); }
+.arena-vidro { background: hsl(var(--primary-foreground) / 0.08); border: 1px solid hsl(var(--primary-foreground) / 0.14); }
+.arena-barra { background: linear-gradient(90deg, hsl(var(--brand-medium)), hsl(var(--brand-homi))); }
+.arena-ouro { color: hsl(var(--warning-500)); }
+.arena-podio-1 { background: linear-gradient(180deg, hsl(var(--warning-500) / 0.35), hsl(var(--warning-500) / 0.08)); }
+.arena-podio-2 { background: linear-gradient(180deg, hsl(var(--muted-foreground) / 0.35), hsl(var(--muted-foreground) / 0.08)); }
+.arena-podio-3 { background: linear-gradient(180deg, hsl(var(--warning-700) / 0.35), hsl(var(--warning-700) / 0.08)); }
+.arena-brilho { animation: arena-brilho var(--motion-long, 600ms) var(--ease-enter, ease-out) infinite alternate; }
+@keyframes arena-brilho { to { box-shadow: 0 0 0 6px hsl(var(--brand-medium) / 0.25); } }
+@media (prefers-reduced-motion: reduce) { .arena-brilho { animation: none; } }
+.arena-confete { position: absolute; top: -10px; width: 7px; height: 11px; border-radius: 2px;
+  background: linear-gradient(90deg, hsl(var(--warning-500)), hsl(var(--brand-homi))); animation: arena-cair 2.6s ease-in forwards; }
+@keyframes arena-cair { to { transform: translateY(420px) rotate(540deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .arena-confete { display: none; } }

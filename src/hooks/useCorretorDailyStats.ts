@@ -144,7 +144,8 @@ export interface CorretorGoals {
 }
 
 // Defaults globais quando não há meta de hoje nem de ontem
-const META_DEFAULTS = { meta_ligacoes: 30, meta_aproveitados: 5, meta_visitas_marcadas: 3 };
+// Mínimo diário da direção (Arena de Ligações): 30 ligações · 3 aproveitados · 1 visita agendada.
+const META_DEFAULTS = { meta_ligacoes: 30, meta_aproveitados: 3, meta_visitas_marcadas: 1 };
 
 export interface MetaEfetiva {
   meta_ligacoes: number;

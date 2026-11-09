@@ -41,7 +41,7 @@ export default function ScoringLegend() {
             {/* Title */}
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-primary" />
-              <h4 className="text-sm font-bold text-foreground">Sistema de Pontuação Gamificado</h4>
+              <h4 className="text-sm font-bold text-foreground">Pontuação do Mutirão e ranking de ligações</h4>
             </div>
 
             {/* Points Table */}
@@ -84,7 +84,7 @@ export default function ScoringLegend() {
 
             {/* Tips */}
             <div className="p-2 rounded-lg bg-muted/50 border border-border text-[10px] text-muted-foreground">
-              <strong className="text-foreground">💡 Dica:</strong> Tentativa não pontua — o que vale é resultado: aproveitar o lead (+5) e, principalmente, agendar visita (+30).
+              <strong className="text-foreground">💡 Dica:</strong> Os pontos acima valem no Mutirão ao Vivo. No ranking de ligações da semana o que conta é o número de ligações; aproveitados e visitas aparecem ao lado. Mínimo do dia: 30 ligações · 3 aproveitados · 1 visita agendada.
               Configure suas metas diárias na <strong>"Minha Área"</strong> para acompanhar seu progresso.
             </div>
           </CardContent>

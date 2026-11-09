@@ -568,6 +568,13 @@
       "when": 1794150277499,
       "tag": "0080_roleta_domingo_inclui_domingo",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1794187694914,
+      "tag": "0081_oa_ranking_ligacoes",
+      "breakpoints": true
     }
   ]
 }
