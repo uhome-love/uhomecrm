@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { mensagemAproveitar, type RespostaAproveitar } from "./aproveitamento";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { createVisitaFromOA } from "@/hooks/useVisitas";
@@ -19,11 +20,6 @@ interface LeadBolsao { id: string; nome: string; telefone: string | null; origem
 const deLista = (l: LeadLista): ClienteOA => ({ id: l.id, nome: l.nome, telefone: l.telefone, empreendimento: l.empreendimento, origemLead: l.origem, entrouEm: l.data_lead, observacoes: l.observacoes, tentativas: l.tentativas_count ?? 0, listaId: l.lista_id });
 const deBolsao = (l: LeadBolsao): ClienteOA => ({ id: l.id, nome: l.nome, telefone: l.telefone, empreendimento: l.empreendimento, origemLead: l.origem, entrouEm: l.entrou_em, observacoes: null, tentativas: 0, listaId: null });
 
-const ERRO_APROVEITAR: Record<string, string> = {
-  DUPLICATE_ACTIVE: "Esse telefone já está ativo com outro corretor.",
-  RESERVA_DE_OUTRO: "Sua reserva venceu e outro corretor já pegou esse cliente.",
-  NAO_ELEGIVEL: "Esse cliente não está mais disponível.",
-};
 
 interface Opcoes { origem: OrigemOA; listaIds: string[]; empreendimentos: string[] }
 
@@ -116,7 +112,8 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
         });
         const r = data as { success?: boolean; reason?: string; attempt_id?: string; pipeline_lead_id?: string } | null;
         if (error || !r?.success) {
-          const msg = r?.reason === "already_approved" || r?.reason === "phone_already_approved" ? "Esse cliente já foi aproveitado por outro corretor." : "Não consegui gravar. Tente de novo.";
+          const msg = r?.reason === "com_outro" ? mensagemAproveitar({ status: "com_outro", corretor_nome: (r as { corretor_nome?: string }).corretor_nome })
+            : r?.reason === "already_approved" || r?.reason === "phone_already_approved" ? "Esse cliente já foi aproveitado por outro corretor." : "Não consegui gravar. Tente de novo.";
           toast.error(msg);
           if (r?.reason && r.reason !== "error") setCliente(null);
           return false;
@@ -126,11 +123,12 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
           toast.error("Cliente aproveitado, mas a visita não foi salva. Confira a Agenda.");
         }
       } else if (resultado === "aproveitar" || resultado === "visita") {
-        const { data, error } = await supabase.functions.invoke("bolsao-aproveitar", { body: { pipeline_lead_id: c.id } });
-        const r = data as { ok?: boolean; error?: string } | null;
-        if (error || !r?.ok) {
-          toast.error(ERRO_APROVEITAR[r?.error ?? ""] ?? "Não consegui aproveitar agora. Tente de novo.");
-          if (r?.error && ERRO_APROVEITAR[r.error]) setCliente(null);
+        const { data, error } = await supabase.rpc("oa_aproveitar", { p_origem: origem, p_lead_id: c.id, p_via: "ao_vivo" });
+        const r = data as unknown as RespostaAproveitar | null;
+        if (error || !r) { toast.error("Não consegui aproveitar agora. Tente de novo."); return false; }
+        if (!r.ok) {
+          toast.error(mensagemAproveitar(r));
+          if (r.status !== "sem_login" && r.status !== "invalido") setCliente(null);
           return false;
         }
         if (resultado === "visita" && !(await salvarVisita(c, c.id, extras))) {
