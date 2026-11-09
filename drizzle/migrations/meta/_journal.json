@@ -589,6 +589,13 @@
       "when": 1794189782979,
       "tag": "0083_arena_contato_indices_bolsao",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1794189856119,
+      "tag": "0084_arena_bolsao_contagem_sem_repetir_bloqueios",
+      "breakpoints": true
     }
   ]
 }
