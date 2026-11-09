@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { useMutiraoSession } from "@/hooks/useMutiraoSession";
 import { cn } from "@/lib/utils";
+import { contatoPermitido } from "@/lib/contatoPermitido";
 import { playSoundSuccess, playSoundFanfare, getCelebrationEnabled } from "@/lib/celebrations";
 
 type BaldeKey = "verde_hot" | "verde" | "amarelo";
@@ -69,8 +70,9 @@ export function LeadCard({
     navigator.clipboard.writeText(lead.telefone);
     toast.success("Telefone copiado");
   };
-  const openWhats = () => {
+  const openWhats = async () => {
     if (!lead?.telefone_normalizado) return toast.info("Sem telefone válido");
+    if (!(await contatoPermitido(lead.telefone_normalizado))) return;
     window.open(`https://wa.me/${lead.telefone_normalizado}`, "_blank");
   };
 
