@@ -12,12 +12,13 @@ function Meta({ icon: Icon, label, valor, meta }: { icon: typeof Phone; label: s
   return (
     <div className="arena-vidro rounded-xl p-3">
       <div className="flex items-center justify-between text-xs opacity-80">
-        <span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{label}</span>
-        <span>{ok ? "✅" : `mín. ${meta}`}</span>
+        <span className="flex min-w-0 items-center gap-1.5 truncate"><Icon className="h-3.5 w-3.5 shrink-0" />{label}</span>
+        {ok && <span>✅</span>}
       </div>
-      <motion.div key={valor} initial={{ scale: 1.25 }} animate={{ scale: 1 }} className="mt-1 text-3xl font-black tabular-nums leading-none">
-        {valor}
-      </motion.div>
+      <div className="mt-1 flex items-baseline gap-1">
+        <motion.span key={valor} initial={{ scale: 1.25 }} animate={{ scale: 1 }} className="inline-block text-3xl font-black tabular-nums leading-none">{valor}</motion.span>
+        <span className="text-xs font-semibold opacity-60">/{meta}</span>
+      </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-primary-foreground/15">
         <motion.div className="arena-barra h-full rounded-full" initial={false} animate={{ width: `${pct(valor, meta)}%` }} />
       </div>

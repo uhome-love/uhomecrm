@@ -23,19 +23,19 @@ export default function ArenaPortas({ value, onChange }: { value: Porta | null; 
         return (
           <motion.button key={p.v} type="button" onClick={() => onChange(p.v)} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-            className={cn("group flex flex-col gap-3 rounded-2xl border-2 p-4 text-left transition-colors duration-fast",
+            className={cn("group grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 rounded-2xl border-2 p-3 sm:flex sm:flex-col sm:items-stretch sm:gap-3 sm:p-4 text-left transition-colors duration-fast",
               ativo ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/40")}>
-            <span className="flex items-center justify-between gap-2">
+            <span className="contents sm:flex sm:items-center sm:justify-between sm:gap-2">
               <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", ativo ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary")}>
                 <p.icon className="h-5 w-5" />
               </span>
-              <span className="text-3xl font-black tabular-nums">{p.n === undefined ? (p.erro ? "—" : "…") : p.n.toLocaleString("pt-BR")}</span>
+              <span className="col-start-3 row-start-1 text-2xl font-black tabular-nums sm:text-3xl">{p.n === undefined ? (p.erro ? "—" : "…") : p.n.toLocaleString("pt-BR")}</span>
             </span>
-            <span className="min-w-0">
+            <span className="col-start-2 row-start-1 min-w-0">
               <span className="block text-base font-bold">{p.titulo}</span>
               <span className="block text-xs text-muted-foreground">{p.desc}</span>
             </span>
-            <span className={cn("text-xs font-bold", ativo ? "text-primary" : "text-muted-foreground group-hover:text-primary")}>{ativo ? "Ligando daqui ✓" : "Ligar daqui →"}</span>
+            <span className={cn("hidden text-xs font-bold sm:block", ativo ? "text-primary" : "text-muted-foreground group-hover:text-primary")}>{ativo ? "Ligando daqui ✓" : "Ligar daqui →"}</span>
           </motion.button>
         );
       })}
