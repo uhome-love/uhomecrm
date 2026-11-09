@@ -59,7 +59,7 @@ export default function ArenaPlacar() {
       </div>
       <div className="grid grid-cols-3 gap-2">
         <Meta icon={Phone} label="Ligações" valor={atual.ligacoes} meta={ARENA_MINIMO.ligacoes} />
-        <Meta icon={Handshake} label="Aproveitados" valor={atual.aproveitados} meta={ARENA_MINIMO.aproveitados} />
+        <Meta icon={Handshake} label="Aproveit." valor={atual.aproveitados} meta={ARENA_MINIMO.aproveitados} />
         <Meta icon={Home} label="Visitas" valor={atual.visitas} meta={ARENA_MINIMO.visitas} />
       </div>
       <AnimatePresence>

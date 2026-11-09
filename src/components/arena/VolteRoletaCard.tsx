@@ -41,9 +41,9 @@ export default function VolteRoletaCard() {
   const eu = ranking.find((l) => l.user_id === user?.id);
   const listas = campanhas.reduce((s, c) => s + (statsMap[c.id]?.naFila ?? 0), 0);
   const portas = [
-    { label: "📋 Listas", n: listas },
-    { label: "⏳ Estagnados", n: est.data ?? 0 },
-    { label: "♻️ Descartados", n: desc.data ?? 0 },
+    { label: "📋 Listas", n: listas as number | undefined },
+    { label: "⏳ Estagnados", n: est.data },
+    { label: "♻️ Descartados", n: desc.data },
   ];
   const ir = () => navigate("/arena-ligacoes");
 
@@ -70,18 +70,20 @@ export default function VolteRoletaCard() {
           <div className="flex flex-wrap gap-1.5">
             {portas.map((p) => (
               <button key={p.label} type="button" onClick={ir} className="arena-vidro rounded-full px-3 py-1 text-xs font-semibold transition-transform duration-fast hover:scale-105">
-                {p.label} <span className="tabular-nums">{p.n.toLocaleString("pt-BR")}</span>
+                {p.label} <span className="tabular-nums">{p.n === undefined ? "…" : p.n.toLocaleString("pt-BR")}</span>
               </button>
             ))}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-4 lg:w-[220px] lg:flex-col lg:text-center">
-          <div className="arena-vidro flex-1 rounded-xl p-3 lg:w-full">
-            <p className="flex items-center justify-center gap-1 text-[11px] font-semibold uppercase tracking-wide opacity-75"><Trophy className="h-3 w-3" /> Ranking da semana</p>
-            <p className="arena-ouro text-3xl font-black">{eu ? `#${eu.posicao}` : "—"}</p>
-            <p className="text-xs opacity-75">{eu ? `${eu.ligacoes} ligações` : "faça a 1ª ligação"}</p>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 lg:w-[220px] lg:flex-col lg:text-center">
+          <div className="arena-vidro flex flex-1 items-center justify-between gap-3 rounded-xl px-3 py-2 lg:w-full lg:flex-col lg:justify-center lg:py-3">
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide opacity-75"><Trophy className="h-3 w-3" /> Ranking da semana</p>
+            <p className="flex items-baseline gap-2 lg:flex-col lg:items-center lg:gap-0">
+              <span className="arena-ouro text-2xl font-black lg:text-3xl">{eu ? `#${eu.posicao}` : "—"}</span>
+              <span className="text-xs opacity-75">{eu ? `${eu.ligacoes} ligações` : "faça a 1ª ligação"}</span>
+            </p>
           </div>
-          <Button size="lg" onClick={ir} className="h-12 flex-1 gap-2 rounded-xl text-base font-black lg:w-full">
+          <Button size="lg" onClick={ir} className="h-12 w-full flex-1 gap-2 rounded-xl text-base font-black lg:w-full">
             <Play className="h-4 w-4 fill-current" /> Começar a ligar
           </Button>
         </div>
