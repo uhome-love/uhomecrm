@@ -36,9 +36,9 @@ function Grupo({ titulo, itens, sel, toggle, abertoInicial }: {
   titulo: string; itens: Contagem[]; sel: string[]; toggle: (e: string) => void; abertoInicial: boolean;
 }) {
   const [aberto, setAberto] = useState<boolean | null>(null);
+  const isMobile = useIsMobile();
   if (!itens.length) return null;
   const marcados = itens.filter((i) => sel.includes(i.empreendimento)).length;
-  const isMobile = useIsMobile();
   const aberto2 = abertoInicial || (aberto ?? (isMobile || marcados > 0));
   return (
     <Collapsible open={aberto2} onOpenChange={setAberto}>
