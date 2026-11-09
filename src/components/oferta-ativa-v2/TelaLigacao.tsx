@@ -132,7 +132,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
               <ClientePainel cliente={cliente} origem={origem} onLigou={iniciarChamada} chamadaSeg={chamadaSeg} onFinalizar={finalizarChamada}>
                 {!isMobile && <ResultadoBarra origem={origem} gravando={gravando} fixo={false} destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
               </ClientePainel>
-              <div className="min-w-0 space-y-3">
+              <div className="flex min-w-0 flex-col gap-3">
                 <RoteiroPainel cliente={cliente} corretorNome={corretorNome} />
                 {isMobile && origem === "listas" && (
                   <button type="button" onClick={() => onResultado("numero_errado")} disabled={gravando} className="w-full py-2 text-center text-sm text-muted-foreground underline-offset-2 hover:underline">
