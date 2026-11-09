@@ -18952,6 +18952,19 @@ export type Database = {
         Returns: Json
       }
       oa_historico_aproveitar: { Args: { p_lead_id: string }; Returns: Json }
+      oa_historico_bolsao: {
+        Args: never
+        Returns: {
+          empreendimento: string
+          lead_id: string
+          no_meu_pipeline: boolean
+          nome: string
+          porta: string
+          quando: string
+          resultado: string
+          telefone: string
+        }[]
+      }
       oa_lista_empreendimentos: {
         Args: { p_lista_id: string }
         Returns: {
