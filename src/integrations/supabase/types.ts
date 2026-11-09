@@ -18934,6 +18934,7 @@ export type Database = {
         Returns: boolean
       }
       oa_ao_vivo_my_profile_id: { Args: never; Returns: string }
+      oa_historico_aproveitar: { Args: { p_lead_id: string }; Returns: Json }
       oa_lista_empreendimentos: {
         Args: { p_lista_id: string }
         Returns: {
