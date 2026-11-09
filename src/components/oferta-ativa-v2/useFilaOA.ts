@@ -33,6 +33,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
   const batida = useRef<ReturnType<typeof setInterval> | null>(null);
   // Chave fixa por cliente carregado: tentar gravar de novo após falha nunca conta 2 ligações.
   const chaveCliente = useRef<string>("");
+  const visitaFalhou = useRef(false);
   useEffect(() => { chaveCliente.current = cliente ? `${cliente.id}_${Date.now()}` : ""; }, [cliente?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const ehLista = origem === "listas";
 
@@ -92,6 +93,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
   const salvarVisita = async (c: ClienteOA, pipelineLeadId: string | undefined, extras: ExtrasResultado, attemptId?: string) => {
     if (!user) return false;
     const v = await createVisitaFromOA({ corretorId: user.id, leadId: ehLista ? c.id : undefined, pipelineLeadId, nomeCliente: c.nome, telefone: c.telefone ?? undefined, empreendimento: c.empreendimento ?? undefined, attemptId, observacoes: extras.nota, dataVisita: extras.dataVisita, horaVisita: extras.horaVisita });
+    visitaFalhou.current = !v;
     if (v) return true;
     // Oferece tentar de novo na hora, sem perder o cliente aproveitado.
     toast.error(`Cliente aproveitado, mas a visita de ${c.nome} não foi salva.`, {
@@ -187,5 +189,5 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
     qc.invalidateQueries({ queryKey: ["oa-listas-batch-stats"] });
   }, [cliente, user, ehLista, qc]);
 
-  return { cliente, carregando, gravando, vazio, proximo, registrar, pular, sair };
+  return { cliente, carregando, gravando, vazio, proximo, registrar, pular, sair, visitaFalhou };
 }
