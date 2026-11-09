@@ -408,7 +408,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             const visita = await createVisitaFromOA({
               corretorId: user!.id,
               leadId: lead.id,
-              pipelineLeadId: result.pipeline_lead_id,
+              pipelineLeadId: "pipeline_lead_id" in result && typeof result.pipeline_lead_id === "string" ? result.pipeline_lead_id : undefined,
               nomeCliente: lead.nome,
               telefone: lead.telefone || undefined,
               empreendimento: lead.empreendimento || undefined,

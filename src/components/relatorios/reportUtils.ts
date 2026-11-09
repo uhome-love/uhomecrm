@@ -1,3 +1,5 @@
+import { formatBRT } from "@/lib/brtTime";
+
 export interface ReportFilters {
   periodo: string;
   dataInicio?: string;
@@ -8,32 +10,34 @@ export interface ReportFilters {
 }
 
 export function getDateRange(f: ReportFilters): { startDate: Date; endDate: Date } {
-  const now = new Date();
-  const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const dia = formatBRT(new Date(), "yyyy-MM-dd");
+  const calendario = new Date(`${dia}T12:00:00Z`);
+  const janela = (primeiro: string, ultimo: string) => ({
+    startDate: new Date(`${primeiro}T00:00:00-03:00`),
+    endDate: new Date(`${ultimo}T23:59:59.999-03:00`),
+  });
+  const dataUTC = (d: Date) => d.toISOString().slice(0, 10);
 
   if (f.periodo === "hoje") {
-    const s = new Date(brt); s.setHours(0, 0, 0, 0);
-    const e = new Date(brt); e.setHours(23, 59, 59, 999);
-    return { startDate: s, endDate: e };
+    return janela(dia, dia);
   }
   if (f.periodo === "semana") {
-    const day = brt.getDay();
+    const day = calendario.getUTCDay();
     const diff = day === 0 ? 6 : day - 1;
-    const s = new Date(brt); s.setDate(brt.getDate() - diff); s.setHours(0, 0, 0, 0);
-    const e = new Date(s); e.setDate(s.getDate() + 6); e.setHours(23, 59, 59, 999);
-    return { startDate: s, endDate: e };
+    const s = new Date(calendario); s.setUTCDate(s.getUTCDate() - diff);
+    const e = new Date(s); e.setUTCDate(s.getUTCDate() + 6);
+    return janela(dataUTC(s), dataUTC(e));
   }
   if (f.periodo === "custom" && f.dataInicio && f.dataFim) {
-    const s = new Date(f.dataInicio + "T00:00:00");
-    const e = new Date(f.dataFim + "T23:59:59");
+    const { startDate: s, endDate: e } = janela(f.dataInicio, f.dataFim);
     if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
       return { startDate: s, endDate: e };
     }
   }
   // default: mes
-  const s = new Date(brt.getFullYear(), brt.getMonth(), 1);
-  const e = new Date(brt.getFullYear(), brt.getMonth() + 1, 0, 23, 59, 59);
-  return { startDate: s, endDate: e };
+  const s = new Date(Date.UTC(calendario.getUTCFullYear(), calendario.getUTCMonth(), 1));
+  const e = new Date(Date.UTC(calendario.getUTCFullYear(), calendario.getUTCMonth() + 1, 0));
+  return janela(dataUTC(s), dataUTC(e));
 }
 
 export function getPeriodoAnterior(s: Date, e: Date): { startDate: Date; endDate: Date } {

@@ -5,7 +5,10 @@ import { normalizarLigacoesMutirao, type MutiraoEvento, type OATentativaEvento }
 export async function consultarEventosOA(inicio: string, fim: string, authId?: string): Promise<OATentativaEvento[]> {
   const { data: perfis, error: perfilError } = await supabase.from("profiles").select("id,user_id");
   if (perfilError) throw perfilError;
-  const ids = new Map((perfis ?? []).map((p) => [p.id, p.user_id]));
+  const ids = new Map<string, string>();
+  for (const perfil of perfis ?? []) {
+    if (perfil.id && perfil.user_id) ids.set(perfil.id, perfil.user_id);
+  }
   const profileId = authId ? (perfis ?? []).find((p) => p.user_id === authId)?.id : undefined;
   const tentativas: OATentativaEvento[] = [];
   const mutirao: MutiraoEvento[] = [];
