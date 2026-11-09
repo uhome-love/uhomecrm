@@ -24,7 +24,6 @@ import AtalhosRotina from "@/components/corretor/rotina/AtalhosRotina";
 import ProximaVisitaCard from "@/components/corretor/rotina/ProximaVisitaCard";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
 import { useNatal } from "@/natal/useNatal";
 import { GorroNatal } from "@/natal/TemaNatal";
 import { NeveSuave } from "@/natal/NeveSuave";
@@ -75,8 +74,6 @@ export default function CorretorDashboard() {
     <div className="px-0 pt-0 md:px-2 space-y-4 max-w-7xl mx-auto pb-10">
       <OnboardingWidget />
 
-      {/* CTA Mutirão Inteligente (aparece quando ao vivo ou janela típica) */}
-      <MutiraoPulseBanner />
 
 
 
