@@ -32,6 +32,17 @@ Topo: uma linha fina com "← Sair", origem, placar compacto (12/30 ligações �
 - Reserva de 1 cliente por vez, proteção de contato (opt-out/bloqueados), Bolsão (prazo 7 dias, regras do gerente), Aproveitar move ao Pipeline como hoje, Mutirão Ao Vivo e placar da TV continuam funcionando.
 - Roleta e distribuição intocadas.
 
+## Fonte única dos números (verdade absoluta)
+- Toda ligação, aproveitado e visita da Oferta Ativa passa a ser gravada só pelo novo módulo, num registro único.
+- Painel do corretor, Arena/ranking, placar da TV, relatórios de Oferta Ativa, painéis do gerente/diretora/CEO, 1:1 e Performance leem só esse registro, com a mesma régua (horário de Brasília, sem contar "pular").
+- Antes de construir: levanto todas as telas e relatórios que hoje mostram números de Oferta Ativa e listo para você quais mudam de fonte.
+- Os registros antigos (Mutirão e oferta cotidiana) continuam valendo para o histórico, convertidos para a mesma régua, sem números em dobro.
+- No teste final, confiro que o mesmo número aparece igual em todas essas telas.
+
+## Qualidade visual
+- Visual moderno e dinâmico: animação curta ao registrar resultado, placar que sobe, comemoração discreta ao bater a meta, modo claro e escuro, tudo seguindo a identidade Uhome.
+- Critério de entrega: fácil de usar no primeiro contato, sem blocos sobrando, sem erros, conferido em computador e celular.
+
 ## Fases (cada uma validada com você antes da próxima)
 1. **Mockup** (desktop + celular, entrada e ligação) para sua aprovação – nenhum código antes.
 2. **Construção da Entrada** + remoção do banner grande; links do menu/dashboard apontam para o novo módulo (endereços antigos redirecionam).
