@@ -63,6 +63,10 @@ export default function CorretorEntrada({ onSair }: Props) {
       prevOpenRef.current = open;
       document.body.classList.add("arena-mode");
       setOpen(false);
+      return () => {
+        document.body.classList.remove("arena-mode");
+        setOpen(prevOpenRef.current);
+      };
     } else {
       document.body.classList.remove("arena-mode");
       setOpen(prevOpenRef.current);

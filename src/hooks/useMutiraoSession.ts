@@ -258,6 +258,8 @@ export function useMutiraoSession() {
       qc.invalidateQueries({ queryKey: ["mutirao", "ranking"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "participantes"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "historico"] });
+      qc.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
+      qc.invalidateQueries({ queryKey: ["oa-ranking-ligacoes"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "reaproveitar"] });
       if (data?.reactivated && data?.target_stage_name) {
         toast.success(`Lead aproveitado — foi para o seu pipeline na etapa ${data.target_stage_name}`, {

@@ -72,5 +72,7 @@ Etapas posteriores a B seguem o fluxo desenho → plano → aprovação; não es
 - [x] Piloto Lia — Fase 2 (06/11): compra/saída global, cancelamento de mensagens, Fila CEO manual com contexto e aviso/reaviso 30 minutos comerciais implantados; proteção de entrada 360 conferida; regras verificadas em transações fictícias desfeitas, compra no Laboratório autenticado e 122 testes passaram. Nenhum envio externo nem cliente real alterado. Piloto em sombra/envio false, lote antigo pausado. Validação real completa de conversa→Fila→push fica na Fase 6 autorizada separadamente.
 - [ ] Piloto Lia — Fases 3 a 5 (cadência/conferência no envio, proteção do número, painel)
 - [ ] Piloto Lia — Fase 6 teste ponta a ponta com o número do Lucas (inclui clicar em "Não quero mais contato" e reativar no fim)
-- [ ] Arena de Ligações — Fase 0 mockups (aguardando aprovação do Lucas)
-- [ ] Arena de Ligações — Fases 1–7 (ranking unificado por nº de ligações, cartão Volte pra Roleta, Arena, metas 30/3/1, ranking na TV, proteção de contato, validação ponta a ponta)
+- [x] Arena de Ligações — mockup e plano aprovados; telas, cartão, metas 30/3/1 e ranking na TV implantados
+- [x] Arena de Ligações — listas: Não atendeu/Aproveitado/Visita persistidos e avanço automático; Bolsão: Estagnado registrado, repetição idempotente, Descartado aproveitado pelo celular; placar 5 ligações/3 aproveitados/1 visita confirmado; 30 testes e preview sem erros; TV sem sessão e com sessão simulada conferida; contagens e proteção corrigidas
+- [x] Arena de Ligações — lista, clientes, visita, tentativas e reservas fictícios removidos; consulta final confirmou zero registros de teste nessas fontes
+- [ ] Arena de Ligações — cobertura restante: operação autenticada de corretor e Mutirão real/retornos/relatórios ponta a ponta; sem criar evento real nem alterar contas existentes nesta conferência. TV ativa foi simulada, não um Mutirão real

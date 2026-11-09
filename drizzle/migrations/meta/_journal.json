@@ -575,6 +575,34 @@
       "when": 1794187694914,
       "tag": "0081_oa_ranking_ligacoes",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1794189354408,
+      "tag": "0082_arena_validacao_contagens_e_contato",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1794189782979,
+      "tag": "0083_arena_contato_indices_bolsao",
+      "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1794189856119,
+      "tag": "0084_arena_bolsao_contagem_sem_repetir_bloqueios",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1794189996258,
+      "tag": "0085_arena_bolsao_bloqueios_busca_unica",
+      "breakpoints": true
     }
   ]
 }

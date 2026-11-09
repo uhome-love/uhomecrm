@@ -260,7 +260,9 @@ export function LeadCard({
                     <Button
                       size="lg"
                       className="w-full font-semibold shadow-sm"
-                      onClick={ms.startCall}
+                      onClick={async () => {
+                        if (await contatoPermitido(lead.telefone_normalizado || lead.telefone)) ms.startCall();
+                      }}
                       disabled={!ms.lockConfirmed}
                     >
                       {ms.lockConfirmed ? <Phone /> : <Loader2 className="animate-spin" />}

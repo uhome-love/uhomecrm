@@ -405,9 +405,10 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             : "Contato Inicial";
           toast.success(`🎉 APROVEITADO → Pipeline: ${tipoLabel}! +3 pontos!`, { duration: 4000 });
           if ((visitaMarcada || interesseTipo === "visita_marcada") && lead) {
-            createVisitaFromOA({
+            const visita = await createVisitaFromOA({
               corretorId: user!.id,
               leadId: lead.id,
+              pipelineLeadId: "pipeline_lead_id" in result && typeof result.pipeline_lead_id === "string" ? result.pipeline_lead_id : undefined,
               nomeCliente: lead.nome,
               telefone: lead.telefone || undefined,
               empreendimento: lead.empreendimento || undefined,
@@ -416,7 +417,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               dataVisita,
               horaVisita,
             });
-            toast.success("📅 Visita registrada na Agenda de Visitas!");
+            if (visita) {
+              queryClient.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
+              queryClient.invalidateQueries({ queryKey: ["visitas"] });
+              queryClient.invalidateQueries({ queryKey: ["oa-ranking-ligacoes"] });
+              toast.success("📅 Visita registrada na Agenda de Visitas!");
+            } else {
+              toast.error("Cliente aproveitado, mas a visita não foi salva. Confira a Agenda antes de tentar novamente.");
+            }
           }
         } else if (resultado === "nao_atendeu") {
           setStreak(0);

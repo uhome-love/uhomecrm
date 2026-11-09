@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Phone, ChevronUp, ChevronDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { ReportFilters, getDateRange, getPeriodoAnterior } from "./reportUtils";
-import { fetchAllRows } from "@/lib/paginatedFetch";
+import { consultarEventosOA } from "@/lib/oaEventosConsulta";
 
 interface Props {
   filters: ReportFilters;
@@ -68,15 +68,7 @@ export default function RelatorioOfertaAtiva({ filters }: Props) {
     let cancelled = false;
 
     async function fetchTents(s: Date, e: Date): Promise<TentRow[]> {
-      let rows = await fetchAllRows<TentRow>((from, to) => {
-        let q = supabase
-          .from("oferta_ativa_tentativas")
-          .select("id, lead_id, corretor_id, canal, resultado, pontos, empreendimento, created_at")
-          .gte("created_at", s.toISOString())
-          .lte("created_at", e.toISOString());
-        if (filters.corretor) q = q.eq("corretor_id", filters.corretor);
-        return q.range(from, to);
-      });
+      let rows = await consultarEventosOA(s.toISOString(), e.toISOString(), filters.corretor || undefined);
 
       if (filters.equipe && !filters.corretor) {
         const { data: members } = await supabase

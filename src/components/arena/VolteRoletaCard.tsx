@@ -58,7 +58,7 @@ export default function VolteRoletaCard() {
             <p className="text-sm opacity-85">
               {fora
                 ? <>Você está fora da Roleta esta semana. Faltam <b className="arena-ouro">{fmtVisitas(faltamVis)} {faltamVis === 1 ? "visita realizada" : "visitas realizadas"}</b>. O caminho começa no telefone.</>
-                : "Você está na Roleta. Bata o mínimo de ligações e suba no ranking!"}
+                : "Meta de visitas atingida. O credenciamento continua no cartão da Roleta. Bora subir no ranking!"}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
