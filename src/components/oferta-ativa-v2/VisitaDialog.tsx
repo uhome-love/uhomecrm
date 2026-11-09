@@ -15,7 +15,9 @@ export default function VisitaDialog({ aberto, nome, gravando, onFechar, onConfi
   const [hora, setHora] = useState("");
   const [nota, setNota] = useState("");
   useEffect(() => { if (aberto) { setData(hojeBRT()); setHora(""); setNota(""); } }, [aberto]);
-  const valido = !!data && /^\d{2}:\d{2}$/.test(hora) && data >= hojeBRT();
+  const agoraHM = new Date().toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+  const horaPassou = data === hojeBRT() && /^\d{2}:\d{2}$/.test(hora) && hora <= agoraHM;
+  const valido = !!data && /^\d{2}:\d{2}$/.test(hora) && data >= hojeBRT() && !horaPassou;
 
   return (
     <Dialog open={aberto} onOpenChange={(o) => !o && !gravando && onFechar()}>
@@ -28,6 +30,7 @@ export default function VisitaDialog({ aberto, nome, gravando, onFechar, onConfi
           <div className="space-y-1.5"><Label htmlFor="oa-visita-data">Dia</Label><Input id="oa-visita-data" type="date" min={hojeBRT()} value={data} onChange={(e) => setData(e.target.value)} className="h-11" /></div>
           <div className="space-y-1.5"><Label htmlFor="oa-visita-hora">Horário</Label><Input id="oa-visita-hora" type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="h-11" /></div>
         </div>
+        {horaPassou && <p className="-mt-2 text-xs text-destructive">Esse horário já passou. Escolha um horário futuro.</p>}
         <div className="space-y-1.5"><Label htmlFor="oa-visita-nota">Observação (opcional)</Label><Input id="oa-visita-nota" value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Ex.: vem com a esposa" className="h-11" /></div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={onFechar} disabled={gravando}>Cancelar</Button>

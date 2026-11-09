@@ -41,7 +41,7 @@ export default function ResultadoBarra({ origem, gravando, fixo, destacar, ultim
   }
 
   return (
-    <section className={cn("rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow duration-medium", destacar && "ring-2 ring-primary")} aria-label="Resultado da ligação">
+    <section className={cn("z-20 rounded-2xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur transition-shadow duration-medium lg:sticky lg:bottom-3", destacar && "ring-2 ring-primary")} aria-label="Resultado da ligação">
       <p className="mb-3 text-sm font-semibold">Como foi a ligação?</p>
       <div className={cn("grid gap-2", lista.length === 5 ? "grid-cols-5" : "grid-cols-4")}>{botoes}</div>
     </section>
