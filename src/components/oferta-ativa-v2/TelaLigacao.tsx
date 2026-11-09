@@ -14,7 +14,8 @@ import ResultadoBarra from "./ResultadoBarra";
 import VisitaDialog from "./VisitaDialog";
 import PlacarCompacto from "./PlacarCompacto";
 import { useFilaOA } from "./useFilaOA";
-import { ORIGEM_INFO, resultadosDaOrigem, type OrigemOA, type ResultadoOA } from "./tipos";
+import ResultadoDialog from "./ResultadoDialog";
+import { ORIGEM_INFO, formatarDuracao, resultadosDaOrigem, type OrigemOA, type ResultadoOA } from "./tipos";
 
 interface Props { origem: OrigemOA; listaIds: string[]; empreendimentos: string[]; onSair: () => void }
 
@@ -32,25 +33,45 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
   const [visitaAberta, setVisitaAberta] = useState(false);
   const [ultimo, setUltimo] = useState<ResultadoOA | null>(null);
   const [ligou, setLigou] = useState(false);
+  const [inicio, setInicio] = useState<number | null>(null);
+  const [agora, setAgora] = useState(Date.now());
+  const [dialogo, setDialogo] = useState(false);
+  const [duracao, setDuracao] = useState(0);
   const [destacar, setDestacar] = useState(false);
   const [aba, setAba] = useState<"ligar" | "ranking">("ligar");
   const corretorNome = String((user?.user_metadata as { nome?: string } | undefined)?.nome ?? "");
 
   useEffect(() => { void proximo(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { setLigou(false); setDestacar(false); }, [cliente?.id]);
-
-  // Ao voltar do discador do celular, pede o resultado na hora.
+  useEffect(() => { setLigou(false); setDestacar(false); setInicio(null); setDialogo(false); setDuracao(0); }, [cliente?.id]);
   useEffect(() => {
-    if (!ligou) return;
-    const onVoltar = () => { if (document.visibilityState === "visible") setDestacar(true); };
-    document.addEventListener("visibilitychange", onVoltar);
-    window.addEventListener("focus", onVoltar);
-    return () => { document.removeEventListener("visibilitychange", onVoltar); window.removeEventListener("focus", onVoltar); };
-  }, [ligou]);
+    if (inicio === null) return;
+    const t = window.setInterval(() => setAgora(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [inicio]);
+  const chamadaSeg = inicio === null ? null : Math.max(0, Math.floor((agora - inicio) / 1000));
+  const iniciarChamada = useCallback(() => { setLigou(true); setInicio(Date.now()); setAgora(Date.now()); }, []);
+  const finalizarChamada = useCallback(() => {
+    setInicio((ini) => { if (ini !== null) setDuracao(Math.floor((Date.now() - ini) / 1000)); return null; });
+    setDialogo(true);
+  }, []);
 
-  const concluir = useCallback(async (r: ResultadoOA, extras = {}) => {
+  // Ao voltar do discador do celular, encerra o contador e pede o resultado na hora.
+  useEffect(() => {
+    if (!ligou || inicio === null) return;
+    let saiu = false;
+    const onVis = () => {
+      if (document.visibilityState === "hidden") { saiu = true; return; }
+      if (saiu) { setDestacar(true); finalizarChamada(); }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [ligou, inicio, finalizarChamada]);
+
+  const concluir = useCallback(async (r: ResultadoOA, extras: { nota?: string; dataVisita?: string; horaVisita?: string } = {}) => {
     setUltimo(r);
-    const ok = await registrar(r, extras);
+    const tempo = duracao > 0 ? `Ligação de ${formatarDuracao(duracao)}` : "";
+    const nota = [extras.nota?.trim(), tempo].filter(Boolean).join(" · ") || undefined;
+    const ok = await registrar(r, { ...extras, nota });
     if (!ok) return false;
     if (r === "aproveitar" || r === "visita") {
       toast.success(r === "visita" ? "Visita marcada e cliente no seu Pipeline! 🎉" : "Aproveitado! O cliente agora está no seu Pipeline. 🎉");
@@ -58,9 +79,10 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     } else if (MSG[r]) toast(MSG[r], { duration: 1500 });
     await proximo();
     return true;
-  }, [registrar, proximo]);
+  }, [registrar, proximo, duracao]);
 
   const onResultado = useCallback((r: ResultadoOA) => {
+    setDialogo(false);
     if (r === "visita") { setVisitaAberta(true); return; }
     void concluir(r);
   }, [concluir]);
@@ -72,14 +94,14 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     const ordem: ResultadoOA[] = ["nao_atendeu", "sem_interesse", "numero_errado", "aproveitar", "visita"];
     const onKey = (e: KeyboardEvent) => {
       const alvo = e.target as HTMLElement;
-      if (visitaAberta || gravando || e.metaKey || e.ctrlKey || e.altKey || ["INPUT", "TEXTAREA", "SELECT"].includes(alvo.tagName) || alvo.isContentEditable) return;
+      if (visitaAberta || dialogo || gravando || e.metaKey || e.ctrlKey || e.altKey || ["INPUT", "TEXTAREA", "SELECT"].includes(alvo.tagName) || alvo.isContentEditable) return;
       const r = ordem[Number(e.key) - 1];
       if (r && opcoes.includes(r)) { e.preventDefault(); onResultado(r); }
       if (e.key.toLowerCase() === "p") { e.preventDefault(); void pular(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [aba, isMobile, cliente, origem, visitaAberta, gravando, onResultado, pular]);
+  }, [aba, isMobile, cliente, origem, visitaAberta, dialogo, gravando, onResultado, pular]);
 
   const sairTela = async () => { await sair(); onSair(); };
 
@@ -103,11 +125,11 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
       </div>
 
       {aba === "ranking" && <div className="mx-auto max-w-2xl"><ArenaRanking /></div>}
-      <div className={aba === "ranking" ? "hidden" : "grid items-start gap-3 lg:grid-cols-[minmax(320px,400px)_1fr]"}>
+      <div className={aba === "ranking" ? "hidden" : "grid items-stretch gap-3 lg:grid-cols-[minmax(320px,400px)_1fr]"}>
         <AnimatePresence mode="wait">
           {cliente ? (
             <motion.div key={cliente.id} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.22 }} className="contents">
-              <ClientePainel cliente={cliente} origem={origem} onLigou={() => setLigou(true)}>
+              <ClientePainel cliente={cliente} origem={origem} onLigou={iniciarChamada} chamadaSeg={chamadaSeg} onFinalizar={finalizarChamada}>
                 {!isMobile && <ResultadoBarra origem={origem} gravando={gravando} fixo={false} destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
               </ClientePainel>
               <div className="min-w-0 space-y-3">
@@ -137,6 +159,8 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
       </div>
 
       {isMobile && cliente && aba === "ligar" && <ResultadoBarra origem={origem} gravando={gravando} fixo destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
+
+      <ResultadoDialog aberto={dialogo} nome={cliente?.nome ?? ""} segundos={duracao} origem={origem} gravando={gravando} ultimo={ultimo} onFechar={() => setDialogo(false)} onResultado={onResultado} />
 
       <VisitaDialog aberto={visitaAberta} nome={cliente?.nome ?? ""} gravando={gravando} onFechar={() => setVisitaAberta(false)}
         onConfirmar={async (dataVisita, horaVisita, nota) => { setUltimo("visita"); if (await concluir("visita", { dataVisita, horaVisita, nota })) setVisitaAberta(false); }} />
