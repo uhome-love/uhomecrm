@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, Bookmark, CheckCircle, BarChart3 } from "lucide-react";
+import { Phone, Bookmark, CheckCircle, BarChart3, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import ArenaRanking from "@/components/arena/ArenaRanking";
@@ -15,6 +15,7 @@ import MeusResultadosPanel from "@/components/oferta-ativa/MeusResultadosPanel";
 import MetaDoDia from "@/components/oferta-ativa-v2/MetaDoDia";
 import EscolhaOrigem from "@/components/oferta-ativa-v2/EscolhaOrigem";
 import FiltroOrigem from "@/components/oferta-ativa-v2/FiltroOrigem";
+import HistoricoLigacoes from "@/components/oferta-ativa-v2/HistoricoLigacoes";
 import TelaLigacao from "@/components/oferta-ativa-v2/TelaLigacao";
 import { primeiroNome, type OrigemOA } from "@/components/oferta-ativa-v2/tipos";
 
@@ -56,6 +57,7 @@ export default function OfertaAtivaCorretor() {
           <TabsTrigger value="ligar" className="shrink-0 gap-1.5"><Phone className="h-3.5 w-3.5" aria-hidden /> Ligar</TabsTrigger>
           <TabsTrigger value="reservados" className="shrink-0 gap-1.5"><Bookmark className="h-3.5 w-3.5" aria-hidden /> Reservados</TabsTrigger>
           <TabsTrigger value="aproveitados" className="shrink-0 gap-1.5"><CheckCircle className="h-3.5 w-3.5" aria-hidden /> Aproveitados</TabsTrigger>
+          <TabsTrigger value="historico" className="shrink-0 gap-1.5"><History className="h-3.5 w-3.5" aria-hidden /> Histórico</TabsTrigger>
           <TabsTrigger value="resultados" className="shrink-0 gap-1.5"><BarChart3 className="h-3.5 w-3.5" aria-hidden /> Meus resultados</TabsTrigger>
         </TabsList>
 
@@ -73,6 +75,7 @@ export default function OfertaAtivaCorretor() {
         </TabsContent>
         <TabsContent value="reservados" className="mt-0"><ReservadosPanel /></TabsContent>
         <TabsContent value="aproveitados" className="mt-0"><AproveitadosPanel /></TabsContent>
+        <TabsContent value="historico" className="mt-0"><HistoricoLigacoes /></TabsContent>
         <TabsContent value="resultados" className="mt-0"><MeusResultadosPanel /></TabsContent>
       </Tabs>
 
