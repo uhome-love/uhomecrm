@@ -31,6 +31,9 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
   const [gravando, setGravando] = useState(false);
   const [vazio, setVazio] = useState(false);
   const batida = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Chave fixa por cliente carregado: tentar gravar de novo após falha nunca conta 2 ligações.
+  const chaveCliente = useRef<string>("");
+  useEffect(() => { chaveCliente.current = cliente ? `${cliente.id}_${Date.now()}` : ""; }, [cliente?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const ehLista = origem === "listas";
 
   const atualizarPlacar = useCallback(() => {
@@ -80,20 +83,22 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
 
   /** Registra o histórico no card do Pipeline quando o telefone já é um lead do próprio corretor (regra antiga mantida). */
   const anotarNoPipeline = async (c: ClienteOA, rotulo: string, nota: string) => {
-    const fone = (c.telefone ?? "").replace(/\D/g, "");
-    if (!user || fone.length < 8) return;
+    if (!user) return;
     try {
-      const { data: pl } = await supabase.from("pipeline_leads").select("id").eq("corretor_id", user.id).ilike("telefone", `%${fone.slice(-8)}`).limit(1).maybeSingle();
-      if (!pl) return;
-      await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: pl.id, created_by: user.id, tipo: "contato", titulo: `[Oferta Ativa] Ligação: ${rotulo}`, descricao: nota || null, status: "concluida", prioridade: "normal", data: new Date().toISOString().slice(0, 10) });
-      await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString() }).eq("id", pl.id);
+      await supabase.rpc("oa_anotar_pipeline", { p_lead_id: c.id, p_titulo: `[Oferta Ativa] Ligação: ${rotulo}`, p_nota: nota });
     } catch (e) { console.warn("[OA] anotar no pipeline", e); }
   };
 
   const salvarVisita = async (c: ClienteOA, pipelineLeadId: string | undefined, extras: ExtrasResultado, attemptId?: string) => {
     if (!user) return false;
     const v = await createVisitaFromOA({ corretorId: user.id, leadId: ehLista ? c.id : undefined, pipelineLeadId, nomeCliente: c.nome, telefone: c.telefone ?? undefined, empreendimento: c.empreendimento ?? undefined, attemptId, observacoes: extras.nota, dataVisita: extras.dataVisita, horaVisita: extras.horaVisita });
-    return !!v;
+    if (v) return true;
+    // Oferece tentar de novo na hora, sem perder o cliente aproveitado.
+    toast.error(`Cliente aproveitado, mas a visita de ${c.nome} não foi salva.`, {
+      duration: 15000,
+      action: { label: "Tentar de novo", onClick: () => { void salvarVisita(c, pipelineLeadId, extras, attemptId).then((ok) => { if (ok) { toast.success("Visita marcada! 🎉"); atualizarPlacar(); } }); } },
+    });
+    return false;
   };
 
   /** Grava o resultado. Retorna true quando gravou (a tela então chama o próximo). */
@@ -107,7 +112,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
         const aproveitou = resultado === "aproveitar" || resultado === "visita";
         const { data, error } = await supabase.rpc("finalizar_tentativa_v2", {
           p_lead_id: c.id, p_corretor_id: user.id, p_canal: "ligacao", p_resultado: aproveitou ? "com_interesse" : resultado,
-          p_feedback: nota, p_lista_id: c.listaId, p_empreendimento: c.empreendimento, p_idempotency_key: `${user.id}_${c.id}_${resultado}_${Date.now()}`,
+          p_feedback: nota, p_lista_id: c.listaId, p_empreendimento: c.empreendimento, p_idempotency_key: `${user.id}_${chaveCliente.current || c.id}_${resultado}`,
           p_visita_marcada: resultado === "visita", p_interesse_tipo: resultado === "visita" ? "visita_marcada" : aproveitou ? "pediu_informacoes" : null,
         });
         const r = data as { success?: boolean; reason?: string; attempt_id?: string; pipeline_lead_id?: string } | null;
@@ -119,9 +124,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
           return false;
         }
         if (!aproveitou) void anotarNoPipeline(c, ROTULO_RESULTADO[resultado], extras.nota ?? "");
-        if (resultado === "visita" && !(await salvarVisita(c, r.pipeline_lead_id, extras, r.attempt_id))) {
-          toast.error("Cliente aproveitado, mas a visita não foi salva. Confira a Agenda.");
-        }
+        if (resultado === "visita") await salvarVisita(c, r.pipeline_lead_id, extras, r.attempt_id);
       } else if (resultado === "aproveitar" || resultado === "visita") {
         const { data, error } = await supabase.rpc("oa_aproveitar", { p_origem: origem, p_lead_id: c.id, p_via: "ao_vivo" });
         const r = data as unknown as RespostaAproveitar | null;
@@ -131,9 +134,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
           if (r.status !== "sem_login" && r.status !== "invalido") setCliente(null);
           return false;
         }
-        if (resultado === "visita" && !(await salvarVisita(c, c.id, extras))) {
-          toast.error("Cliente aproveitado, mas a visita não foi salva. Confira a Agenda.");
-        }
+        if (resultado === "visita") await salvarVisita(c, c.id, extras);
       } else {
         const { data, error } = await supabase.rpc("bolsao_registrar", { p_lead_id: c.id, p_resultado: resultado });
         const r = data as { ok?: boolean; error?: string } | null;
@@ -161,8 +162,14 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
     if (!c || !user || gravando) return;
     setGravando(true);
     try {
-      if (ehLista) await supabase.rpc("skip_oa_lead", { p_lead_id: c.id, p_corretor_id: user.id, p_lista_id: c.listaId, p_skip_minutes: 30, p_session_id: null });
-      else await supabase.rpc("bolsao_registrar", { p_lead_id: c.id, p_resultado: "liberar" });
+      const { data, error } = ehLista
+        ? await supabase.rpc("skip_oa_lead", { p_lead_id: c.id, p_corretor_id: user.id, p_lista_id: c.listaId, p_skip_minutes: 30, p_session_id: null })
+        : await supabase.rpc("bolsao_registrar", { p_lead_id: c.id, p_resultado: "pular" });
+      const ok = !error && (data as { ok?: boolean } | null)?.ok;
+      if (!ok) { toast.error("Não consegui pular agora. Tente de novo."); return; }
+    } catch {
+      toast.error("Sem conexão. O cliente continua com você, tente de novo.");
+      return;
     } finally {
       setGravando(false);
     }
@@ -174,7 +181,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
     const c = cliente;
     setCliente(null);
     if (!c || !user) return;
-    if (ehLista) await supabase.from("oferta_ativa_leads").update({ em_atendimento_por: null, em_atendimento_ate: null }).eq("id", c.id);
+    if (ehLista) await supabase.rpc("oa_liberar_lead", { p_lead_id: c.id });
     else await supabase.rpc("bolsao_registrar", { p_lead_id: c.id, p_resultado: "liberar" });
     qc.invalidateQueries({ queryKey: ["bolsao-contagens"] });
     qc.invalidateQueries({ queryKey: ["oa-listas-batch-stats"] });

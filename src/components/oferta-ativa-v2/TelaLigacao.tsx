@@ -20,6 +20,14 @@ import { ORIGEM_INFO, formatarDuracao, resultadosDaOrigem, type OrigemOA, type R
 
 interface Props { origem: OrigemOA; listaIds: string[]; empreendimentos: string[]; onSair: () => void }
 
+type Sessao = { ligacoes: number; aproveitados: number; visitas: number; segundos: number; inicio: number };
+/** Sessão do dia (BRT) guardada no aparelho para o resumo não sumir ao recarregar. */
+const chaveSessao = () => `oa-sessao-${new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10)}`;
+function lerSessao(): Sessao {
+  try { const s = sessionStorage.getItem(chaveSessao()); if (s) return JSON.parse(s) as Sessao; } catch { /* ignora */ }
+  return { ligacoes: 0, aproveitados: 0, visitas: 0, segundos: 0, inicio: Date.now() };
+}
+
 const MSG: Partial<Record<ResultadoOA, string>> = {
   nao_atendeu: "Próximo! 💪",
   sem_interesse: "Registrado. Bora pro próximo!",
@@ -38,7 +46,8 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
   const [agora, setAgora] = useState(Date.now());
   const [dialogo, setDialogo] = useState(false);
   const [duracao, setDuracao] = useState(0);
-  const [sessao, setSessao] = useState({ ligacoes: 0, aproveitados: 0, visitas: 0, segundos: 0, inicio: Date.now() });
+  const [sessao, setSessao] = useState(lerSessao);
+  useEffect(() => { try { sessionStorage.setItem(chaveSessao(), JSON.stringify(sessao)); } catch { /* sem armazenamento */ } }, [sessao]);
   const [resumo, setResumo] = useState(false);
   const [destacar, setDestacar] = useState(false);
   const [aba, setAba] = useState<"ligar" | "ranking">("ligar");
@@ -107,6 +116,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     return () => window.removeEventListener("keydown", onKey);
   }, [aba, isMobile, cliente, origem, visitaAberta, dialogo, gravando, onResultado, pular]);
 
+  const fecharResumo = () => { try { sessionStorage.removeItem(chaveSessao()); } catch { /* ignora */ } onSair(); };
   const sairTela = async () => { await sair(); if (sessao.ligacoes > 0) setResumo(true); else onSair(); };
 
   return (
@@ -164,7 +174,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
 
       {isMobile && cliente && aba === "ligar" && <ResultadoBarra origem={origem} gravando={gravando} fixo destacar={destacar} ultimo={ultimo} onResultado={onResultado} />}
 
-      <Dialog open={resumo} onOpenChange={(o) => { if (!o) onSair(); }}>
+      <Dialog open={resumo} onOpenChange={(o) => { if (!o) fecharResumo(); }}>
         <DialogContent className="max-w-sm rounded-2xl text-center">
           <DialogHeader className="items-center">
             <PartyPopper className="h-9 w-9 text-primary" aria-hidden />
@@ -176,7 +186,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
               <div key={r} className="rounded-xl bg-muted/60 p-3"><p className="text-2xl font-bold tabular-nums">{n}</p><p className="text-[11px] text-muted-foreground">{r}</p></div>
             ))}
           </div>
-          <Button onClick={onSair} className="w-full">Voltar ao início</Button>
+          <Button onClick={fecharResumo} className="w-full">Voltar ao início</Button>
         </DialogContent>
       </Dialog>
 
