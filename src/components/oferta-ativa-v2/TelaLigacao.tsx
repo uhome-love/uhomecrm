@@ -107,7 +107,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
 
   return (
     <div className={isMobile && cliente && aba === "ligar" ? "pb-36" : ""}>
-      <div className="sticky top-0 z-30 -mx-3 mb-3 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-2 backdrop-blur md:mx-0 md:rounded-2xl md:border md:bg-card md:px-4">
+      <div className="sticky top-0 z-30 -mx-4 mb-3 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-2 backdrop-blur md:mx-0 md:rounded-2xl md:border md:bg-card md:px-4">
         <Button variant="ghost" size="sm" onClick={() => void sairTela()} className="shrink-0 gap-1 px-2" aria-label="Sair"><ArrowLeft className="h-4 w-4" aria-hidden /><span className="hidden sm:inline">Sair</span></Button>
         <span className="hidden truncate rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary sm:inline">{ORIGEM_INFO[origem].emoji} {ORIGEM_INFO[origem].titulo}</span>
         <div className="flex min-w-0 flex-1 justify-center overflow-hidden"><PlacarCompacto /></div>
