@@ -86,13 +86,15 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     const ok = await registrar(r, { ...extras, nota });
     if (!ok) return false;
     setSessao((x) => ({ ...x, ligacoes: x.ligacoes + 1, aproveitados: x.aproveitados + (r === "aproveitar" || r === "visita" ? 1 : 0), visitas: x.visitas + (r === "visita" ? 1 : 0), segundos: x.segundos + duracao }));
-    if (r === "aproveitar" || r === "visita") {
+    if (r === "visita" && fila.visitaFalhou.current) {
+      // aviso com "Tentar de novo" já foi mostrado
+    } else if (r === "aproveitar" || r === "visita") {
       toast.success(r === "visita" ? "Visita marcada e cliente no seu Pipeline! 🎉" : "Aproveitado! O cliente agora está no seu Pipeline. 🎉");
       if (getCelebrationEnabled()) playSoundSuccess();
     } else if (MSG[r]) toast(MSG[r], { duration: 1500 });
     await proximo();
     return true;
-  }, [registrar, proximo, duracao]);
+  }, [registrar, proximo, duracao, fila.visitaFalhou]);
 
   const onResultado = useCallback((r: ResultadoOA) => {
     setDialogo(false);
