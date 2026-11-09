@@ -3,7 +3,7 @@ import { Phone, Users, ListChecks, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ATALHOS = [
-  { label: "Arena de Ligações", path: "/arena-ligacoes", icon: Phone },
+  { label: "Oferta Ativa", path: "/corretor/call", icon: Phone },
   { label: "Clientes", path: "/pipeline-leads", icon: Users },
   { label: "Tarefas", path: "/tarefas", icon: ListChecks },
   { label: "Agenda", path: "/agenda-visitas", icon: CalendarDays },
@@ -36,7 +36,7 @@ export default function AtalhosRotina({ variante = "lista" }: { variante?: "list
     <section className="rounded-xl border border-border bg-card p-4">
       <h2 className="mb-3 text-sm font-bold text-foreground">Atalhos</h2>
       <div className="flex flex-col gap-2">
-        <Button onClick={() => navigate("/arena-ligacoes")} className="justify-start"><Phone className="mr-2 h-4 w-4" />Arena de Ligações</Button>
+        <Button onClick={() => navigate("/corretor/call")} className="justify-start"><Phone className="mr-2 h-4 w-4" />Oferta Ativa</Button>
         <Button variant="outline" onClick={() => navigate("/pipeline-leads")} className="justify-start"><Users className="mr-2 h-4 w-4" />Meus clientes</Button>
         <Button variant="outline" onClick={() => navigate("/tarefas")} className="justify-start"><ListChecks className="mr-2 h-4 w-4" />Tarefas</Button>
         <Button variant="outline" onClick={() => navigate("/agenda-visitas")} className="justify-start"><CalendarDays className="mr-2 h-4 w-4" />Agenda</Button>

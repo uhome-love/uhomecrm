@@ -18,7 +18,6 @@ import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
 import { MissaoNatalCard } from "@/natal/MissaoNatalCard";
 import RoletaTurnoCard from "@/components/corretor/rotina/RoletaTurnoCard";
-import VolteRoletaCard from "@/components/arena/VolteRoletaCard";
 import MinhaEvolucaoKpis from "@/components/corretor/rotina/MinhaEvolucaoKpis";
 import MeuFocoHoje from "@/components/corretor/rotina/MeuFocoHoje";
 import AtalhosRotina from "@/components/corretor/rotina/AtalhosRotina";
@@ -181,8 +180,6 @@ export default function CorretorDashboard() {
         <RoletaTurnoCard />
       </motion.div>
 
-      {/* 3. Arena de Ligações: caminho para voltar à Roleta via Oferta Ativa */}
-      <VolteRoletaCard />
 
       <div className="flex flex-col lg:flex-row gap-3.5">
         <div className="flex-1 min-w-0 space-y-5">
