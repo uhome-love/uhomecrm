@@ -12,9 +12,9 @@ const VISUAL: Record<ResultadoOA, { icon: typeof PhoneMissed; classe: string; at
   visita: { icon: CalendarCheck, classe: "border-transparent bg-success text-primary-foreground hover:bg-success-600", atalho: "5" },
 };
 
-interface Props { origem: OrigemOA; gravando: boolean; fixo: boolean; destacar: boolean; ultimo: ResultadoOA | null; onResultado: (r: ResultadoOA) => void }
+interface Props { origem: OrigemOA; gravando: boolean; fixo: boolean; destacar: boolean; ultimo: ResultadoOA | null; onResultado: (r: ResultadoOA) => void; semTitulo?: boolean }
 
-export default function ResultadoBarra({ origem, gravando, fixo, destacar, ultimo, onResultado }: Props) {
+export default function ResultadoBarra({ origem, gravando, fixo, destacar, ultimo, onResultado, semTitulo }: Props) {
   const lista = resultadosDaOrigem(origem);
   const botoes = lista.map((r) => {
     const v = VISUAL[r];
@@ -41,8 +41,8 @@ export default function ResultadoBarra({ origem, gravando, fixo, destacar, ultim
   }
 
   return (
-    <section className={cn("mt-3 border-t border-border pt-3 transition-shadow duration-medium", destacar && "rounded-xl p-2 ring-2 ring-primary")} aria-label="Resultado da ligação">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Como foi a ligação?</p>
+    <section className={cn(semTitulo ? "" : "mt-3 border-t border-border pt-3", " transition-shadow duration-medium", destacar && "rounded-xl p-2 ring-2 ring-primary")} aria-label="Resultado da ligação">
+      {!semTitulo && <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Como foi a ligação?</p>}
       <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2">{botoes}</div>
     </section>
   );
