@@ -83,8 +83,8 @@ export function AuthBrandPanel() {
 export function AuthMobileHeader() {
   const natal = loginNatal();
   return (
-    <header className="auth-soft-bg relative h-[184px] overflow-hidden rounded-b-[28px] px-6 pt-7 lg:hidden">
-      <Marca className="pointer-events-none absolute -right-4 top-2 h-[200px]" />
+    <header className="auth-soft-bg relative h-[calc(184px+env(safe-area-inset-top))] overflow-hidden rounded-b-[28px] px-6 pt-[calc(env(safe-area-inset-top)+1.75rem)] lg:hidden">
+      <Marca className="pointer-events-none absolute -right-4 top-[calc(env(safe-area-inset-top)+0.5rem)] h-[200px]" />
       <div className="relative"><AuthLogo height={32} /></div>
       <img src={natal ? natal.homi : HOMI} alt="" className="absolute bottom-0 right-5 h-[165px]" />
     </header>
