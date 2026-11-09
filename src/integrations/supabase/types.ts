@@ -18942,6 +18942,10 @@ export type Database = {
       normalizar_bairro: { Args: { _txt: string }; Returns: string }
       normalize_alias: { Args: { input: string }; Returns: string }
       normalize_telefone: { Args: { raw: string }; Returns: string }
+      oa_anotar_pipeline: {
+        Args: { p_lead_id: string; p_nota: string; p_titulo: string }
+        Returns: Json
+      }
       oa_ao_vivo_is_gestor_of: {
         Args: { _profile_id: string }
         Returns: boolean
@@ -18965,6 +18969,7 @@ export type Database = {
           telefone: string
         }[]
       }
+      oa_liberar_lead: { Args: { p_lead_id: string }; Returns: Json }
       oa_lista_empreendimentos: {
         Args: { p_lista_id: string }
         Returns: {
