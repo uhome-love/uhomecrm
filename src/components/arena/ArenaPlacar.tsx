@@ -65,7 +65,7 @@ export default function ArenaPlacar() {
         {festa > 0 && (
           <motion.div key={festa} className="pointer-events-none absolute inset-0 overflow-hidden" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ delay: 2.4, duration: 0.4 }}>
             {Array.from({ length: 24 }).map((_, i) => (
-              <span key={i} className="natal-confete" style={{ left: `${(i * 41) % 100}%`, animationDelay: `${(i % 6) * 0.12}s` }} />
+              <span key={i} className="arena-confete" style={{ left: `${(i * 41) % 100}%`, animationDelay: `${(i % 6) * 0.12}s` }} />
             ))}
           </motion.div>
         )}

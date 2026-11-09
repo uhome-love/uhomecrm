@@ -1141,3 +1141,7 @@ body.arena-mode [data-sidebar] {
 .arena-brilho { animation: arena-brilho var(--motion-long, 600ms) var(--ease-enter, ease-out) infinite alternate; }
 @keyframes arena-brilho { to { box-shadow: 0 0 0 6px hsl(var(--brand-medium) / 0.25); } }
 @media (prefers-reduced-motion: reduce) { .arena-brilho { animation: none; } }
+.arena-confete { position: absolute; top: -10px; width: 7px; height: 11px; border-radius: 2px;
+  background: linear-gradient(90deg, hsl(var(--warning-500)), hsl(var(--brand-homi))); animation: arena-cair 2.6s ease-in forwards; }
+@keyframes arena-cair { to { transform: translateY(420px) rotate(540deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .arena-confete { display: none; } }
