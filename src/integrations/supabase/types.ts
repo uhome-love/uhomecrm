@@ -18941,6 +18941,18 @@ export type Database = {
           empreendimento: string
         }[]
       }
+      oa_ranking_ligacoes: {
+        Args: { p_periodo?: string }
+        Returns: {
+          aproveitados: number
+          avatar_url: string
+          ligacoes: number
+          nome: string
+          posicao: number
+          user_id: string
+          visitas: number
+        }[]
+      }
       oferta_ativa_esta_em_cooldown: {
         Args: { p_corretor_id: string; p_pipeline_lead_id: string }
         Returns: boolean
