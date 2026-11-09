@@ -80,7 +80,7 @@ export default function HistoricoLigacoes() {
       for (const k of ["oa-historico", "oa-ranking-ligacoes", "corretor-daily-stats", "oa-aproveitados", "pipeline", "oa-ranking"]) void qc.invalidateQueries({ queryKey: [k] });
       return;
     }
-    if (res.status === "com_outro") toast.warning(`Este cliente já está com ${res.corretor_nome ?? "outro corretor"}.`);
+    if (res.status === "com_outro") toast.warning(`Este cliente já está com ${res.corretor_nome ?? "outro corretor"} no Pipeline.`);
     else if (res.status === "comigo") toast("Este cliente já está no seu Pipeline.", { action: { label: "Abrir", onClick: () => navigate("/pipeline-leads") } });
     else if (res.status === "bloqueado") toast.error("Este cliente pediu para não receber contato.");
     else toast.error("Não foi possível aproveitar este cliente.");
