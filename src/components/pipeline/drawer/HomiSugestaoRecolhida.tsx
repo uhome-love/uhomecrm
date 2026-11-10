@@ -178,8 +178,7 @@ export default function HomiSugestaoRecolhida(p: Props) {
       >
         <HomiMini className="h-7 w-7 shrink-0" />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[13px] font-bold leading-5 text-homi-text">Homi tem uma sugestão</span>
-          <span className="text-[12px] leading-4 text-muted-foreground">Próximo passo e mensagem pronta</span>
+          <span className="text-[13px] font-bold leading-5 text-homi-text">Sugestão do Homi</span>
         </span>
         <span className="text-[13px] font-semibold text-homi-text">{aberto ? "Recolher" : "Ver"}</span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-homi-text transition-transform", aberto && "rotate-180")} />
