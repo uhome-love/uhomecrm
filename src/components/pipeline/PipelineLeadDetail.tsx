@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
-import EstagnacaoStatusCard from "./EstagnacaoStatusCard";
 import { QualificacaoEtapaCard, PerfilLeadCard } from "./QualificacaoChecklistCard";
 import { getOrigemLabel } from "./LeadHistoricoTab";
 import DrawerTopo from "./drawer/DrawerTopo";
