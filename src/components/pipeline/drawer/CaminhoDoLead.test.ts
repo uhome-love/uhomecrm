@@ -29,3 +29,10 @@ describe("montarCaminho com etapa sem registro de entrada", () => {
     expect(p[3].voltou).toBe(true);
   });
 });
+import { partesDaVisita } from "../LeadHistoricoTab";
+describe("partesDaVisita", () => {
+  it("separa resultado, temperatura e observação sem emoji", () => {
+    const p = partesDaVisita("23/10/2026 · 11:00 · Imóvel: Terrace · Resultado: 🔥 Quer proposta · Temperatura: 🔥 Muito quente · vai mandar docs");
+    expect(p).toMatchObject({ dia: "23 out", hora: "11:00", imovel: "Terrace", resultado: "Quer proposta", temperatura: "Muito quente", obs: ["vai mandar docs"] });
+  });
+});
