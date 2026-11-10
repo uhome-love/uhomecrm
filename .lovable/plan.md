@@ -1,72 +1,66 @@
-# Pipeline de Leads e Negócios — minha visão como desenvolvedor (visão CEO)
+# Ficha do cliente — construir de verdade o desenho aprovado
 
-Esta é uma opinião, baseada nas 8 telas enviadas. Nada será alterado sem desenho e aprovação de cada item.
+## O que aconteceu
+Você tem razão: a ficha ficou quase igual à antiga. Da proposta aprovada, só entraram o quadro "Atenção" e as abas. O resto ficou igual ao de antes:
+- Nome, telefone e e-mail continuam grandes e ocupam o topo da coluna esquerda.
+- Produto, origem, temperatura e corretor não aparecem no topo (estão escondidos no "Resumo", à direita).
+- Há dois botões que fazem quase a mesma coisa ("Registrar" na próxima ação e "Registrar atividade").
+- Ligar, WhatsApp e Anotar ocupam três blocos grandes.
+- "Status da Etapa" continua lá embaixo.
+- A data da visita (qui 12/11 14h) não aparece em destaque; só aparece a tarefa de confirmar.
 
-## O que eu manteria
-- **As 10 etapas** e Negócios como continuação do mesmo cliente. É simples e verdadeiro.
-- **Cartão do cliente**: nome, produto, telefone, última atividade colorida e corretor. Lê rápido.
-- **Bolinhas verde/amarelo/vermelho no topo** (1.689 / 193 / 25): mostram a saúde da carteira num olhar.
-- **Ficha com "Próxima ação" e Registrar** em destaque: leva o corretor a agir.
-- **Abas Equipes / Leads / Negócios** e **Empresa / Meus leads**.
-
-## O que eu mudaria (por ordem de impacto)
-
-### 1. Erros que aparecem nas telas
-- **Tarefa e visita com datas diferentes**: o cliente Matheus Martins tem "Confirmar visita" amanhã (11/11, 10h), mas a visita está marcada para quinta (12/11, 14h). Precisa conferir se a confirmação deveria ser no dia da visita ou na véspera, e deixar isso claro no cartão.
-- **"Desatualizado 5d" com visita marcada**: um cliente com visita futura não deveria aparecer vermelho. Isso gera falsa cobrança.
-- **Origens repetidas no filtro**: "Facebook Leads Ads", "FacebookAds", "fb", "meta ads" e "meta backfill" são a mesma coisa. Juntar em poucos nomes (Meta, Site, Indicação, Oferta Ativa, Lia, TikTok, Outros).
-
-### 2. Visão CEO: o que falta enxergar
-- **Gargalo visível**: Qualificação tem 855 clientes (fica 24 dias em média) e Aquecimento 603 (47 dias). Mostrar no topo de cada coluna quantos estão parados há muito tempo e um botão "ver parados".
-- **Valor por etapa com sentido**: hoje aparece "R$ 7,2M" em Aquecimento, que é um valor estimado. Para o CEO, o valor importa a partir de Visita. Eu mostraria o valor só de Visita para frente e o número de clientes antes disso.
-- **Faixa de conversão**: uma linha fina mostrando quantos passam de uma etapa para a próxima no mês (ex.: Qualificação → Visita 8%).
-
-### 3. Limpeza visual
-- O aviso "127 em Ganho... 15 em Negócios" ocupa uma linha inteira. Transformar em dois atalhos pequenos.
-- A linha de etapas acima das colunas repete as colunas. Manter só uma, que serve para pular até a etapa.
-- Selos demais no cartão (Quente + Visita marcada + T5 24h + c/ Roni). Mostrar no máximo dois e o resto na ficha.
-- Na ficha, "Status da Etapa" fica escondido embaixo. Subir para perto do nome.
-
-### 4. Negócios
-- Coluna de Proposta e Contrato com **valor e data prevista de assinatura** bem visíveis.
-- Aviso quando um negócio fica mais de X dias sem andar.
-
-### 5. Ficha do cliente — como eu organizaria
+## Como vai ficar (computador)
 
 ```text
-+-------------------------------------------------------------+
-| MM  Matheus Martins          [Visita v]  Quente   (x)       |
-|     Open Bosque · fb · entrou 24/10 · Rafaela Sandin        |
-|     [Ligar] [WhatsApp] [Anotar] [...]                       |
-+----------------------------+--------------------------------+
-| AGORA                      | Linha do tempo | Tarefas | Visitas | Dados |
-| Visita qui 12/11 14h       |                                |
-| Confirmar amanhã 10h       |  tudo em ordem de data,        |
-| [Registrar atividade]      |  com filtro por tipo           |
-|                            |                                |
-| Situação da etapa          |                                |
-| Visita marcada             |                                |
-|                            |                                |
-| Negócio (se houver)        |                                |
-| valor · previsão           |                                |
-+----------------------------+--------------------------------+
++--------------------------------------------------------------------------+
+| MM  Matheus Martins   [Visita · marcada v] [Quente]   Ligar WhatsApp Anotar ... X |
+|     Open Bosque · Meta · entrou 24/10 · Rafaela Sandin                   |
+|     (51) 98612-4093 [copiar] · assismatheus@gmail.com [copiar]           |
++------------------------------+-------------------------------------------+
+| AGORA                        | Linha do tempo 8 | Tarefas 1 | Visitas 1 | Dados |
+| Visita qui 12/11 · 14h       |                                           |
+| Open Bosque                  |  linha do tempo limpa: ícone, frase,      |
+| ---------------------------- |  quem e quando — sem caixas por item      |
+| Confirmar visita             |                                           |
+| amanhã · 10h                 |  Narrativa / Sistema vira filtro pequeno  |
+| [ Registrar atividade ]      |  "Resumo" sai daqui (já está no topo)     |
++------------------------------+                                           |
+| ATENÇÃO (só quando houver)   |                                           |
+| 5 dias sem contato           |                                           |
++------------------------------+                                           |
+| NEGÓCIO                      |                                           |
+| valor · previsão / "ainda    |                                           |
+| não há proposta"             |                                           |
++------------------------------+-------------------------------------------+
 ```
 
-- **Topo fixo** com nome, etapa, temperatura, produto, origem, corretor e os botões de contato. Fica sempre visível, mesmo rolando.
-- **Coluna esquerda "Agora"**: só o que precisa de ação: próxima visita, próxima tarefa, um botão principal e a situação da etapa (hoje está escondida embaixo).
-- **Coluna direita com 4 abas**: Linha do tempo, Tarefas, Visitas e Dados (origem, anúncio, formulário e respostas saem da esquerda e vão para cá).
-- **Telefone e e-mail** viram linha pequena com botão de copiar, sem ocupar espaço grande.
-- **"Ações admin"** vai para dentro do menu "...", não fica solto.
-- **Celular**: topo compacto, "Agora" em cima e as abas embaixo, com botões fixos no rodapé.
+- **Topo único e fixo**: nome, etapa (com a situação junto, ex.: "Visita · marcada"), temperatura, produto, origem já agrupada (Meta), data de entrada, corretor e contatos em uma linha pequena com botão de copiar. Ligar / WhatsApp / Anotar / "..." viram botões compactos à direita.
+- **"Status da Etapa" some como bloco**: a situação fica dentro do selo de etapa, e é possível trocá-la clicando nele.
+- **Um só botão principal**: "Registrar atividade", dentro do quadro "Agora".
+- **"Agora"** mostra primeiro a visita marcada (data, hora e produto) e depois a próxima tarefa.
+- **Negócio** aparece sempre como um cartão pequeno (valor e previsão quando existir).
+- **Linha do tempo mais leve**: sem caixa em volta de cada item e com espaçamento uniforme.
+- **"Ações admin" e "Mais ações"** vão para o menu "...".
 
-## Estamos no máximo?
-Não, mas estamos perto de um CRM bom de mercado. Sincero:
-- **Bom nível**: funções (Roleta, Oferta Ativa, Lia, Financeiro) e regras estão acima da maioria dos CRMs imobiliários.
-- **Onde ainda perde para os melhores (Pipedrive, HubSpot, Attio)**: muitos selos e emojis competindo; informação repetida (etapas em dobro, avisos longos); a ficha tem a ação importante misturada com dados de consulta; pouca animação suave ao abrir e mover; cores ainda variam de tela para tela; muitas telas não têm versão própria no celular.
-- **Para chegar ao topo**: menos coisas por tela, uma ação principal clara, mesmo padrão em todas as páginas e movimento suave. É exatamente o que as fases visuais já aprovadas estão fazendo; a ficha seria a próxima peça mais valiosa.
+## Celular (desenho aprovado)
+- Topo compacto com nome, etapa e temperatura; produto, origem e corretor em uma linha abaixo.
+- "Agora" em cima, depois as abas deslizáveis.
+- Barra fixa de Ligar / WhatsApp / Registrar logo acima do menu fixo de baixo, sem cobrir o menu.
 
-## Como seguiria
-1. Você escolhe quais itens entram.
-2. Primeiro investigo os erros do bloco 1 nos dados (sem mexer).
-3. Desenho de cada mudança visual (computador e celular) para aprovação.
-4. Construo uma fase por vez e confiro ao vivo, sem mexer nos números oficiais.
+## O que NÃO muda
+Regras, números, etapas, tarefas, visitas, o registro de atividade e o histórico. A mudança é só na organização da tela, e todas as ações atuais continuam disponíveis.
+
+## Validação
+- Abrir fichas de clientes de teste em várias etapas (Novo Lead, Visita, Proposta, Ganho, com e sem negócio) no computador e no celular (390px).
+- Clicar em cada botão (Ligar, WhatsApp, Anotar, Registrar, trocar etapa, trocar situação, "...") e sempre cancelar, sem alterar clientes reais.
+- Comparar com os desenhos aprovados lado a lado antes de entregar.
+
+## Ponto em aberto (precisa da sua decisão)
+Cliente com visita marcada no futuro deve parar de aparecer como "Desatualizado" / "5 dias sem contato"? Se você não decidir agora, isso fica como está hoje.
+
+## Detalhes técnicos
+- `DrawerLeadHeader` vira o cabeçalho de largura total (acima das duas colunas) e recebe as ações compactas, os metadados (`rotuloOrigem`/`grupoOrigem`) e o seletor de etapa+situação (reaproveitando o seletor atual de flag_status de `leadHelpers.ts`).
+- `PipelineLeadDetail.tsx` (1.274 linhas) será dividido: coluna "Agora" em `drawer/DrawerAgora.tsx` (une `DrawerProximaAcao` + próxima visita + o botão único) e `drawer/DrawerNegocioResumo.tsx`; o bloco "Status da Etapa" e o `DrawerActionGrid` grande saem do corpo.
+- `DrawerTimeline`: tirar o cartão "Resumo" e as caixas de cada item, mantendo os dados e o filtro Narrativa/Sistema.
+- Celular: o mesmo componente, com uma barra fixa respeitando a altura do menu inferior e a área segura do iPhone.
+- Somente tokens do design system; nada de cores fixas.
