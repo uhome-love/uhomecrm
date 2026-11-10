@@ -23,6 +23,8 @@ interface Props {
   stages: Etapa[];
   currentStageId?: string | null;
   createdAt?: string | null;
+  /** Data de entrada na etapa atual (pipeline_leads.stage_changed_at). */
+  stageChangedAt?: string | null;
 }
 export interface Passo {
   stageId: string;
@@ -108,12 +110,18 @@ export function CaminhoLista({ passos, nomeDe }: { passos: Passo[]; nomeDe: (id:
   );
 }
 
-export function UltimoMovimento({ historico, stages, createdAt }: Props) {
-  const passos = montarCaminho(historico, stages, createdAt);
+/** Quando o histórico não termina na etapa atual, acrescenta a etapa atual no fim (só exibição). */
+export function caminhoAteEtapaAtual(passos: Passo[], currentStageId?: string | null, stageChangedAt?: string | null): { passos: Passo[]; semRegistro: boolean } {
+  if (!currentStageId || passos.length === 0 || passos[passos.length - 1].stageId === currentStageId) return { passos, semRegistro: false };
+  return { passos: [...passos, { stageId: currentStageId, data: stageChangedAt ?? null, voltou: false }], semRegistro: true };
+}
+
+export function UltimoMovimento({ historico, stages, createdAt, currentStageId, stageChangedAt }: Props) {
+  const { passos, semRegistro } = caminhoAteEtapaAtual(montarCaminho(historico, stages, createdAt), currentStageId, stageChangedAt);
   if (passos.length < 2) return null;
   const nomeDe = (id: string) => stages.find((s) => s.id === id)?.nome ?? "Etapa";
   const ult = passos[passos.length - 1];
-  const Icone = ult.voltou ? Undo2 : ArrowRight;
+  const Icone = semRegistro ? ArrowRight : ult.voltou ? Undo2 : ArrowRight;
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -121,13 +129,22 @@ export function UltimoMovimento({ historico, stages, createdAt }: Props) {
           type="button"
           className={cn(
             "inline-flex min-w-0 max-w-full items-center gap-1 whitespace-nowrap rounded-md px-1 -mx-1 text-[12px] font-medium hover:bg-muted transition-colors",
-            ult.voltou ? "text-primary" : "text-muted-foreground",
+            ult.voltou && !semRegistro ? "text-primary" : "text-muted-foreground",
           )}
           aria-label="Ver caminho do lead"
         >
           <Icone className="h-3.5 w-3.5 shrink-0" />
-          <span className="min-w-0 truncate pr-px">{ult.voltou ? "Voltou para" : "Avançou para"} {nomeDe(ult.stageId)}</span>
-          <span className="shrink-0">· {diaMesBRT(ult.data)}</span>
+          {semRegistro ? (
+            <>
+              <span className="min-w-0 truncate pr-px">Em {nomeDe(ult.stageId)}</span>
+              {ult.data && <span className="shrink-0">desde {diaMesBRT(ult.data)}</span>}
+            </>
+          ) : (
+            <>
+              <span className="min-w-0 truncate pr-px">{ult.voltou ? "Voltou para" : "Avançou para"} {nomeDe(ult.stageId)}</span>
+              <span className="shrink-0">· {diaMesBRT(ult.data)}</span>
+            </>
+          )}
           <ChevronDown className="h-3 w-3 shrink-0 opacity-70" />
         </button>
       </PopoverTrigger>

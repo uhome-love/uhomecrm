@@ -36,6 +36,8 @@ interface Props {
   homi?: ReactNode;
   /** Novo: esconde o botão grande "Registrar atividade" (o registro fica no topo do histórico). */
   esconderRegistrar?: boolean;
+  /** Etapa final (Descarte, Caiu, Ganho): mostra só um resumo neutro no lugar do próximo passo. */
+  etapaFinal?: { texto: string; acao?: ReactNode } | null;
 }
 
 const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -65,7 +67,7 @@ function diaMesBRT(iso: string): string {
 
 export default function DrawerAgora({
   leadId, leadNome, nextTask, proximaAcaoTexto, pendingCount, onComplete, onSeeAll, onCreateTask, onRegistrar,
-  saudeLinha, saude, tarefaDeEtapaAnterior, homi, esconderRegistrar = false,
+  saudeLinha, saude, tarefaDeEtapaAnterior, homi, esconderRegistrar = false, etapaFinal = null,
 }: Props) {
   const [visita, setVisita] = useState<Visita | null>(null);
 
@@ -99,6 +101,16 @@ export default function DrawerAgora({
   const tipo = parseNextActionType(nextTask, proximaAcaoTexto);
   const tituloBruto = nextTask?.titulo || nextTask?.descricao || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : "Próxima tarefa");
   const tituloTarefa = leadNome ? tituloBruto.replace(new RegExp(`\\s*[—-]\\s*${leadNome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i"), "") : tituloBruto;
+
+  if (etapaFinal) {
+    return (
+      <section className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Situação</p>
+        <p className="rounded-lg bg-muted/60 px-3.5 py-3 text-[13.5px] font-medium text-muted-foreground">{etapaFinal.texto}</p>
+        {etapaFinal.acao}
+      </section>
+    );
+  }
 
   // Um alerta só: selo + barra. Verde não aparece (nada a fazer).
   const temSaude = !!saude && saude.dias != null && saude.dias > 0;
