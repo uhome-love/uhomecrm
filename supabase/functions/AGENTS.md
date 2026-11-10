@@ -1,0 +1,2 @@
+- Lia endpoints accept only service role/cron or admin/diretor JWT (`requireRealUser`). Why: no public sends or paid AI.
+- /vaga updates need the creation HMAC token (`_shared/rhToken.ts`); intake secrets stay log-only until configured. Why: no tampering, no lost leads.
