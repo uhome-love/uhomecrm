@@ -35,6 +35,10 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ action: "list_natal_links", payload }),
     });
     const corpo = await r.json().catch(() => ({}));
+    if (r.status === 401) {
+      console.error("natal-links: site recusou CRM_BRIDGE_TOKEN");
+      return json({ error: "O site recusou a ligação com o CRM. Avise o administrador." }, 502);
+    }
     if (!r.ok) return json({ error: corpo?.error ?? "O site não respondeu. Tente de novo." }, r.status);
     return json(corpo);
   } catch (e) {
