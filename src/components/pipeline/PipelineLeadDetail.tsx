@@ -39,6 +39,10 @@ import { getOrigemLabel } from "./LeadHistoricoTab";
 import DrawerTopo from "./drawer/DrawerTopo";
 import ResumoLead from "./ResumoLead";
 import DrawerAgora from "./drawer/DrawerAgora";
+import HomiSugestaoRecolhida from "./drawer/HomiSugestaoRecolhida";
+import CaminhoDoLead from "./drawer/CaminhoDoLead";
+import ResumoLeadLateral from "./drawer/ResumoLeadLateral";
+import { telefoneForaDoRS } from "@/lib/dddUf";
 import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
 import { VISITA_SUBSTATUS, AQUECIMENTO_SUBSTATUS } from "@/lib/leadHelpers";
 import DrawerTimeline from "./drawer/DrawerTimeline";
@@ -208,6 +212,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const { createVisita } = useVisitas();
   const [isCallOpen, setIsCallOpen] = useState(false);
   const [anotarOpen, setAnotarOpen] = useState(false);
+  const [registroInicial, setRegistroInicial] = useState<{ tipo?: string; texto: string } | null>(null);
   const [registrarOpen, setRegistrarOpen] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
@@ -451,13 +456,31 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   })();
   const temperaturaAtual = String((lead as any).temperatura || "").toLowerCase();
   const tempMeta: Record<string, { label: string; cls: string }> = {
-    quente: { label: "Quente", cls: "bg-destructive/10 text-destructive" },
-    morno: { label: "Morno", cls: "bg-warning-500/15 text-warning-700 dark:text-warning-500" },
-    frio: { label: "Frio", cls: "bg-primary/10 text-primary" },
+    quente: { label: "Quente", cls: "bg-muted text-foreground" },
+    morno: { label: "Morno", cls: "bg-muted text-foreground" },
+    frio: { label: "Frio", cls: "bg-muted text-foreground" },
   };
   const origemTopo = (() => { const g = grupoOrigem(lead.origem); return g === "Outros" && lead.origem ? rotuloOrigem(lead.origem) : g; })();
   const entrouTopo = (() => { const d = lead.created_at ? new Date(lead.created_at) : null; return d && !Number.isNaN(d.getTime()) ? `entrou ${d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })}` : null; })();
   const metaTopo = [lead.empreendimento || "Sem empreendimento", lead.origem ? origemTopo : null, entrouTopo, lead.corretor_id ? corretorNomes[lead.corretor_id] : null].filter(Boolean) as string[];
+  const saudeAgora = (() => {
+    const inp = { ultimo_toque_at: lead.ultimo_toque_at, distribuido_em: lead.distribuido_em, aceito_em: (lead as any).aceito_em, created_at: lead.created_at, stage_tipo: currentStage?.tipo, estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate };
+    const cor = leadSaude(inp);
+    if (cor === "terminal" || cor === "verde") return null;
+    return { dias: diasSemToque(inp), prazo: prazoDaEtapa(currentStage?.tipo), critico: cor === "vermelho" || cor === "estagnado" };
+  })();
+  const tarefaDeEtapaAnterior = (() => {
+    const criada = (nextTask as any)?.created_at as string | undefined;
+    if (!criada || !lead.stage_changed_at || !currentStage?.nome) return null;
+    return new Date(criada).getTime() < new Date(lead.stage_changed_at).getTime()
+      ? { etapaAtual: currentStage.nome, trocadaEm: lead.stage_changed_at } : null;
+  })();
+  const tarefaAtrasadaTitulo = (() => {
+    const t = nextTask as any;
+    if (!t?.vence_em) return null;
+    const due = new Date(`${String(t.vence_em).slice(0, 10)}T${t.hora_vencimento ? String(t.hora_vencimento).slice(0, 5) : "23:59"}:00-03:00`);
+    return due.getTime() < Date.now() ? (t.titulo || t.descricao || null) : null;
+  })();
   const acaoTrack = (action: string) => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action });
   const actionsNode = (
     <>
@@ -467,8 +490,8 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" disabled={!lead.telefone} onClick={() => { acaoTrack("whatsapp"); setIsWhatsAppFlowOpen(true); }}>
         <MessageCircle className="h-3.5 w-3.5 text-success-700" /> WhatsApp
       </Button>
-      <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" onClick={() => { acaoTrack("anotar"); setAnotarOpen(true); }}>
-        <FileText className="h-3.5 w-3.5" /> Anotar
+      <Button size="sm" variant="default" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" onClick={() => { acaoTrack("agendar_visita"); setScheduleVisitOpen(true); }}>
+        <CalendarPlus className="h-3.5 w-3.5" /> Agendar visita
       </Button>
       <CardOverflowMenu
         lead={lead}
@@ -509,6 +532,8 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       cancelEditPhone={() => { setEditingPhone(false); setEditPhone(lead.telefone || ""); }}
       savePhone={handleSavePhone}
       saving={saving}
+      localTelefone={telefoneForaDoRS(lead.telefone)}
+      faixa={<CaminhoDoLead historico={leadData.historico as any} stages={stages} currentStageId={lead.stage_id} createdAt={lead.created_at} />}
       pills={
         <>
           <Popover>
@@ -534,8 +559,10 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           {situacaoTipos.includes(stageTipoAtual) && (
             <Popover>
               <PopoverTrigger asChild>
-                <button className="inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-muted text-foreground/80 hover:bg-muted/70">
-                  {situacaoLabel}
+                <button className={stageTipoAtual === "aquecimento" && !flagsAtuais.prazo
+                  ? "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 border border-dashed border-warning-500 bg-warning-500/10 text-warning-700 dark:text-warning-500 hover:bg-warning-500/15"
+                  : "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-muted text-foreground/80 hover:bg-muted/70"}>
+                  {stageTipoAtual === "aquecimento" ? (flagsAtuais.prazo ? `Retomar em: ${situacaoLabel}` : "Definir prazo") : situacaoLabel}
                   <ChevronDown className="h-2.5 w-2.5" />
                 </button>
               </PopoverTrigger>
@@ -547,7 +574,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           )}
 
           {tempMeta[temperaturaAtual] && (
-            <span className={`inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 ${tempMeta[temperaturaAtual].cls}`}>{tempMeta[temperaturaAtual].label}</span>
+            <span className={`inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 ${tempMeta[temperaturaAtual].cls}`}><Flame className="h-3 w-3 text-muted-foreground" />{tempMeta[temperaturaAtual].label}</span>
           )}
 
           {currentStage?.tipo === "venda" && (
@@ -564,45 +591,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           )}
 
 
-          {(() => {
-            // Chip de saúde = MESMA régua do card/agenda (leadSaude), não conta própria.
-            const saudeInput = {
-              ultimo_toque_at: lead.ultimo_toque_at,
-              distribuido_em: lead.distribuido_em,
-              aceito_em: (lead as any).aceito_em,
-              created_at: lead.created_at,
-              stage_tipo: currentStage?.tipo,
-              estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate,
-            };
-            const cor = leadSaude(saudeInput);
-            if (cor === "terminal") return null;
-            const dias = diasSemToque(saudeInput);
-            const meta: Record<string, { cls: string; dot: string; text: string }> = {
-              verde:     { cls: "bg-success-500/15 text-success-700 dark:text-success-500", dot: "bg-success-500", text: "Em dia" },
-              ambar:     { cls: "bg-warning-500/15 text-warning-700 dark:text-warning-500", dot: "bg-warning-500", text: "Atenção" },
-              vermelho:  { cls: "bg-danger-500/15 text-danger-700 dark:text-danger-500",   dot: "bg-danger-500",  text: "Desatualizado" },
-              estagnado: { cls: "bg-violet-500/15 text-violet-700 dark:text-violet-400",   dot: "bg-violet-500",  text: "Estagnado" },
-            };
-            const m = meta[cor] ?? meta.vermelho;
-            const motivos: string[] = [];
-            if (dias != null) motivos.push(`${dias}d sem atividade`);
-            if (!nextTask) motivos.push("sem próximo passo");
-            const showTooltip = motivos.length > 0;
-            return (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className={`inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 cursor-default ${m.cls}`}>
-                    {m.text}{dias != null && cor !== "verde" ? ` · ${dias}d` : ""}
-                  </span>
-                </TooltipTrigger>
-                {showTooltip && (
-                  <TooltipContent side="bottom" className="text-xs">
-                    {motivos.join(" · ")}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            );
-          })()}
 
         </>
       }
@@ -649,16 +637,25 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         onSeeAll={() => setActiveTab("tarefas")}
         onCreateTask={() => setNextActionOpen(true)}
         onRegistrar={() => { acaoTrack("registrar_atividade"); setRegistrarOpen(true); }}
-        saudeLinha={(() => {
-          const inp = { ultimo_toque_at: lead.ultimo_toque_at, distribuido_em: lead.distribuido_em, aceito_em: (lead as any).aceito_em, created_at: lead.created_at, stage_tipo: currentStage?.tipo, estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate };
-          const cor = leadSaude(inp);
-          if (cor === "terminal" || cor === "verde") return null;
-          const dias = diasSemToque(inp);
-          const prazo = prazoDaEtapa(currentStage?.tipo);
-          const base = dias != null ? `${dias} ${dias === 1 ? "dia" : "dias"} sem contato` : "Sem contato registrado";
-          return { texto: `${base} · prazo da etapa ${prazo} ${prazo === 1 ? "dia" : "dias"}`, critico: cor === "vermelho" || cor === "estagnado" };
-        })()}
+        saude={saudeAgora}
+        tarefaDeEtapaAnterior={tarefaDeEtapaAnterior}
+        esconderRegistrar={!isMobile}
+        homi={
+          <HomiSugestaoRecolhida
+            leadId={lead.id}
+            leadNome={lead.nome}
+            leadTelefone={lead.telefone}
+            empreendimento={lead.empreendimento}
+            etapa={currentStage?.nome ?? ""}
+            temperatura={(lead as any).temperatura}
+            diasSemContato={saudeAgora?.dias ?? null}
+            tarefaAtrasada={tarefaAtrasadaTitulo}
+            onAbrirHomi={() => setHomiOpen(true)}
+          />
+        }
       />
+
+      <ResumoLeadLateral lead={lead} />
 
       {/* Negócio — só a partir de Documentação (ou se já existe negócio) */}
       {(lead.negocio_id || ["documentacao", "proposta", "contrato_gerado", "venda"].includes(stageTipoAtual)) && (
@@ -982,6 +979,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
                 onAddTarefa={leadData.addTarefa}
                 onReload={leadData.reload}
                 onNextAction={() => setNextActionOpen(true)}
+                onRegistrar={(d) => { acaoTrack("registro_rapido"); setRegistroInicial({ tipo: d.tipo ?? undefined, texto: d.texto }); setRegistrarOpen(true); }}
               />
             </TabsContent>
 
@@ -1187,7 +1185,9 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       {registrarOpen && (
         <RegistrarAtividadeModal
           lead={{ id: lead.id, nome: lead.nome }}
-          onClose={() => setRegistrarOpen(false)}
+          tipoInicial={registroInicial?.tipo}
+          obsInicial={registroInicial?.texto}
+          onClose={() => { setRegistrarOpen(false); setRegistroInicial(null); }}
           onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }}
         />
       )}
