@@ -68,7 +68,7 @@ export default function DrawerAgora({ leadId, nextTask, proximaAcaoTexto, pendin
       tarefaQuando = `${abs} · ${atrasada ? "atrasada há" : "em"} ${formatDistance(valido, new Date(), { locale: ptBR })}`;
     }
   }
-  const tipo = parseNextActionType(nextTask as never, proximaAcaoTexto);
+  const tipo = parseNextActionType(nextTask, proximaAcaoTexto);
   const tituloTarefa = nextTask?.titulo || nextTask?.descricao || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : "Próxima tarefa");
 
   return (

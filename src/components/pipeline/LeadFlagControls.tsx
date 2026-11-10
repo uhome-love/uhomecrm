@@ -20,9 +20,11 @@ interface Props {
   stageTipo: string;
   flagStatus: Record<string, string> | null;
   onUpdate?: (flags: Record<string, string>) => void;
+  /** Sem moldura (usado dentro de popover/cartão da ficha). */
+  bare?: boolean;
 }
 
-export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpdate }: Props) {
+export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpdate, bare }: Props) {
   const { user } = useAuth();
   const [flags, setFlags] = useState<Record<string, string>>(flagStatus || {});
   const [jornadaEtapaId, setJornadaEtapaId] = useState<string | null>(null);
@@ -68,7 +70,9 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
     save(updated, key, oldValue);
   };
 
-  const wrapper = (children: React.ReactNode) => (
+  const wrapper = (children: React.ReactNode) => bare ? (
+    <div className="flex items-center gap-3 flex-wrap">{children}</div>
+  ) : (
     <div className="mx-5 my-3 rounded-lg border-2 border-primary/20 bg-primary/5 p-3">
       <p className="text-xs font-semibold text-primary mb-2">📋 Status da Etapa</p>
       <div className="flex items-center gap-3 flex-wrap">
@@ -200,7 +204,7 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
 
   // Etapas comerciais usam o mesmo escritor atômico do cartão e do drawer.
   if (["documentacao", "proposta", "contrato_gerado"].includes(stageTipo)) {
-    return <div className="mx-5 my-3 border-t border-border pt-3">
+    return <div className={bare ? "" : "mx-5 my-3 border-t border-border pt-3"}>
       <Button size="sm" className="w-full" onClick={() => void abrirJornada()}>Atualizar {stageTipo === "contrato_gerado" ? "contrato" : stageTipo === "documentacao" ? "documentação" : "proposta"}</Button>
       {jornadaEtapaId && <Dialog open onOpenChange={open => { if (!open) setJornadaEtapaId(null); }}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Jornada do negócio</DialogTitle></DialogHeader><JornadaNegocioForm leadId={leadId} etapaId={jornadaEtapaId} tipo={stageTipo} mover={false} onCancel={() => setJornadaEtapaId(null)} onSaved={() => setJornadaEtapaId(null)} /></DialogContent></Dialog>}
     </div>;

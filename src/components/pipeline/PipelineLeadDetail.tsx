@@ -37,13 +37,14 @@ import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
 import EstagnacaoStatusCard from "./EstagnacaoStatusCard";
 import { QualificacaoEtapaCard, PerfilLeadCard } from "./QualificacaoChecklistCard";
 import { getOrigemLabel } from "./LeadHistoricoTab";
-import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
+import DrawerTopo from "./drawer/DrawerTopo";
+import DrawerAgora from "./drawer/DrawerAgora";
+import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
+import { VISITA_SUBSTATUS, AQUECIMENTO_SUBSTATUS } from "@/lib/leadHelpers";
 import DrawerTimeline from "./drawer/DrawerTimeline";
-import DrawerActionGrid from "./drawer/DrawerActionGrid";
 import DrawerEmpreendimento from "./drawer/DrawerEmpreendimento";
 import DrawerOrigemLead from "./drawer/DrawerOrigemLead";
 import DrawerAnotarDialog from "./drawer/DrawerAnotarDialog";
-import DrawerProximaAcao, { parseNextActionType } from "./drawer/DrawerProximaAcao";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
 import { Zap } from "lucide-react";
 import PartnershipDialog from "./PartnershipDialog";
@@ -440,11 +441,60 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   // Conteúdo da coluna esquerda — single source (DRY).
   // Reusado em desktop (DrawerLeadInfo aside) e mobile (tab "Info").
   // ─────────────────────────────────────────────────────────────────
+  const situacaoTipos = ["contato_inicial", "busca", "aquecimento", "visita", "pos_visita"];
+  const stageTipoAtual = (currentStage as any)?.tipo || "";
+  const flagsAtuais = (lead.flag_status as Record<string, string> | null) || {};
+  const situacaoLabel = (() => {
+    if (stageTipoAtual === "visita" && flagsAtuais.status_visita) return (VISITA_SUBSTATUS.find(o => o.value === flagsAtuais.status_visita)?.label ?? flagsAtuais.status_visita).replace(/^\S+\s/, "");
+    if (stageTipoAtual === "aquecimento" && flagsAtuais.prazo) return (AQUECIMENTO_SUBSTATUS.find(o => o.value === flagsAtuais.prazo)?.label ?? "").replace(/^\S+\s/, "");
+    return "Situação";
+  })();
+  const temperaturaAtual = String((lead as any).temperatura || "").toLowerCase();
+  const tempMeta: Record<string, { label: string; cls: string }> = {
+    quente: { label: "Quente", cls: "bg-danger-500/12 text-danger-700 dark:text-danger-500" },
+    morno: { label: "Morno", cls: "bg-warning-500/12 text-warning-700 dark:text-warning-500" },
+    frio: { label: "Frio", cls: "bg-primary/10 text-primary" },
+  };
+  const origemTopo = (() => { const g = grupoOrigem(lead.origem); return g === "Outros" && lead.origem ? rotuloOrigem(lead.origem) : g; })();
+  const entrouTopo = (() => { const d = lead.created_at ? new Date(lead.created_at) : null; return d && !Number.isNaN(d.getTime()) ? `entrou ${d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })}` : null; })();
+  const metaTopo = [lead.empreendimento || "Sem empreendimento", lead.origem ? origemTopo : null, entrouTopo, lead.corretor_id ? corretorNomes[lead.corretor_id] : null].filter(Boolean) as string[];
+  const acaoTrack = (action: string) => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action });
+  const actionsNode = (
+    <>
+      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={!lead.telefone} onClick={() => { acaoTrack("ligar"); setIsCallOpen(true); }}>
+        <Phone className="h-3.5 w-3.5" /> Ligar
+      </Button>
+      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={!lead.telefone} onClick={() => { acaoTrack("whatsapp"); setIsWhatsAppFlowOpen(true); }}>
+        <MessageCircle className="h-3.5 w-3.5 text-success-700" /> WhatsApp
+      </Button>
+      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => { acaoTrack("anotar"); setAnotarOpen(true); }}>
+        <FileText className="h-3.5 w-3.5" /> Anotar
+      </Button>
+      <CardOverflowMenu
+        lead={lead}
+        stages={stages}
+        onMoveLead={(leadId, newStageId, observacao) => {
+          if (stages.find(s => s.id === newStageId)?.tipo === "venda") { setConfirmarVendaOpen(true); return; }
+          onMove(leadId, newStageId, observacao);
+        }}
+        onOpenDetail={() => { /* já está aberto */ }}
+        onRegistrarAtividade={() => setRegistrarOpen(true)}
+        onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
+        trigger={
+          <button aria-label="Mais ações" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50">
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        }
+      />
+    </>
+  );
   const headerNode = (
-    <DrawerLeadHeader
+    <DrawerTopo
       nome={lead.nome}
       telefone={lead.telefone}
       email={lead.email}
+      meta={metaTopo}
+      actions={actionsNode}
       canEdit={isAdmin}
       editingName={editingName}
       editName={editName}
@@ -481,6 +531,25 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
               </div>
             </PopoverContent>
           </Popover>
+
+          {situacaoTipos.includes(stageTipoAtual) && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-semibold text-foreground/80 hover:bg-muted/60 shrink-0">
+                  {situacaoLabel}
+                  <ChevronDown className="h-2.5 w-2.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto max-w-sm p-3" align="start">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Situação da etapa</p>
+                <LeadFlagControls bare leadId={lead.id} stageTipo={stageTipoAtual} flagStatus={lead.flag_status as Record<string, string> | null} onUpdate={() => leadData.reload()} />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {tempMeta[temperaturaAtual] && (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${tempMeta[temperaturaAtual].cls}`}>{tempMeta[temperaturaAtual].label}</span>
+          )}
 
           {currentStage?.tipo === "venda" && (
             <button
@@ -537,7 +606,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             );
           })()}
 
-          <span className="text-[10px] text-muted-foreground tabular-nums">{daysSinceCreation}d</span>
         </>
       }
     />
@@ -573,17 +641,16 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       )}
 
 
-      {/* Caixa PRÓXIMA AÇÃO — só aparece quando há próximo passo definido */}
-      {(nextTask || lead.proxima_acao) && (
-        <DrawerProximaAcao
-          nextTask={nextTask}
-          proximaAcaoTexto={lead.proxima_acao}
-          pendingCount={pendingTasksList.length}
-          onComplete={(taskId) => { setActiveTab("tarefas"); setAutoCompleteTaskId(taskId); }}
-          onSeeAll={() => setActiveTab("tarefas")}
-          onCreateTask={() => setNextActionOpen(true)}
-        />
-      )}
+      <DrawerAgora
+        leadId={lead.id}
+        nextTask={nextTask as any}
+        proximaAcaoTexto={lead.proxima_acao}
+        pendingCount={pendingTasksList.length}
+        onComplete={(taskId) => { setActiveTab("tarefas"); setAutoCompleteTaskId(taskId); }}
+        onSeeAll={() => setActiveTab("tarefas")}
+        onCreateTask={() => setNextActionOpen(true)}
+        onRegistrar={() => { acaoTrack("registrar_atividade"); setRegistrarOpen(true); }}
+      />
 
       {/* Atenção — explica por que o cliente está vermelho/estagnado (mesma régua do cartão) */}
       {(() => {
@@ -611,54 +678,25 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         );
       })()}
 
-      {/* ⚡ Registrar atividade — ação PRIMÁRIA (Nova Gestão): é o que carimba o toque */}
-      <div className="hidden md:block space-y-1.5">
-      <button
-        type="button"
-        onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar_atividade" }); setRegistrarOpen(true); }}
-        className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-primary text-primary-foreground text-[13.5px] font-bold shadow-sm transition-colors hover:bg-primary/90"
-      >
-        <Zap className="h-4 w-4" strokeWidth={2.4} /> Registrar atividade
-      </button>
+      {/* Negócio — sempre visível, pequeno */}
+      <section className="rounded-xl border border-border bg-card px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Negócio</p>
+          {lead.negocio_id && <button onClick={() => setActiveTab("negocio")} className="text-[12px] font-semibold text-primary hover:underline">Abrir</button>}
+        </div>
+        <p className="mt-1 text-[13px] text-foreground">
+          {lead.negocio_id
+            ? <>Em andamento{lead.valor_estimado ? <> · <span className="font-semibold tabular-nums">{Number(lead.valor_estimado).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}</span></> : null}</>
+            : <span className="text-muted-foreground">Ainda não há proposta</span>}
+        </p>
+        {["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual) && (
+          <div className="mt-2">
+            <LeadFlagControls bare leadId={lead.id} stageTipo={stageTipoAtual} flagStatus={lead.flag_status as Record<string, string> | null} />
+          </div>
+        )}
+      </section>
 
-      {/* Grade de ações (3 numa linha: Ligar · WhatsApp · Anotar) */}
-      <div className="space-y-1.5">
-        <DrawerActionGrid
-          hasPhone={!!lead.telefone}
-          primary={(() => {
-            const tipo = parseNextActionType(nextTask, lead.proxima_acao);
-            if (tipo === "ligar" || tipo === "whatsapp") return tipo;
-            return undefined;
-          })()}
-          onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
-          onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
-          onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
-          onVisita={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "visita" }); setScheduleVisitOpen(true); }}
-          onTarefa={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "tarefa" }); setNextActionOpen(true); }}
-        />
-
-        {/* Botão "Mais ações" full-width — reusa CardOverflowMenu (mesmas 7 ações do menu ··· do card) */}
-        <CardOverflowMenu
-          lead={lead}
-          stages={stages}
-          onMoveLead={(leadId, newStageId, observacao) => {
-            if (stages.find(s => s.id === newStageId)?.tipo === "venda") { setConfirmarVendaOpen(true); return; }
-            onMove(leadId, newStageId, observacao);
-          }}
-          onOpenDetail={() => { /* já está aberto */ }}
-          onRegistrarAtividade={() => setRegistrarOpen(true)}
-          onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
-          trigger={
-            <button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors">
-              <MoreHorizontal className="h-3.5 w-3.5" />
-              Mais ações
-            </button>
-          }
-        />
-      </div>
-      </div>
-
-      {/* Mobile: "Mais ações" (as ações principais ficam na barra fixa embaixo) */}
+      {/* Celular: "Mais ações" (as ações principais ficam na barra fixa embaixo) */}
       <div className="md:hidden">
         <CardOverflowMenu
           lead={lead}
@@ -694,15 +732,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </>
       )}
 
-      {/* ════════════ SITUAÇÃO DA ETAPA ════════════ */}
-      <LeadFlagControls
-        leadId={lead.id}
-        stageTipo={(currentStage as any)?.tipo || ""}
-        flagStatus={lead.flag_status as Record<string, string> | null}
-        onUpdate={(_updated) => {
-          // Trigger refresh via existing reload mechanism
-        }}
-      />
     </>
   );
 
@@ -867,8 +896,11 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         }>
 
         {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
+        <div className="shrink-0 border-b border-border/60 bg-card px-4 md:px-6 pt-3 md:pt-4 pb-3 pr-12 md:pr-14">
+          {headerNode}
+        </div>
         <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DrawerLeadInfo resetKey={lead.id} header={headerNode}>
+        <DrawerLeadInfo resetKey={lead.id}>
           {bodyNode}
         </DrawerLeadInfo>
 
@@ -915,8 +947,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             {/* ===== TAB: INFO (mobile only) — espelha conteúdo da coluna esquerda ===== */}
             {isMobile && (
               <TabsContent value="info" className="mt-0">
-                <div className="px-5 pt-4">{headerNode}</div>
-                <div className="px-5 py-4 space-y-3">{bodyNode}</div>
+                <div className="px-4 py-4 space-y-3">{bodyNode}</div>
               </TabsContent>
             )}
             {/* ===== TAB: TAREFAS (v4 editorial) ===== */}
