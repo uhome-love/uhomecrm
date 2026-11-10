@@ -25,7 +25,6 @@ import {
 
 } from "lucide-react";
 import DrawerLiaConversaTab from "./DrawerLiaConversaTab";
-import ResumoLead from "./ResumoLead";
 
 import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
@@ -675,8 +674,6 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
         </button>
       </div>
 
-      {/* Resumo do lead — barra colapsável (orçamento/interesse/temperatura editáveis) */}
-      <ResumoLead lead={lead} />
 
       {/* Toggle Narrativa | Sistema — o andaime automático mora dentro da própria História */}
       <div className="px-7 pt-4">
@@ -795,7 +792,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                             <p className="text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed">{it.description}</p>
                           </div>
                         ) : (
-                          <div className={`mt-1 rounded-md border border-zinc-200 border-l-2 ${m.accent} bg-zinc-50 px-2.5 py-1.5 text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed`}>{it.description}</div>
+                          <div className={`mt-1 border-l-2 ${m.accent} pl-2.5 py-0.5 text-[12.5px] text-foreground/75 whitespace-pre-wrap leading-relaxed`}>{it.description}</div>
                         )
                       )}
                       <p className="text-[11px] text-zinc-400 mt-1 tabular-nums">{it.autor ? `${it.autor} · ` : ""}{time}</p>
