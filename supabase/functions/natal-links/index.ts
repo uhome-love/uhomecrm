@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     const slug = (perfil?.slug_ref as string | null) ?? null;
     if (!slug && !email) return json({ error: "Seu cadastro não tem e-mail nem link do site." }, 404);
 
-    const token = Deno.env.get("CRM_BRIDGE_TOKEN");
+    const token = Deno.env.get("CRM_BRIDGE_TOKEN")?.trim();
     if (!token) return json({ error: "Ligação com o site não configurada." }, 500);
 
     const payload: Record<string, string> = {};
@@ -35,6 +35,10 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ action: "list_natal_links", payload }),
     });
     const corpo = await r.json().catch(() => ({}));
+    if (r.status === 401) {
+      console.error("natal-links: site recusou CRM_BRIDGE_TOKEN");
+      return json({ error: "O site recusou a ligação com o CRM. Avise o administrador." }, 502);
+    }
     if (!r.ok) return json({ error: corpo?.error ?? "O site não respondeu. Tente de novo." }, r.status);
     return json(corpo);
   } catch (e) {
