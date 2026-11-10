@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Copy, ExternalLink, Eye, MessageCircle, RefreshCw } from "lucide-react";
-import { campanhaEncerrada, dataBR, formatarPreco, linkWhatsApp, type NatalLinksResposta, type NatalProduto } from "./natalLinks";
+import { campanhaEncerrada, dataBR, formatarPreco, linkWhatsApp, urlSite, type NatalLinksResposta, type NatalProduto } from "./natalLinks";
 
 async function buscar(): Promise<NatalLinksResposta> {
   const { data, error } = await supabase.functions.invoke("natal-links", { body: {} });
@@ -43,13 +43,13 @@ function EnviarDialog({ alvo, onClose }: { alvo: { titulo: string; url: string; 
 }
 
 function Botoes({ url, onWhats, onPrevia, compacto }: { url: string; onWhats: () => void; onPrevia?: () => void; compacto?: boolean }) {
-  const s = compacto ? "h-8 px-2.5 text-xs" : "";
+  const s = compacto ? "h-8 w-full px-2 text-xs" : "";
   return (
-    <div className="flex flex-wrap gap-1.5">
-      <Button size="sm" variant="outline" className={s} onClick={() => copiar(url)}><Copy className="mr-1 h-3.5 w-3.5" />{compacto ? "Copiar" : "Copiar link"}</Button>
-      <Button size="sm" className={s} onClick={onWhats}><MessageCircle className="mr-1 h-3.5 w-3.5" />WhatsApp</Button>
-      <Button size="sm" variant="outline" className={s} asChild><a href={url} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-1 h-3.5 w-3.5" />Abrir</a></Button>
-      {onPrevia && <Button size="sm" variant="outline" className={s} onClick={onPrevia}><Eye className="mr-1 h-3.5 w-3.5" />Prévia</Button>}
+    <div className={compacto ? "grid grid-cols-4 gap-1 sm:grid-cols-2 sm:gap-1.5" : "flex flex-wrap gap-1.5"}>
+      <Button size="sm" variant="outline" className={s} onClick={() => copiar(url)}><Copy className="mr-1 h-3.5 w-3.5" /><span className={compacto ? "max-sm:sr-only" : ""}>{compacto ? "Copiar" : "Copiar link"}</span></Button>
+      <Button size="sm" className={s} onClick={onWhats}><MessageCircle className="mr-1 h-3.5 w-3.5 max-sm:mr-0" /><span className={compacto ? "max-sm:sr-only" : ""}>WhatsApp</span></Button>
+      <Button size="sm" variant="outline" className={s} asChild><a href={url} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-1 h-3.5 w-3.5" /><span className={compacto ? "max-sm:sr-only" : ""}>Abrir</span></a></Button>
+      {onPrevia && <Button size="sm" variant="outline" className={s} onClick={onPrevia}><Eye className="mr-1 h-3.5 w-3.5" /><span className={compacto ? "max-sm:sr-only" : ""}>Prévia</span></Button>}
     </div>
   );
 }
@@ -85,8 +85,8 @@ export function MinhasPaginasNatal() {
     <div className="space-y-4">
       <section className="natal-noite natal-borda-ouro flex flex-col gap-4 rounded-2xl p-4 md:flex-row md:items-center md:p-5">
         <div className="flex min-w-0 flex-1 items-center gap-4">
-          {d.corretor.foto_url
-            ? <img src={d.corretor.foto_url} alt={d.corretor.nome} className="h-16 w-16 shrink-0 rounded-full border-2 border-background/70 object-cover" />
+          {urlSite(d.corretor.foto_url)
+            ? <img src={urlSite(d.corretor.foto_url)!} alt={d.corretor.nome} className="h-16 w-16 shrink-0 rounded-full border-2 border-background/70 object-cover" />
             : <div className="h-16 w-16 shrink-0 rounded-full bg-muted" aria-hidden />}
           <div className="min-w-0">
             <p className="text-xs opacity-80">Sua página do {d.campanha.nome}</p>
@@ -107,7 +107,7 @@ export function MinhasPaginasNatal() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {d.produtos.map((p) => (
             <article key={p.slug} className="flex flex-col overflow-hidden rounded-xl border bg-card">
-              {p.capa_url ? <img src={p.capa_url} alt={p.nome} loading="lazy" className="aspect-[4/3] w-full object-cover" /> : <div className="aspect-[4/3] w-full bg-muted" />}
+              {urlSite(p.capa_url) ? <img src={urlSite(p.capa_url)!} alt={p.nome} loading="lazy" className="aspect-[4/3] w-full object-cover" /> : <div className="aspect-[4/3] w-full bg-muted" />}
               <div className="flex flex-1 flex-col gap-1 p-3">
                 <h3 className="font-bold leading-tight">{p.nome}</h3>
                 <p className="text-xs text-muted-foreground">{[p.bairro, p.cidade].filter(Boolean).join(" · ")}{p.entrega ? ` · Entrega ${p.entrega}` : ""}</p>

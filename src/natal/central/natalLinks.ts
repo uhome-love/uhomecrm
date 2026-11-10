@@ -32,3 +32,12 @@ export function dataBR(iso: string): string {
   const [, m, d] = iso.split("-");
   return d && m ? `${d}/${m}` : iso;
 }
+
+// O domínio uhome.com.br recusa (403) as fotos em /__l5e; o endereço do projeto do site entrega.
+const SITE = "https://id-preview--8ba49a95-26f2-42d4-b8e7-98d251f7e32e.lovable.app";
+/** O site manda fotos com caminho relativo (/__l5e/...); completa com o domínio do site. */
+export function urlSite(u?: string | null): string | null {
+  if (!u) return null;
+  if (/^https?:\/\//i.test(u)) return u;
+  return SITE + (u.startsWith("/") ? u : `/${u}`);
+}
