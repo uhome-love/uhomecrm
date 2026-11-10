@@ -585,38 +585,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         />
       )}
 
-      {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
-      {empreendimentoOpen && (
-        <div className="flex items-center gap-2">
-          <EmpreendimentoCombobox
-            value={empreendimentoSearch || lead.empreendimento || ""}
-            onChange={setEmpreendimentoSearch}
-            className="h-8 text-xs flex-1"
-          />
-          <Button
-            size="sm"
-            className="h-8 text-xs px-3"
-            disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
-            onClick={async () => {
-              setSavingEmpreendimento(true);
-              try {
-                await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
-                toast.success("Empreendimento atualizado");
-                setEmpreendimentoOpen(false);
-              } catch { toast.error("Erro ao salvar"); }
-              finally { setSavingEmpreendimento(false); }
-            }}
-          >
-            {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-          </Button>
-          <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
-            Cancelar
-          </Button>
-        </div>
-      )}
-
-
-
       {/* Atenção — explica por que o cliente está vermelho/estagnado (mesma régua do cartão) */}
       {(() => {
         const inp = {
@@ -741,6 +709,38 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   // Dados de consulta (origem, anúncio, formulário) — aba "Dados do lead".
   const dadosNode = (
     <div className="px-4 md:px-6 py-4 space-y-3 max-w-3xl">
+
+      {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
+      {empreendimentoOpen && (
+        <div className="flex items-center gap-2">
+          <EmpreendimentoCombobox
+            value={empreendimentoSearch || lead.empreendimento || ""}
+            onChange={setEmpreendimentoSearch}
+            className="h-8 text-xs flex-1"
+          />
+          <Button
+            size="sm"
+            className="h-8 text-xs px-3"
+            disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
+            onClick={async () => {
+              setSavingEmpreendimento(true);
+              try {
+                await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
+                toast.success("Empreendimento atualizado");
+                setEmpreendimentoOpen(false);
+              } catch { toast.error("Erro ao salvar"); }
+              finally { setSavingEmpreendimento(false); }
+            }}
+          >
+            {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
+            Cancelar
+          </Button>
+        </div>
+      )}
+
+
 
       {/* Caixa Empreendimento polida (header + 3 métricas) */}
       <DrawerEmpreendimento
