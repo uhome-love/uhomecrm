@@ -1,0 +1,1 @@
+- Lead drawer layout: full-width DrawerTopo (identity, stage+situação popover, contacts, compact actions) above a left "Agora" column (DrawerAgora: next visit, next task, single Registrar) and right tabs; editable ResumoLead lives in the Dados tab. Why: one primary action and no duplicated info between columns.

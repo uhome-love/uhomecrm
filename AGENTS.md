@@ -40,4 +40,3 @@
 - Keep `homi_consulta` CLOSED with its hash table empty; never register a hash or reopen it without Lucas's new explicit approval. Why: the owner change failed and function calls/http/pg_net bypass the table check; any future external consumer uses direct read-only homi_ro login.
 - HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
 <!-- LOVABLE:END -->
-- Lead drawer layout: full-width DrawerTopo (identity, stage+situação popover, contacts, compact actions) above a left "Agora" column (DrawerAgora: next visit, next task, single Registrar) and right tabs; editable ResumoLead lives in the Dados tab. Why: one primary action and no duplicated info between columns.
