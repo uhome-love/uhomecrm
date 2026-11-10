@@ -40,5 +40,5 @@
 - Keep `homi_consulta` CLOSED with its hash table empty; never register a hash or reopen it without Lucas's new explicit approval. Why: the owner change failed and function calls/http/pg_net bypass the table check; any future external consumer uses direct read-only homi_ro login.
 - HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
 <!-- LOVABLE:END -->
-- Lia automation endpoints (`lia-followup`, `lia-reengajar-arm`, `lia-reengajar-dispatch`, `lia-chat`) accept only service role/cron secret or admin/diretor JWT via `requireRealUser`; internal callers send the service-role bearer and pg_cron jobs read it from vault. Why: public endpoints must never trigger sends or paid AI.
-- Public /vaga candidate updates require the HMAC token returned on creation (`_shared/rhToken.ts`); public lead intakes keep log-only secret checks until the provider is configured, never dropping leads. Why: no tampering with others' records while lead entry stays safe.
+- Lia endpoints accept only service role/cron or admin/diretor JWT (`requireRealUser`). Why: no public sends or paid AI.
+- /vaga updates need the creation HMAC token (`_shared/rhToken.ts`); intake secrets stay log-only until configured. Why: no tampering, no lost leads.
