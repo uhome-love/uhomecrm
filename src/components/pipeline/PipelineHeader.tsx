@@ -374,7 +374,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   {focusLeadsCount > 0 && <span className="bg-white/20 rounded-md px-1.5 py-px text-[10px] font-bold">{focusLeadsCount}</span>}
                 </button>
                 {canAdd && (
-                  <button onClick={() => setAddOpen(true)} className="whitespace-nowrap inline-flex items-center gap-1.5 justify-center h-10 w-10 sm:w-auto sm:h-9 sm:px-3.5 bg-primary hover:bg-primary-600 text-primary-foreground rounded-full sm:rounded-lg font-semibold text-xs cursor-pointer">
+                  <button type="button" aria-label="Novo lead" onClick={() => setAddOpen(true)} className="whitespace-nowrap inline-flex items-center gap-1.5 justify-center h-10 w-10 sm:w-auto sm:h-9 sm:px-3.5 bg-primary hover:bg-primary-600 text-primary-foreground rounded-full sm:rounded-lg font-semibold text-xs cursor-pointer">
                     <Plus className="h-5 w-5 sm:h-[13px] sm:w-[13px]" strokeWidth={2} /> <span className="hidden sm:inline">Novo Lead</span>
                   </button>
                 )}
