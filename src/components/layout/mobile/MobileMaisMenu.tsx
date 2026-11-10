@@ -66,8 +66,8 @@ export default function MobileMaisMenu({ groups, activePath, userName, userRole,
       </button>
 
       {groups.map((g) => (
-        <section key={g.title} className="space-y-2">
-          <h3 className="px-4 text-[13px] font-medium uppercase tracking-wide text-muted-foreground">{g.title}</h3>
+        <section key={g.title || "topo"} className="space-y-2">
+          {g.title && <h3 className="px-4 text-[13px] font-medium uppercase tracking-wide text-muted-foreground">{g.title}</h3>}
           <Bloco>
             {g.items.map((i) => (
               <Linha key={i.path} icon={i.icon} label={i.label} badge={i.badge} ativo={activePath === i.path} onClick={() => go(i.path)} />

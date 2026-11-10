@@ -318,7 +318,7 @@ export default function Sidebar({
           <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
           <div className="h-full overflow-y-auto pt-2" style={{ scrollbarWidth: "none" }}>
             <MobileMaisMenu
-              groups={groups}
+              groups={natalItem ? [{ title: "Campanha", items: [natalItem] }, ...groups] : groups}
               activePath={location.pathname}
               userName={userName}
               userRole={userRole}
