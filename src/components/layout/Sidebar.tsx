@@ -22,314 +22,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import MobileMaisMenu from "@/components/layout/mobile/MobileMaisMenu";
 
-// ─── TYPES ───────────────────────────────────────────────────────────────────
-
-type NavItem = {
-  label: string;
-  path: string;
-  icon: React.ReactNode;
-  badge?: string | number;
-};
-
-type NavGroup = {
-  title: string;
-  items: NavItem[];
-};
-
-type UserRole = "admin" | "diretor" | "gestor" | "corretor" | "backoffice" | "rh";
-
-// ─── CAMPAIGN CONFIG ─────────────────────────────────────────────────────────
+import { NAV_BY_ROLE, GRUPO_TOPO, GRUPOS_RECOLHIDOS, type NavGroup, type UserRole } from "@/components/layout/navConfig";
+import { useMenuContadores } from "@/hooks/useMenuContadores";
 
 const CAMPAIGNS: { label: string; path: string; color: string }[] = [];
-
-// ─── NAV CONFIG POR PERFIL ───────────────────────────────────────────────────
-
-const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
-
-  // ── ADMIN / CEO ────────────────────────────────────────────────────────────
-  admin: [
-    {
-      title: "Início",
-      items: [
-        { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
-        { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
-        { label: "Relatórios",         path: "/raio-x",            icon: <BarChart3    size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Comercial",
-      items: [
-        { label: "Roleta",             path: "/roleta",            icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "LIA · Uhome",        path: "/admin/lia-hub",     icon: <MessageSquare size={15} strokeWidth={1.5} /> },
-        { label: "Pipeline",           path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Visitas",            path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Vendas",             path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
-        { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
-        { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Gestão Financeira",
-      items: [{ label: "Financeiro", path: "/financeiro", icon: <Wallet size={15} strokeWidth={1.5} /> }],
-    },
-    {
-      title: "Time",
-      items: [
-        { label: "Usuários",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
-        { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
-        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Recrutamento",       path: "/recrutamento/acompanhamento", icon: <UsersRound size={15} strokeWidth={1.5} /> },
-        { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Marketing",
-      items: [
-        { label: "Central de Marketing", path: "/dados-anuncios",  icon: <BarChart2    size={15} strokeWidth={1.5} /> },
-        { label: "Reengajamento",      path: "/central-nutricao",  icon: <RefreshCw    size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Ferramentas",
-      items: [
-        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
-        { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
-        { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
-        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
-        { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
-        { label: "Simulador de financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
-        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
-        { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
-      ],
-    },
-  ],
-
-  // ── DIRETOR / DIRETORA COMERCIAL ───────────────────────────────────────────
-  // = CEO sem Roleta, Marketing, Reengajamento, HOMI CEO, Base HOMI, Integrações.
-  diretor: [
-    {
-      title: "Principal",
-      items: [
-        { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
-        { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Leads",
-      items: [
-        { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
-        { label: "Base única de leads", path: "/base-leads",       icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
-        { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
-        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Negócios",
-      items: [
-        { label: "Vendas",             path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
-        { label: "Financeiro",         path: "/financeiro",       icon: <Wallet size={15} strokeWidth={1.5} /> },
-        { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
-        { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Time",
-      items: [
-        { label: "Usuários",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
-        { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
-        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
-
-        { label: "Relatórios",         path: "/raio-x",         icon: <BarChart3   size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "RH",
-      items: [
-        { label: "Recrutamento",       path: "/recrutamento/acompanhamento", icon: <UsersRound size={15} strokeWidth={1.5} /> },
-        { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Marketing",
-      items: [
-        { label: "Central de Marketing", path: "/dados-anuncios",  icon: <BarChart2    size={15} strokeWidth={1.5} /> },
-      ],
-    },
-
-    {
-      title: "Ferramentas",
-      items: [
-        { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
-        { label: "HOMI Gerente",       path: "/homi-gerente",      icon: <Bot          size={15} strokeWidth={1.5} /> },
-        { label: "LIA · Uhome",        path: "/admin/lia-hub",     icon: <MessageSquare size={15} strokeWidth={1.5} /> },
-        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
-        { label: "Templates",          path: "/templates-comunicacao", icon: <ClipboardList size={15} strokeWidth={1.5} /> },
-        { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
-      ],
-    },
-  ],
-
-
-  // ── GESTOR ────────────────────────────────────────────────────────────────
-  gestor: [
-    {
-      title: "Principal",
-      items: [
-        { label: "Dashboard",          path: "/gerente/cockpit", icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Minha Agenda",       path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
-        { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Leads",
-      items: [
-        { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
-        { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
-        { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Negócios",
-      items: [
-        { label: "Vendas",             path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
-        { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
-        { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Time",
-      items: [
-        { label: "Meu time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
-        { label: "Meus Candidatos",    path: "/gerente/candidatos", icon: <Users       size={15} strokeWidth={1.5} /> },
-        { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
-        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Relatórios",         path: "/raio-x",         icon: <BarChart3   size={15} strokeWidth={1.5} /> },
-
-      ],
-    },
-    {
-      title: "Ferramentas",
-      items: [
-        { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
-        { label: "HOMI Gerente",       path: "/homi-gerente",      icon: <Bot          size={15} strokeWidth={1.5} /> },
-        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
-        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
-        { label: "Templates",          path: "/templates-comunicacao", icon: <ClipboardList size={15} strokeWidth={1.5} /> },
-        { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
-      ],
-    },
-  ],
-
-  corretor: [
-    {
-      title: "Principal",
-      items: [
-        { label: "Minha rotina",       path: "/corretor",          icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Aceite de leads",    path: "/aceite",            icon: <UserCheck    size={15} strokeWidth={1.5} /> },
-        // WhatsApp Inbox standalone descontinuado pra role 'corretor' em 24/05/2026
-        // Razão: baixa adesão (18 page-views/7d, mediana 3.1s)
-        // WhatsApp agora vive no drawer do lead (grid 2x2 + botão direto)
-        // Rota /whatsapp continua ativa pra admin/gestor e deeplinks
-        // Migration completa (deletar página + componentes) fica pra Quality Sprint
-      ],
-    },
-    {
-      title: "Leads & Visitas",
-      items: [
-        { label: "Notificações",       path: "/notificacoes",      icon: <BellRing     size={15} strokeWidth={1.5} /> },
-        { label: "Agenda", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
-        { label: "Tarefas", path: "/tarefas", icon: <CheckSquare size={15} strokeWidth={1.5} /> },
-        { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Oferta ativa",       path: "/corretor/call",     icon: <Phone        size={15} strokeWidth={1.5} /> },
-        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Negócios",
-      items: [
-        { label: "Vendas",             path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
-        
-        { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Crescimento",
-      items: [
-        { label: "Meus resultados",    path: "/raio-x",         icon: <BarChart2    size={15} strokeWidth={1.5} /> },
-
-        { label: "Falar com HOMI",     path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
-        { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Ferramentas",
-      items: [
-        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
-        { label: "Minhas vitrines",    path: "/minhas-vitrines",   icon: <Building2    size={15} strokeWidth={1.5} /> },
-        
-      ],
-    },
-  ],
-
-  // ── BACKOFFICE ────────────────────────────────────────────────────────────
-  backoffice: [
-    {
-      title: "Principal",
-      items: [
-        { label: "Dashboard",          path: "/backoffice",                       icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Tarefas",            path: "/backoffice/tarefas",               icon: <ListTodo     size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Financeiro",
-      items: [
-        { label: "Pagadorias",         path: "/backoffice/pagadorias",            icon: <Wallet       size={15} strokeWidth={1.5} /> },
-        { label: "Solicitações",       path: "/backoffice/solicitacoes-pagadoria",icon: <ClipboardList size={15} strokeWidth={1.5} /> },
-        { label: "Comissões",          path: "/backoffice/comissoes",             icon: <PieChart     size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Operações",
-      items: [
-        { label: "Cadastros",          path: "/backoffice/cadastros",             icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "HOMI Ana",           path: "/backoffice/homi-ana",             icon: <Bot          size={15} strokeWidth={1.5} /> },
-      ],
-    },
-  ],
-
-  // ── RH ────────────────────────────────────────────────────────────────────
-  rh: [
-    {
-      title: "Principal",
-      items: [
-        { label: "Dashboard RH",       path: "/rh",                icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Recrutamento",
-      items: [
-        { label: "Candidatos",         path: "/rh/recrutamento",   icon: <Users        size={15} strokeWidth={1.5} /> },
-        
-      ],
-    },
-    {
-      title: "Gestão",
-      items: [
-        { label: "Conversas 1:1",      path: "/rh/conversas",      icon: <MessageSquare size={15} strokeWidth={1.5} /> },
-        { label: "Sala de reunião",    path: "/rh/sala-reuniao",   icon: <Video        size={15} strokeWidth={1.5} /> },
-      ],
-    },
-  ],
-};
 
 // ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 
@@ -417,22 +113,38 @@ export default function Sidebar({
     ? [baseGroups[0], MODO_CORRETOR_GROUP, ...baseGroups.slice(1)]
     : baseGroups;
   const comNatal = withNatalMenu(rawGroups, role);
+  const natalItem = comNatal.flatMap(g => g.items).find(i => i.path === "/campanha-natal");
+  const { data: contadores } = useMenuContadores(userId);
+  const contador = (path: string) => {
+    const n = path === "/tarefas" ? contadores?.tarefas : path === "/agenda-visitas" ? contadores?.visitas : undefined;
+    return n ? (n > 99 ? "99+" : n) : undefined;
+  };
   const groups = comNatal.map(g => ({
     ...g,
-    items: g.items.map(item =>
+    items: g.items.filter(i => i.path !== "/campanha-natal").map(item =>
       item.path === "/whatsapp" && !isManagerRole && whatsappUnread > 0
         ? { ...item, badge: whatsappUnread > 9 ? "9+" : whatsappUnread }
-        : item
+        : contador(item.path) !== undefined ? { ...item, badge: contador(item.path) } : item
     ),
   }));
   const isActive  = (path: string) => location.pathname === path;
   const isMobile  = useIsMobile();
 
   // Track which groups are collapsed (by title). "Principal" always open.
-  const NON_COLLAPSIBLE = ["Principal", "Início"];
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({ Ferramentas: true });
+  const NON_COLLAPSIBLE = [GRUPO_TOPO, "Principal"];
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const salvo = localStorage.getItem("menu_grupos_recolhidos");
+      if (salvo) return JSON.parse(salvo) as Record<string, boolean>;
+    } catch { /* ignora */ }
+    return Object.fromEntries(GRUPOS_RECOLHIDOS.map(t => [t, true]));
+  });
   const toggleGroup = (title: string) => {
-    setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
+    setCollapsedGroups(prev => {
+      const next = { ...prev, [title]: !prev[title] };
+      try { localStorage.setItem("menu_grupos_recolhidos", JSON.stringify(next)); } catch { /* ignora */ }
+      return next;
+    });
   };
 
   // Integration with shadcn SidebarProvider for collapse
@@ -462,6 +174,18 @@ export default function Sidebar({
           <UhomeLogo size="md" />
         </div>
       </div>
+      {natalItem && (
+        <div className="px-3 mb-2">
+          <button
+            onClick={() => { go(natalItem.path); if (isMobile) setOpenMobile(false); }}
+            className={cn("natal-chip-ouro w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-left text-[12.5px] font-semibold transition-opacity hover:opacity-90",
+              isActive(natalItem.path) && "ring-2 ring-primary/30")}
+          >
+            <span className="flex-shrink-0">{natalItem.icon}</span>
+            <span className="flex-1 truncate">{natalItem.label}</span>
+          </button>
+        </div>
+      )}
       {showCampaigns && CAMPAIGNS.length > 0 && (
         <div className="px-3 mb-2">
           <button
@@ -505,14 +229,13 @@ export default function Sidebar({
 
         return (
           <div key={group.title}>
-            {gi > 0 && <div className={cn("h-px mx-3 my-[4px]", div)} />}
-            <div className="px-3 pt-1.5 pb-0.5">
+            <div className={cn("px-3", gi > 0 ? "pt-3" : "pt-0.5")}>
               {canCollapse ? (
                 <button
                   onClick={() => toggleGroup(group.title)}
                   className="w-full flex items-center justify-between px-2 mb-[3px] group/label"
                 >
-                  <p className="text-[10.5px] font-semibold tracking-[0.08em] uppercase shell-nav-label">
+                  <p className="text-[10px] font-semibold tracking-[0.1em] uppercase shell-nav-label opacity-80">
                     {group.title}
                   </p>
                   <ChevronRight
@@ -523,11 +246,11 @@ export default function Sidebar({
                     )}
                   />
                 </button>
-              ) : (
-                <p className="text-[10.5px] font-semibold tracking-[0.08em] uppercase px-2 mb-[3px] shell-nav-label">
+              ) : group.title ? (
+                <p className="text-[10px] font-semibold tracking-[0.1em] uppercase px-2 mb-1 shell-nav-label opacity-80">
                   {group.title}
                 </p>
-              )}
+              ) : null}
               {(!isGroupCollapsed || hasActiveItem) && group.items.map(item => {
                 const active = isActive(item.path);
                 return (
@@ -535,11 +258,12 @@ export default function Sidebar({
                     key={item.path}
                     onClick={() => { go(item.path); if (isMobile) setOpenMobile(false); }}
                     className={cn(
-                      "group/item w-full flex items-center gap-[10px] px-2.5 h-8 rounded-[10px] mb-px",
-                      "text-[13.5px] tracking-[-0.15px] transition-all duration-150 text-left",
+                      "group/item relative w-full flex items-center gap-[10px] px-2.5 h-[30px] rounded-[8px] mb-px",
+                      "text-[13px] tracking-[-0.1px] transition-colors duration-150 text-left",
                       active ? itemOn : itemBase
                     )}
                   >
+                    {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-primary" />}
                     <span className={cn("w-[18px] flex items-center justify-center flex-shrink-0",
                       active ? iconOn : iconDef)}>
                       {item.icon}
@@ -553,7 +277,7 @@ export default function Sidebar({
                           ? isManagerRole
                             ? "bg-warning text-warning-foreground"
                             : "bg-destructive text-destructive-foreground"
-                          : "bg-muted text-muted-foreground")}>
+                          : "bg-primary text-primary-foreground min-w-[18px] text-center")}>
                         {item.path === "/whatsapp" && isManagerRole ? `⚠️ ${item.badge}` : item.badge}
                       </span>
                     )}
@@ -623,8 +347,9 @@ export default function Sidebar({
         </div>
 
         {/* Nav icons only */}
-        {groups.map((group) =>
-          group.items.map(item => {
+        {groups.map((group, gi) => [
+          gi > 0 ? <div key={`sep-${group.title}`} className={cn("h-px w-8 mx-auto my-1.5", div)} /> : null,
+          ...group.items.map(item => {
             const active = isActive(item.path);
             return (
               <button
@@ -636,13 +361,14 @@ export default function Sidebar({
                   active ? itemOn : itemBase
                 )}
               >
-                <span className={cn("flex items-center justify-center", active ? iconOn : iconDef)}>
+                <span className={cn("relative flex items-center justify-center", active ? iconOn : iconDef)}>
                   {item.icon}
+                  {item.badge !== undefined && <span className="absolute -top-1 -right-1.5 h-2 w-2 rounded-full bg-primary" />}
                 </span>
               </button>
             );
-          })
-        )}
+          }),
+        ])}
 
         {/* Footer avatar */}
         <div className={cn("mt-auto py-3 flex flex-col items-center gap-2", foot)}>
