@@ -1,3 +1,5 @@
+import RegistroRapido, { type TipoRegistro } from "./drawer/RegistroRapido";
+import { buracosSemRegistro, direcaoEtapa, ehResultadoDeVisita, iconeDoMarco, tituloMudancaEtapa } from "@/lib/timelineNarrativa";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,9 +23,7 @@ import {
 import {
   Plus, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
-  Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat
-
-} from "lucide-react";
+  Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat, AlertTriangle } from "lucide-react";
 import DrawerLiaConversaTab from "./DrawerLiaConversaTab";
 
 import { parseDateTimeSafe } from "@/lib/utils";
@@ -73,6 +73,8 @@ interface Props {
   onAddTarefa: (data: Partial<PipelineTarefa>) => Promise<void | boolean>;
   onReload: () => void;
   onNextAction?: () => void;
+  /** Registro rápido do topo: abre o formulário de registro que já existe, preenchido. */
+  onRegistrar?: (d: { tipo: TipoRegistro | null; texto: string }) => void;
 }
 
 const ATIVIDADE_TIPOS: Record<string, { label: string; icon: any; color?: string }> = {
@@ -102,6 +104,8 @@ interface TimelineItem {
   badge?: { label: string; tone: "success" | "danger" | "neutral" | "warning" };
   sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "anotacao" | "system";
   sourceId?: string;
+  /** Mudança de etapa: dados separados para "Voltou/Avançou para X". */
+  etapa?: { deId?: string | null; paraId?: string | null; de?: string; para?: string; observacao?: string | null };
 }
 
 function firstName(nome?: string | null): string | undefined {
@@ -225,6 +229,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       autor: nome(h.movido_por),
       sourceType: "historico",
       sourceId: h.id,
+      etapa: { deId: h.stage_anterior_id, paraId: h.stage_novo_id, de: from?.nome, para: to?.nome, observacao: h.observacao },
     });
   }
 
@@ -460,23 +465,7 @@ function categoriaDe(item: TimelineItem): "narrativa" | "sistema" {
   return "narrativa";
 }
 
-// Estilo de MARCO da Narrativa (emoji + cores do círculo + acento da citação),
-// no padrão visual do mockup da História.
-function marcoMeta(item: TimelineItem): { emoji: string; ring: string; accent: string; feedback?: boolean } {
-  const t = (item.title || "").toLowerCase();
-  if (item.sourceType === "anotacao" || /^📝|nota|anota/.test(t)) return { emoji: "📝", ring: "bg-amber-50 text-amber-600", accent: "border-l-amber-400" };
-  if (/gerado|entrou|lead entrou|entrada/.test(t)) return { emoji: "🎯", ring: "bg-violet-50 text-violet-600", accent: "border-l-violet-400" };
-  if (/movido|etapa|qualifica/.test(t)) return { emoji: "🔀", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
-  if (/ligaç|liga[rç]|telefon|📞/.test(t)) return { emoji: "📞", ring: "bg-red-50 text-red-600", accent: "border-l-red-400" };
-  if (/whats|mensagem|💬/.test(t)) return { emoji: "💬", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
-  if (/e-mail|email|✉/.test(t)) return { emoji: "✉️", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
-  if (/visita|tour|comparec/.test(t)) return { emoji: "📍", ring: "bg-sky-50 text-sky-600", accent: "border-l-sky-400", feedback: true };
-  if (/proposta|neg[óo]cio|contrato|venda|ganho/.test(t)) return { emoji: "💼", ring: "bg-emerald-50 text-emerald-600", accent: "border-l-emerald-400" };
-  if (/follow/.test(t)) return { emoji: "🔁", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
-  return { emoji: "•", ring: "bg-zinc-100 text-zinc-500", accent: "border-l-zinc-300" };
-}
-
-export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, visitaEventos = [], temLiaConversa = false, loading = false, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction }: Props) {
+export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, visitaEventos = [], temLiaConversa = false, loading = false, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction, onRegistrar }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("ligacao");
   const [resultado, setResultado] = useState("neutro");
@@ -547,21 +536,24 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
 
 
   // Narrativa (história) × Sistema (andaime). Começa na Narrativa.
-  const [histView, setHistView] = useState<"narrativa" | "sistema" | "lia">("narrativa");
+  const [histView, setHistView] = useState<"narrativa" | "tudo" | "lia">("narrativa");
   // A aba "Conversa Lia" aparece quando a origem é LIA OU quando existe uma conversa da LIA
   // linkada a este lead (checagem vem no lote único do lead).
   const isLia = String(lead.origem ?? "").toUpperCase() === "LIA" || !!temLiaConversa;
 
   const narrativaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "narrativa"), [timeline]);
-  const sistemaItems = useMemo(() => timeline.filter((it) => categoriaDe(it) === "sistema"), [timeline]);
-  const shownItems = histView === "narrativa" ? narrativaItems : sistemaItems;
+  const shownItems = histView === "narrativa" ? narrativaItems : timeline;
   // id ÚNICO por posição (o índice evita colisão entre itens sem sourceId no mesmo horário).
   const idDe = (it: TimelineItem, i: number) => `${it.sourceType ?? "x"}-${it.sourceId ?? "noid"}-${i}`;
-  const narrativaById = useMemo(() => {
-    const m = new Map<string, TimelineItem>();
-    narrativaItems.forEach((it, i) => m.set(idDe(it, i), it));
+  const shownById = useMemo(() => {
+    const m = new Map<string, { it: TimelineItem; i: number }>();
+    shownItems.forEach((it, i) => m.set(idDe(it, i), { it, i }));
     return m;
-  }, [narrativaItems]);
+  }, [shownItems]);
+  const buracos = useMemo(
+    () => (histView === "narrativa" ? buracosSemRegistro(narrativaItems.slice(0, 40)) : new Map<number, number>()),
+    [histView, narrativaItems],
+  );
 
   const totalEventos = timeline.length;
   const totalNotas = anotacoes?.length ?? 0;
@@ -656,12 +648,21 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
 
   return (
     <div className="pb-8">
-      {/* Filtro + ação discreta (a aba já diz "Linha do tempo") */}
+      {onRegistrar && (
+        <div className="px-5 md:px-7 pt-4">
+          <RegistroRapido
+            leadPrimeiroNome={firstName(lead.nome)}
+            onRegistrar={onRegistrar}
+            ajuda="Abre o registro de sempre, já preenchido."
+          />
+        </div>
+      )}
+      {/* Filtro (a aba já diz "Linha do tempo") */}
       <div className="px-5 md:px-7 pt-4 flex items-center justify-between gap-3">
         <div className="inline-flex rounded-lg bg-muted p-0.5">
           {([
-            ["narrativa", "Narrativa", narrativaItems.length],
-            ["sistema", "Sistema", sistemaItems.length],
+            ["narrativa", "Atendimento", narrativaItems.length],
+            ["tudo", "Tudo", timeline.length],
           ] as const).map(([v, label, n]) => (
             <button
               key={v}
@@ -681,12 +682,14 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             </button>
           )}
         </div>
-        <button
-          onClick={() => setNovoHistoricoOpen(true)}
-          className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary hover:underline"
-        >
-          <Plus className="h-3.5 w-3.5" /> Anotação
-        </button>
+        {!onRegistrar && (
+          <button
+            onClick={() => setNovoHistoricoOpen(true)}
+            className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary hover:underline"
+          >
+            <Plus className="h-3.5 w-3.5" /> Anotação
+          </button>
+        )}
       </div>
 
       {/* Timeline agrupada por dia (Drawer Wide v4) */}
@@ -749,50 +752,79 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               ) : null,
             };
           })}
-          renderItem={histView === "narrativa" ? (dItem) => {
-            const it = narrativaById.get(dItem.id);
-            if (!it) return null;
-            const m = marcoMeta(it);
+          renderItem={(dItem) => {
+            const found = shownById.get(dItem.id);
+            if (!found) return null;
+            const { it, i } = found;
             const time = formatBRT(it.date, "HH:mm");
-            const isVisitaFeedback = m.feedback && !!it.description;
+            const ehEtapa = it.sourceType === "historico" && !!it.etapa?.para && it.etapa.deId !== it.etapa.paraId;
+            const direcao = ehEtapa ? direcaoEtapa(stages, it.etapa?.deId, it.etapa?.paraId) : undefined;
+            const Icone = iconeDoMarco(it, direcao);
+            const titulo = ehEtapa ? tituloMudancaEtapa(direcao!, it.etapa?.para) : it.title.replace(/^[^\p{L}\p{N}]+/u, "");
+            const resultadoVisita = !ehEtapa && ehResultadoDeVisita(it.title) && !!it.description;
+            const gap = buracos.get(i);
             return (
-              <div key={dItem.id} className="relative flex gap-3 group/marco">
-                <div className={`relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-[15px] ${m.ring}`}>{m.emoji}</div>
-                <div className="flex-1 min-w-0 pt-0.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-[13.5px] font-semibold text-foreground leading-snug">{it.title.replace(/^[^\p{L}\p{N}]+/u, "")}</p>
-                        {it.badge && (
-                          <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold ${it.badge.tone === "success" ? "bg-emerald-50 text-emerald-700" : it.badge.tone === "danger" ? "bg-red-50 text-red-700" : it.badge.tone === "warning" ? "bg-amber-50 text-amber-700" : "bg-zinc-100 text-zinc-600"}`}>{it.badge.label}</span>
-                        )}
-                      </div>
-                      {it.description && (
-                        isVisitaFeedback ? (
-                          <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50/70 px-2.5 py-1.5">
-                            <span className="block text-[9.5px] font-bold uppercase tracking-wide text-amber-700/80 mb-0.5">Feedback da visita</span>
-                            <p className="text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed">{it.description}</p>
+              <div key={dItem.id}>
+                <div className="relative flex gap-3 group/marco">
+                  <div className={`relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${direcao === "voltou" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    <Icone className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <p className="text-[13.5px] font-semibold text-foreground leading-snug">{titulo}</p>
+                          <span className="text-[11.5px] text-muted-foreground tabular-nums">{it.autor ? `${it.autor} · ` : ""}{time}</span>
+                          {it.badge && (
+                            <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold ${it.badge.tone === "success" ? "bg-success-500/15 text-success-700 dark:text-success-500" : it.badge.tone === "danger" ? "bg-danger-500/10 text-danger-700 dark:text-danger-500" : it.badge.tone === "warning" ? "bg-warning-500/15 text-warning-700 dark:text-warning-500" : "bg-muted text-muted-foreground"}`}>{it.badge.label}</span>
+                          )}
+                        </div>
+                        {ehEtapa ? (
+                          (it.etapa?.observacao || it.etapa?.de) && (
+                            <div className="mt-1.5 max-w-[72ch] rounded-lg bg-muted px-3 py-2">
+                              {it.etapa?.observacao && <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">{it.etapa.observacao}</p>}
+                              {it.etapa?.de && (
+                                <span className={`${it.etapa?.observacao ? "mt-1.5 " : ""}inline-flex h-5 items-center rounded-full border border-border bg-card px-2 text-[11px] font-medium text-muted-foreground`}>
+                                  De {it.etapa.de} para {it.etapa.para}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        ) : resultadoVisita ? (
+                          <div className="mt-1.5 max-w-[72ch] rounded-lg bg-muted px-3 py-2">
+                            <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">Resultado da visita</span>
+                            <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">{it.description}</p>
                           </div>
-                        ) : (
+                        ) : it.description ? (
                           <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{it.description}</p>
-                        )
+                        ) : null}
+                      </div>
+                      {it.sourceId && it.sourceType !== "system" && (
+                        <button
+                          onClick={() => setDeleteTarget(it)}
+                          title="Remover registro"
+                          className="shrink-0 opacity-0 group-hover/marco:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       )}
-                      <p className="text-[11.5px] text-muted-foreground mt-1.5 tabular-nums">{it.autor ? `${it.autor} · ` : ""}{time}</p>
                     </div>
-                    {it.sourceId && (
-                      <button
-                        onClick={() => setDeleteTarget(it)}
-                        title="Remover registro"
-                        className="shrink-0 opacity-0 group-hover/marco:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
                   </div>
                 </div>
+                {gap != null && (
+                  <div className="relative mt-3 flex gap-3">
+                    <div className="relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 bg-warning-500/15 text-warning-700 dark:text-warning-500">
+                      <AlertTriangle className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 rounded-lg border border-dashed border-warning-500/60 bg-warning-500/10 px-3 py-2">
+                      <p className="text-[13px] font-semibold text-warning-700 dark:text-warning-500">{gap} dias sem registro</p>
+                      <p className="text-[12px] text-muted-foreground">Nenhum contato registrado nesse período.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             );
-          } : undefined}
+          }}
         />
       </div>
       )}

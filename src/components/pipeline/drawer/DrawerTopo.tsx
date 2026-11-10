@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getInitials } from "@/lib/leadHelpers";
 import type { ReactNode } from "react";
+import type { LocalTelefone } from "@/lib/dddUf";
 
 interface Props {
   nome: string;
@@ -31,6 +32,10 @@ interface Props {
   cancelEditPhone: () => void;
   savePhone: () => void;
   saving?: boolean;
+  /** Chip "DDD 44 · Paraná" quando o telefone é de fora do RS. */
+  localTelefone?: LocalTelefone | null;
+  /** Faixa abaixo dos contatos (ex.: Caminho do lead). */
+  faixa?: ReactNode;
 }
 
 function copiar(valor: string, rotulo: string) {
@@ -105,6 +110,11 @@ export default function DrawerTopo(p: Props) {
                     <Pencil className="h-3 w-3" />
                   </button>
                 )}
+                {p.localTelefone && (
+                  <span className="ml-1 inline-flex h-5 items-center rounded-md bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+                    DDD {p.localTelefone.ddd} · {p.localTelefone.nome}
+                  </span>
+                )}
               </span>
             ) : p.canEdit ? (
               <button onClick={p.startEditPhone} className="text-muted-foreground hover:text-foreground">Adicionar telefone</button>
@@ -120,6 +130,7 @@ export default function DrawerTopo(p: Props) {
               </span>
             )}
           </div>
+          {p.faixa && <div className="mt-3 hidden md:block">{p.faixa}</div>}
         </div>
       </div>
       {p.actions && <div className="hidden md:flex items-center gap-1.5 shrink-0">{p.actions}</div>}
