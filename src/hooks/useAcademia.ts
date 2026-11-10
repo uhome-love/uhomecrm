@@ -219,10 +219,11 @@ export function useAcademia() {
     if (completedCount >= trilhaAulas.length && !certificados.some((c: any) => c.trilha_id === trilhaId)) {
       const trilha = trilhas.find(t => t.id === trilhaId);
       const codigo = `UHOME-${Date.now().toString(36).toUpperCase()}`;
-      await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
+      const { error: erroCert } = await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
       // Nada de "+100 XP bônus": esse bônus nunca foi creditado e o corretor
       // conferia o placar e não batia.
-      toast(`🏆 Nível concluído! ${trilha?.titulo || ""}`, { description: "Certificado emitido.", duration: 6000 });
+      if (erroCert) toast.error("Nível concluído, mas o certificado não foi gerado. Tente de novo.");
+      else toast(`🏆 Nível concluído! ${trilha?.titulo || ""}`, { description: "Certificado emitido.", duration: 6000 });
     }
 
     await queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });
