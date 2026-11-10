@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Plus, Zap } from "lucide-react";
+import { CalendarDays, Clock, Plus, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateBRTSafe } from "@/lib/utils";
 import { parseNextActionType } from "./DrawerProximaAcao";
@@ -23,6 +23,7 @@ interface Props {
   onSeeAll: () => void;
   onCreateTask: () => void;
   onRegistrar: () => void;
+  saudeLinha?: { texto: string; critico: boolean } | null;
 }
 
 const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -40,7 +41,7 @@ function hojeBRT(): string {
   return new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-export default function DrawerAgora({ leadId, leadNome, nextTask, proximaAcaoTexto, pendingCount, onComplete, onSeeAll, onCreateTask, onRegistrar }: Props) {
+export default function DrawerAgora({ leadId, leadNome, nextTask, proximaAcaoTexto, pendingCount, onComplete, onSeeAll, onCreateTask, onRegistrar, saudeLinha }: Props) {
   const [visita, setVisita] = useState<Visita | null>(null);
 
   useEffect(() => {
@@ -74,8 +75,8 @@ export default function DrawerAgora({ leadId, leadNome, nextTask, proximaAcaoTex
   const tituloTarefa = leadNome ? tituloBruto.replace(new RegExp(`\\s*[—-]\\s*${leadNome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i"), "") : tituloBruto;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Agora</p>
+    <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Agora</p>
 
       {visita && (
         <div className="mt-2 flex items-start gap-2.5">
@@ -114,11 +115,17 @@ export default function DrawerAgora({ leadId, leadNome, nextTask, proximaAcaoTex
         </div>
       ) : (
         <div className={`${visita ? "" : "mt-2"} flex items-center justify-between gap-2`}>
-          <p className="text-[13px] text-muted-foreground">Sem próxima tarefa</p>
+          <p className="text-[14px] font-semibold text-foreground">Sem próxima tarefa</p>
           <button onClick={onCreateTask} className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline">
             <Plus className="h-3.5 w-3.5" /> Criar tarefa
           </button>
         </div>
+      )}
+
+      {saudeLinha && (
+        <p className={`mt-3 flex items-center gap-1.5 text-[12px] ${saudeLinha.critico ? "text-destructive" : "text-muted-foreground"}`}>
+          <Clock className="h-3.5 w-3.5 shrink-0" /> {saudeLinha.texto}
+        </p>
       )}
 
       <button
