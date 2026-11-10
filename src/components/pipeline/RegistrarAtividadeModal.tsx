@@ -73,12 +73,16 @@ interface Props {
   onClose: () => void;
   /** chamado após salvar com sucesso (para refetch da lista, etc). */
   onSaved?: () => void;
+  /** Valor inicial do tipo (vem do registro rápido do Histórico). */
+  tipoInicial?: string;
+  /** Valor inicial da observação (vem do registro rápido do Histórico). */
+  obsInicial?: string;
 }
 
-export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTarefaId, exigirObservacao = false, esconderAvancar = false, onDesfazer, onClose, onSaved }: Props) {
+export default function RegistrarAtividadeModal({ lead, subtitulo, concluirTarefaId, exigirObservacao = false, esconderAvancar = false, onDesfazer, onClose, onSaved, tipoInicial, obsInicial }: Props) {
   const { user } = useAuth();
-  const [ativSel, setAtivSel] = useState<AtDef | null>(null);
-  const [obs, setObs] = useState("");
+  const [ativSel, setAtivSel] = useState<AtDef | null>(() => ATIVIDADES.find((a) => a.tipo === tipoInicial) ?? null);
+  const [obs, setObs] = useState(obsInicial ?? "");
   const [lembreteSel, setLembreteSel] = useState<{ label: string; data: string; hora: string } | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [customData, setCustomData] = useState("");
