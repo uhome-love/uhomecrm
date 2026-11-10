@@ -687,23 +687,27 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             </button>
           }
         />
+      </div>
+      </div>
 
-        {/* Apagar (CEO) — admin only, isolado fora do menu padrão */}
-        {isAdmin && onDelete && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center justify-center gap-1.5 h-7 rounded-md text-[10px] text-destructive/70 hover:text-destructive hover:bg-destructive/5 transition-colors">
-                <Trash2 className="h-3 w-3" />
-                Ações admin
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
-                <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar lead (CEO)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+      {/* Mobile: "Mais ações" (as ações principais ficam na barra fixa embaixo) */}
+      <div className="md:hidden">
+        <CardOverflowMenu
+          lead={lead}
+          stages={stages}
+          onMoveLead={(leadId, newStageId, observacao) => {
+            if (stages.find(s => s.id === newStageId)?.tipo === "venda") { setConfirmarVendaOpen(true); return; }
+            onMove(leadId, newStageId, observacao);
+          }}
+          onOpenDetail={() => { /* já está aberto */ }}
+          onRegistrarAtividade={() => setRegistrarOpen(true)}
+          onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
+          trigger={
+            <button className="w-full flex items-center justify-center gap-1.5 h-10 rounded-xl border border-border bg-card text-[12px] text-muted-foreground">
+              <MoreHorizontal className="h-3.5 w-3.5" /> Mais ações
+            </button>
+          }
+        />
       </div>
 
       {/* ── AVISO DE SAÚDE — só quando o lead está vermelho/crítico ── */}
@@ -714,17 +718,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </>
       )}
 
-      {/* ── DETALHES DO LEAD — recolhível pra desafogar a coluna (declutter) ── */}
-      <Collapsible className="rounded-2xl md:rounded-xl border border-border/70 bg-card">
-        <CollapsibleTrigger className="group/det flex w-full items-center justify-between gap-3 px-4 md:px-3 py-3.5 md:py-2.5 text-[12.5px] font-semibold hover:bg-muted/30 transition-colors">
-          <span className="flex flex-col items-start text-left gap-0.5 min-w-0">
-            <span className="text-[15px] md:text-[12.5px] font-semibold text-foreground">Detalhes do lead</span>
-            <span className="text-[12px] md:text-[10.5px] font-normal text-muted-foreground truncate">Origem, anúncio e formulário</span>
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/det:rotate-90" />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="px-2.5 pb-2.5 space-y-2">
-
       {/* Checklist de Qualificação — só visível quando o lead está na etapa Qualificação */}
       {currentStage?.tipo === "qualificacao" && (
         <>
@@ -732,6 +725,22 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           <PerfilLeadCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
         </>
       )}
+
+      {/* ════════════ SITUAÇÃO DA ETAPA ════════════ */}
+      <LeadFlagControls
+        leadId={lead.id}
+        stageTipo={(currentStage as any)?.tipo || ""}
+        flagStatus={lead.flag_status as Record<string, string> | null}
+        onUpdate={(_updated) => {
+          // Trigger refresh via existing reload mechanism
+        }}
+      />
+    </>
+  );
+
+  // Dados de consulta (origem, anúncio, formulário) — aba "Dados do lead".
+  const dadosNode = (
+    <div className="px-4 md:px-6 py-4 space-y-3 max-w-3xl">
 
       {/* Caixa Empreendimento polida (header + 3 métricas) */}
       <DrawerEmpreendimento
@@ -825,19 +834,24 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </p>
       )}
 
-        </CollapsibleContent>
-      </Collapsible>
-
-      {/* ════════════ FLAG CONTROLS ════════════ */}
-      <LeadFlagControls
-        leadId={lead.id}
-        stageTipo={(currentStage as any)?.tipo || ""}
-        flagStatus={lead.flag_status as Record<string, string> | null}
-        onUpdate={(_updated) => {
-          // Trigger refresh via existing reload mechanism
-        }}
-      />
-    </>
+      {/* Apagar (CEO) — admin only, discreto no fim dos dados */}
+      {isAdmin && onDelete && (
+        <div className="pt-2 flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] text-destructive/70 hover:text-destructive hover:bg-destructive/5 transition-colors">
+                <Trash2 className="h-3 w-3" /> Ações admin
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar lead (CEO)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+    </div>
   );
 
   return (
