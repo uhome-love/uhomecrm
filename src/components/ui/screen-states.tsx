@@ -42,7 +42,7 @@ export function EmptyState({
 }: ScreenStateProps) {
   return (
     <div className={cn("flex flex-col items-center justify-center py-16 gap-3 text-center px-4", className)}>
-      {icon ?? <Inbox className="h-10 w-10 text-muted-foreground/50" />}
+      <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1 [&_svg]:h-5 [&_svg]:w-5">{icon ?? <Inbox />}</div>
       <p className="text-sm font-semibold text-foreground">{title}</p>
       {description && <p className="text-xs text-muted-foreground max-w-sm">{description}</p>}
       {action && (
@@ -67,7 +67,7 @@ export function ErrorState({
 }: ScreenStateProps) {
   return (
     <div className={cn("flex flex-col items-center justify-center py-16 gap-3 text-center px-4", className)}>
-      {icon ?? <AlertTriangle className="h-10 w-10 text-destructive/70" />}
+      <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-1 [&_svg]:h-5 [&_svg]:w-5">{icon ?? <AlertTriangle />}</div>
       <p className="text-sm font-semibold text-foreground">{title}</p>
       {description && <p className="text-xs text-muted-foreground max-w-sm">{description}</p>}
       {action && (

@@ -54,7 +54,7 @@ export function KpiCard({
       onClick={onClick}
       className={cn(
         "bg-card border border-border shadow-sm",
-        "rounded-2xl p-4",
+        "rounded-[12px] p-4",
         "flex flex-col gap-2.5 transition-all",
         zerado && "opacity-60",
         onClick && "cursor-pointer hover:border-primary/40 hover:shadow-md hover:-translate-y-px",
@@ -62,7 +62,7 @@ export function KpiCard({
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[12px] font-medium text-muted-foreground truncate">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground truncate">
           {label}
         </span>
         {icon && (

@@ -24,7 +24,7 @@ export const periodoGrupoClasse = "inline-flex items-center gap-0.5 p-1 rounded-
 export function periodoBotaoClasse(ativo: boolean) {
   return cn(
     "inline-flex items-center gap-1.5 h-7 px-3 rounded-lg text-[12.5px] font-medium transition-all whitespace-nowrap",
-    ativo ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+    ativo ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
   );
 }
 
@@ -35,7 +35,7 @@ export function PeriodSelector({ value, onChange, opcoes, className }: PeriodSel
     <div
       role="radiogroup"
       aria-label="Período"
-      className={cn("inline-flex items-center gap-0.5 p-1 rounded-xl bg-muted/70 border border-border", className)}
+      className={cn("inline-flex items-center gap-0.5 p-1 rounded-[12px] bg-card border border-border shadow-sm max-w-full overflow-x-auto", className)}
     >
       {lista.map((o) => {
         const ativo = o.value === value;
@@ -47,7 +47,7 @@ export function PeriodSelector({ value, onChange, opcoes, className }: PeriodSel
             onClick={() => onChange(o.value)}
             className={cn(
               "h-7 px-3 rounded-lg text-[12.5px] font-medium transition-all whitespace-nowrap",
-              ativo ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+              ativo ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {o.label}
