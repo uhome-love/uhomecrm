@@ -13,14 +13,14 @@ interface RegraProps { ok: boolean; titulo: string; valor: string; detalhe?: str
 
 function Regra({ ok, titulo, valor, detalhe, extra }: RegraProps) {
   return (
-    <div className="flex items-start gap-2 rounded-[10px] border border-border bg-background px-3 py-2">
+    <div className="flex items-start gap-2 rounded-lg border border-border bg-background px-3 py-2">
       <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
-        ok ? "bg-success-50 text-success-700" : "bg-destructive/10 text-destructive")}>
+        ok ? "bg-success-500 text-primary-foreground" : "bg-destructive text-destructive-foreground")}>
         {ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
       </span>
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</p>
-        <p className={cn("text-sm font-bold", ok ? "text-foreground" : "text-destructive")}>
+        <p className={cn("text-sm font-bold", ok ? "text-success-500" : "text-destructive")}>
           {valor}{detalhe && <span className="ml-1 text-xs font-normal text-muted-foreground">{detalhe}</span>}
         </p>
         {extra}
@@ -47,7 +47,7 @@ export default function RoletaTurnoCard() {
   }
 
   return (
-    <section className="space-y-3 rounded-[12px] border border-border bg-card p-3 shadow-sm md:p-4">
+    <section className="space-y-2 rounded-xl border border-border bg-card p-2.5">
       <RoletaStatusBar />
       {regras.length > 0 && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">

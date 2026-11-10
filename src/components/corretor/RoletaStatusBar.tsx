@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MapPin, Loader2, Clock, Lock, Unlock, Sun, Sunset, Moon, CheckCircle2, XCircle } from "lucide-react";
+import { Settings, MapPin, Loader2, Clock, Lock, Unlock, Sun, Sunset, Moon, CheckCircle2, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -395,49 +395,52 @@ export default function RoletaStatusBar() {
       <motion.div
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`${isMobile ? "hidden " : ""}space-y-3`}
+        className={`${isMobile ? "hidden " : ""}rounded-xl border px-4 py-2.5 flex items-center justify-between gap-3 transition-colors ${
+          isActiveRoleta ? "border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20" : "border-border bg-card"
+        }`}
       >
-        <div className="flex flex-wrap items-center gap-2.5">
-          <h2 className="text-[15px] font-bold text-foreground">🎯 Roleta de hoje</h2>
-          <Badge variant={isActiveRoleta ? "success" : credStatus === "pendente" ? "warning" : "secondary"} className="rounded-full">
-            {isActiveRoleta ? "Ativo na Roleta" : credStatus === "pendente" ? "Aguardando aprovação" : "Inativo na Roleta"}
-          </Badge>
+        {/* Left: Presença (marcada pelo gestor) + status da roleta */}
+        <div className="relative flex items-center gap-2 flex-wrap">
           <PresencaDoCorretorPill profileId={profileId} authUserId={user?.id} />
-          {hasSegmentos && (
-            <span className="text-xs text-muted-foreground">
-              <MapPin className="mr-0.5 inline h-3 w-3" />
-              {segNames.join(", ")}
-            </span>
-          )}
-          <Button size="sm" className="ml-auto rounded-[10px]" onClick={() => setCredModalOpen(true)}>
-            {hasSegmentos ? "Credenciamento" : "Credenciar"}
-          </Button>
+
+          <div className="h-5 w-px bg-border hidden sm:block" />
+          <span className={`text-xs font-medium ${
+            isActiveRoleta ? "text-emerald-600" :
+            credStatus === "pendente" ? "text-amber-600" : "text-muted-foreground"
+          }`}>
+            {isActiveRoleta ? "🟢 Ativo na Roleta" :
+             credStatus === "pendente" ? "⏳ Aguardando aprovação" : "⚪ Inativo na Roleta"}
+          </span>
         </div>
-        <div className={`grid gap-2 ${JANELAS_CONFIG.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
-          {JANELAS_CONFIG.map((j) => {
-            const st = getJanelaStatus(j);
-            const cred = credenciamentosPorJanela[j.key];
-            const op = getJanelaOperacaoStatus(j.key);
-            const linha = cred
-              ? `${cred === "aprovado" ? "Aprovado" : "Aguardando aprovação"}${op === "encerrado" ? " · encerrado" : ""}`
-              : st === "aberto" ? `Aberto até ${formatHora(j.credAberto.fim)}`
-              : st === "futuro" ? `Abre ${formatHora(j.credAberto.inicio)}`
-              : "Encerrado";
-            return (
-              <div
-                key={j.key}
-                className={`rounded-[10px] border px-3 py-2 text-xs transition-colors ${
-                  cred === "aprovado" && op !== "encerrado" ? "border-success-500/40 bg-success-50"
-                  : st === "aberto" ? "border-primary/40 bg-primary/5"
-                  : st === "encerrado" && !cred ? "border-border opacity-60"
-                  : "border-border"
-                }`}
-              >
-                <p className="text-[13px] font-semibold text-foreground">{j.emoji} {j.label}</p>
-                <p className="text-muted-foreground">{linha} · recebe {j.recebimento}</p>
-              </div>
-            );
-          })}
+
+
+        {/* Right */}
+        <div className="flex items-center gap-2">
+          {hasSegmentos ? (
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              <MapPin className="inline h-3 w-3 mr-0.5" />
+              {segNames.join(", ")}
+              {activeJanelas.length > 0 && (
+                <span className="ml-1 text-primary font-medium">
+                  ({activeJanelas.map(j => JANELAS_CONFIG.find(c => c.key === j)?.emoji).join("")})
+                </span>
+              )}
+            </span>
+          ) : (
+            <button
+              onClick={() => setCredModalOpen(true)}
+              className="text-xs text-amber-600 font-medium hover:text-amber-700 transition-colors hidden sm:inline"
+            >
+              📍 Nenhum segmento — Credenciar-se →
+            </button>
+          )}
+          <button
+            onClick={() => setCredModalOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+            title="Credenciamento na Roleta"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
         </div>
       </motion.div>
 
