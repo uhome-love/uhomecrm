@@ -452,8 +452,8 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   })();
   const temperaturaAtual = String((lead as any).temperatura || "").toLowerCase();
   const tempMeta: Record<string, { label: string; cls: string }> = {
-    quente: { label: "Quente", cls: "bg-danger-500/12 text-danger-700 dark:text-danger-500" },
-    morno: { label: "Morno", cls: "bg-warning-500/12 text-warning-700 dark:text-warning-500" },
+    quente: { label: "Quente", cls: "bg-destructive/10 text-destructive" },
+    morno: { label: "Morno", cls: "bg-warning-500/15 text-warning-700 dark:text-warning-500" },
     frio: { label: "Frio", cls: "bg-primary/10 text-primary" },
   };
   const origemTopo = (() => { const g = grupoOrigem(lead.origem); return g === "Outros" && lead.origem ? rotuloOrigem(lead.origem) : g; })();
@@ -645,6 +645,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       <DrawerAgora
         leadId={lead.id}
         nextTask={nextTask as any}
+        leadNome={lead.nome}
         proximaAcaoTexto={lead.proxima_acao}
         pendingCount={pendingTasksList.length}
         onComplete={(taskId) => { setActiveTab("tarefas"); setAutoCompleteTaskId(taskId); }}

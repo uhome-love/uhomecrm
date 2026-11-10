@@ -15,6 +15,7 @@ interface Visita { data_visita: string; hora_visita: string | null; empreendimen
 
 interface Props {
   leadId: string;
+  leadNome?: string;
   nextTask: Tarefa | null;
   proximaAcaoTexto?: string | null;
   pendingCount: number;
@@ -39,7 +40,7 @@ function hojeBRT(): string {
   return new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-export default function DrawerAgora({ leadId, nextTask, proximaAcaoTexto, pendingCount, onComplete, onSeeAll, onCreateTask, onRegistrar }: Props) {
+export default function DrawerAgora({ leadId, leadNome, nextTask, proximaAcaoTexto, pendingCount, onComplete, onSeeAll, onCreateTask, onRegistrar }: Props) {
   const [visita, setVisita] = useState<Visita | null>(null);
 
   useEffect(() => {
@@ -69,7 +70,8 @@ export default function DrawerAgora({ leadId, nextTask, proximaAcaoTexto, pendin
     }
   }
   const tipo = parseNextActionType(nextTask, proximaAcaoTexto);
-  const tituloTarefa = nextTask?.titulo || nextTask?.descricao || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : "Próxima tarefa");
+  const tituloBruto = nextTask?.titulo || nextTask?.descricao || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : "Próxima tarefa");
+  const tituloTarefa = leadNome ? tituloBruto.replace(new RegExp(`\\s*[—-]\\s*${leadNome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i"), "") : tituloBruto;
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
