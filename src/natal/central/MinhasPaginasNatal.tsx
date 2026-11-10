@@ -86,7 +86,7 @@ export function MinhasPaginasNatal() {
       <section className="natal-noite natal-borda-ouro flex flex-col gap-4 rounded-2xl p-4 md:flex-row md:items-center md:p-5">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           {d.corretor.foto_url
-            ? <img src={d.corretor.foto_url} alt={d.corretor.nome} className="h-16 w-16 shrink-0 rounded-full border-2 border-[hsl(var(--natal-ouro,45_80%_70%))] object-cover" />
+            ? <img src={d.corretor.foto_url} alt={d.corretor.nome} className="h-16 w-16 shrink-0 rounded-full border-2 border-background/70 object-cover" />
             : <div className="h-16 w-16 shrink-0 rounded-full bg-muted" aria-hidden />}
           <div className="min-w-0">
             <p className="text-xs opacity-80">Sua página do {d.campanha.nome}</p>
