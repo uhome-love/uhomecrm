@@ -125,7 +125,7 @@ serve(async (req) => {
     }
 
     // ─── Build context summary ───
-    const pdnStats = buildPdnSummary(pdnData || []);
+    const pdnStats = (await resumoNegociosPipeline(adminClient, teamUserIds, currentMonth)) + "\n" + buildPdnSummary(pdnData || []);
     const checkpointSummary = buildCheckpointSummary(checkpointLines, teamMembers || []);
     const visitasSummary = buildVisitasSummary(visitasWeek || []);
 

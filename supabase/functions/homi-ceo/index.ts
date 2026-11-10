@@ -185,7 +185,7 @@ Seja direto, use dados concretos. Máximo 300 palavras. Período: ${periodo || "
     const managerMap: Record<string, string> = {};
     (managerProfiles || []).forEach(p => { managerMap[p.user_id] = p.nome || p.email || "?"; });
 
-    const pdnGlobal = buildPdnGlobal(allPdn || [], managerMap, allTeamMembers || []);
+    const pdnGlobal = (await resumoNegociosPipeline(adminClient, null, currentMonth)) + "\n" + buildPdnGlobal(allPdn || [], managerMap, allTeamMembers || []);
     const checkpointGlobal = buildCheckpointGlobal(allCheckpointLines, allCheckpoints || [], allTeamMembers || [], managerMap);
     const visitasGlobal = buildVisitasGlobal(allVisitas || []);
     const pipelineSummary = buildPipelineSummary(pipelineLeads || [], stages || []);
