@@ -877,26 +877,29 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 px-3 md:px-5 pr-12 md:pr-5 pt-3 md:pt-4 pb-2 md:pb-1 flex items-center gap-2 md:border-b border-border/50">
-            <TabsList className="bg-muted rounded-full md:rounded-md p-1 h-10 md:h-8 flex-1 flex justify-between md:justify-center overflow-hidden md:overflow-x-auto scrollbar-none">
+            <TabsList className="bg-muted rounded-full md:rounded-md p-1 h-10 md:h-8 flex-1 flex justify-start md:justify-center overflow-x-auto scrollbar-none">
               {isMobile && (
                 <TabsTrigger value="info" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                  <span className="hidden md:inline">ℹ️</span> Info
+                  Agora
                 </TabsTrigger>
               )}
               <TabsTrigger value="historico" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                <span className="hidden md:inline">📖</span> História
+                <span className="md:hidden">Histórico</span><span className="hidden md:inline">Linha do tempo</span>
                 {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{leadData.atividades.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="tarefas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                <span className="hidden md:inline">📌</span> Tarefas
+                Tarefas
                 {pendingTasks > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{pendingTasks}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="visitas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                <span className="hidden md:inline">📊</span> Visitas
+                Visitas
+              </TabsTrigger>
+              <TabsTrigger value="dados" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                <span className="md:hidden">Dados</span><span className="hidden md:inline">Dados do lead</span>
               </TabsTrigger>
               {lead.negocio_id && (
                 <TabsTrigger value="negocio" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                  <span className="hidden md:inline">💼</span> Negócio
+                  Negócio
                 </TabsTrigger>
               )}
             </TabsList>
@@ -967,6 +970,9 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
               />
             </TabsContent>
 
+            {/* ===== TAB: DADOS DO LEAD ===== */}
+            <TabsContent value="dados" className="mt-0">{dadosNode}</TabsContent>
+
             {/* ===== TAB: VISITAS (v4 editorial) ===== */}
             <TabsContent value="visitas" className="mt-0">
               <DrawerVisitsTab
@@ -998,31 +1004,37 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </div>
 
         {/* ════════════ BARRA DE AÇÃO FIXA (mobile) — Histórico/Tarefas/Visitas (aba Info já tem a grade de ações) ════════════ */}
-        {isMobile && !homiOpen && activeTab !== "info" && (
+        {isMobile && !homiOpen && (
           <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-border/50 bg-card/95 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_hsl(var(--foreground)/0.18)] animate-fade-in motion-reduce:animate-none">
             <button
               onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
               disabled={!lead.telefone}
-              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+              aria-label="Ligar"
+              className="shrink-0 flex items-center justify-center h-11 w-12 rounded-xl border border-border bg-card text-foreground disabled:opacity-40 active:scale-[0.98] transition-transform"
             >
-              <Phone className="h-4 w-4" /> Ligar
+              <Phone className="h-4 w-4" />
             </button>
             <button
               onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
               disabled={!lead.telefone}
-              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-emerald-600 text-white font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+              aria-label="WhatsApp"
+              className="shrink-0 flex items-center justify-center h-11 w-12 rounded-xl border border-border bg-card text-success-700 disabled:opacity-40 active:scale-[0.98] transition-transform"
             >
-              <MessageCircle className="h-4 w-4" /> WhatsApp
+              <MessageCircle className="h-4 w-4" />
             </button>
-            {currentStage?.tipo !== "visita" && (
-              <button
-                onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setNextActionOpen(true); }}
-                aria-label="Nova tarefa"
-                className="shrink-0 flex items-center justify-center h-11 w-11 rounded-xl border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            )}
+            <button
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
+              aria-label="Anotar"
+              className="shrink-0 flex items-center justify-center h-11 w-12 rounded-xl border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
+            >
+              <FileText className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar_atividade" }); setRegistrarOpen(true); }}
+              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.98] transition-transform"
+            >
+              <Zap className="h-4 w-4" /> Registrar
+            </button>
           </div>
         )}
 
