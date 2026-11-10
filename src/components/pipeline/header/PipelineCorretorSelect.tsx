@@ -43,7 +43,7 @@ const IDLE_BY_VARIANT: Record<CorretorSelectVariant, string> = {
   tablet:
     "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400",
   desktop:
-    "border-[#e8e8f0] dark:border-border bg-[#f7f7fb] dark:bg-muted/50 text-[#52525b] dark:text-[#a1a1aa]",
+    "border-transparent bg-muted/60 text-foreground hover:bg-muted",
 };
 
 const PLACEHOLDER_BY_VARIANT: Record<CorretorSelectVariant, string> = {
