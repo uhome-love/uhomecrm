@@ -18,3 +18,14 @@ describe("montarCaminho", () => {
     expect(p[p.length - 1].voltou).toBe(true);
   });
 });
+describe("montarCaminho com etapa sem registro de entrada", () => {
+  it("usa a etapa de origem do movimento para saber se voltou", () => {
+    const st = [...stages, { id: "a", nome: "Aquecimento", ordem: 3 }, { id: "p", nome: "Pós-Visita", ordem: 5 }];
+    const p = montarCaminho([
+      { stage_anterior_id: "n", stage_novo_id: "q", created_at: "2026-10-20T12:00:00Z" },
+      { stage_anterior_id: "p", stage_novo_id: "a", created_at: "2026-11-01T12:00:00Z" },
+    ], st, null);
+    expect(p.map((x) => x.stageId)).toEqual(["n", "q", "p", "a"]);
+    expect(p[3].voltou).toBe(true);
+  });
+});

@@ -56,16 +56,23 @@ export function montarCaminho(historico: HistoricoEtapa[], stages: Etapa[], crea
   const movs = [...historico]
     .filter((h) => h.stage_novo_id && h.stage_novo_id !== h.stage_anterior_id)
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-  const base: { stageId: string; data?: string | null }[] = [];
+  const base: { stageId: string; data?: string | null; deId?: string | null }[] = [];
   if (movs[0]?.stage_anterior_id) base.push({ stageId: movs[0].stage_anterior_id, data: createdAt });
-  for (const m of movs) base.push({ stageId: m.stage_novo_id!, data: m.created_at });
+  for (const m of movs) {
+    const ultimo = base[base.length - 1];
+    // Etapa de origem sem registro de entrada: entra no caminho sem data.
+    if (m.stage_anterior_id && ultimo && ultimo.stageId !== m.stage_anterior_id) {
+      base.push({ stageId: m.stage_anterior_id, data: null, deId: ultimo.stageId });
+    }
+    base.push({ stageId: m.stage_novo_id!, data: m.created_at, deId: m.stage_anterior_id });
+  }
 
   // Remove ida (i) + volta (i+1) quando volta para a etapa de antes no mesmo dia.
   let mudou = true;
   while (mudou) {
     mudou = false;
     for (let i = 1; i + 1 < base.length; i++) {
-      if (base[i - 1].stageId === base[i + 1].stageId && chaveDia(base[i].data) === chaveDia(base[i + 1].data)) {
+      if (base[i].data && base[i - 1].stageId === base[i + 1].stageId && chaveDia(base[i].data) === chaveDia(base[i + 1].data)) {
         base.splice(i, 2);
         mudou = true;
         break;
@@ -75,7 +82,7 @@ export function montarCaminho(historico: HistoricoEtapa[], stages: Etapa[], crea
   return base.map((b, i) => {
     const de = i > 0 ? ordemDe(base[i - 1].stageId) : null;
     const para = ordemDe(b.stageId);
-    return { ...b, voltou: de != null && para != null && para < de };
+    return { stageId: b.stageId, data: b.data, voltou: de != null && para != null && para < de };
   });
 }
 
