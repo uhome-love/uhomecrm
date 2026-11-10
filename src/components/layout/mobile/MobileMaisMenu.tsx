@@ -1,6 +1,7 @@
 import { ChevronRight, LogOut, Moon, Sun, Settings, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface Item { label: string; path: string; icon: React.ReactNode; badge?: string | number }
 interface Group { title: string; items: Item[] }
@@ -20,26 +21,28 @@ interface Props {
 export default function MobileMaisMenu({ groups, activePath, userName, userRole, userInitials, isDark, onThemeToggle, go }: Props) {
   const { signOut } = useAuth();
 
-  const Linha = ({ icon, label, onClick, badge, ativo, perigo }: {
-    icon: React.ReactNode; label: string; onClick: () => void; badge?: string | number; ativo?: boolean; perigo?: boolean;
+  const Linha = ({ icon, label, onClick, badge, ativo, perigo, campanha }: {
+    icon: React.ReactNode; label: string; onClick: () => void; badge?: string | number; ativo?: boolean; perigo?: boolean; campanha?: boolean;
   }) => (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted"
+      aria-current={ativo ? "page" : undefined}
+      className={cn("h-auto w-full justify-start gap-3 rounded-none px-4 py-3 text-left font-normal transition-colors duration-short ease-move active:bg-muted", campanha && "shell-nav-campaign")}
     >
       <span className={cn(
         "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-        perigo ? "bg-destructive/10 text-destructive" : ativo ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
+        perigo ? "bg-destructive/10 text-destructive" : campanha ? "text-current" : ativo ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
       )}>
         {icon}
       </span>
-      <span className={cn("flex-1 truncate text-[16px]", perigo ? "text-destructive" : "text-foreground", ativo && "font-semibold")}>{label}</span>
+      <span className={cn("flex-1 truncate text-[16px]", perigo ? "text-destructive" : campanha ? "text-current" : "text-foreground", ativo && "font-semibold")}>{label}</span>
       {badge !== undefined && (
         <span className="rounded-full bg-destructive px-2 py-0.5 text-[11px] font-bold text-destructive-foreground">{badge}</span>
       )}
-      {!perigo && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />}
-    </button>
+      {!perigo && <ChevronRight className={cn("h-4 w-4 shrink-0", campanha ? "text-current" : "text-muted-foreground")} />}
+    </Button>
   );
 
   const Bloco = ({ children }: { children: React.ReactNode }) => (
@@ -70,7 +73,7 @@ export default function MobileMaisMenu({ groups, activePath, userName, userRole,
           {g.title && <h3 className="px-4 text-[13px] font-medium uppercase tracking-wide text-muted-foreground">{g.title}</h3>}
           <Bloco>
             {g.items.map((i) => (
-              <Linha key={i.path} icon={i.icon} label={i.label} badge={i.badge} ativo={activePath === i.path} onClick={() => go(i.path)} />
+              <Linha key={i.path} icon={i.icon} label={i.label} badge={i.badge} ativo={activePath === i.path} campanha={i.path === "/campanha-natal"} onClick={() => go(i.path)} />
             ))}
           </Bloco>
         </section>
