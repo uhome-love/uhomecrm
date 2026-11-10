@@ -34,10 +34,10 @@ export default function PipelineGestorSelect({
             ? "border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300"
             : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
         }`
-      : `h-9 text-[12px] max-w-[170px] min-w-[140px] shrink rounded-lg font-medium truncate transition-colors duration-fast ${
+      : `h-[32px] text-[12px] max-w-[170px] min-w-[140px] shrink rounded-lg font-medium truncate ${
           active
-            ? "border-transparent bg-primary/10 text-primary"
-            : "border-transparent bg-muted/60 text-foreground hover:bg-muted"
+            ? "border-violet-500 bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300"
+            : "border-[#e8e8f0] dark:border-border bg-[#f7f7fb] dark:bg-muted/50 text-[#52525b] dark:text-[#a1a1aa]"
         }`;
 
   return (

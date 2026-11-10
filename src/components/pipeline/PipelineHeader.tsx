@@ -344,29 +344,34 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         {/* ══ ZONA 1 — Identidade + ação primária ══ */}
         <div className="flex h-14 sm:h-12 lg:h-14 items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
+            <div className="hidden sm:flex w-7 h-7 rounded-[7px] bg-primary items-center justify-center shrink-0">
+              <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
+            </div>
             <span className="text-[26px] sm:text-[16px] font-extrabold sm:font-bold text-foreground tracking-[-0.6px] sm:tracking-[-0.3px] whitespace-nowrap">Pipeline</span>
             <span title={pipelineAtivoSplit && activeTab === "kanban" ? `${pipelineAtivoSplit.leads} em Leads · ${pipelineAtivoSplit.negocios} em Negócios (Ganhos ficam no botão Ganhos)` : undefined}><PipelineScopeBadge isAdmin={isAdmin} isDiretor={isDiretor} isGestor={isGestor} countLabel={contextLabel} gestorFilter={activeTab === "equipes" ? "todos" : gestorFilter} /></span>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
             {activeTab === "kanban" && (
               <button
                 type="button"
                 onClick={() => setGanhosFilter(v => !v)}
                 title="Ver leads ganhos / vendidos"
-                className={`inline-flex items-center justify-center gap-1.5 rounded-full sm:rounded-lg h-10 w-10 sm:w-auto sm:h-9 sm:px-3 text-xs font-semibold transition-colors duration-fast sm:border ${ganhosFilter ? "bg-success-600 text-primary-foreground sm:border-transparent" : "bg-muted sm:bg-card sm:border-border text-foreground hover:bg-muted"}`}
+                className={`inline-flex items-center justify-center gap-1.5 rounded-full sm:rounded-lg h-10 w-10 sm:w-auto sm:h-9 sm:px-3 text-xs font-semibold transition-colors ${ganhosFilter ? "bg-emerald-600 text-white" : "bg-muted sm:bg-transparent text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"}`}
               >
                 <Trophy size={16} strokeWidth={2} /> <span className="hidden sm:inline">Ganhos</span>
               </button>
             )}
             {activeTab === "kanban" && (
               <>
+                <div className="hidden sm:block h-5 w-px bg-border" />
                 <button
                   onClick={() => setFocusModeOpen(true)}
-                  className="hidden lg:inline-flex whitespace-nowrap items-center gap-1.5 h-9 px-3 rounded-lg border border-border bg-card font-semibold text-xs text-foreground hover:bg-muted transition-colors duration-fast cursor-pointer"
+                  className="hidden lg:inline-flex whitespace-nowrap items-center gap-1.5 h-9 px-3 rounded-lg font-semibold text-xs text-white cursor-pointer"
+                  style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
                 >
-                  <Zap size={13} strokeWidth={2} className="text-primary" /> Modo Foco
-                  {focusLeadsCount > 0 && <span className="bg-primary/10 text-primary rounded-md px-1.5 py-px text-[10px] font-bold">{focusLeadsCount}</span>}
+                  <Zap size={13} strokeWidth={2} /> Modo Foco
+                  {focusLeadsCount > 0 && <span className="bg-white/20 rounded-md px-1.5 py-px text-[10px] font-bold">{focusLeadsCount}</span>}
                 </button>
                 {canAdd && (
                   <button onClick={() => setAddOpen(true)} className="whitespace-nowrap inline-flex items-center gap-1.5 justify-center h-10 w-10 sm:w-auto sm:h-9 sm:px-3.5 bg-primary hover:bg-primary-600 text-primary-foreground rounded-full sm:rounded-lg font-semibold text-xs cursor-pointer">
@@ -379,15 +384,13 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         </div>
 
         {/* ══ ZONA 2 — Navegação (abas) + lente + Sinal + toggle da 3ª linha ══ */}
-        <div className="flex min-h-12 flex-wrap items-center gap-x-2 sm:gap-x-3 lg:gap-x-4 gap-y-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
-          <div role="tablist" aria-label="Visão do Pipeline" className="inline-flex items-center gap-0.5 rounded-full sm:rounded-[10px] bg-muted p-[3px] shrink-0">
+        <div className="flex min-h-12 flex-nowrap sm:flex-wrap items-center gap-x-2 sm:gap-x-3 lg:gap-x-4 gap-y-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
+          <div className="inline-flex items-center gap-0.5 rounded-full sm:rounded-lg sm:border border-border bg-muted p-1 shrink-0">
             {roleTabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                role="tab"
-                aria-selected={activeTab === tab.key}
-                className={`flex items-center gap-1.5 shrink-0 transition-all duration-fast ease-move h-8 px-3 sm:px-4 rounded-full sm:rounded-lg text-[13px] sm:text-xs border-none cursor-pointer ${
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3 sm:px-3.5 rounded-full sm:rounded-md text-[13px] sm:text-xs border-none cursor-pointer ${
                   activeTab === tab.key ? "bg-card text-foreground font-semibold shadow-sm" : "bg-transparent text-muted-foreground font-medium hover:text-foreground"
                 }`}
               >
@@ -397,10 +400,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
 
           {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
-            <div className="inline-flex items-center gap-1 shrink-0 text-xs">
-              <button type="button" aria-pressed={!minhaCarteira} onClick={() => setMinhaCarteira(false)} className={`h-7 px-2 rounded-md transition-colors duration-fast ${!minhaCarteira ? "text-foreground font-semibold" : "text-muted-foreground font-medium hover:text-foreground"}`}>{isAdmin || isDiretor ? "Empresa" : "Equipe"}</button>
-              <span aria-hidden className="text-muted-foreground/60">·</span>
-              <button type="button" aria-pressed={minhaCarteira} onClick={() => setMinhaCarteira(true)} className={`h-7 px-2 rounded-md transition-colors duration-fast ${minhaCarteira ? "text-foreground font-semibold" : "text-muted-foreground font-medium hover:text-foreground"}`}><span className="hidden md:inline">Meus leads</span><span className="md:hidden">Meus</span></button>
+            <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-1 shrink-0">
+              <button type="button" onClick={() => setMinhaCarteira(false)} className={`h-8 px-3 text-xs font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{isAdmin || isDiretor ? "Empresa" : "Equipe"}</button>
+              <button type="button" onClick={() => setMinhaCarteira(true)} className={`h-8 px-3 text-xs font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><span className="hidden md:inline">Meus leads</span><span className="md:hidden">Meus</span></button>
             </div>
           )}
 
@@ -486,9 +488,23 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         </div>
 
+        {/* ══ CHIPS DE FILTRO ATIVO — sempre visível quando há filtro (mesmo com a 3ª linha colapsada) ══ */}
+        {activeChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-t border-border bg-muted/30 px-3 sm:px-4 lg:px-6 py-2">
+            <span className="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">Filtros ativos</span>
+            {activeChips.map(chip => (
+              <span key={chip.id} className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs font-medium text-foreground">
+                {chip.label}
+                <button onClick={chip.onRemove} aria-label={`Remover ${chip.label}`} className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"><X className="h-3 w-3" /></button>
+              </span>
+            ))}
+            <button onClick={clearAllFilters} className="ml-1 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer">Limpar tudo</button>
+          </div>
+        )}
+
         {/* ══ ZONA 3 — Ferramentas (busca + filtros + ordenação + ações) · colapsável ══ */}
         {toolsOpen && (
-        <div className="flex min-h-12 flex-wrap lg:flex-nowrap items-center gap-1.5 lg:gap-2 px-3 sm:px-4 lg:px-6 py-2">
+        <div className="flex min-h-12 flex-wrap lg:flex-nowrap items-center gap-1.5 lg:gap-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
           <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[190px] sm:max-w-[360px]">
             <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -496,7 +512,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               placeholder="Buscar lead…"
               value={filters.search}
               onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-              className="w-full outline-none h-10 sm:h-9 rounded-full sm:rounded-lg bg-muted sm:bg-muted/60 border border-transparent pl-9 pr-8 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary/40 focus:bg-card"
+              className="w-full outline-none h-10 sm:h-9 rounded-full sm:rounded-lg bg-muted sm:bg-muted/40 border border-transparent sm:border-border pl-9 pr-8 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary"
             />
             {filters.search && (
               <button aria-label="Limpar busca" onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -568,7 +584,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button aria-label="Mais ações" className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-muted-foreground bg-muted/60 cursor-pointer hover:text-foreground">
+                <button aria-label="Mais ações" className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-muted-foreground bg-muted/40 border border-border cursor-pointer hover:text-foreground">
                   <MoreHorizontal size={15} strokeWidth={1.5} />
                 </button>
               </DropdownMenuTrigger>
@@ -586,19 +602,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             </DropdownMenu>
         </div>
         )}
-        {/* ══ CHIPS DE FILTRO ATIVO — sempre visível quando há filtro (mesmo com a 3ª linha colapsada) ══ */}
-        {activeChips.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4 lg:px-6 pb-2.5 pt-0.5">
-            {activeChips.map(chip => (
-              <span key={chip.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 pl-2.5 pr-1 py-0.5 text-xs font-semibold text-primary animate-in fade-in-0 zoom-in-95 duration-fast">
-                {chip.label}
-                <button onClick={chip.onRemove} aria-label={`Remover ${chip.label}`} className="ml-0.5 rounded-full p-0.5 text-primary/70 hover:bg-primary/15 hover:text-primary cursor-pointer"><X className="h-3 w-3" /></button>
-              </span>
-            ))}
-            <button onClick={clearAllFilters} className="ml-1 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer">Limpar</button>
-          </div>
-        )}
-
       </div>
 
 

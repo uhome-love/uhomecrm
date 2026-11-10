@@ -160,7 +160,7 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
   if (compact) {
     return (
       <div className="inline-flex items-center gap-1">
-      <div className="inline-flex items-center rounded-lg p-0.5">
+      <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-border bg-[#f7f7fb] dark:bg-muted/50 p-0.5">
         {visibleBadges.map((b) => {
           const isActive = active === b.key;
           const count = counts[b.key];
@@ -200,7 +200,7 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
               <span style={{ fontVariantNumeric: "tabular-nums", fontSize: 12, fontWeight: 700 }}>
                 {count.toLocaleString("pt-BR")}
               </span>
-              <span className={isActive ? "inline" : "hidden md:inline"} style={{ fontSize: 11, fontWeight: 600 }}>{b.label}</span>
+              {isActive && <span style={{ fontSize: 11, fontWeight: 600 }}>{b.label}</span>}
             </button>
           );
         })}
