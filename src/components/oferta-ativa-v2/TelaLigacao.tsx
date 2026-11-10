@@ -102,6 +102,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     void concluir(r);
   }, [concluir]);
 
+  const raizRef = useRef<HTMLDivElement>(null);
   // Atalhos de teclado no computador: 1–5 resultados, P pula.
   useEffect(() => {
     if (isMobile || !cliente || aba !== "ligar") return;
@@ -109,6 +110,8 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
     const ordem: ResultadoOA[] = ["nao_atendeu", "sem_interesse", "numero_errado", "aproveitar", "visita"];
     const onKey = (e: KeyboardEvent) => {
       const alvo = e.target as HTMLElement;
+      // Aba escondida (outra página aberta no CRM): nenhum atalho vale.
+      if (!raizRef.current || raizRef.current.offsetParent === null) return;
       if (visitaAberta || dialogo || gravando || e.metaKey || e.ctrlKey || e.altKey || ["INPUT", "TEXTAREA", "SELECT"].includes(alvo.tagName) || alvo.isContentEditable) return;
       const r = ordem[Number(e.key) - 1];
       if (r && opcoes.includes(r)) { e.preventDefault(); onResultado(r); }
@@ -122,7 +125,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
   const sairTela = async () => { await sair(); if (sessao.ligacoes > 0) setResumo(true); else onSair(); };
 
   return (
-    <div className={isMobile && cliente && aba === "ligar" ? "pb-36" : ""}>
+    <div ref={raizRef} className={isMobile && cliente && aba === "ligar" ? "pb-36" : ""}>
       <div className="sticky top-0 z-30 -mx-4 mb-3 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-2 backdrop-blur md:mx-0 md:rounded-2xl md:border md:bg-card md:px-4">
         <Button variant="ghost" size="sm" onClick={() => void sairTela()} className="shrink-0 gap-1 px-2" aria-label="Sair"><ArrowLeft className="h-4 w-4" aria-hidden /><span className="hidden sm:inline">Sair</span></Button>
         <span className="hidden truncate rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary sm:inline">{ORIGEM_INFO[origem].emoji} {ORIGEM_INFO[origem].titulo}</span>
