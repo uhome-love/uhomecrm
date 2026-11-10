@@ -6,6 +6,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
+import { supabase } from "@/integrations/supabase/client";
 
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 const LIA_URL = `${EDGE_BASE_URL}/functions/v1/lia-chat`;
@@ -72,9 +73,12 @@ export default function LiaTeste() {
   const callLia = async () => {
     setBusy(true); setErr("");
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("Entre no CRM como CEO ou diretora para testar a LIA");
       const res = await fetch(LIA_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: ANON_KEY },
+        headers: { "Content-Type": "application/json", apikey: ANON_KEY, Authorization: `Bearer ${token}` },
         body: JSON.stringify({ messages: history.current }),
       });
       const data = await res.json();
