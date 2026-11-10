@@ -70,7 +70,9 @@ export default function ResumoLeadLateral({ lead }: { lead: PipelineLead }) {
   };
 
   const origem = lead.origem ? (grupoOrigem(lead.origem) === "Outros" ? rotuloOrigem(lead.origem) : grupoOrigem(lead.origem)) : null;
-  const campanha = lead.campanha || lead.formulario;
+  const norm = (t?: string | null) => (t ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  const campanhaBruta = lead.campanha || lead.formulario;
+  const campanha = campanhaBruta && norm(campanhaBruta) !== norm(lead.empreendimento) ? campanhaBruta : null;
   const orc = fmtOrc(faixa);
 
   return (
