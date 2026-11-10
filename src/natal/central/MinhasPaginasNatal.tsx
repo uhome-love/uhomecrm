@@ -45,11 +45,11 @@ function EnviarDialog({ alvo, onClose }: { alvo: { titulo: string; url: string; 
 function Botoes({ url, onWhats, onPrevia, compacto }: { url: string; onWhats: () => void; onPrevia?: () => void; compacto?: boolean }) {
   const s = compacto ? "h-8 w-full px-2 text-xs" : "";
   return (
-    <div className={compacto ? "grid grid-cols-2 gap-1.5" : "flex flex-wrap gap-1.5"}>
-      <Button size="sm" variant="outline" className={s} onClick={() => copiar(url)}><Copy className="mr-1 h-3.5 w-3.5" />{compacto ? "Copiar" : "Copiar link"}</Button>
-      <Button size="sm" className={s} onClick={onWhats}><MessageCircle className="mr-1 h-3.5 w-3.5" />WhatsApp</Button>
-      <Button size="sm" variant="outline" className={s} asChild><a href={url} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-1 h-3.5 w-3.5" />Abrir</a></Button>
-      {onPrevia && <Button size="sm" variant="outline" className={s} onClick={onPrevia}><Eye className="mr-1 h-3.5 w-3.5" />Prévia</Button>}
+    <div className={compacto ? "grid grid-cols-4 gap-1 sm:grid-cols-2 sm:gap-1.5" : "flex flex-wrap gap-1.5"}>
+      <Button size="sm" variant="outline" className={s} onClick={() => copiar(url)}><Copy className="mr-1 h-3.5 w-3.5" /><span className={compacto ? "max-sm:sr-only" : ""}>{compacto ? "Copiar" : "Copiar link"}</span></Button>
+      <Button size="sm" className={s} onClick={onWhats}><MessageCircle className="mr-1 h-3.5 w-3.5 max-sm:mr-0" /><span className={compacto ? "max-sm:sr-only" : ""}>WhatsApp</span></Button>
+      <Button size="sm" variant="outline" className={s} asChild><a href={url} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-1 h-3.5 w-3.5" /><span className={compacto ? "max-sm:sr-only" : ""}>Abrir</span></a></Button>
+      {onPrevia && <Button size="sm" variant="outline" className={s} onClick={onPrevia}><Eye className="mr-1 h-3.5 w-3.5" /><span className={compacto ? "max-sm:sr-only" : ""}>Prévia</span></Button>}
     </div>
   );
 }
