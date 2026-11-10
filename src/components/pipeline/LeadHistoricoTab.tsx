@@ -23,9 +23,7 @@ import {
 import {
   Plus, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
-  Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat
-
-} from "lucide-react";
+  Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat, AlertTriangle } from "lucide-react";
 import DrawerLiaConversaTab from "./DrawerLiaConversaTab";
 
 import { parseDateTimeSafe } from "@/lib/utils";
@@ -465,22 +463,6 @@ function categoriaDe(item: TimelineItem): "narrativa" | "sistema" {
   // Registros automáticos do robô de pontuação (WhatsApp) não são marco da jornada.
   if (/nurturing_sequencia|Evento: whatsapp_respondeu|Sugestão IA para abordagem|respondeu via whatsapp|Cliente respondeu no WhatsApp/i.test(`${item.title || ""}`)) return "sistema";
   return "narrativa";
-}
-
-// Estilo de MARCO da Narrativa (emoji + cores do círculo + acento da citação),
-// no padrão visual do mockup da História.
-function marcoMeta(item: TimelineItem): { emoji: string; ring: string; accent: string; feedback?: boolean } {
-  const t = (item.title || "").toLowerCase();
-  if (item.sourceType === "anotacao" || /^📝|nota|anota/.test(t)) return { emoji: "📝", ring: "bg-amber-50 text-amber-600", accent: "border-l-amber-400" };
-  if (/gerado|entrou|lead entrou|entrada/.test(t)) return { emoji: "🎯", ring: "bg-violet-50 text-violet-600", accent: "border-l-violet-400" };
-  if (/movido|etapa|qualifica/.test(t)) return { emoji: "🔀", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
-  if (/ligaç|liga[rç]|telefon|📞/.test(t)) return { emoji: "📞", ring: "bg-red-50 text-red-600", accent: "border-l-red-400" };
-  if (/whats|mensagem|💬/.test(t)) return { emoji: "💬", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
-  if (/e-mail|email|✉/.test(t)) return { emoji: "✉️", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
-  if (/visita|tour|comparec/.test(t)) return { emoji: "📍", ring: "bg-sky-50 text-sky-600", accent: "border-l-sky-400", feedback: true };
-  if (/proposta|neg[óo]cio|contrato|venda|ganho/.test(t)) return { emoji: "💼", ring: "bg-emerald-50 text-emerald-600", accent: "border-l-emerald-400" };
-  if (/follow/.test(t)) return { emoji: "🔁", ring: "bg-indigo-50 text-indigo-600", accent: "border-l-indigo-400" };
-  return { emoji: "•", ring: "bg-zinc-100 text-zinc-500", accent: "border-l-zinc-300" };
 }
 
 export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, visitaEventos = [], temLiaConversa = false, loading = false, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction, onRegistrar }: Props) {
