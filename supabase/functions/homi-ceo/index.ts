@@ -333,7 +333,6 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
   const total = pdn.length;
   // Fases canônicas (pós-consolidação 07/2026): em_negociacao | contrato | ganho.
   // "Perdido" vive em coluna status, não em fase.
-  const emNegociacao = pdn.filter(p => p.fase === "em_negociacao" && p.status !== "perdido").length;
   const contrato = pdn.filter(p => p.fase === "contrato" && p.status !== "perdido").length;
   const ganho = pdn.filter(p => p.fase === "ganho").length;
   const perdido = pdn.filter(p => p.status === "perdido").length;
