@@ -877,7 +877,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         }>
 
         {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
-        <div className="shrink-0 border-b border-border/60 bg-card px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-5 pr-12 md:pr-16">
+        <div className="shrink-0 border-b border-border/60 bg-card px-4 md:px-6 pt-4 md:pt-4 pb-3 md:pb-3 pr-12 md:pr-16">
           {headerNode}
         </div>
         <div className="flex-1 flex min-h-0 overflow-hidden">
