@@ -51,7 +51,7 @@ export default function TarefasCorretor() {
   }, [visao, user, equipe.data]);
   const somenteLeitura = visao !== "me";
 
-  const { data, isLoading } = useMinhasTarefas(responsaveis);
+  const { data, isLoading, isError, refetch, isFetching } = useMinhasTarefas(responsaveis);
   const abas = useMemo(() => separarAbas(data?.pendentes ?? [], data?.concluidas ?? []), [data]);
   const semPasso = useSemProximoPasso(visao === "me" ? user?.id ?? null : null, data?.pendentes);
 
@@ -123,6 +123,20 @@ export default function TarefasCorretor() {
       )}
     </>
   );
+
+  // Falha ao carregar nunca vira "sem tarefas" (auditoria 10/11/2026).
+  if (isError && !data) {
+    return (
+      <div role="alert" className="mx-auto mt-10 max-w-md rounded-xl border border-border bg-card p-6 text-center">
+        <p className="text-base font-semibold text-foreground">Não foi possível carregar suas tarefas</p>
+        <p className="mt-1 text-sm text-muted-foreground">Confira a internet e tente de novo. Suas tarefas não foram apagadas.</p>
+        <button type="button" onClick={() => void refetch()} disabled={isFetching}
+          className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+          {isFetching && <Loader2 className="h-4 w-4 animate-spin" />} Tentar de novo
+        </button>
+      </div>
+    );
+  }
 
   if (isMobile) {
     return (
