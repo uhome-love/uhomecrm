@@ -354,7 +354,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 type="button"
                 onClick={() => setGanhosFilter(v => !v)}
                 title="Ver leads ganhos / vendidos"
-                className={`inline-flex items-center justify-center gap-1.5 rounded-full sm:rounded-lg h-10 w-10 sm:w-auto sm:h-9 sm:px-3 text-xs font-semibold transition-colors duration-fast sm:border ${ganhosFilter ? "bg-success text-success-foreground sm:border-transparent" : "bg-muted sm:bg-card sm:border-border text-foreground hover:bg-muted"}`}
+                className={`inline-flex items-center justify-center gap-1.5 rounded-full sm:rounded-lg h-10 w-10 sm:w-auto sm:h-9 sm:px-3 text-xs font-semibold transition-colors duration-fast sm:border ${ganhosFilter ? "bg-success-600 text-primary-foreground sm:border-transparent" : "bg-muted sm:bg-card sm:border-border text-foreground hover:bg-muted"}`}
               >
                 <Trophy size={16} strokeWidth={2} /> <span className="hidden sm:inline">Ganhos</span>
               </button>
