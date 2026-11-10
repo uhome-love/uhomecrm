@@ -31,6 +31,40 @@ Esta é uma opinião, baseada nas 8 telas enviadas. Nada será alterado sem dese
 - Coluna de Proposta e Contrato com **valor e data prevista de assinatura** bem visíveis.
 - Aviso quando um negócio fica mais de X dias sem andar.
 
+### 5. Ficha do cliente — como eu organizaria
+
+```text
++-------------------------------------------------------------+
+| MM  Matheus Martins          [Visita v]  Quente   (x)       |
+|     Open Bosque · fb · entrou 24/10 · Rafaela Sandin        |
+|     [Ligar] [WhatsApp] [Anotar] [...]                       |
++----------------------------+--------------------------------+
+| AGORA                      | Linha do tempo | Tarefas | Visitas | Dados |
+| Visita qui 12/11 14h       |                                |
+| Confirmar amanhã 10h       |  tudo em ordem de data,        |
+| [Registrar atividade]      |  com filtro por tipo           |
+|                            |                                |
+| Situação da etapa          |                                |
+| Visita marcada             |                                |
+|                            |                                |
+| Negócio (se houver)        |                                |
+| valor · previsão           |                                |
++----------------------------+--------------------------------+
+```
+
+- **Topo fixo** com nome, etapa, temperatura, produto, origem, corretor e os botões de contato. Fica sempre visível, mesmo rolando.
+- **Coluna esquerda "Agora"**: só o que precisa de ação: próxima visita, próxima tarefa, um botão principal e a situação da etapa (hoje está escondida embaixo).
+- **Coluna direita com 4 abas**: Linha do tempo, Tarefas, Visitas e Dados (origem, anúncio, formulário e respostas saem da esquerda e vão para cá).
+- **Telefone e e-mail** viram linha pequena com botão de copiar, sem ocupar espaço grande.
+- **"Ações admin"** vai para dentro do menu "...", não fica solto.
+- **Celular**: topo compacto, "Agora" em cima e as abas embaixo, com botões fixos no rodapé.
+
+## Estamos no máximo?
+Não, mas estamos perto de um CRM bom de mercado. Sincero:
+- **Bom nível**: funções (Roleta, Oferta Ativa, Lia, Financeiro) e regras estão acima da maioria dos CRMs imobiliários.
+- **Onde ainda perde para os melhores (Pipedrive, HubSpot, Attio)**: muitos selos e emojis competindo; informação repetida (etapas em dobro, avisos longos); a ficha tem a ação importante misturada com dados de consulta; pouca animação suave ao abrir e mover; cores ainda variam de tela para tela; muitas telas não têm versão própria no celular.
+- **Para chegar ao topo**: menos coisas por tela, uma ação principal clara, mesmo padrão em todas as páginas e movimento suave. É exatamente o que as fases visuais já aprovadas estão fazendo; a ficha seria a próxima peça mais valiosa.
+
 ## Como seguiria
 1. Você escolhe quais itens entram.
 2. Primeiro investigo os erros do bloco 1 nos dados (sem mexer).
