@@ -29,7 +29,7 @@ Quase sem uso (menos de 80 aberturas): HOMI, Materiais, Simulador, Usuários, Mi
 ## Proposta (admin / CEO)
 
 ```text
-(sem título)   Dashboard · Pipeline · Visitas · Tarefas
+(sem título)   Dashboard · Pipeline · Agenda · Tarefas · Visitas
 VENDAS         Oferta Ativa · Leads estagnados · Roleta · Busca de leads
 NEGÓCIOS       Vendas · Intermediação · Financeiro
 TIME           Equipe (Usuários + Presença + Foco) · Recrutamento (Candidatos junto) · Relatórios
@@ -44,7 +44,7 @@ Mesmo menu do CEO, mas sem Roleta e Base única. Placar do Dia, HOMI Gerente e T
 ## Gerente
 
 ```text
-(sem título)   Dashboard · Pipeline · Visitas · Tarefas
+(sem título)   Dashboard · Pipeline · Agenda · Tarefas · Visitas
 VENDAS         Oferta Ativa · Leads estagnados · Busca de leads
 NEGÓCIOS       Vendas · Intermediação
 TIME           Meu time (Presença + Foco) · Meus candidatos · Relatórios
@@ -54,7 +54,7 @@ APOIO          Imóveis · Materiais · Academia · HOMI · HOMI Gerente · Simu
 ## Corretor (mesma lógica, mais curto)
 
 ```text
-(sem título)   Início · Pipeline · Visitas · Tarefas · Oferta Ativa
+(sem título)   Início · Pipeline · Agenda · Tarefas · Visitas · Oferta Ativa
 NEGÓCIOS       Vendas · Meus resultados
 APOIO          Imóveis · Materiais · Minhas vitrines · Simulador · HOMI · Academia (recolhido)
 ```
@@ -63,11 +63,19 @@ Notificações saem do menu, porque já existe o sino no topo.
 ## Padronização
 - Os mesmos nomes de grupo para todos os perfis: Vendas, Negócios, Time, Marketing, Apoio. Cada perfil vê só o que pode acessar.
 - Um ícone diferente para cada item.
-- Os 4 itens mais usados ficam fixos no topo, sem título de grupo.
+- Os itens mais usados ficam fixos no topo, sem título de grupo.
 - Grupos raros ficam recolhidos e lembram se você abriu ou fechou.
 
-## Decisão pendente sobre a Agenda
-A proposta tira a Agenda do menu e deixa Tarefas como o lugar único. As prioridades da Agenda passam a ficar como um bloco no painel inicial. O endereço antigo continua funcionando.
+## Agenda
+A Agenda continua no menu, logo acima de Tarefas. Depois decidimos se ela sai.
+
+## Acabamento visual (junto com a reorganização)
+- Item ativo com uma barra fina à esquerda e fundo suave, mais discreto que o bloco azul atual.
+- Itens mais baixos e textos levemente menores: cabe o menu inteiro sem rolar em telas de notebook.
+- Títulos de grupo menores e mais claros, com menos linhas divisórias.
+- Contadores pequenos ao lado de Tarefas e Visitas, mostrando quantas vencem hoje.
+- Botão para recolher o menu deixando só os ícones, com o nome aparecendo ao passar o mouse.
+- Campanha Natal vira um cartão pequeno e colorido no topo, separado da navegação.
 
 ## Ordem de trabalho
 1. Desenho do menu novo (computador e celular) para aprovação.
