@@ -1,0 +1,1 @@
+- Sidebar menus per role live only in `navConfig.tsx` with shared group names (top untitled, Vendas, Negócios, Time, Marketing, Apoio); Sidebar and the mobile "Mais" sheet render the same groups. Why: one menu definition per role keeps desktop and mobile identical without touching routes or permissions.
