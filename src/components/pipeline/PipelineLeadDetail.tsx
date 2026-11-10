@@ -553,7 +553,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
 
           {currentStage?.tipo === "venda" && (
             <button
-              className="inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-success-500/12 text-success-700 hover:bg-success-500/20 transition-colors"
+              className="inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-success-500/15 text-success-700 hover:bg-success-500/20 transition-colors"
               title="Reativar este lead para uma nova compra"
               onClick={() => {
                 const destino = stages.find(s => s.tipo === "qualificacao") || stages.find(s => s.tipo === "novo_lead");
@@ -579,10 +579,10 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             if (cor === "terminal") return null;
             const dias = diasSemToque(saudeInput);
             const meta: Record<string, { cls: string; dot: string; text: string }> = {
-              verde:     { cls: "bg-success-500/12 text-success-700 dark:text-success-500", dot: "bg-success-500", text: "Em dia" },
-              ambar:     { cls: "bg-warning-500/12 text-warning-700 dark:text-warning-500", dot: "bg-warning-500", text: "Atenção" },
-              vermelho:  { cls: "bg-danger-500/12 text-danger-700 dark:text-danger-500",   dot: "bg-danger-500",  text: "Desatualizado" },
-              estagnado: { cls: "bg-violet-500/12 text-violet-700 dark:text-violet-400",   dot: "bg-violet-500",  text: "Estagnado" },
+              verde:     { cls: "bg-success-500/15 text-success-700 dark:text-success-500", dot: "bg-success-500", text: "Em dia" },
+              ambar:     { cls: "bg-warning-500/15 text-warning-700 dark:text-warning-500", dot: "bg-warning-500", text: "Atenção" },
+              vermelho:  { cls: "bg-danger-500/15 text-danger-700 dark:text-danger-500",   dot: "bg-danger-500",  text: "Desatualizado" },
+              estagnado: { cls: "bg-violet-500/15 text-violet-700 dark:text-violet-400",   dot: "bg-violet-500",  text: "Estagnado" },
             };
             const m = meta[cor] ?? meta.vermelho;
             const motivos: string[] = [];
@@ -705,7 +705,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       {leadCritico && (
         <>
           <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
-          <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
         </>
       )}
 
