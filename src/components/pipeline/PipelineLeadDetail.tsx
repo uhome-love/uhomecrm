@@ -663,9 +663,9 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
 
       {/* Negócio — só a partir de Documentação (ou se já existe negócio) */}
       {(lead.negocio_id || ["documentacao", "proposta", "contrato_gerado", "venda"].includes(stageTipoAtual)) && (
-      <section className="rounded-xl border border-border bg-card px-4 py-3">
+      <section className="rounded-xl border border-border bg-card px-5 py-4">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Negócio</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Negócio</p>
           {lead.negocio_id && <button onClick={() => setActiveTab("negocio")} className="text-[12px] font-semibold text-primary hover:underline">Abrir</button>}
         </div>
         <p className="mt-1 text-[13px] text-foreground">
@@ -933,7 +933,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             {/* ===== TAB: INFO (mobile only) — espelha conteúdo da coluna esquerda ===== */}
             {isMobile && (
               <TabsContent value="info" className="mt-0">
-                <div className="px-4 py-4 space-y-3">{bodyNode}</div>
+                <div className="px-4 py-4 space-y-4">{bodyNode}</div>
               </TabsContent>
             )}
             {/* ===== TAB: TAREFAS (v4 editorial) ===== */}
