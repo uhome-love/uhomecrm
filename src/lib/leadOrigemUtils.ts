@@ -72,3 +72,28 @@ export function empreendimentoLabel(emp?: string | null): string {
   const v = (emp ?? "").toString().trim();
   return v.length > 0 ? v : SEM_EMPREENDIMENTO_LABEL;
 }
+
+/**
+ * Grupo de origem para FILTROS (junta variações do mesmo canal).
+ * Meta, Site, Indicação, Oferta Ativa, Lia, TikTok, Portais, Reengajamento, Cadastro manual, Outros.
+ */
+export const GRUPOS_ORIGEM = [
+  "Meta", "Site", "Indicação", "Oferta Ativa", "Lia", "TikTok", "Portais",
+  "Reengajamento", "Cadastro manual", "Outros",
+] as const;
+export type GrupoOrigem = (typeof GRUPOS_ORIGEM)[number];
+
+export function grupoOrigem(bruta?: string | null): GrupoOrigem {
+  const n = chaveOrigem((bruta ?? "").toString());
+  if (!n) return "Outros";
+  if (isOfertaAtiva(n) || n === "base_unica") return "Oferta Ativa";
+  if (n.includes("tiktok")) return "TikTok";
+  if (["ig", "fb", "an", "network"].includes(n) || n.includes("meta") || n.includes("facebook") || n.includes("instagram")) return "Meta";
+  if (n === "lia" || n.startsWith("lia ")) return "Lia";
+  if (n.includes("reengajamento") || n.includes("nutricao")) return "Reengajamento";
+  if (n.startsWith("site") || n.includes("landing") || n === "formulario" || n === "quiz") return "Site";
+  if (n.includes("indicacao")) return "Indicação";
+  if (["imovelweb", "zap", "vivareal", "jetimob"].includes(n)) return "Portais";
+  if (n === "manual") return "Cadastro manual";
+  return "Outros";
+}

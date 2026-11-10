@@ -1,3 +1,4 @@
+import { grupoOrigem, GRUPOS_ORIGEM } from "@/lib/leadOrigemUtils";
 import { normalizarTemperatura } from "@/lib/temperatura";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -200,7 +201,7 @@ export function applyFilters(
   }
 
   if (filters.origens.length > 0) {
-    result = result.filter(l => l.origem && filters.origens.includes(l.origem));
+    result = result.filter(l => filters.origens.includes(grupoOrigem(l.origem)) || (!!l.origem && filters.origens.includes(l.origem)));
   }
 
   if (filters.segmentos.length > 0) {
@@ -313,9 +314,8 @@ export default function PipelineAdvancedFilters({
   useEffect(() => { persistSavedFilters(savedFilters); }, [savedFilters]);
 
   const origens = useMemo(() => {
-    const set = new Set<string>();
-    leads.forEach(l => { if (l.origem) set.add(l.origem); });
-    return Array.from(set).sort();
+    const presentes = new Set<string>(leads.map(l => grupoOrigem(l.origem)));
+    return GRUPOS_ORIGEM.filter(g => presentes.has(g));
   }, [leads]);
 
   const empreendimentos = useMemo(() => {
@@ -491,7 +491,7 @@ export default function PipelineAdvancedFilters({
                             : "border-border text-muted-foreground hover:border-primary/30"
                         )}
                       >
-                        {o.replace(/_/g, " ")}
+                        {o}
                       </button>
                     ))}
                   </div>
