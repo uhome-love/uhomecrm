@@ -9,7 +9,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getOrigemLabel } from "../LeadHistoricoTab";
+import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
 import type { PipelineLead } from "@/hooks/usePipeline";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -69,9 +69,8 @@ export default function ResumoLeadLateral({ lead }: { lead: PipelineLead }) {
     else toast.success("Orçamento atualizado");
   };
 
-  const origem = getOrigemLabel(lead.origem)?.label;
+  const origem = lead.origem ? (grupoOrigem(lead.origem) === "Outros" ? rotuloOrigem(lead.origem) : grupoOrigem(lead.origem)) : null;
   const campanha = lead.campanha || lead.formulario;
-  const ultimoToque = (lead as { ultimo_toque_at?: string | null }).ultimo_toque_at ?? null;
   const orc = fmtOrc(faixa);
 
   return (
@@ -79,6 +78,12 @@ export default function ResumoLeadLateral({ lead }: { lead: PipelineLead }) {
       <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Resumo do lead</h2>
 
       <Linha rotulo="Interesse">{lead.empreendimento || <span className="font-normal text-muted-foreground">Não informado</span>}</Linha>
+
+      <Linha rotulo="Origem">
+        {[origem, campanha].filter(Boolean).join(" · ") || <span className="font-normal text-muted-foreground">Não informada</span>}
+      </Linha>
+
+      <Linha rotulo="Entrou">{lead.created_at ? diaMes(lead.created_at) : <span className="font-normal text-muted-foreground">Sem data</span>}</Linha>
 
       <Linha rotulo="Orçamento">
         {editando ? (
@@ -106,19 +111,12 @@ export default function ResumoLeadLateral({ lead }: { lead: PipelineLead }) {
         )}
       </Linha>
 
-      <Linha rotulo="Visitas">
+      <Linha rotulo="Visitas" ultima>
         {visitas.total > 0
           ? `${visitas.total} realizada${visitas.total > 1 ? "s" : ""}${visitas.ultima ? ` · ${diaMes(visitas.ultima)}` : ""}`
           : <span className="font-normal text-muted-foreground">Nenhuma ainda</span>}
       </Linha>
 
-      <Linha rotulo="Último contato">
-        {ultimoToque ? diaMes(ultimoToque) : <span className="font-normal text-muted-foreground">Sem registro</span>}
-      </Linha>
-
-      <Linha rotulo="Origem" ultima>
-        {[origem, campanha].filter(Boolean).join(" · ") || <span className="font-normal text-muted-foreground">Não informada</span>}
-      </Linha>
     </section>
   );
 }
