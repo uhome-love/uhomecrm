@@ -214,7 +214,17 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const [registroInicial, setRegistroInicial] = useState<{ tipo?: string; texto: string } | null>(null);
   const [registrarOpen, setRegistrarOpen] = useState(false);
 
-  const currentStage = stages.find(s => s.id === lead.stage_id);
+  // Etapa desligada (ex.: Caiu) não vem na lista do quadro: busca só nome/tipo para exibir.
+  const [etapaForaDaLista, setEtapaForaDaLista] = useState<{ id: string; nome: string; tipo: string } | null>(null);
+  const etapaNaLista = stages.find(s => s.id === lead.stage_id);
+  useEffect(() => {
+    if (etapaNaLista || !lead.stage_id) { setEtapaForaDaLista(null); return; }
+    let cancel = false;
+    void supabase.from("pipeline_stages").select("id, nome, tipo").eq("id", lead.stage_id).maybeSingle()
+      .then(({ data }) => { if (!cancel) setEtapaForaDaLista((data as { id: string; nome: string; tipo: string } | null) ?? null); });
+    return () => { cancel = true; };
+  }, [etapaNaLista, lead.stage_id]);
+  const currentStage = etapaNaLista ?? (etapaForaDaLista as unknown as typeof etapaNaLista);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
 
   // Sugestão de etapa vinda do aviso do gestor (PDN)
@@ -568,7 +578,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       savePhone={handleSavePhone}
       saving={saving}
       localTelefone={telefoneForaDoRS(lead.telefone)}
-      metaExtra={<UltimoMovimento historico={leadData.historico as any} stages={stages} currentStageId={lead.stage_id} createdAt={lead.created_at} stageChangedAt={(lead as any).stage_changed_at} />}
+      metaExtra={<UltimoMovimento historico={leadData.historico as any} stages={etapaForaDaLista ? [...stages, etapaForaDaLista] : stages} currentStageId={lead.stage_id} createdAt={lead.created_at} stageChangedAt={(lead as any).stage_changed_at} />}
       pills={
         <>
           <Popover>
