@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getInitials } from "@/lib/leadHelpers";
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { LocalTelefone } from "@/lib/dddUf";
 
 interface Props {
@@ -55,6 +55,28 @@ export function formatTelefoneBR(t?: string | null): string {
 }
 
 export default function DrawerTopo(p: Props) {
+  const nomeRef = useRef<HTMLHeadingElement>(null);
+  const [nomeAberto, setNomeAberto] = useState(false);
+  // Nome em mais de uma linha: a linha de baixo não sobe por baixo dele no desktop.
+  const [nomeMultilinha, setNomeMultilinha] = useState(false);
+  useLayoutEffect(() => {
+    const el = nomeRef.current;
+    if (!el) return;
+    const medir = () => {
+      const lh = parseFloat(getComputedStyle(el).lineHeight) || 24;
+      setNomeMultilinha(el.clientHeight > lh * 1.5);
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [p.nome, p.editingName, nomeAberto]);
+  // Nome com mais de 2 linhas: o 1º toque mostra o nome inteiro; o seguinte edita.
+  const tocarNome = () => {
+    const el = nomeRef.current;
+    if (!nomeAberto && el && el.scrollHeight > el.clientHeight + 1) { setNomeAberto(true); return; }
+    p.startEditName();
+  };
   return (
     <div className="flex flex-col min-w-0">
       <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -78,11 +100,12 @@ export default function DrawerTopo(p: Props) {
               </div>
             ) : (
               <h2
-                className="text-[17px] md:text-[19px] font-bold text-foreground flex-1 min-w-0 leading-tight break-words tracking-tight outline-none focus:outline-none cursor-pointer hover:text-primary transition-colors"
+                ref={nomeRef}
+                className={`text-[17px] md:text-[19px] font-bold text-foreground flex-1 min-w-0 leading-tight break-words tracking-tight outline-none focus:outline-none cursor-pointer hover:text-primary transition-colors ${nomeAberto ? "" : "line-clamp-2"}`}
                 data-lead-titulo
                 tabIndex={-1}
-                onClick={p.startEditName}
-                title="Clique para editar o nome"
+                onClick={tocarNome}
+                title={p.nome}
               >
                 {p.nome}
               </h2>
@@ -91,7 +114,7 @@ export default function DrawerTopo(p: Props) {
           </div>
         </div>
       </div>
-      <div className="min-w-0 mt-1 md:-mt-2.5 md:pl-[60px]">
+      <div className={`min-w-0 mt-1 md:pl-[60px] ${nomeMultilinha ? "md:mt-1" : "md:-mt-2.5"}`}>
           {(p.pills || p.metaExtra) && (
             <div className="mt-0.5 flex items-center gap-1 min-[380px]:gap-1.5 flex-wrap md:flex-nowrap min-w-0 max-[380px]:[&_.rounded-full]:px-2 max-[380px]:[&_.rounded-full]:gap-0.5">
               {p.pills}
