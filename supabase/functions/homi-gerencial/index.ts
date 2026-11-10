@@ -2,6 +2,7 @@ import { homiGateway } from "../_shared/homiGateway.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadEnterpriseKnowledge, getEmpreendimentoNames, getKnowledgeSourceHeader } from "../_shared/enterprise-knowledge.ts";
+import { resumoNegociosPipeline } from "../_shared/negociosPipeline.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,7 +125,7 @@ serve(async (req) => {
     }
 
     // ─── Build context summary ───
-    const pdnStats = buildPdnSummary(pdnData || []);
+    const pdnStats = (await resumoNegociosPipeline(adminClient, teamUserIds, currentMonth)) + "\n" + buildPdnSummary(pdnData || []);
     const checkpointSummary = buildCheckpointSummary(checkpointLines, teamMembers || []);
     const visitasSummary = buildVisitasSummary(visitasWeek || []);
 
@@ -259,7 +260,6 @@ function buildPdnSummary(pdn: any[]): string {
   const total = pdn.length;
   // Fases canônicas (pós-consolidação 07/2026): em_negociacao | contrato | ganho.
   // "Perdido" vive em coluna status, não em fase.
-  const emNegociacao = pdn.filter(p => p.fase === "em_negociacao" && p.status !== "perdido").length;
   const contrato = pdn.filter(p => p.fase === "contrato" && p.status !== "perdido").length;
   const ganho = pdn.filter(p => p.fase === "ganho").length;
   const perdido = pdn.filter(p => p.status === "perdido").length;
@@ -276,7 +276,6 @@ function buildPdnSummary(pdn: any[]): string {
   });
 
   let summary = `- Total negócios: ${total}
-- Em Negociação: ${emNegociacao} | Contrato: ${contrato} | Ganho: ${ganho} | Perdido: ${perdido}
 - VGV Assinado: R$ ${(vgvAssinado / 1000).toFixed(0)}k
 - VGV Projetado: R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
 

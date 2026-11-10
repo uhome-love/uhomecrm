@@ -2,6 +2,7 @@ import { homiGateway } from "../_shared/homiGateway.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadEnterpriseKnowledge, getEmpreendimentoNames, getKnowledgeSourceHeader } from "../_shared/enterprise-knowledge.ts";
+import { resumoNegociosPipeline } from "../_shared/negociosPipeline.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -184,7 +185,7 @@ Seja direto, use dados concretos. Máximo 300 palavras. Período: ${periodo || "
     const managerMap: Record<string, string> = {};
     (managerProfiles || []).forEach(p => { managerMap[p.user_id] = p.nome || p.email || "?"; });
 
-    const pdnGlobal = buildPdnGlobal(allPdn || [], managerMap, allTeamMembers || []);
+    const pdnGlobal = (await resumoNegociosPipeline(adminClient, null, currentMonth)) + "\n" + buildPdnGlobal(allPdn || [], managerMap, allTeamMembers || []);
     const checkpointGlobal = buildCheckpointGlobal(allCheckpointLines, allCheckpoints || [], allTeamMembers || [], managerMap);
     const visitasGlobal = buildVisitasGlobal(allVisitas || []);
     const pipelineSummary = buildPipelineSummary(pipelineLeads || [], stages || []);
@@ -332,7 +333,6 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
   const total = pdn.length;
   // Fases canônicas (pós-consolidação 07/2026): em_negociacao | contrato | ganho.
   // "Perdido" vive em coluna status, não em fase.
-  const emNegociacao = pdn.filter(p => p.fase === "em_negociacao" && p.status !== "perdido").length;
   const contrato = pdn.filter(p => p.fase === "contrato" && p.status !== "perdido").length;
   const ganho = pdn.filter(p => p.fase === "ganho").length;
   const perdido = pdn.filter(p => p.status === "perdido").length;
@@ -340,7 +340,6 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
   const vgvProjetado = pdn.filter(p => ["em_negociacao", "contrato", "ganho"].includes(p.fase) && p.status !== "perdido").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
   let summary = `- Total negócios: ${total}
-- Em Negociação: ${emNegociacao} | Contrato: ${contrato} | Ganho: ${ganho} | Perdido: ${perdido}
 - VGV Assinado: R$ ${(vgvAssinado / 1000).toFixed(0)}k
 - VGV Projetado: R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
 
