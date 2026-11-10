@@ -351,7 +351,7 @@ export default function PipelineAdvancedFilters({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant={activeCount > 0 ? "default" : "outline"} size="sm" className="gap-1.5 h-9 text-[12px] rounded-lg">
+        <Button variant="ghost" size="sm" className={cn("gap-1.5 h-9 text-[12px] rounded-lg transition-colors duration-fast", activeCount > 0 ? "bg-primary/10 text-primary hover:bg-primary/15" : "bg-muted/60 text-foreground hover:bg-muted")}>
           <SlidersHorizontal className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">+ Filtros</span>
           {activeCount > 0 && (

@@ -25,7 +25,7 @@ const TRIGGER_BY_VARIANT: Record<CorretorSelectVariant, string> = {
   tablet:
     "h-7 text-[10px] w-[110px] shrink-0 rounded-[7px] font-semibold",
   desktop:
-    "h-[32px] text-[12px] max-w-[200px] min-w-[150px] shrink rounded-lg font-medium",
+    "h-9 text-[12px] max-w-[200px] min-w-[150px] shrink rounded-lg font-medium transition-colors duration-fast",
 };
 
 const ACTIVE_BY_VARIANT: Record<CorretorSelectVariant, string> = {
@@ -34,7 +34,7 @@ const ACTIVE_BY_VARIANT: Record<CorretorSelectVariant, string> = {
   tablet:
     "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300",
   desktop:
-    "border-primary bg-primary/5 dark:bg-primary/10 text-primary",
+    "border-transparent bg-primary/10 text-primary",
 };
 
 const IDLE_BY_VARIANT: Record<CorretorSelectVariant, string> = {

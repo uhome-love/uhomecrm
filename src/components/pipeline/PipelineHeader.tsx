@@ -486,23 +486,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         </div>
 
-        {/* ══ CHIPS DE FILTRO ATIVO — sempre visível quando há filtro (mesmo com a 3ª linha colapsada) ══ */}
-        {activeChips.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-border bg-muted/30 px-3 sm:px-4 lg:px-6 py-2">
-            <span className="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">Filtros ativos</span>
-            {activeChips.map(chip => (
-              <span key={chip.id} className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs font-medium text-foreground">
-                {chip.label}
-                <button onClick={chip.onRemove} aria-label={`Remover ${chip.label}`} className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"><X className="h-3 w-3" /></button>
-              </span>
-            ))}
-            <button onClick={clearAllFilters} className="ml-1 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer">Limpar tudo</button>
-          </div>
-        )}
-
         {/* ══ ZONA 3 — Ferramentas (busca + filtros + ordenação + ações) · colapsável ══ */}
         {toolsOpen && (
-        <div className="flex min-h-12 flex-wrap lg:flex-nowrap items-center gap-1.5 lg:gap-2 sm:border-t border-border px-3 sm:px-4 lg:px-6 py-2">
+        <div className="flex min-h-12 flex-wrap lg:flex-nowrap items-center gap-1.5 lg:gap-2 px-3 sm:px-4 lg:px-6 py-2">
           <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[190px] sm:max-w-[360px]">
             <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -510,7 +496,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               placeholder="Buscar lead…"
               value={filters.search}
               onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-              className="w-full outline-none h-10 sm:h-9 rounded-full sm:rounded-lg bg-muted sm:bg-muted/40 border border-transparent sm:border-border pl-9 pr-8 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary"
+              className="w-full outline-none h-10 sm:h-9 rounded-full sm:rounded-lg bg-muted sm:bg-muted/60 border border-transparent pl-9 pr-8 text-xs font-medium text-foreground transition-all duration-200 focus:border-primary/40 focus:bg-card"
             />
             {filters.search && (
               <button aria-label="Limpar busca" onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -582,7 +568,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button aria-label="Mais ações" className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-muted-foreground bg-muted/40 border border-border cursor-pointer hover:text-foreground">
+                <button aria-label="Mais ações" className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-muted-foreground bg-muted/60 cursor-pointer hover:text-foreground">
                   <MoreHorizontal size={15} strokeWidth={1.5} />
                 </button>
               </DropdownMenuTrigger>
@@ -600,6 +586,19 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             </DropdownMenu>
         </div>
         )}
+        {/* ══ CHIPS DE FILTRO ATIVO — sempre visível quando há filtro (mesmo com a 3ª linha colapsada) ══ */}
+        {activeChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4 lg:px-6 pb-2.5 pt-0.5">
+            {activeChips.map(chip => (
+              <span key={chip.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 pl-2.5 pr-1 py-0.5 text-xs font-semibold text-primary animate-in fade-in-0 zoom-in-95 duration-fast">
+                {chip.label}
+                <button onClick={chip.onRemove} aria-label={`Remover ${chip.label}`} className="ml-0.5 rounded-full p-0.5 text-primary/70 hover:bg-primary/15 hover:text-primary cursor-pointer"><X className="h-3 w-3" /></button>
+              </span>
+            ))}
+            <button onClick={clearAllFilters} className="ml-1 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer">Limpar</button>
+          </div>
+        )}
+
       </div>
 
 
