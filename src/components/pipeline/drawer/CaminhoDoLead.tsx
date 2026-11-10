@@ -120,7 +120,7 @@ export function UltimoMovimento({ historico, stages, createdAt }: Props) {
         <button
           type="button"
           className={cn(
-            "inline-flex min-w-0 max-w-full items-center gap-1 rounded-md px-1 -mx-1 text-[12px] font-medium hover:bg-muted transition-colors",
+            "inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md px-1 -mx-1 text-[12px] font-medium hover:bg-muted transition-colors",
             ult.voltou ? "text-primary" : "text-muted-foreground",
           )}
           aria-label="Ver caminho do lead"
