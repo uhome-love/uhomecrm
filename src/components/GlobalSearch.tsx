@@ -218,7 +218,7 @@ export default function GlobalSearch() {
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
+    <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
       <CommandInput
         placeholder="Buscar leads, negócios, visitas, corretores..."
         value={query}
