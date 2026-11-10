@@ -1,5 +1,5 @@
 /** Tela de ligação única para Listas, Estagnados e Descartados: cliente, roteiro, resultado e ranking. */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, SkipForward, Trophy, Phone, Loader2, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
