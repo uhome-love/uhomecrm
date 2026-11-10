@@ -25,6 +25,27 @@ Deno.serve(async (req) => {
     const token = Deno.env.get("CRM_BRIDGE_TOKEN")?.trim();
     if (!token) return json({ error: "Ligação com o site não configurada." }, 500);
 
+    // Verificação (só admin/diretor): confere no site a página de vários corretores pelo e-mail.
+    const body = await req.json().catch(() => ({}));
+    if (Array.isArray(body?.verificar_emails)) {
+      const { data: papeis } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+      if (!(papeis ?? []).some((p: { role: string }) => p.role === "admin" || p.role === "diretor")) {
+        return json({ error: "Só a direção pode fazer essa verificação." }, 403);
+      }
+      const emails = (body.verificar_emails as unknown[]).filter((e): e is string => typeof e === "string").slice(0, 50);
+      const resultados = await Promise.all(emails.map(async (em) => {
+        const rr = await fetch(SITE_BRIDGE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-crm-token": token },
+          body: JSON.stringify({ action: "list_natal_links", payload: { email: em } }),
+        });
+        const cc = await rr.json().catch(() => ({}));
+        return { email: em, status: rr.status, nome: cc?.corretor?.nome ?? null, slug: cc?.corretor?.slug ?? null,
+          campanha_url: cc?.campanha_url ?? null, produtos: cc?.produtos?.length ?? 0, erro: cc?.error ?? null };
+      }));
+      return json({ resultados });
+    }
+
     const payload: Record<string, string> = {};
     if (slug) payload.corretor_slug = slug;
     if (email) payload.email = email;
