@@ -130,7 +130,7 @@ export default function DrawerTopo(p: Props) {
               </span>
             )}
           </div>
-          {p.faixa && <div className="mt-3">{p.faixa}</div>}
+          {p.faixa && <div className="mt-3 hidden md:block">{p.faixa}</div>}
         </div>
       </div>
       {p.actions && <div className="hidden md:flex items-center gap-1.5 shrink-0">{p.actions}</div>}
