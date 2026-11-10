@@ -38,6 +38,7 @@ import EstagnacaoStatusCard from "./EstagnacaoStatusCard";
 import { QualificacaoEtapaCard, PerfilLeadCard } from "./QualificacaoChecklistCard";
 import { getOrigemLabel } from "./LeadHistoricoTab";
 import DrawerTopo from "./drawer/DrawerTopo";
+import ResumoLead from "./ResumoLead";
 import DrawerAgora from "./drawer/DrawerAgora";
 import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
 import { VISITA_SUBSTATUS, AQUECIMENTO_SUBSTATUS } from "@/lib/leadHelpers";
@@ -738,6 +739,8 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   // Dados de consulta (origem, anúncio, formulário) — aba "Dados do lead".
   const dadosNode = (
     <div className="px-4 md:px-6 py-4 space-y-3 max-w-3xl">
+      {/* Resumo editável (orçamento, interesse, temperatura) — saiu da linha do tempo */}
+      <ResumoLead lead={lead} />
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (
