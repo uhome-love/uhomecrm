@@ -44,6 +44,8 @@ export default function GlobalSearch() {
   const { isGestor, isAdmin } = useUserRole();
   const navigate = useNavigate();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const buscaAtual = useRef(0);
+  const [falhou, setFalhou] = useState(false);
 
   // Ctrl+K / Cmd+K shortcut
   useEffect(() => {
@@ -66,21 +68,27 @@ export default function GlobalSearch() {
   }, [open]);
 
   const search = useCallback(async (term: string) => {
+    const minhaBusca = ++buscaAtual.current;
     if (!user || term.length < 2) {
       setResults([]);
+      setFalhou(false);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
+    setFalhou(false);
     const all: SearchResult[] = [];
+    let erro = false;
 
     try {
       // Search pipeline_leads
-      const { data: leads } = await supabase
+      const { data: leads, error: eLeads } = await supabase
         .from("pipeline_leads")
         .select("id, nome, telefone, email, empreendimento, temperatura, stage_id, oportunidade_score")
         .or(`nome.ilike.%${term}%,telefone.ilike.%${term}%,email.ilike.%${term}%,empreendimento.ilike.%${term}%`)
         .limit(6);
+      if (eLeads) erro = true;
 
       // Fetch stage names for badge
       const stageIds = [...new Set((leads || []).map(l => l.stage_id))];
@@ -105,12 +113,13 @@ export default function GlobalSearch() {
       });
 
       // Search negócios
-      const { data: negocios } = await supabase
+      const { data: negocios, error: eNeg } = await supabase
         .from("negocios")
-        .select("id, nome_cliente, empreendimento, fase, vgv_estimado")
+        .select("id, nome_cliente, empreendimento, fase, vgv_estimado, pipeline_lead_id")
         .eq("status", "ativo")
         .or(`nome_cliente.ilike.%${term}%,empreendimento.ilike.%${term}%`)
         .limit(6);
+      if (eNeg) erro = true;
 
       (negocios || []).forEach(n => {
         const vgvStr = n.vgv_estimado ? `R$${(n.vgv_estimado / 1000).toFixed(0)}k` : "";
@@ -120,17 +129,18 @@ export default function GlobalSearch() {
           title: n.nome_cliente,
           subtitle: [n.empreendimento, n.fase, vgvStr].filter(Boolean).join(" · "),
           badge: "Negócio",
-          url: `/pipeline-negocios?negocio=${n.id}`,
+          url: n.pipeline_lead_id ? `/pipeline-leads?lead=${n.pipeline_lead_id}` : "/pipeline-leads",
         });
       });
 
       // Search visitas
-      const { data: visitas } = await supabase
+      const { data: visitas, error: eVis } = await supabase
         .from("visitas")
-        .select("id, nome_cliente, empreendimento, data_visita, hora_visita, status")
+        .select("id, nome_cliente, empreendimento, data_visita, hora_visita, status, pipeline_lead_id")
         .or(`nome_cliente.ilike.%${term}%,empreendimento.ilike.%${term}%`)
         .order("data_visita", { ascending: false })
         .limit(6);
+      if (eVis) erro = true;
 
       (visitas || []).forEach(v => {
         const dateStr = v.data_visita ? new Date(v.data_visita).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "";
@@ -140,7 +150,9 @@ export default function GlobalSearch() {
           title: v.nome_cliente || "Visita",
           subtitle: [v.empreendimento, dateStr, v.hora_visita, v.status].filter(Boolean).join(" · "),
           badge: v.status || "Visita",
-          url: `/agenda-visitas?visita=${v.id}`,
+          url: v.pipeline_lead_id
+            ? `/pipeline-leads?lead=${v.pipeline_lead_id}`
+            : `/agenda-visitas?q=${encodeURIComponent(v.nome_cliente || "")}`,
         });
       });
 
@@ -166,9 +178,13 @@ export default function GlobalSearch() {
       }
     } catch (err) {
       console.error("Global search error:", err);
+      erro = true;
     }
 
+    // Resposta atrasada de uma busca antiga nunca substitui a atual.
+    if (minhaBusca !== buscaAtual.current) return;
     setResults(all);
+    setFalhou(erro && all.length === 0);
     setLoading(false);
   }, [user, isGestor, isAdmin]);
 
@@ -221,7 +237,14 @@ export default function GlobalSearch() {
           </CommandGroup>
         )}
 
-        {!showQuickActions && !hasResults && !loading && (
+        {!showQuickActions && falhou && !loading && (
+          <div role="alert" className="py-6 text-center text-sm text-muted-foreground">
+            Não foi possível buscar agora.{" "}
+            <button type="button" className="font-semibold text-primary underline" onClick={() => search(query)}>Tentar de novo</button>
+          </div>
+        )}
+
+        {!showQuickActions && !hasResults && !loading && !falhou && (
           <CommandEmpty>Nenhum resultado para "{query}"</CommandEmpty>
         )}
 
