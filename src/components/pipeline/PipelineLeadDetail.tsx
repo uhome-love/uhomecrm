@@ -54,7 +54,7 @@ import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
-import { leadSaude, diasSemToque } from "@/lib/leadSaude";
+import { leadSaude, diasSemToque, prazoDaEtapa } from "@/lib/leadSaude";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
 import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
@@ -617,7 +617,34 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
 
 
 
+      {/* Atenção — explica por que o cliente está vermelho/estagnado (mesma régua do cartão) */}
+      {(() => {
+        const inp = {
+          ultimo_toque_at: lead.ultimo_toque_at,
+          distribuido_em: lead.distribuido_em,
+          aceito_em: (lead as any).aceito_em,
+          created_at: lead.created_at,
+          stage_tipo: currentStage?.tipo,
+          estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate,
+        };
+        const cor = leadSaude(inp);
+        if (cor !== "vermelho" && cor !== "estagnado") return null;
+        const dias = diasSemToque(inp);
+        return (
+          <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-3.5 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">Atenção</p>
+            <p className="text-[13px] font-semibold text-destructive mt-0.5">
+              {dias != null ? `${dias} ${dias === 1 ? "dia" : "dias"} sem contato` : "Sem contato registrado"}
+            </p>
+            <p className="text-[11.5px] text-muted-foreground">
+              Na etapa {currentStage?.nome ?? "atual"} o prazo é {prazoDaEtapa(currentStage?.tipo)} {prazoDaEtapa(currentStage?.tipo) === 1 ? "dia" : "dias"}
+            </p>
+          </div>
+        );
+      })()}
+
       {/* ⚡ Registrar atividade — ação PRIMÁRIA (Nova Gestão): é o que carimba o toque */}
+      <div className="hidden md:block space-y-1.5">
       <button
         type="button"
         onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar_atividade" }); setRegistrarOpen(true); }}
