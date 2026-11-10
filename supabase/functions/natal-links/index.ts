@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     const slug = (perfil?.slug_ref as string | null) ?? null;
     if (!slug && !email) return json({ error: "Seu cadastro não tem e-mail nem link do site." }, 404);
 
-    const token = Deno.env.get("CRM_BRIDGE_TOKEN");
+    const token = Deno.env.get("CRM_BRIDGE_TOKEN")?.trim();
     if (!token) return json({ error: "Ligação com o site não configurada." }, 500);
 
     const payload: Record<string, string> = {};
