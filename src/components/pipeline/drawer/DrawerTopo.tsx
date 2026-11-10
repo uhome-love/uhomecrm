@@ -93,7 +93,7 @@ export default function DrawerTopo(p: Props) {
       </div>
       <div className="min-w-0 mt-1 md:-mt-2.5 md:pl-[60px]">
           {(p.pills || p.metaExtra) && (
-            <div className="mt-0.5 flex items-center gap-1 min-[380px]:gap-1.5 flex-wrap md:flex-nowrap min-w-0">
+            <div className="mt-0.5 flex items-center gap-1 min-[380px]:gap-1.5 flex-wrap md:flex-nowrap min-w-0 max-[380px]:[&_.rounded-full]:px-2 max-[380px]:[&_.rounded-full]:gap-0.5">
               {p.pills}
               {p.metaExtra && <div className="flex min-w-0 flex-1 basis-full md:basis-auto items-center md:pl-1">{p.metaExtra}</div>}
             </div>
