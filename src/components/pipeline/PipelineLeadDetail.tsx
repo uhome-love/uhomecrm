@@ -54,7 +54,7 @@ import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
-import { leadSaude, diasSemToque } from "@/lib/leadSaude";
+import { leadSaude, diasSemToque, prazoDaEtapa } from "@/lib/leadSaude";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
 import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
@@ -585,39 +585,34 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         />
       )}
 
-      {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
-      {empreendimentoOpen && (
-        <div className="flex items-center gap-2">
-          <EmpreendimentoCombobox
-            value={empreendimentoSearch || lead.empreendimento || ""}
-            onChange={setEmpreendimentoSearch}
-            className="h-8 text-xs flex-1"
-          />
-          <Button
-            size="sm"
-            className="h-8 text-xs px-3"
-            disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
-            onClick={async () => {
-              setSavingEmpreendimento(true);
-              try {
-                await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
-                toast.success("Empreendimento atualizado");
-                setEmpreendimentoOpen(false);
-              } catch { toast.error("Erro ao salvar"); }
-              finally { setSavingEmpreendimento(false); }
-            }}
-          >
-            {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-          </Button>
-          <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
-            Cancelar
-          </Button>
-        </div>
-      )}
-
-
+      {/* Atenção — explica por que o cliente está vermelho/estagnado (mesma régua do cartão) */}
+      {(() => {
+        const inp = {
+          ultimo_toque_at: lead.ultimo_toque_at,
+          distribuido_em: lead.distribuido_em,
+          aceito_em: (lead as any).aceito_em,
+          created_at: lead.created_at,
+          stage_tipo: currentStage?.tipo,
+          estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate,
+        };
+        const cor = leadSaude(inp);
+        if (cor !== "vermelho" && cor !== "estagnado") return null;
+        const dias = diasSemToque(inp);
+        return (
+          <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-3.5 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">Atenção</p>
+            <p className="text-[13px] font-semibold text-destructive mt-0.5">
+              {dias != null ? `${dias} ${dias === 1 ? "dia" : "dias"} sem contato` : "Sem contato registrado"}
+            </p>
+            <p className="text-[11.5px] text-muted-foreground">
+              Na etapa {currentStage?.nome ?? "atual"} o prazo é {prazoDaEtapa(currentStage?.tipo)} {prazoDaEtapa(currentStage?.tipo) === 1 ? "dia" : "dias"}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* ⚡ Registrar atividade — ação PRIMÁRIA (Nova Gestão): é o que carimba o toque */}
+      <div className="hidden md:block space-y-1.5">
       <button
         type="button"
         onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar_atividade" }); setRegistrarOpen(true); }}
@@ -660,23 +655,27 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             </button>
           }
         />
+      </div>
+      </div>
 
-        {/* Apagar (CEO) — admin only, isolado fora do menu padrão */}
-        {isAdmin && onDelete && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center justify-center gap-1.5 h-7 rounded-md text-[10px] text-destructive/70 hover:text-destructive hover:bg-destructive/5 transition-colors">
-                <Trash2 className="h-3 w-3" />
-                Ações admin
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
-                <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar lead (CEO)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+      {/* Mobile: "Mais ações" (as ações principais ficam na barra fixa embaixo) */}
+      <div className="md:hidden">
+        <CardOverflowMenu
+          lead={lead}
+          stages={stages}
+          onMoveLead={(leadId, newStageId, observacao) => {
+            if (stages.find(s => s.id === newStageId)?.tipo === "venda") { setConfirmarVendaOpen(true); return; }
+            onMove(leadId, newStageId, observacao);
+          }}
+          onOpenDetail={() => { /* já está aberto */ }}
+          onRegistrarAtividade={() => setRegistrarOpen(true)}
+          onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
+          trigger={
+            <button className="w-full flex items-center justify-center gap-1.5 h-10 rounded-xl border border-border bg-card text-[12px] text-muted-foreground">
+              <MoreHorizontal className="h-3.5 w-3.5" /> Mais ações
+            </button>
+          }
+        />
       </div>
 
       {/* ── AVISO DE SAÚDE — só quando o lead está vermelho/crítico ── */}
@@ -687,17 +686,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </>
       )}
 
-      {/* ── DETALHES DO LEAD — recolhível pra desafogar a coluna (declutter) ── */}
-      <Collapsible className="rounded-2xl md:rounded-xl border border-border/70 bg-card">
-        <CollapsibleTrigger className="group/det flex w-full items-center justify-between gap-3 px-4 md:px-3 py-3.5 md:py-2.5 text-[12.5px] font-semibold hover:bg-muted/30 transition-colors">
-          <span className="flex flex-col items-start text-left gap-0.5 min-w-0">
-            <span className="text-[15px] md:text-[12.5px] font-semibold text-foreground">Detalhes do lead</span>
-            <span className="text-[12px] md:text-[10.5px] font-normal text-muted-foreground truncate">Origem, anúncio e formulário</span>
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/det:rotate-90" />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="px-2.5 pb-2.5 space-y-2">
-
       {/* Checklist de Qualificação — só visível quando o lead está na etapa Qualificação */}
       {currentStage?.tipo === "qualificacao" && (
         <>
@@ -705,6 +693,54 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           <PerfilLeadCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
         </>
       )}
+
+      {/* ════════════ SITUAÇÃO DA ETAPA ════════════ */}
+      <LeadFlagControls
+        leadId={lead.id}
+        stageTipo={(currentStage as any)?.tipo || ""}
+        flagStatus={lead.flag_status as Record<string, string> | null}
+        onUpdate={(_updated) => {
+          // Trigger refresh via existing reload mechanism
+        }}
+      />
+    </>
+  );
+
+  // Dados de consulta (origem, anúncio, formulário) — aba "Dados do lead".
+  const dadosNode = (
+    <div className="px-4 md:px-6 py-4 space-y-3 max-w-3xl">
+
+      {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
+      {empreendimentoOpen && (
+        <div className="flex items-center gap-2">
+          <EmpreendimentoCombobox
+            value={empreendimentoSearch || lead.empreendimento || ""}
+            onChange={setEmpreendimentoSearch}
+            className="h-8 text-xs flex-1"
+          />
+          <Button
+            size="sm"
+            className="h-8 text-xs px-3"
+            disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
+            onClick={async () => {
+              setSavingEmpreendimento(true);
+              try {
+                await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
+                toast.success("Empreendimento atualizado");
+                setEmpreendimentoOpen(false);
+              } catch { toast.error("Erro ao salvar"); }
+              finally { setSavingEmpreendimento(false); }
+            }}
+          >
+            {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
+            Cancelar
+          </Button>
+        </div>
+      )}
+
+
 
       {/* Caixa Empreendimento polida (header + 3 métricas) */}
       <DrawerEmpreendimento
@@ -798,19 +834,24 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </p>
       )}
 
-        </CollapsibleContent>
-      </Collapsible>
-
-      {/* ════════════ FLAG CONTROLS ════════════ */}
-      <LeadFlagControls
-        leadId={lead.id}
-        stageTipo={(currentStage as any)?.tipo || ""}
-        flagStatus={lead.flag_status as Record<string, string> | null}
-        onUpdate={(_updated) => {
-          // Trigger refresh via existing reload mechanism
-        }}
-      />
-    </>
+      {/* Apagar (CEO) — admin only, discreto no fim dos dados */}
+      {isAdmin && onDelete && (
+        <div className="pt-2 flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] text-destructive/70 hover:text-destructive hover:bg-destructive/5 transition-colors">
+                <Trash2 className="h-3 w-3" /> Ações admin
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar lead (CEO)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+    </div>
   );
 
   return (
@@ -836,26 +877,29 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 px-3 md:px-5 pr-12 md:pr-5 pt-3 md:pt-4 pb-2 md:pb-1 flex items-center gap-2 md:border-b border-border/50">
-            <TabsList className="bg-muted rounded-full md:rounded-md p-1 h-10 md:h-8 flex-1 flex justify-between md:justify-center overflow-hidden md:overflow-x-auto scrollbar-none">
+            <TabsList className="bg-muted rounded-full md:rounded-md p-1 h-10 md:h-8 flex-1 flex justify-start md:justify-center overflow-x-auto scrollbar-none">
               {isMobile && (
-                <TabsTrigger value="info" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                  <span className="hidden md:inline">ℹ️</span> Info
+                <TabsTrigger value="info" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                  Agora
                 </TabsTrigger>
               )}
-              <TabsTrigger value="historico" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                <span className="hidden md:inline">📖</span> História
-                {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{leadData.atividades.length}</Badge>}
+              <TabsTrigger value="historico" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                <span className="md:hidden">Histórico</span><span className="hidden md:inline">Linha do tempo</span>
+                {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-4 md:h-3.5 text-[10px] md:text-[8px] px-1.5 md:px-1 ml-1">{leadData.atividades.length}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="tarefas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                <span className="hidden md:inline">📌</span> Tarefas
-                {pendingTasks > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{pendingTasks}</Badge>}
+              <TabsTrigger value="tarefas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                Tarefas
+                {pendingTasks > 0 && <Badge variant="secondary" className="h-4 md:h-3.5 text-[10px] md:text-[8px] px-1.5 md:px-1 ml-1">{pendingTasks}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="visitas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                <span className="hidden md:inline">📊</span> Visitas
+              <TabsTrigger value="visitas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                Visitas
+              </TabsTrigger>
+              <TabsTrigger value="dados" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                <span className="md:hidden">Dados</span><span className="hidden md:inline">Dados do lead</span>
               </TabsTrigger>
               {lead.negocio_id && (
-                <TabsTrigger value="negocio" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
-                  <span className="hidden md:inline">💼</span> Negócio
+                <TabsTrigger value="negocio" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                  Negócio
                 </TabsTrigger>
               )}
             </TabsList>
@@ -926,6 +970,9 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
               />
             </TabsContent>
 
+            {/* ===== TAB: DADOS DO LEAD ===== */}
+            <TabsContent value="dados" className="mt-0">{dadosNode}</TabsContent>
+
             {/* ===== TAB: VISITAS (v4 editorial) ===== */}
             <TabsContent value="visitas" className="mt-0">
               <DrawerVisitsTab
@@ -957,31 +1004,37 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </div>
 
         {/* ════════════ BARRA DE AÇÃO FIXA (mobile) — Histórico/Tarefas/Visitas (aba Info já tem a grade de ações) ════════════ */}
-        {isMobile && !homiOpen && activeTab !== "info" && (
+        {isMobile && !homiOpen && (
           <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-border/50 bg-card/95 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_hsl(var(--foreground)/0.18)] animate-fade-in motion-reduce:animate-none">
             <button
               onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
               disabled={!lead.telefone}
-              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+              aria-label="Ligar"
+              className="shrink-0 flex items-center justify-center h-11 w-12 rounded-xl border border-border bg-card text-foreground disabled:opacity-40 active:scale-[0.98] transition-transform"
             >
-              <Phone className="h-4 w-4" /> Ligar
+              <Phone className="h-4 w-4" />
             </button>
             <button
               onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
               disabled={!lead.telefone}
-              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-emerald-600 text-white font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+              aria-label="WhatsApp"
+              className="shrink-0 flex items-center justify-center h-11 w-12 rounded-xl border border-border bg-card text-success-700 disabled:opacity-40 active:scale-[0.98] transition-transform"
             >
-              <MessageCircle className="h-4 w-4" /> WhatsApp
+              <MessageCircle className="h-4 w-4" />
             </button>
-            {currentStage?.tipo !== "visita" && (
-              <button
-                onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setNextActionOpen(true); }}
-                aria-label="Nova tarefa"
-                className="shrink-0 flex items-center justify-center h-11 w-11 rounded-xl border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            )}
+            <button
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
+              aria-label="Anotar"
+              className="shrink-0 flex items-center justify-center h-11 w-12 rounded-xl border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
+            >
+              <FileText className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar_atividade" }); setRegistrarOpen(true); }}
+              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.98] transition-transform"
+            >
+              <Zap className="h-4 w-4" /> Registrar
+            </button>
           </div>
         )}
 

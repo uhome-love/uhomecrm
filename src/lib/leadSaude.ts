@@ -20,6 +20,11 @@ const PRAZO_POR_ETAPA: Record<string, number> = {
 };
 const PRAZO_PADRAO = 7;
 
+/** Prazo "em dia" (dias sem toque) da etapa — usado só para explicar o aviso na ficha. */
+export function prazoDaEtapa(stageTipo?: string | null): number {
+  return (stageTipo && PRAZO_POR_ETAPA[stageTipo]) || PRAZO_PADRAO;
+}
+
 /**
  * Estagnação (dias sem toque) — vira "ponto de decisão", só nas etapas que
  * estagnam. Sem Contato é por cadência (Fase 2); aqui uso uma aproximação.
