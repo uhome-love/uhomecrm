@@ -112,7 +112,7 @@ export default function DrawerTopo(p: Props) {
                 )}
                 {p.localTelefone && (
                   <span className="ml-1 inline-flex h-5 items-center rounded-md bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
-                    DDD {p.localTelefone.ddd} · {p.localTelefone.estado}
+                    DDD {p.localTelefone.ddd} · {p.localTelefone.nome}
                   </span>
                 )}
               </span>
