@@ -126,7 +126,7 @@ export function UltimoMovimento({ historico, stages, createdAt }: Props) {
           aria-label="Ver caminho do lead"
         >
           <Icone className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">
+          <span>
             {ult.voltou ? "Voltou para" : "Avançou para"} {nomeDe(ult.stageId)} · {diaMesBRT(ult.data)}
           </span>
           <ChevronDown className="h-3 w-3 shrink-0 opacity-70" />
