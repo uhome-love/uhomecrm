@@ -656,52 +656,37 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
 
   return (
     <div className="pb-8">
-      {/* Header padronizado (igual Tarefas/Visitas) */}
-      <div className="px-7 pt-6 pb-4 flex justify-between items-end border-b border-zinc-100">
-        <div>
-          <div className="text-lg font-bold text-zinc-900 tracking-tight">História do lead</div>
-          <div className="text-xs text-zinc-500 mt-0.5">
-            {histView === "narrativa"
-              ? <>a jornada — {narrativaItems.length} marco{narrativaItems.length !== 1 ? "s" : ""}</>
-              : <>andaime operacional — {sistemaItems.length} evento{sistemaItems.length !== 1 ? "s" : ""}</>}
-          </div>
-        </div>
-        <button
-          onClick={() => setNovoHistoricoOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" /> Novo histórico
-        </button>
-      </div>
-
-
-      {/* Toggle Narrativa | Sistema — o andaime automático mora dentro da própria História */}
-      <div className="px-7 pt-4">
-        <div className="inline-flex rounded-lg bg-zinc-100 p-0.5">
-          <button
-            onClick={() => setHistView("narrativa")}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "narrativa" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            📖 Narrativa
-            <span className={`text-[10px] font-bold rounded-full px-1.5 ${histView === "narrativa" ? "bg-indigo-100 text-indigo-700" : "bg-zinc-200 text-zinc-500"}`}>{narrativaItems.length}</span>
-          </button>
-          <button
-            onClick={() => setHistView("sistema")}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "sistema" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            ⚙️ Sistema
-            <span className={`text-[10px] font-bold rounded-full px-1.5 ${histView === "sistema" ? "bg-zinc-200 text-zinc-700" : "bg-zinc-200 text-zinc-500"}`}>{sistemaItems.length}</span>
-          </button>
+      {/* Filtro + ação discreta (a aba já diz "Linha do tempo") */}
+      <div className="px-5 md:px-7 pt-4 flex items-center justify-between gap-3">
+        <div className="inline-flex rounded-lg bg-muted p-0.5">
+          {([
+            ["narrativa", "Narrativa", narrativaItems.length],
+            ["sistema", "Sistema", sistemaItems.length],
+          ] as const).map(([v, label, n]) => (
+            <button
+              key={v}
+              onClick={() => setHistView(v)}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors ${histView === v ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {label}
+              <span className="text-[10.5px] tabular-nums text-muted-foreground">{n}</span>
+            </button>
+          ))}
           {isLia && (
             <button
               onClick={() => setHistView("lia")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${histView === "lia" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors ${histView === "lia" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <MessageSquare className="h-3.5 w-3.5" /> Conversa Lia
+              Conversa Lia
             </button>
           )}
-
         </div>
+        <button
+          onClick={() => setNovoHistoricoOpen(true)}
+          className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary hover:underline"
+        >
+          <Plus className="h-3.5 w-3.5" /> Anotação
+        </button>
       </div>
 
       {/* Timeline agrupada por dia (Drawer Wide v4) */}
@@ -720,10 +705,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
           ))}
         </div>
       ) : (
-      <div className="px-7 pt-4">
-
-
-
+      <div className="px-5 md:px-7 pt-5">
         <DrawerTimelineGroup
           items={shownItems.slice(0, 40).map((item, i) => {
             const tipoGuess = (() => {
@@ -780,7 +762,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-[13px] font-semibold text-foreground leading-snug">{it.title}</p>
+                        <p className="text-[13.5px] font-semibold text-foreground leading-snug">{it.title.replace(/^[^\p{L}\p{N}]+/u, "")}</p>
                         {it.badge && (
                           <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold ${it.badge.tone === "success" ? "bg-emerald-50 text-emerald-700" : it.badge.tone === "danger" ? "bg-red-50 text-red-700" : it.badge.tone === "warning" ? "bg-amber-50 text-amber-700" : "bg-zinc-100 text-zinc-600"}`}>{it.badge.label}</span>
                         )}
@@ -792,10 +774,10 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                             <p className="text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed">{it.description}</p>
                           </div>
                         ) : (
-                          <div className={`mt-1 border-l-2 ${m.accent} pl-2.5 py-0.5 text-[12.5px] text-foreground/75 whitespace-pre-wrap leading-relaxed`}>{it.description}</div>
+                          <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{it.description}</p>
                         )
                       )}
-                      <p className="text-[11px] text-zinc-400 mt-1 tabular-nums">{it.autor ? `${it.autor} · ` : ""}{time}</p>
+                      <p className="text-[11.5px] text-muted-foreground mt-1.5 tabular-nums">{it.autor ? `${it.autor} · ` : ""}{time}</p>
                     </div>
                     {it.sourceId && (
                       <button
