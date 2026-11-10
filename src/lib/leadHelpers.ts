@@ -183,7 +183,7 @@ export function getLeadSubstatusBadge(
       return f.status_visita ? map[f.status_visita] ?? null : null;
     }
 
-    // Em Negociação (tipo `proposta`, absorve documentação)
+    // Proposta (tipo `proposta`; antigo nome "Em Negociação")
     case "proposta": {
       const map: Record<string, SubstatusBadge> = {
         proposta_enviada: { label: "📤 Proposta enviada", className: PILL.indigo },
@@ -259,7 +259,7 @@ export const VISITA_SUBSTATUS: SubstatusOption[] = [
   { value: "no_show", label: "👻 No-show" },
 ];
 
-/** Etapa Em Negociação → flag_status.status_negociacao */
+/** Etapas Documentação e Proposta → flag_status.status_negociacao */
 export const NEGOCIACAO_SUBSTATUS: SubstatusOption[] = [
   { value: "proposta_enviada", label: "📤 Proposta enviada" },
   { value: "proposta_aprovada", label: "✅ Proposta aprovada" },
