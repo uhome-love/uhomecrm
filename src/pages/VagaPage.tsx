@@ -115,6 +115,7 @@ export default function VagaPage() {
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [pontos, setPontos] = useState(0);
   const [candidatoId, setCandidatoId] = useState<string | null>(null);
+  const [candidatoToken, setCandidatoToken] = useState<string | null>(null);
   const [input, setInput] = useState("");
 
   const [diaSel, setDiaSel] = useState<Date | null>(null);
@@ -287,6 +288,7 @@ export default function VagaPage() {
             return;
           }
           setCandidatoId(id);
+          setCandidatoToken((data as any)?.token ?? null);
         })
         .catch((e) => console.warn("[vaga] captura antecipada falhou", e));
       fireEvent("VagaContato");
@@ -305,6 +307,7 @@ export default function VagaPage() {
             body: {
               acao: "atualizar",
               candidato_id: candidatoId,
+              token: candidatoToken,
               respostas: respostasAtualizadas,
               temperatura: temperaturaFinal,
             },
@@ -337,6 +340,7 @@ export default function VagaPage() {
       body: {
         acao: "finalizar",
         candidato_id: candidatoId,
+        token: candidatoToken,
         nome: respostas.nome,
         telefone: respostas.telefone,
         respostas: respostasFinal,

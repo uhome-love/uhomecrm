@@ -14,6 +14,7 @@
  * }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { tokenCandidatoValido } from "../_shared/rhToken.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
     let candidato: { id: string } | null = null;
     let etapaAnterior: string | null = null;
 
-    if (candidatoIdRecebido) {
+    if (candidatoIdRecebido && (await tokenCandidatoValido(candidatoIdRecebido, body.token))) {
       const { data: atualizado, error: upErr } = await supabase
         .from("rh_candidatos")
         .update({ nome, telefone, email, etapa: "entrevista_marcada", temperatura, respostas })
