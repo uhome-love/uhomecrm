@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
         });
         const cc = await rr.json().catch(() => ({}));
         return { email: em, status: rr.status, nome: cc?.corretor?.nome ?? null, slug: cc?.corretor?.slug ?? null,
+          telefone: cc?.corretor?.whatsapp ?? cc?.corretor?.telefone ?? cc?.corretor?.phone ?? null,
           campanha_url: cc?.campanha_url ?? null, produtos: cc?.produtos?.length ?? 0, erro: cc?.error ?? null };
       }));
       return json({ resultados });
