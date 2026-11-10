@@ -879,26 +879,26 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           <div className="shrink-0 px-3 md:px-5 pr-12 md:pr-5 pt-3 md:pt-4 pb-2 md:pb-1 flex items-center gap-2 md:border-b border-border/50">
             <TabsList className="bg-muted rounded-full md:rounded-md p-1 h-10 md:h-8 flex-1 flex justify-start md:justify-center overflow-x-auto scrollbar-none">
               {isMobile && (
-                <TabsTrigger value="info" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                <TabsTrigger value="info" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
                   Agora
                 </TabsTrigger>
               )}
-              <TabsTrigger value="historico" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+              <TabsTrigger value="historico" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
                 <span className="md:hidden">Histórico</span><span className="hidden md:inline">Linha do tempo</span>
-                {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{leadData.atividades.length}</Badge>}
+                {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-4 md:h-3.5 text-[10px] md:text-[8px] px-1.5 md:px-1 ml-1">{leadData.atividades.length}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="tarefas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+              <TabsTrigger value="tarefas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
                 Tarefas
-                {pendingTasks > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{pendingTasks}</Badge>}
+                {pendingTasks > 0 && <Badge variant="secondary" className="h-4 md:h-3.5 text-[10px] md:text-[8px] px-1.5 md:px-1 ml-1">{pendingTasks}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="visitas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+              <TabsTrigger value="visitas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
                 Visitas
               </TabsTrigger>
               <TabsTrigger value="dados" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
                 <span className="md:hidden">Dados</span><span className="hidden md:inline">Dados do lead</span>
               </TabsTrigger>
               {lead.negocio_id && (
-                <TabsTrigger value="negocio" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-1.5 md:px-3 flex-1 md:flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                <TabsTrigger value="negocio" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
                   Negócio
                 </TabsTrigger>
               )}
