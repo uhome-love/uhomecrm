@@ -56,10 +56,10 @@ export function formatTelefoneBR(t?: string | null): string {
 
 export default function DrawerTopo(p: Props) {
   return (
-    <div className="flex items-start gap-3 min-w-0">
+    <div className="flex flex-col min-w-0">
       <div className="flex items-start gap-3 min-w-0 flex-1">
         <div
-          className="h-11 w-11 md:h-12 md:w-12 rounded-full flex items-center justify-center shrink-0 bg-primary text-primary-foreground font-semibold text-base md:text-lg"
+          className="h-10 w-10 md:h-12 md:w-12 rounded-full flex items-center justify-center shrink-0 bg-primary text-primary-foreground font-semibold text-base md:text-lg"
           aria-hidden
         >
           {getInitials(p.nome)}
@@ -89,15 +89,17 @@ export default function DrawerTopo(p: Props) {
             )}
             {p.actions && <div className="hidden md:flex items-center gap-1.5 shrink-0">{p.actions}</div>}
           </div>
-
+        </div>
+      </div>
+      <div className="min-w-0 mt-1 md:-mt-2.5 md:pl-[60px]">
           {(p.pills || p.metaExtra) && (
-            <div className="mt-0.5 flex items-center gap-1.5 flex-wrap md:flex-nowrap min-w-0">
+            <div className="mt-0.5 flex items-center gap-1 min-[380px]:gap-1.5 flex-wrap md:flex-nowrap min-w-0 max-[380px]:[&_.rounded-full]:px-2 max-[380px]:[&_.rounded-full]:gap-0.5">
               {p.pills}
               {p.metaExtra && <div className="flex min-w-0 flex-1 basis-full md:basis-auto items-center md:pl-1">{p.metaExtra}</div>}
             </div>
           )}
 
-          <div className="mt-0.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[12px]">
+          <div className="mt-0.5 flex flex-col md:flex-row md:items-center gap-x-3 gap-y-0 md:gap-y-1 md:flex-wrap text-[12px]">
             {p.editingPhone ? (
               <div className="flex items-center gap-1">
                 <Input value={p.editPhone} onChange={(e) => p.setEditPhone(e.target.value)}
@@ -109,11 +111,11 @@ export default function DrawerTopo(p: Props) {
             ) : p.telefone ? (
               <span className="inline-flex items-center gap-1 text-foreground/80">
                 <a href={`tel:${p.telefone}`} className="hover:text-primary tabular-nums">{formatTelefoneBR(p.telefone)}</a>
-                <button onClick={() => copiar(p.telefone!, "Telefone")} aria-label="Copiar telefone" className="text-muted-foreground hover:text-foreground p-0.5">
+                <button onClick={() => copiar(p.telefone!, "Telefone")} aria-label="Copiar telefone" className="shrink-0 inline-flex items-center justify-center text-muted-foreground hover:text-foreground h-10 w-10 -my-2.5 -mx-3 md:h-auto md:w-auto md:m-0 md:p-0.5">
                   <Copy className="h-3 w-3" />
                 </button>
                 {p.canEdit && (
-                  <button onClick={p.startEditPhone} aria-label="Editar telefone" className="text-muted-foreground hover:text-foreground p-0.5">
+                  <button onClick={p.startEditPhone} aria-label="Editar telefone" className="shrink-0 inline-flex items-center justify-center text-muted-foreground hover:text-foreground h-10 w-10 -my-2.5 -mx-3 md:h-auto md:w-auto md:m-0 md:p-0.5">
                     <Pencil className="h-3 w-3" />
                   </button>
                 )}
@@ -128,22 +130,23 @@ export default function DrawerTopo(p: Props) {
             ) : (
               <span className="text-muted-foreground italic">Sem telefone</span>
             )}
+            <div className="flex items-center gap-3 min-w-0 md:contents">
             {p.email && (
-              <span className="inline-flex items-center gap-1 text-foreground/80 min-w-0">
-                <a href={`mailto:${p.email}`} className="hover:text-primary truncate max-w-[240px]">{p.email}</a>
-                <button onClick={() => copiar(p.email!, "E-mail")} aria-label="Copiar e-mail" className="text-muted-foreground hover:text-foreground p-0.5">
+              <span className="inline-flex items-center gap-1 text-foreground/80 min-w-0 flex-1 md:flex-none">
+                <a href={`mailto:${p.email}`} className="hover:text-primary truncate min-w-0 md:max-w-[240px]">{p.email}</a>
+                <button onClick={() => copiar(p.email!, "E-mail")} aria-label="Copiar e-mail" className="shrink-0 inline-flex items-center justify-center text-muted-foreground hover:text-foreground h-10 w-10 -my-2.5 -mx-3 md:h-auto md:w-auto md:m-0 md:p-0.5">
                   <Copy className="h-3 w-3" />
                 </button>
               </span>
             )}
             {p.responsavel && (
-              <span className="inline-flex items-center gap-1 text-foreground/80 min-w-0">
+              <span className="inline-flex items-center gap-1 text-foreground/80 shrink-0 md:shrink md:min-w-0">
                 <UserRound className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-label="Responsável" />
-                <span className="truncate">{p.responsavel}</span>
+                <span className="whitespace-nowrap md:truncate">{p.responsavel}</span>
               </span>
             )}
+            </div>
           </div>
-        </div>
       </div>
     </div>
   );
