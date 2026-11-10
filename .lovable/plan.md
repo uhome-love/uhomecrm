@@ -38,6 +38,19 @@ APOIO          Imóveis · Materiais · Academia · HOMI · Simulador   (grupo r
 Campanha       Natal 2026 fica em destaque no topo, só até 31/12
 ```
 
+## Diretora
+Mesmo menu do CEO, mas sem Roleta e Base única. Placar do Dia, HOMI Gerente e Templates entram em Apoio.
+
+## Gerente
+
+```text
+(sem título)   Dashboard · Pipeline · Visitas · Tarefas
+VENDAS         Oferta Ativa · Leads estagnados · Busca de leads
+NEGÓCIOS       Vendas · Intermediação
+TIME           Meu time (Presença + Foco) · Meus candidatos · Relatórios
+APOIO          Imóveis · Materiais · Academia · HOMI · HOMI Gerente · Simulador   (recolhido)
+```
+
 ## Corretor (mesma lógica, mais curto)
 
 ```text
