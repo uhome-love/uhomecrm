@@ -32,3 +32,11 @@ export function dataBR(iso: string): string {
   const [, m, d] = iso.split("-");
   return d && m ? `${d}/${m}` : iso;
 }
+
+const SITE = "https://uhome.com.br";
+/** O site manda fotos com caminho relativo (/__l5e/...); completa com o domínio do site. */
+export function urlSite(u?: string | null): string | null {
+  if (!u) return null;
+  if (/^https?:\/\//i.test(u)) return u;
+  return SITE + (u.startsWith("/") ? u : `/${u}`);
+}

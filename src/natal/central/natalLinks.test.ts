@@ -20,3 +20,12 @@ describe("natalLinks", () => {
     expect(campanhaEncerrada("2026-12-18", new Date("2026-12-19T03:30:00Z"))).toBe(true);
   });
 });
+
+import { urlSite } from "./natalLinks";
+describe("urlSite", () => {
+  it("completa caminho relativo com o site", () => {
+    expect(urlSite("/__l5e/a.webp")).toBe("https://uhome.com.br/__l5e/a.webp");
+    expect(urlSite("https://x.com/a.png")).toBe("https://x.com/a.png");
+    expect(urlSite(null)).toBeNull();
+  });
+});
