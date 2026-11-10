@@ -14,6 +14,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 import { handoffEngajado } from "../_shared/liaHandoff.ts";
 import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
 import { contatoPodeReceber } from "../_shared/contatoEnvio.ts";
@@ -178,6 +179,11 @@ const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  // Trava (auditoria 10/11/2026): só rotina automática (service role / x-cron-secret) ou CEO/diretora logada.
+  {
+    const auth = await requireRealUser(req, { allowServiceRole: true, roles: ["admin", "diretor"] });
+    if (auth.error) return auth.error;
+  }
   try {
     const sb = svc();
     const body = await req.json().catch(() => ({}));
