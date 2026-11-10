@@ -36,11 +36,11 @@ export function PageHeader({
   homiSugestoes,
 }: PageHeaderProps) {
   return (
-    <div className={cn("flex flex-col gap-3 mb-6", className)}>
+    <div className={cn("flex flex-col gap-4 mb-5", className)}>
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           {icon && (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/15 flex items-center justify-center flex-shrink-0 text-primary">
+            <div className="w-9 h-9 rounded-[10px] bg-primary text-primary-foreground shadow-sm flex items-center justify-center flex-shrink-0 [&_svg]:h-[18px] [&_svg]:w-[18px]">
               {icon}
             </div>
           )}
@@ -48,7 +48,7 @@ export function PageHeader({
             <h1
               className={cn(
                 "font-bold tracking-[-0.4px] text-foreground leading-tight",
-                size === "sm" ? "text-[18px]" : "text-[24px]"
+                size === "sm" ? "text-[18px]" : "text-[22px]"
               )}
             >
               {title}
@@ -68,7 +68,7 @@ export function PageHeader({
         )}
       </div>
       {tabs && tabs.length > 0 && (
-        <div className="inline-flex self-start items-center gap-0.5 p-1 rounded-xl bg-muted/70 border border-border flex-wrap">
+        <div className="inline-flex self-start items-center gap-0.5 p-1 rounded-[12px] bg-card border border-border shadow-sm flex-wrap">
           {tabs.map((tab) => (
             <button
               key={tab.value}
@@ -76,7 +76,7 @@ export function PageHeader({
               className={cn(
                 "flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-medium transition-all",
                 activeTab === tab.value
-                  ? "bg-card text-foreground font-semibold shadow-sm"
+                  ? "bg-primary/10 text-primary font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >

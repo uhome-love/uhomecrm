@@ -17,6 +17,7 @@ const badgeVariants = cva(
         warning: "border-transparent bg-warning-50 text-warning-700",
         danger: "border-transparent bg-danger-50 text-danger-700",
         purple: "border-transparent bg-purple-50 text-purple-700",
+        info: "border-transparent bg-primary/10 text-primary",
         neutral: "border-transparent bg-neutral-900 text-white",
         /* ── Team badges ── */
         teamGreen: "border-transparent bg-success-50 text-success-700",
