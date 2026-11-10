@@ -1,4 +1,4 @@
-import { DISCARD_REASONS_REENGAJAVEL, DISCARD_REASONS_DEFINITIVO, getReasonByCode, reasonDisplay } from "@/lib/discardReasons";
+import { DISCARD_REASONS_REENGAJAVEL, DISCARD_REASONS_DEFINITIVO, getReasonByCode, reasonDisplay, classifyMotivoText } from "@/lib/discardReasons";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { LeadFormRespostas } from "@/components/pipeline/drawer/LeadFormRespostas";
 import { useNavigate } from "react-router-dom";
@@ -485,6 +485,34 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
     const due = new Date(`${String(t.vence_em).slice(0, 10)}T${t.hora_vencimento ? String(t.hora_vencimento).slice(0, 5) : "23:59"}:00-03:00`);
     return due.getTime() < Date.now() ? (t.titulo || t.descricao || null) : null;
   })();
+  const etapaSemVisita = stageTipoAtual === "descarte" || stageTipoAtual === "caiu";
+  const etapaFinalInfo = (() => {
+    if (!["descarte", "caiu", "venda"].includes(stageTipoAtual)) return null;
+    const quando = (lead as any).stage_changed_at as string | null | undefined;
+    const d = quando ? new Date(quando) : null;
+    const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+    let data = "";
+    if (d && !Number.isNaN(d.getTime())) {
+      const pt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "numeric" }).formatToParts(d);
+      data = `${pt.find(x => x.type === "day")?.value ?? ""} ${MES[Number(pt.find(x => x.type === "month")?.value ?? "1") - 1]}`;
+    }
+    const em = data ? ` em ${data}` : "";
+    if (stageTipoAtual === "descarte") {
+      const r = getReasonByCode((lead as any).motivo_descarte_code) ?? getReasonByCode(classifyMotivoText(lead.motivo_descarte));
+      const motivo = r ? reasonDisplay(r) : (lead.motivo_descarte || "").replace(/^Descartado:\s*/i, "").trim();
+      return { texto: `Descartado${em}${motivo ? ` · Motivo: ${motivo}` : ""}` };
+    }
+    if (stageTipoAtual === "caiu") return { texto: `Negócio caiu${em}` };
+    return {
+      texto: `Venda assinada${em}`,
+      acao: (
+        <Button size="sm" variant="outline" className="self-start h-8 gap-1.5 text-[12.5px]" onClick={() => {
+          const destino = stages.find(s => s.tipo === "qualificacao") || stages.find(s => s.tipo === "novo_lead");
+          if (destino) handleMoveStage(destino.id);
+        }}>🔄 Reativar lead</Button>
+      ),
+    };
+  })();
   const acaoTrack = (action: string) => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action });
   const actionsNode = (
     <>
@@ -494,9 +522,11 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" disabled={!lead.telefone} onClick={() => { acaoTrack("whatsapp"); setIsWhatsAppFlowOpen(true); }}>
         <MessageCircle className="h-3.5 w-3.5 text-success-700" /> WhatsApp
       </Button>
-      <Button size="sm" variant="default" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" onClick={() => { acaoTrack("agendar_visita"); setScheduleVisitOpen(true); }}>
-        <CalendarPlus className="h-3.5 w-3.5" /> Agendar visita
-      </Button>
+      {!etapaSemVisita && (
+        <Button size="sm" variant="default" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" onClick={() => { acaoTrack("agendar_visita"); setScheduleVisitOpen(true); }}>
+          <CalendarPlus className="h-3.5 w-3.5" /> Agendar visita
+        </Button>
+      )}
       <CardOverflowMenu
         lead={lead}
         stages={stages}
@@ -538,7 +568,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       savePhone={handleSavePhone}
       saving={saving}
       localTelefone={telefoneForaDoRS(lead.telefone)}
-      metaExtra={<UltimoMovimento historico={leadData.historico as any} stages={stages} currentStageId={lead.stage_id} createdAt={lead.created_at} />}
+      metaExtra={<UltimoMovimento historico={leadData.historico as any} stages={stages} currentStageId={lead.stage_id} createdAt={lead.created_at} stageChangedAt={(lead as any).stage_changed_at} />}
       pills={
         <>
           <Popover>
@@ -645,6 +675,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         saude={saudeAgora}
         tarefaDeEtapaAnterior={tarefaDeEtapaAnterior}
         esconderRegistrar={!isMobile}
+        etapaFinal={etapaFinalInfo}
         homi={
           <HomiSugestaoRecolhida
             leadId={lead.id}
@@ -1040,12 +1071,14 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             >
               <MessageCircle className="h-4 w-4" />
             </button>
+            {!etapaSemVisita && (
             <button
               onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "agendar_visita" }); setScheduleVisitOpen(true); }}
               className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.98] transition-transform"
             >
               <CalendarPlus className="h-4 w-4" /> Agendar visita
             </button>
+            )}
           </div>
         )}
 
