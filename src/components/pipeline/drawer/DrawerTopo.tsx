@@ -34,8 +34,8 @@ interface Props {
   saving?: boolean;
   /** Chip "DDD 44 · Paraná" quando o telefone é de fora do RS. */
   localTelefone?: LocalTelefone | null;
-  /** Faixa abaixo dos contatos (ex.: Caminho do lead). */
-  faixa?: ReactNode;
+  /** Extra no fim da linha de dados (ex.: último movimento de etapa). */
+  metaExtra?: ReactNode;
 }
 
 function copiar(valor: string, rotulo: string) {
@@ -63,7 +63,7 @@ export default function DrawerTopo(p: Props) {
           {getInitials(p.nome)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap md:flex-nowrap min-w-0">
             {p.editingName ? (
               <div className="flex items-center gap-1.5 w-full">
                 <Input value={p.editName} onChange={(e) => p.setEditName(e.target.value)}
@@ -83,14 +83,17 @@ export default function DrawerTopo(p: Props) {
                 {p.nome}
               </h2>
             )}
-            {!p.editingName && p.pills}
+            {!p.editingName && <div className="flex items-center gap-1.5 shrink-0">{p.pills}</div>}
           </div>
 
-          {p.meta.length > 0 && (
-            <p className="mt-1 text-[12px] text-muted-foreground truncate">{p.meta.join(" · ")}</p>
+          {(p.meta.length > 0 || p.metaExtra) && (
+            <div className="mt-0.5 flex items-center gap-2 min-w-0 text-[12px]">
+              {p.meta.length > 0 && <p className="text-muted-foreground truncate min-w-0">{p.meta.join(" · ")}</p>}
+              {p.metaExtra && <div className="hidden md:flex min-w-0 shrink items-center">{p.metaExtra}</div>}
+            </div>
           )}
 
-          <div className="mt-1 flex items-center gap-x-3 gap-y-1 flex-wrap text-[12px]">
+          <div className="mt-0.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[12px]">
             {p.editingPhone ? (
               <div className="flex items-center gap-1">
                 <Input value={p.editPhone} onChange={(e) => p.setEditPhone(e.target.value)}
@@ -130,7 +133,7 @@ export default function DrawerTopo(p: Props) {
               </span>
             )}
           </div>
-          {p.faixa && <div className="mt-3 hidden md:block">{p.faixa}</div>}
+          {p.metaExtra && <div className="mt-1 flex md:hidden min-w-0">{p.metaExtra}</div>}
         </div>
       </div>
       {p.actions && <div className="hidden md:flex items-center gap-1.5 shrink-0">{p.actions}</div>}

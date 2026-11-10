@@ -39,7 +39,7 @@ import DrawerTopo from "./drawer/DrawerTopo";
 import ResumoLead from "./ResumoLead";
 import DrawerAgora from "./drawer/DrawerAgora";
 import HomiSugestaoRecolhida from "./drawer/HomiSugestaoRecolhida";
-import CaminhoDoLead from "./drawer/CaminhoDoLead";
+import { UltimoMovimento } from "./drawer/CaminhoDoLead";
 import ResumoLeadLateral from "./drawer/ResumoLeadLateral";
 import { telefoneForaDoRS } from "@/lib/dddUf";
 import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
@@ -532,7 +532,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       savePhone={handleSavePhone}
       saving={saving}
       localTelefone={telefoneForaDoRS(lead.telefone)}
-      faixa={<CaminhoDoLead historico={leadData.historico as any} stages={stages} currentStageId={lead.stage_id} createdAt={lead.created_at} />}
+      metaExtra={<UltimoMovimento historico={leadData.historico as any} stages={stages} currentStageId={lead.stage_id} createdAt={lead.created_at} />}
       pills={
         <>
           <Popover>
@@ -877,7 +877,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         }>
 
         {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
-        <div className="shrink-0 border-b border-border/60 bg-card px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-5 pr-12 md:pr-16">
+        <div className="shrink-0 border-b border-border/60 bg-card px-4 md:px-6 pt-4 md:pt-4 pb-3 md:pb-3 pr-12 md:pr-16">
           {headerNode}
         </div>
         <div className="flex-1 flex min-h-0 overflow-hidden">
