@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Pencil, ClipboardList, ListChecks, Check, ChevronDown } from "lucide-react";
+import { Loader2, Pencil, Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { PipelineLead } from "@/hooks/usePipeline";
@@ -85,14 +85,13 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
   };
 
   return (
-    <div className="rounded-lg border bg-card p-3 space-y-2">
+    <div className="rounded-xl border border-border bg-card px-5 py-4 space-y-3">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center gap-1.5 text-left"
       >
-        <ListChecks className="h-3.5 w-3.5 text-primary" />
-        <span className="text-xs font-semibold">Etapa da qualificação</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Etapa da qualificação</span>
         {!expanded && currentLabel && (
           <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-px text-[10px] font-semibold text-primary">
             {currentLabel}
@@ -391,11 +390,10 @@ export function PerfilLeadCard({ lead, onSaved }: Props) {
   };
 
   return (
-    <div className="rounded-lg border bg-card p-3 space-y-2">
+    <div className="rounded-xl border border-border bg-card px-5 py-4 space-y-2">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <ClipboardList className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-semibold">Perfil do lead</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Perfil do lead</span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${filled === total ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : filled === 0 ? "bg-muted text-muted-foreground border border-border" : "bg-amber-500/10 text-amber-600 border border-amber-500/20"}`}>
             {filled}/{total} preenchido
           </span>
@@ -458,9 +456,9 @@ export function PerfilLeadCard({ lead, onSaved }: Props) {
       </div>
 
       {filled === 0 ? (
-        <p className="text-[11px] text-muted-foreground italic">
-          Nenhum campo preenchido ainda. Clique em <span className="font-medium">Editar</span> para completar o perfil.
-        </p>
+        <button type="button" onClick={() => setEditing(true)} className="text-[13px] font-semibold text-primary hover:underline">
+          Completar perfil ({filled}/{total})
+        </button>
       ) : (
         <div className="grid grid-cols-2 gap-2">
           <ChipDisplay label="Tipologia" value={tipologiaLabel} empty="—" />

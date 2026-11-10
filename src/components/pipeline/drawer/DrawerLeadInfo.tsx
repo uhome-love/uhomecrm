@@ -37,7 +37,7 @@ export default function DrawerLeadInfo({ children, header, resetKey }: Props) {
 
   return (
     <aside
-      className="hidden md:flex flex-col shrink-0 min-w-0 w-full md:w-[36%] md:max-w-[440px] border-r border-border/50 bg-[#fafafa] dark:bg-muted/50"
+      className="hidden md:flex flex-col shrink-0 min-w-0 w-full md:w-[36%] md:max-w-[440px] border-r border-border/50 bg-muted/30"
       data-drawer-pane="info"
     >
       {header && (
@@ -46,7 +46,7 @@ export default function DrawerLeadInfo({ children, header, resetKey }: Props) {
         </div>
       )}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        <div className="w-full min-w-0 px-5 py-4 space-y-3">
+        <div className="w-full min-w-0 px-5 md:px-6 py-5 space-y-4">
           {children}
         </div>
       </div>

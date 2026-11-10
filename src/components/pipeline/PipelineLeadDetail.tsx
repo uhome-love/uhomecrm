@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
-import EstagnacaoStatusCard from "./EstagnacaoStatusCard";
 import { QualificacaoEtapaCard, PerfilLeadCard } from "./QualificacaoChecklistCard";
 import { getOrigemLabel } from "./LeadHistoricoTab";
 import DrawerTopo from "./drawer/DrawerTopo";
@@ -462,13 +461,13 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const acaoTrack = (action: string) => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action });
   const actionsNode = (
     <>
-      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={!lead.telefone} onClick={() => { acaoTrack("ligar"); setIsCallOpen(true); }}>
+      <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" disabled={!lead.telefone} onClick={() => { acaoTrack("ligar"); setIsCallOpen(true); }}>
         <Phone className="h-3.5 w-3.5" /> Ligar
       </Button>
-      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={!lead.telefone} onClick={() => { acaoTrack("whatsapp"); setIsWhatsAppFlowOpen(true); }}>
+      <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" disabled={!lead.telefone} onClick={() => { acaoTrack("whatsapp"); setIsWhatsAppFlowOpen(true); }}>
         <MessageCircle className="h-3.5 w-3.5 text-success-700" /> WhatsApp
       </Button>
-      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => { acaoTrack("anotar"); setAnotarOpen(true); }}>
+      <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" onClick={() => { acaoTrack("anotar"); setAnotarOpen(true); }}>
         <FileText className="h-3.5 w-3.5" /> Anotar
       </Button>
       <CardOverflowMenu
@@ -482,7 +481,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         onRegistrarAtividade={() => setRegistrarOpen(true)}
         onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
         trigger={
-          <button aria-label="Mais ações" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50">
+          <button aria-label="Mais ações" className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50">
             <MoreHorizontal className="h-4 w-4" />
           </button>
         }
@@ -514,8 +513,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         <>
           <Popover>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
-                <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
+              <button className="inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 cursor-pointer hover:opacity-80 transition-opacity" style={{ backgroundColor: currentStage?.cor + "1f", color: currentStage?.cor }}>
                 {currentStage?.nome}
                 <ChevronDown className="h-2.5 w-2.5" />
               </button>
@@ -536,7 +534,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           {situacaoTipos.includes(stageTipoAtual) && (
             <Popover>
               <PopoverTrigger asChild>
-                <button className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-semibold text-foreground/80 hover:bg-muted/60 shrink-0">
+                <button className="inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-muted text-foreground/80 hover:bg-muted/70">
                   {situacaoLabel}
                   <ChevronDown className="h-2.5 w-2.5" />
                 </button>
@@ -549,12 +547,12 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           )}
 
           {tempMeta[temperaturaAtual] && (
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${tempMeta[temperaturaAtual].cls}`}>{tempMeta[temperaturaAtual].label}</span>
+            <span className={`inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 ${tempMeta[temperaturaAtual].cls}`}>{tempMeta[temperaturaAtual].label}</span>
           )}
 
           {currentStage?.tipo === "venda" && (
             <button
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors shrink-0"
+              className="inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-success-500/15 text-success-700 hover:bg-success-500/20 transition-colors"
               title="Reativar este lead para uma nova compra"
               onClick={() => {
                 const destino = stages.find(s => s.tipo === "qualificacao") || stages.find(s => s.tipo === "novo_lead");
@@ -580,10 +578,10 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             if (cor === "terminal") return null;
             const dias = diasSemToque(saudeInput);
             const meta: Record<string, { cls: string; dot: string; text: string }> = {
-              verde:     { cls: "bg-success-500/12 text-success-700 dark:text-success-500", dot: "bg-success-500", text: "Em dia" },
-              ambar:     { cls: "bg-warning-500/12 text-warning-700 dark:text-warning-500", dot: "bg-warning-500", text: "Atenção" },
-              vermelho:  { cls: "bg-danger-500/12 text-danger-700 dark:text-danger-500",   dot: "bg-danger-500",  text: "Desatualizado" },
-              estagnado: { cls: "bg-violet-500/12 text-violet-700 dark:text-violet-400",   dot: "bg-violet-500",  text: "Estagnado" },
+              verde:     { cls: "bg-success-500/15 text-success-700 dark:text-success-500", dot: "bg-success-500", text: "Em dia" },
+              ambar:     { cls: "bg-warning-500/15 text-warning-700 dark:text-warning-500", dot: "bg-warning-500", text: "Atenção" },
+              vermelho:  { cls: "bg-danger-500/15 text-danger-700 dark:text-danger-500",   dot: "bg-danger-500",  text: "Desatualizado" },
+              estagnado: { cls: "bg-violet-500/15 text-violet-700 dark:text-violet-400",   dot: "bg-violet-500",  text: "Estagnado" },
             };
             const m = meta[cor] ?? meta.vermelho;
             const motivos: string[] = [];
@@ -593,9 +591,8 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             return (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default ${m.cls}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${m.dot}`} />
-                    {m.text}
+                  <span className={`inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 cursor-default ${m.cls}`}>
+                    {m.text}{dias != null && cor !== "verde" ? ` · ${dias}d` : ""}
                   </span>
                 </TooltipTrigger>
                 {showTooltip && (
@@ -652,38 +649,22 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         onSeeAll={() => setActiveTab("tarefas")}
         onCreateTask={() => setNextActionOpen(true)}
         onRegistrar={() => { acaoTrack("registrar_atividade"); setRegistrarOpen(true); }}
+        saudeLinha={(() => {
+          const inp = { ultimo_toque_at: lead.ultimo_toque_at, distribuido_em: lead.distribuido_em, aceito_em: (lead as any).aceito_em, created_at: lead.created_at, stage_tipo: currentStage?.tipo, estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate };
+          const cor = leadSaude(inp);
+          if (cor === "terminal" || cor === "verde") return null;
+          const dias = diasSemToque(inp);
+          const prazo = prazoDaEtapa(currentStage?.tipo);
+          const base = dias != null ? `${dias} ${dias === 1 ? "dia" : "dias"} sem contato` : "Sem contato registrado";
+          return { texto: `${base} · prazo da etapa ${prazo} ${prazo === 1 ? "dia" : "dias"}`, critico: cor === "vermelho" || cor === "estagnado" };
+        })()}
       />
 
-      {/* Atenção — explica por que o cliente está vermelho/estagnado (mesma régua do cartão) */}
-      {(() => {
-        const inp = {
-          ultimo_toque_at: lead.ultimo_toque_at,
-          distribuido_em: lead.distribuido_em,
-          aceito_em: (lead as any).aceito_em,
-          created_at: lead.created_at,
-          stage_tipo: currentStage?.tipo,
-          estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate,
-        };
-        const cor = leadSaude(inp);
-        if (cor !== "vermelho" && cor !== "estagnado") return null;
-        const dias = diasSemToque(inp);
-        return (
-          <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-3.5 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">Atenção</p>
-            <p className="text-[13px] font-semibold text-destructive mt-0.5">
-              {dias != null ? `${dias} ${dias === 1 ? "dia" : "dias"} sem contato` : "Sem contato registrado"}
-            </p>
-            <p className="text-[11.5px] text-muted-foreground">
-              Na etapa {currentStage?.nome ?? "atual"} o prazo é {prazoDaEtapa(currentStage?.tipo)} {prazoDaEtapa(currentStage?.tipo) === 1 ? "dia" : "dias"}
-            </p>
-          </div>
-        );
-      })()}
-
-      {/* Negócio — sempre visível, pequeno */}
-      <section className="rounded-xl border border-border bg-card px-4 py-3">
+      {/* Negócio — só a partir de Documentação (ou se já existe negócio) */}
+      {(lead.negocio_id || ["documentacao", "proposta", "contrato_gerado", "venda"].includes(stageTipoAtual)) && (
+      <section className="rounded-xl border border-border bg-card px-5 py-4">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Negócio</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Negócio</p>
           {lead.negocio_id && <button onClick={() => setActiveTab("negocio")} className="text-[12px] font-semibold text-primary hover:underline">Abrir</button>}
         </div>
         <p className="mt-1 text-[13px] text-foreground">
@@ -697,6 +678,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           </div>
         )}
       </section>
+      )}
 
       {/* Celular: "Mais ações" (as ações principais ficam na barra fixa embaixo) */}
       <div className="md:hidden">
@@ -722,7 +704,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       {leadCritico && (
         <>
           <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
-          <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
         </>
       )}
 
@@ -890,7 +871,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   return (
 
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="inset-y-0 right-0 h-full w-full max-w-none md:w-[70vw] md:max-w-[2000px] p-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+      <SheetContent className="inset-y-0 right-0 h-full w-full max-w-none md:w-[70vw] md:max-w-[2000px] p-0 gap-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
             <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
@@ -900,7 +881,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         }>
 
         {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
-        <div className="shrink-0 border-b border-border/60 bg-card px-4 md:px-6 pt-3 md:pt-4 pb-3 pr-12 md:pr-14">
+        <div className="shrink-0 border-b border-border/60 bg-card px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-5 pr-12 md:pr-16">
           {headerNode}
         </div>
         <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -912,29 +893,28 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         <DrawerTimeline>
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 px-3 md:px-5 pr-12 md:pr-5 pt-3 md:pt-4 pb-2 md:pb-1 flex items-center gap-2 md:border-b border-border/50">
-            <TabsList className="bg-muted rounded-full md:rounded-md p-1 h-10 md:h-8 flex-1 flex justify-start md:justify-center overflow-x-auto scrollbar-none">
+          <div className="shrink-0 px-4 md:px-7 pt-2 md:pt-3 flex items-center gap-2 border-b border-border/60">
+            <TabsList className="bg-transparent rounded-none p-0 h-11 flex-1 flex justify-start gap-1 md:gap-4 overflow-x-auto scrollbar-none">
               {isMobile && (
-                <TabsTrigger value="info" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                <TabsTrigger value="info" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                   Agora
                 </TabsTrigger>
               )}
-              <TabsTrigger value="historico" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+              <TabsTrigger value="historico" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                 <span className="md:hidden">Histórico</span><span className="hidden md:inline">Linha do tempo</span>
-                {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-4 md:h-3.5 text-[10px] md:text-[8px] px-1.5 md:px-1 ml-1">{leadData.atividades.length}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="tarefas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+              <TabsTrigger value="tarefas" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                 Tarefas
-                {pendingTasks > 0 && <Badge variant="secondary" className="h-4 md:h-3.5 text-[10px] md:text-[8px] px-1.5 md:px-1 ml-1">{pendingTasks}</Badge>}
+                {pendingTasks > 0 && <Badge variant="secondary" className="h-5 rounded-full text-[10.5px] px-1.5 ml-0.5">{pendingTasks}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="visitas" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+              <TabsTrigger value="visitas" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                 Visitas
               </TabsTrigger>
-              <TabsTrigger value="dados" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+              <TabsTrigger value="dados" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                 <span className="md:hidden">Dados</span><span className="hidden md:inline">Dados do lead</span>
               </TabsTrigger>
               {lead.negocio_id && (
-                <TabsTrigger value="negocio" className="text-[13px] md:text-xs font-semibold md:font-medium h-8 md:h-6 px-2.5 md:px-3 flex-none min-w-0 rounded-full md:rounded-sm shrink-0 data-[state=active]:shadow-sm gap-1">
+                <TabsTrigger value="negocio" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                   Negócio
                 </TabsTrigger>
               )}
@@ -951,7 +931,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             {/* ===== TAB: INFO (mobile only) — espelha conteúdo da coluna esquerda ===== */}
             {isMobile && (
               <TabsContent value="info" className="mt-0">
-                <div className="px-4 py-4 space-y-3">{bodyNode}</div>
+                <div className="px-4 py-4 space-y-4">{bodyNode}</div>
               </TabsContent>
             )}
             {/* ===== TAB: TAREFAS (v4 editorial) ===== */}
