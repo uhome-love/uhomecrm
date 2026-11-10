@@ -35,10 +35,21 @@ Deno.serve(async (req) => {
     let telefone = String((body as any).phone ?? (body as any).telefone ?? "").replace(/\D/g, "");
     if (telefone.startsWith("55") && telefone.length > 11) telefone = telefone.slice(2);
     if (!nome && !telefone) return json({ error: "nome ou telefone obrigatório" }, 400);
+    // Anti-spam (auditoria 10/11/2026): telefone brasileiro válido e campos com tamanho limitado.
+    if (telefone.length < 10 || telefone.length > 11) return json({ error: "telefone inválido" }, 400);
+    if (nome.length > 120 || JSON.stringify(body).length > 20000) return json({ error: "dados grandes demais" }, 400);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
+
+    // Mesmo telefone pelo quiz nos últimos 10 minutos = repetição; não cria outro lead.
+    {
+      const desde = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: recente } = await supabase.from("pipeline_leads").select("id")
+        .eq("origem", "Quiz").like("telefone", `%${telefone.slice(-8)}`).gte("created_at", desde).limit(1);
+      if (recente?.length) return json({ ok: true, duplicado: true });
+    }
 
     // Etapa inicial (Novo Lead)
     const { data: stageData, error: stageErr } = await supabase

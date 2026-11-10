@@ -136,6 +136,25 @@ Deno.serve(async (req) => {
     supabase.from("ops_events").insert({ fn: "receive-imovelweb-lead", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
   };
 
+  // Senha do webhook (auditoria 10/11/2026). Modo AVISO por padrão: registra quem chega
+  // sem senha e deixa passar (lead nunca é perdido). Bloqueio só com IMOVELWEB_SECRET_ENFORCE=on.
+  {
+    const expected = Deno.env.get("IMOVELWEB_WEBHOOK_SECRET") ?? "";
+    const provided = req.headers.get("x-webhook-secret") ?? new URL(req.url).searchParams.get("secret") ?? "";
+    const ok = !!expected && provided === expected;
+    if (!ok) {
+      const enforce = (Deno.env.get("IMOVELWEB_SECRET_ENFORCE") ?? "").toLowerCase() === "on";
+      logOps("warn", "security", enforce ? "webhook sem senha bloqueado" : "webhook sem senha (modo aviso)", {
+        secret_configured: !!expected, has_secret: !!provided, enforce,
+      });
+      if (enforce && expected) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+  }
+
   // Meta CAPI Match Quality: IP + User Agent (plain text)
   const _xff = req.headers.get("x-forwarded-for") || "";
   const clientIpAddress: string | null =

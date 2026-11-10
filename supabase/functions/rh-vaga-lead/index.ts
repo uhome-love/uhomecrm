@@ -13,6 +13,7 @@
  * ('novo_lead','entrevista_marcada'). Nunca retorna dados sensíveis.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { tokenCandidato, tokenCandidatoValido } from "../_shared/rhToken.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,7 +58,7 @@ Deno.serve(async (req) => {
       const desde = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
       const { data: existente } = await supabase
         .from("rh_candidatos")
-        .select("id")
+        .select("id, nome")
         .eq("origem", "anuncio")
         .eq("telefone", telefone)
         .in("etapa", ETAPAS_EDITAVEIS)
@@ -66,14 +67,16 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle();
 
-      if (existente?.id) {
+      // Só reaproveita a ficha se for a mesma pessoa (mesmo nome); nunca sobrescreve o nome de outra.
+      const mesmoNome = existente?.nome && String(existente.nome).trim().toLowerCase() === nome.toLowerCase();
+      if (existente?.id && mesmoNome) {
         await supabase
           .from("rh_candidatos")
-          .update({ nome, respostas })
+          .update({ respostas })
           .eq("id", existente.id)
           .eq("origem", "anuncio")
           .in("etapa", ETAPAS_EDITAVEIS);
-        return json({ ok: true, candidato_id: existente.id, reutilizado: true });
+        return json({ ok: true, candidato_id: existente.id, token: await tokenCandidato(existente.id), reutilizado: true });
       }
 
       const { data: criado, error: err } = await supabase
@@ -93,13 +96,14 @@ Deno.serve(async (req) => {
         console.error("[rh-vaga-lead] criar", err);
         return json({ error: "Não foi possível registrar." }, 500);
       }
-      return json({ ok: true, candidato_id: criado.id });
+      return json({ ok: true, candidato_id: criado.id, token: await tokenCandidato(criado.id) });
     }
 
     // ── (b) atualizar respostas/temperatura ──
     if (acao === "atualizar") {
       const candidatoId = String(body.candidato_id || "").trim();
       if (!candidatoId) return json({ error: "candidato_id obrigatório" }, 400);
+      if (!(await tokenCandidatoValido(candidatoId, body.token))) return json({ error: "Não autorizado" }, 403);
 
       const patch: Record<string, unknown> = {};
       if (body.respostas && typeof body.respostas === "object") patch.respostas = body.respostas;
@@ -141,6 +145,7 @@ Deno.serve(async (req) => {
       if (!prefData || !prefTurno) return json({ error: "Preferência inválida" }, 400);
 
       let candidatoId = String(body.candidato_id || "").trim() || null;
+      if (candidatoId && !(await tokenCandidatoValido(candidatoId, body.token))) candidatoId = null; // sem código: cria ficha nova
 
       if (candidatoId) {
         const { data: upd, error: upErr } = await supabase

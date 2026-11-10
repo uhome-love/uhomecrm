@@ -210,11 +210,19 @@ export default function AppLayout() {
                 className="shell-search hidden sm:flex flex-1 max-w-[520px] mx-auto items-center gap-2.5 h-10 px-3.5 rounded-xl text-left"
               >
                 <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="flex-1 truncate text-[13px] text-muted-foreground">Buscar clientes, imóveis, páginas…</span>
+                <span className="flex-1 truncate text-[13px] text-muted-foreground">Buscar clientes, visitas, corretores…</span>
                 <kbd className="shell-kbd pointer-events-none inline-flex h-6 items-center rounded-md px-1.5 font-mono text-[10.5px] font-medium">⌘K</kbd>
               </button>
 
               <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                aria-label="Buscar clientes"
+                onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+                className="sm:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-[hsl(var(--shell-nav-hover))]"
+              >
+                <Search className="h-5 w-5" />
+              </button>
               <HomiHeaderButton />
               <NotificationBell />
               <DropdownMenu>

@@ -219,10 +219,11 @@ export function useAcademia() {
     if (completedCount >= trilhaAulas.length && !certificados.some((c: any) => c.trilha_id === trilhaId)) {
       const trilha = trilhas.find(t => t.id === trilhaId);
       const codigo = `UHOME-${Date.now().toString(36).toUpperCase()}`;
-      await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
+      const { error: erroCert } = await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
       // Nada de "+100 XP bônus": esse bônus nunca foi creditado e o corretor
       // conferia o placar e não batia.
-      toast(`🏆 Nível concluído! ${trilha?.titulo || ""}`, { description: "Certificado emitido.", duration: 6000 });
+      if (erroCert) toast.error("Nível concluído, mas o certificado não foi gerado. Tente de novo.");
+      else toast(`🏆 Nível concluído! ${trilha?.titulo || ""}`, { description: "Certificado emitido.", duration: 6000 });
     }
 
     await queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });
@@ -242,7 +243,7 @@ export function useAcademia() {
            !progresso.some(p => p.aula_id === a.id && p.status === "concluida")
     );
     if (pendentes.length === 0) return;
-    await supabase.from("academia_progresso").upsert(
+    const { error: erroProgresso } = await supabase.from("academia_progresso").upsert(
       pendentes.map(a => ({
         corretor_id: profileId,
         trilha_id: trilhaId,
@@ -253,14 +254,22 @@ export function useAcademia() {
       })),
       { onConflict: "corretor_id,aula_id" }
     );
+    if (erroProgresso) {
+      toast.error("Não foi possível salvar seu progresso. Tente de novo.");
+      return;
+    }
     // O certificado é emitido no completeAula olhando o estado ANTES desta
     // rodada, então nesse caminho ele não sairia e a tela prometia que sim.
     const jaTem = certificados.some((c: any) => c.trilha_id === trilhaId);
     if (!jaTem) {
       const codigo = `UHOME-${Date.now().toString(36).toUpperCase()}`;
-      await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
+      const { error: erroCert } = await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
       const trilha = trilhas.find(t => t.id === trilhaId);
-      toast(`🏆 Nível concluído! ${trilha?.titulo || ""}`, { description: "Certificado emitido.", duration: 6000 });
+      if (erroCert) {
+        toast.error("Nível concluído, mas o certificado não foi gerado. Tente de novo.");
+      } else {
+        toast(`🏆 Nível concluído! ${trilha?.titulo || ""}`, { description: "Certificado emitido.", duration: 6000 });
+      }
     }
 
     await queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });

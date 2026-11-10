@@ -110,6 +110,23 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   const homiRole: HomiRole = isAdmin ? "ceo" : isCorretor ? "corretor" : "gestor";
   const currentPage = location.pathname;
 
+  // Outro usuário entrou no mesmo aparelho: nada da conversa anterior fica visível.
+  const userIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const atual = user?.id ?? null;
+    if (userIdRef.current !== null && userIdRef.current !== atual) {
+      setMessages([]);
+      setConversationId(null);
+      setAlerts([]);
+      setUserName("");
+      setEmpreendimentoFoco(null);
+      setKnowledgeSource(null);
+      setIsOpen(false);
+      pendingMessageRef.current = null;
+    }
+    userIdRef.current = atual;
+  }, [user?.id]);
+
   // Fetch user name
   useEffect(() => {
     if (!user) return;

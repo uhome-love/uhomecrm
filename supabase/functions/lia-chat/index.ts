@@ -9,6 +9,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireRealUser } from "../_shared/ai-auth.ts";
 import { numerosFora, permitidos, substituirBolhas } from "../_shared/liaTravaNumeros.ts";
 import { aplicarTravaFinanciamento, RE_AUDIO_SEM_TRANSCRICAO, FRASE_AUDIO_FALHOU } from "../_shared/liaTravaFinanciamento.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -540,6 +541,11 @@ async function resolverAcervo(raw: string): Promise<{ raw: string; repassar: boo
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  // Trava (auditoria 10/11/2026): só rotina automática (service role / x-cron-secret) ou CEO/diretora logada.
+  {
+    const auth = await requireRealUser(req, { allowServiceRole: true, roles: ["admin", "diretor"] });
+    if (auth.error) return auth.error;
+  }
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
