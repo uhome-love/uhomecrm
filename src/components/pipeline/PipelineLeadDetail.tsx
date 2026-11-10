@@ -28,7 +28,7 @@ import {
   Phone, Mail, Calendar, MapPin, Loader2,
   Clock, Building2, Target, DollarSign,
   Plus, CheckCircle2, AlertTriangle, ChevronRight,
-  FileText, ChevronDown, ClipboardList,
+  FileText, ChevronDown, ClipboardList, CalendarPlus,
   Flame, Snowflake, Sun, Brain, TrendingUp,
   Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, MessageCircle, ExternalLink, Home, Copy
 } from "lucide-react";
