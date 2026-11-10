@@ -39,7 +39,7 @@ import DrawerTopo from "./drawer/DrawerTopo";
 import ResumoLead from "./ResumoLead";
 import DrawerAgora from "./drawer/DrawerAgora";
 import HomiSugestaoRecolhida from "./drawer/HomiSugestaoRecolhida";
-import CaminhoDoLead from "./drawer/CaminhoDoLead";
+import { UltimoMovimento } from "./drawer/CaminhoDoLead";
 import ResumoLeadLateral from "./drawer/ResumoLeadLateral";
 import { telefoneForaDoRS } from "@/lib/dddUf";
 import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
@@ -532,7 +532,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       savePhone={handleSavePhone}
       saving={saving}
       localTelefone={telefoneForaDoRS(lead.telefone)}
-      faixa={<CaminhoDoLead historico={leadData.historico as any} stages={stages} currentStageId={lead.stage_id} createdAt={lead.created_at} />}
+      metaExtra={<UltimoMovimento historico={leadData.historico as any} stages={stages} currentStageId={lead.stage_id} createdAt={lead.created_at} />}
       pills={
         <>
           <Popover>
