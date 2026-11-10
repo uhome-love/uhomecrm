@@ -472,7 +472,12 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
     const criada = (nextTask as any)?.created_at as string | undefined;
     if (!criada || !lead.stage_changed_at || !currentStage?.nome) return null;
     return new Date(criada).getTime() < new Date(lead.stage_changed_at).getTime()
-      ? { etapaAtual: currentStage.nome, trocadaEm: lead.stage_changed_at } : null;
+      ? { etapaAtual: currentStage.nome, trocadaEm: lead.stage_changed_at, etapaAnterior: (() => {
+          const ult = [...((leadData.historico ?? []) as { stage_anterior_id: string | null; stage_novo_id: string | null; created_at: string }[])]
+            .filter((h) => h.stage_novo_id === lead.stage_id && h.stage_anterior_id && h.stage_anterior_id !== h.stage_novo_id)
+            .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+          return ult ? stages.find((s) => s.id === ult.stage_anterior_id)?.nome ?? null : null;
+        })() } : null;
   })();
   const tarefaAtrasadaTitulo = (() => {
     const t = nextTask as any;
@@ -515,7 +520,8 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       nome={lead.nome}
       telefone={lead.telefone}
       email={lead.email}
-      meta={metaTopo}
+      meta={[]}
+      responsavel={lead.corretor_id ? corretorNomes[lead.corretor_id] : null}
       actions={actionsNode}
       canEdit={isAdmin}
       editingName={editingName}

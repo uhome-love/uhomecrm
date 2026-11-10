@@ -23,7 +23,7 @@ import {
 import {
   Plus, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
-  Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat, AlertTriangle } from "lucide-react";
+  Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat, AlertTriangle, Check as CheckIcon, Flame } from "lucide-react";
 import DrawerLiaConversaTab from "./DrawerLiaConversaTab";
 
 import { parseDateTimeSafe } from "@/lib/utils";
@@ -111,6 +111,29 @@ interface TimelineItem {
 function firstName(nome?: string | null): string | undefined {
   if (!nome) return undefined;
   return nome.trim().split(/\s+/)[0] || undefined;
+}
+
+// Visita: separa "23/10/2026 · 11:00 · Imóvel: X · Resultado: Y · Temperatura: Z · obs".
+const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const semEmoji = (t: string) => t.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "").replace(/\s{2,}/g, " ").trim();
+export function partesDaVisita(desc?: string | null) {
+  if (!desc) return null;
+  const r: { dia?: string; hora?: string; imovel?: string; resultado?: string; temperatura?: string; obs: string[] } = { obs: [] };
+  for (const bruto of desc.split(" · ")) {
+    const p = semEmoji(bruto);
+    if (!p) continue;
+    const d = p.match(/^(\d{2})\/(\d{2})\/\d{4}$/);
+    if (d) { r.dia = `${d[1]} ${MESES_CURTOS[Number(d[2]) - 1] ?? ""}`.trim(); continue; }
+    if (/^\d{1,2}:\d{2}$/.test(p)) { r.hora = p; continue; }
+    const kv = p.match(/^(Imóvel|Resultado|Temperatura):\s*(.+)$/i);
+    if (kv) {
+      const k = kv[1].toLowerCase();
+      if (k === "imóvel") r.imovel = kv[2]; else if (k === "resultado") r.resultado = kv[2]; else r.temperatura = kv[2];
+      continue;
+    }
+    r.obs.push(p);
+  }
+  return r.dia || r.hora || r.imovel || r.resultado ? r : null;
 }
 
 // Resultados crus → etiquetas legíveis (ordem importa: específicos primeiro)
@@ -653,7 +676,6 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
           <RegistroRapido
             leadPrimeiroNome={firstName(lead.nome)}
             onRegistrar={onRegistrar}
-            ajuda="Abre o registro de sempre, já preenchido."
           />
         </div>
       )}
@@ -762,6 +784,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             const Icone = iconeDoMarco(it, direcao);
             const titulo = ehEtapa ? tituloMudancaEtapa(direcao!, it.etapa?.para) : it.title.replace(/^[^\p{L}\p{N}]+/u, "");
             const resultadoVisita = !ehEtapa && ehResultadoDeVisita(it.title) && !!it.description;
+            const visitaAgendada = !ehEtapa && !resultadoVisita && /^visita (agendada|marcada)/i.test(titulo);
+            const pv = resultadoVisita || visitaAgendada ? partesDaVisita(it.description) : null;
+            const tituloFinal = resultadoVisita && pv && (pv.imovel || pv.hora)
+              ? `${titulo} · ${[pv.imovel, pv.hora].filter(Boolean).join(", ")}`
+              : titulo;
             const gap = buracos.get(i);
             return (
               <div key={dItem.id}>
@@ -773,7 +800,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <p className="text-[13.5px] font-semibold text-foreground leading-snug">{titulo}</p>
+                          <p className="text-[13.5px] font-semibold text-foreground leading-snug">{tituloFinal}</p>
                           <span className="text-[11.5px] text-muted-foreground tabular-nums">{it.autor ? `${it.autor} · ` : ""}{time}</span>
                           {it.badge && (
                             <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold ${it.badge.tone === "success" ? "bg-success-500/15 text-success-700 dark:text-success-500" : it.badge.tone === "danger" ? "bg-danger-500/10 text-danger-700 dark:text-danger-500" : it.badge.tone === "warning" ? "bg-warning-500/15 text-warning-700 dark:text-warning-500" : "bg-muted text-muted-foreground"}`}>{it.badge.label}</span>
@@ -791,10 +818,31 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                             </div>
                           )
                         ) : resultadoVisita ? (
-                          <div className="mt-1.5 max-w-[72ch] rounded-lg bg-muted px-3 py-2">
-                            <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">Resultado da visita</span>
-                            <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">{it.description}</p>
-                          </div>
+                          pv ? (
+                            <div className="mt-1.5 max-w-[72ch] flex flex-col gap-1.5">
+                              {(pv.resultado || pv.temperatura) && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {pv.resultado && (
+                                    <span className="inline-flex h-6 items-center gap-1 rounded-full bg-success-500/15 px-2.5 text-[12px] font-semibold text-success-700 dark:text-success-500">
+                                      <CheckIcon className="h-3.5 w-3.5" /> {pv.resultado}
+                                    </span>
+                                  )}
+                                  {pv.temperatura && (
+                                    <span className="inline-flex h-6 items-center gap-1 rounded-full bg-muted px-2.5 text-[12px] font-semibold text-foreground/80">
+                                      <Flame className="h-3.5 w-3.5" /> {pv.temperatura}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {pv.obs.length > 0 && <p className="text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{pv.obs.join(" · ")}</p>}
+                            </div>
+                          ) : (
+                            <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{semEmoji(it.description ?? "")}</p>
+                          )
+                        ) : visitaAgendada && pv ? (
+                          <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80">
+                            Para {[pv.dia, pv.hora].filter(Boolean).join(", ")}{pv.imovel ? ` · ${pv.imovel}` : ""}{pv.obs.length ? ` · ${pv.obs.join(" · ")}` : ""}
+                          </p>
                         ) : it.description ? (
                           <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{it.description}</p>
                         ) : null}

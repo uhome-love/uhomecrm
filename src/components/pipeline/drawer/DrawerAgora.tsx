@@ -31,7 +31,7 @@ interface Props {
   /** Novo: alimenta o selo "Parado há N dias" e a barra contra o prazo da etapa. */
   saude?: { dias: number | null; prazo: number; critico: boolean } | null;
   /** Novo: a tarefa foi criada antes da última troca de etapa. */
-  tarefaDeEtapaAnterior?: { etapaAtual: string; trocadaEm: string } | null;
+  tarefaDeEtapaAnterior?: { etapaAtual: string; trocadaEm: string; etapaAnterior?: string | null } | null;
   /** Novo: bloco do Homi (HomiSugestaoRecolhida). */
   homi?: ReactNode;
   /** Novo: esconde o botão grande "Registrar atividade" (o registro fica no topo do histórico). */
@@ -92,7 +92,8 @@ export default function DrawerAgora({
     if (valido) {
       atrasada = valido.getTime() < Date.now();
       const abs = valido.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", ...(nextTask.hora_vencimento ? { hour: "2-digit", minute: "2-digit" } : {}) });
-      tarefaQuando = `${atrasada ? "Venceu" : "Vence"} ${abs} · ${atrasada ? "atrasada há" : "em"} ${formatDistance(valido, new Date(), { locale: ptBR })}`;
+      const dist = formatDistance(valido, new Date(), { locale: ptBR });
+      tarefaQuando = atrasada ? `Venceu há ${dist} · ${abs}` : `Vence em ${dist} · ${abs}`;
     }
   }
   const tipo = parseNextActionType(nextTask, proximaAcaoTexto);
@@ -101,14 +102,13 @@ export default function DrawerAgora({
 
   // Um alerta só: selo + barra. Verde não aparece (nada a fazer).
   const temSaude = !!saude && saude.dias != null && saude.dias > 0;
-  const pctPrazo = temSaude ? Math.min(100, Math.round((saude!.dias! / Math.max(1, saude!.prazo)) * 100)) : 0;
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Próximo passo</p>
         {temSaude && (
-          <span className={cn(
+          <span title={`Prazo da etapa: ${saude!.prazo} ${saude!.prazo === 1 ? "dia" : "dias"}`} className={cn(
             "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold",
             saude!.critico ? "bg-danger-500/10 text-danger-700 dark:text-danger-500" : "bg-warning-500/15 text-warning-700 dark:text-warning-500",
           )}>
@@ -117,18 +117,6 @@ export default function DrawerAgora({
           </span>
         )}
       </div>
-
-      {temSaude && (
-        <div className="flex flex-col gap-1.5">
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${saude!.dias} de ${saude!.prazo} dias do prazo da etapa`}>
-            <div className={cn("h-full", saude!.critico ? "bg-danger-500" : "bg-warning-500")} style={{ width: `${pctPrazo}%` }} />
-          </div>
-          <div className="flex justify-between gap-2 text-[12px] text-muted-foreground">
-            <span>Sem contato há {saude!.dias} {saude!.dias === 1 ? "dia" : "dias"}</span>
-            <span className="tabular-nums">prazo da etapa: {saude!.prazo} {saude!.prazo === 1 ? "dia" : "dias"}</span>
-          </div>
-        </div>
-      )}
 
       {!saude && saudeLinha && (
         <p className={cn("flex items-center gap-1.5 text-[12px]", saudeLinha.critico ? "text-destructive" : "text-muted-foreground")}>
@@ -161,7 +149,9 @@ export default function DrawerAgora({
               )}
               {tarefaDeEtapaAnterior && (
                 <p className="mt-1 text-[12px] leading-[18px] text-muted-foreground">
-                  Ficou da etapa anterior: o lead foi para {tarefaDeEtapaAnterior.etapaAtual} em {diaMesBRT(tarefaDeEtapaAnterior.trocadaEm)} e a tarefa não foi trocada.
+                  {tarefaDeEtapaAnterior.etapaAnterior
+                    ? `É da etapa anterior (${tarefaDeEtapaAnterior.etapaAnterior}).`
+                    : `É da etapa anterior (antes de ${diaMesBRT(tarefaDeEtapaAnterior.trocadaEm)}).`}
                 </p>
               )}
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">

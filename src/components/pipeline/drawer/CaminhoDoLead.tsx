@@ -6,6 +6,7 @@
 import { ArrowRight, ChevronDown, Undo2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { direcaoEtapa } from "@/lib/timelineNarrativa";
 
 export interface HistoricoEtapa {
   stage_anterior_id: string | null;
@@ -49,10 +50,6 @@ function chaveDia(iso?: string | null) {
 
 /** Monta os passos do caminho, sem as idas e voltas do mesmo dia. */
 export function montarCaminho(historico: HistoricoEtapa[], stages: Etapa[], createdAt?: string | null): Passo[] {
-  const ordemDe = (id?: string | null) => {
-    const i = stages.findIndex((s) => s.id === id);
-    return i === -1 ? null : stages[i].ordem ?? i;
-  };
   const movs = [...historico]
     .filter((h) => h.stage_novo_id && h.stage_novo_id !== h.stage_anterior_id)
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -79,11 +76,12 @@ export function montarCaminho(historico: HistoricoEtapa[], stages: Etapa[], crea
       }
     }
   }
-  return base.map((b, i) => {
-    const de = i > 0 ? ordemDe(base[i - 1].stageId) : null;
-    const para = ordemDe(b.stageId);
-    return { stageId: b.stageId, data: b.data, voltou: de != null && para != null && para < de };
-  });
+  // Mesma regra de direção da linha do tempo (timelineNarrativa.direcaoEtapa).
+  return base.map((b, i) => ({
+    stageId: b.stageId,
+    data: b.data,
+    voltou: i > 0 && direcaoEtapa(stages, base[i - 1].stageId, b.stageId) === "voltou",
+  }));
 }
 
 export function CaminhoLista({ passos, nomeDe }: { passos: Passo[]; nomeDe: (id: string) => string }) {
@@ -102,7 +100,7 @@ export function CaminhoLista({ passos, nomeDe }: { passos: Passo[]; nomeDe: (id:
           >
             {p.voltou ? <Undo2 className="h-3.5 w-3.5 shrink-0" /> : <span className="h-1.5 w-1.5 mx-1 rounded-full bg-current opacity-50 shrink-0" />}
             <span className="truncate flex-1">{p.voltou ? `Voltou para ${nomeDe(p.stageId)}` : nomeDe(p.stageId)}</span>
-            {p.data && <span className="tabular-nums text-[11.5px] text-muted-foreground shrink-0">{diaMesBRT(p.data)}</span>}
+            <span className="tabular-nums text-[11.5px] text-muted-foreground shrink-0">{p.data ? diaMesBRT(p.data) : "sem registro"}</span>
           </li>
         );
       })}
@@ -122,13 +120,13 @@ export function UltimoMovimento({ historico, stages, createdAt }: Props) {
         <button
           type="button"
           className={cn(
-            "inline-flex min-w-0 max-w-full items-center gap-1 rounded-md px-1 -mx-1 text-[12px] font-medium hover:bg-muted transition-colors",
+            "inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md px-1 -mx-1 text-[12px] font-medium hover:bg-muted transition-colors",
             ult.voltou ? "text-primary" : "text-muted-foreground",
           )}
           aria-label="Ver caminho do lead"
         >
           <Icone className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">
+          <span>
             {ult.voltou ? "Voltou para" : "Avançou para"} {nomeDe(ult.stageId)} · {diaMesBRT(ult.data)}
           </span>
           <ChevronDown className="h-3 w-3 shrink-0 opacity-70" />

@@ -3,7 +3,7 @@
 // Nome + etapa/situação/temperatura/saúde + linha de dados (produto ·
 // origem · entrada · corretor) + contatos com copiar + ações compactas.
 // ─────────────────────────────────────────────────────────────────
-import { Copy, Loader2, Pencil } from "lucide-react";
+import { Copy, Loader2, Pencil, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,9 @@ interface Props {
   saving?: boolean;
   /** Chip "DDD 44 · Paraná" quando o telefone é de fora do RS. */
   localTelefone?: LocalTelefone | null;
-  /** Extra no fim da linha de dados (ex.: último movimento de etapa). */
+  /** Nome do corretor responsável (linha de contato). */
+  responsavel?: string | null;
+  /** Extra no fim da linha de situação (ex.: último movimento de etapa). */
   metaExtra?: ReactNode;
 }
 
@@ -54,7 +56,7 @@ export function formatTelefoneBR(t?: string | null): string {
 
 export default function DrawerTopo(p: Props) {
   return (
-    <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-5">
+    <div className="flex items-start gap-3 min-w-0">
       <div className="flex items-start gap-3 min-w-0 flex-1">
         <div
           className="h-11 w-11 md:h-12 md:w-12 rounded-full flex items-center justify-center shrink-0 bg-primary text-primary-foreground font-semibold text-base md:text-lg"
@@ -63,7 +65,7 @@ export default function DrawerTopo(p: Props) {
           {getInitials(p.nome)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap md:flex-nowrap min-w-0">
+          <div className="flex items-center gap-3 min-w-0 min-h-9">
             {p.editingName ? (
               <div className="flex items-center gap-1.5 w-full">
                 <Input value={p.editName} onChange={(e) => p.setEditName(e.target.value)}
@@ -76,20 +78,20 @@ export default function DrawerTopo(p: Props) {
               </div>
             ) : (
               <h2
-                className="text-[17px] md:text-[19px] font-bold text-foreground truncate max-w-full tracking-tight cursor-pointer hover:text-primary transition-colors"
+                className="text-[17px] md:text-[19px] font-bold text-foreground flex-1 min-w-0 leading-tight break-words tracking-tight cursor-pointer hover:text-primary transition-colors"
                 onClick={p.startEditName}
                 title="Clique para editar o nome"
               >
                 {p.nome}
               </h2>
             )}
-            {!p.editingName && <div className="flex items-center gap-1.5 shrink-0">{p.pills}</div>}
+            {p.actions && <div className="hidden md:flex items-center gap-1.5 shrink-0">{p.actions}</div>}
           </div>
 
-          {(p.meta.length > 0 || p.metaExtra) && (
-            <div className="mt-0.5 flex items-center gap-2 min-w-0 text-[12px]">
-              {p.meta.length > 0 && <p className="text-muted-foreground truncate min-w-0">{p.meta.join(" · ")}</p>}
-              {p.metaExtra && <div className="hidden md:flex min-w-0 shrink items-center">{p.metaExtra}</div>}
+          {(p.pills || p.metaExtra) && (
+            <div className="mt-0.5 flex items-center gap-1.5 flex-wrap md:flex-nowrap min-w-0">
+              {p.pills}
+              {p.metaExtra && <div className="flex min-w-0 max-w-full flex-none items-center pl-1">{p.metaExtra}</div>}
             </div>
           )}
 
@@ -115,7 +117,7 @@ export default function DrawerTopo(p: Props) {
                 )}
                 {p.localTelefone && (
                   <span className="ml-1 inline-flex h-5 items-center rounded-md bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
-                    DDD {p.localTelefone.ddd} · {p.localTelefone.nome}
+                    DDD {p.localTelefone.ddd} · {p.localTelefone.uf}
                   </span>
                 )}
               </span>
@@ -132,11 +134,15 @@ export default function DrawerTopo(p: Props) {
                 </button>
               </span>
             )}
+            {p.responsavel && (
+              <span className="inline-flex items-center gap-1 text-foreground/80 min-w-0">
+                <UserRound className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-label="Responsável" />
+                <span className="truncate">{p.responsavel}</span>
+              </span>
+            )}
           </div>
-          {p.metaExtra && <div className="mt-1 flex md:hidden min-w-0">{p.metaExtra}</div>}
         </div>
       </div>
-      {p.actions && <div className="hidden md:flex items-center gap-1.5 shrink-0">{p.actions}</div>}
     </div>
   );
 }
