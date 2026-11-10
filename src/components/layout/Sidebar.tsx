@@ -24,6 +24,7 @@ import MobileMaisMenu from "@/components/layout/mobile/MobileMaisMenu";
 
 import { NAV_BY_ROLE, GRUPO_TOPO, GRUPOS_RECOLHIDOS, type NavGroup, type UserRole } from "@/components/layout/navConfig";
 import { useMenuContadores } from "@/hooks/useMenuContadores";
+import { Button } from "@/components/ui/button";
 
 const CAMPAIGNS: { label: string; path: string; color: string }[] = [];
 
@@ -163,7 +164,7 @@ export default function Sidebar({
     : "bg-card border border-border hover:bg-accent";
   const itemBase  = "shell-nav-item";
   const itemOn  = "shell-nav-item-active";
-  const iconDef   = "text-muted-foreground group-hover/item:text-primary";
+  const iconDef   = "shell-nav-label group-hover/item:text-foreground";
   const iconOn    = "text-current";
 
   // Render full nav content (reused in both aside and mobile sheet)
@@ -175,15 +176,17 @@ export default function Sidebar({
         </div>
       </div>
       {natalItem && (
-        <div className="px-3 mb-2">
-          <button
+        <div className="px-3 mb-4">
+          <Button
+            variant="ghost"
             onClick={() => { go(natalItem.path); if (isMobile) setOpenMobile(false); }}
-            className={cn("natal-chip-ouro w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-left text-[12.5px] font-semibold transition-opacity hover:opacity-90",
+            className={cn("shell-nav-campaign h-9 w-full justify-start gap-2.5 rounded-[10px] border px-3 py-2 text-left text-[12.5px] font-semibold transition-colors duration-short ease-move",
               isActive(natalItem.path) && "ring-2 ring-primary/30")}
+            aria-current={isActive(natalItem.path) ? "page" : undefined}
           >
             <span className="flex-shrink-0">{natalItem.icon}</span>
             <span className="flex-1 truncate">{natalItem.label}</span>
-          </button>
+          </Button>
         </div>
       )}
       {showCampaigns && CAMPAIGNS.length > 0 && (
@@ -231,21 +234,23 @@ export default function Sidebar({
           <div key={group.title}>
             <div className={cn("px-3", gi > 0 ? "pt-3" : "pt-0.5")}>
               {canCollapse ? (
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => toggleGroup(group.title)}
-                  className="w-full flex items-center justify-between px-2 mb-[3px] group/label"
+                  aria-expanded={!isGroupCollapsed || hasActiveItem}
+                  className="group/label mb-[3px] h-5 w-full justify-between rounded-sm px-2 py-0 hover:bg-transparent"
                 >
                   <p className="text-[10px] font-semibold tracking-[0.1em] uppercase shell-nav-label opacity-80">
                     {group.title}
                   </p>
                   <ChevronRight
-                    size={10} strokeWidth={2}
+                    size={14} strokeWidth={2}
                     className={cn(
-                      "transition-transform duration-200 shell-nav-label opacity-60 group-hover/label:opacity-100",
+                      "!size-3.5 shell-nav-label transition-transform duration-short ease-move group-hover/label:text-foreground",
                       !isGroupCollapsed && "rotate-90"
                     )}
                   />
-                </button>
+                </Button>
               ) : group.title ? (
                 <p className="text-[10px] font-semibold tracking-[0.1em] uppercase px-2 mb-1 shell-nav-label opacity-80">
                   {group.title}
