@@ -2,6 +2,7 @@ import { homiGateway } from "../_shared/homiGateway.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadEnterpriseKnowledge, getEmpreendimentoNames, getKnowledgeSourceHeader } from "../_shared/enterprise-knowledge.ts";
+import { resumoNegociosPipeline } from "../_shared/negociosPipeline.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -276,7 +277,6 @@ function buildPdnSummary(pdn: any[]): string {
   });
 
   let summary = `- Total negócios: ${total}
-- Em Negociação: ${emNegociacao} | Contrato: ${contrato} | Ganho: ${ganho} | Perdido: ${perdido}
 - VGV Assinado: R$ ${(vgvAssinado / 1000).toFixed(0)}k
 - VGV Projetado: R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
 

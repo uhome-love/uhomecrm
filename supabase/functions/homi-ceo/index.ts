@@ -2,6 +2,7 @@ import { homiGateway } from "../_shared/homiGateway.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadEnterpriseKnowledge, getEmpreendimentoNames, getKnowledgeSourceHeader } from "../_shared/enterprise-knowledge.ts";
+import { resumoNegociosPipeline } from "../_shared/negociosPipeline.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -340,7 +341,6 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
   const vgvProjetado = pdn.filter(p => ["em_negociacao", "contrato", "ganho"].includes(p.fase) && p.status !== "perdido").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
   let summary = `- Total negócios: ${total}
-- Em Negociação: ${emNegociacao} | Contrato: ${contrato} | Ganho: ${ganho} | Perdido: ${perdido}
 - VGV Assinado: R$ ${(vgvAssinado / 1000).toFixed(0)}k
 - VGV Projetado: R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
 
