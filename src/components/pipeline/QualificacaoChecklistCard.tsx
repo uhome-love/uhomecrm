@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Pencil, ClipboardList, ListChecks, Check, ChevronDown } from "lucide-react";
+import { Loader2, Pencil, Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { PipelineLead } from "@/hooks/usePipeline";
@@ -456,9 +456,9 @@ export function PerfilLeadCard({ lead, onSaved }: Props) {
       </div>
 
       {filled === 0 ? (
-        <p className="text-[11px] text-muted-foreground italic">
-          Nenhum campo preenchido ainda. Clique em <span className="font-medium">Editar</span> para completar o perfil.
-        </p>
+        <button type="button" onClick={() => setEditing(true)} className="text-[13px] font-semibold text-primary hover:underline">
+          Completar perfil ({filled}/{total})
+        </button>
       ) : (
         <div className="grid grid-cols-2 gap-2">
           <ChipDisplay label="Tipologia" value={tipologiaLabel} empty="—" />
