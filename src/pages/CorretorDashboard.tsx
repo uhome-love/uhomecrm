@@ -17,6 +17,7 @@ import OnboardingWidget from "@/components/corretor/OnboardingWidget";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
 import { MissaoNatalCard } from "@/natal/MissaoNatalCard";
+import { AtalhoPaginasNatal } from "@/natal/AtalhoPaginasNatal";
 import RoletaTurnoCard from "@/components/corretor/rotina/RoletaTurnoCard";
 import MinhaEvolucaoKpis from "@/components/corretor/rotina/MinhaEvolucaoKpis";
 import MeuFocoHoje from "@/components/corretor/rotina/MeuFocoHoje";
@@ -171,6 +172,7 @@ export default function CorretorDashboard() {
       </motion.div>
 
       <MissaoNatalCard userId={user?.id} recolhivel />
+      <AtalhoPaginasNatal />
 
       {/* 2. Roleta do turno: barra de credenciamento + estado + regras */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="space-y-2">

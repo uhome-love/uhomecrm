@@ -16,22 +16,24 @@ import { AbaEmpreendimentos, AbaFollowups, AbaScripts, AbaVisaoGeral } from "./A
 import { AbaDisparos, AbaGrade, AbaInstagram, AbaPdfs } from "./AbasArquivos";
 import { GerenciarMateriaisSheet } from "./GerenciarMateriaisSheet";
 import { MuralVendas } from "../MuralVendas";
+import { MinhasPaginasNatal } from "./MinhasPaginasNatal";
 import "../natal.css";
 import "./central.css";
 
 const ABAS = [
-  ["visao", "Visão geral"], ["mural", "Mural das Vendas"], ["empreendimentos", "Empreendimentos"], ["cards", "Cards"], ["disparos", "Disparos"],
+  ["visao", "Visão geral"], ["paginas", "Minhas páginas"], ["mural", "Mural das Vendas"], ["empreendimentos", "Empreendimentos"], ["cards", "Cards"], ["disparos", "Disparos"],
   ["instagram", "Instagram"], ["pdfs", "PDFs"], ["scripts", "Scripts"], ["followups", "Follow-ups"],
 ] as const;
 const GRUPOS: { rotulo: string; abas: string[] }[] = [
   { rotulo: "Comece aqui", abas: ["visao", "mural"] },
-  { rotulo: "Para enviar", abas: ["empreendimentos", "cards", "disparos", "instagram", "pdfs"] },
+  { rotulo: "Para enviar", abas: ["paginas", "empreendimentos", "cards", "disparos", "instagram", "pdfs"] },
   { rotulo: "Para copiar", abas: ["scripts", "followups"] },
 ];
 type Aba = (typeof ABAS)[number][0];
 const CHAVE_ABA = "natal-central-aba";
 
 function abaInicial(): Aba {
+  try { const u = new URLSearchParams(window.location.search).get("aba"); if (ABAS.some(([k]) => k === u)) return u as Aba; } catch { /* ok */ }
   try { const v = localStorage.getItem(CHAVE_ABA); if (ABAS.some(([k]) => k === v)) return v as Aba; } catch { /* ok */ }
   return "visao";
 }
@@ -56,7 +58,7 @@ export default function CampanhaNatalPage() {
   const ehCorretor = !(isAdmin || isDiretor || isGestor);
   const porChave = useMemo(() => Object.fromEntries(materiais.map((m) => [m.chave, m])), [materiais]);
   const caminhos = useMemo(() => {
-    const secoes: Record<Aba, string[]> = { visao: [], mural: [], empreendimentos: ["fotos"], cards: ["cards"], disparos: ["disparos"], instagram: ["instagram", "molduras"], scripts: [], followups: [], pdfs: [] };
+    const secoes: Record<Aba, string[]> = { visao: [], paginas: [], mural: [], empreendimentos: ["fotos"], cards: ["cards"], disparos: ["disparos"], instagram: ["instagram", "molduras"], scripts: [], followups: [], pdfs: [] };
     return materiais.filter((m) => secoes[aba].includes(m.secao)).map((m) => m.arquivo_path);
   }, [materiais, aba]);
   const { data: urls = {} } = useUrlsAssinadas(caminhos);
@@ -121,6 +123,7 @@ export default function CampanhaNatalPage() {
       </div>
 
       {aba === "visao" && <div className="space-y-6"><MuralVendas limite={4} /><AbaVisaoGeral busca={busca} /></div>}
+      {aba === "paginas" && <MinhasPaginasNatal />}
       {aba === "mural" && <MuralVendas />}
       {aba === "empreendimentos" && <AbaEmpreendimentos busca={busca} porChave={porChave} urls={urls} />}
       {aba === "cards" && <AbaGrade itens={porSecao("cards")} urls={urls} />}
