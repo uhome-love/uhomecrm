@@ -1041,17 +1041,10 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
               <MessageCircle className="h-4 w-4" />
             </button>
             <button
-              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
-              aria-label="Anotar"
-              className="shrink-0 flex items-center justify-center h-11 w-12 rounded-xl border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
-            >
-              <FileText className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar_atividade" }); setRegistrarOpen(true); }}
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "agendar_visita" }); setScheduleVisitOpen(true); }}
               className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.98] transition-transform"
             >
-              <Zap className="h-4 w-4" /> Registrar
+              <CalendarPlus className="h-4 w-4" /> Agendar visita
             </button>
           </div>
         )}
