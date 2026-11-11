@@ -67,3 +67,9 @@
 .tl-ativ-email { background: hsl(var(--tl-email-bg)); color: hsl(var(--tl-email-fg)); }
 .tl-ativ-presencial { background: hsl(var(--tl-presencial-bg)); color: hsl(var(--tl-presencial-fg)); }
 .tl-ativ-nota { background: hsl(var(--tl-nota-bg)); color: hsl(var(--tl-nota-fg)); }
+
+/* ScrollArea do Radix usa display:table no conteúdo, que deixa textos longos alargarem a ficha. */
+.lead-detail-sheet [data-radix-scroll-area-viewport] > div {
+  display: block !important;
+  min-width: 0 !important;
+}
