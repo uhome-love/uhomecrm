@@ -3,7 +3,7 @@
 ## Limites e aprovação
 - Somente polimento: manter estrutura da ficha, topo aprovado no computador e no celular, larguras das colunas, cores, emojis, destaques e ações existentes.
 - Sem migration, alterações de gravação, permissões, tarefas, visitas, distribuição, reativação ou cálculos comerciais.
-- Esta entrega é apenas o plano. Após sua aprovação, apresentar desenho isolado das mudanças; só alterar a ficha depois de aprovar também esse desenho.
+- Primeiro apresentar e aprovar o mockup isolado. Depois apresentar este plano para aprovação; só alterar a ficha após as duas aprovações.
 - Extras autorizados: somente o agrupamento da linha do tempo e o caminho do lead, necessários para os títulos dos dias, alinhamento da linha vertical e animação do popover. Nenhuma mudança em peças globais ou outras telas.
 
 ## 1. Cartões mais leves
