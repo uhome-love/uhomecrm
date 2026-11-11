@@ -14,7 +14,7 @@
  *
  * Público (verify_jwt=false) — o 360dialog posta aqui sem auth. Segredo D360_API_KEY.
  */
-import { liaPodeEnviarModoTeste } from "../_shared/liaModoTeste.ts";
+import { liaPodeEnviarModoTeste, ehConversaDeTeste } from "../_shared/liaModoTeste.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -562,12 +562,14 @@ serve(async (req) => {
         let sinal = "seguindo";
         let repassar = false;
         let erroChat = false;
+        let statusChat: number | null = null;
         try {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
             headers: liaInternoHeaders(),
             body: JSON.stringify({ messages: msgs, nome: (est?.nome ?? contactName) || null, ...(recuperacao ? { ficha: recuperacao.ficha } : produto?.ficha ? { ficha: produto.ficha + _blocoMidias } : {}), ...(posRepasse ? { pos_repasse: true } : {}) }),
           });
+          statusChat = r.status;
           if (!r.ok) { erroChat = true; console.error("[lia-whatsapp] lia-chat HTTP", r.status); }
           else {
             const d = await r.json();
@@ -589,7 +591,14 @@ serve(async (req) => {
         // perderia calado (o 360dialog não reenvia). Em vez de sumir, a LIA pede pra reenviar (gera um
         // novo turno) — nunca deixa o cliente no vácuo por uma instabilidade momentânea.
         if (!reply && erroChat) {
-          await sendText(from, "Opa, tive uma instabilidade rapidinha aqui 🙈 me manda de novo tua última mensagem que já te respondo!");
+          // no máximo 1 aviso de instabilidade a cada 10 min por cliente; toda falha vira alerta
+          const desde = new Date(Date.now() - 10 * 60_000).toISOString();
+          const { data: recentes } = await sb.from("ops_events").select("id")
+            .eq("category", "lia_instabilidade").eq("message", `instabilidade ${from.slice(-8)}`)
+            .eq("ctx->>avisou", "true").gte("created_at", desde).limit(1);
+          const avisar = !recentes?.length;
+          await sb.from("ops_events").insert({ fn: "lia-whatsapp", level: "error", category: "lia_instabilidade", message: `instabilidade ${from.slice(-8)}`, ctx: { final: from.slice(-4), status: statusChat, avisou: avisar } }).then(() => {}, () => {});
+          if (avisar) await sendText(from, "Opa, tive uma instabilidade rapidinha aqui 🙈 me manda de novo tua última mensagem que já te respondo!");
           continue;
         }
 
@@ -732,7 +741,13 @@ async function qualificar(sb: any, from: string, est: any, nome: string | null, 
 
     let leadId: string | null = est.lead_id ?? null;
     if (est.recuperacao) {
-      if (!leadId) return null;
+      if (!leadId) {
+        // RECUPERAÇÃO DE TESTE: nada vai para Fila CEO, Roleta ou corretor. Só registra.
+        if (!(await ehConversaDeTeste(sb, from))) return null;
+        await sb.from("ops_events").insert({ fn: "lia-whatsapp", level: "info", category: "lia_teste_handoff", message: "teste: cliente seria passado ao especialista (nada criado)", ctx: { final: from.slice(-4), nivel, resumo: (resumo || "").slice(0, 800) } }).then(() => {}, () => {});
+        await sb.from("lia_estado").update({ status: "qualificado", nivel, resumo: resumo || est.resumo || null, qualificado_em: est.qualificado_em ?? nowISO(), updated_at: nowISO() }).eq("telefone", from);
+        return "teste-sem-lead";
+      }
       return await handoffRecupera(sb, { leadId, telefone: from, nivel, resumo: resumo || "Cliente pediu atendimento com um especialista." });
     }
     if (!leadId) {
