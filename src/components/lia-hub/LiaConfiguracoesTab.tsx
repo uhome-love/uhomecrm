@@ -8,6 +8,7 @@ import { formatBRT } from "@/lib/brtTime";
 import { PROPOSTA_ENVIO, validarEnvio, type EnvioProgramado } from "@/lia/envioProgramado";
 import { useLiaConfiguracoes } from "./useLiaConfiguracoes";
 import LiaLeituraAviso from "./LiaLeituraAviso";
+import LiaModoTesteCard from "./LiaModoTesteCard";
 
 const DIAS=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 export default function LiaConfiguracoesTab() {
@@ -23,6 +24,7 @@ export default function LiaConfiguracoesTab() {
   const salvar=async()=>{try{await q.salvar.mutateAsync({config:draft,versao:data.versao});setRevisar(false);}catch{/* rascunho mantido */}};
   const field=(key:"limite_dia"|"espera_horas",label:string)=><div><label htmlFor={key} className="mb-2 block text-xs font-semibold">{label}</label><Input id={key} type="number" min={key==="limite_dia"?1:24} max={key==="limite_dia"?100:2160} value={draft[key]} onChange={e=>setDraft({...draft,[key]:Number(e.target.value)})}/></div>;
   return <div className="space-y-5">
+    <LiaModoTesteCard/>
     <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-3"><div><p className="text-sm font-semibold">Estado dos envios preservado</p><p className="mt-1 text-xs text-muted-foreground">Salvar não liga o motor nem retoma lotes.</p></div><Badge variant="outline"><Lock className="mr-1 h-3 w-3"/>Sem ativação</Badge></div>
     <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
       <section className="space-y-5">
