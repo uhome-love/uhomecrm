@@ -923,14 +923,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                   </div>
                 </div>
                 {gap != null && (
-                  <div className="relative mt-3 flex gap-3">
-                    <div className="relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 bg-warning-500/15 text-warning-700 dark:text-warning-500">
-                      <AlertTriangle className="h-4 w-4" />
+                  <div className="relative mt-2 flex items-center gap-3" aria-label={`${gap} dias sem registro`}>
+                    <div className="relative z-10 flex w-9 shrink-0 justify-center self-stretch">
+                      <span className="block h-8 border-l-2 border-dashed border-warning-500/70 bg-card" />
                     </div>
-                    <div className="flex-1 rounded-lg border border-dashed border-warning-500/60 bg-warning-500/10 px-3 py-2">
-                      <p className="text-[13px] font-semibold text-warning-700 dark:text-warning-500">{gap} dias sem registro</p>
-                      <p className="text-[12px] text-muted-foreground">Nenhum contato registrado nesse período.</p>
-                    </div>
+                    <p className="text-[12px] font-medium text-warning-700 dark:text-warning-500">{gap} dias sem registro</p>
                   </div>
                 )}
               </div>
