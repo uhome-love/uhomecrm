@@ -6,7 +6,7 @@
 // O ResumoLead da aba "Dados do lead" continua onde está.
 // ─────────────────────────────────────────────────────────────────
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, X } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
@@ -89,10 +89,18 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
   const campanha = campanhaBruta && norm(campanhaBruta) !== norm(lead.empreendimento) ? campanhaBruta : null;
   const orc = fmtOrc(faixa);
   const pendente = leitura?.id !== lead.id;
+  const [aberto, setAberto] = useState(() => { try { return localStorage.getItem("ficha.resumo.aberto") === "1"; } catch { return false; } });
+  const alternar = () => setAberto((v) => { try { localStorage.setItem("ficha.resumo.aberto", v ? "0" : "1"); } catch { /* ignore */ } return !v; });
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Resumo do lead</h2>
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+        <button type="button" onClick={alternar} aria-expanded={aberto} className="flex w-full items-center justify-between gap-2 rounded-md text-left uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <span>Resumo do lead</span>
+          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-fast ${aberto ? "rotate-180" : ""}`} aria-hidden />
+        </button>
+      </h2>
+      {aberto && (<div className="mt-2">
 
       <Linha rotulo="Interesse"><span className={lead.empreendimento ? "text-primary" : ""}>{(lead.empreendimento ? lead.empreendimento.charAt(0).toUpperCase() + lead.empreendimento.slice(1) : "") || <span className="font-normal text-muted-foreground">Não informado</span>}</span></Linha>
 
@@ -135,7 +143,7 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
           ? `${visitas.total} realizada${visitas.total > 1 ? "s" : ""}${visitas.ultima ? ` · ${diaMes(visitas.ultima)}` : ""}`
           : <span className="font-normal text-muted-foreground">Nenhuma ainda</span>}
       </Linha>
-
+      </div>)}
     </section>
   );
 }
