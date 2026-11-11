@@ -136,5 +136,6 @@ export function descricaoLegivel(d: string): string {
   s = s.replace(/(Situação|Status):\s*([a-zà-ú_]+)/gi, (_, k, v) => `${k}: ${codigoLegivel(v)}`);
   s = s.replace(/\b([A-Za-zÀ-ú0-9]+(?:_-?_?[A-Za-zÀ-ú0-9]+)+)\b/g, (m) => respostaFormLegivel(m));
   s = s.replace(/\b([A-Z]{2,})\s+([a-zà-ú]+)/g, (m, a, b) => (a.length <= 3 ? `${maiuscula(a.toLowerCase())} ${b}` : m));
+  s = s.replace(/\br\$\s?/g, "R$ ");
   return s;
 }
