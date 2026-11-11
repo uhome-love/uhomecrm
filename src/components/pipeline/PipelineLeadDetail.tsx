@@ -510,7 +510,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const entrouTopo = (() => { const d = lead.created_at ? new Date(lead.created_at) : null; return d && !Number.isNaN(d.getTime()) ? `entrou ${d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })}` : null; })();
   const metaTopo = [lead.empreendimento || "Sem empreendimento", lead.origem ? origemTopo : null, entrouTopo, lead.corretor_id ? corretorNomes[lead.corretor_id] : null].filter(Boolean) as string[];
   const saudeAgora = (() => {
-    const inp = { ultimo_toque_at: lead.ultimo_toque_at, distribuido_em: lead.distribuido_em, aceito_em: (lead as any).aceito_em, created_at: lead.created_at, stage_tipo: currentStage?.tipo, estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate };
+    const inp = { ultimo_toque_at: lead.ultimo_toque_at, distribuido_em: lead.distribuido_em, aceito_em: (lead as any).aceito_em, created_at: lead.created_at, stage_tipo: currentStage?.tipo, estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate, tem_acao_futura: lead.tem_acao_futura };
     const cor = leadSaude(inp);
     if (cor === "terminal" || cor === "verde") return null;
     return { dias: diasCalendarioSemToque(inp), prazo: prazoDaEtapa(currentStage?.tipo), critico: cor === "vermelho" || cor === "estagnado" };
