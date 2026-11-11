@@ -419,6 +419,7 @@ export function usePipeline(
     }
 
     void hydrateBrokerNames(leadsData);
+    void hydrateAcaoFutura(leadsData);
 
     } catch (err) {
       console.error("[usePipeline] loadLeads crash:", err);

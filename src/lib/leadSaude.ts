@@ -52,6 +52,8 @@ export interface LeadSaudeInput {
    * do SQL (public.lead_saude_status). NULL = sem carência (régua crua). Expira sozinha.
    */
   estagnacao_carencia_ate?: string | null;
+  /** Lead com visita marcada ou tarefa pendente de hoje em diante → sempre "Em dia". */
+  tem_acao_futura?: boolean | null;
 }
 
 function diasSem(base: string): number {
@@ -89,6 +91,7 @@ function hojeBRT(): string {
 export function leadSaude(input: LeadSaudeInput): LeadSaude {
   const tipo = input.stage_tipo ?? "";
   if (TERMINAIS.has(tipo)) return "terminal";
+  if (input.tem_acao_futura) return "verde";
 
   const base = relogioBase(input);
   if (!base) return "vermelho"; // sem qualquer referência = desatualizado
