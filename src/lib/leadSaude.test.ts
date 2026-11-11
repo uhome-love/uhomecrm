@@ -42,3 +42,18 @@ describe("lead que volta com distribuição antiga", () => {
     })).toBe("verde");
   });
 });
+
+import { describe as d2, it as i2, expect as e2 } from "vitest";
+import { leadSaude as ls2 } from "./leadSaude";
+d2("ação futura", () => {
+  const velho = new Date(Date.now() - 30 * 86_400_000).toISOString();
+  i2("lead com visita/tarefa futura fica em dia mesmo sem toque há 30 dias", () => {
+    e2(ls2({ ultimo_toque_at: velho, created_at: velho, stage_tipo: "visita", tem_acao_futura: true })).toBe("verde");
+  });
+  i2("sem ação futura segue a regra normal", () => {
+    e2(ls2({ ultimo_toque_at: velho, created_at: velho, stage_tipo: "visita" })).toBe("vermelho");
+  });
+  i2("etapa final continua final", () => {
+    e2(ls2({ created_at: velho, stage_tipo: "venda", tem_acao_futura: true })).toBe("terminal");
+  });
+});
