@@ -1,4 +1,6 @@
 import { format } from "date-fns";
+import { useEffect } from "react";
+import { useDateFilter } from "@/contexts/DateFilterContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Inbox } from "lucide-react";
@@ -9,6 +11,9 @@ import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
 import MobilePeriodSelector from "./MobilePeriodSelector";
 
 export default function DesktopHeader({model}: {model:CeoDashboardController}) {
+const { setPeriod } = useDateFilter();
+// Painel CEO sempre abre em "Hoje"
+useEffect(() => { setPeriod("hoje"); }, [setPeriod]);
 const { user, period, range, frase, setDispatchOpen, filaCeoCount, lastUpdate, profile, reload, hoje } = model;
 return <>      {/* ═══ GREETING ═══ */}
       <GreetingBar
