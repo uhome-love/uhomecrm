@@ -495,7 +495,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
     const due = new Date(`${String(t.vence_em).slice(0, 10)}T${t.hora_vencimento ? String(t.hora_vencimento).slice(0, 5) : "23:59"}:00-03:00`);
     return due.getTime() < Date.now() ? (t.titulo || t.descricao || null) : null;
   })();
-  const etapaSemVisita = stageTipoAtual === "descarte" || stageTipoAtual === "caiu";
+  const etapaSemVisita = stageTipoAtual === "descarte" || stageTipoAtual === "caiu" || stageTipoAtual === "venda";
   const etapaFinalInfo = (() => {
     if (!["descarte", "caiu", "venda"].includes(stageTipoAtual)) return null;
     const quando = (lead as any).stage_changed_at as string | null | undefined;
@@ -583,7 +583,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         <>
           <Popover>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 cursor-pointer hover:opacity-80 transition-opacity" style={{ backgroundColor: currentStage?.cor + "1f", color: currentStage?.cor }}>
+              <button className={`inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 cursor-pointer hover:opacity-80 transition-opacity${currentStage?.cor ? "" : " bg-muted text-foreground"}`} style={currentStage?.cor ? { backgroundColor: currentStage.cor + "1f", color: currentStage.cor } : undefined}>
                 {currentStage?.nome}
                 <ChevronDown className="h-2.5 w-2.5" />
               </button>
@@ -622,18 +622,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             <span className={`inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 ${tempMeta[temperaturaAtual].cls}`}><Flame className="h-3 w-3 text-muted-foreground" />{tempMeta[temperaturaAtual].label}</span>
           )}
 
-          {currentStage?.tipo === "venda" && (
-            <button
-              className="inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-success-500/15 text-success-700 hover:bg-success-500/20 transition-colors"
-              title="Reativar este lead para uma nova compra"
-              onClick={() => {
-                const destino = stages.find(s => s.tipo === "qualificacao") || stages.find(s => s.tipo === "novo_lead");
-                if (destino) handleMoveStage(destino.id);
-              }}
-            >
-              🔄 Reativar lead
-            </button>
-          )}
 
 
 

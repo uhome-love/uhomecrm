@@ -101,6 +101,7 @@ interface TimelineItem {
   icon: any;
   color: string;
   autor?: string;
+  mesmaEtapa?: boolean;
   badge?: { label: string; tone: "success" | "danger" | "neutral" | "warning" };
   sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "anotacao" | "system";
   sourceId?: string;
@@ -237,7 +238,8 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
         date: h.created_at,
         icon: Repeat,
         color: "bg-muted text-muted-foreground",
-        autor: nome(h.movido_por),
+        autor: "Automático",
+        mesmaEtapa: true,
         sourceType: "historico",
         sourceId: h.id,
       });
@@ -482,6 +484,7 @@ function categoriaDe(item: TimelineItem): "narrativa" | "sistema" {
   if (item.sourceType === "tarefa") return "sistema";
   if (item.sourceType === "system") return "sistema";
   if (item.badge?.label === "🤖 Automação") return "sistema";
+  if (item.sourceType === "historico" && item.mesmaEtapa) return "sistema";
   if (item.sourceType === "historico" && /cad[êe]ncia/i.test(item.title)) return "sistema";
   // Registros automáticos do robô de pontuação (WhatsApp) não são marco da jornada.
   if (/nurturing_sequencia|Evento: whatsapp_respondeu|Sugestão IA para abordagem|respondeu via whatsapp|Cliente respondeu no WhatsApp/i.test(`${item.title || ""}`)) return "sistema";

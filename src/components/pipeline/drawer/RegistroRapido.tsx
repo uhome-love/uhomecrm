@@ -49,7 +49,7 @@ export default function RegistroRapido({ leadPrimeiroNome, onRegistrar, ajuda }:
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) registrar(); }}
-          placeholder={`Registre o que aconteceu com ${leadPrimeiroNome ? `o ${leadPrimeiroNome}` : "o cliente"} e o próximo passo…`}
+          placeholder={`Registre o que aconteceu com ${leadPrimeiroNome || "o cliente"} e o próximo passo…`}
           className="min-h-[44px] w-full resize-none border-0 bg-transparent p-0 text-[14px] leading-[22px] text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         <div className="flex flex-wrap items-center justify-between gap-2">
