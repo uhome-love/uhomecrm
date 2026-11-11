@@ -4,10 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Inbox } from "lucide-react";
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
 import { GreetingBar } from "@/components/ui/GreetingBar";
-import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
 import { MissaoNatalEmpresa } from "@/natal/MissaoNatalEmpresa";
+import { useDateFilter } from "@/contexts/DateFilterContext";
 
 export default function DesktopHeader({model}: {model:CeoDashboardController}) {
+const { setPeriod, setCustomRange } = useDateFilter();
 const { user, period, range, frase, setDispatchOpen, filaCeoCount, lastUpdate, profile, reload, hoje } = model;
 return <>      {/* ═══ GREETING ═══ */}
       <GreetingBar
@@ -17,8 +18,8 @@ return <>      {/* ═══ GREETING ═══ */}
         filter={period === "hoje" ? "hoje" : period === "ontem" ? "ontem" : period === "semana" ? "semana" : period === "mes" || period === "ultimos_30d" ? "mes" : "personalizado"}
         dateRange={{ from: range.start, to: range.end }}
         onFilterChange={(f, r) => {
-          const periodMap: Record<string, string> = { hoje: "hoje", ontem: "ontem", semana: "semana", mes: "mes" };
-          window.dispatchEvent(new CustomEvent("date-filter-change", { detail: { period: periodMap[f] || "personalizado", range: r } }));
+          if (f === "personalizado") { if (r?.from && r?.to) setCustomRange({ start: r.from, end: r.to }); return; }
+          setPeriod(f);
         }}
         onRefresh={reload}
         refreshTime={format(lastUpdate, "HH:mm")}
@@ -28,7 +29,7 @@ return <>      {/* ═══ GREETING ═══ */}
 
       {/* ═══ DATE FILTER + ACTION BUTTONS ═══ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex-1 min-w-0 max-w-full"><GlobalDateFilterBar variant="header" /></div>
+        <div className="flex-1 min-w-0 max-w-full hidden md:block" aria-hidden="true" />
         <div className="flex items-center gap-2 shrink-0">
           <Button
             size="sm"
