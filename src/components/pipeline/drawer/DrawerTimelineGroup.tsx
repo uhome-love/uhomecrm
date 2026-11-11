@@ -74,9 +74,12 @@ export function cabecalhoDiaFicha(iso: string, agora = new Date()): string {
   const intervalo = Math.round((Date.parse(`${hoje}T12:00:00-03:00`) - Date.parse(`${dia}T12:00:00-03:00`)) / 86400000);
   if (intervalo === 0) return "Hoje";
   if (intervalo === 1) return "Ontem";
-  const data = formatBRT(iso, dia.slice(0, 4) !== hoje.slice(0, 4) ? "dd MMM yyyy" : "dd MMM");
+  const instante = new Date(iso);
+  if (Number.isNaN(instante.getTime())) return "";
+  const partes = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short", ...(dia.slice(0, 4) !== hoje.slice(0, 4) ? { year: "numeric" as const } : {}) }).formatToParts(instante);
+  const data = partes.filter(p => p.type !== "literal").map(p => p.value.replace(/\.$/, "")).join(" ");
   if (intervalo > 1 && intervalo < 7) {
-    const semana = formatBRT(iso, "EEE").replace(/\.$/, "");
+    const semana = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "short" }).format(instante).replace(/\.$/, "");
     return `${semana.charAt(0).toUpperCase()}${semana.slice(1)}, ${data}`;
   }
   return data;
