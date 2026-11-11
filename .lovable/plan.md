@@ -1,7 +1,7 @@
 # Ficha do lead · refinamento final (só visual)
 
 ## Limites e aprovação
-- Somente polimento: manter estrutura da ficha, topo aprovado no computador e no celular, larguras das colunas, cores, emojis, destaques e ações existentes.
+- Somente polimento: manter estrutura da ficha, topo aprovado no computador e no celular, larguras das colunas, emojis, destaques e ações existentes. Desenho aprovado por Lucas, com acréscimo de cores discretas em poucos pontos; preservar as cores da linha do tempo e as situações finais neutras de Descarte/Caiu.
 - Sem migration, alterações de gravação, permissões, tarefas, visitas, distribuição, reativação ou cálculos comerciais.
 - Primeiro apresentar e aprovar o mockup isolado. Depois apresentar este plano para aprovação; só alterar a ficha após as duas aprovações.
 - Extras autorizados: somente o agrupamento da linha do tempo e o caminho do lead, necessários para os títulos dos dias, alinhamento da linha vertical e animação do popover. Nenhuma mudança em peças globais ou outras telas.
@@ -11,6 +11,7 @@
 - **Situação:** remover a caixa cinza interna; Descarte e Caiu mantêm texto, datas e emojis dos motivos.
 - **Sem próximo passo:** uma linha âmbar e, abaixo, botão de contorno de largura total, **+ Criar próximo passo**, abrindo o formulário atual.
 - Cabeçalhos com rótulo à esquerda e selo/link à direita, espaçamento interno preservado; o selo passa inteiro para a linha de baixo se não couber, sem sobreposição.
+- **Acentos de cor:** filete superior âmbar no Próximo passo sem tarefa, vermelho quando a tarefa já estiver vencida e azul quando estiver em dia; azul no Negócio; verde no destaque de Venda assinada e no seu título; Interesse no Resumo em azul discreto. Homi mantém o ciano existente. Usar somente tokens temáticos, sem colorir cartões inteiros ou alterar a régua de saúde/vencimento. Descarte e Caiu continuam neutros; cores e emojis da linha do tempo permanecem intactos.
 
 ## 2. Ordem e destaque conforme a etapa
 - **Novo Lead até Pós-Visita:** Próximo passo → Resumo. Preservar os blocos auxiliares já existentes e suas condições de exibição.
