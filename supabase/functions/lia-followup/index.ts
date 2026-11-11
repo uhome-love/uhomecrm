@@ -259,7 +259,7 @@ async function backfillResumos(sb: any): Promise<number> {
       try {
         const rr = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+          headers: { "x-lia-cron-secret": Deno.env.get("LIA_CRON_SECRET") ?? "", "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
           body: JSON.stringify({ messages: msgs, mode: "resumo" }),
         });
         if (!rr.ok) { console.error("[lia-followup] resumo HTTP", rr.status, await rr.text().catch(() => "")); continue; }

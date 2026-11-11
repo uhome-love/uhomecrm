@@ -564,7 +564,7 @@ serve(async (req) => {
         try {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}` },
+            headers: { "x-lia-cron-secret": Deno.env.get("LIA_CRON_SECRET") ?? "", "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}` },
             body: JSON.stringify({ messages: msgs, nome: (est?.nome ?? contactName) || null, ...(recuperacao ? { ficha: recuperacao.ficha } : produto?.ficha ? { ficha: produto.ficha + _blocoMidias } : {}), ...(posRepasse ? { pos_repasse: true } : {}) }),
           });
           if (!r.ok) { erroChat = true; console.error("[lia-whatsapp] lia-chat HTTP", r.status); }
