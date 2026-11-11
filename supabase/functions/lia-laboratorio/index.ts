@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       const { data: produto, error } = await admin.from("lia_produtos").select("slug,nome_publico,nome,ficha,updated_at").eq("slug",slug).eq("ativo",true).maybeSingle();
       if (error || !produto?.ficha) return json({ error: "Ficha do produto indisponível" }, 400);
       const r = await fetch(`${url}/functions/v1/lia-chat`, {
-        method:"POST", headers:{ Authorization:`Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`, apikey:anon,"Content-Type":"application/json" },
+        method:"POST", headers:{ "x-lia-cron-secret": Deno.env.get("LIA_CRON_SECRET") ?? "", Authorization:`Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`, apikey:anon,"Content-Type":"application/json" },
         body:JSON.stringify({ mode:"reengajar", messages:[{ role:"user",content:contexto }], ficha:produto.ficha }),
       });
       if (!r.ok) return json({ error:"Não foi possível gerar a simulação" },502);

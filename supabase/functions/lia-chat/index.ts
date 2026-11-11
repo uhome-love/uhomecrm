@@ -543,8 +543,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   // Trava (auditoria 10/11/2026): só rotina automática (service role / x-cron-secret) ou CEO/diretora logada.
   {
-    const auth = await requireRealUser(req, { allowServiceRole: true, roles: ["admin", "diretor"] });
-    if (auth.error) return auth.error;
+    const liaSecret = Deno.env.get("LIA_CRON_SECRET") ?? "";
+    const interno = !!liaSecret && req.headers.get("x-lia-cron-secret") === liaSecret;
+    if (!interno) {
+      const auth = await requireRealUser(req, { allowServiceRole: true, roles: ["admin", "diretor"] });
+      if (auth.error) return auth.error;
+    }
   }
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } });
