@@ -1,9 +1,9 @@
 import { EMPREENDIMENTOS, PDFS, SECOES_ARQUIVOS } from "./conteudo";
 
-export type Secao = "cards" | "disparos" | "instagram" | "molduras" | "fotos" | "pdfs";
+export type Secao = "cards" | "disparos" | "instagram" | "molduras" | "fotos" | "pdfs" | "prime";
 export interface ArquivoLido { chave: string; secao: Secao; ordem: number; titulo: string; caminho: string }
 
-const PADRAO = /^(CARD|DISP|INSTA|MOLD|FOTO|PDF)-(\d+)-(.+)\.(jpe?g|png|webp|pdf)$/i;
+const PADRAO = /^(CARD|DISP|INSTA|MOLD|FOTO|PDF|PRIME)-(\d+)-(.+)\.(jpe?g|png|webp|pdf)$/i;
 
 /** Lê o nome do arquivo e diz onde ele entra. null = fora do padrão. */
 export function lerNomeArquivo(nome: string): ArquivoLido | null {
