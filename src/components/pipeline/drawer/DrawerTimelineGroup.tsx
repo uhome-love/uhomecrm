@@ -5,7 +5,7 @@
 // ícones em círculo 36px com bg sutil por tipo + linha conectora.
 // ─────────────────────────────────────────────────────────────────
 import { formatBRT } from "@/lib/brtTime";
-import { formatDayHeader, dayKeyBRT } from "@/lib/leadHelpers";
+import { dayKeyBRT } from "@/lib/leadHelpers";
 import type { ReactNode } from "react";
 import {
   Phone, MessageSquare, CheckCircle2, StickyNote, MapPin, ArrowRight,
@@ -68,6 +68,23 @@ const TYPE_STYLE: Record<string, { bg: string; color: string; icon: any }> = {
 
 const FALLBACK_STYLE = { bg: "bg-zinc-100 dark:bg-zinc-800", color: "text-zinc-600 dark:text-zinc-300", icon: FileText };
 
+export function cabecalhoDiaFicha(iso: string, agora = new Date()): string {
+  const dia = dayKeyBRT(iso);
+  const hoje = dayKeyBRT(agora.toISOString());
+  const intervalo = Math.round((Date.parse(`${hoje}T12:00:00-03:00`) - Date.parse(`${dia}T12:00:00-03:00`)) / 86400000);
+  if (intervalo === 0) return "Hoje";
+  if (intervalo === 1) return "Ontem";
+  const instante = new Date(iso);
+  if (Number.isNaN(instante.getTime())) return "";
+  const partes = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short", ...(dia.slice(0, 4) !== hoje.slice(0, 4) ? { year: "numeric" as const } : {}) }).formatToParts(instante);
+  const data = partes.filter(p => p.type !== "literal").map(p => p.value.replace(/\.$/, "")).join(" ");
+  if (intervalo > 1 && intervalo < 7) {
+    const semana = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "short" }).format(instante).replace(/\.$/, "");
+    return `${semana.charAt(0).toUpperCase()}${semana.slice(1)}, ${data}`;
+  }
+  return data;
+}
+
 function styleFor(item: DrawerTimelineItem) {
   if (item.tipo && TYPE_STYLE[item.tipo]) return TYPE_STYLE[item.tipo];
   if (item.kind === "historico") return TYPE_STYLE.historico;
@@ -84,7 +101,7 @@ export default function DrawerTimelineGroup({ items, renderItem }: Props) {
     const key = dayKeyBRT(ev.date);
     let g = groups.find(x => x.key === key);
     if (!g) {
-      g = { key, label: formatDayHeader(ev.date) || key, events: [] };
+      g = { key, label: cabecalhoDiaFicha(ev.date) || key, events: [] };
       groups.push(g);
     }
     g.events.push(ev);
@@ -104,16 +121,16 @@ export default function DrawerTimelineGroup({ items, renderItem }: Props) {
         <section key={g.key}>
           {/* Cabeçalho do dia */}
           <div className="flex items-center gap-3 mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">
+            <span className="text-[10px] font-bold text-muted-foreground shrink-0">
               {g.label}
             </span>
             <div className="flex-1 h-px bg-border/40" />
           </div>
 
           {/* Eventos do dia */}
-          <div className="relative pl-1">
+          <div className="relative">
             {/* linha conectora vertical (atrás dos círculos) */}
-            <div className="absolute left-[19px] top-3 bottom-3 w-px bg-border/40 pointer-events-none" />
+            <div className="absolute left-[17.5px] top-[18px] bottom-[18px] w-px bg-border/40 pointer-events-none" />
             <div className="space-y-3">
               {g.events.map((ev) => renderItem ? renderItem(ev) : <DefaultTimelineRow key={ev.id} item={ev} />)}
             </div>

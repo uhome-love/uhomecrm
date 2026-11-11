@@ -1,6 +1,7 @@
 import { valorCurto } from "@/lib/timelineNarrativa";
 import { DISCARD_REASONS_REENGAJAVEL, DISCARD_REASONS_DEFINITIVO, getReasonByCode, reasonDisplay, classifyMotivoText } from "@/lib/discardReasons";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import "./drawer/refinamentoFicha.css";
 import { LeadFormRespostas } from "@/components/pipeline/drawer/LeadFormRespostas";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -85,6 +86,12 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
 import { getScoreTemperature } from "@/lib/scoreTemperatureLabels";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
+import { useJornadaNegocio } from "@/hooks/useJornadaNegocio";
+import { useProfileNames } from "@/hooks/useProfileNames";
+import { valorSugerido } from "@/lib/jornadaNegocio";
+import { substatusValueLabel } from "@/lib/pipelineAudit";
+import { diasCalendarioBRT } from "@/lib/diasCalendarioBRT";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   lead: PipelineLead;
@@ -130,8 +137,26 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
+  const jornadaFicha = useJornadaNegocio(open && lead.negocio_id ? lead.id : "");
+  const nomesFicha = useProfileNames();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<string>(() => (isMobile ? "info" : "historico"));
+  const abasRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const abas = abasRef.current;
+    if (!abas) return;
+    const medir = () => {
+      const ativa = abas.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+      if (!ativa) return;
+      abas.style.setProperty("--tab-left", `${ativa.offsetLeft}px`);
+      abas.style.setProperty("--tab-width", `${ativa.offsetWidth}px`);
+    };
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(abas);
+    abas.querySelectorAll('[role="tab"]').forEach(aba => observador.observe(aba));
+    return () => observador.disconnect();
+  }, [activeTab, lead.id, isMobile, open]);
   useEffect(() => {
     setActiveTab(isMobile ? "info" : "historico");
   }, [lead.id, isMobile]);
@@ -514,12 +539,19 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       return { texto: `Descartado${em}${motivo ? ` · Motivo: ${motivo}` : ""}` };
     }
     if (stageTipoAtual === "caiu") return { texto: `Negócio caiu${em}` };
-    const valorVenda = valorCurto(Number(lead.valor_estimado) || 0).replace(/ /g, "\u00a0");
+    const negocio = jornadaFicha.data?.negocio;
+    const assinatura = negocio?.data_assinatura;
+    const dataAssinatura = assinatura ? parseDateBRTSafe(assinatura) : null;
+    const dataVenda = dataAssinatura?.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short" }).replace(/ de /g, " ").replace(/\./g, "") ?? "";
+    const registroAssinatura = negocio?.fase === "ganho" && assinatura ? leadData.historico.find(h => h.stage_novo_id === lead.stage_id && h.stage_anterior_id !== h.stage_novo_id && Math.abs(Date.parse(h.created_at) - Date.parse(lead.stage_changed_at ?? "")) < 60000 && new Date(h.created_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) === dataAssinatura?.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" })) : undefined;
+    const autor = registroAssinatura ? nomesFicha[registroAssinatura.movido_por]?.trim().split(/\s+/)[0] : undefined;
+    const valorVenda = negocio?.fase === "ganho" ? valorCurto(valorSugerido(negocio)).replace(/ /g, "\u00a0") : "";
     return {
-      texto: `Venda assinada${em}${valorVenda ? ` · ${valorVenda}` : ""}`,
+      texto: jornadaFicha.error ? "Não foi possível consultar a venda." : "Venda assinada",
+      venda: negocio?.fase === "ganho" ? { valor: valorVenda, data: dataVenda, autor } : undefined,
       link: lead.negocio_id ? { rotulo: "Abrir negócio", onClick: () => setActiveTab("negocio") } : undefined,
       acao: (
-        <Button size="sm" variant="outline" className="self-start h-8 gap-1.5 text-[12.5px]" onClick={() => {
+        <Button size="sm" variant="ghost" className="self-start h-8 mt-2 px-0 gap-1.5 text-[12.5px] text-muted-foreground hover:bg-transparent hover:text-foreground" onClick={() => {
           const destino = stages.find(s => s.tipo === "qualificacao") || stages.find(s => s.tipo === "novo_lead");
           if (destino) handleMoveStage(destino.id);
         }}>🔄 Reativar lead</Button>
@@ -527,6 +559,24 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
     };
   })();
   const etapaNegocio = ["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual);
+  const negocioFicha = jornadaFicha.data?.negocio;
+  const contratoRaw = negocioFicha?.jornada && typeof negocioFicha.jornada === "object" && !Array.isArray(negocioFicha.jornada) ? negocioFicha.jornada.contrato : null;
+  const contratoRef = contratoRaw && typeof contratoRaw === "object" && !Array.isArray(contratoRaw) ? contratoRaw : null;
+  const situacaoFicha = stageTipoAtual === "contrato_gerado" ? negocioFicha?.contrato_situacao : negocioFicha?.proposta_situacao;
+  const diasSituacao = contratoRef?.status === situacaoFicha && contratoRef?.etapa_id === lead.stage_id && typeof contratoRef?.desde === "string" ? diasCalendarioBRT(contratoRef.desde) : null;
+  const negocioNode = stageTipoAtual !== "venda" && (lead.negocio_id || etapaNegocio) ? (
+    <section className="rounded-xl border border-border border-t-2 border-t-primary bg-card p-5 shadow-sm space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-[11px] font-semibold uppercase text-primary">Negócio</p>
+        {lead.negocio_id && <Button variant="link" onClick={() => setActiveTab("negocio")} className="h-auto p-0 text-[12px]">Abrir</Button>}
+      </div>
+      {lead.negocio_id && jornadaFicha.isPending ? <div aria-busy="true" className="space-y-3"><Skeleton className="h-4 w-3/4 motion-reduce:animate-none" /><Skeleton className="h-6 w-1/2 motion-reduce:animate-none" /><Skeleton className="h-9 w-full motion-reduce:animate-none" /></div> : jornadaFicha.error ? <p className="text-[13px] text-muted-foreground">Não foi possível consultar o negócio.</p> : <>
+        <p className="text-[13px] leading-relaxed">{currentStage?.nome}{situacaoFicha ? ` · ${substatusValueLabel(stageTipoAtual === "contrato_gerado" ? "status_contrato" : "status_negociacao", situacaoFicha).replace(/^[^\p{L}\p{N}]+/u, "")}` : ""}{diasSituacao != null && diasSituacao >= 0 ? ` há ${diasSituacao} ${diasSituacao === 1 ? "dia" : "dias"}` : ""}</p>
+        {negocioFicha && <p className="font-display text-[19px] font-bold whitespace-nowrap tabular-nums">{valorCurto(valorSugerido(negocioFicha)).replace(/ /g, "\u00a0")}</p>}
+        {!lead.negocio_id && <p className="text-[13px] text-muted-foreground">Ainda não há proposta</p>}
+        {etapaNegocio && <LeadFlagControls bare leadId={lead.id} stageTipo={stageTipoAtual} flagStatus={lead.flag_status as Record<string, string> | null} />}
+      </>}
+    </section>
+  ) : null;
   const acaoTrack = (action: string) => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action });
   const actionsNode = (
     <>
@@ -663,7 +713,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </div>
       )}
 
-
+      {etapaNegocio && negocioNode}
       <DrawerAgora
         leadId={lead.id}
         nextTask={nextTask as any}
@@ -678,6 +728,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         tarefaDeEtapaAnterior={tarefaDeEtapaAnterior}
         esconderRegistrar={!isMobile}
         etapaFinal={etapaFinalInfo}
+        loading={leadData.loading || (stageTipoAtual === "venda" && !!lead.negocio_id && jornadaFicha.isPending)}
         homi={
           <HomiSugestaoRecolhida
             leadId={lead.id}
@@ -695,25 +746,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
 
       <ResumoLeadLateral lead={lead} esconderOrcamento={stageTipoAtual === "venda"} />
 
-      {/* Negócio — só a partir de Documentação (ou se já existe negócio) */}
-      {stageTipoAtual !== "venda" && (lead.negocio_id || ["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual)) && (
-      <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Negócio</p>
-          {lead.negocio_id && <button onClick={() => setActiveTab("negocio")} className="text-[12px] font-semibold text-primary hover:underline">Abrir</button>}
-        </div>
-        <p className="mt-1 text-[13px] text-foreground">
-          {lead.negocio_id
-            ? <>Em andamento{lead.valor_estimado ? <> · <span className="font-semibold tabular-nums">{valorCurto(Number(lead.valor_estimado)).replace(/ /g, "\u00a0")}</span></> : null}</>
-            : <span className="text-muted-foreground">Ainda não há proposta</span>}
-        </p>
-        {["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual) && (
-          <div className="mt-2">
-            <LeadFlagControls bare leadId={lead.id} stageTipo={stageTipoAtual} flagStatus={lead.flag_status as Record<string, string> | null} />
-          </div>
-        )}
-      </section>
-      )}
+      {!etapaNegocio && negocioNode}
 
       {/* Celular: "Mais ações" (as ações principais ficam na barra fixa embaixo) */}
       <div className="md:hidden">
@@ -906,7 +939,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   return (
 
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent onOpenAutoFocus={(e) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-lead-titulo]")?.focus({ preventScroll: true }); }} className="inset-y-0 right-0 h-full w-full max-w-none md:w-full min-[1100px]:w-[70vw] md:max-w-[2000px] p-0 gap-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+      <SheetContent onOpenAutoFocus={(e) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-lead-titulo]")?.focus({ preventScroll: true }); }} className="lead-detail-sheet inset-y-0 right-0 h-full w-full max-w-none md:w-full min-[1100px]:w-[70vw] md:max-w-[2000px] p-0 gap-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
             <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
@@ -929,7 +962,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 px-4 md:px-7 pt-2 md:pt-3 flex items-center gap-2 border-b border-border/60">
-            <TabsList onScroll={(e) => { const el = e.currentTarget; el.dataset.fim = String(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4); }} data-fim="false" className="bg-transparent rounded-none p-0 h-11 flex-1 flex justify-start gap-1 md:gap-4 overflow-x-auto scrollbar-none max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,black_85%,transparent)] max-md:data-[fim=true]:[mask-image:none]">
+            <TabsList ref={abasRef} onScroll={(e) => { const el = e.currentTarget; el.dataset.fim = String(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4); }} data-fim="false" className="lead-tabs bg-transparent rounded-none p-0 h-11 flex-1 flex justify-start gap-1 md:gap-4 overflow-x-auto scrollbar-none max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,black_85%,transparent)] max-md:data-[fim=true]:[mask-image:none]">
               {isMobile && (
                 <TabsTrigger value="info" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                   Agora

@@ -7,9 +7,9 @@
 // ─────────────────────────────────────────────────────────────────
 import { diasCalendarioBRT } from "@/lib/diasCalendarioBRT";
 import { useEffect, useState, type ReactNode } from "react";
-import { formatDistance } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { CalendarDays, Clock, Plus, Repeat, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateBRTSafe, cn } from "@/lib/utils";
 import { parseNextActionType } from "./DrawerProximaAcao";
@@ -37,8 +37,9 @@ interface Props {
   homi?: ReactNode;
   /** Novo: esconde o botão grande "Registrar atividade" (o registro fica no topo do histórico). */
   esconderRegistrar?: boolean;
+  loading?: boolean;
   /** Etapa final (Descarte, Caiu, Ganho): mostra só um resumo neutro no lugar do próximo passo. */
-  etapaFinal?: { texto: string; acao?: ReactNode; link?: { rotulo: string; onClick: () => void } } | null;
+  etapaFinal?: { texto: string; venda?: { valor: string; data: string; autor?: string }; acao?: ReactNode; link?: { rotulo: string; onClick: () => void } } | null;
 }
 
 const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -68,7 +69,7 @@ function diaMesBRT(iso: string): string {
 
 export default function DrawerAgora({
   leadId, leadNome, nextTask, proximaAcaoTexto, pendingCount, onComplete, onSeeAll, onCreateTask, onRegistrar,
-  saudeLinha, saude, tarefaDeEtapaAnterior, homi, esconderRegistrar = false, etapaFinal = null,
+  saudeLinha, saude, tarefaDeEtapaAnterior, homi, esconderRegistrar = false, etapaFinal = null, loading = false,
 }: Props) {
   const [visita, setVisita] = useState<Visita | null>(null);
 
@@ -105,33 +106,45 @@ export default function DrawerAgora({
   const tituloBruto = nextTask?.titulo || nextTask?.descricao || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : "Próxima tarefa");
   const tituloTarefa = leadNome ? tituloBruto.replace(new RegExp(`\\s*[—-]\\s*${leadNome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i"), "") : tituloBruto;
 
+  if (loading) return (
+    <section aria-busy="true" className={cn("rounded-xl border border-border bg-card p-5 shadow-sm space-y-4", etapaFinal ? "min-h-[190px]" : "min-h-[249px]")}>
+      <Skeleton className="h-3 w-24 motion-reduce:animate-none" /><Skeleton className="h-5 w-3/4 motion-reduce:animate-none" /><Skeleton className="h-4 w-1/2 motion-reduce:animate-none" /><Skeleton className="h-9 w-full motion-reduce:animate-none" />
+      {!etapaFinal && <Skeleton className="h-11 w-full motion-reduce:animate-none" />}
+    </section>
+  );
+
   if (etapaFinal) {
     return (
-      <section className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
+      <section className={cn("rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col gap-3", etapaFinal.venda && "border-t-2 border-t-success-500")}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Situação</p>
-          {etapaFinal.link && <button type="button" onClick={etapaFinal.link.onClick} className="whitespace-nowrap text-[12px] font-semibold text-primary hover:underline">{etapaFinal.link.rotulo}</button>}
         </div>
-        <p className="rounded-lg bg-muted/60 px-3.5 py-3 text-[13.5px] font-medium text-muted-foreground">{etapaFinal.texto}</p>
+        {etapaFinal.venda ? <div className="space-y-2">
+          <p className="font-display text-[16px] font-bold text-success-700 dark:text-success-500">🏆 Venda assinada</p>
+          {etapaFinal.venda.valor && <p className="font-display text-[24px] font-bold whitespace-nowrap tabular-nums">{etapaFinal.venda.valor}</p>}
+          {etapaFinal.venda.data && <p className="text-[13px] text-muted-foreground">{etapaFinal.venda.data}{etapaFinal.venda.autor ? ` · ${etapaFinal.venda.autor}` : ""}</p>}
+        </div> : <p className="text-[13.5px] font-medium leading-relaxed text-muted-foreground">{etapaFinal.texto}</p>}
+        {etapaFinal.link && <Button variant="link" onClick={etapaFinal.link.onClick} className="self-start h-auto p-0 text-[12px] font-semibold">{etapaFinal.link.rotulo}</Button>}
         {etapaFinal.acao}
       </section>
     );
   }
 
   // Um alerta só: selo + barra. Verde não aparece (nada a fazer).
-  const temSaude = !!saude && saude.dias != null && saude.dias > 0;
+  const saudeVisivel = saude && saude.dias != null && saude.dias > 0 ? saude : null;
+  const taskId = nextTask?.id;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
+    <section className={cn("rounded-xl border border-border border-t-2 bg-card p-5 shadow-sm flex flex-col gap-4", !nextTask ? "border-t-warning-500" : atrasada ? "border-t-danger-500" : "border-t-primary")}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground whitespace-nowrap">Próximo passo</p>
-        {temSaude && (
-          <span title={`Prazo da etapa: ${saude!.prazo} ${saude!.prazo === 1 ? "dia" : "dias"}`} className={cn(
+        {saudeVisivel && (
+          <span title={`Prazo da etapa: ${saudeVisivel.prazo} ${saudeVisivel.prazo === 1 ? "dia" : "dias"}`} className={cn(
             "inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[12px] font-semibold",
-            saude!.critico ? "bg-danger-500/10 text-danger-700 dark:text-danger-500" : "bg-warning-500/15 text-warning-700 dark:text-warning-500",
+            saudeVisivel.critico ? "bg-danger-500/10 text-danger-700 dark:text-danger-500" : "bg-warning-500/15 text-warning-700 dark:text-warning-500",
           )}>
-            <span className={cn("h-1.5 w-1.5 rounded-full", saude!.critico ? "bg-danger-500" : "bg-warning-500")} />
-            {saude!.critico ? "Parado" : "Atenção"} há {saude!.dias} {saude!.dias === 1 ? "dia" : "dias"}
+            <span className={cn("h-1.5 w-1.5 rounded-full", saudeVisivel.critico ? "bg-danger-500" : "bg-warning-500")} />
+            {saudeVisivel.critico ? "Parado" : "Atenção"} há {saudeVisivel.dias} {saudeVisivel.dias === 1 ? "dia" : "dias"}
           </span>
         )}
       </div>
@@ -157,7 +170,7 @@ export default function DrawerAgora({
       )}
 
       {nextTask ? (
-        <div className="rounded-lg bg-muted/60 p-3.5">
+        <div>
           <div className="flex items-start gap-2">
             <Clock className={cn("mt-0.5 h-4 w-4 shrink-0", atrasada ? "text-danger-500" : "text-muted-foreground")} />
             <div className="min-w-0 flex-1">
@@ -173,35 +186,35 @@ export default function DrawerAgora({
                 </p>
               )}
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                {nextTask.id && (
-                  <button type="button" onClick={() => onComplete(nextTask.id!)} className="text-[12.5px] font-semibold text-primary hover:underline">
+                {taskId && (
+                  <Button variant="link" onClick={() => onComplete(taskId)} className="h-auto p-0 text-[12.5px] font-semibold">
                     Concluir
-                  </button>
+                  </Button>
                 )}
                 {(atrasada || tarefaDeEtapaAnterior) && (
-                  <button type="button" onClick={onCreateTask} className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary hover:underline">
+                  <Button variant="link" onClick={onCreateTask} className="h-auto p-0 gap-1 text-[12.5px] font-semibold">
                     <Repeat className="h-3.5 w-3.5" /> Trocar tarefa
-                  </button>
+                  </Button>
                 )}
                 {pendingCount > 1 && (
-                  <button type="button" onClick={onSeeAll} className="text-[12px] text-muted-foreground hover:text-foreground">
+                  <Button variant="link" onClick={onSeeAll} className="h-auto p-0 text-[12px] text-muted-foreground hover:text-foreground">
                     + {pendingCount - 1} tarefa{pendingCount - 1 > 1 ? "s" : ""} pendente{pendingCount - 1 > 1 ? "s" : ""}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-warning-500/10 px-3.5 py-3">
-          <p className="text-[14px] font-semibold text-warning-700 dark:text-warning-500">Sem próximo passo</p>
-          <button type="button" onClick={onCreateTask} className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary hover:underline">
-            <Plus className="h-3.5 w-3.5" /> Criar tarefa
-          </button>
+        <div className="space-y-3">
+          <p className="whitespace-nowrap text-[14px] font-semibold text-warning-700 dark:text-warning-500">Sem próximo passo</p>
+          <Button variant="outline" onClick={onCreateTask} className="w-full gap-1 text-[12.5px]">
+            <Plus className="h-3.5 w-3.5" /> Criar próximo passo
+          </Button>
         </div>
       )}
 
-      {homi}
+      {homi && <div className="border-t border-border pt-3">{homi}</div>}
 
       {!esconderRegistrar && (
         <button
