@@ -116,10 +116,13 @@ export function caminhoAteEtapaAtual(passos: Passo[], currentStageId?: string | 
   return { passos: [...passos, { stageId: currentStageId, data: stageChangedAt ?? null, voltou: false }], semRegistro: true };
 }
 
+const FINAL_LABEL: Record<string, string> = { caiu: "Caiu", descarte: "Descartado", venda: "Ganho" };
+
 export function UltimoMovimento({ historico, stages, createdAt, currentStageId, stageChangedAt }: Props) {
   const { passos, semRegistro } = caminhoAteEtapaAtual(montarCaminho(historico, stages, createdAt), currentStageId, stageChangedAt);
   if (passos.length < 2) return null;
   const nomeDe = (id: string) => stages.find((s) => s.id === id)?.nome ?? "Etapa";
+  const tipoDe = (id: string) => (stages.find((s) => s.id === id) as { tipo?: string } | undefined)?.tipo;
   const ult = passos[passos.length - 1];
   const Icone = semRegistro ? ArrowRight : ult.voltou ? Undo2 : ArrowRight;
   return (
@@ -134,7 +137,9 @@ export function UltimoMovimento({ historico, stages, createdAt, currentStageId, 
           aria-label="Ver caminho do lead"
         >
           <Icone className="h-3.5 w-3.5 shrink-0" />
-          {semRegistro ? (
+          {FINAL_LABEL[tipoDe(ult.stageId) ?? ""] && ult.data ? (
+            <span className="min-w-0 truncate pr-px">{FINAL_LABEL[tipoDe(ult.stageId)!]} em {diaMesBRT(ult.data)}</span>
+          ) : semRegistro ? (
             <>
               <span className="min-w-0 truncate pr-px">Em {nomeDe(ult.stageId)}</span>
               {ult.data && <span className="shrink-0">desde {diaMesBRT(ult.data)}</span>}
