@@ -5,6 +5,7 @@
 // quando ela sobrou da etapa anterior) e a sugestão do Homi, recolhida.
 // Mantém as props antigas: quem ainda passa só `saudeLinha` continua funcionando.
 // ─────────────────────────────────────────────────────────────────
+import { diasCalendarioBRT } from "@/lib/diasCalendarioBRT";
 import { useEffect, useState, type ReactNode } from "react";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -94,8 +95,10 @@ export default function DrawerAgora({
     if (valido) {
       atrasada = valido.getTime() < Date.now();
       const abs = valido.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", ...(nextTask.hora_vencimento ? { hour: "2-digit", minute: "2-digit" } : {}) });
-      const dist = formatDistance(valido, new Date(), { locale: ptBR });
-      tarefaQuando = atrasada ? `Venceu há ${dist} · ${abs}` : `Vence em ${dist} · ${abs}`;
+      const n = diasCalendarioBRT(valido);
+      const plural = (k: number) => `${k} ${k === 1 ? "dia" : "dias"}`;
+      const quando = n === 0 ? (atrasada ? "Venceu hoje" : "Vence hoje") : n > 0 ? `Venceu há ${plural(n)}` : n === -1 ? "Vence amanhã" : `Vence em ${plural(-n)}`;
+      tarefaQuando = `${quando} · ${abs}`;
     }
   }
   const tipo = parseNextActionType(nextTask, proximaAcaoTexto);

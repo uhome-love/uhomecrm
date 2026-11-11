@@ -59,7 +59,7 @@ import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
-import { leadSaude, diasSemToque, prazoDaEtapa } from "@/lib/leadSaude";
+import { leadSaude, diasSemToque, diasCalendarioSemToque, prazoDaEtapa } from "@/lib/leadSaude";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
 import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
@@ -477,7 +477,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
     const inp = { ultimo_toque_at: lead.ultimo_toque_at, distribuido_em: lead.distribuido_em, aceito_em: (lead as any).aceito_em, created_at: lead.created_at, stage_tipo: currentStage?.tipo, estagnacao_carencia_ate: (lead as any).estagnacao_carencia_ate };
     const cor = leadSaude(inp);
     if (cor === "terminal" || cor === "verde") return null;
-    return { dias: diasSemToque(inp), prazo: prazoDaEtapa(currentStage?.tipo), critico: cor === "vermelho" || cor === "estagnado" };
+    return { dias: diasCalendarioSemToque(inp), prazo: prazoDaEtapa(currentStage?.tipo), critico: cor === "vermelho" || cor === "estagnado" };
   })();
   const tarefaDeEtapaAnterior = (() => {
     const criada = (nextTask as any)?.created_at as string | undefined;
@@ -526,6 +526,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       ),
     };
   })();
+  const etapaNegocio = ["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual);
   const acaoTrack = (action: string) => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action });
   const actionsNode = (
     <>
@@ -536,7 +537,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         <MessageCircle className="h-3.5 w-3.5 text-success-700" /> WhatsApp
       </Button>
       {!etapaSemVisita && (
-        <Button size="sm" variant="default" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" onClick={() => { acaoTrack("agendar_visita"); setScheduleVisitOpen(true); }}>
+        <Button size="sm" variant={etapaNegocio ? "outline" : "default"} className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" onClick={() => { acaoTrack("agendar_visita"); setScheduleVisitOpen(true); }}>
           <CalendarPlus className="h-3.5 w-3.5" /> Agendar visita
         </Button>
       )}
@@ -703,7 +704,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </div>
         <p className="mt-1 text-[13px] text-foreground">
           {lead.negocio_id
-            ? <>Em andamento{lead.valor_estimado ? <> · <span className="font-semibold tabular-nums">{valorCurto(Number(lead.valor_estimado))}</span></> : null}</>
+            ? <>Em andamento{lead.valor_estimado ? <> · <span className="font-semibold tabular-nums">{valorCurto(Number(lead.valor_estimado)).replace(/ /g, "\u00a0")}</span></> : null}</>
             : <span className="text-muted-foreground">Ainda não há proposta</span>}
         </p>
         {["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual) && (
@@ -928,7 +929,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 px-4 md:px-7 pt-2 md:pt-3 flex items-center gap-2 border-b border-border/60">
-            <TabsList className="bg-transparent rounded-none p-0 h-11 flex-1 flex justify-start gap-1 md:gap-4 overflow-x-auto scrollbar-none">
+            <TabsList onScroll={(e) => { const el = e.currentTarget; el.dataset.fim = String(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4); }} data-fim="false" className="bg-transparent rounded-none p-0 h-11 flex-1 flex justify-start gap-1 md:gap-4 overflow-x-auto scrollbar-none max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,black_85%,transparent)] max-md:data-[fim=true]:[mask-image:none]">
               {isMobile && (
                 <TabsTrigger value="info" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                   Agora
@@ -1075,7 +1076,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             {!etapaSemVisita && (
             <button
               onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "agendar_visita" }); setScheduleVisitOpen(true); }}
-              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.98] transition-transform"
+              className={`flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform ${etapaNegocio ? "border border-input bg-card text-foreground" : "bg-primary text-primary-foreground"}`}
             >
               <CalendarPlus className="h-4 w-4" /> Agendar visita
             </button>
