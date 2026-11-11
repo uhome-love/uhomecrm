@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { diasCalendarioBRT } from "@/lib/diasCalendarioBRT";
 import { useEffect, useState, type ReactNode } from "react";
-import { CalendarDays, Clock, Plus, Repeat, Zap } from "lucide-react";
+import { CalendarDays, Clock, MessageCircle, Phone, Plus, Repeat, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,7 @@ interface Props {
   esconderRegistrar?: boolean;
   loading?: boolean;
   /** Etapa final (Descarte, Caiu, Ganho): mostra só um resumo neutro no lugar do próximo passo. */
+  primeiroContato?: { entrouHa: string; atrasado: boolean; onLigar?: () => void; onWhatsApp?: () => void } | null;
   etapaFinal?: { texto: string; venda?: { valor: string; data: string; autor?: string }; acao?: ReactNode; link?: { rotulo: string; onClick: () => void } } | null;
 }
 
