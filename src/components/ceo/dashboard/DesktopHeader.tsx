@@ -5,22 +5,17 @@ import { Inbox } from "lucide-react";
 import type { CeoDashboardController } from "@/hooks/useCeoDashboardController";
 import { GreetingBar } from "@/components/ui/GreetingBar";
 import { MissaoNatalEmpresa } from "@/natal/MissaoNatalEmpresa";
-import { useDateFilter } from "@/contexts/DateFilterContext";
+import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
+import MobilePeriodSelector from "./MobilePeriodSelector";
 
 export default function DesktopHeader({model}: {model:CeoDashboardController}) {
-const { setPeriod, setCustomRange } = useDateFilter();
 const { user, period, range, frase, setDispatchOpen, filaCeoCount, lastUpdate, profile, reload, hoje } = model;
 return <>      {/* ═══ GREETING ═══ */}
       <GreetingBar
         name={profile?.nome || user?.email?.split("@")[0] || "CEO"}
         avatarUrl={profile?.avatar_gamificado_url || profile?.avatar_url}
         subtitle={`"${frase}"`}
-        filter={period === "hoje" ? "hoje" : period === "ontem" ? "ontem" : period === "semana" ? "semana" : period === "mes" || period === "ultimos_30d" ? "mes" : "personalizado"}
-        dateRange={{ from: range.start, to: range.end }}
-        onFilterChange={(f, r) => {
-          if (f === "personalizado") { if (r?.from && r?.to) setCustomRange({ start: r.from, end: r.to }); return; }
-          setPeriod(f);
-        }}
+        showFilter={false}
         onRefresh={reload}
         refreshTime={format(lastUpdate, "HH:mm")}
       />
@@ -28,8 +23,9 @@ return <>      {/* ═══ GREETING ═══ */}
       <MissaoNatalEmpresa recolhivel />
 
       {/* ═══ DATE FILTER + ACTION BUTTONS ═══ */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex-1 min-w-0 max-w-full hidden md:block" aria-hidden="true" />
+      <div className="flex flex-row items-center justify-between gap-3">
+        <div className="min-w-0 md:hidden"><MobilePeriodSelector /></div>
+        <div className="hidden md:block flex-1 min-w-0 max-w-full"><GlobalDateFilterBar variant="header" /></div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
             size="sm"
