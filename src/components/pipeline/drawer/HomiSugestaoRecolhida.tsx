@@ -89,10 +89,14 @@ export default function HomiSugestaoRecolhida(p: Props) {
   const [carregando, setCarregando] = useState(false);
   const [sugestao, setSugestao] = useState<Sugestao | null>(null);
   const [erro, setErro] = useState(false);
+  const [demorou, setDemorou] = useState(false);
 
   const gerar = async () => {
     setCarregando(true);
     setErro(false);
+    setDemorou(false);
+    const controle = new AbortController();
+    const limite = window.setTimeout(() => controle.abort(), 10_000);
     try {
       const historico = await montarHistorico(p.leadId);
       const contexto = [
@@ -111,12 +115,13 @@ export default function HomiSugestaoRecolhida(p: Props) {
       const token = sessao.data.session?.access_token;
       const resp = await fetch(`${EDGE_BASE_URL}/functions/v1/homi-assistant`, {
         method: "POST",
+        signal: controle.signal,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          acao: "custom",
+          acao: "sugestao_ficha",
           empreendimento: p.empreendimento || "Geral",
           situacao: `${p.etapa} | Temp: ${p.temperatura || "não definida"} | ${p.diasSemContato ?? "?"} dias sem contato`,
           objetivo: OBJETIVO,
@@ -132,9 +137,11 @@ export default function HomiSugestaoRecolhida(p: Props) {
       const data = (await resp.json()) as { content?: string };
       setSugestao(separarSecoes(data.content || ""));
     } catch (e) {
-      console.error("[HomiSugestaoRecolhida]", e);
+      if (controle.signal.aborted) setDemorou(true);
+      else console.error("[HomiSugestaoRecolhida]", e);
       setErro(true);
     } finally {
+      window.clearTimeout(limite);
       setCarregando(false);
     }
   };
@@ -190,7 +197,7 @@ export default function HomiSugestaoRecolhida(p: Props) {
 
           {erro && !carregando && (
             <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2.5">
-              <span className="text-[13px] text-muted-foreground">Não consegui gerar a sugestão agora.</span>
+              <span className="text-[13px] text-muted-foreground">{demorou ? "O Homi está demorando." : "Não consegui gerar a sugestão agora."}</span>
               <Button variant="link" onClick={() => void gerar()} className="h-auto p-0 gap-1 text-[13px] font-semibold text-homi-text">
                 <RefreshCw className="h-3.5 w-3.5" /> Tentar de novo
               </Button>
