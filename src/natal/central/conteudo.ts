@@ -630,6 +630,10 @@ export const PDFS = [
 
 // Prefixo do nome do arquivo -> seção da Central (ex.: "CARD-01-Open_Bosque.jpg" = seção cards, ordem 1, título "Open Bosque")
 export const SECOES_ARQUIVOS = {
+  "PRIME": {
+    "secao": "prime",
+    "titulo": "Coleção Prime"
+  },
   "CARD": {
     "secao": "cards",
     "titulo": "Cards de Natal para WhatsApp"

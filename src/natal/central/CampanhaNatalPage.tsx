@@ -14,6 +14,7 @@ import { podeGerenciar } from "./arquivos";
 import { useMateriais, useUrlsAssinadas } from "./useMateriais";
 import { AbaEmpreendimentos, AbaFollowups, AbaScripts, AbaVisaoGeral } from "./AbasTexto";
 import { AbaDisparos, AbaGrade, AbaInstagram, AbaPdfs } from "./AbasArquivos";
+import { AbaColecaoPrime } from "./ColecaoPrime";
 import { GerenciarMateriaisSheet } from "./GerenciarMateriaisSheet";
 import { MuralVendas } from "../MuralVendas";
 import { MinhasPaginasNatal } from "./MinhasPaginasNatal";
@@ -21,12 +22,12 @@ import "../natal.css";
 import "./central.css";
 
 const ABAS = [
-  ["visao", "Visão geral"], ["paginas", "Minhas páginas"], ["mural", "Mural das Vendas"], ["empreendimentos", "Empreendimentos"], ["cards", "Cards"], ["disparos", "Disparos"],
+  ["visao", "Visão geral"], ["paginas", "Minhas páginas"], ["mural", "Mural das Vendas"], ["empreendimentos", "Empreendimentos"], ["cards", "Cards"], ["prime", "Coleção Prime"], ["disparos", "Disparos"],
   ["instagram", "Instagram"], ["pdfs", "PDFs"], ["scripts", "Scripts"], ["followups", "Follow-ups"],
 ] as const;
 const GRUPOS: { rotulo: string; abas: string[] }[] = [
   { rotulo: "Comece aqui", abas: ["visao", "mural"] },
-  { rotulo: "Para enviar", abas: ["paginas", "empreendimentos", "cards", "disparos", "instagram", "pdfs"] },
+  { rotulo: "Para enviar", abas: ["paginas", "empreendimentos", "prime", "cards", "disparos", "instagram", "pdfs"] },
   { rotulo: "Para copiar", abas: ["scripts", "followups"] },
 ];
 type Aba = (typeof ABAS)[number][0];
@@ -52,13 +53,13 @@ export default function CampanhaNatalPage() {
     empreendimentos: EMPREENDIMENTOS.length, cards: materiais.filter((m) => m.secao === "cards").length,
     disparos: materiais.filter((m) => m.secao === "disparos").length,
     instagram: materiais.filter((m) => m.secao === "instagram" || m.secao === "molduras").length,
-    pdfs: materiais.filter((m) => m.secao === "pdfs").length, scripts: SCRIPTS.length,
+    pdfs: materiais.filter((m) => m.secao === "pdfs").length, prime: materiais.filter((m) => m.secao === "prime").length / 2, scripts: SCRIPTS.length,
     followups: FOLLOWUPS.reduce((n, g) => n + g.mensagens.length, 0),
   };
   const ehCorretor = !(isAdmin || isDiretor || isGestor);
   const porChave = useMemo(() => Object.fromEntries(materiais.map((m) => [m.chave, m])), [materiais]);
   const caminhos = useMemo(() => {
-    const secoes: Record<Aba, string[]> = { visao: [], paginas: [], mural: [], empreendimentos: ["fotos"], cards: ["cards"], disparos: ["disparos"], instagram: ["instagram", "molduras"], scripts: [], followups: [], pdfs: [] };
+    const secoes: Record<Aba, string[]> = { visao: [], paginas: [], mural: [], empreendimentos: ["fotos"], cards: ["cards"], prime: ["prime"], disparos: ["disparos"], instagram: ["instagram", "molduras"], scripts: [], followups: [], pdfs: [] };
     return materiais.filter((m) => secoes[aba].includes(m.secao)).map((m) => m.arquivo_path);
   }, [materiais, aba]);
   const { data: urls = {} } = useUrlsAssinadas(caminhos);
@@ -126,6 +127,7 @@ export default function CampanhaNatalPage() {
       {aba === "paginas" && <MinhasPaginasNatal />}
       {aba === "mural" && <MuralVendas />}
       {aba === "empreendimentos" && <AbaEmpreendimentos busca={busca} porChave={porChave} urls={urls} />}
+      {aba === "prime" && <AbaColecaoPrime itens={porSecao("prime")} urls={urls} />}
       {aba === "cards" && <AbaGrade itens={porSecao("cards")} urls={urls} />}
       {aba === "disparos" && <AbaDisparos itens={porSecao("disparos")} urls={urls} />}
       {aba === "instagram" && <AbaInstagram itens={porSecao("instagram")} molduras={porSecao("molduras")} urls={urls} />}
