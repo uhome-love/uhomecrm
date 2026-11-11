@@ -12,6 +12,7 @@
  * Nada dispara sem aprovação humana (status 'aprovado'). Público (verify_jwt=false),
  * chamado pelo pg_cron com Bearer anon, igual às outras crons do projeto.
  */
+import { liaPodeEnviarModoTeste } from "../_shared/liaModoTeste.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireRealUser } from "../_shared/ai-auth.ts";
@@ -60,6 +61,7 @@ const horaBRT = () => {
 };
 
 async function send360Text(to: string, body: string) {
+  if (!await liaPodeEnviarModoTeste(svc(), to, "followup-texto")) return false;
   if (!await contatoPodeReceber(svc(), to)) return false;
   const key = Deno.env.get("D360_API_KEY");
   if (!key) { console.error("[lia-followup] D360_API_KEY ausente"); return false; }
@@ -75,6 +77,7 @@ async function send360Text(to: string, body: string) {
 }
 
 async function send360Image(to: string, link: string) {
+  if (!await liaPodeEnviarModoTeste(svc(), to, "followup-imagem")) return false;
   if (!await contatoPodeReceber(svc(), to)) return false;
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return false;
@@ -90,6 +93,7 @@ async function send360Image(to: string, link: string) {
 }
 
 async function send360Doc(to: string, link: string, filename: string) {
+  if (!await liaPodeEnviarModoTeste(svc(), to, "followup-doc")) return false;
   if (!await contatoPodeReceber(svc(), to)) return false;
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return false;
@@ -151,6 +155,7 @@ const MAX_CUTUCOES = CADENCIA.length;   // esgotou a cadência = recebeu todos o
 
 // Envia um template APROVADO do WhatsApp (reativação pós-24h). {{1}} = primeiro nome do lead.
 async function sendTemplate(to: string, tpl: { name: string; lang: string; vars?: number; headerDoc?: { link: string; filename: string } }, bodyParams: string[]): Promise<{ ok: boolean; err?: string }> {
+  if (!await liaPodeEnviarModoTeste(svc(), to, "followup-template")) return { ok: false, err: "modo_teste" };
   if (!await contatoPodeReceber(svc(), to, null, tpl.name)) return { ok: false, err: "contato_bloqueado" };
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
