@@ -37,7 +37,7 @@ export default function GlobalDateFilterBar({ variant = "inline", className }: P
   };
 
   return (
-    <div className={cn("inline-flex items-center gap-0.5 p-1 rounded-xl bg-muted/70 border border-border flex-wrap mb-4", className)}>
+    <div className={cn("inline-flex items-center gap-0.5 p-1 rounded-xl bg-muted/70 border border-border flex-wrap mb-4", isHeader && "max-w-full flex-nowrap overflow-x-auto scrollbar-none md:flex-wrap", className)}>
       {PERIODS.map(p => (
         <button
           key={p.key}
