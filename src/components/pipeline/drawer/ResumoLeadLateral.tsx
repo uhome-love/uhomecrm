@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
 import type { PipelineLead } from "@/hooks/usePipeline";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
@@ -44,6 +46,7 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
   const [visitas, setVisitas] = useState<{ total: number; ultima: string | null }>({ total: 0, ultima: null });
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState("");
+  const [leitura, setLeitura] = useState<{ id: string; erro: boolean } | null>(null);
 
   useEffect(() => {
     let cancel = false;
@@ -53,6 +56,8 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
         supabase.from("visitas").select("data_visita").eq("pipeline_lead_id", lead.id).eq("status", "realizada").order("data_visita", { ascending: false }),
       ]);
       if (cancel) return;
+      setLeitura({ id: lead.id, erro: !!(l.error || v.error) });
+      if (l.error || v.error) return;
       setFaixa(((l.data as { faixa_valor?: string | null } | null)?.faixa_valor) ?? null);
       const lista = (v.data ?? []) as { data_visita: string }[];
       setVisitas({ total: lista.length, ultima: lista[0]?.data_visita ?? null });
@@ -74,12 +79,13 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
   const campanhaBruta = lead.campanha || lead.formulario;
   const campanha = campanhaBruta && norm(campanhaBruta) !== norm(lead.empreendimento) ? campanhaBruta : null;
   const orc = fmtOrc(faixa);
+  const pendente = leitura?.id !== lead.id;
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
       <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Resumo do lead</h2>
 
-      <Linha rotulo="Interesse">{(lead.empreendimento ? lead.empreendimento.charAt(0).toUpperCase() + lead.empreendimento.slice(1) : "") || <span className="font-normal text-muted-foreground">Não informado</span>}</Linha>
+      <Linha rotulo="Interesse"><span className={lead.empreendimento ? "text-primary" : ""}>{(lead.empreendimento ? lead.empreendimento.charAt(0).toUpperCase() + lead.empreendimento.slice(1) : "") || <span className="font-normal text-muted-foreground">Não informado</span>}</span></Linha>
 
       <Linha rotulo="Origem">
         {[origem, campanha].filter(Boolean).join(" · ") || <span className="font-normal text-muted-foreground">Não informada</span>}
@@ -89,7 +95,7 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
 
       {!esconderOrcamento && (
       <Linha rotulo="Orçamento">
-        {editando ? (
+        {pendente ? <Skeleton className="ml-auto h-5 w-28 motion-reduce:animate-none" /> : leitura?.erro ? <span className="font-normal text-muted-foreground">Indisponível</span> : editando ? (
           <span className="flex items-center gap-1">
             <label htmlFor={`orc-${lead.id}`} className="sr-only">Orçamento</label>
             <input
@@ -101,22 +107,22 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
               placeholder="ex.: parcela até R$ 2.500"
               className="w-44 rounded-md border border-border bg-card px-2 py-1 text-[13px] font-normal text-foreground focus:border-primary/60 focus:outline-none"
             />
-            <button type="button" onClick={() => void salvar()} aria-label="Salvar orçamento" className="p-1 text-success-700 hover:opacity-80"><Check className="h-4 w-4" /></button>
-            <button type="button" onClick={() => setEditando(false)} aria-label="Cancelar" className="p-1 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+            <Button variant="ghost" size="icon" onClick={() => void salvar()} aria-label="Salvar orçamento" className="h-7 w-7 text-success-700"><Check className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => setEditando(false)} aria-label="Cancelar" className="h-7 w-7 text-muted-foreground"><X className="h-4 w-4" /></Button>
           </span>
         ) : orc ? (
-          <button type="button" onClick={() => { setRascunho(faixa ?? ""); setEditando(true); }} className="hover:text-primary">{orc}</button>
+          <Button variant="link" onClick={() => { setRascunho(faixa ?? ""); setEditando(true); }} className="h-auto p-0 whitespace-normal text-right">{orc}</Button>
         ) : (
           <span className="inline-flex flex-wrap items-center justify-end gap-x-2.5">
             <span className="whitespace-nowrap font-normal text-muted-foreground">Não informado</span>
-            <button type="button" onClick={() => { setRascunho(""); setEditando(true); }} className="font-semibold text-primary hover:underline">Preencher</button>
+            <Button variant="link" onClick={() => { setRascunho(""); setEditando(true); }} className="h-auto p-0 font-semibold">Preencher</Button>
           </span>
         )}
       </Linha>
       )}
 
       <Linha rotulo="Visitas" ultima>
-        {visitas.total > 0
+        {pendente ? <Skeleton className="ml-auto h-5 w-28 motion-reduce:animate-none" /> : leitura?.erro ? <span className="font-normal text-muted-foreground">Indisponível</span> : visitas.total > 0
           ? `${visitas.total} realizada${visitas.total > 1 ? "s" : ""}${visitas.ultima ? ` · ${diaMes(visitas.ultima)}` : ""}`
           : <span className="font-normal text-muted-foreground">Nenhuma ainda</span>}
       </Linha>
