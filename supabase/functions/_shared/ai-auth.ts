@@ -40,13 +40,13 @@ export async function requireRealUser(
   req: Request,
   opts: { allowServiceRole?: boolean; roles?: string[] } = {},
 ): Promise<RealUserOk | RealUserErr> {
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+  const anonKey = (Deno.env.get("SUPABASE_ANON_KEY") ?? "").trim();
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  const cronSecret = (Deno.env.get("CRON_SECRET") ?? "").trim();
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-  const providedCron = req.headers.get("x-cron-secret") ?? "";
+  const providedCron = (req.headers.get("x-cron-secret") ?? "").trim();
 
   // 1. service-role / cron
   if (opts.allowServiceRole) {
@@ -71,6 +71,10 @@ export async function requireRealUser(
   });
   const { data, error } = await sb.auth.getClaims(token);
   const claims = data?.claims as Record<string, unknown> | undefined;
+  // Credencial de sistema assinada (o gateway pode trocar a chave por um JWT service_role equivalente).
+  if (opts.allowServiceRole && !error && claims?.role === "service_role") {
+    return { userId: null, roles: [], isServiceRole: true, error: null };
+  }
   if (error || !claims?.sub || claims.role !== "authenticated") {
     return { userId: null, roles: [], isServiceRole: false, error: deny("Unauthorized", 401) };
   }

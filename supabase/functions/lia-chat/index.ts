@@ -543,11 +543,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   // Trava (auditoria 10/11/2026): só rotina automática (service role / x-cron-secret) ou CEO/diretora logada.
   {
-    const liaSecret = Deno.env.get("LIA_CRON_SECRET") ?? "";
-    const interno = !!liaSecret && req.headers.get("x-lia-cron-secret") === liaSecret;
+    const liaSecret = (Deno.env.get("LIA_CRON_SECRET") ?? "").trim();
+    const header = (req.headers.get("x-lia-cron-secret") ?? "").trim();
+    const interno = !!liaSecret && header === liaSecret;
     if (!interno) {
       const auth = await requireRealUser(req, { allowServiceRole: true, roles: ["admin", "diretor"] });
-      if (auth.error) return auth.error;
+      if (auth.error) {
+        console.warn(JSON.stringify({ fn: "lia-chat", msg: "auth recusada", secret_set: !!liaSecret, header_set: !!header, secret_ok: false, service_ok: false }));
+        return auth.error;
+      }
     }
   }
   if (req.method !== "POST") {
