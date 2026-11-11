@@ -1,0 +1,2 @@
+ALTER TABLE public.natal_materiais DROP CONSTRAINT natal_materiais_secao_check;
+ALTER TABLE public.natal_materiais ADD CONSTRAINT natal_materiais_secao_check CHECK (secao = ANY (ARRAY['cards','disparos','instagram','molduras','fotos','pdfs','prime']));
