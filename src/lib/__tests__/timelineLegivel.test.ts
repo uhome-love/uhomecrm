@@ -18,3 +18,4 @@ describe("texto legível da linha do tempo", () => {
   });
 });
 describe("faixa de renda", () => { it("tira _ de r$", () => { expect(descricaoLegivel("De r$_8.001 a r$_12.000")).toBe("De R$ 8.001 a R$ 12.000"); }); });
+describe("observação de contrato", () => { it("mantém espaço", () => { expect(descricaoLegivel("Contrato atualizado · Avulso · Unidade: avulso · EM vistoria")).toBe("Contrato atualizado · Avulso · Em vistoria"); }); });
