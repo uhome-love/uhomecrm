@@ -517,6 +517,22 @@ function categoriaDe(item: TimelineItem): "narrativa" | "sistema" {
   return "narrativa";
 }
 
+/** Exibição: junta observações sem repetir o mesmo trecho. */
+function obsSemRepeticao(obs: string[]): string {
+  const norm = (x: string) => x.trim().replace(/\s+/g, " ").toLowerCase();
+  const out: string[] = [];
+  for (const o of obs) {
+    let t = o.trim();
+    const n = norm(t);
+    const meio = Math.floor(n.length / 2);
+    if (n.length > 20 && n.length % 2 === 0 && n.slice(0, meio) === n.slice(meio)) t = t.slice(0, meio).trim();
+    if (!t || out.some((x) => norm(x).includes(norm(t)))) continue;
+    for (let i = out.length - 1; i >= 0; i--) if (norm(t).includes(norm(out[i]))) out.splice(i, 1);
+    out.push(t);
+  }
+  return out.join(" · ");
+}
+
 export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, visitaEventos = [], temLiaConversa = false, loading = false, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction, onRegistrar }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("ligacao");
@@ -895,7 +911,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                                   )}
                                 </div>
                               )}
-                              {pv.obs.length > 0 && <p className="text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{pv.obs.join(" · ")}</p>}
+                              {pv.obs.length > 0 && <p className="text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{obsSemRepeticao(pv.obs)}</p>}
                             </div>
                           ) : (
                             <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{semEmoji(it.description ?? "")}</p>
@@ -923,14 +939,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                   </div>
                 </div>
                 {gap != null && (
-                  <div className="relative mt-3 flex gap-3">
-                    <div className="relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 bg-warning-500/15 text-warning-700 dark:text-warning-500">
-                      <AlertTriangle className="h-4 w-4" />
+                  <div className="relative mt-2 flex items-center gap-3" aria-label={`${gap} dias sem registro`}>
+                    <div className="relative z-10 flex w-9 shrink-0 justify-center self-stretch">
+                      <span className="block h-8 border-l-2 border-dashed border-warning-500/70 bg-card" />
                     </div>
-                    <div className="flex-1 rounded-lg border border-dashed border-warning-500/60 bg-warning-500/10 px-3 py-2">
-                      <p className="text-[13px] font-semibold text-warning-700 dark:text-warning-500">{gap} dias sem registro</p>
-                      <p className="text-[12px] text-muted-foreground">Nenhum contato registrado nesse período.</p>
-                    </div>
+                    <p className="text-[12px] font-medium text-warning-700 dark:text-warning-500">{gap} dias sem registro</p>
                   </div>
                 )}
               </div>

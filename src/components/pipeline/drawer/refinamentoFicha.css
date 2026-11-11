@@ -47,3 +47,23 @@
     transition: none !important;
   }
 }
+/* Cores das atividades na linha do tempo (só o círculo) */
+:root {
+  --tl-ligacao-bg: 204 94% 94%; --tl-ligacao-fg: 200 98% 39%;
+  --tl-whatsapp-bg: 142 70% 92%; --tl-whatsapp-fg: 142 70% 33%;
+  --tl-email-bg: 270 90% 95%; --tl-email-fg: 271 81% 50%;
+  --tl-presencial-bg: 226 100% 94%; --tl-presencial-fg: 239 84% 60%;
+  --tl-nota-bg: 48 96% 89%; --tl-nota-fg: 32 95% 34%;
+}
+.dark {
+  --tl-ligacao-bg: 204 70% 18%; --tl-ligacao-fg: 199 89% 68%;
+  --tl-whatsapp-bg: 142 50% 16%; --tl-whatsapp-fg: 142 69% 58%;
+  --tl-email-bg: 270 45% 20%; --tl-email-fg: 270 95% 78%;
+  --tl-presencial-bg: 235 45% 22%; --tl-presencial-fg: 234 89% 76%;
+  --tl-nota-bg: 45 60% 17%; --tl-nota-fg: 48 96% 60%;
+}
+.tl-ativ-ligacao { background: hsl(var(--tl-ligacao-bg)); color: hsl(var(--tl-ligacao-fg)); }
+.tl-ativ-whatsapp { background: hsl(var(--tl-whatsapp-bg)); color: hsl(var(--tl-whatsapp-fg)); }
+.tl-ativ-email { background: hsl(var(--tl-email-bg)); color: hsl(var(--tl-email-fg)); }
+.tl-ativ-presencial { background: hsl(var(--tl-presencial-bg)); color: hsl(var(--tl-presencial-fg)); }
+.tl-ativ-nota { background: hsl(var(--tl-nota-bg)); color: hsl(var(--tl-nota-fg)); }

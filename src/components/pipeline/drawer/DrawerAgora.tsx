@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { diasCalendarioBRT } from "@/lib/diasCalendarioBRT";
 import { useEffect, useState, type ReactNode } from "react";
-import { CalendarDays, Clock, Plus, Repeat, Zap } from "lucide-react";
+import { CalendarDays, Clock, MessageCircle, Phone, Plus, Repeat, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,7 @@ interface Props {
   esconderRegistrar?: boolean;
   loading?: boolean;
   /** Etapa final (Descarte, Caiu, Ganho): mostra só um resumo neutro no lugar do próximo passo. */
+  primeiroContato?: { entrouHa: string; atrasado: boolean; onLigar?: () => void; onWhatsApp?: () => void } | null;
   etapaFinal?: { texto: string; venda?: { valor: string; data: string; autor?: string }; acao?: ReactNode; link?: { rotulo: string; onClick: () => void } } | null;
 }
 
@@ -69,7 +70,7 @@ function diaMesBRT(iso: string): string {
 
 export default function DrawerAgora({
   leadId, leadNome, nextTask, proximaAcaoTexto, pendingCount, onComplete, onSeeAll, onCreateTask, onRegistrar,
-  saudeLinha, saude, tarefaDeEtapaAnterior, homi, esconderRegistrar = false, etapaFinal = null, loading = false,
+  saudeLinha, saude, tarefaDeEtapaAnterior, homi, esconderRegistrar = false, etapaFinal = null, loading = false, primeiroContato = null,
 }: Props) {
   const [visita, setVisita] = useState<Visita | null>(null);
 
@@ -104,7 +105,7 @@ export default function DrawerAgora({
   }
   const tipo = parseNextActionType(nextTask, proximaAcaoTexto);
   const tituloBruto = nextTask?.titulo || nextTask?.descricao || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : "Próxima tarefa");
-  const tituloTarefa = leadNome ? tituloBruto.replace(new RegExp(`\\s*[—-]\\s*${leadNome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i"), "") : tituloBruto;
+  const tituloTarefa = leadNome ? tituloBruto.replace(new RegExp(`\\s*(?:[—-]|:)\\s*${leadNome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i"), "") : tituloBruto;
 
   if (loading) return (
     <section aria-busy="true" className={cn("rounded-xl border border-border bg-card p-5 shadow-sm space-y-4", etapaFinal ? "min-h-[190px]" : "min-h-[249px]")}>
@@ -206,12 +207,25 @@ export default function DrawerAgora({
           </div>
         </div>
       ) : (
+        primeiroContato ? (
+        <div className="space-y-3">
+          <div>
+            <p className={cn("text-[14px] font-semibold", primeiroContato.atrasado ? "text-warning-700 dark:text-warning-500" : "text-foreground")}>Fazer o primeiro contato</p>
+            <p className="text-[12px] text-muted-foreground">entrou há {primeiroContato.entrouHa}</p>
+          </div>
+          <div className="flex gap-2">
+            {primeiroContato.onLigar && <Button variant="outline" onClick={primeiroContato.onLigar} className="flex-1 gap-1 text-[12.5px]"><Phone className="h-3.5 w-3.5" /> Ligar</Button>}
+            {primeiroContato.onWhatsApp && <Button variant="outline" onClick={primeiroContato.onWhatsApp} className="flex-1 gap-1 text-[12.5px]"><MessageCircle className="h-3.5 w-3.5" /> WhatsApp</Button>}
+          </div>
+        </div>
+        ) : (
         <div className="space-y-3">
           <p className="whitespace-nowrap text-[14px] font-semibold text-warning-700 dark:text-warning-500">Sem próximo passo</p>
           <Button variant="outline" onClick={onCreateTask} className="w-full gap-1 text-[12.5px]">
             <Plus className="h-3.5 w-3.5" /> Criar próximo passo
           </Button>
         </div>
+        )
       )}
 
       {homi && <div className="border-t border-border pt-3">{homi}</div>}

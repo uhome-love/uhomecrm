@@ -4,6 +4,7 @@ import { useJornadaNegocio } from "@/hooks/useJornadaNegocio";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fmtMoney } from "@/lib/fmtMoney";
+import { valorCurto } from "@/lib/timelineNarrativa";
 import { formatBRT } from "@/lib/brtTime";
 import { substatusValueLabel } from "@/lib/pipelineAudit";
 import { DOCUMENTOS_NEGOCIO, lerDocumentos, valorSugerido } from "@/lib/jornadaNegocio";
@@ -39,11 +40,11 @@ function NegocioDoCliente({ leadId }: { leadId: string }) {
     <header className="space-y-2 border-b border-border pb-4">
       <div className="flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-semibold"><Briefcase className="size-4 text-primary" />{n.empreendimento || "Negócio"}</h3><Badge variant="secondary">{n.fase === "ganho" ? "Ganho" : etapa?.nome || "Em andamento"}</Badge></div>
       <p className="text-sm text-muted-foreground">{n.construtora}{n.unidade ? ` · Unidade ${n.unidade}` : ""}</p>
-      <p className="text-lg font-semibold text-primary">{fmtMoney(valorSugerido(n), "exact")}</p>
+      <p className="text-lg font-semibold text-primary">{valorCurto(valorSugerido(n)) || fmtMoney(valorSugerido(n), "exact")}</p>
     </header>
     {n.fase !== "ganho" && <TermometroNegocio leadId={leadId} situacao={etapa?.tipo === "contrato_gerado" && typeof flags.status_contrato === "string" ? substatusValueLabel("status_contrato", flags.status_contrato) : typeof flags.status_negociacao === "string" ? substatusValueLabel("status_negociacao", flags.status_negociacao) : null} />}
     <dl className="space-y-3 text-sm">
-      {n.proposta_valor && <Info label="Valor da proposta" value={fmtMoney(n.proposta_valor, "exact")} />}
+      {n.proposta_valor && <Info label="Valor da proposta" value={valorCurto(Number(n.proposta_valor)) || fmtMoney(n.proposta_valor, "exact")} />}
       {typeof jornada.previsao_assinatura === "string" && <Info label="Previsão de assinatura" value={formatBRT(`${jornada.previsao_assinatura}T12:00:00-03:00`, "dd/MM/yyyy")} />}
       </dl>
     <section className="space-y-2 border-t border-border pt-4"><h3 className="text-sm font-semibold">Documentos do cliente</h3>{DOCUMENTOS_NEGOCIO.map(doc => <p key={doc.key} className="flex items-center gap-2 text-sm"><span className={documentos[doc.key] ? "text-primary" : "text-muted-foreground"}>{documentos[doc.key] ? "✓" : "—"}</span>{doc.label}</p>)}<p className="text-xs text-muted-foreground">Conferência informativa</p></section>

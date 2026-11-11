@@ -1,5 +1,6 @@
 import { valorCurto } from "@/lib/timelineNarrativa";
 import { DISCARD_REASONS_REENGAJAVEL, DISCARD_REASONS_DEFINITIVO, getReasonByCode, reasonDisplay, classifyMotivoText } from "@/lib/discardReasons";
+import { assinaturaPrevistaRotulo } from "@/lib/assinaturaPrevista";
 import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import "./drawer/refinamentoFicha.css";
 import { LeadFormRespostas } from "@/components/pipeline/drawer/LeadFormRespostas";
@@ -38,7 +39,6 @@ import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
 import { QualificacaoEtapaCard, PerfilLeadCard } from "./QualificacaoChecklistCard";
 import { getOrigemLabel } from "./LeadHistoricoTab";
 import DrawerTopo from "./drawer/DrawerTopo";
-import ResumoLead from "./ResumoLead";
 import DrawerAgora from "./drawer/DrawerAgora";
 import HomiSugestaoRecolhida from "./drawer/HomiSugestaoRecolhida";
 import { UltimoMovimento } from "./drawer/CaminhoDoLead";
@@ -121,6 +121,17 @@ const PDN_GRUPO_LABEL: Record<string, string> = {
   contrato: "Contrato",
   ganho: "Ganho",
 };
+
+function tempoDesde(iso?: string | null): string {
+  const ms = iso ? Date.now() - new Date(iso).getTime() : NaN;
+  if (!Number.isFinite(ms) || ms < 0) return "pouco tempo";
+  const min = Math.floor(ms / 60000);
+  if (min < 60) return `${Math.max(min, 1)} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} h`;
+  const d = Math.floor(h / 24);
+  return `${d} ${d === 1 ? "dia" : "dias"}`;
+}
 
 export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete, etapaSugerida }: Props) {
   const [confirmedLead, setConfirmedLead] = useState<PipelineLead | null>(null);
@@ -572,6 +583,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       {lead.negocio_id && jornadaFicha.isPending ? <div aria-busy="true" className="space-y-3"><Skeleton className="h-4 w-3/4 motion-reduce:animate-none" /><Skeleton className="h-6 w-1/2 motion-reduce:animate-none" /><Skeleton className="h-9 w-full motion-reduce:animate-none" /></div> : jornadaFicha.error ? <p className="text-[13px] text-muted-foreground">Não foi possível consultar o negócio.</p> : <>
         <p className="text-[13px] leading-relaxed">{currentStage?.nome}{situacaoFicha ? ` · ${substatusValueLabel(stageTipoAtual === "contrato_gerado" ? "status_contrato" : "status_negociacao", situacaoFicha).replace(/^[^\p{L}\p{N}]+/u, "")}` : ""}{diasSituacao != null && diasSituacao >= 0 ? ` há ${diasSituacao} ${diasSituacao === 1 ? "dia" : "dias"}` : ""}</p>
         {negocioFicha && <p className="font-display text-[19px] font-bold whitespace-nowrap tabular-nums">{valorCurto(valorSugerido(negocioFicha)).replace(/ /g, "\u00a0")}</p>}
+        {(() => { const j = negocioFicha?.jornada; const prev = j && typeof j === "object" && !Array.isArray(j) && typeof (j as Record<string, unknown>).previsao_assinatura === "string" ? assinaturaPrevistaRotulo((j as Record<string, string>).previsao_assinatura) : null; return prev ? <p className="text-[12.5px] text-muted-foreground">Assinatura prevista: <span className="font-semibold text-foreground">{prev}</span></p> : null; })()}
         {!lead.negocio_id && <p className="text-[13px] text-muted-foreground">Ainda não há proposta</p>}
         {etapaNegocio && <LeadFlagControls bare leadId={lead.id} stageTipo={stageTipoAtual} flagStatus={lead.flag_status as Record<string, string> | null} />}
       </>}
@@ -660,8 +672,10 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
               <PopoverTrigger asChild>
                 <button className={stageTipoAtual === "aquecimento" && !flagsAtuais.prazo
                   ? "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 border border-dashed border-warning-500 bg-warning-500/10 text-warning-700 dark:text-warning-500 hover:bg-warning-500/15"
-                  : "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-muted text-foreground/80 hover:bg-muted/70"}>
-                  {stageTipoAtual === "aquecimento" ? (flagsAtuais.prazo ? `Retomar em: ${situacaoLabel}` : "Definir prazo") : situacaoLabel}
+                  : situacaoLabel === "Situação"
+                    ? "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-medium shrink-0 border border-dashed border-border text-muted-foreground hover:bg-muted/60"
+                    : "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-muted text-foreground/80 hover:bg-muted/70"}>
+                  {stageTipoAtual === "aquecimento" ? (flagsAtuais.prazo ? `Retomar em: ${situacaoLabel}` : "Definir prazo") : situacaoLabel === "Situação" ? "+ situação" : situacaoLabel}
                   <ChevronDown className="h-2.5 w-2.5" />
                 </button>
               </PopoverTrigger>
@@ -728,6 +742,12 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         tarefaDeEtapaAnterior={tarefaDeEtapaAnterior}
         esconderRegistrar={!isMobile}
         etapaFinal={etapaFinalInfo}
+        primeiroContato={stageTipoAtual === "novo_lead" && !nextTask ? {
+          entrouHa: tempoDesde(lead.created_at),
+          atrasado: !!saudeAgora && saudeAgora.dias != null && saudeAgora.dias > 0,
+          onLigar: lead.telefone ? () => { acaoTrack("ligar"); setIsCallOpen(true); } : undefined,
+          onWhatsApp: lead.telefone ? () => { acaoTrack("whatsapp"); setIsWhatsAppFlowOpen(true); } : undefined,
+        } : null}
         loading={leadData.loading || (stageTipoAtual === "venda" && !!lead.negocio_id && jornadaFicha.isPending)}
         homi={
           <HomiSugestaoRecolhida
@@ -789,8 +809,6 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   // Dados de consulta (origem, anúncio, formulário) — aba "Dados do lead".
   const dadosNode = (
     <div className="px-4 md:px-6 py-4 space-y-3 max-w-3xl">
-      {/* Resumo editável (orçamento, interesse, temperatura) — saiu da linha do tempo */}
-      <ResumoLead lead={lead} />
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (

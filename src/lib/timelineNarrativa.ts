@@ -1,7 +1,7 @@
 // Regras da linha do tempo "Atendimento" da ficha do lead.
 // Funções puras: não leem nem gravam nada no banco.
 
-import {
+import { Users,
   ArrowRightLeft, Briefcase, CalendarDays, Circle, TrendingDown, Trophy, XCircle, Mail, MapPin, MessageCircle, Phone, Repeat, StickyNote, Target, Undo2,
   type LucideIcon,
 } from "lucide-react";
@@ -64,7 +64,7 @@ export function buracosSemRegistro<T extends { date: string }>(itensMaisRecentes
   return buracos;
 }
 
-export type TomMarco = "azul" | "verde" | "laranja" | "vermelho" | "cinza";
+export type TomMarco = "azul" | "verde" | "laranja" | "vermelho" | "cinza" | "ligacao" | "whatsapp" | "email" | "presencial" | "nota";
 export interface EstiloMarco { icone: LucideIcon; emoji?: string; tom: TomMarco; marco: boolean; ganho?: boolean }
 
 /** Ícone, cor e peso de cada item. Só os marcos da história ganham cor; emoji só em 🎯 📅 📍 🏆 ❌. */
@@ -82,15 +82,17 @@ export function iconeDoMarco(
     if (direcao === "avancou") return { icone: ArrowRightLeft, tom: "azul", marco: true };
   }
   const rotina = (icone: LucideIcon): EstiloMarco => ({ icone, tom: "cinza", marco: false });
-  if (item.sourceType === "anotacao" || /\bnota\b|anota/.test(t)) return rotina(StickyNote);
+  const ativ = (icone: LucideIcon, tom: TomMarco): EstiloMarco => ({ icone, tom, marco: false });
+  if (item.sourceType === "anotacao" || /\bnota\b|anota/.test(t)) return ativ(StickyNote, "nota");
   if (item.sourceType === "historico") return rotina(Repeat);
   if (/lead entrou|lead gerado|^entrou|entrada/.test(t)) return { icone: Target, emoji: "🎯", tom: "azul", marco: true };
   if (/no.?show|n[ãa]o compareceu/.test(t)) return { icone: MapPin, tom: "laranja", marco: true };
   if (/^visita (agendada|marcada|remarcada)/.test(t.replace(/^[^\p{L}]+/u, ""))) return { icone: CalendarDays, emoji: "📅", tom: "azul", marco: true };
   if (/visita/.test(t) && /realizad|resultado/.test(t)) return { icone: MapPin, emoji: "📍", tom: "verde", marco: true };
-  if (/ligaç|liga[rç]|telefon|atendeu/.test(t)) return rotina(Phone);
-  if (/whats|mensagem/.test(t)) return rotina(MessageCircle);
-  if (/e-mail|email/.test(t)) return rotina(Mail);
+  if (/ligaç|liga[rç]|telefon|atendeu/.test(t)) return ativ(Phone, "ligacao");
+  if (/whats|mensagem/.test(t)) return ativ(MessageCircle, "whatsapp");
+  if (/e-mail|email/.test(t)) return ativ(Mail, "email");
+  if (/presencial|reuni/.test(t)) return ativ(Users, "presencial");
   if (/visita|tour|comparec/.test(t)) return rotina(MapPin);
   if (/proposta|neg[óo]cio|contrato|venda|ganho|documenta/.test(t)) return rotina(Briefcase);
   if (/follow|cad[êe]ncia/.test(t)) return rotina(Repeat);
@@ -104,6 +106,11 @@ export const CLASSE_TOM: Record<TomMarco, string> = {
   laranja: "bg-warning-500/15 text-warning-700 dark:text-warning-500",
   vermelho: "bg-danger-500/10 text-danger-700 dark:text-danger-500",
   cinza: "bg-muted text-muted-foreground",
+  ligacao: "tl-ativ-ligacao",
+  whatsapp: "tl-ativ-whatsapp",
+  email: "tl-ativ-email",
+  presencial: "tl-ativ-presencial",
+  nota: "tl-ativ-nota",
 };
 
 /** 1100000 → "R$ 1,1 mi"; 735000 → "R$ 735 mil". */
@@ -131,6 +138,8 @@ export function respostaFormLegivel(r: string): string {
 
 /** Texto de exibição: valores em R$, códigos legíveis e sem "Avulso · Unidade: avulso" repetido. */
 export function descricaoLegivel(d: string): string {
+  // Linhas internas do formulário do Meta (não são perguntas do cliente).
+  d = d.split("\n").filter((l) => !/^\s*[•\-]?\s*(Message\b|Property contract\b)/i.test(l)).join("\n");
   let s = d.replace(/r\$_/gi, "R$ ").replace(/(\d)_a_/g, "$1 a ").replace(/Valor:\s*(\d{4,})(?:[.,]\d+)?/g, (_, n) => `Valor: ${valorCurto(Number(n))}`);
   s = s.replace(/([^·•\n]+?)\s*·\s*Unidade:\s*([^·•\n]+)/g, (m, prod, uni) => (prod.trim().toLowerCase() === uni.trim().toLowerCase() ? `${prod.replace(/\s+$/, "")} ` : m));
   s = s.replace(/(Situação|Status):\s*([a-zà-ú_]+)/gi, (_, k, v) => `${k}: ${codigoLegivel(v)}`);

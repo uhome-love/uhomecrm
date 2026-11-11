@@ -1,4 +1,7 @@
 import { MessageCircleQuestion } from "lucide-react";
+import { descricaoLegivel } from "@/lib/timelineNarrativa";
+
+const INTERNAS = /^(message|property contract( \d+)?|lead gerado|form id|ad id)$/i;
 
 export interface FormResposta {
   pergunta: string;
@@ -19,7 +22,8 @@ function parse(raw: unknown): FormResposta[] {
         pergunta: String(r?.pergunta ?? r?.question ?? "").trim(),
         resposta: String(r?.resposta ?? r?.answer ?? "").trim(),
       }))
-      .filter((r) => r.pergunta && r.resposta);
+      .filter((r) => r.pergunta && r.resposta && !INTERNAS.test(r.pergunta) && !/^lead gerado do formul/i.test(r.resposta))
+      .map((r) => ({ ...r, resposta: descricaoLegivel(r.resposta) }));
   } catch {
     return [];
   }

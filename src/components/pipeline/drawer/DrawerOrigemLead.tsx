@@ -31,14 +31,17 @@ interface Props {
   entrouEm?: string | null;
 }
 
+const SIGLAS: Record<string, string> = { ig: "Instagram", fb: "Facebook", an: "Audience Network", msg: "Messenger", wa: "WhatsApp" };
+const legivel = (v?: string | null) => (v ? SIGLAS[v.trim().toLowerCase()] ?? v : v);
+
 /** Linhas da origem do lead (de onde veio, anúncio, formulário) — estilo lista do iPhone. */
 export default function DrawerOrigemLead({ origem, campanha, conjunto, anuncio, formulario, plataforma, entrouEm }: Props) {
   const nomeFormulario = useNomeFormulario(formulario);
   let entrou: string | null = null;
   if (entrouEm) entrou = (() => { const d = formatBRT(entrouEm, "dd/MM/yyyy", ""); const h = formatBRT(entrouEm, "HH:mm", ""); return d ? `${d} às ${h}` : null; })();
   const rows = [
-    { k: "Origem", v: origem },
-    { k: "Plataforma", v: plataforma },
+    { k: "Origem", v: legivel(origem) },
+    { k: "Plataforma", v: legivel(plataforma) },
     { k: "Campanha", v: campanha },
     { k: "Conjunto", v: conjunto },
     { k: "Anúncio", v: anuncio },
