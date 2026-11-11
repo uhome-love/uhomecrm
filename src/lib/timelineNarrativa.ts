@@ -132,7 +132,7 @@ export function respostaFormLegivel(r: string): string {
 /** Texto de exibição: valores em R$, códigos legíveis e sem "Avulso · Unidade: avulso" repetido. */
 export function descricaoLegivel(d: string): string {
   let s = d.replace(/Valor:\s*(\d{4,})(?:[.,]\d+)?/g, (_, n) => `Valor: ${valorCurto(Number(n))}`);
-  s = s.replace(/([^·•\n]+?)\s*·\s*Unidade:\s*([^·•\n]+)/g, (m, prod, uni) => (prod.trim().toLowerCase() === uni.trim().toLowerCase() ? prod.trim() : m));
+  s = s.replace(/([^·•\n]+?)\s*·\s*Unidade:\s*([^·•\n]+)/g, (m, prod, uni) => (prod.trim().toLowerCase() === uni.trim().toLowerCase() ? `${prod.trim()} ` : m));
   s = s.replace(/(Situação|Status):\s*([a-zà-ú_]+)/gi, (_, k, v) => `${k}: ${codigoLegivel(v)}`);
   s = s.replace(/\b([A-Za-zÀ-ú0-9]+(?:_-?_?[A-Za-zÀ-ú0-9]+)+)\b/g, (m) => respostaFormLegivel(m));
   s = s.replace(/\b([A-Z]{2,})\s+([a-zà-ú]+)/g, (m, a, b) => (a.length <= 3 ? `${maiuscula(a.toLowerCase())} ${b}` : m));
