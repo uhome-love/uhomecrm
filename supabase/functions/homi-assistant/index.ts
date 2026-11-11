@@ -841,6 +841,7 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     const response = await homiGateway({
         model: HOMI_CHAT_MODEL,
         max_tokens: acao === "sugestao_ficha" ? 1000 : 2000,
+        reasoning_effort: acao === "sugestao_ficha" ? "minimal" : "low",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
