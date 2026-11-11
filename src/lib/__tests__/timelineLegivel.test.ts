@@ -13,7 +13,9 @@ describe("texto legível da linha do tempo", () => {
     expect(iconeDoMarco({ sourceType: "historico" }, "voltou", "aquecimento").tom).toBe("laranja");
     expect(iconeDoMarco({ sourceType: "historico" }, "avancou", "venda").emoji).toBe("🏆");
     expect(iconeDoMarco({ sourceType: "historico" }, "avancou", "descarte").tom).toBe("vermelho");
-    expect(iconeDoMarco({ title: "WhatsApp" }).tom).toBe("cinza");
+    expect(iconeDoMarco({ title: "WhatsApp" }).tom).toBe("whatsapp");
+    expect(iconeDoMarco({ title: "Ligação" }).tom).toBe("ligacao");
+    expect(iconeDoMarco({ title: "x", sourceType: "anotacao" }).tom).toBe("nota");
     expect(iconeDoMarco({ title: "Visita agendada" }).emoji).toBe("📅");
   });
 });
