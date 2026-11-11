@@ -28,6 +28,8 @@ export interface PipelineLead {
   produto_id?: string | null;
   empreendimento: string | null;
   stage_id: string;
+  /** Hidratado no cliente: visita marcada ou tarefa pendente de hoje em diante. */
+  tem_acao_futura?: boolean;
   stage_changed_at: string;
   ordem_no_stage: number;
   corretor_id: string | null;
@@ -176,6 +178,23 @@ export function usePipeline(
       return !shouldHideLeadFromPipeline(l);
     });
   }, [shouldHideLeadFromPipeline]);
+
+  const hydrateAcaoFutura = useCallback(async (rows: PipelineLead[]) => {
+    if (rows.length === 0) return;
+    const ids = rows.map(l => l.id);
+    const comAcao = new Set<string>();
+    try {
+      for (let i = 0; i < ids.length; i += 500) {
+        const { data, error } = await supabase.rpc("leads_com_acao_futura", { p_ids: ids.slice(i, i + 500) });
+        if (error) { console.warn("[usePipeline] ação futura", error); return; }
+        (data as string[] | null)?.forEach(id => comAcao.add(id));
+      }
+    } catch (e) { console.warn("[usePipeline] ação futura", e); return; }
+    setLeads(prev => prev.map(l => {
+      const tem = comAcao.has(l.id);
+      return l.tem_acao_futura === tem ? l : { ...l, tem_acao_futura: tem };
+    }));
+  }, []);
 
   const hydrateBrokerNames = useCallback(async (rows: PipelineLead[]) => {
     if (!(isGestor || isAdmin) || rows.length === 0) return;
