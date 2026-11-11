@@ -526,7 +526,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     criada: { title: "Visita agendada", icon: MapPin, color: "text-primary", tone: "neutral" },
     status_alterado: { title: "Visita — status alterado", icon: Repeat, color: "text-primary" },
     resultado_registrado: { title: "Resultado da visita registrado", icon: CheckCircle2, color: "text-success-500" },
-    data_alterada: { title: "Visita remarcada", icon: MapPin, color: "text-primary", tone: "neutral" },
+    data_alterada: { title: "Visita remarcada", icon: MapPin, color: "text-primary" },
   };
   const STATUS_LABEL: Record<string, string> = {
     marcada: "Marcada", confirmada: "Confirmada", reagendada: "Reagendada",

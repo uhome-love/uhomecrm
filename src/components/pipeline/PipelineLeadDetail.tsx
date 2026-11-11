@@ -514,7 +514,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       return { texto: `Descartado${em}${motivo ? ` · Motivo: ${motivo}` : ""}` };
     }
     if (stageTipoAtual === "caiu") return { texto: `Negócio caiu${em}` };
-    const valorVenda = valorCurto(Number(lead.valor_estimado) || 0);
+    const valorVenda = valorCurto(Number(lead.valor_estimado) || 0).replace(/ /g, "\u00a0");
     return {
       texto: `Venda assinada${em}${valorVenda ? ` · ${valorVenda}` : ""}`,
       link: lead.negocio_id ? { rotulo: "Abrir negócio", onClick: () => setActiveTab("negocio") } : undefined,
