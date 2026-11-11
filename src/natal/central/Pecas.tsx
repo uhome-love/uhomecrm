@@ -28,7 +28,7 @@ export function Vazio() {
   return <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Os materiais desta seção ainda vão ser publicados.</p>;
 }
 
-export function CardArquivo({ m, url }: { m: Material; url?: string }) {
+export function CardArquivo({ m, url, proporcao = "aspect-square" }: { m: Material; url?: string; proporcao?: string }) {
   const pdf = m.arquivo_path.toLowerCase().endsWith(".pdf");
   const [zoom, setZoom] = useState(false);
   return (
@@ -39,8 +39,8 @@ export function CardArquivo({ m, url }: { m: Material; url?: string }) {
         </Dialog>
       )}
       {pdf ? null : url
-        ? <button type="button" onClick={() => setZoom(true)} className="block w-full" aria-label={`Ver ${m.titulo} em tela cheia`}><img src={url} alt={m.titulo} loading="lazy" className="aspect-square w-full bg-muted object-cover transition-transform hover:scale-[1.02]" /></button>
-        : <Skeleton className="aspect-square w-full" />}
+        ? <button type="button" onClick={() => setZoom(true)} className="block w-full" aria-label={`Ver ${m.titulo} em tela cheia`}><img src={url} alt={m.titulo} loading="lazy" className={`${proporcao} w-full bg-muted object-cover transition-transform hover:scale-[1.02]`} /></button>
+        : <Skeleton className={`${proporcao} w-full`} />}
       <div className="space-y-2 p-3">
         <p className="truncate text-sm font-semibold">{m.titulo}</p>
         <div className="grid grid-cols-2 gap-2">
