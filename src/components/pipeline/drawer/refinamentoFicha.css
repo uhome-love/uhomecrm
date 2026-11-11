@@ -1,0 +1,49 @@
+.lead-detail-sheet {
+  --motion-homi: 200ms;
+  --motion-path: 150ms;
+}
+
+.lead-path-popover[data-state] {
+  animation-duration: 150ms;
+  animation-timing-function: var(--ease-enter);
+  --tw-enter-scale: 1;
+  --tw-exit-scale: 1;
+  --tw-enter-translate-x: 0;
+  --tw-enter-translate-y: 0;
+  --tw-exit-translate-x: 0;
+  --tw-exit-translate-y: 0;
+}
+
+.lead-detail-sheet .lead-tabs {
+  position: relative;
+}
+
+.lead-detail-sheet .lead-tabs [role="tab"][data-state="active"] {
+  border-color: transparent;
+}
+
+.lead-detail-sheet .lead-tabs::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: var(--tab-left, 0px);
+  width: var(--tab-width, 0px);
+  height: 2px;
+  background: hsl(var(--primary));
+  pointer-events: none;
+  transition: left var(--motion-short) var(--ease-move), width var(--motion-short) var(--ease-move);
+}
+
+.lead-detail-sheet :is(button, a):focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead-path-popover[data-state] {
+    animation: none !important;
+  }
+  .lead-detail-sheet .lead-tabs::after {
+    transition: none !important;
+  }
+}

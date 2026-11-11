@@ -1,6 +1,7 @@
 import { valorCurto } from "@/lib/timelineNarrativa";
 import { DISCARD_REASONS_REENGAJAVEL, DISCARD_REASONS_DEFINITIVO, getReasonByCode, reasonDisplay, classifyMotivoText } from "@/lib/discardReasons";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import "./drawer/refinamentoFicha.css";
 import { LeadFormRespostas } from "@/components/pipeline/drawer/LeadFormRespostas";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -140,6 +141,22 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const nomesFicha = useProfileNames();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<string>(() => (isMobile ? "info" : "historico"));
+  const abasRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const abas = abasRef.current;
+    if (!abas) return;
+    const medir = () => {
+      const ativa = abas.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+      if (!ativa) return;
+      abas.style.setProperty("--tab-left", `${ativa.offsetLeft}px`);
+      abas.style.setProperty("--tab-width", `${ativa.offsetWidth}px`);
+    };
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(abas);
+    abas.querySelectorAll('[role="tab"]').forEach(aba => observador.observe(aba));
+    return () => observador.disconnect();
+  }, [activeTab, lead.id, isMobile, open]);
   useEffect(() => {
     setActiveTab(isMobile ? "info" : "historico");
   }, [lead.id, isMobile]);
@@ -554,7 +571,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       </div>
       {lead.negocio_id && jornadaFicha.isPending ? <div aria-busy="true" className="space-y-3"><Skeleton className="h-4 w-3/4 motion-reduce:animate-none" /><Skeleton className="h-6 w-1/2 motion-reduce:animate-none" /><Skeleton className="h-9 w-full motion-reduce:animate-none" /></div> : jornadaFicha.error ? <p className="text-[13px] text-muted-foreground">Não foi possível consultar o negócio.</p> : <>
         <p className="text-[13px] leading-relaxed">{currentStage?.nome}{situacaoFicha ? ` · ${substatusValueLabel(stageTipoAtual === "contrato_gerado" ? "status_contrato" : "status_negociacao", situacaoFicha).replace(/^[^\p{L}\p{N}]+/u, "")}` : ""}{diasSituacao != null && diasSituacao >= 0 ? ` há ${diasSituacao} ${diasSituacao === 1 ? "dia" : "dias"}` : ""}</p>
-        {negocioFicha && <p className="font-display text-[19px] font-bold whitespace-nowrap tabular-nums">{valorCurto(valorSugerido(negocio)).replace(/ /g, "\u00a0")}</p>}
+        {negocioFicha && <p className="font-display text-[19px] font-bold whitespace-nowrap tabular-nums">{valorCurto(valorSugerido(negocioFicha)).replace(/ /g, "\u00a0")}</p>}
         {!lead.negocio_id && <p className="text-[13px] text-muted-foreground">Ainda não há proposta</p>}
         {etapaNegocio && <LeadFlagControls bare leadId={lead.id} stageTipo={stageTipoAtual} flagStatus={lead.flag_status as Record<string, string> | null} />}
       </>}
@@ -922,7 +939,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   return (
 
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent onOpenAutoFocus={(e) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-lead-titulo]")?.focus({ preventScroll: true }); }} className="inset-y-0 right-0 h-full w-full max-w-none md:w-full min-[1100px]:w-[70vw] md:max-w-[2000px] p-0 gap-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+      <SheetContent onOpenAutoFocus={(e) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-lead-titulo]")?.focus({ preventScroll: true }); }} className="lead-detail-sheet inset-y-0 right-0 h-full w-full max-w-none md:w-full min-[1100px]:w-[70vw] md:max-w-[2000px] p-0 gap-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
             <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
@@ -945,7 +962,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 px-4 md:px-7 pt-2 md:pt-3 flex items-center gap-2 border-b border-border/60">
-            <TabsList onScroll={(e) => { const el = e.currentTarget; el.dataset.fim = String(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4); }} data-fim="false" className="bg-transparent rounded-none p-0 h-11 flex-1 flex justify-start gap-1 md:gap-4 overflow-x-auto scrollbar-none max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,black_85%,transparent)] max-md:data-[fim=true]:[mask-image:none]">
+            <TabsList ref={abasRef} onScroll={(e) => { const el = e.currentTarget; el.dataset.fim = String(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4); }} data-fim="false" className="lead-tabs bg-transparent rounded-none p-0 h-11 flex-1 flex justify-start gap-1 md:gap-4 overflow-x-auto scrollbar-none max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,black_85%,transparent)] max-md:data-[fim=true]:[mask-image:none]">
               {isMobile && (
                 <TabsTrigger value="info" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                   Agora
