@@ -76,7 +76,7 @@ export default function RegistroRapido({ leadPrimeiroNome, onRegistrar, ajuda }:
             type="button"
             onClick={registrar}
             disabled={!podeRegistrar}
-            className="inline-flex h-9 items-center rounded-md border border-input bg-card px-3.5 text-[13.5px] font-semibold text-foreground hover:bg-muted/50 disabled:opacity-50"
+            className="ml-auto inline-flex h-9 items-center rounded-md border border-input bg-card px-3.5 text-[13.5px] font-semibold text-foreground hover:bg-muted/50 disabled:opacity-50"
           >
             Registrar
           </button>

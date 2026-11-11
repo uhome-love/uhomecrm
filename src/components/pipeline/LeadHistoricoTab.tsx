@@ -117,6 +117,17 @@ function firstName(nome?: string | null): string | undefined {
 // Visita: separa "23/10/2026 · 11:00 · Imóvel: X · Resultado: Y · Temperatura: Z · obs".
 const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const semEmoji = (t: string) => t.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "").replace(/\s{2,}/g, " ").trim();
+function horaBRT(iso: string): string {
+  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+}
+export function diaHoraCurtoBRT(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "?";
+  const pt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "numeric" }).formatToParts(d);
+  const dia = pt.find((x) => x.type === "day")?.value ?? "";
+  const mes = Number(pt.find((x) => x.type === "month")?.value ?? "1");
+  return `${dia} ${MESES_CURTOS[mes - 1] ?? ""}, ${horaBRT(iso)}`;
+}
 export function partesDaVisita(desc?: string | null) {
   if (!desc) return null;
   const r: { dia?: string; hora?: string; imovel?: string; resultado?: string; temperatura?: string; obs: string[] } = { obs: [] };
@@ -514,7 +525,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     criada: { title: "Visita agendada", icon: MapPin, color: "text-primary", tone: "neutral" },
     status_alterado: { title: "Visita — status alterado", icon: Repeat, color: "text-primary" },
     resultado_registrado: { title: "Resultado da visita registrado", icon: CheckCircle2, color: "text-success-500" },
-    data_alterada: { title: "Visita — data alterada", icon: Clock, color: "text-warning-600", tone: "warning" },
+    data_alterada: { title: "Visita remarcada", icon: Clock, color: "text-warning-600", tone: "warning" },
   };
   const STATUS_LABEL: Record<string, string> = {
     marcada: "Marcada", confirmada: "Confirmada", reagendada: "Reagendada",
@@ -539,8 +550,8 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
       } else if (ev.tipo === "resultado_registrado") {
         description = `Resultado: ${ev.status_novo || ""}`;
       } else if (ev.tipo === "data_alterada") {
-        const de = ev.data_anterior ? new Date(ev.data_anterior).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "?";
-        const para = ev.data_nova ? new Date(ev.data_nova).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "?";
+        const de = ev.data_anterior ? diaHoraCurtoBRT(ev.data_anterior) : "?";
+        const para = ev.data_nova ? diaHoraCurtoBRT(ev.data_nova) : "?";
         description = `${de} → ${para}`;
       }
       return {
@@ -805,6 +816,17 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             const resultadoVisita = !ehEtapa && ehResultadoDeVisita(it.title) && !!it.description;
             const visitaAgendada = !ehEtapa && !resultadoVisita && /^visita (agendada|marcada)/i.test(titulo);
             const pv = resultadoVisita || visitaAgendada ? partesDaVisita(it.description) : null;
+            // Exibição: completa a hora do agendamento pelo evento "criada" da mesma visita (BRT)
+            // e marca "remarcada" se a data mudou depois. Nada é gravado.
+            let remarcada = false;
+            if (visitaAgendada && pv) {
+              const t = new Date(it.date).getTime();
+              const criada = visitaEventos.find((ev) => ev.tipo === "criada" && ev.data_nova && Math.abs(new Date(ev.created_at).getTime() - t) <= 60_000);
+              if (criada) {
+                if (!pv.hora) pv.hora = horaBRT(criada.data_nova);
+                remarcada = visitaEventos.some((ev) => ev.tipo === "data_alterada" && ev.visita_id === criada.visita_id && new Date(ev.created_at).getTime() > t);
+              }
+            }
             const tituloFinal = resultadoVisita && pv && (pv.imovel || pv.hora)
               ? `${titulo} · ${[pv.imovel, pv.hora].filter(Boolean).join(", ")}`
               : titulo;
@@ -861,6 +883,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                         ) : visitaAgendada && pv ? (
                           <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80">
                             Para {[pv.dia, pv.hora].filter(Boolean).join(", ")}{pv.imovel ? ` · ${pv.imovel}` : ""}{pv.obs.length ? ` · ${pv.obs.join(" · ")}` : ""}
+                            {remarcada && <span className="ml-2 inline-flex h-5 items-center rounded-full bg-muted px-2 text-[11px] font-medium text-muted-foreground align-middle">remarcada</span>}
                           </p>
                         ) : it.description ? (
                           <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{descricaoLegivel(it.description)}</p>

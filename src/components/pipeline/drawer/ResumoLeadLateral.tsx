@@ -33,8 +33,8 @@ function fmtOrc(v: string | null): string | null {
 function Linha({ rotulo, children, ultima = false }: { rotulo: string; children: ReactNode; ultima?: boolean }) {
   return (
     <div className={`flex items-center justify-between gap-4 py-2.5 ${ultima ? "" : "border-b border-border"}`}>
-      <span className="shrink-0 text-[13px] font-medium text-muted-foreground">{rotulo}</span>
-      <span className="min-w-0 text-right text-[14px] font-semibold text-foreground">{children}</span>
+      <span className="shrink-0 whitespace-nowrap text-[13px] font-medium text-muted-foreground">{rotulo}</span>
+      <span className="min-w-0 break-words text-right text-[14px] font-semibold text-foreground">{children}</span>
     </div>
   );
 }
@@ -106,8 +106,8 @@ export default function ResumoLeadLateral({ lead }: { lead: PipelineLead }) {
         ) : orc ? (
           <button type="button" onClick={() => { setRascunho(faixa ?? ""); setEditando(true); }} className="hover:text-primary">{orc}</button>
         ) : (
-          <span className="inline-flex items-center gap-2.5">
-            <span className="font-normal text-muted-foreground">Não informado</span>
+          <span className="inline-flex flex-wrap items-center justify-end gap-x-2.5">
+            <span className="whitespace-nowrap font-normal text-muted-foreground">Não informado</span>
             <button type="button" onClick={() => { setRascunho(""); setEditando(true); }} className="font-semibold text-primary hover:underline">Preencher</button>
           </span>
         )}
