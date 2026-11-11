@@ -43,7 +43,7 @@ export function CardArquivo({ m, url, proporcao = "aspect-square" }: { m: Materi
         : <Skeleton className={`${proporcao} w-full`} />}
       <div className="space-y-2 p-3">
         <p className="truncate text-sm font-semibold">{m.titulo}</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid gap-2 ${proporcao === "aspect-square" ? "grid-cols-2" : "grid-cols-1"}`}>
           <Button size="sm" onClick={() => baixarMaterial(m)}><Download className="mr-1 h-4 w-4" />Baixar</Button>
           <Button size="sm" variant="outline" onClick={() => compartilharMaterial(m)}><Share2 className="mr-1 h-4 w-4" />Compartilhar</Button>
         </div>
