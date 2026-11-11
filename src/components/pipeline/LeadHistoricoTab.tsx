@@ -128,6 +128,19 @@ export function diaHoraCurtoBRT(iso: string): string {
   const mes = Number(pt.find((x) => x.type === "month")?.value ?? "1");
   return `${dia} ${MESES_CURTOS[mes - 1] ?? ""}, ${horaBRT(iso)}`;
 }
+type SentidoResultado = "positivo" | "neutro" | "negativo";
+/** Só exibição: cor do resultado da visita pelo sentido. */
+export function sentidoResultado(r: string): SentidoResultado {
+  const t = r.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/nao gostou|sem interesse|desistiu|nao tem interesse/.test(t)) return "negativo";
+  if (/quer proposta|proposta|visitar de novo|nova visita|continuar visitando|gostou/.test(t)) return "positivo";
+  return "neutro";
+}
+const CLASSE_RESULTADO: Record<SentidoResultado, string> = {
+  positivo: "bg-success-500/15 text-success-700 dark:text-success-500",
+  neutro: "bg-muted text-foreground/80",
+  negativo: "bg-danger-500/10 text-danger-700 dark:text-danger-500",
+};
 export function partesDaVisita(desc?: string | null) {
   if (!desc) return null;
   const r: { dia?: string; hora?: string; imovel?: string; resultado?: string; temperatura?: string; obs: string[] } = { obs: [] };
@@ -561,8 +574,8 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
         date: ev.created_at,
         icon: meta.icon,
         color: meta.color,
-        autor: ev.ator_id ? nomesPorId[ev.ator_id] : undefined,
-        badge: meta.tone ? { label: "visita", tone: meta.tone } : undefined,
+        autor: ev.ator_id && nomesPorId[ev.ator_id] ? String(nomesPorId[ev.ator_id]).split(" ")[0] : undefined,
+        badge: meta.tone && ev.tipo !== "data_alterada" ? { label: "visita", tone: meta.tone } : undefined,
         sourceType: "system",
         sourceId: ev.id,
       };
@@ -870,8 +883,8 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                               {(pv.resultado || pv.temperatura) && (
                                 <div className="flex flex-wrap gap-1.5">
                                   {pv.resultado && (
-                                    <span className="inline-flex h-6 items-center gap-1 rounded-full bg-success-500/15 px-2.5 text-[12px] font-semibold text-success-700 dark:text-success-500">
-                                      <CheckIcon className="h-3.5 w-3.5" /> {pv.resultado}
+                                    <span className={`inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold ${CLASSE_RESULTADO[sentidoResultado(pv.resultado)]}`}>
+                                      {sentidoResultado(pv.resultado) === "positivo" && <CheckIcon className="h-3.5 w-3.5" />} {pv.resultado}
                                     </span>
                                   )}
                                   {pv.temperatura && (

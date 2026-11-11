@@ -79,7 +79,7 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
     <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
       <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Resumo do lead</h2>
 
-      <Linha rotulo="Interesse">{lead.empreendimento || <span className="font-normal text-muted-foreground">Não informado</span>}</Linha>
+      <Linha rotulo="Interesse">{(lead.empreendimento ? lead.empreendimento.charAt(0).toUpperCase() + lead.empreendimento.slice(1) : "") || <span className="font-normal text-muted-foreground">Não informado</span>}</Linha>
 
       <Linha rotulo="Origem">
         {[origem, campanha].filter(Boolean).join(" · ") || <span className="font-normal text-muted-foreground">Não informada</span>}

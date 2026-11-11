@@ -1,3 +1,4 @@
+import { diasCalendarioBRT } from "@/lib/diasCalendarioBRT";
 // ─────────────────────────────────────────────────────────────────
 // leadSaude — espelho TS de public.lead_saude_status (SSOT no banco).
 // Saúde do lead pelo ÚLTIMO TOQUE REAL (não por tarefa aberta).
@@ -110,6 +111,13 @@ export function leadSaude(input: LeadSaudeInput): LeadSaude {
 }
 
 /** Dias inteiros desde o último toque (para tooltip/label). */
+/** Só exibição: dias de calendário (BRT) desde a base do relógio de saúde. */
+export function diasCalendarioSemToque(input: LeadSaudeInput): number | null {
+  const base = relogioBase(input);
+  if (!base) return null;
+  return diasCalendarioBRT(base);
+}
+
 export function diasSemToque(input: LeadSaudeInput): number | null {
   const base = relogioBase(input);
   if (!base) return null;
