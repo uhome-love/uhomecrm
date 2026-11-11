@@ -29,7 +29,16 @@ function diaMes(dataOuIso?: string | null): string {
 
 function fmtOrc(v: string | null): string | null {
   if (!v || !v.trim()) return null;
-  return v.replace(/_/g, " ").replace(/\br\$\s*/i, "R$ ").trim();
+  const t = v.replace(/_/g, " ").replace(/\br\$\s*/i, "R$ ").trim();
+  if (/^[0.,\s]+$/.test(t) || /^R\$\s*[0.,\s]*$/.test(t)) return null;
+  if (/^\d[\d.\s]*$/.test(t)) {
+    const n = Number(t.replace(/[.\s]/g, ""));
+    if (n >= 1000000) return `R$ ${(n / 1000000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+    if (n >= 1000) return `R$ ${Math.round(n / 1000)} mil`;
+    return `R$ ${n.toLocaleString("pt-BR")}`;
+  }
+  if (/^\d/.test(t)) return `R$ ${t}`;
+  return t;
 }
 
 function Linha({ rotulo, children, ultima = false }: { rotulo: string; children: ReactNode; ultima?: boolean }) {
