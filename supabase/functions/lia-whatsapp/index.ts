@@ -472,7 +472,7 @@ serve(async (req) => {
           }
           continue;
         }
-        if (decisao.bloqueado) continue;
+        if (decisao.bloqueado) { console.warn("[lia-whatsapp] resposta não enviada: contato bloqueado", from.slice(-4)); continue; }
         if (decisao.novo_contato) {
           const { data: atual } = await sb.from("lia_estado").select("*").eq("telefone", from).maybeSingle();
           est = atual ?? est;
