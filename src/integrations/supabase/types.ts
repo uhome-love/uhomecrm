@@ -4234,7 +4234,11 @@ export type Database = {
           max_mensagens_turno: number
           max_midias_conversa: number
           modo_liberacao: string
+          modo_teste: boolean
+          modo_teste_alterado_em: string | null
+          modo_teste_alterado_por: string | null
           notificacao_canal: Json
+          numero_teste: string | null
           prompt_versao: string
           updated_at: string
           webhook_secret: string | null
@@ -4257,7 +4261,11 @@ export type Database = {
           max_mensagens_turno?: number
           max_midias_conversa?: number
           modo_liberacao?: string
+          modo_teste?: boolean
+          modo_teste_alterado_em?: string | null
+          modo_teste_alterado_por?: string | null
           notificacao_canal?: Json
+          numero_teste?: string | null
           prompt_versao?: string
           updated_at?: string
           webhook_secret?: string | null
@@ -4280,7 +4288,11 @@ export type Database = {
           max_mensagens_turno?: number
           max_midias_conversa?: number
           modo_liberacao?: string
+          modo_teste?: boolean
+          modo_teste_alterado_em?: string | null
+          modo_teste_alterado_por?: string | null
           notificacao_canal?: Json
+          numero_teste?: string | null
           prompt_versao?: string
           updated_at?: string
           webhook_secret?: string | null
@@ -18810,6 +18822,10 @@ export type Database = {
       }
       lia_salvar_ficha: {
         Args: { p_ficha: string; p_id: string; p_versao: string }
+        Returns: Json
+      }
+      lia_salvar_modo_teste: {
+        Args: { p_ligado: boolean; p_numero: string }
         Returns: Json
       }
       list_empreendimentos_nao_resolvidos: {
