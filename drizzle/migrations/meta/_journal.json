@@ -666,6 +666,13 @@
       "when": 1794424940112,
       "tag": "0094_lia_modo_teste",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1794425630719,
+      "tag": "0095_resposta_cliente_limpa_supressao_tecnica",
+      "breakpoints": true
     }
   ]
 }
