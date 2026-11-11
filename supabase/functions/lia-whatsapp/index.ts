@@ -23,6 +23,7 @@ import { encerramento, novoContatoWhatsApp } from "../_shared/liaRecuperaRespost
 import { handoffRecupera } from "../_shared/liaHandoff.ts";
 import { contextoRealRecupera } from "../_shared/liaRecuperaContexto.ts";
 import { webhookLiaAutorizado } from "../_shared/liaWebhookAuth.ts";
+import { liaInternoHeaders } from "../_shared/liaInternoHeaders.ts";
 
 const cors = corsHeaders;
 
@@ -564,7 +565,7 @@ serve(async (req) => {
         try {
           const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
             method: "POST",
-            headers: { "x-lia-cron-secret": Deno.env.get("LIA_CRON_SECRET") ?? "", "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}` },
+            headers: liaInternoHeaders(),
             body: JSON.stringify({ messages: msgs, nome: (est?.nome ?? contactName) || null, ...(recuperacao ? { ficha: recuperacao.ficha } : produto?.ficha ? { ficha: produto.ficha + _blocoMidias } : {}), ...(posRepasse ? { pos_repasse: true } : {}) }),
           });
           if (!r.ok) { erroChat = true; console.error("[lia-whatsapp] lia-chat HTTP", r.status); }
@@ -824,7 +825,7 @@ async function gerarResumo(sb: any, from: string): Promise<string> {
       try {
         const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}` },
+          headers: liaInternoHeaders(),
           body: JSON.stringify({ messages: msgs, mode: "resumo" }),
         });
         if (!r.ok) { console.error("[lia-whatsapp] resumo HTTP", r.status, await r.text().catch(() => "")); continue; }

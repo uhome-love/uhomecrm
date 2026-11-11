@@ -20,6 +20,7 @@ import { handoffEngajado } from "../_shared/liaHandoff.ts";
 import { horarioEnvioLia, reservarEnvioLia } from "../_shared/liaEnvioProgramado.ts";
 import { contatoPodeReceber } from "../_shared/contatoEnvio.ts";
 import { handoffRecuperaSeAplicavel } from "../_shared/liaRecuperaContexto.ts";
+import { liaInternoHeaders } from "../_shared/liaInternoHeaders.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -259,7 +260,7 @@ async function backfillResumos(sb: any): Promise<number> {
       try {
         const rr = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
           method: "POST",
-          headers: { "x-lia-cron-secret": Deno.env.get("LIA_CRON_SECRET") ?? "", "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+          headers: liaInternoHeaders(),
           body: JSON.stringify({ messages: msgs, mode: "resumo" }),
         });
         if (!rr.ok) { console.error("[lia-followup] resumo HTTP", rr.status, await rr.text().catch(() => "")); continue; }
@@ -446,7 +447,7 @@ async function passarEngajadosParaTime(
       if (msgs.length) {
         const rr = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+          headers: liaInternoHeaders(),
           body: JSON.stringify({ messages: msgs, mode: "resumo" }),
         });
         if (rr.ok) { const d = await rr.json(); const t = String(d?.resumo ?? "").trim(); if (t) resumo = t; }
@@ -543,7 +544,7 @@ async function reengajarProativo(sb: any): Promise<number> {
       const ficha = fichaPorProduto[c.produto_slug ?? ""] ?? "";
       const r = await fetch(`${EDGE_BASE}/functions/v1/lia-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+        headers: liaInternoHeaders(),
         body: JSON.stringify({ mode: "reengajar", messages: msgs, ...(ficha ? { ficha } : {}) }),
       });
       const d = await r.json();
