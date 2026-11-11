@@ -175,7 +175,7 @@ export function GreetingBar({
   return (
     <div
       className={cn(
-        "relative flex items-center gap-4 rounded-[14px] px-6 py-[18px] overflow-hidden",
+        "relative flex flex-wrap items-center gap-x-3 gap-y-3 rounded-[14px] px-4 py-4 overflow-hidden md:flex-nowrap md:gap-4 md:px-6 md:py-[18px]",
         natal.efeitos ? "natal-noite natal-borda-ouro" : "bg-primary",
         className
       )}
@@ -204,19 +204,23 @@ export function GreetingBar({
       </div>
 
       {/* Texto */}
-      <div className="relative z-10 min-w-0 flex-1">
-        <p className="text-[16px] font-extrabold tracking-[-0.3px] text-white leading-snug">
+      <div className="relative z-10 min-w-0 flex-1 basis-[calc(100%-62px)] md:basis-auto">
+        <p className="text-[17px] md:text-[16px] font-extrabold tracking-[-0.3px] text-white leading-snug">
           {getGreeting()}, {(() => { const f = name.split(" ")[0]; return f.charAt(0).toUpperCase() + f.slice(1).toLowerCase(); })()}! {getEmoji()}
         </p>
-        <p className="mt-0.5 text-[11.5px] font-medium text-white/55">
+        <p className="mt-0.5 line-clamp-2 text-[12.5px] font-medium text-white/70 md:line-clamp-none md:text-[11.5px] md:text-white/55">
           {displaySubtitle}
         </p>
         {natal.efeitos && (
-          <span className="natal-chip-ouro mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
+          <span className="natal-chip-ouro mt-1.5 hidden md:inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold">🎁 Faltam {diasAte18()} dias para 18/12</span>
         )}
       </div>
       {natal.efeitos && (
         <img src="/natal/homi_noel.png" alt="" aria-hidden className="pointer-events-none relative z-10 -my-6 hidden h-[92px] flex-shrink-0 select-none self-end sm:block" />
+      )}
+
+      {natal.efeitos && (
+        <span className="natal-chip-ouro relative z-10 inline-flex h-[34px] items-center whitespace-nowrap rounded-full px-3 text-[12px] font-bold md:hidden">🎁 Faltam {diasAte18()} dias · 18/12</span>
       )}
 
       {/* Filtro dropdown */}
@@ -312,7 +316,7 @@ export function GreetingBar({
       {/* Refresh */}
       <button
         onClick={onRefresh}
-        className="relative z-10 flex flex-shrink-0 items-center gap-1 text-[11px] text-white/40 transition-colors hover:text-white/70"
+        className="relative z-10 ml-auto flex flex-shrink-0 items-center gap-1 text-[11px] text-white/60 md:ml-0 md:text-white/40 transition-colors hover:text-white/70"
         title="Atualizar dados"
       >
         <RefreshCw className="h-3 w-3" strokeWidth={2} />
