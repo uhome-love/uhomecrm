@@ -672,8 +672,10 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
               <PopoverTrigger asChild>
                 <button className={stageTipoAtual === "aquecimento" && !flagsAtuais.prazo
                   ? "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 border border-dashed border-warning-500 bg-warning-500/10 text-warning-700 dark:text-warning-500 hover:bg-warning-500/15"
-                  : "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-muted text-foreground/80 hover:bg-muted/70"}>
-                  {stageTipoAtual === "aquecimento" ? (flagsAtuais.prazo ? `Retomar em: ${situacaoLabel}` : "Definir prazo") : situacaoLabel}
+                  : situacaoLabel === "Situação"
+                    ? "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-medium shrink-0 border border-dashed border-border text-muted-foreground hover:bg-muted/60"
+                    : "inline-flex items-center gap-1 h-6 rounded-full px-2.5 text-[11.5px] font-semibold shrink-0 bg-muted text-foreground/80 hover:bg-muted/70"}>
+                  {stageTipoAtual === "aquecimento" ? (flagsAtuais.prazo ? `Retomar em: ${situacaoLabel}` : "Definir prazo") : situacaoLabel === "Situação" ? "+ situação" : situacaoLabel}
                   <ChevronDown className="h-2.5 w-2.5" />
                 </button>
               </PopoverTrigger>
