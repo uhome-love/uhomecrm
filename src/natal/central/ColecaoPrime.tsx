@@ -28,8 +28,8 @@ export function AbaColecaoPrime({ itens, urls }: { itens: Material[]; urls: Reco
           ))}
         </div>
       </div>
-      {capa && <div className="max-w-xs"><CardArquivo m={capa} url={urls[capa.arquivo_path]} proporcao={proporcao} /></div>}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
+      {capa && <div className={formato === "feed" ? "max-w-xs" : "max-w-[240px]"}><CardArquivo m={capa} url={urls[capa.arquivo_path]} proporcao={proporcao} /></div>}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
         {resto.map((m) => <CardArquivo key={m.id} m={m} url={urls[m.arquivo_path]} proporcao={proporcao} />)}
       </div>
     </div>
