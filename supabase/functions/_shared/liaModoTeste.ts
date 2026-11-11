@@ -20,7 +20,7 @@ export async function liaPodeEnviarModoTeste(sb: SupabaseClient, to: string, ori
   const ok = modoTestePermite(cache.cfg, to);
   if (!ok) {
     console.warn(`[lia-modo-teste] bloqueado (${origem}) ***${String(to).replace(/\D/g, "").slice(-4)}`);
-    await sb.from("ops_events").insert({ fn: "lia-modo-teste", level: "info", msg: "bloqueado_modo_teste", ctx: { origem, final: String(to).replace(/\D/g, "").slice(-4) } }).then(() => {}, () => {});
+    await sb.from("ops_events").insert({ fn: "lia-modo-teste", level: "info", message: "bloqueado_modo_teste", category: "lia", ctx: { origem, final: String(to).replace(/\D/g, "").slice(-4) } }).then(() => {}, () => {});
   }
   return ok;
 }
