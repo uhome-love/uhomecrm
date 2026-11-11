@@ -64,20 +64,20 @@ export function MissaoNatalEmpresa({ recolhivel = false }: { recolhivel?: boolea
 
   return (
     <section className="natal-borda-ouro relative overflow-hidden rounded-2xl border bg-card p-4 md:p-5">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <img src="/natal/chave_de_ouro_com_laco.svg" alt="" aria-hidden className="h-10 w-10" />
-          <div>
-            <h2 className="text-base font-bold text-foreground">Missão de Natal · Uhome</h2>
-            <p className="text-xs text-muted-foreground">Campanha de 01/11 a 18/12 · resumo da empresa</p>
+      <header className="flex items-center justify-between gap-2 md:flex-wrap">
+        <div className="flex min-w-0 items-center gap-2.5 md:gap-3">
+          <img src="/natal/chave_de_ouro_com_laco.svg" alt="" aria-hidden className="h-8 w-8 shrink-0 md:h-10 md:w-10" />
+          <div className="min-w-0">
+            <h2 className="text-[14px] md:text-base font-bold text-foreground">Missão de Natal · Uhome</h2>
+            <p className="text-xs text-muted-foreground"><span className="hidden md:inline">Campanha de </span>01/11 a 18/12 · resumo da empresa</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {data.hoje <= CAMPANHA_FIM && <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">🎄 Faltam {diasAte18(data.hoje)} dias</span>}
+        <div className="flex shrink-0 items-center gap-2">
+          {data.hoje <= CAMPANHA_FIM && <span className="hidden md:inline rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">🎄 Faltam {diasAte18(data.hoje)} dias</span>}
           {recolhivel && (
             <button type="button" onClick={() => setAberto((v) => !v)} aria-expanded={aberto}
-              className="flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold hover:bg-muted">
-              {aberto ? "Recolher" : `Ver missão · ${brlCurto(data.anoVgv)}`}
+              className="flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-muted md:py-1">
+              {aberto ? "Recolher" : <><span className="hidden md:inline">Ver missão · </span>{brlCurto(data.anoVgv)}</>}
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${aberto ? "rotate-180" : ""}`} />
             </button>
           )}

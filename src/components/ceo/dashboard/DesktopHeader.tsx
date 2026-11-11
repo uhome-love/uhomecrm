@@ -28,7 +28,7 @@ return <>      {/* ═══ GREETING ═══ */}
 
       {/* ═══ DATE FILTER + ACTION BUTTONS ═══ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex-1"><GlobalDateFilterBar variant="header" /></div>
+        <div className="flex-1 min-w-0 max-w-full"><GlobalDateFilterBar variant="header" /></div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
             size="sm"
