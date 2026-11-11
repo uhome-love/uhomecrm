@@ -6,8 +6,8 @@
 // texto já preenchidos, e o salvamento continua sendo do modal (nada muda na
 // gravação).
 // ─────────────────────────────────────────────────────────────────
-import { useState } from "react";
-import { MapPin, MessageCircle, Phone, StickyNote, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MapPin, Send, MessageCircle, Phone, StickyNote, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Mesmos tipos do RegistrarAtividadeModal (ATIVIDADES). */
@@ -31,6 +31,16 @@ export default function RegistroRapido({ leadPrimeiroNome, onRegistrar, ajuda }:
   const [texto, setTexto] = useState("");
   const [tipo, setTipo] = useState<TipoRegistro | null>(null);
   const podeRegistrar = texto.trim().length > 0 || tipo !== null;
+  // Botão vira só ícone quando a linha não comporta chips + "Registrar" (nunca desce sozinho).
+  const linhaRef = useRef<HTMLDivElement>(null);
+  const [compacto, setCompacto] = useState(false);
+  useEffect(() => {
+    const el = linhaRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => setCompacto(e.contentRect.width < 470));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const registrar = () => {
     if (!podeRegistrar) return;
