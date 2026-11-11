@@ -451,7 +451,7 @@ export function usePipeline(
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, roleLoading, mergeVisibleLeads, hydrateBrokerNames, scopeKey]);
+  }, [userId, isGestor, isAdmin, roleLoading, mergeVisibleLeads, hydrateBrokerNames, hydrateAcaoFutura, scopeKey]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
