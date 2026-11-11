@@ -36,6 +36,7 @@ import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHisto
 import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
 import { useLeadImoveisEvents, type LeadImovelEvent } from "@/hooks/useLeadImoveisEvents";
 import DrawerTimelineGroup from "./drawer/DrawerTimelineGroup";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ATIVIDADE_BUTTONS = [
   { value: "ligacao", label: "Ligou", emoji: "📞" },
@@ -746,13 +747,13 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
       {histView === "lia" ? (
         <DrawerLiaConversaTab leadId={leadId} />
       ) : loading && shownItems.length === 0 ? (
-        <div className="px-7 pt-4 space-y-3" aria-busy="true">
+        <div className="px-5 md:px-7 pt-5 space-y-5 min-h-[420px]" aria-busy="true">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3">
-              <div className="h-8 w-8 rounded-full bg-zinc-100 animate-pulse" />
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full motion-reduce:animate-none" />
               <div className="flex-1 space-y-2">
-                <div className="h-3.5 w-1/3 rounded bg-zinc-100 animate-pulse" />
-                <div className="h-12 w-full rounded-lg bg-zinc-100 animate-pulse" />
+                <Skeleton className="h-3.5 w-1/3 motion-reduce:animate-none" />
+                <Skeleton className="h-12 w-full rounded-lg motion-reduce:animate-none" />
               </div>
             </div>
           ))}
@@ -812,7 +813,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             const tipoNova = ehEtapa ? (stages.find(s => s.id === it.etapa?.paraId) as { tipo?: string } | undefined)?.tipo : undefined;
             const estilo = iconeDoMarco(it, direcao, tipoNova);
             const Icone = estilo.icone;
-            const tituloBase = ehEtapa ? tituloMudancaEtapa(direcao!, it.etapa?.para) : it.title.replace(/^[^\p{L}\p{N}]+/u, "");
+            const tituloBase = ehEtapa && direcao ? tituloMudancaEtapa(direcao, it.etapa?.para) : it.title.replace(/^[^\p{L}\p{N}]+/u, "");
             const titulo = estilo.ganho ? "Venda assinada" : tituloBase;
             const valorGanho = estilo.ganho ? (() => {
               const m = timeline.map(x => /Valor:\s*(\d{4,})/.exec(x.description ?? "")).find(Boolean);
@@ -852,7 +853,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               && !!v.title && obsEtapa.toLowerCase().startsWith(v.title.replace(/^[^\p{L}]+/u, "").trim().toLowerCase()));
             return (
               <div key={dItem.id}>
-                <div className="relative flex gap-3 group/marco">
+                <div className="relative flex gap-3 group/marco rounded-md hover:bg-muted/40 transition-colors duration-short">
                   <div className={`relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${CLASSE_TOM[estilo.tom]}`}>
                     {estilo.emoji ? <span className="text-[15px] leading-none" aria-hidden>{estilo.emoji}</span> : <Icone className="h-4 w-4" />}
                   </div>
@@ -868,7 +869,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                         </div>
                         {ehEtapa ? (
                           ((it.etapa?.observacao && !obsRepetida) || it.etapa?.de) && (
-                            <div className={`mt-1.5 max-w-[72ch] rounded-lg px-3 py-2 ${estilo.ganho ? "border border-success-500/40 bg-success-500/5" : "bg-muted"}`}>
+                            <div className={`mt-1.5 max-w-[72ch] ${estilo.ganho ? "rounded-lg px-3 py-2 border border-success-500/40 bg-success-500/5" : obsEtapa && !obsRepetida ? "rounded-lg px-3 py-2 bg-muted" : ""}`}>
                               {it.etapa?.observacao && !obsRepetida && <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">{descricaoLegivel(it.etapa.observacao)}</p>}
                               {it.etapa?.de && (
                                 <span className={`${it.etapa?.observacao && !obsRepetida ? "mt-1.5 " : ""}inline-flex h-5 items-center rounded-full border border-border bg-card px-2 text-[11px] font-medium text-muted-foreground`}>
@@ -909,13 +910,14 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                         ) : null}
                       </div>
                       {it.sourceId && it.sourceType !== "system" && (
-                        <button
+                        <Button variant="ghost" size="icon"
                           onClick={() => setDeleteTarget(it)}
                           title="Remover registro"
-                          className="shrink-0 opacity-0 group-hover/marco:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
+                          aria-label="Remover registro"
+                          className="h-7 w-7 shrink-0 opacity-0 max-md:opacity-70 group-hover/marco:opacity-100 group-focus-within/marco:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
                         >
                           <Trash2 className="h-3 w-3" />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>

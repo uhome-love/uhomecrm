@@ -85,6 +85,12 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
 import { getScoreTemperature } from "@/lib/scoreTemperatureLabels";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
+import { useJornadaNegocio } from "@/hooks/useJornadaNegocio";
+import { useProfileNames } from "@/hooks/useProfileNames";
+import { valorSugerido } from "@/lib/jornadaNegocio";
+import { substatusValueLabel } from "@/lib/pipelineAudit";
+import { diasCalendarioBRT } from "@/lib/diasCalendarioBRT";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   lead: PipelineLead;
@@ -130,6 +136,8 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
+  const jornadaFicha = useJornadaNegocio(open && lead.negocio_id ? lead.id : "");
+  const nomesFicha = useProfileNames();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<string>(() => (isMobile ? "info" : "historico"));
   useEffect(() => {
@@ -514,12 +522,19 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       return { texto: `Descartado${em}${motivo ? ` · Motivo: ${motivo}` : ""}` };
     }
     if (stageTipoAtual === "caiu") return { texto: `Negócio caiu${em}` };
-    const valorVenda = valorCurto(Number(lead.valor_estimado) || 0).replace(/ /g, "\u00a0");
+    const negocio = jornadaFicha.data?.negocio;
+    const assinatura = negocio?.data_assinatura;
+    const dataAssinatura = assinatura ? parseDateBRTSafe(assinatura) : null;
+    const dataVenda = dataAssinatura?.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short" }).replace(/ de /g, " ").replace(/\./g, "") ?? "";
+    const registroAssinatura = negocio?.fase === "ganho" && assinatura ? leadData.historico.find(h => h.stage_novo_id === lead.stage_id && h.stage_anterior_id !== h.stage_novo_id && Math.abs(Date.parse(h.created_at) - Date.parse(lead.stage_changed_at ?? "")) < 60000 && new Date(h.created_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) === dataAssinatura?.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" })) : undefined;
+    const autor = registroAssinatura ? nomesFicha[registroAssinatura.movido_por]?.trim().split(/\s+/)[0] : undefined;
+    const valorVenda = negocio?.fase === "ganho" ? valorCurto(valorSugerido(negocio)).replace(/ /g, "\u00a0") : "";
     return {
-      texto: `Venda assinada${em}${valorVenda ? ` · ${valorVenda}` : ""}`,
+      texto: jornadaFicha.error ? "Não foi possível consultar a venda." : "Venda assinada",
+      venda: negocio?.fase === "ganho" ? { valor: valorVenda, data: dataVenda, autor } : undefined,
       link: lead.negocio_id ? { rotulo: "Abrir negócio", onClick: () => setActiveTab("negocio") } : undefined,
       acao: (
-        <Button size="sm" variant="outline" className="self-start h-8 gap-1.5 text-[12.5px]" onClick={() => {
+        <Button size="sm" variant="ghost" className="self-start h-8 mt-2 px-0 gap-1.5 text-[12.5px] text-muted-foreground hover:bg-transparent hover:text-foreground" onClick={() => {
           const destino = stages.find(s => s.tipo === "qualificacao") || stages.find(s => s.tipo === "novo_lead");
           if (destino) handleMoveStage(destino.id);
         }}>🔄 Reativar lead</Button>
@@ -527,6 +542,24 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
     };
   })();
   const etapaNegocio = ["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual);
+  const negocioFicha = jornadaFicha.data?.negocio;
+  const contratoRaw = negocioFicha?.jornada && typeof negocioFicha.jornada === "object" && !Array.isArray(negocioFicha.jornada) ? negocioFicha.jornada.contrato : null;
+  const contratoRef = contratoRaw && typeof contratoRaw === "object" && !Array.isArray(contratoRaw) ? contratoRaw : null;
+  const situacaoFicha = stageTipoAtual === "contrato_gerado" ? negocioFicha?.contrato_situacao : negocioFicha?.proposta_situacao;
+  const diasSituacao = contratoRef?.status === situacaoFicha && contratoRef?.etapa_id === lead.stage_id && typeof contratoRef?.desde === "string" ? diasCalendarioBRT(contratoRef.desde) : null;
+  const negocioNode = stageTipoAtual !== "venda" && (lead.negocio_id || etapaNegocio) ? (
+    <section className="rounded-xl border border-border border-t-2 border-t-primary bg-card p-5 shadow-sm space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-[11px] font-semibold uppercase text-primary">Negócio</p>
+        {lead.negocio_id && <Button variant="link" onClick={() => setActiveTab("negocio")} className="h-auto p-0 text-[12px]">Abrir</Button>}
+      </div>
+      {lead.negocio_id && jornadaFicha.isPending ? <div aria-busy="true" className="space-y-3"><Skeleton className="h-4 w-3/4 motion-reduce:animate-none" /><Skeleton className="h-6 w-1/2 motion-reduce:animate-none" /><Skeleton className="h-9 w-full motion-reduce:animate-none" /></div> : jornadaFicha.error ? <p className="text-[13px] text-muted-foreground">Não foi possível consultar o negócio.</p> : <>
+        <p className="text-[13px] leading-relaxed">{currentStage?.nome}{situacaoFicha ? ` · ${substatusValueLabel(stageTipoAtual === "contrato_gerado" ? "status_contrato" : "status_negociacao", situacaoFicha).replace(/^[^\p{L}\p{N}]+/u, "")}` : ""}{diasSituacao != null && diasSituacao >= 0 ? ` há ${diasSituacao} ${diasSituacao === 1 ? "dia" : "dias"}` : ""}</p>
+        {negocioFicha && <p className="font-display text-[19px] font-bold whitespace-nowrap tabular-nums">{valorCurto(valorSugerido(negocio)).replace(/ /g, "\u00a0")}</p>}
+        {!lead.negocio_id && <p className="text-[13px] text-muted-foreground">Ainda não há proposta</p>}
+        {etapaNegocio && <LeadFlagControls bare leadId={lead.id} stageTipo={stageTipoAtual} flagStatus={lead.flag_status as Record<string, string> | null} />}
+      </>}
+    </section>
+  ) : null;
   const acaoTrack = (action: string) => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action });
   const actionsNode = (
     <>
@@ -663,7 +696,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         </div>
       )}
 
-
+      {etapaNegocio && negocioNode}
       <DrawerAgora
         leadId={lead.id}
         nextTask={nextTask as any}
@@ -678,6 +711,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         tarefaDeEtapaAnterior={tarefaDeEtapaAnterior}
         esconderRegistrar={!isMobile}
         etapaFinal={etapaFinalInfo}
+        loading={leadData.loading || (stageTipoAtual === "venda" && !!lead.negocio_id && jornadaFicha.isPending)}
         homi={
           <HomiSugestaoRecolhida
             leadId={lead.id}
@@ -695,25 +729,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
 
       <ResumoLeadLateral lead={lead} esconderOrcamento={stageTipoAtual === "venda"} />
 
-      {/* Negócio — só a partir de Documentação (ou se já existe negócio) */}
-      {stageTipoAtual !== "venda" && (lead.negocio_id || ["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual)) && (
-      <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Negócio</p>
-          {lead.negocio_id && <button onClick={() => setActiveTab("negocio")} className="text-[12px] font-semibold text-primary hover:underline">Abrir</button>}
-        </div>
-        <p className="mt-1 text-[13px] text-foreground">
-          {lead.negocio_id
-            ? <>Em andamento{lead.valor_estimado ? <> · <span className="font-semibold tabular-nums">{valorCurto(Number(lead.valor_estimado)).replace(/ /g, "\u00a0")}</span></> : null}</>
-            : <span className="text-muted-foreground">Ainda não há proposta</span>}
-        </p>
-        {["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual) && (
-          <div className="mt-2">
-            <LeadFlagControls bare leadId={lead.id} stageTipo={stageTipoAtual} flagStatus={lead.flag_status as Record<string, string> | null} />
-          </div>
-        )}
-      </section>
-      )}
+      {!etapaNegocio && negocioNode}
 
       {/* Celular: "Mais ações" (as ações principais ficam na barra fixa embaixo) */}
       <div className="md:hidden">
