@@ -1,5 +1,5 @@
 import RegistroRapido, { type TipoRegistro } from "./drawer/RegistroRapido";
-import { buracosSemRegistro, direcaoEtapa, ehResultadoDeVisita, iconeDoMarco, tituloMudancaEtapa } from "@/lib/timelineNarrativa";
+import { buracosSemRegistro, CLASSE_TOM, descricaoLegivel, direcaoEtapa, ehResultadoDeVisita, iconeDoMarco, tituloMudancaEtapa, valorCurto } from "@/lib/timelineNarrativa";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -784,8 +784,24 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             const time = formatBRT(it.date, "HH:mm");
             const ehEtapa = it.sourceType === "historico" && !!it.etapa?.para && it.etapa.deId !== it.etapa.paraId;
             const direcao = ehEtapa ? direcaoEtapa(stages, it.etapa?.deId, it.etapa?.paraId) : undefined;
-            const Icone = iconeDoMarco(it, direcao);
-            const titulo = ehEtapa ? tituloMudancaEtapa(direcao!, it.etapa?.para) : it.title.replace(/^[^\p{L}\p{N}]+/u, "");
+            const tipoNova = ehEtapa ? (stages.find(s => s.id === it.etapa?.paraId) as { tipo?: string } | undefined)?.tipo : undefined;
+            const estilo = iconeDoMarco(it, direcao, tipoNova);
+            const Icone = estilo.icone;
+            const tituloBase = ehEtapa ? tituloMudancaEtapa(direcao!, it.etapa?.para) : it.title.replace(/^[^\p{L}\p{N}]+/u, "");
+            const titulo = estilo.ganho ? "Venda assinada" : tituloBase;
+            const valorGanho = estilo.ganho ? (() => {
+              const m = timeline.map(x => /Valor:\s*(\d{4,})/.exec(x.description ?? "")).find(Boolean);
+              const v = m ? Number(m[1]) : Number((lead as { valor_estimado?: number | null }).valor_estimado ?? 0);
+              return valorCurto(v);
+            })() : "";
+            if (it.mesmaEtapa) {
+              return (
+                <div key={dItem.id} className="relative flex items-center gap-3 py-0.5">
+                  <div className="relative z-10 h-9 w-9 flex items-center justify-center shrink-0"><span className="h-2 w-2 rounded-full bg-muted-foreground/40" /></div>
+                  <p className="min-w-0 flex-1 truncate text-[12px] text-muted-foreground">{it.title} <span className="tabular-nums">· Automático · {time}</span></p>
+                </div>
+              );
+            }
             const resultadoVisita = !ehEtapa && ehResultadoDeVisita(it.title) && !!it.description;
             const visitaAgendada = !ehEtapa && !resultadoVisita && /^visita (agendada|marcada)/i.test(titulo);
             const pv = resultadoVisita || visitaAgendada ? partesDaVisita(it.description) : null;
@@ -796,14 +812,14 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             return (
               <div key={dItem.id}>
                 <div className="relative flex gap-3 group/marco">
-                  <div className={`relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${direcao === "voltou" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                    <Icone className="h-4 w-4" />
+                  <div className={`relative z-10 h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${CLASSE_TOM[estilo.tom]}`}>
+                    {estilo.emoji ? <span className="text-[15px] leading-none" aria-hidden>{estilo.emoji}</span> : <Icone className="h-4 w-4" />}
                   </div>
                   <div className="flex-1 min-w-0 pt-0.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <p className="text-[13.5px] font-semibold text-foreground leading-snug">{tituloFinal}</p>
+                          <p className={`text-[13.5px] text-foreground leading-snug ${estilo.marco ? "font-semibold" : "font-normal"}`}>{tituloFinal}{valorGanho ? ` · ${valorGanho}` : ""}</p>
                           <span className="text-[11.5px] text-muted-foreground tabular-nums">{it.autor ? `${it.autor} · ` : ""}{time}</span>
                           {it.badge && (
                             <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold ${it.badge.tone === "success" ? "bg-success-500/15 text-success-700 dark:text-success-500" : it.badge.tone === "danger" ? "bg-danger-500/10 text-danger-700 dark:text-danger-500" : it.badge.tone === "warning" ? "bg-warning-500/15 text-warning-700 dark:text-warning-500" : "bg-muted text-muted-foreground"}`}>{it.badge.label}</span>
@@ -811,8 +827,8 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                         </div>
                         {ehEtapa ? (
                           (it.etapa?.observacao || it.etapa?.de) && (
-                            <div className="mt-1.5 max-w-[72ch] rounded-lg bg-muted px-3 py-2">
-                              {it.etapa?.observacao && <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">{it.etapa.observacao}</p>}
+                            <div className={`mt-1.5 max-w-[72ch] rounded-lg px-3 py-2 ${estilo.ganho ? "border border-success-500/40 bg-success-500/5" : "bg-muted"}`}>
+                              {it.etapa?.observacao && <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">{descricaoLegivel(it.etapa.observacao)}</p>}
                               {it.etapa?.de && (
                                 <span className={`${it.etapa?.observacao ? "mt-1.5 " : ""}inline-flex h-5 items-center rounded-full border border-border bg-card px-2 text-[11px] font-medium text-muted-foreground`}>
                                   De {it.etapa.de} para {it.etapa.para}
@@ -847,7 +863,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                             Para {[pv.dia, pv.hora].filter(Boolean).join(", ")}{pv.imovel ? ` · ${pv.imovel}` : ""}{pv.obs.length ? ` · ${pv.obs.join(" · ")}` : ""}
                           </p>
                         ) : it.description ? (
-                          <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{it.description}</p>
+                          <p className="mt-1 max-w-[68ch] text-[13px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{descricaoLegivel(it.description)}</p>
                         ) : null}
                       </div>
                       {it.sourceId && it.sourceType !== "system" && (
