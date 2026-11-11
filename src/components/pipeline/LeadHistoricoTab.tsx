@@ -836,7 +836,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             const obsEtapa = it.etapa?.observacao?.trim();
             const obsRepetida = !!obsEtapa && [shownItems[i + 1], shownItems[i - 1]].some((v) => v && v !== it && !!v.description
               && Math.abs(new Date(v.date).getTime() - new Date(it.date).getTime()) <= 60_000
-              && (v.title + " · " + v.description).replace(/\s+/g, " ").includes(obsEtapa.replace(/\s+/g, " ").split(" · Valor")[0]));
+              && !!v.title && obsEtapa.toLowerCase().startsWith(v.title.replace(/^[^\p{L}]+/u, "").trim().toLowerCase()));
             return (
               <div key={dItem.id}>
                 <div className="relative flex gap-3 group/marco">
