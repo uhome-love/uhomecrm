@@ -39,7 +39,7 @@ function Linha({ rotulo, children, ultima = false }: { rotulo: string; children:
   );
 }
 
-export default function ResumoLeadLateral({ lead }: { lead: PipelineLead }) {
+export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: { lead: PipelineLead; esconderOrcamento?: boolean }) {
   const [faixa, setFaixa] = useState<string | null>(null);
   const [visitas, setVisitas] = useState<{ total: number; ultima: string | null }>({ total: 0, ultima: null });
   const [editando, setEditando] = useState(false);
@@ -87,6 +87,7 @@ export default function ResumoLeadLateral({ lead }: { lead: PipelineLead }) {
 
       <Linha rotulo="Entrou">{lead.created_at ? diaMes(lead.created_at) : <span className="font-normal text-muted-foreground">Sem data</span>}</Linha>
 
+      {!esconderOrcamento && (
       <Linha rotulo="Orçamento">
         {editando ? (
           <span className="flex items-center gap-1">
@@ -112,6 +113,7 @@ export default function ResumoLeadLateral({ lead }: { lead: PipelineLead }) {
           </span>
         )}
       </Linha>
+      )}
 
       <Linha rotulo="Visitas" ultima>
         {visitas.total > 0

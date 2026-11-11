@@ -1,3 +1,4 @@
+import { valorCurto } from "@/lib/timelineNarrativa";
 import { DISCARD_REASONS_REENGAJAVEL, DISCARD_REASONS_DEFINITIVO, getReasonByCode, reasonDisplay, classifyMotivoText } from "@/lib/discardReasons";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { LeadFormRespostas } from "@/components/pipeline/drawer/LeadFormRespostas";
@@ -513,8 +514,10 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
       return { texto: `Descartado${em}${motivo ? ` · Motivo: ${motivo}` : ""}` };
     }
     if (stageTipoAtual === "caiu") return { texto: `Negócio caiu${em}` };
+    const valorVenda = valorCurto(Number(lead.valor_estimado) || 0);
     return {
-      texto: `Venda assinada${em}`,
+      texto: `Venda assinada${em}${valorVenda ? ` · ${valorVenda}` : ""}`,
+      link: lead.negocio_id ? { rotulo: "Abrir negócio", onClick: () => setActiveTab("negocio") } : undefined,
       acao: (
         <Button size="sm" variant="outline" className="self-start h-8 gap-1.5 text-[12.5px]" onClick={() => {
           const destino = stages.find(s => s.tipo === "qualificacao") || stages.find(s => s.tipo === "novo_lead");
@@ -689,18 +692,18 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         }
       />
 
-      <ResumoLeadLateral lead={lead} />
+      <ResumoLeadLateral lead={lead} esconderOrcamento={stageTipoAtual === "venda"} />
 
       {/* Negócio — só a partir de Documentação (ou se já existe negócio) */}
-      {(lead.negocio_id || ["documentacao", "proposta", "contrato_gerado", "venda"].includes(stageTipoAtual)) && (
-      <section className="rounded-xl border border-border bg-card px-5 py-4">
+      {stageTipoAtual !== "venda" && (lead.negocio_id || ["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual)) && (
+      <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Negócio</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Negócio</p>
           {lead.negocio_id && <button onClick={() => setActiveTab("negocio")} className="text-[12px] font-semibold text-primary hover:underline">Abrir</button>}
         </div>
         <p className="mt-1 text-[13px] text-foreground">
           {lead.negocio_id
-            ? <>Em andamento{lead.valor_estimado ? <> · <span className="font-semibold tabular-nums">{Number(lead.valor_estimado).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}</span></> : null}</>
+            ? <>Em andamento{lead.valor_estimado ? <> · <span className="font-semibold tabular-nums">{valorCurto(Number(lead.valor_estimado))}</span></> : null}</>
             : <span className="text-muted-foreground">Ainda não há proposta</span>}
         </p>
         {["documentacao", "proposta", "contrato_gerado"].includes(stageTipoAtual) && (
