@@ -13,6 +13,7 @@
  *
  * Público (verify_jwt=false), chamado pelo pg_cron. NÃO toca no fluxo dos leads Meta.
  */
+import { liaPodeEnviarModoTeste } from "../_shared/liaModoTeste.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { isModeloRecupera } from "../_shared/liaRecuperaModelos.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -81,6 +82,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const toWa = (raw: string) => { let d = (raw || "").replace(/\D/g, ""); if (d.startsWith("55")) d = d.slice(2); return "55" + d; };
 
 async function sendTemplate(to: string, name: string, bodyParams: string[]): Promise<{ ok: boolean; err?: string; waId?: string }> {
+  if (!await liaPodeEnviarModoTeste(svc(), to, "recuperacao")) return { ok: false, err: "modo_teste" };
   if (!await contatoPodeReceber(svc(), to, null, name)) return { ok: false, err: "contato_bloqueado" };
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };

@@ -11,6 +11,9 @@
  * template, erro no envio) devolve { desviar:false } → o lead segue o fluxo
  * normal (roleta). Assim NUNCA se perde um lead se a LIA não conseguir puxar.
  */
+import { liaPodeEnviarModoTeste } from "./liaModoTeste.ts";
+import { createClient as createClientModoTeste } from "https://esm.sh/@supabase/supabase-js@2";
+const svcModoTeste = () => createClientModoTeste(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const D360_URL = "https://waba-v2.360dialog.io/messages";
@@ -50,6 +53,7 @@ const WA_TEMPLATES: Record<string, { lang: string; headerDoc?: { link: string; f
 // Envia um template WhatsApp aprovado via 360dialog. {{1}} = primeiro nome.
 // Retorna { ok, err } — err traz o erro do 360dialog pra diagnóstico.
 async function enviarTemplate(to: string, tplName: string, bodyParams: string[]): Promise<{ ok: boolean; err?: string }> {
+  if (!await liaPodeEnviarModoTeste(svcModoTeste(), to, "form-bridge")) return { ok: false, err: "modo_teste" };
   const key = Deno.env.get("D360_API_KEY");
   if (!key) return { ok: false, err: "sem D360_API_KEY" };
   const cfg = WA_TEMPLATES[tplName] ?? { lang: "pt_BR" };

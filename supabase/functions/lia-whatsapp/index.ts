@@ -14,6 +14,7 @@
  *
  * Público (verify_jwt=false) — o 360dialog posta aqui sem auth. Segredo D360_API_KEY.
  */
+import { liaPodeEnviarModoTeste } from "../_shared/liaModoTeste.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -130,6 +131,7 @@ const svc = () =>
 async function send360(to: string, payload: Record<string, unknown>, confirmarEncerramento = false): Promise<boolean> {
   const key = Deno.env.get("D360_API_KEY");
   if (!key) { console.error("[lia-whatsapp] D360_API_KEY ausente"); return false; }
+  if (!await liaPodeEnviarModoTeste(svc(), to, "lia-whatsapp")) return false;
   if (!confirmarEncerramento && !await contatoPodeReceber(svc(), to)) return false;
   try {
     const r = await fetch(D360_URL, {
