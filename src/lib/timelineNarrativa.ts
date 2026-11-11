@@ -138,6 +138,8 @@ export function respostaFormLegivel(r: string): string {
 
 /** Texto de exibição: valores em R$, códigos legíveis e sem "Avulso · Unidade: avulso" repetido. */
 export function descricaoLegivel(d: string): string {
+  // Linhas internas do formulário do Meta (não são perguntas do cliente).
+  d = d.split("\n").filter((l) => !/^\s*[•\-]?\s*(Message\b|Property contract\b)/i.test(l)).join("\n");
   let s = d.replace(/r\$_/gi, "R$ ").replace(/(\d)_a_/g, "$1 a ").replace(/Valor:\s*(\d{4,})(?:[.,]\d+)?/g, (_, n) => `Valor: ${valorCurto(Number(n))}`);
   s = s.replace(/([^·•\n]+?)\s*·\s*Unidade:\s*([^·•\n]+)/g, (m, prod, uni) => (prod.trim().toLowerCase() === uni.trim().toLowerCase() ? `${prod.replace(/\s+$/, "")} ` : m));
   s = s.replace(/(Situação|Status):\s*([a-zà-ú_]+)/gi, (_, k, v) => `${k}: ${codigoLegivel(v)}`);
