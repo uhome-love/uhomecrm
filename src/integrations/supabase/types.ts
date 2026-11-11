@@ -18743,6 +18743,26 @@ export type Database = {
         Returns: boolean
       }
       lead_em_estado_final: { Args: { p_lead_id: string }; Returns: boolean }
+      lead_saude_acao:
+        | {
+            Args: {
+              p_lead_id: string
+              p_ref: string
+              p_stage_tipo: string
+              p_ultimo_toque: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_carencia_ate: string
+              p_lead_id: string
+              p_ref: string
+              p_stage_tipo: string
+              p_ultimo_toque: string
+            }
+            Returns: string
+          }
       lead_saude_status:
         | {
             Args: {
