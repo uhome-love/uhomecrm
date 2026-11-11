@@ -817,7 +817,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             const valorGanho = estilo.ganho ? (() => {
               const m = timeline.map(x => /Valor:\s*(\d{4,})/.exec(x.description ?? "")).find(Boolean);
               const v = m ? Number(m[1]) : Number((lead as { valor_estimado?: number | null }).valor_estimado ?? 0);
-              return valorCurto(v);
+              return valorCurto(v).replace(/ /g, "\u00a0");
             })() : "";
             if (it.mesmaEtapa) {
               return (
