@@ -37,7 +37,7 @@ interface Props {
   /** Novo: esconde o botão grande "Registrar atividade" (o registro fica no topo do histórico). */
   esconderRegistrar?: boolean;
   /** Etapa final (Descarte, Caiu, Ganho): mostra só um resumo neutro no lugar do próximo passo. */
-  etapaFinal?: { texto: string; acao?: ReactNode } | null;
+  etapaFinal?: { texto: string; acao?: ReactNode; link?: { rotulo: string; onClick: () => void } } | null;
 }
 
 const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -105,7 +105,10 @@ export default function DrawerAgora({
   if (etapaFinal) {
     return (
       <section className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Situação</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Situação</p>
+          {etapaFinal.link && <button type="button" onClick={etapaFinal.link.onClick} className="whitespace-nowrap text-[12px] font-semibold text-primary hover:underline">{etapaFinal.link.rotulo}</button>}
+        </div>
         <p className="rounded-lg bg-muted/60 px-3.5 py-3 text-[13.5px] font-medium text-muted-foreground">{etapaFinal.texto}</p>
         {etapaFinal.acao}
       </section>

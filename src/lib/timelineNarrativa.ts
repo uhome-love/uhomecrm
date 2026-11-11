@@ -86,7 +86,7 @@ export function iconeDoMarco(
   if (item.sourceType === "historico") return rotina(Repeat);
   if (/lead entrou|lead gerado|^entrou|entrada/.test(t)) return { icone: Target, emoji: "🎯", tom: "azul", marco: true };
   if (/no.?show|n[ãa]o compareceu/.test(t)) return { icone: MapPin, tom: "laranja", marco: true };
-  if (/^visita (agendada|marcada)/.test(t.replace(/^[^\p{L}]+/u, ""))) return { icone: CalendarDays, emoji: "📅", tom: "azul", marco: true };
+  if (/^visita (agendada|marcada|remarcada)/.test(t.replace(/^[^\p{L}]+/u, ""))) return { icone: CalendarDays, emoji: "📅", tom: "azul", marco: true };
   if (/visita/.test(t) && /realizad|resultado/.test(t)) return { icone: MapPin, emoji: "📍", tom: "verde", marco: true };
   if (/ligaç|liga[rç]|telefon|atendeu/.test(t)) return rotina(Phone);
   if (/whats|mensagem/.test(t)) return rotina(MessageCircle);

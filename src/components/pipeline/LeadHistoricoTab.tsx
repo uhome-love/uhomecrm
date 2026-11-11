@@ -493,6 +493,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
 // Sistema: tarefas/lembretes, cadências automáticas, aceito/distribuído, sub-eventos de visita.
 function categoriaDe(item: TimelineItem): "narrativa" | "sistema" {
   if (item.sourceType === "tarefa") return "sistema";
+  if (item.sourceType === "system" && item.title === "Visita remarcada") return "narrativa";
   if (item.sourceType === "system") return "sistema";
   if (item.badge?.label === "🤖 Automação") return "sistema";
   if (item.sourceType === "historico" && item.mesmaEtapa) return "sistema";
@@ -525,7 +526,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     criada: { title: "Visita agendada", icon: MapPin, color: "text-primary", tone: "neutral" },
     status_alterado: { title: "Visita — status alterado", icon: Repeat, color: "text-primary" },
     resultado_registrado: { title: "Resultado da visita registrado", icon: CheckCircle2, color: "text-success-500" },
-    data_alterada: { title: "Visita remarcada", icon: Clock, color: "text-warning-600", tone: "warning" },
+    data_alterada: { title: "Visita remarcada", icon: MapPin, color: "text-primary" },
   };
   const STATUS_LABEL: Record<string, string> = {
     marcada: "Marcada", confirmada: "Confirmada", reagendada: "Reagendada",
@@ -831,6 +832,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               ? `${titulo} · ${[pv.imovel, pv.hora].filter(Boolean).join(", ")}`
               : titulo;
             const gap = buracos.get(i);
+            // Caixa da etapa: não repete a frase automática do item vizinho no mesmo minuto.
+            const obsEtapa = it.etapa?.observacao?.trim();
+            const obsRepetida = !!obsEtapa && [shownItems[i + 1], shownItems[i - 1]].some((v) => v && v !== it && !!v.description
+              && Math.abs(new Date(v.date).getTime() - new Date(it.date).getTime()) <= 60_000
+              && !!v.title && obsEtapa.toLowerCase().startsWith(v.title.replace(/^[^\p{L}]+/u, "").trim().toLowerCase()));
             return (
               <div key={dItem.id}>
                 <div className="relative flex gap-3 group/marco">
@@ -848,11 +854,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
                           )}
                         </div>
                         {ehEtapa ? (
-                          (it.etapa?.observacao || it.etapa?.de) && (
+                          ((it.etapa?.observacao && !obsRepetida) || it.etapa?.de) && (
                             <div className={`mt-1.5 max-w-[72ch] rounded-lg px-3 py-2 ${estilo.ganho ? "border border-success-500/40 bg-success-500/5" : "bg-muted"}`}>
-                              {it.etapa?.observacao && <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">{descricaoLegivel(it.etapa.observacao)}</p>}
+                              {it.etapa?.observacao && !obsRepetida && <p className="text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">{descricaoLegivel(it.etapa.observacao)}</p>}
                               {it.etapa?.de && (
-                                <span className={`${it.etapa?.observacao ? "mt-1.5 " : ""}inline-flex h-5 items-center rounded-full border border-border bg-card px-2 text-[11px] font-medium text-muted-foreground`}>
+                                <span className={`${it.etapa?.observacao && !obsRepetida ? "mt-1.5 " : ""}inline-flex h-5 items-center rounded-full border border-border bg-card px-2 text-[11px] font-medium text-muted-foreground`}>
                                   De {it.etapa.de} para {it.etapa.para}
                                 </span>
                               )}

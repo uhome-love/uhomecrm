@@ -6,8 +6,8 @@
 // texto já preenchidos, e o salvamento continua sendo do modal (nada muda na
 // gravação).
 // ─────────────────────────────────────────────────────────────────
-import { useState } from "react";
-import { MapPin, MessageCircle, Phone, StickyNote, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MapPin, Send, MessageCircle, Phone, StickyNote, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Mesmos tipos do RegistrarAtividadeModal (ATIVIDADES). */
@@ -31,6 +31,16 @@ export default function RegistroRapido({ leadPrimeiroNome, onRegistrar, ajuda }:
   const [texto, setTexto] = useState("");
   const [tipo, setTipo] = useState<TipoRegistro | null>(null);
   const podeRegistrar = texto.trim().length > 0 || tipo !== null;
+  // Botão vira só ícone quando a linha não comporta chips + "Registrar" (nunca desce sozinho).
+  const linhaRef = useRef<HTMLDivElement>(null);
+  const [compacto, setCompacto] = useState(false);
+  useEffect(() => {
+    const el = linhaRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => setCompacto(e.contentRect.width < 470));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const registrar = () => {
     if (!podeRegistrar) return;
@@ -52,8 +62,8 @@ export default function RegistroRapido({ leadPrimeiroNome, onRegistrar, ajuda }:
           placeholder={`Registre o que aconteceu com ${leadPrimeiroNome || "o cliente"} e o próximo passo…`}
           className="min-h-[44px] w-full resize-none border-0 bg-transparent p-0 text-[14px] leading-[22px] text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div role="group" aria-label="Como foi o contato" className="flex flex-wrap gap-1.5">
+        <div ref={linhaRef} className="flex items-end justify-between gap-2">
+          <div role="group" aria-label="Como foi o contato" className="flex min-w-0 flex-1 flex-wrap gap-1.5">
             {TIPOS.map(({ tipo: t, label, icon: Icon }) => {
               const ativo = tipo === t;
               return (
@@ -63,7 +73,7 @@ export default function RegistroRapido({ leadPrimeiroNome, onRegistrar, ajuda }:
                   aria-pressed={ativo}
                   onClick={() => setTipo(ativo ? null : t)}
                   className={cn(
-                    "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold transition-colors",
+                    "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[12px] font-semibold transition-colors",
                     ativo ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -76,9 +86,10 @@ export default function RegistroRapido({ leadPrimeiroNome, onRegistrar, ajuda }:
             type="button"
             onClick={registrar}
             disabled={!podeRegistrar}
-            className="ml-auto inline-flex h-9 items-center rounded-md border border-input bg-card px-3.5 text-[13.5px] font-semibold text-foreground hover:bg-muted/50 disabled:opacity-50"
+            aria-label="Registrar"
+            className={cn("inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-input bg-card text-[13px] font-semibold text-foreground hover:bg-muted/50 disabled:opacity-50", compacto ? "w-8" : "px-3.5")}
           >
-            Registrar
+            {compacto ? <Send className="h-3.5 w-3.5" /> : "Registrar"}
           </button>
         </div>
       </div>
