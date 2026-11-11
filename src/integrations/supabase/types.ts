@@ -18763,6 +18763,7 @@ export type Database = {
           }
       lead_tem_acao_futura: { Args: { p_lead_id: string }; Returns: boolean }
       lead_teve_contato_v3: { Args: { p_lead_id: string }; Returns: boolean }
+      leads_com_acao_futura: { Args: { p_ids: string[] }; Returns: string[] }
       lia_avaliar_cenario: {
         Args: { p_avaliacao: string; p_comentario?: string; p_id: string }
         Returns: undefined
