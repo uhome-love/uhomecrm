@@ -1,51 +1,67 @@
-# Ficha do lead · acabamento final (só visual)
+# Ficha do lead · refinamento final (só visual)
 
-Sem migration e sem mudar o que é gravado. Cores, emojis e layout aprovados continuam.
+## Limites e aprovação
+- Somente polimento: manter estrutura da ficha, topo aprovado no computador e no celular, larguras das colunas, cores, emojis, destaques e ações existentes.
+- Sem migration, alterações de gravação, permissões, tarefas, visitas, distribuição, reativação ou cálculos comerciais.
+- Esta entrega é apenas o plano. Após sua aprovação, apresentar desenho isolado das mudanças; só alterar a ficha depois de aprovar também esse desenho.
+- Extras autorizados: somente o agrupamento da linha do tempo e o caminho do lead, necessários para os títulos dos dias, alinhamento da linha vertical e animação do popover. Nenhuma mudança em peças globais ou outras telas.
 
-## 1. Contagem de dias
-- "Venceu há N dias" / "Vence em N dias" passa a contar dias de calendário no horário de Brasília (hoje menos a data da tarefa), sem arredondar. Leonardo: tarefa de 25/10 passa a mostrar "Venceu há 16 dias". Hoje = "Venceu hoje"; amanhã = "Vence amanhã".
-- O selo "Parado há N dias" passa a usar a mesma conta de calendário. Atenção: o selo mede outra coisa (dias desde o último contato, não o vencimento da tarefa). No Leonardo o último contato foi antes do vencimento, então os números continuam diferentes (selo maior que a tarefa). Os dois ficam corretos e calculados do mesmo jeito.
+## 1. Cartões mais leves
+- **Próximo passo:** remover apenas a caixa cinza interna da tarefa. Manter ícone, título, vencimento, explicação e ações Concluir/Trocar tarefa diretamente no cartão. Separar a tarefa do Homi por uma linha fina.
+- **Situação:** remover a caixa cinza interna; Descarte e Caiu mantêm texto, datas e emojis dos motivos.
+- **Sem próximo passo:** uma linha âmbar e, abaixo, botão de contorno de largura total, **+ Criar próximo passo**, abrindo o formulário atual.
+- Cabeçalhos com rótulo à esquerda e selo/link à direita, espaçamento interno preservado; o selo passa inteiro para a linha de baixo se não couber, sem sobreposição.
 
-## 2. Homi recolhido
-"Ver" e a seta ficam juntos na ponta direita, com espaço garantido depois de "Sugestão do Homi" (o texto não encosta no "Ver" em telas estreitas).
+## 2. Ordem e destaque conforme a etapa
+- **Novo Lead até Pós-Visita:** Próximo passo → Resumo. Preservar os blocos auxiliares já existentes e suas condições de exibição.
+- **Documentação, Proposta e Contrato:** Negócio → Próximo passo → Resumo. O cartão Negócio mostra etapa, situação atual e duração correta, valor curto sem quebra e a ação azul existente, como **Atualizar contrato**.
+- Exemplo de composição: **Contrato · Em leitura há 12 dias** / **R$ 599 mil** / **Atualizar contrato**. Os dias são calculados a partir do registro correspondente à situação, não de uma atualização genérica. Sem data confiável, exibir a situação sem inventar duração.
+- **Ganho:** Situação → Resumo. No cartão Situação: **🏆 Venda assinada**, valor em Montserrat de **24 px**, data oficial e autor do registro de assinatura, **Abrir negócio** e **🔄 Reativar lead** discreto ao final. Não duplicar o cartão Negócio.
+- O exemplo **10 nov · Junior** só aparece se os registros confirmarem essa data e esse autor; o responsável atual não será apresentado como autor da assinatura por suposição.
+- **Descarte e Caiu:** conservar a composição atual, retirando somente a caixa interna.
+- Manter Ligar e WhatsApp; Agendar visita continua oculto nas etapas finais e de contorno nas etapas comerciais, conforme aprovado.
 
-## 3. Dinheiro sem quebra
-Espaço não quebrável em todos os valores curtos da ficha ("R$ 1,1 mi", "R$ 599 mil"): card Situação, card Negócio e linha do tempo.
+## 3. Linha do tempo
+- Mudança de etapa **sem anotação visível:** título e chip **De X para Y** soltos, sem caixa. Com anotação, conservar a caixa e os destaques aprovados, inclusive o verde do Ganho.
+- Cabeçalhos: **Hoje**, **Ontem**, dia da semana abreviado + data nos demais dias dos últimos sete dias; somente data nos mais antigos. Acrescentar ano apenas quando diferente do ano atual. Tudo no horário de Brasília.
+- Posicionar a linha vertical no mesmo centro dos círculos, incluindo registros automáticos e avisos de intervalo; sem deslocamentos entre tipos de item.
+- Fundo muito suave ao passar o mouse. Lixeira visível também ao navegar por teclado e acessível no celular; o clique mantém a confirmação atual, sem excluir nada automaticamente.
+- Preservar Atendimento/Tudo, autores, ordem dos eventos, datas de visitas, cores, emojis e textos já aprovados.
 
-## 4. Resultado da visita com cor pelo sentido
-- Verde com check: quer proposta, quer visitar de novo, gostou, continuar visitando.
-- Cinza sem check: vai pensar, aguardando retorno, e qualquer resultado não reconhecido.
-- Vermelho suave sem check: não gostou, sem interesse.
-O texto e o emoji do resultado continuam como estão.
+## 4. Registro rápido
+- Exemplo curto: **O que aconteceu com Leandro?**, usando o primeiro nome de cada cliente.
+- Campo aumenta com o texto digitado, sem barra interna prematura e sem empurrar os controles para fora da ficha. Com foco, borda azul e anel suave.
+- No celular: quatro chips em uma única faixa horizontal rolável e botão de envio fixo à direita dessa faixa, sem rolar junto e sem descer para outra linha.
+- Preservar seleção do contato e o formulário de confirmação atual; o botão não passa a salvar diretamente.
 
-## 5. Botão principal em etapas de negócio
-Em Documentação, Proposta e Contrato: "Agendar visita" vira botão de contorno (topo do computador e barra do celular), e "Atualizar contrato/proposta/documentação" no card Negócio fica como o único botão azul. Nas etapas de lead, nada muda.
-
-## 6. Resumo → Interesse
-O que encontrei: no Leandro, o negócio também está gravado como "Avulso" (empreendimento, unidade e produto oficial = "Avulso"). "Casa Tua Porto Alegre" não existe no negócio dele; o que existe são visitas em "Casa Tua". Então trocar pelo negócio não muda nada no caso dele.
-Proposta:
-- Usar o empreendimento do negócio quando houver um específico (não "Avulso"); senão o do lead.
-- Se os dois forem "Avulso", mostrar o imóvel da última visita ("Casa Tua"), com o texto "Avulso · última visita: Casa Tua".
-- Sempre com a primeira letra maiúscula ("avulso" → "Avulso").
-Se preferir só a letra maiúscula sem usar a visita, me avise ao aprovar.
-
-## 7. Visita remarcada
-Sem o selo cinza "visita" e autor só com o primeiro nome ("Adriana"), igual aos outros itens.
-
-## 8. Abas no celular
-As abas rolam para o lado, com um esmaecido na borda direita enquanto houver aba escondida (some ao chegar no fim). "Negócio" não aparece cortado de repente.
-
-## Testes
-- Leonardo: tarefa "Venceu há 16 dias"; selo contado por calendário; "Ver" à direita.
-- Eraldo: "R$ 1,1 mi" inteiro; remarcada sem selo e com "Adriana".
-- Leandro: "Vai pensar" em cinza; só "Atualizar contrato" em azul; Interesse conforme item 6.
-- 1280 px, escuro e celular 390 px. Nada é salvo.
+## 5. Movimento, foco e carregamento
+- Homi: abertura e fechamento por altura e opacidade em **200 ms**, mantendo a chamada atual somente quando aberto. Não acrescentar chamadas nem geração automática.
+- Caminho do lead: apenas fade de **150 ms**, sem zoom/deslocamento nesse popover.
+- Sublinhado das abas desliza entre as posições reais, inclusive após rolar as abas no celular; conteúdo e navegação permanecem iguais.
+- Com **reduzir movimento** ligado: nenhuma dessas animações, nem pulsação dos esqueletos.
+- Esqueletos temáticos nos cartões e na linha do tempo: reservar a composição própria de cada etapa, larguras e alturas mínimas compatíveis; manter conteúdo já carregado durante atualizações. Não exibir falsos estados de ausência de tarefa, valor zero ou nenhuma visita enquanto a leitura estiver pendente.
+- Foco azul visível em botões, chips e links; estados de mouse, desabilitado e carregamento nas ações aplicáveis, sem mudar quando uma ação é permitida.
 
 ## Detalhes técnicos
-- `DrawerAgora.tsx`: helper `diasCalendarioBRT(dataISO)` (diferença entre datas YYYY-MM-DD em America/Sao_Paulo) no lugar de `formatDistance`; o selo usa o mesmo helper sobre a data-base do relógio de saúde (`PipelineLeadDetail.tsx`, só exibição; `diasSemToque` e regras de saúde não mudam).
-- `HomiSugestaoRecolhida.tsx`: `gap-3` e grupo "Ver"+seta com `ml-auto`.
-- `valorCurto` usado com `\u00a0` via pequeno wrapper de exibição na ficha (teste existente não muda).
-- `LeadHistoricoTab.tsx`: mapa de tom por resultado (positivo/neutro/negativo) nos chips; `data_alterada` sem badge e `autor` via `firstName`.
-- `PipelineLeadDetail.tsx`: variante `outline` do Agendar visita quando a etapa é documentacao/proposta/contrato_gerado (topo e barra); `LeadFlagControls` mantém o botão azul.
-- `ResumoLeadLateral.tsx`: recebe empreendimento do negócio e imóvel da última visita (dados já carregados na ficha); capitaliza a primeira letra.
-- Abas mobile: `overflow-x-auto` já existe; adicionar máscara de gradiente controlada por scroll.
+- Arquivos principais: `DrawerAgora.tsx`, `HomiSugestaoRecolhida.tsx`, `ResumoLeadLateral.tsx`, `LeadHistoricoTab.tsx`, `RegistroRapido.tsx`, `PipelineLeadDetail.tsx`, `DrawerLeadInfo.tsx` e o cartão Negócio hoje declarado dentro de `PipelineLeadDetail.tsx`.
+- Dois extras aprovados: `DrawerTimelineGroup.tsx` e `CaminhoDoLead.tsx`. Formatação dos cabeçalhos e alinhamento ficam restritos à ficha; não alterar `leadHelpers.ts`, `ui/popover.tsx` ou `ui/tabs.tsx` globalmente.
+- No código atual, Situação e o pequeno cartão Negócio usam `lead.valor_estimado`. Para o destaque solicitado, fazer leitura autorizada somente do negócio ativo vinculado ao lead e usar seus campos oficiais de valor/assinatura; reaproveitar seletores existentes de valores e o cache, sem alterar os escritores ou escolher outra venda histórica.
+- Conferir a referência de entrada da situação do contrato e o autor no histórico já autorizado. Se não houver registro inequívoco, omitir o dado ausente em vez de deduzi-lo de visita, proprietário atual ou `updated_at`.
+- Aplicar tokens de cores, tipografia, foco e movimento existentes; os tempos específicos de 200/150 ms ficam limitados à apresentação da ficha, sem mudar durações de todo o CRM.
+- Reutilizar as peças de botão e esqueleto existentes e os mesmos manipuladores de ação. Estado pendente local cobre também as leituras independentes de orçamento e visitas.
+
+## Fases de execução, depois das aprovações
+1. Cartões e ordem por etapa; validar antes de avançar.
+2. Linha do tempo e registro; validar antes de avançar.
+3. Movimento, acessibilidade e carregamento; revisar as três fases juntas.
+
+## Validação e evidências
+- **Leonardo Prado:** tarefa vencida sem caixa interna; Concluir/Trocar tarefa preservados; vencimento e saúde continuam com a mesma régua, sem alterar dados.
+- **Leandro da Nóbrega Silva:** Negócio primeiro, situação/duração sem invenção, valor inteiro, Atualizar contrato azul e ausência de próximo passo bem organizada. Interesse continua apenas com a primeira letra maiúscula; não usar imóvel da última visita.
+- **Eraldo Rodrigues:** destaque 🏆, R$ 1,1 mi, data oficial, autor comprovado quando disponível, Abrir negócio e reativação discreta. Visitas e tarefas existentes não serão corrigidas ou canceladas nesta rodada.
+- **Danielle Knorst:** descarte sem caixa interna, com motivo e emojis preservados; sem Agendar visita.
+- Abrir os quatro leads em **1280 px, 1440 px e celular 390 px**, todos no claro e no escuro: 24 combinações. Capturar evidências dos cartões e da linha do tempo.
+- Simular leituras lentas com cache frio e conferir também reabertura com cache: nenhuma mensagem vazia falsa e nenhum salto abrupto entre esqueleto e conteúdo. Medir posições antes/depois, considerando que anotações de tamanho desconhecido podem expandir naturalmente o conteúdo.
+- Conferir teclado, foco, rolagem dos chips, envio que abre o formulário, caminho e abas com movimento normal/reduzido. Testar a abertura/fechamento do Homi com resposta controlada no navegador, sem disparar mensagens ou chamadas pagas desnecessárias.
+- Nos leads reais, somente leitura e abertura de formulários seguida de **Cancelar**: não concluir tarefa, salvar atividade, atualizar contrato, agendar visita, reativar nem excluir registros.
+- Revisar o diff, rodar testes existentes pertinentes e conferir erros do preview; encerrar com o que foi validado e prints, sem declarar pronto somente pela leitura do código.
