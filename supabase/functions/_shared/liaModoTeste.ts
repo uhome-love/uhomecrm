@@ -24,3 +24,12 @@ export async function liaPodeEnviarModoTeste(sb: SupabaseClient, to: string, ori
   }
   return ok;
 }
+
+/** Estrito: true SÓ com o modo teste LIGADO e o número igual ao de teste. Falha de leitura = false. */
+export async function ehConversaDeTeste(sb: SupabaseClient, telefone: string): Promise<boolean> {
+  const { data, error } = await sb.from("ia_config").select("modo_teste, numero_teste").limit(1).maybeSingle();
+  if (error || !data?.modo_teste) return false;
+  const a = String((data as any).numero_teste ?? "").replace(/\D/g, "").slice(-8);
+  const b = String(telefone ?? "").replace(/\D/g, "").slice(-8);
+  return a.length === 8 && a === b;
+}

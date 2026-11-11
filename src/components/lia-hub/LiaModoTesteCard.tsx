@@ -45,7 +45,7 @@ export default function LiaModoTesteCard() {
       if (!data?.ok) throw new Error(data?.motivo ?? "Não foi possível enviar o teste.");
       return data as { final: string };
     },
-    onSuccess: (d) => toast.success(`Teste enviado para o final ${d.final}. Confira no WhatsApp.`),
+    onSuccess: (d) => toast.success(`Conversa de teste reiniciada e mensagem enviada para o final ${d.final}. Confira no WhatsApp.`),
     onError: (e: Error) => toast.error(e.message),
   });
 
