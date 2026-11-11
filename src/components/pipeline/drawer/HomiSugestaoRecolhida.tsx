@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { HomiIcon } from "@/components/brand/HomiAvatar";
 
 interface Props {
   leadId: string;
@@ -80,19 +83,8 @@ async function montarHistorico(leadId: string): Promise<string> {
   return linhas.join("\n");
 }
 
-function HomiMini({ className }: { className?: string }) {
-  // Se o projeto já tiver o avatar do Homi como componente, troque por ele.
-  return (
-    <svg viewBox="0 0 28 28" className={className} role="img" aria-label="Homi">
-      <path d="M14 2.5 25.5 11v13.5a1.5 1.5 0 0 1-1.5 1.5H4a1.5 1.5 0 0 1-1.5-1.5V11Z" className="fill-primary stroke-primary" strokeWidth={1} strokeLinejoin="round" />
-      <rect x="6.5" y="12.5" width="15" height="9.5" rx="3" fill="#0F172A" />
-      <circle cx="11.2" cy="17.2" r="1.7" className="fill-homi-cyan" />
-      <circle cx="16.8" cy="17.2" r="1.7" className="fill-homi-cyan" />
-    </svg>
-  );
-}
-
 export default function HomiSugestaoRecolhida(p: Props) {
+  const reduzirMovimento = useReducedMotion();
   const [aberto, setAberto] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [sugestao, setSugestao] = useState<Sugestao | null>(null);
@@ -170,13 +162,13 @@ export default function HomiSugestaoRecolhida(p: Props) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-homi-border bg-homi-soft">
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={alternar}
         aria-expanded={aberto}
-        className="flex w-full items-center gap-3 px-3 py-1.5 text-left h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="flex w-full justify-start items-center gap-2 px-3 py-1.5 text-left h-11 rounded-none hover:bg-homi-cyan/10 focus-visible:ring-primary focus-visible:ring-inset"
       >
-        <HomiMini className="h-6 w-6 shrink-0" />
+        <span className="h-6 w-6 shrink-0"><HomiIcon size={24} /></span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-[13px] font-bold leading-5 text-homi-text whitespace-nowrap">Sugestão do Homi</span>
         </span>
@@ -184,22 +176,24 @@ export default function HomiSugestaoRecolhida(p: Props) {
           {aberto ? "Recolher" : "Ver"}
           <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", aberto && "rotate-180")} />
         </span>
-      </button>
+      </Button>
 
+      <AnimatePresence initial={false}>
       {aberto && (
+        <motion.div key="sugestao" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduzirMovimento ? 0 : 0.2 }} className="overflow-hidden">
         <div className="flex flex-col gap-3 px-4 pb-4 pt-0.5">
           {carregando && (
             <div className="flex items-center gap-2 py-3 text-[13px] text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin text-homi-text" /> Lendo o histórico do {p.leadNome.split(" ")[0]}…
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none text-homi-text" /> Lendo o histórico do {p.leadNome.split(" ")[0]}…
             </div>
           )}
 
           {erro && !carregando && (
             <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2.5">
               <span className="text-[13px] text-muted-foreground">Não consegui gerar a sugestão agora.</span>
-              <button type="button" onClick={() => void gerar()} className="inline-flex items-center gap-1 text-[13px] font-semibold text-homi-text hover:underline">
+              <Button variant="link" onClick={() => void gerar()} className="h-auto p-0 gap-1 text-[13px] font-semibold text-homi-text">
                 <RefreshCw className="h-3.5 w-3.5" /> Tentar de novo
-              </button>
+              </Button>
             </div>
           )}
 
@@ -215,13 +209,13 @@ export default function HomiSugestaoRecolhida(p: Props) {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {p.leadTelefone && (
-                      <button type="button" onClick={abrirWhatsApp} className="inline-flex h-9 items-center gap-2 rounded-md border border-homi-border bg-card px-3.5 text-[13px] font-semibold text-foreground hover:bg-muted/50">
+                      <Button variant="outline" onClick={abrirWhatsApp} className="h-9 gap-2 border-homi-border bg-card px-3.5 text-[13px]">
                         <MessageCircle className="h-4 w-4" /> Abrir no WhatsApp
-                      </button>
+                      </Button>
                     )}
-                    <button type="button" onClick={copiar} className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-[13px] font-semibold text-homi-text hover:bg-card/60">
+                    <Button variant="ghost" onClick={copiar} className="h-9 gap-2 px-3 text-[13px] text-homi-text hover:bg-card/60">
                       <Copy className="h-4 w-4" /> Copiar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -229,12 +223,14 @@ export default function HomiSugestaoRecolhida(p: Props) {
           )}
 
           {p.onAbrirHomi && !carregando && (
-            <button type="button" onClick={p.onAbrirHomi} className="self-start text-[13px] font-semibold text-homi-text hover:underline">
+            <Button variant="link" onClick={p.onAbrirHomi} className="self-start h-auto p-0 text-[13px] font-semibold text-homi-text">
               Abrir o Homi completo
-            </button>
+            </Button>
           )}
         </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

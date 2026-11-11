@@ -63,7 +63,7 @@ export function montarCaminho(historico: HistoricoEtapa[], stages: Etapa[], crea
     if (m.stage_anterior_id && ultimo && ultimo.stageId !== m.stage_anterior_id) {
       base.push({ stageId: m.stage_anterior_id, data: null, deId: ultimo.stageId });
     }
-    base.push({ stageId: m.stage_novo_id!, data: m.created_at, deId: m.stage_anterior_id });
+    if (m.stage_novo_id) base.push({ stageId: m.stage_novo_id, data: m.created_at, deId: m.stage_anterior_id });
   }
 
   // Remove ida (i) + volta (i+1) quando volta para a etapa de antes no mesmo dia.
@@ -125,6 +125,7 @@ export function UltimoMovimento({ historico, stages, createdAt, currentStageId, 
   const tipoDe = (id: string) => (stages.find((s) => s.id === id) as { tipo?: string } | undefined)?.tipo;
   const ult = passos[passos.length - 1];
   const Icone = semRegistro ? ArrowRight : ult.voltou ? Undo2 : ArrowRight;
+  const rotuloFinal = FINAL_LABEL[tipoDe(ult.stageId) ?? ""];
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -137,8 +138,8 @@ export function UltimoMovimento({ historico, stages, createdAt, currentStageId, 
           aria-label="Ver caminho do lead"
         >
           <Icone className="h-3.5 w-3.5 shrink-0" />
-          {FINAL_LABEL[tipoDe(ult.stageId) ?? ""] && ult.data ? (
-            <span className="min-w-0 truncate pr-px">{FINAL_LABEL[tipoDe(ult.stageId)!]} em {diaMesBRT(ult.data)}</span>
+          {rotuloFinal && ult.data ? (
+            <span className="min-w-0 truncate pr-px">{rotuloFinal} em {diaMesBRT(ult.data)}</span>
           ) : semRegistro ? (
             <>
               <span className="min-w-0 truncate pr-px">Em {nomeDe(ult.stageId)}</span>
@@ -153,7 +154,7 @@ export function UltimoMovimento({ historico, stages, createdAt, currentStageId, 
           <ChevronDown className="h-3 w-3 shrink-0 opacity-70" />
         </button>
       </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" className="w-[calc(100vw-2rem)] sm:w-72 p-1.5">
+      <PopoverContent side="bottom" align="start" className="lead-path-popover w-[calc(100vw-2rem)] sm:w-72 p-1.5">
         <p className="px-2.5 pt-1 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Caminho do lead</p>
         <CaminhoLista passos={passos} nomeDe={nomeDe} />
       </PopoverContent>
