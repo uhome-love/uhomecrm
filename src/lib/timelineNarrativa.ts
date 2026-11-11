@@ -2,7 +2,7 @@
 // Funções puras: não leem nem gravam nada no banco.
 
 import {
-  ArrowRightLeft, Briefcase, Circle, Mail, MapPin, MessageCircle, Phone, Repeat, StickyNote, Target, Undo2,
+  ArrowRightLeft, Briefcase, CalendarDays, Circle, TrendingDown, Trophy, XCircle, Mail, MapPin, MessageCircle, Phone, Repeat, StickyNote, Target, Undo2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -64,17 +64,77 @@ export function buracosSemRegistro<T extends { date: string }>(itensMaisRecentes
   return buracos;
 }
 
-/** Ícone de traço para cada tipo de marco (substitui os emojis da Narrativa). */
-export function iconeDoMarco(item: { title?: string | null; sourceType?: string | null }, direcao?: DirecaoEtapa): LucideIcon {
+export type TomMarco = "azul" | "verde" | "laranja" | "vermelho" | "cinza";
+export interface EstiloMarco { icone: LucideIcon; emoji?: string; tom: TomMarco; marco: boolean; ganho?: boolean }
+
+/** Ícone, cor e peso de cada item. Só os marcos da história ganham cor; emoji só em 🎯 📅 📍 🏆 ❌. */
+export function iconeDoMarco(
+  item: { title?: string | null; sourceType?: string | null },
+  direcao?: DirecaoEtapa,
+  tipoEtapaNova?: string | null,
+): EstiloMarco {
   const t = (item.title ?? "").toLowerCase();
-  if (item.sourceType === "anotacao" || /nota|anota/.test(t)) return StickyNote;
-  if (item.sourceType === "historico") return direcao === "voltou" ? Undo2 : ArrowRightLeft;
-  if (/gerado|entrou|lead entrou|entrada/.test(t)) return Target;
-  if (/ligaç|liga[rç]|telefon|atendeu/.test(t)) return Phone;
-  if (/whats|mensagem/.test(t)) return MessageCircle;
-  if (/e-mail|email/.test(t)) return Mail;
-  if (/visita|tour|comparec/.test(t)) return MapPin;
-  if (/proposta|neg[óo]cio|contrato|venda|ganho/.test(t)) return Briefcase;
-  if (/follow|cad[êe]ncia/.test(t)) return Repeat;
-  return Circle;
+  if (item.sourceType === "historico" && direcao) {
+    if (tipoEtapaNova === "venda") return { icone: Trophy, emoji: "🏆", tom: "verde", marco: true, ganho: true };
+    if (tipoEtapaNova === "descarte") return { icone: XCircle, emoji: "❌", tom: "vermelho", marco: true };
+    if (tipoEtapaNova === "caiu") return { icone: TrendingDown, tom: "vermelho", marco: true };
+    if (direcao === "voltou") return { icone: Undo2, tom: "laranja", marco: true };
+    if (direcao === "avancou") return { icone: ArrowRightLeft, tom: "azul", marco: true };
+  }
+  const rotina = (icone: LucideIcon): EstiloMarco => ({ icone, tom: "cinza", marco: false });
+  if (item.sourceType === "anotacao" || /\bnota\b|anota/.test(t)) return rotina(StickyNote);
+  if (item.sourceType === "historico") return rotina(Repeat);
+  if (/lead entrou|^entrou|entrada/.test(t)) return { icone: Target, emoji: "🎯", tom: "azul", marco: true };
+  if (/no.?show|n[ãa]o compareceu/.test(t)) return { icone: MapPin, tom: "laranja", marco: true };
+  if (/^visita (agendada|marcada)/.test(t.replace(/^[^\p{L}]+/u, ""))) return { icone: CalendarDays, emoji: "📅", tom: "azul", marco: true };
+  if (/visita/.test(t) && /realizad|resultado/.test(t)) return { icone: MapPin, emoji: "📍", tom: "verde", marco: true };
+  if (/ligaç|liga[rç]|telefon|atendeu/.test(t)) return rotina(Phone);
+  if (/whats|mensagem/.test(t)) return rotina(MessageCircle);
+  if (/e-mail|email/.test(t)) return rotina(Mail);
+  if (/visita|tour|comparec/.test(t)) return rotina(MapPin);
+  if (/proposta|neg[óo]cio|contrato|venda|ganho|documenta/.test(t)) return rotina(Briefcase);
+  if (/follow|cad[êe]ncia/.test(t)) return rotina(Repeat);
+  return rotina(Circle);
+}
+
+/** Classes do círculo por tom (tokens do tema). */
+export const CLASSE_TOM: Record<TomMarco, string> = {
+  azul: "bg-primary/10 text-primary",
+  verde: "bg-success-500/15 text-success-700 dark:text-success-500",
+  laranja: "bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  vermelho: "bg-danger-500/10 text-danger-700 dark:text-danger-500",
+  cinza: "bg-muted text-muted-foreground",
+};
+
+/** 1100000 → "R$ 1,1 mi"; 735000 → "R$ 735 mil". */
+export function valorCurto(v: number): string {
+  if (!Number.isFinite(v) || v <= 0) return "";
+  if (v >= 1_000_000) return `R$ ${(Math.round(v / 100_000) / 10).toLocaleString("pt-BR")} mi`;
+  if (v >= 1_000) return `R$ ${Math.round(v / 1_000).toLocaleString("pt-BR")} mil`;
+  return `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
+}
+
+const ACENTOS: Record<string, string> = { confeccao: "confecção", negociacao: "negociação", aprovacao: "aprovação", analise: "análise", assinatura: "assinatura", documentacao: "documentação", nao: "não", sim: "sim" };
+const maiuscula = (x: string) => (x ? x.charAt(0).toUpperCase() + x.slice(1) : x);
+
+/** "em_confeccao" → "Em confecção"; "EM vistoria" → "Em vistoria"; "gerado" → "Gerado". */
+export function codigoLegivel(c: string): string {
+  const palavras = c.trim().replace(/_/g, " ").replace(/\s+/g, " ").toLowerCase().split(" ").map((w) => ACENTOS[w] ?? w);
+  return maiuscula(palavras.join(" "));
+}
+
+/** "casa_3_dorms_-_130m2" → "Casa 3 dorms · 130 m²". */
+export function respostaFormLegivel(r: string): string {
+  const partes = r.split(/_-_|\s-\s/).map((p) => codigoLegivel(p).replace(/(\d+)\s?m2\b/gi, "$1 m²"));
+  return maiuscula(partes.map((p) => p.charAt(0).toLowerCase() + p.slice(1)).join(" · "));
+}
+
+/** Texto de exibição: valores em R$, códigos legíveis e sem "Avulso · Unidade: avulso" repetido. */
+export function descricaoLegivel(d: string): string {
+  let s = d.replace(/Valor:\s*(\d{4,})(?:[.,]\d+)?/g, (_, n) => `Valor: ${valorCurto(Number(n))}`);
+  s = s.replace(/([^·•\n]+?)\s*·\s*Unidade:\s*([^·•\n]+)/g, (m, prod, uni) => (prod.trim().toLowerCase() === uni.trim().toLowerCase() ? prod.trim() : m));
+  s = s.replace(/(Situação|Status):\s*([a-zà-ú_]+)/gi, (_, k, v) => `${k}: ${codigoLegivel(v)}`);
+  s = s.replace(/\b([A-Za-zÀ-ú0-9]+(?:_-?_?[A-Za-zÀ-ú0-9]+)+)\b/g, (m) => respostaFormLegivel(m));
+  s = s.replace(/\b([A-Z]{2,})\s+([a-zà-ú]+)/g, (m, a, b) => (a.length <= 3 ? `${maiuscula(a.toLowerCase())} ${b}` : m));
+  return s;
 }
