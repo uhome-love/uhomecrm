@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { abertura, CENARIOS, conferir, contextoRecuperacao, type Msg } from "../_shared/liaLaboratorio.ts";
+import { liaInternoHeaders } from "../_shared/liaInternoHeaders.ts";
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -35,7 +36,7 @@ Deno.serve(async (req) => {
       const { data: produto, error } = await admin.from("lia_produtos").select("slug,nome_publico,nome,ficha,updated_at").eq("slug",slug).eq("ativo",true).maybeSingle();
       if (error || !produto?.ficha) return json({ error: "Ficha do produto indisponível" }, 400);
       const r = await fetch(`${url}/functions/v1/lia-chat`, {
-        method:"POST", headers:{ "x-lia-cron-secret": Deno.env.get("LIA_CRON_SECRET") ?? "", Authorization:`Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`, apikey:anon,"Content-Type":"application/json" },
+        method:"POST", headers: liaInternoHeaders(),
         body:JSON.stringify({ mode:"reengajar", messages:[{ role:"user",content:contexto }], ficha:produto.ficha }),
       });
       if (!r.ok) return json({ error:"Não foi possível gerar a simulação" },502);
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
       const messages = conversa.map((m) => ({ role: m.de === "lia" ? "assistant" : "user", content: m.texto }));
       const rl = await fetch(`${url}/functions/v1/lia-chat`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`, apikey: anon, "Content-Type": "application/json" },
+        headers: liaInternoHeaders(),
         body: JSON.stringify({ messages, ficha: fichaRecupera, nome: cenario.nomeCliente }),
       });
       if (!rl.ok) return json({ error: `Cérebro da Lia falhou (${rl.status})` }, 502);
