@@ -228,8 +228,9 @@ const CardMinimal = memo(function CardMinimal({
         created_at: lead.created_at,
         stage_tipo: stage?.tipo,
         estagnacao_carencia_ate: lead.estagnacao_carencia_ate,
+        tem_acao_futura: lead.tem_acao_futura,
       }),
-    [lead.ultimo_toque_at, lead.distribuido_em, lead.aceito_em, lead.created_at, stage?.tipo, lead.estagnacao_carencia_ate]
+    [lead.tem_acao_futura, lead.ultimo_toque_at, lead.distribuido_em, lead.aceito_em, lead.created_at, stage?.tipo, lead.estagnacao_carencia_ate]
   );
 
   // "última atividade · há Xd" — vocabulário universal (atividade, não toque).

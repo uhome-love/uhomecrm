@@ -419,7 +419,7 @@ export default function PipelineKanban() {
             aceito_em: l.aceito_em,
             created_at: l.created_at,
             stage_tipo: stageMap.get(l.stage_id),
-            estagnacao_carencia_ate: l.estagnacao_carencia_ate,
+            estagnacao_carencia_ate: l.estagnacao_carencia_ate, tem_acao_futura: l.tem_acao_futura,
           }) !== "estagnado"
       );
     }
@@ -435,7 +435,7 @@ export default function PipelineKanban() {
     }
     if (clientStatusFilter !== "todos") {
       result = result.filter((l) => {
-        const saude = leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: stageMap.get(l.stage_id), estagnacao_carencia_ate: l.estagnacao_carencia_ate });
+        const saude = leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: stageMap.get(l.stage_id), estagnacao_carencia_ate: l.estagnacao_carencia_ate, tem_acao_futura: l.tem_acao_futura });
         switch (clientStatusFilter) {
           case "estagnado": return saude === "estagnado";
           case "tarefa_atrasada": return saude === "vermelho"; // chip "desatualizado" (exclui estagnado)
@@ -538,7 +538,7 @@ export default function PipelineKanban() {
     if (pipeline.stages.length === 0) return counts;
     for (const l of preFilteredLeads) {
       const tipo = stageTypeById[l.stage_id];
-      const saude = leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo, estagnacao_carencia_ate: l.estagnacao_carencia_ate });
+      const saude = leadSaude({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at, stage_tipo: tipo, estagnacao_carencia_ate: l.estagnacao_carencia_ate, tem_acao_futura: l.tem_acao_futura });
       if (saude === "estagnado") { counts.estagnado++; continue; }
       if (saude === "terminal") continue; // ganho/descarte não entram na régua de saúde
       const s = leadSaudeClientStatus(l, kanbanTarefasMap[l.id] || null, tipo);
