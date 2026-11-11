@@ -114,7 +114,7 @@ export function valorCurto(v: number): string {
   return `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
 }
 
-const ACENTOS: Record<string, string> = { confeccao: "confecção", negociacao: "negociação", aprovacao: "aprovação", analise: "análise", assinatura: "assinatura", documentacao: "documentação", nao: "não", sim: "sim" };
+const ACENTOS: Record<string, string> = { confeccao: "confecção", negociacao: "negociação", aprovacao: "aprovação", analise: "análise", assinatura: "assinatura", documentacao: "documentação", nao: "não", sim: "sim", bancario: "bancário" };
 const maiuscula = (x: string) => (x ? x.charAt(0).toUpperCase() + x.slice(1) : x);
 
 /** "em_confeccao" → "Em confecção"; "EM vistoria" → "Em vistoria"; "gerado" → "Gerado". */
@@ -131,7 +131,7 @@ export function respostaFormLegivel(r: string): string {
 
 /** Texto de exibição: valores em R$, códigos legíveis e sem "Avulso · Unidade: avulso" repetido. */
 export function descricaoLegivel(d: string): string {
-  let s = d.replace(/Valor:\s*(\d{4,})(?:[.,]\d+)?/g, (_, n) => `Valor: ${valorCurto(Number(n))}`);
+  let s = d.replace(/r\$_/gi, "R$ ").replace(/(\d)_a_/g, "$1 a ").replace(/Valor:\s*(\d{4,})(?:[.,]\d+)?/g, (_, n) => `Valor: ${valorCurto(Number(n))}`);
   s = s.replace(/([^·•\n]+?)\s*·\s*Unidade:\s*([^·•\n]+)/g, (m, prod, uni) => (prod.trim().toLowerCase() === uni.trim().toLowerCase() ? `${prod.trim()} ` : m));
   s = s.replace(/(Situação|Status):\s*([a-zà-ú_]+)/gi, (_, k, v) => `${k}: ${codigoLegivel(v)}`);
   s = s.replace(/\b([A-Za-zÀ-ú0-9]+(?:_-?_?[A-Za-zÀ-ú0-9]+)+)\b/g, (m) => respostaFormLegivel(m));

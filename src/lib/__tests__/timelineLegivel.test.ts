@@ -17,3 +17,4 @@ describe("texto legível da linha do tempo", () => {
     expect(iconeDoMarco({ title: "Visita agendada" }).emoji).toBe("📅");
   });
 });
+describe("faixa de renda", () => { it("tira _ de r$", () => { expect(descricaoLegivel("De r$_8.001 a r$_12.000")).toBe("De R$ 8.001 a R$ 12.000"); }); });
