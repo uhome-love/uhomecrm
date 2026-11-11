@@ -118,10 +118,10 @@ export default function DrawerAgora({
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Próximo passo</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground whitespace-nowrap">Próximo passo</p>
         {temSaude && (
           <span title={`Prazo da etapa: ${saude!.prazo} ${saude!.prazo === 1 ? "dia" : "dias"}`} className={cn(
-            "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold",
+            "inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[12px] font-semibold",
             saude!.critico ? "bg-danger-500/10 text-danger-700 dark:text-danger-500" : "bg-warning-500/15 text-warning-700 dark:text-warning-500",
           )}>
             <span className={cn("h-1.5 w-1.5 rounded-full", saude!.critico ? "bg-danger-500" : "bg-warning-500")} />
@@ -157,7 +157,7 @@ export default function DrawerAgora({
             <div className="min-w-0 flex-1">
               <p className="text-[14px] font-semibold leading-snug text-foreground">{tituloTarefa}</p>
               {tarefaQuando && (
-                <p className={cn("text-[12px]", atrasada ? "font-semibold text-danger-700 dark:text-danger-500" : "text-muted-foreground")}>{tarefaQuando}</p>
+                <p className={cn("text-[12px] whitespace-nowrap", atrasada ? "font-semibold text-danger-700 dark:text-danger-500" : "text-muted-foreground")}>{tarefaQuando}</p>
               )}
               {tarefaDeEtapaAnterior && (
                 <p className="mt-1 text-[12px] leading-[18px] text-muted-foreground">

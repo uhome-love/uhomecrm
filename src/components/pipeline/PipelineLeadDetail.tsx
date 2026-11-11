@@ -902,7 +902,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   return (
 
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent onOpenAutoFocus={(e) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-lead-titulo]")?.focus({ preventScroll: true }); }} className="inset-y-0 right-0 h-full w-full max-w-none md:w-[70vw] md:max-w-[2000px] p-0 gap-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+      <SheetContent onOpenAutoFocus={(e) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-lead-titulo]")?.focus({ preventScroll: true }); }} className="inset-y-0 right-0 h-full w-full max-w-none md:w-full min-[1100px]:w-[70vw] md:max-w-[2000px] p-0 gap-0 pt-[env(safe-area-inset-top)] md:pt-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
             <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
