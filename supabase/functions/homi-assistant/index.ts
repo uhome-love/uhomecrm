@@ -12,21 +12,49 @@ import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materia
 import { requireRealUser } from "../_shared/ai-auth.ts";
 import { HOMI_CHAT_MODEL } from "../_shared/homi-brain.ts";
 
+let instanciaFria = true;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const fria = instanciaFria;
+  instanciaFria = false;
+  const t0 = performance.now();
+  const tempos: Record<string, number> = {};
+  const marca = (k: string, desde: number) => { tempos[k] = Math.round(performance.now() - desde); };
   try {
     // ── Auth: usuário real obrigatório (anon key rejeitada) ──
     const _auth = await requireRealUser(req, {});
+    marca("auth_ms", t0);
     if (_auth.error) return _auth.error;
 
     const { acao, empreendimento, situacao, mensagem_cliente, objetivo, role, lead_context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // ── Materiais em paralelo com o conhecimento, limitado a 1,5 s ──
+    let materiaisEsgotado = false;
+    const tMat = performance.now();
+    const materiaisPromise: Promise<any[]> = acao === "sugestao_ficha" ? Promise.resolve([]) : (async () => {
+      let timer: number | undefined;
+      const limite = new Promise<any[]>((resolve) => {
+        timer = setTimeout(() => { materiaisEsgotado = true; resolve([]); }, 1500);
+      });
+      const busca = searchMateriaisForHomi(
+        [empreendimento, objetivo, mensagem_cliente, situacao].filter(Boolean).join(" | "),
+        { limit: 4, empreendimentoNome: empreendimento,
+          usageContext: {funcao:"homi-assistant:materiais",userId:_auth.userId,leadId:null,versaoPrompt:"materiais-2026-11-06"} },
+      ).catch((e) => { console.error("materiais context skipped:", e); return []; });
+      try { return await Promise.race([busca, limite]); }
+      finally { clearTimeout(timer); marca("materiais_ms", tMat); }
+    })();
+
     // ── Load enterprise knowledge from DB (cached 5min) ──
+    const tCon = performance.now();
     const supabase = createServiceClient();
     const knowledge = await loadEnterpriseKnowledge(supabase);
+    marca("conhecimento_ms", tCon);
+    const tPrompt = performance.now();
     const infoEmpreendimento = formatForAssistant(knowledge, empreendimento || "");
 
     const isGerente = role === "gerente";
@@ -258,11 +286,6 @@ O cliente deve perceber: "Posso sair do aluguel sem me apertar"
 • Fechamento: "A maioria das pessoas se surpreende quando vê o que consegue por essa parcela"
 
 🔥 FRASE DE CONVERSÃO: "Esse aqui é porta de entrada"
-
-🔷 MELNICK DAY (EVENTO):
-• Perfil: Urgência, condições exclusivas
-• Abordagem: Escassez, evento especial
-• Mensagem: "Evento com condições que não se repetem"
 
 🧠 LÓGICA DE DIRECIONAMENTO POR PERFIL:
 • Cliente fala "morar melhor" / "espaço" / "família" → Orygem ou Las Casas
@@ -822,26 +845,20 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     // Append full lead context to prompt for v2 contextual responses
     userPrompt += leadCtx;
 
-    // ── HOMI ↔ Materiais: buscar materiais relevantes e injetar no system prompt ──
-    let materiaisSuggestions: any[] = [];
-    if (acao !== "sugestao_ficha") try {
-      const searchQuery = [empreendimento, objetivo, mensagem_cliente, situacao]
-        .filter(Boolean).join(" | ");
-      materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
-        limit: 4,
-        empreendimentoNome: empreendimento,
-          usageContext: {funcao:"homi-assistant:materiais",userId:_auth.userId,leadId:null,versaoPrompt:"materiais-2026-11-06"},
-      });
-      const block = formatMateriaisBlock(materiaisSuggestions);
-      if (block) systemPrompt += block;
-    } catch (e) {
-      console.error("materiais context skipped:", e);
-    }
+    marca("prompt_ms", tPrompt);
+    // ── HOMI ↔ Materiais: resultado da busca paralela (vazio se passou de 1,5 s) ──
+    const materiaisSuggestions: any[] = await materiaisPromise;
+    if (materiaisEsgotado) console.warn("[homi-assistant] materiais: tempo esgotado (1,5 s)", { acao });
+    const block = formatMateriaisBlock(materiaisSuggestions);
+    if (block) systemPrompt += block;
+
+    const raciocinioMinimo = acao === "sugestao_ficha" || whatsappActions.includes(acao) || objecaoActions.includes(acao);
+    const tModelo = performance.now();
 
     const response = await homiGateway({
         model: HOMI_CHAT_MODEL,
         max_tokens: acao === "sugestao_ficha" ? 1000 : 2000,
-        reasoning_effort: acao === "sugestao_ficha" ? "minimal" : "low",
+        reasoning_effort: raciocinioMinimo ? "minimal" : "low",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -857,6 +874,9 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     }
 
     const result = await response.json();
+    marca("modelo_ms", tModelo);
+    marca("total_ms", t0);
+    console.log("[homi-assistant] tempos", JSON.stringify({ acao, fria, materiais_esgotado: materiaisEsgotado, ...tempos }));
     const finishReason = result.choices?.[0]?.finish_reason;
     if (finishReason === "length") console.warn("[homi-assistant] resposta cortada por limite (finish_reason=length)", { acao });
     const content = result.choices?.[0]?.message?.content || "Sem resposta.";
