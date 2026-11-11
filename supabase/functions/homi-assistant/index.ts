@@ -10,6 +10,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { loadEnterpriseKnowledge, formatForAssistant, createServiceClient } from "../_shared/enterprise-knowledge.ts";
 import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
 import { requireRealUser } from "../_shared/ai-auth.ts";
+import { HOMI_CHAT_MODEL } from "../_shared/homi-brain.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -121,13 +122,6 @@ O cliente deve perceber: "Não estou comprando terreno — estou comprando um je
 • Condução visita: "Esse tipo de projeto só faz sentido quando tu vê o bairro funcionando"
 • Fechamento visita: "Esse aqui costuma virar chave quando a pessoa pisa lá dentro"
 
-📊 DADOS REAIS DE PERFORMANCE (CRM):
-• Total de leads: 131
-• Taxa lead→visita: 10.7%
-• Conversão pós-visita: 29%
-• No-show: 54% (CRÍTICO — maior taxa de todos os produtos)
-• INSIGHT: SEMPRE confirmar visita na véspera E no dia. Criar urgência pré-visita. Enviar conteúdo emocional antes da visita pra manter engajamento.
-
 🧠 GATILHOS MENTAIS PRIORITÁRIOS:
 • Segurança (família) → "Monitoramento 24h, controle de acesso"
 • Espaço (liberdade) → "Sair do apertado, ter quintal, praça"
@@ -170,10 +164,6 @@ O cliente deve perceber: "Isso é uma decisão inteligente de investimento, não
 • Condução visita: "Se tu ver o projeto e a localização, fica muito claro o potencial"
 • Fechamento: "Esse tipo de produto faz mais sentido quando tu entende o todo, não só a unidade"
 
-📊 DADOS REAIS DE PERFORMANCE (CRM):
-• Dados ainda em coleta — produto mais recente
-• INSIGHT: Focar em leads qualificados com perfil investidor. Usar dados de rentabilidade da região como argumento.
-
 🔥 FRASE DE CONVERSÃO: "Esse é investimento inteligente"
 
 🔷 SHIFT (INVESTIMENTO URBANO - ESTILO DE VIDA + LIQUIDEZ):
@@ -206,11 +196,6 @@ NÃO é apartamento comum. É produto híbrido de estilo de vida urbano.
 • Condução visita: "Vale ver porque a proposta dele muda bastante a percepção"
 • Fechamento: "Esse aqui é muito usado por quem quer começar a investir sem dar um passo muito grande"
 
-📊 DADOS REAIS DE PERFORMANCE (CRM):
-• Total de leads: 81
-• No-show: 0% (leads mais qualificados de todos os produtos)
-• INSIGHT: Leads do Shift são altamente qualificados. Foco é conduzir direto para proposta após visita. Não perder tempo com qualificação excessiva.
-
 🔥 FRASE DE CONVERSÃO: "Esse aqui é muito mais estilo de vida urbano"
 
 🔷 ORYGEM (MÉDIO PADRÃO - VIDA + STATUS + LOCALIZAÇÃO):
@@ -240,13 +225,6 @@ O cliente deve perceber: "Esse já é outro nível de produto"
 • Argumentos: Padrão construtivo superior, diferenciação real, valorização consistente
 • Condução visita: "Esse tipo de produto só faz sentido quando tu vê pessoalmente"
 • Fechamento: "Esse aqui é o tipo de imóvel que quando a pessoa visita, começa a comparar diferente"
-
-📊 DADOS REAIS DE PERFORMANCE (CRM):
-• Total de leads: 170
-• Taxa lead→visita: 7.1%
-• Conversão pós-visita: 56%
-• No-show: 29%
-• INSIGHT: Funil saudável. Foco é QUALIFICAÇÃO antes da visita — lead que chega qualificado converte bem. Investir em pré-visita consultiva.
 
 🔥 FRASE DE CONVERSÃO: "Esse já é outro nível de produto"
 
@@ -279,13 +257,6 @@ O cliente deve perceber: "Posso sair do aluguel sem me apertar"
 • Condução visita: "Vale ver porque o custo-benefício dele é bem forte"
 • Fechamento: "A maioria das pessoas se surpreende quando vê o que consegue por essa parcela"
 
-📊 DADOS REAIS DE PERFORMANCE (CRM):
-• Total de leads: 492 (maior volume)
-• Taxa lead→visita: 9.3%
-• Conversão pós-visita: 80% (MELHOR taxa de todos os produtos!)
-• No-show: 20%
-• INSIGHT: Produto de VOLUME. O foco é GERAR VISITA — quem visita, compra. Fazer conta aluguel vs parcela. Não perder tempo qualificando demais, levar pra conhecer.
-
 🔥 FRASE DE CONVERSÃO: "Esse aqui é porta de entrada"
 
 🔷 MELNICK DAY (EVENTO):
@@ -298,21 +269,6 @@ O cliente deve perceber: "Posso sair do aluguel sem me apertar"
 • Cliente fala "investir" / "renda" / "valorização" → Shift ou Connect JW
 • Cliente fala "parcela" / "aluguel" / "primeiro imóvel" → Open Bosque
 • REGRA FINAL: Cada produto DEVE ser vendido de forma DIFERENTE. Erro = tratar todos iguais.
-
-📊 COMPARATIVO DE PERFORMANCE (DADOS REAIS DO CRM):
-| Produto       | Leads | Lead→Visita | Visita→Conversão | No-show |
-| Open Bosque   | 492   | 9.3%        | 80%              | 20%     |
-| Las Casas     | 131   | 10.7%       | 29%              | 54%     |
-| Orygem        | 170   | 7.1%        | 56%              | 29%     |
-| Shift         | 81    | -           | -                | 0%      |
-| Connect JW    | -     | -           | -                | -       |
-
-🧠 REGRAS DE DECISÃO BASEADAS EM DADOS:
-• Open Bosque converte 80% das visitas → produto de VOLUME, foco total em GERAR VISITA
-• Las Casas tem 54% de no-show → investir PESADO em confirmação e urgência pré-visita
-• Orygem tem funil saudável (56% conversão) → foco é QUALIFICAÇÃO antes da visita
-• Shift tem 0% no-show → leads mais qualificados, foco é CONDUZIR PARA PROPOSTA
-• PRIORIZAR produtos com melhor taxa de conversão quando lead não tem preferência clara
 
 ═══════════════════════════════════════
 PLAYBOOKS POR ORIGEM DO LEAD
@@ -407,17 +363,21 @@ SE NÃO FOI (no-show):
 
 O HOMI NÃO define um novo fluxo — se adapta às etapas já configuradas no pipeline do sistema.
 
-REFERÊNCIA DO FLUXO EXISTENTE:
-Novos → Sem Contato → Atendimento → Possibilidade de Visita → Visita Agendada → Visita Realizada → Proposta
+REFERÊNCIA DO FLUXO EXISTENTE (10 etapas do pipeline):
+Novo Lead → Sem Contato → Qualificação → Aquecimento → Visita → Pós-Visita → Documentação → Proposta → Contrato → Ganho
+Descarte é saída do fluxo (botão), não uma etapa para onde avançar.
 
 ORIENTAÇÃO POR ETAPA:
-• NOVOS: Primeiro contato em até 5 min. Gerar curiosidade.
+• NOVO LEAD: Primeiro contato em até 5 min. Gerar curiosidade.
 • SEM CONTATO: Tentar 3 canais diferentes (WhatsApp, ligação, SMS). Não desistir cedo.
-• ATENDIMENTO: ⚠️ ETAPA MAIS CRÍTICA — lead parado aqui é o ERRO MAIS COMUM. Aplicar Framework UHOME completo.
-• POSSIBILIDADE DE VISITA: Conduzir para data/hora específica. Nunca perguntar "quer visitar?", sempre "qual horário funciona?"
-• VISITA AGENDADA: Ativar fluxo anti no-show (D0→D-2→D-1→Dia)
-• VISITA REALIZADA: Follow-up MESMO DIA + conduzir para proposta
+• QUALIFICAÇÃO: ⚠️ ETAPA MAIS CRÍTICA — lead parado aqui é o ERRO MAIS COMUM. Aplicar Framework UHOME completo.
+• AQUECIMENTO: Conduzir para data/hora específica. Nunca perguntar "quer visitar?", sempre "qual horário funciona?"
+• VISITA: Ativar fluxo anti no-show (D0→D-2→D-1→Dia)
+• PÓS-VISITA: Follow-up MESMO DIA + conduzir para documentação/proposta
+• DOCUMENTAÇÃO: Reunir documentos rápido, tirar dúvidas de financiamento
 • PROPOSTA: Criar urgência, trabalhar objeções, fechar
+• CONTRATO: Acompanhar assinatura sem deixar esfriar
+• GANHO: Pós-venda e pedido de indicação
 
 REGRA: Sempre empurrar etapa. Lead parado = oportunidade perdida.
 
@@ -744,6 +704,21 @@ Obedeça o formato descrito no prompt à risca. Qualquer conteúdo extra será d
     const contextoCliente = mensagem_cliente ? `\n\nO CLIENTE DISSE/ESCREVEU: "${mensagem_cliente}"\n\nIMPORTANTE: Analise a frase do cliente, identifique o sentimento/objeção real por trás dela, e responda de forma estratégica.` : "";
 
     switch (acao) {
+      case "sugestao_ficha":
+        userPrompt = `SITUAÇÃO: O corretor abriu a ficha do lead e quer o próximo passo.
+
+Empreendimento: ${empreendimento}
+Situação do lead: ${situacao}
+
+Responda EXATAMENTE neste formato curto, sem outras seções:
+
+## Próximo passo
+(1 frase objetiva.)
+
+## 💬 Mensagem
+(Até 3 linhas curtas de WhatsApp, terminando com convite para visita oferecendo duas opções de dia.)`;
+        break;
+
       case "responder_whatsapp":
         userPrompt = `SITUAÇÃO: O corretor precisa responder um lead NO WHATSAPP agora.
 
@@ -840,7 +815,7 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
       userPrompt += "\n\n⚠️ FORMATO OBRIGATÓRIO: Use FORMATO LIGAÇÃO (apenas script Corretor/Cliente + dicas). NÃO inclua mensagens WhatsApp.";
     } else if (objecaoActions.includes(acao)) {
       userPrompt += "\n\n⚠️ FORMATO OBRIGATÓRIO: Use FORMATO OBJEÇÃO (análise + resposta sugerida + alternativa). NÃO inclua script de ligação.";
-    } else {
+    } else if (acao !== "sugestao_ficha") {
       userPrompt += "\n\n⚠️ FORMATO OBRIGATÓRIO: Use FORMATO COMPLETO.";
     }
 
@@ -849,7 +824,7 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
 
     // ── HOMI ↔ Materiais: buscar materiais relevantes e injetar no system prompt ──
     let materiaisSuggestions: any[] = [];
-    try {
+    if (acao !== "sugestao_ficha") try {
       const searchQuery = [empreendimento, objetivo, mensagem_cliente, situacao]
         .filter(Boolean).join(" | ");
       materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
@@ -864,12 +839,14 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     }
 
     const response = await homiGateway({
-        model: "google/gemini-2.5-flash",
+        model: HOMI_CHAT_MODEL,
+        max_tokens: acao === "sugestao_ficha" ? 1000 : 2000,
+        reasoning_effort: acao === "sugestao_ficha" ? "minimal" : "low",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-      }, { funcao: "homi-assistant", userId: _auth.userId, leadId: null, versaoPrompt: "homi-assistant-2026-11-06" }, false);
+      }, { funcao: "homi-assistant", userId: _auth.userId, leadId: null, versaoPrompt: acao === "sugestao_ficha" ? "homi-assistant-ficha-2026-11-11" : "homi-assistant-2026-11-11" }, false);
 
     if (!response.ok) {
       const t = await response.text();
@@ -880,6 +857,8 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     }
 
     const result = await response.json();
+    const finishReason = result.choices?.[0]?.finish_reason;
+    if (finishReason === "length") console.warn("[homi-assistant] resposta cortada por limite (finish_reason=length)", { acao });
     const content = result.choices?.[0]?.message?.content || "Sem resposta.";
 
     return new Response(JSON.stringify({ content, materiais: materiaisSuggestions }), {
