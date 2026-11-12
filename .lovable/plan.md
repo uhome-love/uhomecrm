@@ -38,3 +38,9 @@ Arquivo: Relatorio_Progresso_Trava_Roleta_v2.pdf. Antes de entregar, confiro tod
 ## Detalhes técnicos
 - Vendas: `v_negocios_pipeline`. Descartes: `pipeline_historico` → etapa tipo descarte. Tentativas: `pipeline_atividades` nos 7 dias depois da criação do lead. Tarefas: `pipeline_tarefas` criadas nos 7 primeiros dias. Datas em BRT.
 - Gerado com reportlab + matplotlib.
+
+## 8. Guia do corretor (com metas tiradas dos números)
+As metas exatas saem dos números reais dos 7 corretores com 10 visitas ou mais, que fizeram metade das vendas. Faço a conta na construção e mostro de onde vem cada meta.
+- **Para entrar na Roleta (quem está fora):** quantas ligações por dia na Oferta Ativa são necessárias para chegar a 2 visitas na semana (pela conversão real de ligação em visita), mais follow-up registrado nos leads da carteira e menos descartes. O CRM em dia precisa ficar em 80% ou mais.
+- **Para se manter (quem está dentro):** 2 visitas por semana com folga (meta de 3), CRM acima de 85%, tarefa e próxima ação em todo lead, confirmação da visita no dia anterior e descartar só depois de várias tentativas registradas.
+- **O corretor ideal:** a rotina semanal dos que mais venderam, com números para bater: visitas por semana, registros por lead nos primeiros 7 dias, tarefas concluídas, ligações e no máximo um certo percentual de descarte. Fecha com a conta "visitas → vendas" da Uhome hoje: cerca de 1 venda a cada 10 visitas.
