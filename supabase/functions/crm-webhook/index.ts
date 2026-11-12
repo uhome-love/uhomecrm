@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
 import { distributeLeadDirect } from '../_shared/roleta-distribution.ts'
+import { reactivateDiscardedToRoleta, DESCARTE_STAGE_ID } from '../_shared/reactivateDiscardedToRoleta.ts'
 
 const VALID_TIPOS = ['lead', 'agendamento', 'captacao', 'whatsapp_click'] as const
 const NOVO_LEAD_STAGE_ID = 'd3843b2f-2fa1-4c31-9129-4eb0ed21f019'
@@ -340,7 +341,28 @@ Deno.serve(async (req) => {
           ? `${existingLead.observacoes}\n${newObsLine}`
           : newObsLine
 
-        if (existingCorretorId) {
+        const estavaDescartado = existingLead.stage_id === DESCARTE_STAGE_ID || existingLead.arquivado === true
+        if (existingCorretorId && estavaDescartado) {
+          // Descartado/inativo que se cadastra de novo: volta como NOVO LEAD na Roleta
+          // (não volta para quem descartou). Histórico do site segue no mesmo lead.
+          await supabase.from('pipeline_leads').update({
+            dados_site: record, tipo_acao: tipo, origem: 'site_uhome',
+            origem_detalhe: origemDetalheLabel || origemComponente || `site_${tipo}`,
+            origem_ref: origemRef, imovel_codigo: imovelCodigo || undefined,
+            imovel_url: imovelUrl || undefined, observacoes: mergedObs,
+          }).eq('id', existingLead.id)
+          const reac = await reactivateDiscardedToRoleta(supabase, {
+            supabaseUrl: Deno.env.get('SUPABASE_URL')!,
+            serviceKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+            leadId: existingLead.id,
+            corretorAnteriorId: existingCorretorId,
+            origemLabel: 'Site',
+            interesseLabel: imovelTitulo || onde,
+          })
+          existingCorretorId = reac.corretor_id ?? null
+          await registrarHistoricoSite(existingLead.id, `🔄 Novo cadastro no Site (estava descartado) — ${onde}`, existingCorretorId)
+          console.log(`[crm-webhook] Descartado ${existingLead.id} voltou à Roleta, distribuído=${reac.distributed}`)
+        } else if (existingCorretorId) {
           // Lead already has an owner — DO NOT reassign, DO NOT move stage.
           // Append observation only; keep aceite_status, stage_id and corretor untouched.
           await supabase

@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AtividadeSite from "@/components/pipeline/drawer/AtividadeSite";
+import { useAtividadeSite } from "@/components/pipeline/drawer/useAtividadeSite";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -152,6 +154,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const nomesFicha = useProfileNames();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<string>(() => (isMobile ? "info" : "historico"));
+  const { data: eventosSite = [] } = useAtividadeSite(lead?.id);
   const abasRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const abas = abasRef.current;
@@ -1040,6 +1043,11 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
               <TabsTrigger value="dados" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                 <span className="md:hidden">Dados</span><span className="hidden md:inline">Dados do lead</span>
               </TabsTrigger>
+              {eventosSite.length > 0 && (
+                <TabsTrigger value="site" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                  <span className="md:hidden">Site</span><span className="hidden md:inline">Atividade no site</span>
+                </TabsTrigger>
+              )}
               {lead.negocio_id && (
                 <TabsTrigger value="negocio" className="text-[13.5px] font-medium h-11 px-1.5 flex-none min-w-0 rounded-none shrink-0 gap-1 border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                   Negócio
@@ -1115,6 +1123,9 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
 
             {/* ===== TAB: DADOS DO LEAD ===== */}
             <TabsContent value="dados" className="mt-0">{dadosNode}</TabsContent>
+            {eventosSite.length > 0 && (
+              <TabsContent value="site" className="mt-0"><AtividadeSite eventos={eventosSite} /></TabsContent>
+            )}
 
             {/* ===== TAB: VISITAS (v4 editorial) ===== */}
             <TabsContent value="visitas" className="mt-0">

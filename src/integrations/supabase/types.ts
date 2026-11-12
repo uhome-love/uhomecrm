@@ -17564,6 +17564,16 @@ export type Database = {
         Returns: Json
       }
       assert_acts_as: { Args: { p_corretor_id: string }; Returns: undefined }
+      atividade_site_lead: {
+        Args: { p_lead_id: string }
+        Returns: {
+          created_at: string
+          dados: Json
+          id: string
+          pagina: string
+          tipo: string
+        }[]
+      }
       atualizar_situacao_crm_base_leads: { Args: never; Returns: Json }
       auto_arquivar_descartes_24h: {
         Args: never

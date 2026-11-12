@@ -687,6 +687,13 @@
       "when": 1794515168444,
       "tag": "0097_corrigir_3_permissoes_abertas",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1794520871769,
+      "tag": "0098_atividade_site_lead",
+      "breakpoints": true
     }
   ]
 }
