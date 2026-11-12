@@ -17540,6 +17540,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      alterar_interesse_lead: {
+        Args: { p_canonico_id?: string; p_lead_id: string; p_nome: string }
+        Returns: string
+      }
       anexar_documentos_venda: {
         Args: {
           p_comprovante_path?: string
