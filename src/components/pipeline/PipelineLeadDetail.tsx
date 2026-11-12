@@ -154,6 +154,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const nomesFicha = useProfileNames();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<string>(() => (isMobile ? "info" : "historico"));
+  const { data: eventosSite = [] } = useAtividadeSite(lead?.id);
   const abasRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const abas = abasRef.current;
