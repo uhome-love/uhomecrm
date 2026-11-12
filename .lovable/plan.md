@@ -1,7 +1,8 @@
 # Atividade no site na ficha do lead
 
 ## O que o corretor vai ver
-- Nova aba **"Atividade no site"** na ficha do lead (computador e celular).
+- Nova aba **"Atividade no site"** na ficha do lead, que **só aparece quando o lead tem atividade no site**.
+- Layout limpo e organizado, com largura contida (sem esticar demais em telas grandes) e adaptado ao celular.
 - No topo, um resumo: imóveis mais vistos, bairros, buscas feitas e última visita.
 - Selo de temperatura do site: **Esquentando** quando voltou várias vezes, viu o mesmo imóvel mais de uma vez ou clicou no WhatsApp; senão **Navegando**.
 - Abaixo, linha do tempo com cada evento: viu imóvel, buscou na IA, clicou contato, enviou formulário e o histórico enviado pelo site.
