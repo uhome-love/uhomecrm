@@ -680,6 +680,13 @@
       "when": 1794487720493,
       "tag": "0096_alterar_interesse_lead",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1794515168444,
+      "tag": "0097_corrigir_3_permissoes_abertas",
+      "breakpoints": true
     }
   ]
 }
