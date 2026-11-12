@@ -3,7 +3,8 @@
 // Mantém 100% do comportamento original e adiciona:
 //   - Análise de padrão de comportamento do lead nas últimas 24h
 //   - Alerta urgente para o corretor quando lead está "quente"
-//   - Reativação automática de leads descartados que voltam ao site
+//   - Aviso 'Lead voltou ao site' para descartados/inativos (sem mudar etapa)
+//   - historico_site: resumo + linha do tempo guardados em site_events.dados
 //   - Atualização do lead_score em pipeline_leads
 // =============================================================================
 
@@ -121,28 +122,67 @@ async function verificarDescarte(
 }
 
 // ---------------------------------------------------------------------------
-// Reativa lead descartado movendo para stage de qualificação
+// Lead descartado/inativo voltou ao site: só AVISA (nunca muda etapa/corretor)
+// Destino: corretor responsável; sem corretor → admins (Fila do CEO).
+// 1 aviso por lead por dia (agrupamento_key).
 // ---------------------------------------------------------------------------
-async function reativarLead(
+async function avisarLeadVoltouAoSite(
   supabase: ReturnType<typeof createClient>,
-  pipelineLeadId: string
+  pipelineLeadId: string,
 ): Promise<void> {
-  const { data: stageQualificacao } = await supabase
-    .from('pipeline_stages')
-    .select('id')
-    .eq('tipo', 'busca')
-    .limit(1)
-    .single()
-
-  if (!stageQualificacao) return
-
-  await supabase
+  const { data: lead } = await supabase
     .from('pipeline_leads')
-    .update({
-      stage_id: stageQualificacao.id,
-      ultima_acao_at: new Date().toISOString(),
-    })
+    .select('id, nome, corretor_id, arquivado, pipeline_stages!pipeline_leads_stage_id_fkey(tipo)')
     .eq('id', pipelineLeadId)
+    .maybeSingle()
+  if (!lead) return
+  const tipoEtapa = (lead.pipeline_stages as { tipo?: string } | null)?.tipo
+  const inativo = lead.arquivado === true || tipoEtapa === 'descarte' || tipoEtapa === 'caiu'
+  if (!inativo) return
+
+  const desde = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()
+  const { data: evs } = await supabase
+    .from('site_events')
+    .select('dados')
+    .eq('pipeline_lead_id', pipelineLeadId)
+    .eq('tipo', 'visitou_imovel')
+    .gte('created_at', desde)
+    .limit(200)
+  const cont = new Map<string, number>()
+  for (const e of evs ?? []) {
+    const d = (e.dados ?? {}) as Record<string, unknown>
+    const t = String(d.imovel_titulo || d.imovel_codigo || '').trim()
+    if (t) cont.set(t, (cont.get(t) || 0) + 1)
+  }
+  const imoveis = [...cont.entries()].sort((x, y) => y[1] - x[1]).slice(0, 3).map(([t]) => t)
+
+  let destinos: string[] = []
+  if (lead.corretor_id) destinos = [lead.corretor_id]
+  else {
+    const { data: admins } = await supabase.from('user_roles').select('user_id').eq('role', 'admin')
+    destinos = (admins ?? []).map((r: { user_id: string }) => r.user_id)
+  }
+  const dia = new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10)
+  const nome = lead.nome || 'Cliente'
+  const mensagem = imoveis.length
+    ? `${nome} voltou ao site e viu: ${imoveis.join(', ')}.`
+    : `${nome} voltou ao site.`
+  for (const uid of destinos) {
+    const key = `lead_voltou_site_${pipelineLeadId}_${dia}`
+    const { data: ja } = await supabase.from('notifications').select('id')
+      .eq('user_id', uid).eq('agrupamento_key', key).limit(1)
+    if (ja && ja.length) continue
+    await supabase.from('notifications').insert({
+      user_id: uid,
+      tipo: 'lead',
+      categoria: 'lead_voltou_site',
+      titulo: `🌐 Lead voltou ao site: ${nome}`,
+      mensagem,
+      dados: { pipeline_lead_id: pipelineLeadId, lead_nome: nome, imoveis },
+      agrupamento_key: key,
+      lida: false,
+    }).then(({ error }) => { if (error) console.warn('[voltou-site] warn:', error.message) })
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -373,6 +413,13 @@ Deno.serve(async (req) => {
       })
     }
 
+    // ── Aviso "Lead voltou ao site" (descarte/inativo) — sem mudar etapa ──
+    const eventosComIdentidade = ['visitou_imovel', 'buscou_ia', 'clicou_contato', 'formulario_enviado', 'historico_site', 'favoritou_imovel']
+    if (pipeline_lead_id && eventosComIdentidade.includes(tipo)) {
+      try { await avisarLeadVoltouAoSite(supabase, pipeline_lead_id) }
+      catch (e) { console.warn('[voltou-site] erro:', e) }
+    }
+
     // ── NOVO: Radar de Intenção ──
     // Só analisa se o evento é de navegação relevante e temos o pipeline_lead_id
     const eventosQueAcionamRadar = [
@@ -414,11 +461,7 @@ Deno.serve(async (req) => {
 
             if (leadData?.corretor_id) {
               const eraDescartado = await verificarDescarte(supabase, pipeline_lead_id!)
-
-              if (eraDescartado) {
-                await reativarLead(supabase, pipeline_lead_id!)
-                console.log(`[radar] 🔄 Lead ${leadData.nome} reativado após retorno ao site`)
-              }
+              // Nunca muda a situação do lead sozinho — apenas avisa.
 
               await criarAlertaCorretor(
                 supabase,
