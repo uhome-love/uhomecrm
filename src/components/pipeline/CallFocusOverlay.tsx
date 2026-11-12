@@ -105,6 +105,10 @@ const STAGE_LABELS: Record<string, string> = {
   negociacao: "Negociação",
   proposta: "Proposta",
   contrato: "Contrato",
+  novo_lead: "Novo Lead",
+  qualificacao: "Qualificação",
+  documentacao: "Documentação",
+  ganho: "Ganho",
 };
 
 function getInitials(name: string) {
@@ -515,7 +519,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
       <div className="border-t border-border/50 px-5 py-3 space-y-2 shrink-0">
         {fase === 1 && (
           <>
-            <p className="text-[11px] text-muted-foreground text-center">Como foi a ligação?</p>
+            {!(scriptRecolhido && !verScript) && <p className="text-[11px] text-muted-foreground text-center">Como foi a ligação?</p>}
             <div className="flex gap-2">
               <button
                 onClick={() => { setResultado("atendeu"); setFase(2); }}
