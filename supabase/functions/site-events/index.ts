@@ -463,7 +463,7 @@ Deno.serve(async (req) => {
               const eraDescartado = await verificarDescarte(supabase, pipeline_lead_id!)
               // Nunca muda a situação do lead sozinho — apenas avisa.
 
-              await criarAlertaCorretor(
+              if (!eraDescartado) await criarAlertaCorretor(
                 supabase,
                 leadData.corretor_id,
                 leadData.nome || 'Cliente',
