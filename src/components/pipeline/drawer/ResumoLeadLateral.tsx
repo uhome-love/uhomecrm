@@ -13,6 +13,7 @@ import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import EditarInteresse from "./EditarInteresse";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
@@ -55,6 +56,8 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
   const [visitas, setVisitas] = useState<{ total: number; ultima: string | null }>({ total: 0, ultima: null });
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState("");
+  const [interesse, setInteresse] = useState<string | null>(lead.empreendimento ?? null);
+  useEffect(() => { setInteresse(lead.empreendimento ?? null); }, [lead.id, lead.empreendimento]);
   const [leitura, setLeitura] = useState<{ id: string; erro: boolean } | null>(null);
 
   useEffect(() => {
@@ -86,7 +89,7 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
   const origem = lead.origem ? (grupoOrigem(lead.origem) === "Outros" ? rotuloOrigem(lead.origem) : grupoOrigem(lead.origem)) : null;
   const norm = (t?: string | null) => (t ?? "").trim().replace(/\s+/g, " ").toLowerCase();
   const campanhaBruta = lead.campanha || lead.formulario;
-  const campanha = campanhaBruta && norm(campanhaBruta) !== norm(lead.empreendimento) ? campanhaBruta : null;
+  const campanha = campanhaBruta && norm(campanhaBruta) !== norm(interesse) ? campanhaBruta : null;
   const orc = fmtOrc(faixa);
   const pendente = leitura?.id !== lead.id;
   const [aberto, setAberto] = useState(() => { try { return localStorage.getItem("ficha.resumo.aberto") === "1"; } catch { return false; } });
@@ -102,7 +105,12 @@ export default function ResumoLeadLateral({ lead, esconderOrcamento = false }: {
       </h2>
       {aberto && (<div className="mt-2">
 
-      <Linha rotulo="Interesse"><span className={lead.empreendimento ? "text-primary" : ""}>{(lead.empreendimento ? lead.empreendimento.charAt(0).toUpperCase() + lead.empreendimento.slice(1) : "") || <span className="font-normal text-muted-foreground">Não informado</span>}</span></Linha>
+      <Linha rotulo="Interesse">
+        <span className="inline-flex items-center justify-end">
+          <span className={interesse ? "text-primary" : ""}>{(interesse ? interesse.charAt(0).toUpperCase() + interesse.slice(1) : "") || <span className="font-normal text-muted-foreground">Não informado</span>}</span>
+          <EditarInteresse leadId={lead.id} atual={interesse} onSalvo={setInteresse} />
+        </span>
+      </Linha>
 
       <Linha rotulo="Origem">
         {[origem, campanha].filter(Boolean).join(" · ") || <span className="font-normal text-muted-foreground">Não informada</span>}
