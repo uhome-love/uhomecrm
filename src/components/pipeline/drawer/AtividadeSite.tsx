@@ -1,6 +1,7 @@
 import { Eye, Search, MessageCircle, FileText, Heart, History, Flame, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
+import { formatBRT } from "@/lib/brtTime";
 import { ptBR } from "date-fns/locale";
 import { type EventoSite, resumirAtividadeSite, descreverEvento } from "./useAtividadeSite";
 
@@ -62,7 +63,7 @@ export default function AtividadeSite({ eventos }: { eventos: EventoSite[] }) {
                 </span>
                 <div className="flex flex-wrap items-baseline gap-x-2">
                   <span className="text-sm font-medium">{titulo}</span>
-                  <span className="text-xs text-muted-foreground">{format(new Date(e.created_at), "dd/MM HH:mm")}</span>
+                  <span className="text-xs text-muted-foreground">{formatBRT(e.created_at, "dd/MM HH:mm")}</span>
                 </div>
                 {detalhe && <p className="text-xs text-muted-foreground break-words">{detalhe}</p>}
               </li>
