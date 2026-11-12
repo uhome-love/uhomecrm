@@ -247,6 +247,47 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const [scheduleVisitOpen, setScheduleVisitOpen] = useState(false);
   const { createVisita } = useVisitas();
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const [callScriptRecolhido, setCallScriptRecolhido] = useState(false);
+  const [perguntarTarefa, setPerguntarTarefa] = useState(false);
+  // Celular: abre o discador do telefone; ao voltar ao app, abre "Como foi a ligação?".
+  const discarRef = useRef<{ saiu: boolean; timer?: number } | null>(null);
+  useEffect(() => {
+    const abrirResultado = () => {
+      const d = discarRef.current;
+      if (!d) return;
+      if (d.timer) window.clearTimeout(d.timer);
+      discarRef.current = null;
+      setCallScriptRecolhido(true);
+      setIsCallOpen(true);
+    };
+    const onVis = () => {
+      const d = discarRef.current;
+      if (!d) return;
+      if (document.visibilityState === "hidden") d.saiu = true;
+      else if (d.saiu) abrirResultado();
+    };
+    const onBlur = () => { if (discarRef.current) discarRef.current.saiu = true; };
+    const onFocus = () => { if (discarRef.current?.saiu) abrirResultado(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
+      if (discarRef.current?.timer) window.clearTimeout(discarRef.current.timer);
+    };
+  }, []);
+  const iniciarLigacao = () => {
+    if (!lead.telefone) return;
+    if (!isMobile) { setCallScriptRecolhido(false); setIsCallOpen(true); return; }
+    const timer = window.setTimeout(() => {
+      // Se o discador não abriu (app não saiu de foco), mostra o registro mesmo assim.
+      if (discarRef.current && !discarRef.current.saiu) { discarRef.current = null; setCallScriptRecolhido(true); setIsCallOpen(true); }
+    }, 4000);
+    discarRef.current = { saiu: false, timer };
+    window.location.href = `tel:${lead.telefone.replace(/[^\d+]/g, "")}`;
+  };
   const [anotarOpen, setAnotarOpen] = useState(false);
   const [registroInicial, setRegistroInicial] = useState<{ tipo?: string; texto: string } | null>(null);
   const [registrarOpen, setRegistrarOpen] = useState(false);
@@ -592,7 +633,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const acaoTrack = (action: string) => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action });
   const actionsNode = (
     <>
-      <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" disabled={!lead.telefone} onClick={() => { acaoTrack("ligar"); setIsCallOpen(true); }}>
+      <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" disabled={!lead.telefone} onClick={() => { acaoTrack("ligar"); iniciarLigacao(); }}>
         <Phone className="h-3.5 w-3.5" /> Ligar
       </Button>
       <Button size="sm" variant="outline" className="h-9 px-3.5 gap-1.5 text-[13px] font-medium" disabled={!lead.telefone} onClick={() => { acaoTrack("whatsapp"); setIsWhatsAppFlowOpen(true); }}>
@@ -745,7 +786,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         primeiroContato={stageTipoAtual === "novo_lead" && !nextTask ? {
           entrouHa: tempoDesde(lead.created_at),
           atrasado: !!saudeAgora && saudeAgora.dias != null && saudeAgora.dias > 0,
-          onLigar: lead.telefone ? () => { acaoTrack("ligar"); setIsCallOpen(true); } : undefined,
+          onLigar: lead.telefone ? () => { acaoTrack("ligar"); iniciarLigacao(); } : undefined,
           onWhatsApp: lead.telefone ? () => { acaoTrack("whatsapp"); setIsWhatsAppFlowOpen(true); } : undefined,
         } : null}
         loading={leadData.loading || (stageTipoAtual === "venda" && !!lead.negocio_id && jornadaFicha.isPending)}
@@ -1109,7 +1150,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
         {isMobile && !homiOpen && (
           <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-border/50 bg-card/95 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_hsl(var(--foreground)/0.18)] animate-fade-in motion-reduce:animate-none">
             <button
-              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); iniciarLigacao(); }}
               disabled={!lead.telefone}
               aria-label="Ligar"
               className="shrink-0 flex items-center justify-center h-11 w-12 rounded-xl border border-border bg-card text-foreground disabled:opacity-40 active:scale-[0.98] transition-transform"
@@ -1272,9 +1313,31 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           tipoInicial={registroInicial?.tipo}
           obsInicial={registroInicial?.texto}
           onClose={() => { setRegistrarOpen(false); setRegistroInicial(null); }}
-          onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }}
+          onSaved={async () => {
+            onUpdate(lead.id, {} as any); leadData.reload();
+            // Pergunta se quer criar tarefa — só se o cliente não tiver tarefa pendente.
+            const { count } = await supabase.from("pipeline_tarefas")
+              .select("id", { count: "exact", head: true })
+              .eq("pipeline_lead_id", lead.id).eq("status", "pendente");
+            if (!count) setPerguntarTarefa(true);
+          }}
         />
       )}
+
+      <Dialog open={perguntarTarefa} onOpenChange={setPerguntarTarefa}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Quer criar uma tarefa?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {lead.nome.split(" ")[0]} está sem tarefa pendente. Crie a próxima para não esquecer o retorno.
+          </p>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setPerguntarTarefa(false)}>Agora não</Button>
+            <Button onClick={() => { setPerguntarTarefa(false); setActiveTab("tarefas"); setNextActionOpen(true); }}>Criar tarefa</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <CallFocusOverlay
         isOpen={isCallOpen}
@@ -1287,6 +1350,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           stage_id: lead.stage_id,
         }}
         stageTipo={currentStage?.tipo}
+        scriptRecolhido={callScriptRecolhido}
         leadOrigem={(lead as any).origem}
         tarefas={leadData.tarefas}
         availableStages={stages.map(s => ({ id: s.id, tipo: s.tipo, nome: s.nome }))}

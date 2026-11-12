@@ -1,5 +1,5 @@
 import { registrarAtividade } from "@/lib/registrarAtividade";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +26,8 @@ interface CallFocusOverlayProps {
   tarefas: any[];
   availableStages: { id: string; tipo: string; nome: string }[];
   onRefresh: () => void;
+  /** Celular: aberto ao voltar do discador — script começa recolhido. */
+  scriptRecolhido?: boolean;
 }
 
 type ScriptLine = { role: "corretor" | "cliente" | "dica"; texto: string };
@@ -115,7 +117,7 @@ function getTomorrow() {
   return d.toISOString().split("T")[0];
 }
 
-export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem, tarefas, availableStages, onRefresh }: CallFocusOverlayProps) {
+export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem, tarefas, availableStages, onRefresh, scriptRecolhido = false }: CallFocusOverlayProps) {
   const { user } = useAuth();
   const [fase, setFase] = useState<1 | 2 | 3>(1);
   const [resultado, setResultado] = useState<"atendeu" | "nao_atendeu" | null>(null);
@@ -125,6 +127,10 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
   const [tarefaHora, setTarefaHora] = useState("11:00");
   const [novaEtapaSelecionada, setNovaEtapaSelecionada] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [verScript, setVerScript] = useState(!scriptRecolhido);
+  useEffect(() => {
+    if (isOpen) { setFase(1); setResultado(null); setVerScript(!scriptRecolhido); }
+  }, [isOpen, scriptRecolhido]);
 
   // Presets Fase B — chips por etapa
   const stagePresets = useMemo(() => getPresetsForStage(stageTipo), [stageTipo]);
@@ -328,6 +334,14 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
         {/* FASE 1 — SCRIPT */}
         {fase === 1 && (
           <div className="px-5 py-4 space-y-3">
+            {!verScript ? (
+              <div className="space-y-2 text-center py-2">
+                <p className="text-base font-semibold">Como foi a ligação?</p>
+                <button type="button" onClick={() => setVerScript(true)} className="text-xs font-medium text-primary hover:underline">
+                  Ver script
+                </button>
+              </div>
+            ) : (<>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">Script de ligação</span>
               <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: "#EEEDFE", color: "#534AB7" }}>
@@ -355,6 +369,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
                 );
               })}
             </div>
+            </>)}
           </div>
         )}
 
