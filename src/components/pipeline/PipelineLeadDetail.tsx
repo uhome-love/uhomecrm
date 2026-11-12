@@ -1319,7 +1319,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
             const { count } = await supabase.from("pipeline_tarefas")
               .select("id", { count: "exact", head: true })
               .eq("pipeline_lead_id", lead.id).eq("status", "pendente");
-            if (!count) setPerguntarTarefa(true);
+            if (!count) { toast.dismiss(); setPerguntarTarefa(true); }
           }}
         />
       )}
