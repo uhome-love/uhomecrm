@@ -1,31 +1,40 @@
 # Relatório completo "Movimento Uhome Performance" (PDF para montar a apresentação)
 
-Um relatório em PDF com todos os dados para o Claude montar a apresentação. Ele mostra por que a trava (2 visitas + 80% do CRM) foi boa e onde ainda dá para melhorar com a Oferta Ativa. Só leitura: nada muda no CRM.
+Um relatório em PDF com todos os dados para o Claude montar a apresentação. Ele mostra por que a trava (2 visitas + 80% do CRM) foi boa e onde ainda dá para melhorar. Só leitura: nada muda no CRM.
 
 ## 1. Como era antes x o que mudou
 - **Antes de 14/10:** qualquer corretor se credenciava na Roleta, sem exigência de visita nem de CRM.
 - **Depois:** só entra quem fez 2 visitas na semana anterior e tem 80% do CRM em dia.
 - **As tentativas por lead aumentaram:** um lead novo recebia 3,6 registros nos 7 primeiros dias e agora recebe 4,5 (+26%). O contato no 1º dia subiu de 95% para 99%.
-- **O descarte aumentou:** foi de 992 para 1.497 em 4 semanas. Parte vem dos 20% a mais de leads e de qualificar mais rápido. Fica registrado como ponto a acompanhar.
 - **Estagnados:** o sistema não guarda a foto de cada dia, então não dá para comparar com o "antes" com exatidão. No lugar, mostro o número de hoje e o CRM em dia por semana.
 
-## 2. Quem vendeu depois da trava (12/10 a 11/11)
-- 18 vendas por corretor, com VGV (parceria 50/50) e empreendimento, sem nome de cliente.
-- Cruzamento com a subida das visitas. Exemplos: Jéssica França (+10 visitas, 2 vendas), Marcos, Adriana, Ebert, Rafaela Campos, Thalia, Pedro Jorge.
+## 2. Descarte: como aumentou
+- Foi de 992 para 1.497 em 4 semanas (+51%), enquanto os leads subiram só 20%.
+- No relatório: descartes por semana, por motivo e por corretor, e em quantos dias depois da entrada o lead é descartado.
 
-## 3. Conteúdo do PDF (versão 2)
-1. Como era antes x a regra nova
-2. Resumo com os números principais
-3. Tabela antes x depois: visitas, corretores visitando, visitas por lead, no-show, atividades, tarefas, tentativas por lead, contato no 1º dia, descartes, leads, Oferta Ativa, vendas e VGV
-4. Gráficos semanais: visitas, CRM e trabalho, vendas, Oferta Ativa e descartes
-5. Roleta por semana: aptos, CRM médio, quem bateu as 2 visitas
-6. Visitas por corretor, antes x depois
-7. Quem vendeu depois da trava
-8. Oportunidades: Oferta Ativa, metade do time fora da Roleta, no-show, descarte
-9. Mensagens-chave prontas para os slides e limites dos dados
+## 3. Leads com tarefa e próxima ação evoluem mais? Sim
+- Leads com tarefa registrada nos 7 primeiros dias chegam à visita realizada **5 vezes mais** (7,7% contra 1,4%).
+- E são descartados menos nas 2 primeiras semanas (19,8% contra 27,2%).
+- (Leads de 14/09 a 25/10. O grupo sem tarefa é pequeno, 147 leads, e isso fica anotado no relatório.)
+
+## 4. Quem fez 10 visitas ou mais vendeu? Sim, todos os 7
+- Pedro Jorge (15 visitas, 2 vendas), Jéssica França (13, 2), Marcos Aurelio Farias (12, 1), Adriana Kaiser (12, 1), Thalia de Oliveira (10, 1), Rafaela Campos (10, 1) e Ebert Silva (10, 1).
+- Juntos, fizeram 9 das 18 vendas do período.
+
+## 5. Quem vendeu depois da trava
+- 18 vendas por corretor, com VGV (parceria 50/50) e empreendimento, sem nome de cliente, cruzadas com a subida das visitas.
+
+## 6. Plano de melhorias
+1. **Descartar menos para aproveitar mais:** mais tentativas antes de descartar e revisão do descarte rápido.
+2. **Mais tentativas de contato registradas**, sempre com tarefa e próxima ação marcadas.
+3. **Oferta Ativa** para quem ficou fora da Roleta.
+4. **Confirmar a visita no dia anterior** para reduzir o no-show.
+
+## 7. Conteúdo do PDF (versão 2)
+Como era antes x regra nova, resumo, tabela antes x depois, gráficos semanais (visitas, CRM e trabalho, vendas, Oferta Ativa, descartes), Roleta por semana, visitas por corretor, quem vendeu, os itens 2 a 4 acima, plano de melhorias, mensagens-chave prontas para os slides e limites dos dados.
 
 Arquivo: Relatorio_Progresso_Trava_Roleta_v2.pdf. Antes de entregar, confiro todas as páginas em imagem.
 
 ## Detalhes técnicos
-- Vendas: `v_negocios_pipeline` (ganho, data_assinatura em BRT). Descartes: `pipeline_historico` → etapa tipo descarte. Tentativas: `pipeline_atividades` nos 7 dias depois da criação do lead.
+- Vendas: `v_negocios_pipeline`. Descartes: `pipeline_historico` → etapa tipo descarte. Tentativas: `pipeline_atividades` nos 7 dias depois da criação do lead. Tarefas: `pipeline_tarefas` criadas nos 7 primeiros dias. Datas em BRT.
 - Gerado com reportlab + matplotlib.
