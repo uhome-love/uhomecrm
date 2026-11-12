@@ -146,6 +146,18 @@ export type Database = {
         }
         Relationships: []
       }
+      _tmp_teste_interesse: {
+        Row: {
+          a: string | null
+        }
+        Insert: {
+          a?: string | null
+        }
+        Update: {
+          a?: string | null
+        }
+        Relationships: []
+      }
       academia_aulas: {
         Row: {
           conteudo: Json | null
