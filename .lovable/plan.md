@@ -11,6 +11,11 @@
 ## Regra importante (mudança de comportamento)
 Hoje o recebimento de eventos **move sozinho** o lead descartado de volta para uma etapa ativa quando ele navega bastante. Pelo pedido, isso será **desligado**: o lead nunca muda de etapa, corretor ou situação por causa do site. Só aviso.
 
+## Descartado que faz novo cadastro
+- Só **navegar** no site: nunca muda o lead, apenas avisa.
+- Se o descartado **enviar um novo cadastro/formulário**: entra como **novo lead na Roleta** pelo caminho normal de reentrada já existente (zera ciclos e parcerias), levando junto o contexto: resumo da atividade no site e imóveis vistos, visíveis na aba e na primeira anotação para o corretor que receber.
+- Primeiro passo da construção: conferir no banco se o formulário do site hoje já reativa o descartado na Roleta; se já faz, só acrescentamos o contexto, sem mexer na distribuição.
+
 ## Ordem (padrão do projeto)
 1. Mockup da aba (computador + celular) para aprovação do Lucas.
 2. Construção após aprovação.
