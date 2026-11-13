@@ -701,6 +701,13 @@
       "when": 1794594391839,
       "tag": "0099_restringir_leitura_visita_eventos",
       "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1794605071912,
+      "tag": "0100_migration",
+      "breakpoints": true
     }
   ]
 }
