@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flame, Phone, MessageCircle } from "lucide-react";
+import { Flame, Phone, MessageCircle, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -29,7 +29,7 @@ function respostaCliente(msg: string): string | null {
 
 /**
  * Trava a tela do corretor quando um lead DELE no Pipeline respondeu SIM a um
- * disparo de reengajamento. Só informa: libera ao tocar em Ligar/WhatsApp
+ * disparo de reengajamento. Só informa: libera pelo X, Ver lead, Ligar ou WhatsApp
  * (marca o aviso como lido e abre a ficha). Nunca altera o lead.
  */
 export default function ReengajamentoInteresseBloqueio() {
@@ -89,12 +89,13 @@ export default function ReengajamentoInteresseBloqueio() {
   const digitos = (atual.telefone || "").replace(/\D/g, "");
   const waNumero = digitos.length <= 11 ? `55${digitos}` : digitos;
 
-  async function confirmar(acao: "ligar" | "whatsapp") {
+  async function confirmar(acao: "ligar" | "whatsapp" | "ver" | "fechar") {
     if (saindo) return;
     setSaindo(true);
     try {
       await supabase.from("notifications").update({ lida: true, lida_em: new Date().toISOString() }).eq("id", atual.id);
       await qc.invalidateQueries({ queryKey: key });
+      if (acao === "fechar") return;
       navigate(`/pipeline-leads?lead=${atual.leadId}`);
       if (digitos) {
         if (acao === "ligar" && isMobile) window.location.href = `tel:+${waNumero}`;
@@ -106,9 +107,9 @@ export default function ReengajamentoInteresseBloqueio() {
   }
 
   return (
-    <Dialog open onOpenChange={() => { /* bloqueado: só libera pelos botões */ }}>
+    <Dialog open onOpenChange={(aberto) => { if (!aberto) void confirmar("fechar"); }}>
       <DialogContent
-        className="max-w-[440px] gap-0 rounded-2xl p-5 sm:p-6 [&>button]:hidden"
+        className="max-w-[440px] gap-0 rounded-2xl p-5 sm:p-6"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
@@ -139,6 +140,9 @@ export default function ReengajamentoInteresseBloqueio() {
             <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
           </Button>
         </div>
+        <Button variant="ghost" className="mt-2 h-10 w-full" disabled={saindo} onClick={() => confirmar("ver")}>
+          <Eye className="mr-2 h-4 w-4" /> Ver lead
+        </Button>
       </DialogContent>
     </Dialog>
   );
