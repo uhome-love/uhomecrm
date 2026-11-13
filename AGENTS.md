@@ -40,4 +40,4 @@
 - HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
 <!-- LOVABLE:END -->
 - site-events never changes lead stage/owner (only a daily notice); only a new site signup returns a discarded lead to the Roleta. Why: browsing is a signal.
-- Reengagement SIM never moves an active owned lead: fila-CEO RPCs return `already_active`, all webhook paths honor it, owner gets ReengajamentoInteresseBloqueio (release only marks read). Why: leads were wrongly redistributed.
+- Reengagement SIM keeps active owned leads: RPCs return `already_active`, webhooks honor it; owner gets a screen lock. Why: no wrong redistribution.
