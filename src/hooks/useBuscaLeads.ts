@@ -52,6 +52,7 @@ export interface BuscaLead {
   stage_nome?: string | null;
   corretor_nome?: string | null;
   arquivado?: boolean;
+  livre_repasse?: boolean;
 }
 
 export interface LeadTentativa {
@@ -67,7 +68,8 @@ export interface LeadTentativa {
 
 export function useBuscaLeads() {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isGestor, isDiretor } = useUserRole();
+  const soGestor = isGestor && !isAdmin && !isDiretor;
   const queryClient = useQueryClient();
   const [results, setResults] = useState<BuscaLead[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -128,10 +130,19 @@ export function useBuscaLeads() {
       const skipOA = filters.status === "pipeline";
       const skipPL = filters.status && filters.status !== "todos" && filters.status !== "pipeline";
 
-      const [oaRes, plRes] = await Promise.all([
+      const livresQuery = soGestor && !skipPL
+        ? supabase.rpc("buscar_leads_repasse_gestor", {
+            p_nome: filters.nome || undefined, p_telefone: filters.telefone || undefined, p_email: filters.email || undefined,
+            p_empreendimento: filters.empreendimento || undefined, p_origem: filters.origem || undefined,
+            p_data_inicio: filters.dataInicio || undefined, p_data_fim: filters.dataFim || undefined,
+          })
+        : Promise.resolve({ data: [], error: null });
+      const [oaRes, plRes, livresRes] = await Promise.all([
         skipOA ? Promise.resolve({ data: [], error: null }) : oaQuery,
         skipPL ? Promise.resolve({ data: [], error: null }) : plQuery,
+        livresQuery,
       ]);
+      if (livresRes.error) console.error("[Busca] livres", livresRes.error);
 
       if (oaRes.error) throw oaRes.error;
       if (plRes.error) throw plRes.error;
@@ -197,6 +208,20 @@ export function useBuscaLeads() {
         arquivado: !!d.arquivado,
       }));
 
+      const jaTem = new Set(plMapped.map(p => p.id));
+      for (const d of ((livresRes.data || []) as Array<{ id: string; nome: string; telefone: string | null; email: string | null; empreendimento: string | null; origem: string | null; stage_id: string | null; stage_nome: string | null; stage_tipo: string | null; corretor_id: string | null; corretor_nome: string | null; created_at: string; updated_at: string; observacoes: string | null; arquivado: boolean }>)) {
+        if (jaTem.has(d.id)) { const ex = plMapped.find(p => p.id === d.id); if (ex) ex.livre_repasse = true; continue; }
+        plMapped.push({
+          id: d.id, nome: d.nome, telefone: d.telefone, telefone2: null, email: d.email, telefone_normalizado: null,
+          empreendimento: d.empreendimento, campanha: null, origem: d.origem, data_lead: d.created_at,
+          status: d.arquivado ? "arquivado" : "no_pipeline", motivo_descarte: null, corretor_id: d.corretor_id, lista_id: "",
+          em_atendimento_por: null, em_atendimento_ate: null, tentativas_count: 0, ultima_tentativa: null, cadastrado_jetimob: false,
+          created_at: d.created_at, updated_at: d.updated_at, observacoes: d.observacoes, lista_nome: "Pipeline CRM",
+          source: "pipeline", stage_id: d.stage_id, stage_nome: d.stage_nome || "—", stage_tipo: d.stage_tipo,
+          corretor_nome: d.corretor_nome || "Sem corretor", arquivado: d.arquivado, livre_repasse: true,
+        });
+      }
+
       // Combine and sort by updated_at desc
       const combined = [...oaMapped, ...plMapped].sort((a, b) =>
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -210,7 +235,7 @@ export function useBuscaLeads() {
     } finally {
       setIsSearching(false);
     }
-  }, [user]);
+  }, [user, soGestor]);
 
   const fetchTentativas = useCallback(async (leadId: string): Promise<LeadTentativa[]> => {
     const { data, error } = await supabase
@@ -287,6 +312,20 @@ export function useBuscaLeads() {
     motivo?: string
   ): Promise<boolean> => {
     if (!user) return false;
+    if (soGestor) {
+      const { data, error } = await supabase.rpc("repassar_lead_gestor", { p_lead_id: leadId, p_corretor_id: novoCorretorId, p_motivo: motivo || undefined });
+      const r = data as { ok?: boolean; erro?: string } | null;
+      if (error || !r?.ok) {
+        const msgs: Record<string, string> = {
+          com_outro_corretor: "Esse lead está em atendimento com outro corretor — repasse bloqueado.",
+          corretor_fora_da_equipe: "Escolha um corretor da sua equipe.",
+        };
+        toast.error((r?.erro && msgs[r.erro]) || "Erro ao repassar lead");
+        return false;
+      }
+      toast.success("Lead repassado com sucesso");
+      return true;
+    }
     try {
       const { data: stages } = await supabase
         .from("pipeline_stages")
