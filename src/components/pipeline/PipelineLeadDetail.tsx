@@ -285,7 +285,7 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
     if (!lead.telefone) return;
     if (!isMobile) { setCallScriptRecolhido(false); setIsCallOpen(true); return; }
     // Só abre o resultado ao voltar do discador; limpa a espera após 60s.
-    const timer = window.setTimeout(() => { discarRef.current = null; }, 60000);
+    const timer = window.setTimeout(() => { if (discarRef.current && !discarRef.current.saiu) discarRef.current = null; }, 60000);
     discarRef.current = { saiu: false, timer };
     const a = document.createElement("a");
     a.href = `tel:${lead.telefone.replace(/[^\d+]/g, "")}`;
