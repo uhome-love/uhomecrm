@@ -39,5 +39,5 @@
 - Keep `homi_consulta` CLOSED with its hash table empty; never register a hash or reopen it without Lucas's new explicit approval. Why: the owner change failed and function calls/http/pg_net bypass the table check; any future external consumer uses direct read-only homi_ro login.
 - HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
 <!-- LOVABLE:END -->
-- site-events never changes lead stage/owner (discarded/inactive only get a daily notice); only a new site registration (crm-webhook) returns a discarded lead to the Roleta; ficha reads via `atividade_site_lead`. Why: browsing is a signal, not a decision.
+- site-events never changes lead stage/owner (only a daily notice); only a new site signup returns a discarded lead to the Roleta. Why: browsing is a signal.
 - Reengagement SIM on a broker's own lead locks their screen (ReengajamentoInteresseBloqueio); release only marks the notice read. Why: instant contact, no lead changes.
