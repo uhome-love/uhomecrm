@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isNatal } from "@/natal/config";
-import { PlacarNatalDecor, FaixasPlacarNatal, BarraOuroTv, NATAL_FUNDO, NATAL_CONFETE, NATAL_NOTAS_MARCADA, NATAL_NOTAS_REALIZADA, NATAL_TITULO_GRAD, NATAL_OURO } from "@/natal/PlacarNatal";
+import { PlacarNatalDecor, tocarVisitaMarcadaNatal, FaixasPlacarNatal, BarraOuroTv, NATAL_FUNDO, NATAL_CONFETE, NATAL_NOTAS_MARCADA, NATAL_NOTAS_REALIZADA, NATAL_TITULO_GRAD, NATAL_OURO } from "@/natal/PlacarNatal";
 
 const DEFAULT_META = 20;
 const META_EQUIPE = 10;
