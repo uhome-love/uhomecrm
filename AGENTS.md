@@ -41,3 +41,4 @@
 <!-- LOVABLE:END -->
 - site-events never changes lead stage/owner (only a daily notice); only a new site signup returns a discarded lead to the Roleta. Why: browsing is a signal.
 - Reengagement SIM on a broker's own lead locks their screen (ReengajamentoInteresseBloqueio); release only marks the notice read. Why: instant contact, no lead changes.
+- Reengagement SIM never moves an active lead: `reativar_lead_para_fila_ceo`/base/OA RPCs return `already_active` for active owned leads and every webhook path must honor it (tests/reengajamentoLeadAtivo.sql). Why: active leads were wrongly redistributed via Fila CEO.
