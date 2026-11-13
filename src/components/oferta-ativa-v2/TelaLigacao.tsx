@@ -38,7 +38,7 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const fila = useFilaOA({ origem, listaIds, empreendimentos });
-  const { cliente, carregando, gravando, vazio, proximo, registrar, pular, sair } = fila;
+  const { cliente, carregando, gravando, vazio, erro, proximo, registrar, pular, sair } = fila;
   const [visitaAberta, setVisitaAberta] = useState(false);
   const [ultimo, setUltimo] = useState<ResultadoOA | null>(null);
   const [ligou, setLigou] = useState(false);
@@ -54,6 +54,12 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
   const corretorNome = String((user?.user_metadata as { nome?: string } | undefined)?.nome ?? "");
 
   useEffect(() => { void proximo(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Ao voltar para o app sem cliente na tela e sem busca em andamento, busca de novo uma vez.
+  useEffect(() => {
+    const onVolta = () => { if (document.visibilityState === "visible" && !cliente && !carregando && !vazio) void proximo(); };
+    document.addEventListener("visibilitychange", onVolta);
+    return () => document.removeEventListener("visibilitychange", onVolta);
+  }, [cliente, carregando, vazio, proximo]);
   useEffect(() => { setLigou(false); setDestacar(false); setInicio(null); setDialogo(false); setDuracao(0); }, [cliente?.id]);
   useEffect(() => {
     if (inicio === null) return;
@@ -162,8 +168,14 @@ export default function TelaLigacao({ origem, listaIds, empreendimentos, onSair 
             </motion.div>
           ) : (
             <motion.div key="estado" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-8 text-center lg:col-span-2">
-              {carregando || !vazio ? (
+              {carregando || (!vazio && !erro) ? (
                 <><Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden /><p className="text-sm text-muted-foreground">Buscando o próximo cliente…</p></>
+              ) : erro ? (
+                <>
+                  <p className="text-lg font-semibold">Não consegui carregar o próximo cliente</p>
+                  <p className="max-w-sm text-sm text-muted-foreground">Pode ter sido a conexão. Nada foi perdido.</p>
+                  <div className="flex gap-2"><Button variant="outline" onClick={() => void proximo()}>Tentar de novo</Button><Button onClick={onSair}>Escolher outra fila</Button></div>
+                </>
               ) : (
                 <>
                   <PartyPopper className="h-10 w-10 text-primary" aria-hidden />
