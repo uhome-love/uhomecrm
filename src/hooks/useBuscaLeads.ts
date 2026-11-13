@@ -384,7 +384,7 @@ export function useBuscaLeads() {
       toast.error("Erro ao repassar lead");
       return false;
     }
-  }, [user]);
+  }, [user, soGestor]);
 
   const fetchCorretores = useCallback(async () => {
     const { data } = await supabase
