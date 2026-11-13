@@ -694,6 +694,13 @@
       "when": 1794520871769,
       "tag": "0098_atividade_site_lead",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1794594391839,
+      "tag": "0099_restringir_leitura_visita_eventos",
+      "breakpoints": true
     }
   ]
 }
