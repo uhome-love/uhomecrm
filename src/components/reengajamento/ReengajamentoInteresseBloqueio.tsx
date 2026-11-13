@@ -63,7 +63,8 @@ export default function ReengajamentoInteresseBloqueio() {
         .from("pipeline_leads")
         .select("id, nome, telefone, empreendimento")
         .in("id", [...new Set(linhas.map((l) => l.leadId))]);
-      const mapa = new Map((leads || []).map((l) => [l.id, l]));
+      type L = { id: string; nome: string | null; telefone: string | null; empreendimento: string | null };
+      const mapa = new Map<string, L>(((leads || []) as L[]).map((l) => [l.id, l]));
       return linhas.map((n) => {
         const l = mapa.get(n.leadId);
         return { id: n.id, mensagem: n.mensagem, created_at: n.created_at, leadId: n.leadId, nome: l?.nome || "Lead", telefone: l?.telefone || null, empreendimento: l?.empreendimento || null };

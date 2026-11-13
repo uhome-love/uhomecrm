@@ -40,4 +40,4 @@
 - HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
 <!-- LOVABLE:END -->
 - site-events never changes lead stage/owner (discarded/inactive only get a daily notice); only a new site registration (crm-webhook) returns a discarded lead to the Roleta; ficha reads via `atividade_site_lead`. Why: browsing is a signal, not a decision.
-- Reengagement SIM from a broker's active Pipeline lead locks the broker screen (ReengajamentoInteresseBloqueio, unread lead_reengajado notifications with route pipeline_ativo_keep, 48h); Ligar/WhatsApp only marks it read and opens the lead, never changes the lead. Why: instant contact without touching distribution.
+- Reengagement SIM on a broker's own lead locks their screen (ReengajamentoInteresseBloqueio); release only marks the notice read. Why: instant contact, no lead changes.
