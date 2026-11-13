@@ -1038,12 +1038,14 @@ Deno.serve(async (req) => {
                       if (alreadyActive) activeCorretorId = (oaRes as any)?.corretor_id || null;
                       console.log(`🔥 Oferta Ativa lead ${metaDispatch.lead_id} → pipeline ${effectiveLeadId} (template=${tplName}) ${alreadyActive ? "JÁ ATIVO — mantido com corretor" : "→ Fila do CEO"}`);
                     } else {
-                      const { error: filaErr } = await supabase.rpc("reativar_lead_para_fila_ceo", {
+                      const { data: filaRes, error: filaErr } = await supabase.rpc("reativar_lead_para_fila_ceo", {
                         p_lead_id: metaDispatch.lead_id,
                         p_template_name: tplName,
                       });
                       if (filaErr) throw filaErr;
-                      console.log(`🔥 Lead ${metaDispatch.lead_id} reengajado (template=${tplName}) → Fila do CEO`);
+                      alreadyActive = !!(filaRes as any)?.already_active;
+                      if (alreadyActive) activeCorretorId = (filaRes as any)?.corretor_id || activeCorretorId;
+                      console.log(`🔥 Lead ${metaDispatch.lead_id} reengajado (template=${tplName}) ${alreadyActive ? "JÁ ATIVO — mantido com corretor" : "→ Fila do CEO"}`);
                     }
                   } catch (e) {
                     console.error("rpc reativar (fila CEO) error:", e);
