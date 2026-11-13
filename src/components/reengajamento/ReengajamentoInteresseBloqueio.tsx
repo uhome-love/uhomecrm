@@ -5,7 +5,7 @@ import { Flame, Phone, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatBRT } from "@/lib/utils";
+import { formatBRT } from "@/lib/brtTime";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
