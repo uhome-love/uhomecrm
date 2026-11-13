@@ -17655,6 +17655,34 @@ export type Database = {
           title: string
         }[]
       }
+      buscar_leads_repasse_gestor: {
+        Args: {
+          p_data_fim?: string
+          p_data_inicio?: string
+          p_email?: string
+          p_empreendimento?: string
+          p_nome?: string
+          p_origem?: string
+          p_telefone?: string
+        }
+        Returns: {
+          arquivado: boolean
+          corretor_id: string
+          corretor_nome: string
+          created_at: string
+          email: string
+          empreendimento: string
+          id: string
+          nome: string
+          observacoes: string
+          origem: string
+          stage_id: string
+          stage_nome: string
+          stage_tipo: string
+          telefone: string
+          updated_at: string
+        }[]
+      }
       cadencia_sc_descartar_reengajavel: {
         Args: { p_lead_id: string }
         Returns: undefined
@@ -18769,6 +18797,7 @@ export type Database = {
         Returns: boolean
       }
       lead_em_estado_final: { Args: { p_lead_id: string }; Returns: boolean }
+      lead_livre_para_repasse: { Args: { p_lead_id: string }; Returns: boolean }
       lead_saude_acao:
         | {
             Args: {
@@ -19232,6 +19261,10 @@ export type Database = {
           p_lead_id: string
           p_lock_minutes?: number
         }
+        Returns: Json
+      }
+      repassar_lead_gestor: {
+        Args: { p_corretor_id: string; p_lead_id: string; p_motivo?: string }
         Returns: Json
       }
       reset_roleta_turno: { Args: never; Returns: undefined }
