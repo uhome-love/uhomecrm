@@ -24,6 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
 import VisitaPendenteBloqueio from "@/components/visitas/VisitaPendenteBloqueio";
+import ReengajamentoInteresseBloqueio from "@/components/reengajamento/ReengajamentoInteresseBloqueio";
 import ComunicadoTarefas from "@/components/comunicados/ComunicadoTarefas";
 import { useVendaRealtimeNotification } from "@/hooks/useVendaRealtimeNotification";
 import { useWhatsAppNotifications } from "@/hooks/useWhatsAppNotifications";
@@ -357,6 +358,7 @@ export default function AppLayout() {
           onClose={closeDialog}
           onResult={refreshPending}
         />
+        {isCorretor && !isAdmin && !isDiretor && !isGestor && <ReengajamentoInteresseBloqueio />}
         {isCorretor && !isAdmin && !isDiretor && !isGestor && <VisitaPendenteBloqueio />}
         {isCorretor && !isAdmin && !isDiretor && !isGestor && <ComunicadoTarefas />}
         {isMobile && !isFullscreen && <MobileBottomNav role={sidebarRole} />}
