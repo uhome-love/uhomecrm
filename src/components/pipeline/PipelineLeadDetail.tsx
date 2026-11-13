@@ -284,12 +284,15 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
   const iniciarLigacao = () => {
     if (!lead.telefone) return;
     if (!isMobile) { setCallScriptRecolhido(false); setIsCallOpen(true); return; }
-    const timer = window.setTimeout(() => {
-      // Se o discador não abriu (app não saiu de foco), mostra o registro mesmo assim.
-      if (discarRef.current && !discarRef.current.saiu) { discarRef.current = null; setCallScriptRecolhido(true); setIsCallOpen(true); }
-    }, 4000);
+    // Só abre o resultado ao voltar do discador; limpa a espera após 60s.
+    const timer = window.setTimeout(() => { if (discarRef.current && !discarRef.current.saiu) discarRef.current = null; }, 60000);
     discarRef.current = { saiu: false, timer };
-    window.location.href = `tel:${lead.telefone.replace(/[^\d+]/g, "")}`;
+    const a = document.createElement("a");
+    a.href = `tel:${lead.telefone.replace(/[^\d+]/g, "")}`;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
   const [anotarOpen, setAnotarOpen] = useState(false);
   const [registroInicial, setRegistroInicial] = useState<{ tipo?: string; texto: string } | null>(null);
