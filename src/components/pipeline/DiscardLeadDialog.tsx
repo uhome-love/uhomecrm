@@ -85,8 +85,19 @@ export default function DiscardLeadDialog({
         if (error) throw error;
         toast.success("Lead inativado definitivamente");
       } else {
-        const descarteStage = stages.find(s => s.tipo === "descarte")
+        let descarteStage: { id: string } | undefined = stages.find(s => s.tipo === "descarte")
           || stages.find(s => s.nome.toLowerCase().includes("descart"));
+        if (!descarteStage) {
+          // Descarte não aparece mais como coluna visível do Pipeline — busca direto.
+          const { data } = await supabase
+            .from("pipeline_stages")
+            .select("id")
+            .eq("pipeline_tipo", "leads")
+            .eq("tipo", "descarte")
+            .limit(1)
+            .maybeSingle();
+          descarteStage = data ?? undefined;
+        }
         if (!descarteStage) {
           toast.error("Etapa de Descarte não encontrada. Contate o suporte.");
           return;
