@@ -204,5 +204,5 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
     qc.invalidateQueries({ queryKey: ["oa-listas-batch-stats"] });
   }, [cliente, user, ehLista, qc]);
 
-  return { cliente, carregando, gravando, vazio, proximo, registrar, pular, sair, visitaFalhou };
+  return { cliente, carregando, gravando, vazio, erro, proximo, registrar, pular, sair, visitaFalhou };
 }
