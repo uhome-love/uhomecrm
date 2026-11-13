@@ -411,6 +411,9 @@ export default function BuscaLeads() {
                             <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-300 border-indigo-500/30">
                               {lead.stage_nome || "—"}
                             </Badge>
+                            {lead.livre_repasse && (
+                              <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">Livre para repasse</Badge>
+                            )}
                             {lead.arquivado && (
                               <Badge variant="outline" className="text-[10px] bg-orange-500/10 text-orange-300 border-orange-500/30">
                                 arquivado

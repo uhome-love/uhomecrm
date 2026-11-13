@@ -708,6 +708,13 @@
       "when": 1794605071912,
       "tag": "0100_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1794609321513,
+      "tag": "0101_gestor_busca_repasse_livres",
+      "breakpoints": true
     }
   ]
 }
