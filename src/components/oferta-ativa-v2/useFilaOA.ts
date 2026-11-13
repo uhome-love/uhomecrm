@@ -30,6 +30,8 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
   const [carregando, setCarregando] = useState(false);
   const [gravando, setGravando] = useState(false);
   const [vazio, setVazio] = useState(false);
+  const [erro, setErro] = useState(false);
+  const pedido = useRef(0);
   const batida = useRef<ReturnType<typeof setInterval> | null>(null);
   // Chave fixa por cliente carregado: tentar gravar de novo após falha nunca conta 2 ligações.
   const chaveCliente = useRef<string>("");
@@ -55,18 +57,25 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
 
   const proximo = useCallback(async () => {
     if (!user) return null;
+    const meu = ++pedido.current;
     setCarregando(true);
     setVazio(false);
+    setErro(false);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const limite = new Promise<never>((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), 15_000); });
+    const comLimite = <T,>(p: PromiseLike<T>) => Promise.race([Promise.resolve(p), limite]);
     try {
       if (ehLista) {
-        const { data, error } = await supabase.rpc("fetch_next_lead_campaign", { p_corretor_id: user.id, p_lista_ids: listaIds, p_lock_minutes: 5 });
+        const { data, error } = await comLimite(supabase.rpc("fetch_next_lead_campaign", { p_corretor_id: user.id, p_lista_ids: listaIds, p_lock_minutes: 5 }));
+        if (meu !== pedido.current) return null;
         if (error) throw error;
         const r = data as { found?: boolean; lead?: LeadLista } | null;
         const c = r?.found && r.lead ? deLista(r.lead) : null;
         setCliente(c); setVazio(!c);
         return c;
       }
-      const { data, error } = await supabase.rpc("bolsao_puxar", { p_porta: origem, p_empreendimentos: empreendimentos.length ? empreendimentos : null });
+      const { data, error } = await comLimite(supabase.rpc("bolsao_puxar", { p_porta: origem, p_empreendimentos: empreendimentos.length ? empreendimentos : null }));
+      if (meu !== pedido.current) return null;
       if (error) throw error;
       const r = data as { ok: boolean; lead: LeadBolsao | null; error?: string };
       if (!r.ok) throw new Error(r.error ?? "Erro ao buscar cliente");
@@ -74,13 +83,19 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
       setCliente(c); setVazio(!c);
       return c;
     } catch (e) {
+      if (meu !== pedido.current) return null;
       console.error("[OA] proximo", e);
+      setCliente(null); setErro(true);
       toast.error("Não consegui buscar o próximo cliente. Tente de novo.");
       return null;
     } finally {
-      setCarregando(false);
+      if (timer) clearTimeout(timer);
+      if (meu === pedido.current) setCarregando(false);
     }
   }, [user, ehLista, listaIds, origem, empreendimentos]);
+
+  const proximoRef = useRef(proximo);
+  proximoRef.current = proximo;
 
   /** Registra o histórico no card do Pipeline quando o telefone já é um lead do próprio corretor (regra antiga mantida). */
   const anotarNoPipeline = async (c: ClienteOA, rotulo: string, nota: string) => {
@@ -122,7 +137,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
           const msg = r?.reason === "com_outro" ? mensagemAproveitar({ status: "com_outro", corretor_nome: (r as { corretor_nome?: string }).corretor_nome })
             : r?.reason === "already_approved" || r?.reason === "phone_already_approved" ? "Esse cliente já foi aproveitado por outro corretor." : "Não consegui gravar. Tente de novo.";
           toast.error(msg);
-          if (r?.reason && r.reason !== "error") setCliente(null);
+          if (r?.reason && r.reason !== "error") { setCliente(null); void proximoRef.current(); }
           return false;
         }
         if (!aproveitou) void anotarNoPipeline(c, ROTULO_RESULTADO[resultado], extras.nota ?? "");
@@ -133,7 +148,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
         if (error || !r) { toast.error("Não consegui aproveitar agora. Tente de novo."); return false; }
         if (!r.ok) {
           toast.error(mensagemAproveitar(r));
-          if (r.status !== "sem_login" && r.status !== "invalido") setCliente(null);
+          if (r.status !== "sem_login" && r.status !== "invalido") { setCliente(null); void proximoRef.current(); }
           return false;
         }
         if (resultado === "visita") await salvarVisita(c, c.id, extras);
@@ -143,7 +158,7 @@ export function useFilaOA({ origem, listaIds, empreendimentos }: Opcoes) {
         if (error || !r?.ok) {
           const deOutro = r?.error === "reserva_nao_encontrada";
           toast.error(deOutro ? "Outro corretor já pegou esse cliente." : "Não consegui gravar. Tente de novo.");
-          if (deOutro) setCliente(null);
+          if (deOutro) { setCliente(null); void proximoRef.current(); }
           return false;
         }
       }
