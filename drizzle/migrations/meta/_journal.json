@@ -715,6 +715,13 @@
       "when": 1794609321513,
       "tag": "0101_gestor_busca_repasse_livres",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1794630717113,
+      "tag": "0102_migration",
+      "breakpoints": true
     }
   ]
 }
