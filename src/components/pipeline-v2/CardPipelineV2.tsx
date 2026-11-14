@@ -13,7 +13,7 @@
 //   4. Ponto de saúde + última atividade · corretor · ⚡ registrar
 // No computador, ··· e ⚡ aparecem ao passar o mouse. No celular, sempre.
 // ─────────────────────────────────────────────────────────────────
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { MessageCircle, Phone, Zap, Copy, Check } from "lucide-react";
