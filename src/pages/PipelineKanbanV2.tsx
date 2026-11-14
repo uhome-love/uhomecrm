@@ -815,8 +815,6 @@ export default function PipelineKanbanV2() {
           acaoCounts={acaoCounts}
           acaoFilter={acaoFilter}
           setAcaoFilter={setAcaoFilter}
-          sortOrder={sortOrder}
-          tarefasMap={kanbanTarefasMap}
         />
       ) : (
         <div className="flex-1 min-h-0 overflow-hidden flex" style={{ padding: "0 16px" }}>

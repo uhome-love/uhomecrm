@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useMemo, memo, useCallback } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
-import CardMinimal from "./CardMinimal";
-import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
+import CardMinimal from "@/components/pipeline-v2/CardPipelineV2";
+import MobileTopoV2 from "@/components/pipeline-v2/MobileTopoV2";
+import { useSwipeEtapa } from "@/components/pipeline-v2/useSwipeEtapa";
+import type { FiltroAcao } from "@/lib/pipelineV2/proximaAcao";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isTaskHigherPriority, type ProximaTarefa } from "@/lib/taskQueryUtils";
@@ -22,6 +24,9 @@ interface PipelineMobileViewProps {
   clientStatusCounts?: { em_dia: number; desatualizado: number; tarefa_atrasada: number };
   clientStatusFilter?: string;
   onStatusFilterChange?: (f: string) => void;
+  acaoCounts?: { atrasada: number; hoje: number; sem: number };
+  acaoFilter?: FiltroAcao;
+  setAcaoFilter?: (v: FiltroAcao) => void;
 }
 
 const LOAD_BATCH = 20;
@@ -38,11 +43,11 @@ const HIDDEN_STAGE_TIPOS = new Set([
 const PipelineMobileView = memo(function PipelineMobileView({
   stages: allStages, leads, corretorNomes, parcerias, onMoveLead,
   onSelectLead, selectionMode, selectedLeads, onToggleSelect,
+  acaoCounts = { atrasada: 0, hoje: 0, sem: 0 }, acaoFilter = "todos", setAcaoFilter,
 }: PipelineMobileViewProps) {
   // Fluxo único: Descarte/Caiu não viram aba (só destino do botão de descarte).
   const stages = useMemo(() => allStages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo)), [allStages]);
   const [activeStageId, setActiveStageId] = useState(stages[0]?.id || "");
-  const tabsRef = useRef<HTMLDivElement>(null);
 
   // Keep activeStageId valid
   useEffect(() => {
@@ -51,10 +56,10 @@ const PipelineMobileView = memo(function PipelineMobileView({
     }
   }, [stages, activeStageId]);
 
-  // Scroll active tab into view
+  // Ao trocar de etapa, a lista volta ao primeiro card
+  const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = tabsRef.current?.querySelector(`[data-stage-id="${activeStageId}"]`) as HTMLElement;
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    if (listRef.current) listRef.current.scrollTop = 0;
   }, [activeStageId]);
 
   // Leads per stage counts
@@ -111,6 +116,44 @@ const PipelineMobileView = memo(function PipelineMobileView({
     staleTime: 30_000,
   });
 
+  // Cadência "Sem Contato" (mesma leitura do quadro do computador)
+  const { data: cadenciaRows = [] as { pipeline_lead_id: string; tentativa_atual: number; proxima_em: string | null }[] } = useQuery({
+    queryKey: ["pipeline-cadencia-sc", leadIdsKey],
+    queryFn: async () => {
+      if (leadIds.length === 0) return [];
+      const chunks: string[][] = [];
+      for (let i = 0; i < leadIds.length; i += 500) chunks.push(leadIds.slice(i, i + 500));
+      const results = await Promise.all(chunks.map(async (chunk) => {
+        const { data } = await supabase
+          .from("lead_cadencia_sem_contato")
+          .select("pipeline_lead_id, tentativa_atual, proxima_em")
+          .in("status", ["ativa", "aguardando_descarte"])
+          .in("pipeline_lead_id", chunk);
+        return data || [];
+      }));
+      return results.flat();
+    },
+    enabled: leadIds.length > 0,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const cadenciaMap = useMemo(() => {
+    const map: Record<string, { tentativa: number; proxima_em: string | null }> = {};
+    for (const r of cadenciaRows) {
+      if (r.pipeline_lead_id) map[r.pipeline_lead_id] = { tentativa: r.tentativa_atual, proxima_em: r.proxima_em };
+    }
+    return map;
+  }, [cadenciaRows]);
+
+  const activeIdx = stages.findIndex(s => s.id === activeStageId);
+  const swipe = useSwipeEtapa({
+    podeAnterior: activeIdx > 0,
+    podeProxima: activeIdx >= 0 && activeIdx < stages.length - 1,
+    onAnterior: () => { if (activeIdx > 0) setActiveStageId(stages[activeIdx - 1].id); },
+    onProxima: () => { if (activeIdx < stages.length - 1) setActiveStageId(stages[activeIdx + 1].id); },
+  });
+  const etapasTopo = useMemo(() => stages.map(s => ({ id: s.id, nome: s.tipo === "convertido" ? "Negócio" : s.nome, tipo: s.tipo, qtd: stageCounts[s.id] || 0, cor: s.cor })), [stages, stageCounts]);
+
   const activeStage = stages.find(s => s.id === activeStageId);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -122,66 +165,25 @@ const PipelineMobileView = memo(function PipelineMobileView({
   }, [stageLeads.length]);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      {/* Stage Tabs */}
-      <div
-        ref={tabsRef}
-        style={{
-          display: "flex",
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch",
-          scrollbarWidth: "none",
-          padding: "10px 16px",
-          gap: 8,
-          position: "sticky",
-          top: 0,
-          zIndex: 25 /* Z.mobileTabs */,
-        }}
-        className="scrollbar-none bg-background/85 backdrop-blur-xl border-b border-border/60"
-      >
-        {stages.map(stage => {
-          const isActive = stage.id === activeStageId;
-          const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📋";
-          const count = stageCounts[stage.id] || 0;
-          return (
-            <button
-              key={stage.id}
-              data-stage-id={stage.id}
-              onClick={() => setActiveStageId(stage.id)}
-              className={[
-                "flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-full h-9 px-3.5 text-[13px] font-semibold transition-all duration-200 active:scale-95 motion-reduce:transition-none",
-                isActive
-                  ? "bg-foreground text-background shadow-sm"
-                  : "bg-muted/70 text-muted-foreground",
-              ].join(" ")}
-            >
-              <span className="text-sm leading-none">{emoji}</span>
-              {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
-              <span
-                className={[
-                  "min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center",
-                  isActive ? "bg-background/20 text-background" : "bg-background text-foreground/70",
-                ].join(" ")}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Cards List — fluxo único, mesma renderização em todas as etapas */}
-      {(
-
+    <div className="flex flex-col flex-1 min-h-0">
         <div
+          ref={listRef}
           onScroll={handleScroll}
           style={{
-            flex: 1, minHeight: 0, overflowY: "auto",
-            display: "flex", flexDirection: "column", gap: 6,
-            padding: "8px 12px max(6rem, calc(env(safe-area-inset-bottom) + 5rem))",
+            flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden",
+            padding: "0 12px max(6rem, calc(env(safe-area-inset-bottom) + 5rem))",
             WebkitOverflowScrolling: "touch",
           }}
         >
+          <MobileTopoV2
+            contadores={acaoCounts}
+            acaoFilter={acaoFilter}
+            onAcaoFilter={(v) => setAcaoFilter?.(v)}
+            etapas={etapasTopo}
+            etapaAtivaId={activeStageId}
+            onEtapa={setActiveStageId}
+          />
+          <div {...swipe.handlers} style={{ ...swipe.style, display: "flex", flexDirection: "column", gap: 6, paddingTop: 8 }}>
           {stageLeads.length === 0 && (
             <div
               className="text-muted-foreground"
@@ -209,26 +211,15 @@ const PipelineMobileView = memo(function PipelineMobileView({
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}
+                cadencia={cadenciaMap[lead.id] || null}
+                variante="toque"
                 onDragStart={() => { /* mobile: sem drag */ }}
                 onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
               />
             </div>
           ))}
-          {hasMore && (
-            <button
-              onClick={() => setVisibleCount(prev => Math.min(prev + LOAD_BATCH, stageLeads.length))}
-              className="text-muted-foreground"
-              style={{
-                width: "100%", padding: "10px 0",
-                fontSize: 12, fontWeight: 600,
-                background: "none", border: "none", cursor: "pointer",
-              }}
-            >
-              Mostrar mais ({stageLeads.length - visibleCount} restantes)
-            </button>
-          )}
+          </div>
         </div>
-      )}
     </div>
   );
 });
