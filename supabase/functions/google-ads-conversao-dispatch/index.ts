@@ -22,8 +22,10 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
-  // Apenas service role (cron) ou admin
-  if (auth !== `Bearer ${serviceKey}`) {
+  // Apenas agendamento (x-cron-secret, mesmo segredo do CAPI), service role ou admin
+  const cronSecret = Deno.env.get("CAPI_CRON_SECRET");
+  const porCron = !!cronSecret && req.headers.get("x-cron-secret") === cronSecret;
+  if (!porCron && auth !== `Bearer ${serviceKey}`) {
     const { data: u } = await sb.auth.getUser(auth.replace("Bearer ", ""));
     if (!u?.user) return json({ error: "unauthorized" }, 401);
     const { data: isAdmin } = await sb.rpc("has_role", { _user_id: u.user.id, _role: "admin" });
