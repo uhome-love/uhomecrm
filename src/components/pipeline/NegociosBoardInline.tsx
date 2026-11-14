@@ -16,6 +16,7 @@ import { NegociosBoardSummary } from "./negocio/NegociosBoardSummary";
 import { recortarNegocios, recortarPosVisita, resumoNegocios, filtrarNegociosAtalho, type NegociosAtalho } from "@/lib/negociosBoardPresentation";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { diasCalendarioBRT } from "@/lib/diasCalendarioBRT";
 
 interface NegociosBoardProps {
   onOpenLead: (leadId: string) => void;
@@ -38,6 +39,10 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, l
   const [atalho, setAtalho] = useState<NegociosAtalho>("todos");
 
   const leadById = useMemo(() => new Map(pipelineLeads.map(l => [l.id, l])), [pipelineLeads]);
+  const atividadeDias = (id: string | null): number | null => {
+    const toque = id ? leadById.get(id)?.ultimo_toque_at : null;
+    return toque && !Number.isNaN(Date.parse(toque)) ? Math.max(0, diasCalendarioBRT(toque)) : null;
+  };
   const recorte = useMemo(() => ({ lens, search: searchTerm, corretor: corretorFilter, gestorIds: gestorTeamUserIds, saude: saudeFilter }), [lens, searchTerm, corretorFilter, gestorTeamUserIds, saudeFilter]);
   const negociosBase = useMemo(() => recortarNegocios((data?.negocios ?? []).map(n => {
     const lead = n.pipelineLeadId ? leadById.get(n.pipelineLeadId) : undefined;
@@ -126,8 +131,8 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, l
         ) : (
           <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-[calc(6rem+env(safe-area-inset-bottom))]">
             {activeIsPos ? (
-              prontos.length === 0 ? <NegociosEmpty coluna={mobileCol} /> : prontos.map((p) => <PosCard key={p.id} p={p} stages={stages} onMoveLead={onMoveLead} onOpenLead={onOpenLead} />)
-            ) : activeItems.length === 0 ? <NegociosEmpty coluna={mobileCol} /> : activeItems.map((n) => <NegCard key={n.id} n={n} lens={lens} stages={stages} onMoveLead={onMoveLead} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} />)}
+              prontos.length === 0 ? <NegociosEmpty coluna={mobileCol} /> : prontos.map((p) => <PosCard key={p.id} p={p} atividadeDias={atividadeDias(p.id)} stages={stages} onMoveLead={onMoveLead} onOpenLead={onOpenLead} />)
+            ) : activeItems.length === 0 ? <NegociosEmpty coluna={mobileCol} /> : activeItems.map((n) => <NegCard key={n.id} n={n} atividadeDias={atividadeDias(n.pipelineLeadId)} stages={stages} onMoveLead={onMoveLead} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} />)}
           </div>
         )}
       </div>
@@ -161,8 +166,8 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, l
                 })()}
                 <div className="flex flex-col gap-2 min-h-0 flex-1 overflow-y-auto px-2 pb-2">
                   {isPos ? (
-                    prontos.length === 0 ? <NegociosEmpty coluna={c.key} /> : prontos.map((p) => <PosCard key={p.id} p={p} stages={stages} onMoveLead={onMoveLead} onOpenLead={onOpenLead} onDragStartCard={onMoveLead ? beginDrag : undefined} />)
-                  ) : items.length === 0 ? <NegociosEmpty coluna={c.key} /> : items.map((n) => <NegCard key={n.id} n={n} lens={lens} stages={stages} onMoveLead={onMoveLead} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} onDragStartCard={onMoveLead ? beginDrag : undefined} />)}
+                    prontos.length === 0 ? <NegociosEmpty coluna={c.key} /> : prontos.map((p) => <PosCard key={p.id} p={p} atividadeDias={atividadeDias(p.id)} stages={stages} onMoveLead={onMoveLead} onOpenLead={onOpenLead} onDragStartCard={onMoveLead ? beginDrag : undefined} />)
+                  ) : items.length === 0 ? <NegociosEmpty coluna={c.key} /> : items.map((n) => <NegCard key={n.id} n={n} atividadeDias={atividadeDias(n.pipelineLeadId)} stages={stages} onMoveLead={onMoveLead} onClick={() => n.pipelineLeadId && onOpenLead(n.pipelineLeadId)} onDragStartCard={onMoveLead ? beginDrag : undefined} />)}
                 </div>
               </div>
             );
