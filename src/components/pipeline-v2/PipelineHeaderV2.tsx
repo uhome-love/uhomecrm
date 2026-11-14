@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// PipelineHeaderV2 — topo novo do Pipeline (página de teste /pipeline-v2).
+// PipelineHeaderV2 — topo do Pipeline oficial (/pipeline-leads).
 //
 // Recebe as MESMAS props do PipelineHeader (troca direta no
 // PipelineKanbanV2) e mais 3 opcionais para os atalhos de ação.
