@@ -916,53 +916,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         }
       `}</style>
 
-      {/* Aviso: leads existentes que não aparecem em nenhuma coluna */}
-      {(foraDoBoard.ganhos > 0 || foraDoBoard.negocios > 0) && (
-        <div className="shrink-0 mt-2 mb-1 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          {foraDoBoard.ganhos > 0 && (
-            <span>{foraDoBoard.ganhos} lead(s) em <b className="text-foreground">Ganho</b> — veja no filtro “🏆 Ganhos”. </span>
-          )}
-          {foraDoBoard.negocios > 0 && (
-            <span>{foraDoBoard.negocios} lead(s) em etapa comercial — veja na aba <b className="text-foreground">Negócios</b>.</span>
-          )}
-        </div>
-      )}
-
-
-      {/* Mini-map nav pills — índice de navegação discreto entre etapas */}
-      <div className="shrink-0 flex items-center gap-1 mb-2 px-0.5 overflow-x-auto scrollbar-none pb-0.5" style={{ paddingTop: 10 }}>
-        {visibleStages.map((stage, idx) => {
-          const stageLeads = leadsByStage.get(stage.id) || [];
-          const isActive = idx === activeIndex;
-          const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📍";
-          return (
-            <button
-              key={stage.id}
-              onClick={() => scrollToIndex(idx)}
-              title={stage.tipo === "convertido" ? "Negócio" : stage.nome}
-              className="transition-all hover:opacity-100"
-              style={{
-                display: "flex", alignItems: "center", gap: 5,
-                padding: "3px 9px", borderRadius: 99, fontSize: 11, fontWeight: 500,
-                whiteSpace: "nowrap",
-                background: isActive ? "hsl(var(--primary) / 0.1)" : "transparent",
-                border: isActive ? "1px solid hsl(var(--primary) / 0.4)" : "1px solid transparent",
-                color: isActive ? "hsl(var(--primary))" : "hsl(var(--pipeline-text-muted))",
-                opacity: isActive ? 1 : 0.7,
-                cursor: "pointer",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-            >
-              {emoji && <span style={{ fontSize: 11 }}>{emoji}</span>}
-              <span>{stage.tipo === "convertido" ? "Negócio" : stage.nome}</span>
-              <span style={{ fontWeight: 700, marginLeft: 1 }}>
-                {stageLeads.length}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
+      <div className="shrink-0" style={{ height: 10 }} />
 
       {/* Kanban scroll area */}
       <div className="relative flex-1 min-h-0">
