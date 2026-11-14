@@ -722,6 +722,13 @@
       "when": 1794630717113,
       "tag": "0102_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1794685392924,
+      "tag": "0103_google_ads_conversao_visita",
+      "breakpoints": true
     }
   ]
 }

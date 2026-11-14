@@ -3640,6 +3640,48 @@ export type Database = {
         }
         Relationships: []
       }
+      google_ads_conversoes: {
+        Row: {
+          conversao_em: string
+          created_at: string
+          enviado_em: string | null
+          gclid: string
+          id: string
+          pipeline_lead_id: string
+          resposta: Json | null
+          status: string
+          tentativas: number
+          valor: number
+          visita_id: string | null
+        }
+        Insert: {
+          conversao_em: string
+          created_at?: string
+          enviado_em?: string | null
+          gclid: string
+          id?: string
+          pipeline_lead_id: string
+          resposta?: Json | null
+          status?: string
+          tentativas?: number
+          valor?: number
+          visita_id?: string | null
+        }
+        Update: {
+          conversao_em?: string
+          created_at?: string
+          enviado_em?: string | null
+          gclid?: string
+          id?: string
+          pipeline_lead_id?: string
+          resposta?: Json | null
+          status?: string
+          tentativas?: number
+          valor?: number
+          visita_id?: string | null
+        }
+        Relationships: []
+      }
       homi_alerts: {
         Row: {
           contexto: Json | null
@@ -11559,6 +11601,7 @@ export type Database = {
           form_respostas: Json | null
           forma_pagamento: string | null
           formulario: string | null
+          gclid: string | null
           gerente_id: string | null
           hora_proxima_acao: string | null
           id: string
@@ -11677,6 +11720,7 @@ export type Database = {
           form_respostas?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
+          gclid?: string | null
           gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
@@ -11795,6 +11839,7 @@ export type Database = {
           form_respostas?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
+          gclid?: string | null
           gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
