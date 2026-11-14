@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
     let fbc: string | null = (body.fbc || "").toString().trim() || null;
     const fbp: string | null = (body.fbp || "").toString().trim() || null;
     const fbclid: string | null = (body.fbclid || "").toString().trim() || null;
+    const gclid: string | null = (body.gclid || "").toString().trim() || null;
     // Build fbc from fbclid if not provided
     if (!fbc && fbclid) {
       fbc = `fb.1.${Date.now()}.${fbclid}`;
@@ -230,6 +231,7 @@ Deno.serve(async (req) => {
         // Atualiza sinais de match do Meta (fbc/fbp/UA/IP) quando vierem nesta submissão
         if (fbc) updatePayload.fbc = fbc;
         if (fbp) updatePayload.fbp = fbp;
+        if (gclid) updatePayload.gclid = gclid;
         if (clientUserAgent) updatePayload.client_user_agent = clientUserAgent;
         if (clientIpAddress) updatePayload.client_ip_address = clientIpAddress;
 
@@ -418,6 +420,7 @@ Deno.serve(async (req) => {
         prioridade_lead: "media",
         fbc,
         fbp,
+        gclid,
         client_user_agent: clientUserAgent,
         client_ip_address: clientIpAddress,
         event_source_url: eventSourceUrl,
