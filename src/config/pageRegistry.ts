@@ -64,7 +64,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   roleta: lazyRetry(() => import("@/pages/RoletaLeads")),
   marketplace: lazyRetry(() => import("@/pages/MarketplaceScripts")),
   pipeline: lazyRetry(() => import("@/pages/PipelineKanban")),
-  "pipeline-v2": lazyRetry(() => import("@/pages/PipelineKanbanV2")),
   
   
   templates: lazyRetry(() => import("@/pages/TemplatesComunicacao")),
@@ -149,7 +148,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/marketplace":           { key: "marketplace",          label: "Marketplace",         icon: "Lightbulb" },
   "/pipeline":              { key: "pipeline",             label: "Pipeline",            icon: "AlignLeft",     noPadding: true },
   "/pipeline-leads":        { key: "pipeline",             label: "Pipeline",            icon: "AlignLeft",     noPadding: true },
-  "/pipeline-v2":            { key: "pipeline-v2",          label: "Pipeline (novo)",     icon: "AlignLeft",     noPadding: true },
   
   
   "/templates-comunicacao": { key: "templates",            label: "Templates",           icon: "ClipboardList", roles: ["gestor", "admin", "diretor"] },
