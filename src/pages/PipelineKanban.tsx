@@ -450,8 +450,8 @@ export default function PipelineKanban() {
     if (riscoFilter && riscoLeadIds) {
       result = result.filter(l => riscoLeadIds.has(l.id));
     }
-    return result;
     result = filtrarPorAcao(result, acaoFilter, kanbanTarefasMap, Object.fromEntries(stageMap) as Record<string, string>);
+    return result;
   }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds, acaoFilter]);
 
   // Resumo da lente Negócios — total, VGV somado e em risco (>7d sem avanço de fase)
@@ -573,6 +573,8 @@ export default function PipelineKanban() {
   // Fonte única do pipeline ativo (topo = soma das bolinhas; Ganho/Descarte fora).
   const pipelineAtivo = useMemo(() => contarPipelineAtivo(filteredLeads, stageTypeById), [filteredLeads, stageTypeById]);
 
+  const acaoCounts = useMemo(() => contarAcoes(preFilteredLeads, kanbanTarefasMap, stageTypeById), [preFilteredLeads, kanbanTarefasMap, stageTypeById]);
+
   const lastStableClientStatusCountsRef = useRef(clientStatusCounts);
   // Pronto quando: stages carregados E (sem leads OU tarefas não estão carregando).
   // Reforço anti-flash: se há leads mas o mapa de tarefas veio vazio, NÃO está
@@ -627,6 +629,7 @@ export default function PipelineKanban() {
     setCampaignTagFilter("all");
     setClientStatusFilter("todos");
     setNegociosFilter(false);
+    setAcaoFilter("todos");
     clearRisco();
     if (searchParams.get("filtro")) {
       searchParams.delete("filtro");
@@ -696,6 +699,9 @@ export default function PipelineKanban() {
       
       {/* ═══ HEADER (Fase 6: extraído para PipelineHeader.tsx) ═══ */}
       <PipelineHeader
+        acaoCounts={acaoCounts}
+        acaoFilter={acaoFilter}
+        setAcaoFilter={setAcaoFilter}
         filteredLeadsCount={pipelineAtivo.total}
         pipelineAtivoSplit={pipelineAtivo}
         displayedClientStatusCounts={displayedClientStatusCounts}
