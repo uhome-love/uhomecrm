@@ -9,6 +9,10 @@
 - Se o lead tem tarefa: "Próxima: Follow-up · amanhã 10h". Fica vermelho quando está atrasada e azul quando é para hoje.
 - Se não tem tarefa: "Sem próxima ação", em amarelo. São os mesmos nomes e cores dos atalhos de tarefa do topo.
 - O restante do cartão continua igual, no computador e no celular.
+- **São dois sinais separados, sem misturar:**
+  - A **saúde** (a bolinha verde, amarela ou vermelha, que diz se o lead está atualizado ou desatualizado) continua medindo só o tempo sem atividade, como hoje. Uma tarefa atrasada não deixa o lead desatualizado.
+  - A **linha da próxima tarefa** mostra a organização do corretor: "Tarefa atrasada", "Para hoje", "Próxima: ..." ou "Sem próxima ação".
+  - Exemplo: um lead com contato ontem e tarefa vencida aparece com a bolinha verde e "Tarefa atrasada · venceu ontem". O corretor vê que falou com o cliente, mas precisa reagendar.
 
 ## 3. Pop-up "Concluir tarefa" compacto (desenho aprovado)
 - Cabeçalho em uma linha; resultado e observação em cima; status em uma linha; próxima ação com botões rápidos e atalhos de data; o resto fica em "Mais opções".
