@@ -41,7 +41,8 @@ import { toast } from "sonner";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/lib/taskQueryUtils";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
-import PipelineHeader from "@/components/pipeline/PipelineHeader";
+import PipelineHeader from "@/components/pipeline-v2/PipelineHeaderV2";
+import { contarAcoes, filtrarPorAcao, type FiltroAcao } from "@/lib/pipelineV2/proximaAcao";
 
 import ModoTimeView from "@/components/pipeline/modo-time/ModoTimeView";
 import { calcGestorOwnRow } from "@/lib/calcGestorOwnRow";
@@ -69,6 +70,7 @@ const CAMPAIGN_TAGS = [
 type ClientStatusFilter = "todos" | LeadClientStatus | "estagnado";
 
 export default function PipelineKanban() {
+  const [acaoFilter, setAcaoFilter] = useState<FiltroAcao>("todos");
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
@@ -449,7 +451,8 @@ export default function PipelineKanban() {
       result = result.filter(l => riscoLeadIds.has(l.id));
     }
     return result;
-  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds]);
+    result = filtrarPorAcao(result, acaoFilter, kanbanTarefasMap, Object.fromEntries(stageMap) as Record<string, string>);
+  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds, acaoFilter]);
 
   // Resumo da lente Negócios — total, VGV somado e em risco (>7d sem avanço de fase)
   const negociosLeadIds = useMemo(
@@ -631,7 +634,7 @@ export default function PipelineKanban() {
     }
   };
 
-  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter || riscoFilter;
+  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter || riscoFilter || acaoFilter !== "todos";
 
 
   // A aba "Equipes" (padrão do CEO/Diretor) tem fonte de dados própria
