@@ -332,7 +332,7 @@ export function CompletionForm(props: CompletionFormProps) {
   /* ─── "Ajustar manualmente" (colapsável no card Agendar) ─── */
   const [manualOpen, setManualOpen] = useState(false);
   // Auto-abre se o usuário tiver descartado a sugestão ou não houver sugestão E ele tenha rolado até o outcome
-  const shouldShowManual = manualOpen || !suggestion || suggestionDismissed;
+  const shouldShowManual = manualOpen;
 
   /* ─── Stage options ─── */
   const { data: stages = [], isLoading: stagesLoading } = useStageOptions(
@@ -454,11 +454,9 @@ export function CompletionForm(props: CompletionFormProps) {
     <div className="flex flex-col max-h-[90vh] max-[420px]:max-h-[92vh]">
       {/* Header compacto */}
       <div className="px-4 pt-4 pb-3 border-b border-border/60 shrink-0">
-        <div className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
-          Concluir tarefa
-        </div>
-        <div className="text-sm font-semibold text-foreground truncate mt-0.5">
-          {subtitleText}
+        <div className="text-sm truncate pr-6">
+          <span className="font-semibold text-foreground">Concluir tarefa</span>
+          <span className="text-muted-foreground"> · {subtitleText}</span>
         </div>
       </div>
 
@@ -499,7 +497,7 @@ export function CompletionForm(props: CompletionFormProps) {
           </label>
           <Textarea
             ref={descricaoRef}
-            placeholder="Ex: Cliente pediu para ligar amanhã às 14h, interessado no apto 301..."
+            placeholder="O que aconteceu na conversa?"
             value={descricao}
             onChange={(e) => {
               onChangeDescricao(e.target.value);
@@ -507,9 +505,9 @@ export function CompletionForm(props: CompletionFormProps) {
               el.style.height = "auto";
               el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
             }}
-            rows={1}
+            rows={2}
             className={cn(
-              "resize-none text-xs bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20 min-h-[32px] overflow-hidden",
+              "resize-none text-xs bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20 min-h-[52px] overflow-hidden",
               descricao.length > 0 &&
                 !descricaoValida &&
                 "border-destructive focus-visible:ring-destructive/20",
@@ -556,15 +554,6 @@ export function CompletionForm(props: CompletionFormProps) {
                 </div>
               </div>
             )}
-            {/* Divisor: "Como prosseguir?" */}
-            <div className="flex items-center gap-2 pt-1">
-              <div className="flex-1 h-px bg-border/60" />
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                {context === "lead" ? "Como prosseguir?" : "Quando voltar?"}
-              </span>
-              <div className="flex-1 h-px bg-border/60" />
-            </div>
-
             {/* Cartão principal — Agendar (default destacado) */}
             {outcome === "agendar" && (
               <AgendarCard
@@ -777,36 +766,38 @@ function AgendarCard({
   onSelectPreset: (preset: TaskPreset) => void;
 }) {
   const showSuggestionCard = suggestion && !suggestionDismissed;
+  const quickDatesBlock = (
+            <div className="flex flex-wrap gap-1">
+              {quickDates()
+                .filter((q) => {
+                  // Não oferecer atalho que ultrapasse o teto do stage.
+                  const diffDays = Math.round(
+                    (q.d.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000,
+                  );
+                  return diffDays <= maxDaysAhead;
+                })
+                .map((q) => (
+                  <button
+                    key={q.label}
+                    type="button"
+                    onClick={() => onApplyQuick(q.d, q.h)}
+                    className=cn("text-[11px] px-2.5 py-1 rounded-full transition-colors border", novaTarefa.vence_em === dateToBRT(q.d) && novaTarefa.hora_vencimento === q.h ? "bg-primary/10 border-primary text-primary font-semibold" : "bg-background border-border text-foreground hover:bg-muted")
+                  >
+                    {q.label}
+                  </button>
+                ))}
+            </div>
+  );
 
   return (
-    <div className="rounded-lg border-2 border-primary/40 bg-primary/5 p-3 space-y-2.5">
-      <div className="flex items-center gap-1.5">
-        <div
-          className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-white"
-          style={{
-            background:
-              "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
-          }}
-        >
-          <CalendarPlus className="w-3.5 h-3.5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-xs font-semibold text-foreground">
-            Agendar próxima tarefa
-          </div>
-          <div className="text-[10px] text-muted-foreground">
-            Caminho recomendado — mantém o lead ativo
-          </div>
-        </div>
-      </div>
-
+    <div className="rounded-xl border border-primary/25 bg-primary/[0.04] p-3 space-y-2">
       {/* Presets de próxima tarefa (Fase B) */}
       {presets && presets.length > 0 && (
         <div className="space-y-1.5">
           <div className="text-[10px] uppercase tracking-wide font-semibold text-primary">
             Próxima ação
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-nowrap gap-1 overflow-x-auto scrollbar-none -mx-1 px-1 pb-0.5">
             {presets.map((p) => {
               const active = selectedPresetId === p.id;
               const Icon = p.Icon;
@@ -816,7 +807,7 @@ function AgendarCard({
                   type="button"
                   onClick={() => onSelectPreset(p)}
                   className={cn(
-                    "px-2 py-1 rounded-full text-[11px] font-medium border transition-all inline-flex items-center gap-1",
+                    "shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all inline-flex items-center gap-1",
                     active
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-background hover:bg-muted border-border text-foreground",
@@ -828,15 +819,11 @@ function AgendarCard({
               );
             })}
           </div>
-          {selectedPresetId && selectedPresetId !== PRESET_OUTRO_ID && (
-            <p className="text-[10px] text-muted-foreground">
-              Tipo, prazo e status foram preenchidos. Ajuste manualmente se
-              precisar.
-            </p>
-          )}
         </div>
       )}
 
+
+      {quickDatesBlock}
 
       {semContato.enabled && semContato.requiresNextTask && (
         <div className="text-[10.5px] text-primary bg-primary/10 border border-primary/25 rounded-md p-2 flex items-start gap-1.5">
@@ -894,7 +881,7 @@ function AgendarCard({
         ) : (
           <ChevronDown className="w-3 h-3" />
         )}
-        Ajustar manualmente
+        Mais opções <span className="font-normal text-muted-foreground">(data manual, mover etapa, detalhes)</span>
       </button>
 
       {manualOpen && (
@@ -931,26 +918,6 @@ function AgendarCard({
             <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1 block">
               Quando
             </label>
-            <div className="flex flex-wrap gap-1 mb-1.5">
-              {quickDates()
-                .filter((q) => {
-                  // Não oferecer atalho que ultrapasse o teto do stage.
-                  const diffDays = Math.round(
-                    (q.d.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000,
-                  );
-                  return diffDays <= maxDaysAhead;
-                })
-                .map((q) => (
-                  <button
-                    key={q.label}
-                    type="button"
-                    onClick={() => onApplyQuick(q.d, q.h)}
-                    className="text-[10px] px-1.5 py-0.5 rounded transition-colors border bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                  >
-                    {q.label}
-                  </button>
-                ))}
-            </div>
             <div className="grid grid-cols-2 gap-1.5">
               <div className="flex items-center gap-1 bg-background border border-border rounded-md px-2">
                 <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
@@ -1267,33 +1234,24 @@ function ReasonBlock({
 function StageStatusBlock({ block }: { block: StageStatusPropsBlock }) {
   const title =
     block.kind === "qualificacao"
-      ? "Status da qualificação"
+      ? "Status do atendimento"
       : block.kind === "aquecimento"
         ? "Prazo do aquecimento"
         : "Situação da negociação";
   const helper =
     block.kind === "qualificacao"
-      ? "Registre em que momento da qualificação a conversa está agora."
+      ? "Registre em que momento do atendimento a conversa está agora."
       : block.kind === "aquecimento"
         ? "Registre o prazo acordado para retomar o contato."
         : "Registre em que ponto da negociação o lead está agora.";
 
   return (
-    <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold text-foreground">
-          {title} <span className="text-destructive">*</span>
-        </span>
-        {block.currentValue && (
-          <span className="text-[10px] text-muted-foreground truncate">
-            atual:{" "}
-            {block.options.find((o) => o.value === block.currentValue)?.label ??
-              block.currentValue}
-          </span>
-        )}
-      </div>
-      <Select value={block.pick || undefined} onValueChange={block.onPick}>
-        <SelectTrigger className="h-8 text-xs bg-background">
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs font-medium text-foreground min-w-0 truncate" title={helper}>
+        {title} <span className="text-destructive">*</span>
+      </span>
+      <Select value={block.pick || block.currentValue || undefined} onValueChange={block.onPick}>
+        <SelectTrigger className="h-8 w-auto min-w-[150px] max-w-[60%] text-xs bg-background">
           <SelectValue placeholder="Selecione..." />
         </SelectTrigger>
         <SelectContent>
@@ -1304,8 +1262,6 @@ function StageStatusBlock({ block }: { block: StageStatusPropsBlock }) {
           ))}
         </SelectContent>
       </Select>
-      <p className="text-[10px] text-muted-foreground leading-tight">{helper}</p>
     </div>
   );
 }
-
