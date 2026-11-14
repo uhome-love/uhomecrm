@@ -535,11 +535,10 @@ const CardMinimal = memo(function CardMinimal({
           {/* Divisor sutil */}
           <div className="mt-2 border-t border-border/40" />
 
-          {/* Base: PRÓXIMA TAREFA (ou "Sem próxima ação") + ⚡ registrar. Saúde fica na borda. */}
+          {/* Base: última atividade + ⚡ registrar. Saúde fica na borda. */}
           <div className="mt-2 flex items-center gap-1.5 min-w-0">
-            <TarefaIcon className={`h-3 w-3 shrink-0 ${tarefaLinha.cor}`} />
-            <span title={tarefaLinha.titulo} className={`flex-1 min-w-0 truncate text-[11.5px] font-medium ${tarefaLinha.cor}`}>
-              {tarefaLinha.texto}
+            <span className="flex-1 min-w-0 truncate text-[11.5px] text-muted-foreground">
+              última atividade · <span className="font-medium text-foreground/80">{atividadeInfo.label}</span>
             </span>
             {atividadeInfo.temAtividade ? (
               <button
