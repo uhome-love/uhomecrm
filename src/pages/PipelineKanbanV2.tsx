@@ -636,7 +636,7 @@ export default function PipelineKanbanV2() {
     }
   };
 
-  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter || riscoFilter;
+  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter || riscoFilter || acaoFilter !== "todos";
 
 
   // A aba "Equipes" (padrão do CEO/Diretor) tem fonte de dados própria
