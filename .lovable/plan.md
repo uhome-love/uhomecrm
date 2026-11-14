@@ -1,30 +1,32 @@
-# Auditoria do cartão "Novos agendamentos" (Agenda de Visitas)
+# Auditoria das visitas da semana (09 a 15/11) — Painel CEO
 
-## O que a auditoria encontrou (hoje, 14/11)
-O número 15 está certo pela regra atual: conta toda visita **cadastrada hoje** no CRM, seja qual for a data dela.
+## O que foi conferido (direto no banco, mesma regra do painel)
 
-Das 15:
-- **6 ainda vão acontecer:** 1 hoje às 16h e 5 em outros dias (15/11, 17/11, 20/11, 21/11, além de 1 hoje às 15h que ainda não teve resultado).
-- **9 foram marcadas e feitas no mesmo dia.** O corretor cadastrou e o cliente visitou poucas horas depois.
-- **2 delas foram cadastradas depois de já terem acontecido.** Uma foi lançada às 11h05 para uma visita das 9h, e a outra às 17h53 para uma visita das 14h01. São só um registro do que já tinha acontecido, não um agendamento.
-- **1 no show.**
+| Contador | Semana | Hoje (14/11) |
+|---|---|---|
+| Total | 128 | 52 |
+| A realizar | 9 | 3 |
+| Realizadas | 60 | 22 |
+| No show | 59 | 27 |
+| Novos agendamentos (criados no período) | 117 | 16 |
 
-Ou seja, o cartão mistura agendamento de verdade com registro de visita do mesmo dia. Por isso parece que "a maioria já foi realizada".
+- **Total bate**: 9 + 60 + 59 = 128 (e 3 + 22 + 27 = 52).
+- **Duplicidade: nenhuma.** Nenhum cliente tem duas visitas no mesmo dia. Canceladas: 0 na semana (já ficam fora).
+- **Nenhuma visita "realizada" no futuro** e nenhuma visita passada ficou sem resultado.
+- **Realizadas 60 x Roleta 58**: 2 clientes visitaram duas vezes em dias diferentes. O painel conta 60 visitas; a Roleta conta 1 por cliente na semana (58). As duas estão certas, cada uma na sua regra.
 
-## Proposta (só a forma de mostrar, sem mudar as regras de visitas)
-O cartão continua mostrando o total de cadastros do período, com uma linha de detalhe embaixo:
-- **Para os próximos dias:** visitas cadastradas no período para depois do dia em que foram cadastradas.
-- **Para o mesmo dia:** visitas marcadas e feitas no mesmo dia.
-- **Lançadas depois:** visitas cadastradas depois do horário em que aconteceram.
+## Pontos de atenção
 
-Ao tocar no cartão, a lista que já existe mostra um selo com o tipo em cada visita.
-O cartão vale igual no computador e no celular.
+1. **"Novos agendamentos" não é "visitas futuras".** Conta o que foi marcado no período, seja para quando for. Hoje: 16 marcadas, 12 delas para o próprio dia e 9 já realizadas. Por isso aparece "a maioria realizada".
+2. **27 no show hoje** é alto (metade do dia). Todos foram marcados no sistema entre 10h e 20h, de origem manual e Oferta Ativa. Vale o gerente conferir se foram no show de verdade.
+3. **Proteção futura**: o contador lê a tabela bruta de visitas, não a versão sem duplicados. Hoje não muda nada (0 duplicados), mas se surgir um, ele contaria duas vezes.
 
-## Outro ponto que apareceu (sem mudar nada)
-Hoje há **26 no shows** entre as 51 visitas do dia, um número bem alto. Vale conferir em outra etapa se são reais ou se foram marcadas assim automaticamente.
+## Proposta (só depois de você aprovar)
 
-## Detalhes técnicos
-- A RPC `get_visitas_kpis` ganha 3 campos novos (`agendadas_futuro`, `agendadas_mesmo_dia`, `agendadas_retroativas`), comparando `created_at` (BRT) com `data_visita` + `hora_visita`. Os campos de hoje continuam iguais. A mudança vai numa migration só, fora do horário de pico.
-- `MobileVisitas` e `DesktopVisitas` mostram a linha de detalhe. `VisitasPorEquipeList` mostra o selo.
-- Um teste SQL confere as 3 classificações.
-- Antes de construir, apresento um desenho da tela para aprovação.
+- **A.** Trocar o rótulo e o detalhe de "Novos agendamentos" para deixar claro: "Marcadas no período", mostrando em pequeno quantas são para o futuro e quantas já foram realizadas. Mockup antes.
+- **B.** Fazer o contador ler a versão sem duplicados (mesmo número de hoje, protege contra o futuro). Mudança de banco fora do horário comercial.
+- **C.** Lista dos 27 no show de hoje por corretor, para você/gerentes conferirem.
+
+## Técnico
+- Fonte: RPC `get_visitas_kpis` (lê `visitas`, exclui cancelada/backfill/tipo≠lead). B = trocar para `visitas_unicas` mantendo a mesma assinatura e o escopo por papel.
+- A = só apresentação em `DesktopVisitas.tsx`/`MobileVisitas.tsx` + campos extras (`agendadas_futuras`, `agendadas_realizadas`) no RPC.
