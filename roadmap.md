@@ -8,6 +8,6 @@
 ## Negócios — refinamento visual
 - [x] Desenho do computador em tema claro aprovado
 - [x] Desenhos do celular e tema escuro aprovados
-- [ ] Plano da mudança visual — apresentado para aprovação
+- [x] Plano da mudança visual aprovado
 - [ ] Construção por fases — depende do plano aprovado
 - [ ] Revisão e validação ao vivo no computador e celular — após construção, sem alterar leads reais

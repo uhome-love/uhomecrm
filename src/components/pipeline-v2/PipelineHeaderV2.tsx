@@ -26,11 +26,15 @@ import { GERENTES_REAIS } from "@/components/pipeline/header/gerentesReais";
 import HomiPageButton from "@/components/homi/HomiPageButton";
 import type { PipelineHeaderProps, ClientStatusFilter } from "@/components/pipeline/PipelineHeader";
 import type { FiltroAcao } from "@/lib/pipelineV2/proximaAcao";
+import { NegociosLensToggle } from "@/components/pipeline/negocio/NegociosLensToggle";
+import type { NegociosLens } from "@/components/pipeline/negocio/boardPresentation";
 
 export interface PipelineHeaderV2Props extends PipelineHeaderProps {
   acaoCounts?: { atrasada: number; hoje: number; sem: number };
   acaoFilter?: FiltroAcao;
   setAcaoFilter?: (v: FiltroAcao) => void;
+  negociosLens?: NegociosLens;
+  setNegociosLens?: (value: NegociosLens) => void;
 }
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
@@ -57,6 +61,7 @@ export default function PipelineHeaderV2(props: PipelineHeaderV2Props) {
     canToggleCarteira = false, minhaCarteira = false, setMinhaCarteira,
     riscoFilter = false, clearRisco,
     acaoCounts, acaoFilter = "todos", setAcaoFilter,
+    negociosLens = "equipe", setNegociosLens,
   } = props;
 
   const tabs = isAdmin
@@ -172,6 +177,10 @@ export default function PipelineHeaderV2(props: PipelineHeaderV2Props) {
             );
           })}
         </div>
+
+        {activeTab === "negocios" && (isAdmin || isGestor) && setNegociosLens && (
+          <div className="order-3 ml-auto sm:order-none sm:ml-0"><NegociosLensToggle value={negociosLens} onChange={setNegociosLens} /></div>
+        )}
 
         {canToggleCarteira && setMinhaCarteira && naAbaLeads && (
           <div className={`${segBase} hidden md:inline-flex`} role="group" aria-label="De quem são os leads">
