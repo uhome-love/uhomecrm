@@ -148,6 +148,9 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
           .eq("status", "ativo")
           .limit(500),
       ]);
+      if (profMeuRes.error) throw profMeuRes.error;
+      if (leadsRes.error) throw leadsRes.error;
+      if (ganhoRes.error) throw ganhoRes.error;
       const meuCorretorId = (profMeuRes.data?.id as string | undefined) ?? null;
       const leads = (leadsRes.data ?? []) as any[];
       const ganhos = (ganhoRes.data ?? []) as any[];
@@ -162,6 +165,8 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
           : Promise.resolve({ data: [] as any[] }),
         supabase.from("profiles").select("id, user_id, nome, avatar_url, avatar_gamificado_url"),
       ]);
+      if (negRes.error) throw negRes.error;
+      if (profsRes.error) throw profsRes.error;
       const negById = new Map<string, any>();
       for (const n of (negRes.data ?? []) as any[]) negById.set(String(n.id), n);
       // ATENÇÃO fonte dupla: LEAD.corretor_id = profiles.user_id; NEGOCIO.corretor_id = profiles.id.

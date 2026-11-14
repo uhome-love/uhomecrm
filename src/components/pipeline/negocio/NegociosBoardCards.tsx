@@ -1,7 +1,7 @@
 import { useState } from "react";
-import type { ReactNode, DragEvent } from "react";
+import type { ReactNode, DragEvent, MouseEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, History } from "lucide-react";
+import { ArrowRight, CalendarCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LeadSaude } from "@/lib/leadSaude";
 import type { PipelineStage } from "@/hooks/usePipeline";
@@ -10,7 +10,13 @@ import { ParceriaSelo } from "../ParceriaSelo";
 import { JornadaNegocioDialog } from "./JornadaNegocioDialog";
 import { NegOverflowMenu } from "./NegociosBoardActions";
 import { money, SAUDE_STRIPE, PASSO_TIPO, type MoveLeadFn, type NegociosLens as Lens } from "./boardPresentation";
-const stripe = (saude: LeadSaude) => SAUDE_STRIPE[saude];
+import { Button } from "@/components/ui/button";
+import { formatBRT } from "@/lib/brtTime";
+const SAUDE_DOT: Record<LeadSaude, string> = { verde: "bg-success-500", ambar: "bg-warning-500", vermelho: "bg-danger-500", estagnado: "bg-purple-500", terminal: "bg-success-500" };
+const SAUDE_LABEL: Record<LeadSaude, string> = { verde: "Em dia", ambar: "Atenção", vermelho: "Desatualizado", estagnado: "Estagnado", terminal: "Venda assinada" };
+function UltimaAtividade({ saude, dias }: { saude: LeadSaude; dias: number }) {
+  return <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground"><span className={cn("size-2 shrink-0 rounded-full", SAUDE_DOT[saude])} role="img" aria-label={SAUDE_LABEL[saude]} title={SAUDE_LABEL[saude]} /><span>Última atividade · há {dias}d</span></div>;
+}
 function getInitials(nome: string): string {
   const parts = nome.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
@@ -30,13 +36,14 @@ function CardRoot({ onClick, className, children, onDragStart }: { onClick: () =
   return (
     <div
       role="button"
+      data-negocio-card
       tabIndex={0}
       draggable={!!onDragStart}
       onDragStart={onDragStart}
       onClick={onClick}
       onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       className={cn(
-        "group relative shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card p-2.5 pl-3.5 text-left transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 before:absolute before:inset-y-0 before:left-0 before:w-1",
+        "group relative min-w-0 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card p-3 text-left transition-shadow duration-short ease-move hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
         onDragStart && "active:cursor-grabbing",
         className
       )}
@@ -50,7 +57,7 @@ export function PosCard({ p, stages, onMoveLead, onOpenLead, onDragStartCard }: 
   const queryClient = useQueryClient();
   const [jornadaOpen, setJornadaOpen] = useState(false);
   const docStage = (stages || []).find((s) => s.tipo === "documentacao");
-  const virar = async (e: React.MouseEvent) => {
+  const virar = (e: MouseEvent) => {
     e.stopPropagation();
     if (onMoveLead && docStage) {
       setJornadaOpen(true);
@@ -61,7 +68,6 @@ export function PosCard({ p, stages, onMoveLead, onOpenLead, onDragStartCard }: 
   return (
     <CardRoot
       onClick={() => onOpenLead(p.id)}
-      className={stripe(p.saude)}
       onDragStart={onDragStartCard ? () => onDragStartCard(p.id, "pos_visita") : undefined}
     >
       <div data-no-card-click onClick={e => e.stopPropagation()}>
@@ -72,18 +78,19 @@ export function PosCard({ p, stages, onMoveLead, onOpenLead, onDragStartCard }: 
         <NegOverflowMenu leadId={p.id} nome={p.nome} passo="pos_visita" stages={stages} onMoveLead={onMoveLead} onOpen={() => onOpenLead(p.id)} />
       </div>
       <div className="mb-1 flex items-center gap-1.5 pr-6">
-        <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight", p.sinal === "quente" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700")}>{p.sinal === "quente" ? "🔥 Quente" : "😐 Interesse"}</span>
+        <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight", p.sinal === "quente" ? "bg-danger-500/10 text-danger-500" : "bg-warning-500/10 text-warning-700 dark:text-warning-500")}>{p.sinal === "quente" ? "🔥 Quente" : "😐 Interesse"}</span>
       </div>
-      <div className="truncate text-[13px] font-bold">{p.nome}</div>
-      <div className="truncate text-[11px] text-muted-foreground">{p.empreendimento}</div>
-      <div className="mt-1.5 flex items-center gap-1.5">
+      <div className="line-clamp-2 break-words text-[13px] font-bold leading-5" title={p.nome}>{p.nome}</div>
+      <div className="mt-0.5 line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground" title={p.empreendimento}>{p.empreendimento}</div>
+      <UltimaAtividade saude={p.saude} dias={p.dias} />
+      <div className="mt-2 flex min-w-0 items-center gap-1.5">
         {p.corretor && p.corretor !== "—" && (
           <>
             <CorretorAvatar nome={p.corretor} url={p.corretorAvatar} />
-            <span className="truncate text-[11px] text-muted-foreground">{p.corretor.split(" ")[0]}</span>
+            <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground" title={p.corretor}>{p.corretor}</span>
           </>
         )}
-        <button type="button" onClick={virar} title="Mover para Documentação (iniciar negócio)" className="ml-auto inline-flex items-center gap-0.5 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shrink-0 hover:bg-primary/90 transition-colors">virar negócio <ArrowRight className="h-2.5 w-2.5" /></button>
+        <Button variant="link" size="sm" onClick={virar} title="Mover para Documentação (iniciar negócio)" className="ml-auto h-9 shrink-0 gap-1 px-0.5 text-[11px]">Virar negócio <ArrowRight /></Button>
       </div>
     </CardRoot>
   );
@@ -92,10 +99,10 @@ export function PosCard({ p, stages, onMoveLead, onOpenLead, onDragStartCard }: 
 // Pill de sub-status no MESMO padrão do CardMinimal (bg-X-100 text-X-700).
 const PILL_BASE = "shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold leading-tight whitespace-nowrap";
 const PASSO_PILL: Record<NegPasso, { emoji: string; cls: string; nome: string }> = {
-  documentacao: { emoji: "📄", cls: "bg-sky-100 text-sky-700", nome: "Documentação" },
-  proposta: { emoji: "📝", cls: "bg-violet-100 text-violet-700", nome: "Proposta" },
-  contrato: { emoji: "📑", cls: "bg-indigo-100 text-indigo-700", nome: "Contrato" },
-  ganho: { emoji: "✅", cls: "bg-emerald-100 text-emerald-700", nome: "Assinado" },
+  documentacao: { emoji: "📄", cls: "bg-primary/10 text-primary dark:text-primary-300", nome: "Documentação" },
+  proposta: { emoji: "📝", cls: "bg-purple-500/10 text-purple-700 dark:text-purple-500", nome: "Proposta" },
+  contrato: { emoji: "📑", cls: "bg-primary/10 text-primary dark:text-primary-300", nome: "Contrato" },
+  ganho: { emoji: "✅", cls: "bg-success-500/10 text-success-700 dark:text-success-500", nome: "Assinado" },
 };
 function subBadge(n: NegocioCard): { emoji: string; cls: string; label: string } {
   const meta = PASSO_PILL[n.passo];
@@ -110,7 +117,6 @@ export function NegCard({ n, lens, stages, onMoveLead, onClick, onDragStartCard 
   return (
     <CardRoot
       onClick={onClick}
-      className={stripe(n.saude)}
       onDragStart={canDrag ? () => { if (onDragStartCard && n.pipelineLeadId) onDragStartCard(n.pipelineLeadId, PASSO_TIPO[n.passo]); } : undefined}
     >
       {/* Menu ⋯ fixo no canto superior direito — igual ao card de leads */}
@@ -120,32 +126,26 @@ export function NegCard({ n, lens, stages, onMoveLead, onClick, onDragStartCard 
       {/* Linha de sub-status (pill) */}
       <div className="mb-1 flex flex-wrap items-center gap-1.5 pr-6">
         {ganho && n.dataAssinatura
-          ? <span className={cn(PILL_BASE, "bg-emerald-100 text-emerald-700")}>✅ Assinado {n.dataAssinatura.slice(0, 5)}</span>
+          ? <span className={cn(PILL_BASE, PASSO_PILL.ganho.cls)}>✅ Assinado {formatBRT(n.dataAssinatura, "dd/MM")}</span>
           : <span className={cn(PILL_BASE, sb.cls)}>{sb.emoji} {sb.label}</span>}
-        {n.ceo && <span className={cn(PILL_BASE, "bg-amber-100 text-amber-700")}>CEO</span>}
+        {n.ceo && <span className={cn(PILL_BASE, "bg-warning-500/10 text-warning-700 dark:text-warning-500")}>CEO</span>}
         <ParceriaSelo leadId={n.pipelineLeadId} />
       </div>
       {/* Nome + VGV */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-[13px] font-bold">{n.cliente}</span>
+      <div className="line-clamp-2 break-words text-[13px] font-bold leading-5" title={n.cliente}>{n.cliente}</div>
+      <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-[11px] leading-4">
+        <span className="min-w-0 break-words text-muted-foreground">{n.empreendimento}</span>
         {n.vgv == null
-          ? <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-700">falta VGV</span>
-          : <span className="shrink-0 text-[12.5px] font-extrabold tabular-nums">{money(n.vgv)}</span>}
+          ? <span className="text-warning-700 dark:text-warning-500">· Sem VGV</span>
+          : <span className="whitespace-nowrap font-medium tabular-nums text-muted-foreground">· {money(n.vgv)}</span>}
       </div>
-      <div className="truncate text-[11px] text-muted-foreground">{n.empreendimento}</div>
 
       {/* Divisor sutil + última atividade (sóbrio, igual ao card de leads) */}
-      <div className="mt-2 border-t border-border/40" />
-      <div className="mt-2 flex items-center gap-1.5 min-w-0">
-        <History className="h-3 w-3 shrink-0 text-muted-foreground/70" />
-        <span className={cn("flex-1 min-w-0 truncate text-[11px]", n.tone === "bad" ? "text-rose-600 font-medium" : n.tone === "warn" ? "text-amber-600 font-medium" : "text-muted-foreground")}>
-          {ganho && n.dataAssinatura ? `assinado · ${n.dataAssinatura.slice(0, 5)}` : `última atividade · há ${n.dias}d`}
-        </span>
-      </div>
+      {ganho ? <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarCheck className="size-3.5 text-success-500" />{n.dataAssinatura ? `Assinado · ${formatBRT(n.dataAssinatura, "dd/MM/yyyy")}` : "Venda assinada"}</div> : <UltimaAtividade saude={n.saude} dias={n.dias} />}
 
       {/* Rodapé: de quem é o negócio (corretor) — sempre visível, como no card de leads */}
       {n.corretor && n.corretor !== "—" && (
-        <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
+        <div className="mt-2 flex items-center gap-1.5 min-w-0">
           <CorretorAvatar nome={n.corretor} url={n.corretorAvatar} />
           <span className="truncate text-[11px] text-muted-foreground">{n.corretor}</span>
         </div>

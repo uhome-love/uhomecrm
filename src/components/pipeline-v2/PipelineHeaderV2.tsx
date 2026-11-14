@@ -179,7 +179,7 @@ export default function PipelineHeaderV2(props: PipelineHeaderV2Props) {
         </div>
 
         {activeTab === "negocios" && (isAdmin || isGestor) && setNegociosLens && (
-          <div className="order-3 ml-auto sm:order-none sm:ml-0"><NegociosLensToggle value={negociosLens} onChange={setNegociosLens} /></div>
+          <div className="ml-auto sm:ml-0"><NegociosLensToggle value={negociosLens} onChange={setNegociosLens} /></div>
         )}
 
         {canToggleCarteira && setMinhaCarteira && naAbaLeads && (
