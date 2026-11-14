@@ -44,7 +44,7 @@ const ETAPA_ALIASES: Record<string, string> = {
 };
 
 const ETAPA_LABELS: Record<string, string> = {
-  novo_lead: "Novo Lead", sem_contato: "Sem Contato", qualificacao: "Qualificação",
+  novo_lead: "Novo Lead", sem_contato: "Sem Contato", qualificacao: "Atendimento",
   aquecimento: "Aquecimento", visita: "Visita", pos_visita: "Pós-Visita",
   documentacao: "Documentação", proposta: "Proposta", contrato_gerado: "Contrato",
   venda: "Ganho", descarte: "Descarte", inativo: "Inativo",

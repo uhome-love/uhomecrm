@@ -324,7 +324,7 @@ const COMMERCIAL_TIPOS = ["documentacao", "proposta", "contrato_gerado"];
 
 // Destinos do Regredir — o cliente volta a ser lead, mas a etapa varia com o motivo.
 const REGREDIR_DESTINOS = [
-  { tipo: "qualificacao", label: "Qualificação", hint: "quer mais opções" },
+  { tipo: "qualificacao", label: "Atendimento", hint: "quer mais opções" },
   { tipo: "aquecimento", label: "Aquecimento", hint: "quer mais tempo pra ver outras coisas" },
   { tipo: "pos_visita", label: "Pós-Visita", hint: "ainda está definindo" },
 ];

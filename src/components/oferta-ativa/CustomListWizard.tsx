@@ -167,7 +167,7 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
         .from("pipeline_stages")
         .select("id, nome")
         .eq("ativo", true);
-      const qualStage = (stages || []).find(s => s.nome === "Qualificação");
+      const qualStage = (stages || []).find(s => s.tipo === "qualificacao");
       if (!qualStage) return null;
 
       const cutoff = new Date(Date.now() - 5 * 86400000).toISOString();
@@ -208,10 +208,10 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
         }
 
         return {
-          text: `Você tem ${count} leads em Qualificação há mais de 5 dias sem contato. Vale uma lista focada nisso! 🎯`,
+          text: `Você tem ${count} leads em Atendimento há mais de 5 dias sem contato. Vale uma lista focada nisso! 🎯`,
           filtros: {
             fontes: ["meus_leads"],
-            etapas: ["Qualificação"],
+            etapas: ["Atendimento"],
             tempoSemContato: "3dias",
             ordem: "score",
           } as CustomListFilters,

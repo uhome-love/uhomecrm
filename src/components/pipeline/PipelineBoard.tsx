@@ -974,6 +974,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
               "Caiu": makeTheme("--stage-descarte"),
               // Legacy
               "Qualificação": makeTheme("--stage-busca"),
+              "Atendimento": makeTheme("--stage-busca"),
               "Possível Visita": makeTheme("--stage-aquecimento"),
               "Visita Marcada": makeTheme("--stage-visita"),
               "Visita Realizada": makeTheme("--stage-visita"),

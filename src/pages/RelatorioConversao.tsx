@@ -18,7 +18,7 @@ function fmtPct(rate: number): string {
 function Funil({ t }: { t: Totais }) {
   const steps = [
     { label: "Leads recebidos", n: t.leads_recebidos || 0, cls: "f0" },
-    { label: "Qualificação + Aquecimento", n: t.qualif_aquec || 0, cls: "f1" },
+    { label: "Atendimento + Aquecimento", n: t.qualif_aquec || 0, cls: "f1" },
     { label: "Visitas criadas", n: t.visitas_criadas || 0, cls: "f2" },
     { label: "Visitas realizadas", n: t.visitas_realizadas || 0, cls: "f3" },
     { label: "Negócios", n: t.negocios_zona || 0, cls: "f4" },

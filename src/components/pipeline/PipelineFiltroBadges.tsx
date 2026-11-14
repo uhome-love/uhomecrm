@@ -60,7 +60,7 @@ function InfoOciosidade() {
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[12px]">
             <span>Novo Lead <b className="font-semibold text-foreground">1</b></span>
             <span>Sem Contato <b className="font-semibold text-foreground">2</b></span>
-            <span>Qualificação <b className="font-semibold text-foreground">7</b></span>
+            <span>Atendimento <b className="font-semibold text-foreground">7</b></span>
             <span>Aquecimento <b className="font-semibold text-foreground">15</b></span>
             <span>Visita <b className="font-semibold text-foreground">2</b></span>
             <span>Negociação/Contrato <b className="font-semibold text-foreground">7</b></span>
@@ -68,7 +68,7 @@ function InfoOciosidade() {
         </div>
         <p className="mt-2.5 text-muted-foreground">
           Parado tempo demais, o lead <b className="font-semibold text-violet-600 dark:text-violet-400">estagna</b> e sai pra gestão
-          (Qualificação e Aquecimento em 21 dias; Sem Contato em 15).
+          (Atendimento e Aquecimento em 21 dias; Sem Contato em 15).
         </p>
         <p className="mt-2 text-muted-foreground">
           Registre uma atividade <b className="font-semibold text-primary">⚡</b> e o lead volta a ficar verde.

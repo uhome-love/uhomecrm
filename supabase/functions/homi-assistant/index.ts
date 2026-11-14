@@ -387,7 +387,7 @@ SE NÃO FOI (no-show):
 O HOMI NÃO define um novo fluxo — se adapta às etapas já configuradas no pipeline do sistema.
 
 REFERÊNCIA DO FLUXO EXISTENTE (10 etapas do pipeline):
-Novo Lead → Sem Contato → Qualificação → Aquecimento → Visita → Pós-Visita → Documentação → Proposta → Contrato → Ganho
+Novo Lead → Sem Contato → Atendimento → Aquecimento → Visita → Pós-Visita → Documentação → Proposta → Contrato → Ganho
 Descarte é saída do fluxo (botão), não uma etapa para onde avançar.
 
 ORIENTAÇÃO POR ETAPA:

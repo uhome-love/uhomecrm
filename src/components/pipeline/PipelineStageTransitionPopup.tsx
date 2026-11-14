@@ -378,7 +378,7 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
   return (
     <div className="max-w-lg mx-auto w-full">
       <DialogHeader>
-        <DialogTitle className="text-base flex items-center gap-2">🎯 Perfil de Interesse — Qualificação</DialogTitle>
+        <DialogTitle className="text-base flex items-center gap-2">🎯 Perfil de Interesse — Atendimento</DialogTitle>
       </DialogHeader>
       <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{lead.nome}</strong></p>
 

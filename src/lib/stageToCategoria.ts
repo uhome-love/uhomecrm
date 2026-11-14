@@ -6,6 +6,7 @@ export const STAGE_TO_CATEGORIAS: Record<string, MarketplaceCategory[]> = {
   "Sem Contato":      ["script_ligacao", "whatsapp"],
   "Contato Iniciado": ["script_ligacao", "argumento_empreendimento"],
   "Qualificação":     ["script_ligacao", "argumento_empreendimento"],
+  "Atendimento":      ["script_ligacao", "argumento_empreendimento"],
   Busca:              ["argumento_empreendimento", "script_ligacao"],
   Aquecimento:        ["argumento_empreendimento", "quebra_objecao", "whatsapp"],
   Visita:             ["whatsapp", "script_ligacao"],

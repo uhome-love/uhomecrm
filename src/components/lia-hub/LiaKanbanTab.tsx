@@ -28,7 +28,7 @@ const COLUNAS: { id: ColunaId; titulo: string; cor: string }[] = [
   { id: "novo", titulo: "Novo", cor: "bg-primary" },
   { id: "sem_contato", titulo: "Sem contato", cor: "bg-muted-foreground" },
   { id: "atendimento", titulo: "Atendimento inicial", cor: "bg-sky-500" },
-  { id: "qualificacao", titulo: "Qualificação", cor: "bg-warning" },
+  { id: "qualificacao", titulo: "Atendimento", cor: "bg-warning" },
   { id: "followup", titulo: "Follow-up", cor: "bg-violet-500" },
   { id: "qualificado", titulo: "Qualificado", cor: "bg-success" },
   { id: "descartado", titulo: "Descartados", cor: "bg-muted-foreground/50" },

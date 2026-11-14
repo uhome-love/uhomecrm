@@ -100,7 +100,7 @@ export function PipelineSortDropdown({ value, onChange }: Props) {
           <span className="font-semibold text-foreground">Prioridade</span> por etapa:
           <span className="mt-1 block">🟦 Novo Lead → mais recente</span>
           <span className="block">⚫ Sem Contato → cadência (tentativa devida)</span>
-          <span className="block">🔍 Qualificação+ → 🔥 quente esfriando</span>
+          <span className="block">🔍 Atendimento+ → 🔥 quente esfriando</span>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
