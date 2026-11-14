@@ -781,7 +781,7 @@ function AgendarCard({
                     key={q.label}
                     type="button"
                     onClick={() => onApplyQuick(q.d, q.h)}
-                    className=cn("text-[11px] px-2.5 py-1 rounded-full transition-colors border", novaTarefa.vence_em === dateToBRT(q.d) && novaTarefa.hora_vencimento === q.h ? "bg-primary/10 border-primary text-primary font-semibold" : "bg-background border-border text-foreground hover:bg-muted")
+                    className={cn("text-[11px] px-2.5 py-1 rounded-full transition-colors border", novaTarefa.vence_em === dateToBRT(q.d) && novaTarefa.hora_vencimento === q.h ? "bg-primary/10 border-primary text-primary font-semibold" : "bg-background border-border text-foreground hover:bg-muted")}
                   >
                     {q.label}
                   </button>
