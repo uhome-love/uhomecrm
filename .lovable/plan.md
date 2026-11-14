@@ -1,32 +1,41 @@
-# Auditoria das visitas da semana (09 a 15/11) — Painel CEO
+# Auditoria das visitas — semana (09–15/11) e hoje (14/11)
 
-## O que foi conferido (direto no banco, mesma regra do painel)
-
-| Contador | Semana | Hoje (14/11) |
+## 1. Contadores do Painel CEO: corretos
+| | Semana | Hoje |
 |---|---|---|
 | Total | 128 | 52 |
 | A realizar | 9 | 3 |
 | Realizadas | 60 | 22 |
 | No show | 59 | 27 |
-| Novos agendamentos (criados no período) | 117 | 16 |
+| Novos agendamentos | 117 | 16 |
 
-- **Total bate**: 9 + 60 + 59 = 128 (e 3 + 22 + 27 = 52).
-- **Duplicidade: nenhuma.** Nenhum cliente tem duas visitas no mesmo dia. Canceladas: 0 na semana (já ficam fora).
-- **Nenhuma visita "realizada" no futuro** e nenhuma visita passada ficou sem resultado.
-- **Realizadas 60 x Roleta 58**: 2 clientes visitaram duas vezes em dias diferentes. O painel conta 60 visitas; a Roleta conta 1 por cliente na semana (58). As duas estão certas, cada uma na sua regra.
+- Total confere (a realizar + realizadas + no show). Nenhuma duplicidade, nenhuma cancelada contada, nenhuma "realizada" no futuro.
+- Mesmo telefone com nomes diferentes na semana: nenhum caso.
+- Roleta conta 58 na semana (2 clientes visitaram 2 vezes); painel conta 60 visitas. As duas regras estão certas.
+- "Novos agendamentos" = marcadas no período (mesmo para o próprio dia); por isso muitas já aparecem realizadas.
 
-## Pontos de atenção
+## 2. Visitas de hoje: busca por visitas falsas
+Conferi as 52 visitas uma a uma: lead existe, tem telefone, tem histórico de contato, horário de criação x horário da visita, relato do resultado.
 
-1. **"Novos agendamentos" não é "visitas futuras".** Conta o que foi marcado no período, seja para quando for. Hoje: 16 marcadas, 12 delas para o próprio dia e 9 já realizadas. Por isso aparece "a maioria realizada".
-2. **27 no show hoje** é alto (metade do dia). Todos foram marcados no sistema entre 10h e 20h, de origem manual e Oferta Ativa. Vale o gerente conferir se foram no show de verdade.
-3. **Proteção futura**: o contador lê a tabela bruta de visitas, não a versão sem duplicados. Hoje não muda nada (0 duplicados), mas se surgir um, ele contaria duas vezes.
+**Nenhum sinal claro de fraude.** Todas têm lead real, telefone e resultado registrado. Mas 4 das 22 realizadas foram **lançadas depois do horário da visita** e merecem conferência do gerente:
 
-## Proposta (só depois de você aprovar)
+| Corretor | Cliente | Visita | Lançada | Observação |
+|---|---|---|---|---|
+| Matheus Pasin | Aida Ana Fabrin | 18:20 | 20:02 (realizada 1 min depois) | lead do Facebook de 11/10 |
+| Rafaela Campos | Gabriel Marques | 14:01 | 17:53 (realizada no mesmo minuto) | lead do Instagram de 02/11 |
+| Pedro Jorge | Laisa (network Pedro) | 09:00 | 11:05 (realizada 1 min depois) | lead criado pelo corretor ontem, DDD 63 |
+| Eduardo Santos | Andreia de Fraga | 15:30 | lead e visita criados hoje 13:47 | lead manual, só 2 contatos |
 
-- **A.** Trocar o rótulo e o detalhe de "Novos agendamentos" para deixar claro: "Marcadas no período", mostrando em pequeno quantas são para o futuro e quantas já foram realizadas. Mockup antes.
-- **B.** Fazer o contador ler a versão sem duplicados (mesmo número de hoje, protege contra o futuro). Mudança de banco fora do horário comercial.
-- **C.** Lista dos 27 no show de hoje por corretor, para você/gerentes conferirem.
+Pode ser só esquecimento de marcar antes, mas são exatamente o padrão de uma visita "inventada" para contar na Roleta.
+
+Outros pontos: 27 no show hoje (alto). Billy John tem 2 visitas das 10h criadas à tarde, ainda sem resultado.
+
+## 3. Proposta (só após aprovação, com mockup antes)
+- **A. Selo "Lançada depois"** na visita realizada que foi criada depois do horário marcado, visível para gerente/CEO na Agenda de Visitas e na ficha. Não bloqueia nada e continua contando.
+- **B. Relatório semanal** para o CEO com essas visitas por corretor (quantas lançadas depois, quantas com lead criado no mesmo dia).
+- **C. Texto mais claro** em "Novos agendamentos" ("Marcadas no período", com quantas são futuras).
+- **D. Proteção:** contador passar a ler a versão sem duplicados (mesmo número hoje).
 
 ## Técnico
-- Fonte: RPC `get_visitas_kpis` (lê `visitas`, exclui cancelada/backfill/tipo≠lead). B = trocar para `visitas_unicas` mantendo a mesma assinatura e o escopo por papel.
-- A = só apresentação em `DesktopVisitas.tsx`/`MobileVisitas.tsx` + campos extras (`agendadas_futuras`, `agendadas_realizadas`) no RPC.
+- Fonte do painel: RPC `get_visitas_kpis` (tabela `visitas`, exclui cancelada/backfill/tipo≠lead). D = trocar por `visitas_unicas`, mesma assinatura e escopo.
+- A/B: regra derivada `created_at(BRT) > data_visita+hora_visita` ou `lead.created_at::date = data_visita`; só apresentação + um campo no retorno, sem mexer em contagem nem na Roleta.
