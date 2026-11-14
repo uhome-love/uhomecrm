@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT, formatBRT } from "@/lib/brtTime";
-import { Handshake, Phone, Zap, History } from "lucide-react";
+import { Handshake, Phone, Zap, AlarmClock, CalendarClock, Pin, AlertTriangle } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import RegistrarAtividadeModal from "./RegistrarAtividadeModal";
@@ -283,6 +283,29 @@ const CardMinimal = memo(function CardMinimal({
     [hasSpecificTitle, specificTitleText, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
+  // Linha da próxima tarefa — mesmos nomes/cores dos atalhos do topo.
+  // Sinal separado da saúde: tarefa atrasada NÃO deixa o lead desatualizado.
+  const tarefaLinha = useMemo(() => {
+    if (!proximaTarefa) {
+      if (stage?.tipo === "novo_lead") {
+        return { estado: "sem" as const, texto: "Fazer o 1º contato", titulo: "Lead novo — faça o primeiro contato", cor: "text-amber-600 dark:text-amber-400" };
+      }
+      return { estado: "sem" as const, texto: "Sem próxima ação", titulo: "Defina a próxima tarefa deste lead", cor: "text-amber-600 dark:text-amber-400" };
+    }
+    const tituloCurto = (proximaTarefa.titulo || "").split(/\s[—–-]\s|:\s/)[0].trim();
+    const nome = hasSpecificTitle ? specificTitleText : tituloCurto && tituloCurto.length <= 40 ? tituloCurto : ACTION_LABEL[actionType];
+    const hoje = todayBRT();
+    const v = proximaTarefa.vence_em;
+    if (v && v < hoje) {
+      return { estado: "atrasada" as const, texto: `Tarefa atrasada · ${nome}`, titulo: fullActionLabel, cor: "text-red-600 dark:text-red-400" };
+    }
+    if (v === hoje) {
+      return { estado: "hoje" as const, texto: `Para hoje · ${nome}${proximaTarefa.hora_vencimento ? ` ${proximaTarefa.hora_vencimento.slice(0, 5)}` : ""}`, titulo: fullActionLabel, cor: "text-primary" };
+    }
+    return { estado: "futura" as const, texto: `Próxima: ${nome} · ${actionWhen}`, titulo: fullActionLabel, cor: "text-muted-foreground" };
+  }, [proximaTarefa, stage?.tipo, hasSpecificTitle, specificTitleText, actionType, actionWhen, fullActionLabel]);
+  const TarefaIcon = tarefaLinha.estado === "sem" ? AlertTriangle : tarefaLinha.estado === "atrasada" ? AlarmClock : tarefaLinha.estado === "hoje" ? Pin : CalendarClock;
+
   const empreendimento = useMemo(
     () => deduplicateEmp(lead.empreendimento || ""),
     [lead.empreendimento]
@@ -512,18 +535,11 @@ const CardMinimal = memo(function CardMinimal({
           {/* Divisor sutil */}
           <div className="mt-2 border-t border-border/40" />
 
-          {/* Base: última ATIVIDADE (estado/contexto) + ⚡ registrar no hover.
-              A cor de urgência é a borda (saúde); aqui é só contexto discreto. */}
+          {/* Base: PRÓXIMA TAREFA (ou "Sem próxima ação") + ⚡ registrar. Saúde fica na borda. */}
           <div className="mt-2 flex items-center gap-1.5 min-w-0">
-            <History className="h-3 w-3 shrink-0 text-muted-foreground/70" />
-            <span
-              className={`flex-1 min-w-0 truncate text-[11.5px] ${
-                atividadeInfo.temAtividade && saudeCard !== "verde" && saudeCard !== "terminal"
-                  ? "text-amber-600 dark:text-amber-500 font-medium"
-                  : "text-muted-foreground"
-              }`}
-            >
-              última atividade · {atividadeInfo.label}
+            <TarefaIcon className={`h-3 w-3 shrink-0 ${tarefaLinha.cor}`} />
+            <span title={tarefaLinha.titulo} className={`flex-1 min-w-0 truncate text-[11.5px] font-medium ${tarefaLinha.cor}`}>
+              {tarefaLinha.texto}
             </span>
             {atividadeInfo.temAtividade ? (
               <button

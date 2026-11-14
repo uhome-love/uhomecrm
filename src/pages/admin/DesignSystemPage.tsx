@@ -97,7 +97,7 @@ export default function DesignSystemPage() {
         <Panel title="Funil do pipeline" subtitle="Leads de exemplo pela etapa atual">
           <FunnelBars items={[
             { label: "Novo lead", value: 4 }, { label: "Sem contato", value: 13 },
-            { label: "Qualificação", value: 2 }, { label: "Aquecimento", value: 0 },
+            { label: "Atendimento", value: 2 }, { label: "Aquecimento", value: 0 },
             { label: "Visita", value: 0 }, { label: "Descarte", value: 1, tone: "danger" },
           ]} />
         </Panel>

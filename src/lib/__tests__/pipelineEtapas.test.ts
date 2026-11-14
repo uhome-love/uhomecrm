@@ -5,7 +5,7 @@ import { etapaNegocioDoPipeline } from "@/lib/negocioEtapa";
 describe("Etapas do Pipeline — verdade única", () => {
   it("tem as 10 etapas na ordem combinada", () => {
     expect(PIPELINE_ETAPAS.map((e) => e.nome)).toEqual([
-      "Novo Lead", "Sem Contato", "Qualificação", "Aquecimento", "Visita",
+      "Novo Lead", "Sem Contato", "Atendimento", "Aquecimento", "Visita",
       "Pós-Visita", "Documentação", "Proposta", "Contrato", "Ganho",
     ]);
   });

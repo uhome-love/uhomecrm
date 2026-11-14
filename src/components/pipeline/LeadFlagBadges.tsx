@@ -8,6 +8,7 @@ interface Props {
 const FLAG_CONFIGS: Record<string, Record<string, { label: string; color: string; bg: string }>> = {
   qualificacao: {
     contato_inicial: { label: "📞 Contato inicial", color: "hsl(var(--primary-600))", bg: "rgba(37,99,235,0.12)" },
+    qualificacao: { label: "🧭 Qualificação", color: "#7C3AED", bg: "rgba(124,58,237,0.12)" },
     alinhamento_perfil: { label: "🎯 Alinhando perfil", color: "#7C3AED", bg: "rgba(124,58,237,0.12)" },
     busca: { label: "🔍 Busca de imóveis", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
     follow_up: { label: "🔁 Follow up", color: "#059669", bg: "rgba(5,150,105,0.12)" },

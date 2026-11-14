@@ -40,3 +40,4 @@
 <!-- LOVABLE:END -->
 - site-events never changes lead stage/owner (only a daily notice); only a new site signup returns a discarded lead to the Roleta. Why: browsing is a signal.
 - Reengagement SIM keeps active owned leads: RPCs return `already_active`, webhooks honor it; owner notice closes by X or any button. Why: no wrong redistribution.
+- Stage display names come from pipeline_stages.nome; code that needs a specific stage matches by `tipo`, never by name. Why: renames (Qualificação→Atendimento) must not break logic.

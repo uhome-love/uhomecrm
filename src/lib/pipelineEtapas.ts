@@ -5,7 +5,7 @@
 export const PIPELINE_ETAPAS = [
   { tipo: "novo_lead", nome: "Novo Lead" },
   { tipo: "sem_contato", nome: "Sem Contato" },
-  { tipo: "qualificacao", nome: "Qualificação" },
+  { tipo: "qualificacao", nome: "Atendimento" },
   { tipo: "aquecimento", nome: "Aquecimento" },
   { tipo: "visita", nome: "Visita" },
   { tipo: "pos_visita", nome: "Pós-Visita" },

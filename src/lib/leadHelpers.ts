@@ -157,6 +157,7 @@ export function getLeadSubstatusBadge(
     case "qualificacao": {
       const map: Record<string, SubstatusBadge> = {
         contato_inicial: { label: "📞 Contato inicial", className: PILL.indigo },
+        qualificacao: { label: "🧭 Qualificação", className: PILL.purple },
         alinhamento_perfil: { label: "🎯 Alinhando perfil", className: PILL.purple },
         busca: { label: "🔍 Busca de imóveis", className: PILL.amber },
         follow_up: { label: "🔁 Follow up", className: PILL.emerald },
@@ -234,9 +235,10 @@ export interface SubstatusOption {
   label: string;
 }
 
-/** Etapa Qualificação → flag_status.status_atendimento */
+/** Etapa Atendimento (tipo qualificacao) → flag_status.status_atendimento */
 export const QUALIFICACAO_SUBSTATUS: SubstatusOption[] = [
   { value: "contato_inicial", label: "📞 Contato inicial" },
+  { value: "qualificacao", label: "🧭 Qualificação" },
   { value: "alinhamento_perfil", label: "🎯 Alinhando perfil" },
   { value: "busca", label: "🔍 Busca de imóveis" },
   { value: "follow_up", label: "🔁 Follow up" },

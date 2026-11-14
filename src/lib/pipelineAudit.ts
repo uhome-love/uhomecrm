@@ -15,7 +15,7 @@ import {
 
 /** Nome legível de cada campo de substatus (chave em flag_status). */
 export const SUBSTATUS_FIELD_LABEL: Record<string, string> = {
-  status_atendimento: "Qualificação",
+  status_atendimento: "Atendimento",
   prazo: "Aquecimento",
   status_visita: "Visita",
   status_negociacao: "Situação da proposta",

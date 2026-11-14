@@ -511,7 +511,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
       } as never);
 
       await finish(
-        `Lead voltou para ${regressStageTipo === "qualificacao" ? "Qualificação" : "Aquecimento"} ✅`,
+        `Lead voltou para ${regressStageTipo === "qualificacao" ? "Atendimento" : "Aquecimento"} ✅`,
       );
     } catch (err) {
       console.error("[VisitaFlow.regressao]", err);
@@ -559,7 +559,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
                 : "bg-background border-border text-muted-foreground hover:bg-muted",
             )}
           >
-            🔎 Qualificação
+            🔎 Atendimento
           </button>
           <button
             type="button"
@@ -815,7 +815,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               onClick={() => setRegressOpen(true)}
               className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1"
             >
-              ↩ Prefiro voltar o lead pra Qualificação/Aquecimento
+              ↩ Prefiro voltar o lead pra Atendimento/Aquecimento
             </button>
           </div>
         )}

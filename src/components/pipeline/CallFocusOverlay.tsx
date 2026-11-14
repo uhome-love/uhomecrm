@@ -106,7 +106,7 @@ const STAGE_LABELS: Record<string, string> = {
   proposta: "Proposta",
   contrato: "Contrato",
   novo_lead: "Novo Lead",
-  qualificacao: "Qualificação",
+  qualificacao: "Atendimento",
   documentacao: "Documentação",
   ganho: "Ganho",
 };
