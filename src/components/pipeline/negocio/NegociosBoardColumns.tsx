@@ -14,7 +14,7 @@ export function NegociosEmpty({ coluna }: { coluna: NegociosColKey }) {
   </div>;
 }
 
-export function NegociosColumn({ stage, count, valor, highlight, children }: { stage: PipelineStage; count: number; valor?: number; highlight?: boolean; children: ReactNode }) {
+export function NegociosColumn({ stage, count, valor, highlight, children }: { stage: PipelineStage; count: number; valor?: number; highlight?: boolean; children?: ReactNode }) {
   return <div className={cn("shrink-0 rounded-t-xl px-2.5 pb-2 pt-3", highlight && "bg-primary/5")} style={colunaEstiloV2(stage).style}>
     <ColunaCabecalhoV2 stage={stage} qtd={count} valor={valor === undefined ? undefined : money(valor) ?? undefined} />
     {children}
