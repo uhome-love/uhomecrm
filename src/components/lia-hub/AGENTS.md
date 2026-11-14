@@ -1,0 +1,1 @@
+- Lia navigation is defined only in `liaAreas.ts` (six areas via `?area=`, sections via `?aba=`, old links resolve to their area); focused Recovery views reuse existing controllers and distinguish unavailable reads from zero. Why: preserve links and data truth.
