@@ -41,4 +41,4 @@
 - site-events never changes lead stage/owner (only a daily notice); only a new site signup returns a discarded lead to the Roleta. Why: browsing is a signal.
 - Reengagement SIM keeps active owned leads: RPCs return `already_active`, webhooks honor it; owner notice closes by X or any button. Why: no wrong redistribution.
 - Stage display names come from pipeline_stages.nome; code that needs a specific stage matches by `tipo`, never by name. Why: renames (Qualificação→Atendimento) must not break logic.
-- Google Ads offline conversions: realized visits enqueue once per lead into `google_ads_conversoes` (trigger on `visitas`, only when the lead has `gclid`, extracted from `dados_site` or landing body) and `google-ads-conversao-dispatch` sends via the Data Manager API (`events:ingest`; legacy uploadClickConversions is blocked for new integrations), writing a lead note. Why: one send per lead, never blocks the visit.
+- Google Ads visit conversions: once per lead with gclid via `google_ads_conversoes` + `google-ads-conversao-dispatch` (Data Manager API). Why: no duplicates, never blocks visits.
