@@ -13,7 +13,7 @@
 //   4. Ponto de saúde + última atividade · corretor · ⚡ registrar
 // No computador, ··· e ⚡ aparecem ao passar o mouse. No celular, sempre.
 // ─────────────────────────────────────────────────────────────────
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { MessageCircle, Phone, Zap, Copy, Check } from "lucide-react";
@@ -177,9 +177,36 @@ const CardPipelineV2 = memo(function CardPipelineV2({
         created_at: lead.created_at,
         stage_tipo: stageTipo,
         estagnacao_carencia_ate: lead.estagnacao_carencia_ate,
+        tem_acao_futura: lead.tem_acao_futura,
       }),
-    [lead.ultimo_toque_at, lead.distribuido_em, lead.aceito_em, lead.created_at, stageTipo, lead.estagnacao_carencia_ate],
+    [lead.ultimo_toque_at, lead.distribuido_em, lead.aceito_em, lead.created_at, stageTipo, lead.estagnacao_carencia_ate, lead.tem_acao_futura],
   );
+
+  // Celular: depois do discador, ao voltar ao app abre a ficha para registrar a ligação.
+  const discarRef = useRef<{ saiu: boolean; timer?: number } | null>(null);
+  useEffect(() => {
+    const voltar = () => {
+      const d = discarRef.current;
+      if (!d?.saiu) return;
+      if (d.timer) window.clearTimeout(d.timer);
+      discarRef.current = null;
+      onClick();
+    };
+    const onVis = () => {
+      if (!discarRef.current) return;
+      if (document.visibilityState === "hidden") discarRef.current.saiu = true;
+      else voltar();
+    };
+    const onBlur = () => { if (discarRef.current) discarRef.current.saiu = true; };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", voltar);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", voltar);
+    };
+  }, [onClick]);
 
   const rodape = useMemo(() => {
     const dias = diasSemToque({
@@ -397,7 +424,10 @@ const CardPipelineV2 = memo(function CardPipelineV2({
                   if (!telIntl) {
                     e.preventDefault();
                     toast.error("Este lead não tem telefone cadastrado.");
+                    return;
                   }
+                  const timer = window.setTimeout(() => { if (discarRef.current && !discarRef.current.saiu) discarRef.current = null; }, 60000);
+                  discarRef.current = { saiu: false, timer };
                 }}
                 className={`${botaoIcone} ${tom.botao}`}
               >
