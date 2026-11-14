@@ -451,7 +451,7 @@ export function CompletionForm(props: CompletionFormProps) {
   }
 
   return (
-    <div className="flex flex-col max-h-[90vh] max-[420px]:max-h-[92vh]">
+    <div className="flex flex-col max-h-[90vh] max-[420px]:max-h-[85vh]">
       {/* Header compacto */}
       <div className="px-4 pt-4 pb-3 border-b border-border/60 shrink-0">
         <div className="text-sm truncate pr-6">
@@ -666,13 +666,13 @@ export function CompletionForm(props: CompletionFormProps) {
       </div>
 
       {/* CTA fixo no rodapé */}
-      <div className="px-4 py-3 border-t border-border/60 bg-card shrink-0 flex gap-2 items-center max-[420px]:flex-col max-[420px]:gap-1.5">
+      <div className="px-4 py-3 border-t border-border/60 bg-card shrink-0 flex gap-2 items-center pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Button
           variant="outline"
           size="sm"
           onClick={onCancel}
           disabled={saving}
-          className="max-[420px]:w-full max-[420px]:order-2"
+          className="h-10 px-4"
         >
           Cancelar
         </Button>
@@ -681,7 +681,7 @@ export function CompletionForm(props: CompletionFormProps) {
           disabled={!canConfirm || saving}
           size="sm"
           className={cn(
-            "flex-1 gap-1.5 border-0 disabled:opacity-40 shadow-md max-[420px]:w-full max-[420px]:order-1",
+            "flex-1 h-10 gap-1.5 border-0 disabled:opacity-40 shadow-md",
             ctaConfig.variant === "gradient" && "text-white shadow-primary/25",
             ctaConfig.variant === "neutral" &&
               "bg-foreground text-background hover:bg-foreground/90",
