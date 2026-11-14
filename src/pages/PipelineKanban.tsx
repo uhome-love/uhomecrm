@@ -12,6 +12,7 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import NegociosBoardInline from "@/components/pipeline/NegociosBoardInline";
+import type { NegociosLens } from "@/components/pipeline/negocio/boardPresentation";
 import { useQueryClient, useQuery, keepPreviousData } from "@tanstack/react-query";
 import { todayBRT } from "@/lib/utils";
 import { useParceriasMap, usePartnerLeadsByCorretor } from "@/hooks/useParcerias";
@@ -71,6 +72,7 @@ type ClientStatusFilter = "todos" | LeadClientStatus | "estagnado";
 
 export default function PipelineKanban() {
   const [acaoFilter, setAcaoFilter] = useState<FiltroAcao>("todos");
+  const [negociosLens, setNegociosLens] = useState<NegociosLens>("equipe");
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
@@ -699,6 +701,8 @@ export default function PipelineKanban() {
       
       {/* ═══ HEADER (Fase 6: extraído para PipelineHeader.tsx) ═══ */}
       <PipelineHeader
+        negociosLens={negociosLens}
+        setNegociosLens={setNegociosLens}
         acaoCounts={acaoCounts}
         acaoFilter={acaoFilter}
         setAcaoFilter={setAcaoFilter}
@@ -815,7 +819,7 @@ export default function PipelineKanban() {
           onStatusFilterChange={(f) => setClientStatusFilter(f as ClientStatusFilter)}
         />
       ) : (
-        <div className="flex-1 min-h-0 overflow-hidden flex" style={{ padding: "0 16px" }}>
+        <div className="flex-1 min-h-0 overflow-hidden flex px-1 sm:px-4">
           <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
             <ErrorBoundary onError={(err) => console.error("[PipelineBoard] Render crash:", err.message, err.stack)}>
             <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "#94A3B8" }} /></div>}>
@@ -883,6 +887,8 @@ export default function PipelineKanban() {
 
               ) : activeTab === "negocios" ? (
                 <NegociosBoardInline
+                  lens={negociosLens}
+                  pipelineLeads={pipeline.leads}
                   canSeeEquipe={isGestor || isCeoView}
                   stages={pipeline.stages || []}
                   onMoveLead={pipeline.moveLead}

@@ -134,7 +134,7 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
       const [profMeuRes, leadsRes, ganhoRes] = await Promise.all([
         user?.id
           ? supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle()
-          : Promise.resolve({ data: null as { id?: string } | null }),
+          : Promise.resolve({ data: null as { id?: string } | null, error: null }),
         supabase
           .from("pipeline_leads")
           .select("id, nome, empreendimento, temperatura, corretor_id, ultimo_toque_at, distribuido_em, aceito_em, created_at, updated_at, stage_changed_at, negocio_id, flag_status, pipeline_stages!inner(tipo)")
@@ -148,6 +148,9 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
           .eq("status", "ativo")
           .limit(500),
       ]);
+      if (profMeuRes.error) throw profMeuRes.error;
+      if (leadsRes.error) throw leadsRes.error;
+      if (ganhoRes.error) throw ganhoRes.error;
       const meuCorretorId = (profMeuRes.data?.id as string | undefined) ?? null;
       const leads = (leadsRes.data ?? []) as any[];
       const ganhos = (ganhoRes.data ?? []) as any[];
@@ -159,9 +162,11 @@ export function useNegociosBoard(options?: { enabled?: boolean }) {
       const [negRes, profsRes] = await Promise.all([
         negocioIds.length
           ? supabase.from("negocios").select("id, empreendimento, unidade, vgv_estimado, vgv_final, data_assinatura, requer_aprovacao_ceo, negociacao_situacao, documentacao_situacao, proposta_situacao").in("id", negocioIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [], error: null }),
         supabase.from("profiles").select("id, user_id, nome, avatar_url, avatar_gamificado_url"),
       ]);
+      if (negRes.error) throw negRes.error;
+      if (profsRes.error) throw profsRes.error;
       const negById = new Map<string, any>();
       for (const n of (negRes.data ?? []) as any[]) negById.set(String(n.id), n);
       // ATENÇÃO fonte dupla: LEAD.corretor_id = profiles.user_id; NEGOCIO.corretor_id = profiles.id.
