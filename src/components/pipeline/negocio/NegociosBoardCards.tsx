@@ -90,7 +90,7 @@ export function PosCard({ p, atividadeDias, stages, onMoveLead, onOpenLead, onDr
             <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground" title={p.corretor}>{p.corretor}</span>
           </>
         )}
-        <Button variant="link" size="sm" onClick={virar} title="Mover para Documentação (iniciar negócio)" className="ml-auto h-9 shrink-0 gap-1 px-0.5 text-[11px]">Virar negócio <ArrowRight /></Button>
+        <Button variant="link" size="sm" onClick={virar} title="Mover para Documentação (iniciar negócio)" className="negocios-action ml-auto h-9 shrink-0 gap-1 px-0.5 text-[11px]">Virar negócio <ArrowRight /></Button>
       </div>
     </CardRoot>
   );
@@ -99,9 +99,9 @@ export function PosCard({ p, atividadeDias, stages, onMoveLead, onOpenLead, onDr
 // Pill de sub-status no MESMO padrão do CardMinimal (bg-X-100 text-X-700).
 const PILL_BASE = "shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold leading-tight whitespace-nowrap";
 const PASSO_PILL: Record<NegPasso, { emoji: string; cls: string; nome: string }> = {
-  documentacao: { emoji: "📄", cls: "bg-primary/10 text-primary dark:text-primary-300", nome: "Documentação" },
+  documentacao: { emoji: "📄", cls: "negocios-primary-status", nome: "Documentação" },
   proposta: { emoji: "📝", cls: "bg-purple-500/10 text-purple-700 dark:text-purple-500", nome: "Proposta" },
-  contrato: { emoji: "📑", cls: "bg-primary/10 text-primary dark:text-primary-300", nome: "Contrato" },
+  contrato: { emoji: "📑", cls: "negocios-primary-status", nome: "Contrato" },
   ganho: { emoji: "✅", cls: "bg-success-500/10 text-success-700 dark:text-success-500", nome: "Assinado" },
 };
 function subBadge(n: NegocioCard): { emoji: string; cls: string; label: string } {

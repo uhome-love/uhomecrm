@@ -155,7 +155,7 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, l
             return (
               <div
                 key={c.key}
-                className={cn("flex w-[280px] shrink-0 flex-col rounded-xl bg-muted/40 transition-colors duration-short", over && "ring-2 ring-primary/40")}
+                className={cn("flex min-w-[232px] flex-1 basis-0 flex-col rounded-xl bg-muted/40 transition-colors duration-short", over && "ring-2 ring-primary/40")}
                 onDragOver={(e) => { if (dragRef.current) { e.preventDefault(); if (dragOverCol !== c.key) setDragOverCol(c.key); } }}
                 onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverCol((v) => (v === c.key ? null : v)); }}
                 onDrop={(e) => { e.preventDefault(); dropOnCol(c.key); }}

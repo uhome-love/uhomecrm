@@ -6,9 +6,9 @@ import { money } from "./boardPresentation";
 
 export function NegociosBoardSummary({ resumo, atalho, onChange }: { resumo: NegociosResumoVisual; atalho: NegociosAtalho; onChange: (atalho: NegociosAtalho) => void }) {
   const toggle = (value: NegociosAtalho) => onChange(atalho === value ? "todos" : value);
-  return <div className="shrink-0 border-b border-border py-3" aria-label="Resumo de Negócios">
+  return <div className="shrink-0 border-b border-border py-2 sm:py-3" aria-label="Resumo de Negócios">
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:gap-x-8">
-      <div className="flex items-center gap-2.5"><BarChart3 className="size-5 text-primary" aria-hidden /><div><p className="text-[11px] text-muted-foreground">VGV em andamento</p><p className="text-base font-bold tabular-nums">{money(resumo.vgv)}</p></div></div>
+      <div className="flex items-center gap-2.5"><BarChart3 className="negocios-action size-5" aria-hidden /><div><p className="text-[11px] text-muted-foreground">VGV em andamento</p><p className="text-base font-bold tabular-nums">{money(resumo.vgv)}</p></div></div>
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Briefcase className="hidden size-4 sm:block" aria-hidden /><strong className="text-foreground">{resumo.quantidade}</strong> negócios</div>
       <div className="flex items-center gap-1 sm:gap-3">
         <Button variant="ghost" size="sm" aria-pressed={atalho === "parados"} onClick={() => toggle("parados")} className={cn("h-9 gap-1.5 px-1.5 text-xs text-muted-foreground", atalho === "parados" && "bg-primary/10 text-primary")} title="Mais de 7 dias sem atividade, sem ação futura e fora de Em dia">

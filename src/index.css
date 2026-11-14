@@ -93,6 +93,7 @@
     --primary-foreground:  0 0% 100%;
     --primary-dark:        var(--primary-700);
     --brand:               var(--primary-500);
+    --business-action:     var(--primary-600);
     --homi-cyan:           188 86% 53%;
     --homi-soft:           183 100% 96%;
     --homi-border:         186 94% 82%;
@@ -277,6 +278,7 @@
     --popover-foreground:  214 30% 95%;
     --primary:             var(--primary-600);
     --primary-foreground:  0 0% 100%;
+    --business-action:     var(--primary-300);
     --homi-soft:           189 49% 17%;
     --homi-border:         194 70% 27%;
     --homi-text:           188 86% 53%;
@@ -356,6 +358,9 @@
     border-radius: var(--radius-sm);
   }
 }
+
+.negocios-action.negocios-action { color: hsl(var(--business-action)); }
+.negocios-primary-status { background: hsl(var(--primary) / .10); color: hsl(var(--business-action)); }
 
 @layer utilities {
   /* ── Superficies ── */
