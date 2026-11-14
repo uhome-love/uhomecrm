@@ -253,6 +253,7 @@ const SectionTitle = ({ n, children }: { n: number; children: React.ReactNode })
 // ─── Qualificação ───
 export const QUALIFICACAO_STATUS_ATEND: Record<string, string> = {
   contato_inicial: "Contato inicial",
+  qualificacao: "Qualificação",
   alinhamento_perfil: "Alinhamento de perfil",
   busca: "Busca de imóveis",
   envio_opcoes: "Envio de opções",

@@ -24,6 +24,7 @@ export const QUALIFICACAO_TASK_MAP: Record<
   { tipo: string; acao: string; diasVence: number }
 > = {
   contato_inicial:    { tipo: "whatsapp", acao: "Perfil de busca completo",  diasVence: 0 },
+  qualificacao:       { tipo: "ligacao",  acao: "Qualificar o cliente",      diasVence: 0 },
   alinhamento_perfil: { tipo: "tarefa",   acao: "Alinhar perfil de busca",   diasVence: 0 },
   busca:              { tipo: "whatsapp", acao: "Buscar imóveis compatíveis", diasVence: 0 },
   envio_opcoes:       { tipo: "tarefa",   acao: "Enviar opções",             diasVence: 2 },
