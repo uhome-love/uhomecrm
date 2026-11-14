@@ -9,5 +9,5 @@
 - [x] Desenho do computador em tema claro aprovado
 - [x] Desenhos do celular e tema escuro aprovados
 - [x] Plano da mudança visual aprovado
-- [ ] Construção por fases — depende do plano aprovado
-- [ ] Revisão e validação ao vivo no computador e celular — após construção, sem alterar leads reais
+- [x] Construção por fases — topo, etapas, resumo e cartões de Negócios
+- [x] Revisão e validação ao vivo no computador 1494px e celular 360/390/430px; claro/escuro, filtros, ficha e formulários cancelados; 70 testes passaram
