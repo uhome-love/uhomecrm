@@ -287,9 +287,13 @@ const CardMinimal = memo(function CardMinimal({
   // Sinal separado da saúde: tarefa atrasada NÃO deixa o lead desatualizado.
   const tarefaLinha = useMemo(() => {
     if (!proximaTarefa) {
+      if (stage?.tipo === "novo_lead") {
+        return { estado: "sem" as const, texto: "Fazer o 1º contato", titulo: "Lead novo — faça o primeiro contato", cor: "text-amber-600 dark:text-amber-400" };
+      }
       return { estado: "sem" as const, texto: "Sem próxima ação", titulo: "Defina a próxima tarefa deste lead", cor: "text-amber-600 dark:text-amber-400" };
     }
-    const nome = hasSpecificTitle ? specificTitleText : ACTION_LABEL[actionType];
+    const tituloCurto = (proximaTarefa.titulo || "").split(/\s[—–-]\s|:\s/)[0].trim();
+    const nome = hasSpecificTitle ? specificTitleText : tituloCurto && tituloCurto.length <= 40 ? tituloCurto : ACTION_LABEL[actionType];
     const hoje = todayBRT();
     const v = proximaTarefa.vence_em;
     if (v && v < hoje) {
@@ -299,7 +303,7 @@ const CardMinimal = memo(function CardMinimal({
       return { estado: "hoje" as const, texto: `Para hoje · ${nome}${proximaTarefa.hora_vencimento ? ` ${proximaTarefa.hora_vencimento.slice(0, 5)}` : ""}`, titulo: fullActionLabel, cor: "text-primary" };
     }
     return { estado: "futura" as const, texto: `Próxima: ${nome} · ${actionWhen}`, titulo: fullActionLabel, cor: "text-muted-foreground" };
-  }, [proximaTarefa, hasSpecificTitle, specificTitleText, actionType, actionWhen, fullActionLabel]);
+  }, [proximaTarefa, stage?.tipo, hasSpecificTitle, specificTitleText, actionType, actionWhen, fullActionLabel]);
   const TarefaIcon = tarefaLinha.estado === "sem" ? AlertTriangle : tarefaLinha.estado === "atrasada" ? AlarmClock : tarefaLinha.estado === "hoje" ? Pin : CalendarClock;
 
   const empreendimento = useMemo(
