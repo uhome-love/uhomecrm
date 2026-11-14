@@ -1,3 +1,4 @@
+import { interesseDeclarado } from "../_shared/interesseDeclarado.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hmacSha256Hex, timingSafeEqual, logAuthMissing } from "../_shared/webhook-signature.ts";
 import { registrarResposta } from "../_shared/contatoEnvio.ts";
@@ -1641,9 +1642,13 @@ async function handleUnknownReply(
         .order("sent_at", { ascending: false })
         .limit(1);
       const disp = disps?.[0];
+      const tipoRespInicial: "botão" | "texto" = msg?.type === "button" || msg?.type === "interactive" ? "botão" : "texto";
       if (disp?.template_name) {
         const emp = empreendimentoFromTemplate(disp.template_name);
-        if (emp) {
+        const declarado = interesseDeclarado(msgText, emp, tipoRespInicial);
+        if (declarado) {
+          await supabase.from("pipeline_leads").update({ campanha: declarado, empreendimento: declarado }).eq("id", newLead.id);
+        } else if (emp) {
           await supabase.from("pipeline_leads").update({ campanha: emp, empreendimento: emp }).eq("id", newLead.id);
         }
         if (!disp.responded_at) {
@@ -1667,7 +1672,9 @@ async function handleUnknownReply(
         const formBase = base?.ultimo_formulario || base?.primeiro_formulario || null;
         if (empBase || formBase) {
           const upd: Record<string, unknown> = { origem_detalhe: `Base Única: ${formBase || empBase}` };
-          if (!reengEmp && empBase) { upd.empreendimento = empBase; upd.campanha = empBase; }
+          const declaradoBase = interesseDeclarado(msgText, empBase, tipoRespInicial);
+          if (declaradoBase) { upd.empreendimento = declaradoBase; upd.campanha = declaradoBase; }
+          else if (!reengEmp && empBase) { upd.empreendimento = empBase; upd.campanha = empBase; }
           await supabase.from("pipeline_leads").update(upd).eq("id", newLead.id);
           origemTexto = `cadastro na Base Única (${formBase || empBase})`;
         }

@@ -1,3 +1,4 @@
 - Lia endpoints accept only service role/cron or admin/diretor JWT (`requireRealUser`). Why: no public sends or paid AI.
 - /vaga updates need the creation HMAC token (`_shared/rhToken.ts`); intake secrets stay log-only until configured. Why: no tampering, no lost leads.
 - Every Lia 360dialog send path calls `liaPodeEnviarModoTeste` (`_shared/liaModoTeste.ts`, ia_config.modo_teste/numero_teste) before sending; config read failure blocks. Why: one test lock covers replies, follow-ups, recovery and form bridge.
+- WhatsApp unknown-sender free-text naming another city than the sent product stores 'Interesse declarado: …' (`_shared/interesseDeclarado.ts`). Why: lead reflects what the client said.
