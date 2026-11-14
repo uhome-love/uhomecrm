@@ -59,11 +59,12 @@ export function RegredirDialog({ open, onOpenChange, onConfirm, stages }: { open
         <div className="grid gap-1.5">
           {destinos.map((d) => (
             <Button
+              variant="outline"
               key={d.tipo}
               type="button"
               onClick={() => setDestino(d.stage.id)}
               className={cn(
-                "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
+                "h-auto justify-start whitespace-normal flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
                 destino === d.stage.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
               )}
             >

@@ -9,13 +9,13 @@ import type { NegocioCard, NegPasso, ProntoVirar } from "@/hooks/useNegociosBoar
 import { ParceriaSelo } from "../ParceriaSelo";
 import { JornadaNegocioDialog } from "./JornadaNegocioDialog";
 import { NegOverflowMenu } from "./NegociosBoardActions";
-import { money, SAUDE_STRIPE, PASSO_TIPO, type MoveLeadFn, type NegociosLens as Lens } from "./boardPresentation";
+import { money, PASSO_TIPO, type MoveLeadFn } from "./boardPresentation";
 import { Button } from "@/components/ui/button";
 import { formatBRT } from "@/lib/brtTime";
 const SAUDE_DOT: Record<LeadSaude, string> = { verde: "bg-success-500", ambar: "bg-warning-500", vermelho: "bg-danger-500", estagnado: "bg-purple-500", terminal: "bg-success-500" };
 const SAUDE_LABEL: Record<LeadSaude, string> = { verde: "Em dia", ambar: "Atenção", vermelho: "Desatualizado", estagnado: "Estagnado", terminal: "Venda assinada" };
-function UltimaAtividade({ saude, dias }: { saude: LeadSaude; dias: number }) {
-  return <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground"><span className={cn("size-2 shrink-0 rounded-full", SAUDE_DOT[saude])} role="img" aria-label={SAUDE_LABEL[saude]} title={SAUDE_LABEL[saude]} /><span>Última atividade · há {dias}d</span></div>;
+function UltimaAtividade({ saude, dias }: { saude: LeadSaude; dias: number | null }) {
+  return <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground"><span className={cn("size-2 shrink-0 rounded-full", SAUDE_DOT[saude])} role="img" aria-label={SAUDE_LABEL[saude]} title={SAUDE_LABEL[saude]} /><span>{dias === null ? "Sem atividade registrada" : `Última atividade · há ${dias}d`}</span></div>;
 }
 function getInitials(nome: string): string {
   const parts = nome.trim().split(/\s+/).filter(Boolean);
@@ -53,7 +53,7 @@ function CardRoot({ onClick, className, children, onDragStart }: { onClick: () =
   );
 }
 
-export function PosCard({ p, stages, onMoveLead, onOpenLead, onDragStartCard }: { p: ProntoVirar; stages?: PipelineStage[]; onMoveLead?: MoveLeadFn; onOpenLead: (leadId: string) => void; onDragStartCard?: (leadId: string, fromTipo: string) => void }) {
+export function PosCard({ p, atividadeDias, stages, onMoveLead, onOpenLead, onDragStartCard }: { p: ProntoVirar; atividadeDias: number | null; stages?: PipelineStage[]; onMoveLead?: MoveLeadFn; onOpenLead: (leadId: string) => void; onDragStartCard?: (leadId: string, fromTipo: string) => void }) {
   const queryClient = useQueryClient();
   const [jornadaOpen, setJornadaOpen] = useState(false);
   const docStage = (stages || []).find((s) => s.tipo === "documentacao");
@@ -82,7 +82,7 @@ export function PosCard({ p, stages, onMoveLead, onOpenLead, onDragStartCard }: 
       </div>
       <div className="line-clamp-2 break-words text-[13px] font-bold leading-5" title={p.nome}>{p.nome}</div>
       <div className="mt-0.5 line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground" title={p.empreendimento}>{p.empreendimento}</div>
-      <UltimaAtividade saude={p.saude} dias={p.dias} />
+      <UltimaAtividade saude={p.saude} dias={atividadeDias} />
       <div className="mt-2 flex min-w-0 items-center gap-1.5">
         {p.corretor && p.corretor !== "—" && (
           <>
@@ -109,7 +109,7 @@ function subBadge(n: NegocioCard): { emoji: string; cls: string; label: string }
   return { emoji: meta.emoji, cls: meta.cls, label: n.detalhe ? n.detalhe.charAt(0).toUpperCase() + n.detalhe.slice(1) : meta.nome };
 }
 
-export function NegCard({ n, lens, stages, onMoveLead, onClick, onDragStartCard }: { n: NegocioCard; lens: Lens; stages?: PipelineStage[]; onMoveLead?: MoveLeadFn; onClick: () => void; onDragStartCard?: (leadId: string, fromTipo: string) => void }) {
+export function NegCard({ n, atividadeDias, stages, onMoveLead, onClick, onDragStartCard }: { n: NegocioCard; atividadeDias: number | null; stages?: PipelineStage[]; onMoveLead?: MoveLeadFn; onClick: () => void; onDragStartCard?: (leadId: string, fromTipo: string) => void }) {
   const ganho = n.fase === "ganho";
   const sb = subBadge(n);
   // Cards de Ganho (venda fechada) NÃO arrastam — não se "desvende" por engano.
@@ -141,7 +141,7 @@ export function NegCard({ n, lens, stages, onMoveLead, onClick, onDragStartCard 
       </div>
 
       {/* Divisor sutil + última atividade (sóbrio, igual ao card de leads) */}
-      {ganho ? <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarCheck className="size-3.5 text-success-500" />{n.dataAssinatura ? `Assinado · ${formatBRT(n.dataAssinatura, "dd/MM/yyyy")}` : "Venda assinada"}</div> : <UltimaAtividade saude={n.saude} dias={n.dias} />}
+      {ganho ? <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarCheck className="size-3.5 text-success-500" />{n.dataAssinatura ? `Assinado · ${formatBRT(n.dataAssinatura, "dd/MM/yyyy")}` : "Venda assinada"}</div> : <UltimaAtividade saude={n.saude} dias={atividadeDias} />}
 
       {/* Rodapé: de quem é o negócio (corretor) — sempre visível, como no card de leads */}
       {n.corretor && n.corretor !== "—" && (
