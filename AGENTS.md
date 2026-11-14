@@ -42,3 +42,4 @@
 - Reengagement SIM keeps active owned leads: RPCs return `already_active`, webhooks honor it; owner notice closes by X or any button. Why: no wrong redistribution.
 - Stage display names come from pipeline_stages.nome; code that needs a specific stage matches by `tipo`, never by name. Why: renames (Qualificação→Atendimento) must not break logic.
 - Google Ads visit conversions: once per lead with gclid via `google_ads_conversoes` + `google-ads-conversao-dispatch` (Data Manager API). Why: no duplicates, never blocks visits.
+- Unknown-sender WhatsApp replies whose free text names a different city than the sent product store 'Interesse declarado: …' in campanha/empreendimento via `_shared/interesseDeclarado.ts` instead of forcing the product. Why: the lead must reflect what the client actually said.
