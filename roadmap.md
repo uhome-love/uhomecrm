@@ -7,7 +7,7 @@
 
 ## Negócios — refinamento visual
 - [x] Desenho do computador em tema claro aprovado
-- [ ] Desenhos do celular e tema escuro — aguardam aprovação
-- [ ] Plano da mudança visual — apresentar após aprovação dos desenhos restantes
+- [x] Desenhos do celular e tema escuro aprovados
+- [ ] Plano da mudança visual — apresentado para aprovação
 - [ ] Construção por fases — depende do plano aprovado
 - [ ] Revisão e validação ao vivo no computador e celular — após construção, sem alterar leads reais
