@@ -1652,6 +1652,39 @@ async function handleUnknownReply(
         }
         await registrarMensagemEnviadaNaTimeline(supabase, newLead.id, disp.template_name, msgText, contactName);
       }
+
+      // Sem disparo registrado: recorre ao cadastro na Base Única (telefone com ou sem o 9).
+      let origemTexto = disp?.template_name ? `disparo "${disp.template_name}"` : "";
+      if (!disp?.template_name) {
+        const { data: base } = await supabase
+          .from("base_leads")
+          .select("empreendimento_texto, primeiro_formulario, ultimo_formulario")
+          .eq("telefone_key", last8)
+          .order("ultima_conversao_em", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const empBase = base?.empreendimento_texto || null;
+        const formBase = base?.ultimo_formulario || base?.primeiro_formulario || null;
+        if (empBase || formBase) {
+          const upd: Record<string, unknown> = { origem_detalhe: `Base Única: ${formBase || empBase}` };
+          if (!reengEmp && empBase) { upd.empreendimento = empBase; upd.campanha = empBase; }
+          await supabase.from("pipeline_leads").update(upd).eq("id", newLead.id);
+          origemTexto = `cadastro na Base Única (${formBase || empBase})`;
+        }
+      }
+
+      const tipoResp = msg?.type === "button" || msg?.type === "interactive" ? "botão" : "texto";
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: newLead.id,
+        tipo: "nurturing_sequencia",
+        titulo: `💬 Respondeu no WhatsApp (${tipoResp}): "${msgText.slice(0, 80)}"`,
+        descricao: disp?.template_name
+          ? `Resposta ao disparo "${disp.template_name}".`
+          : `A mensagem que o cliente respondeu não está registrada no CRM.${origemTexto ? ` Origem identificada pelo ${origemTexto}.` : " Cliente sem cadastro anterior encontrado."}`,
+        data: new Date().toISOString().slice(0, 10),
+        status: "concluida",
+        created_by: "00000000-0000-0000-0000-000000000000",
+      });
     } catch (e) {
       console.error("vincular resposta solta ao disparo error:", e);
     }
