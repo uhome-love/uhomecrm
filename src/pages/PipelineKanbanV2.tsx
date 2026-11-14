@@ -3,9 +3,10 @@ import { contarPipelineAtivo } from "@/lib/pipelineAtivo";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import { usePipeline } from "@/hooks/usePipeline";
-import PipelineBoard from "@/components/pipeline/PipelineBoard";
+import PipelineBoard from "@/components/pipeline/PipelineBoardV2";
+import { contarAcoes, filtrarPorAcao, type FiltroAcao } from "@/lib/pipelineV2/proximaAcao";
 import { loadSortOrder, type SortOrder } from "@/components/pipeline/PipelineSortDropdown";
-import PipelineMobileView from "@/components/pipeline/PipelineMobileView";
+import PipelineMobileView from "@/components/pipeline/PipelineMobileViewV2";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
@@ -41,7 +42,7 @@ import { toast } from "sonner";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/lib/taskQueryUtils";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
-import PipelineHeader from "@/components/pipeline/PipelineHeader";
+import PipelineHeader from "@/components/pipeline-v2/PipelineHeaderV2";
 
 import ModoTimeView from "@/components/pipeline/modo-time/ModoTimeView";
 import { calcGestorOwnRow } from "@/lib/calcGestorOwnRow";
@@ -68,7 +69,8 @@ const CAMPAIGN_TAGS = [
 
 type ClientStatusFilter = "todos" | LeadClientStatus | "estagnado";
 
-export default function PipelineKanban() {
+export default function PipelineKanbanV2() {
+  const [acaoFilter, setAcaoFilter] = useState<FiltroAcao>("todos");
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
@@ -448,8 +450,9 @@ export default function PipelineKanban() {
     if (riscoFilter && riscoLeadIds) {
       result = result.filter(l => riscoLeadIds.has(l.id));
     }
+    result = filtrarPorAcao(result, acaoFilter, kanbanTarefasMap, Object.fromEntries(stageMap) as Record<string, string>);
     return result;
-  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds]);
+  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds, acaoFilter]);
 
   // Resumo da lente Negócios — total, VGV somado e em risco (>7d sem avanço de fase)
   const negociosLeadIds = useMemo(
@@ -568,6 +571,7 @@ export default function PipelineKanban() {
   }, [preFilteredLeads, stageTypeById, pipeline.stages.length, clientStatusCounts]);
 
   // Fonte única do pipeline ativo (topo = soma das bolinhas; Ganho/Descarte fora).
+  const acaoCounts = useMemo(() => contarAcoes(preFilteredLeads, kanbanTarefasMap, stageTypeById), [preFilteredLeads, kanbanTarefasMap, stageTypeById]);
   const pipelineAtivo = useMemo(() => contarPipelineAtivo(filteredLeads, stageTypeById), [filteredLeads, stageTypeById]);
 
   const lastStableClientStatusCountsRef = useRef(clientStatusCounts);
@@ -624,6 +628,7 @@ export default function PipelineKanban() {
     setCampaignTagFilter("all");
     setClientStatusFilter("todos");
     setNegociosFilter(false);
+    setAcaoFilter("todos");
     clearRisco();
     if (searchParams.get("filtro")) {
       searchParams.delete("filtro");
@@ -693,6 +698,9 @@ export default function PipelineKanban() {
       
       {/* ═══ HEADER (Fase 6: extraído para PipelineHeader.tsx) ═══ */}
       <PipelineHeader
+        acaoCounts={acaoCounts}
+        acaoFilter={acaoFilter}
+        setAcaoFilter={setAcaoFilter}
         filteredLeadsCount={pipelineAtivo.total}
         pipelineAtivoSplit={pipelineAtivo}
         displayedClientStatusCounts={displayedClientStatusCounts}
@@ -804,6 +812,11 @@ export default function PipelineKanban() {
           clientStatusCounts={clientStatusCounts}
           clientStatusFilter={clientStatusFilter}
           onStatusFilterChange={(f) => setClientStatusFilter(f as ClientStatusFilter)}
+          acaoCounts={acaoCounts}
+          acaoFilter={acaoFilter}
+          setAcaoFilter={setAcaoFilter}
+          sortOrder={sortOrder}
+          tarefasMap={kanbanTarefasMap}
         />
       ) : (
         <div className="flex-1 min-h-0 overflow-hidden flex" style={{ padding: "0 16px" }}>
