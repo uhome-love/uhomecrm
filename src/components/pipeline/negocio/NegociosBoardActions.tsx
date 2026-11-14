@@ -125,7 +125,7 @@ export function NegOverflowMenu({ leadId, nome, passo, stages, onMoveLead, onOpe
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
