@@ -888,6 +888,7 @@ export default function PipelineKanban() {
               ) : activeTab === "negocios" ? (
                 <NegociosBoardInline
                   lens={negociosLens}
+                  pipelineLeads={pipeline.leads}
                   canSeeEquipe={isGestor || isCeoView}
                   stages={pipeline.stages || []}
                   onMoveLead={pipeline.moveLead}

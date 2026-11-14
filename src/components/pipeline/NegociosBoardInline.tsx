@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useNegociosBoard, type NegocioCard, type NegPasso } from "@/hooks/useNegociosBoard";
-import type { LeadSaude } from "@/lib/leadSaude";
+import { leadSaude, type LeadSaude } from "@/lib/leadSaude";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
@@ -12,6 +12,10 @@ import { RegredirDialog } from "./negocio/NegociosBoardActions";
 import { PosCard, NegCard } from "./negocio/NegociosBoardCards";
 import { NegociosColumn, NegociosEmpty, NegociosMobileTabs } from "./negocio/NegociosBoardColumns";
 import { NEGOCIOS_COLUNAS, PASSO_TIPO, COMMERCIAL_TIPOS, type MoveLeadFn, type NegociosColKey as ColKey, type NegociosLens as Lens } from "./negocio/boardPresentation";
+import { NegociosBoardSummary } from "./negocio/NegociosBoardSummary";
+import { recortarNegocios, recortarPosVisita, resumoNegocios, filtrarNegociosAtalho, type NegociosAtalho } from "@/lib/negociosBoardPresentation";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface NegociosBoardProps {
   onOpenLead: (leadId: string) => void;
@@ -23,38 +27,28 @@ interface NegociosBoardProps {
   corretorFilter?: string; // user_id do corretor, "all" ou "sem_corretor"
   saudeFilter?: LeadSaude | null; // filtro de saúde (atenção=ambar / desatualizado=vermelho / estagnado)
   gestorTeamUserIds?: string[] | null; // user_ids do time do gestor (null = sem filtro de gestor)
+  pipelineLeads?: PipelineLead[];
 }
 
-export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, lens: selectedLens = "equipe", stages = [], onMoveLead, searchTerm = "", corretorFilter = "all", saudeFilter = null, gestorTeamUserIds = null }: NegociosBoardProps) {
-  const { data, isLoading } = useNegociosBoard();
+export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, lens: selectedLens = "equipe", stages = [], onMoveLead, searchTerm = "", corretorFilter = "all", saudeFilter = null, gestorTeamUserIds = null, pipelineLeads = [] }: NegociosBoardProps) {
+  const { data, isLoading, error, refetch } = useNegociosBoard();
   const lens: Lens = canSeeEquipe ? selectedLens : "meus";
   const isMobile = useIsMobile();
   const [mobileCol, setMobileCol] = useState<ColKey>("proposta");
+  const [atalho, setAtalho] = useState<NegociosAtalho>("todos");
 
-  const q = searchTerm.trim().toLowerCase();
-  const corr = corretorFilter && corretorFilter !== "all" ? corretorFilter : null;
-  const gestorSet = gestorTeamUserIds ? new Set(gestorTeamUserIds) : null;
-  const gestorKey = gestorTeamUserIds ? gestorTeamUserIds.join(",") : "";
-  const matchCorretor = (userId: string | null) => !corr || (corr === "sem_corretor" ? !userId : userId === corr);
-  const matchGestor = (userId: string | null) => !gestorSet || (!!userId && gestorSet.has(userId));
-  const negocios = useMemo(() => {
-    let all = data?.negocios ?? [];
-    if (lens === "meus") all = all.filter((n) => n.meu);
-    if (gestorSet) all = all.filter((n) => matchGestor(n.corretorUserId));
-    if (corr) all = all.filter((n) => matchCorretor(n.corretorUserId));
-    if (saudeFilter) all = all.filter((n) => n.saude === saudeFilter);
-    if (q) all = all.filter((n) => n.cliente.toLowerCase().includes(q) || (n.empreendimento || "").toLowerCase().includes(q));
-    return all;
-  }, [data, lens, q, corr, saudeFilter, gestorKey]);
-  const prontos = useMemo(() => {
-    let all = data?.prontos ?? [];
-    if (lens === "meus") all = all.filter((p) => p.meu);
-    if (gestorSet) all = all.filter((p) => matchGestor(p.corretorUserId));
-    if (corr) all = all.filter((p) => matchCorretor(p.corretorUserId));
-    if (saudeFilter) all = all.filter((p) => p.saude === saudeFilter);
-    if (q) all = all.filter((p) => p.nome.toLowerCase().includes(q) || (p.empreendimento || "").toLowerCase().includes(q));
-    return all;
-  }, [data, lens, q, corr, saudeFilter, gestorKey]);
+  const leadById = useMemo(() => new Map(pipelineLeads.map(l => [l.id, l])), [pipelineLeads]);
+  const recorte = useMemo(() => ({ lens, search: searchTerm, corretor: corretorFilter, gestorIds: gestorTeamUserIds, saude: saudeFilter }), [lens, searchTerm, corretorFilter, gestorTeamUserIds, saudeFilter]);
+  const negociosBase = useMemo(() => recortarNegocios((data?.negocios ?? []).map(n => {
+    const lead = n.pipelineLeadId ? leadById.get(n.pipelineLeadId) : undefined;
+    return lead && n.passo !== "ganho" ? { ...n, saude: leadSaude({ ...lead, stage_tipo: PASSO_TIPO[n.passo] }) } : n;
+  }), recorte), [data, leadById, recorte]);
+  const resumo = useMemo(() => resumoNegocios(negociosBase), [negociosBase]);
+  const negocios = useMemo(() => filtrarNegociosAtalho(negociosBase, atalho), [negociosBase, atalho]);
+  const prontos = useMemo(() => atalho === "todos" ? recortarPosVisita((data?.prontos ?? []).map(p => {
+    const lead = leadById.get(p.id);
+    return lead ? { ...p, saude: leadSaude({ ...lead, stage_tipo: "pos_visita" }) } : p;
+  }), recorte) : [], [data, recorte, atalho, leadById]);
 
   // Agrupa uma vez por passo (ordenado por VGV) + soma de VGV — memoizado.
   const porPasso = useMemo(() => {
@@ -110,13 +104,16 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, l
     Promise.resolve(onMoveLead(drag.leadId, targetStage.id)).then(invalidateBoard);
   };
 
+  const summary = isLoading ? <Skeleton className="my-3 h-16 w-full shrink-0" /> : <NegociosBoardSummary resumo={resumo} atalho={atalho} onChange={setAtalho} />;
+  if (error) return <div role="alert" className="flex flex-col items-center gap-3 py-8 text-sm text-muted-foreground"><p>Não foi possível carregar Negócios.</p><Button variant="outline" onClick={() => void refetch()}><RefreshCw />Tentar novamente</Button></div>;
+
   // ---------- MOBILE: abas de coluna + lista vertical ----------
   if (isMobile) {
     const activeItems = itemsOf(mobileCol);
     const activeIsPos = mobileCol === "pos_visita";
     return (
       <div className="flex h-full min-h-0 min-w-0 flex-col px-1 pt-2">
-        
+        {summary}
         <NegociosMobileTabs stages={stages} active={mobileCol} onChange={setMobileCol} info={colInfo} />
         {(() => {
           const col = NEGOCIOS_COLUNAS.find(c => c.key === mobileCol);
@@ -140,7 +137,7 @@ export default function NegociosBoardInline({ onOpenLead, canSeeEquipe = true, l
   // ---------- DESKTOP: kanban horizontal ----------
   return (
     <div className="flex h-full min-h-0 flex-col pt-3">
-      
+      {summary}
       {isLoading ? (
         <div className="flex gap-3">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-72 w-64 shrink-0 rounded-2xl" />)}</div>
       ) : (
