@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { interesseDeclarado } from "./interesseDeclarado";
+import { interesseDeclarado } from "../../../supabase/functions/_shared/interesseDeclarado";
 describe("interesseDeclarado", () => {
   it("texto citando POA em disparo de Canoas vira interesse declarado", () => {
     expect(interesseDeclarado("Quero ver em POA", "Casa Tua Canoas", "texto")).toBe("Interesse declarado: imóvel em Porto Alegre");
