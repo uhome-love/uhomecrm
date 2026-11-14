@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import CardMinimal from "./CardMinimal";
+import { ColunaCabecalhoV2, colunaEstiloV2 } from "@/components/pipeline-v2/ColunaCabecalhoV2";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -915,53 +916,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         }
       `}</style>
 
-      {/* Aviso: leads existentes que não aparecem em nenhuma coluna */}
-      {(foraDoBoard.ganhos > 0 || foraDoBoard.negocios > 0) && (
-        <div className="shrink-0 mt-2 mb-1 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          {foraDoBoard.ganhos > 0 && (
-            <span>{foraDoBoard.ganhos} lead(s) em <b className="text-foreground">Ganho</b> — veja no filtro “🏆 Ganhos”. </span>
-          )}
-          {foraDoBoard.negocios > 0 && (
-            <span>{foraDoBoard.negocios} lead(s) em etapa comercial — veja na aba <b className="text-foreground">Negócios</b>.</span>
-          )}
-        </div>
-      )}
-
-
-      {/* Mini-map nav pills — índice de navegação discreto entre etapas */}
-      <div className="shrink-0 flex items-center gap-1 mb-2 px-0.5 overflow-x-auto scrollbar-none pb-0.5" style={{ paddingTop: 10 }}>
-        {visibleStages.map((stage, idx) => {
-          const stageLeads = leadsByStage.get(stage.id) || [];
-          const isActive = idx === activeIndex;
-          const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📍";
-          return (
-            <button
-              key={stage.id}
-              onClick={() => scrollToIndex(idx)}
-              title={stage.tipo === "convertido" ? "Negócio" : stage.nome}
-              className="transition-all hover:opacity-100"
-              style={{
-                display: "flex", alignItems: "center", gap: 5,
-                padding: "3px 9px", borderRadius: 99, fontSize: 11, fontWeight: 500,
-                whiteSpace: "nowrap",
-                background: isActive ? "hsl(var(--primary) / 0.1)" : "transparent",
-                border: isActive ? "1px solid hsl(var(--primary) / 0.4)" : "1px solid transparent",
-                color: isActive ? "hsl(var(--primary))" : "hsl(var(--pipeline-text-muted))",
-                opacity: isActive ? 1 : 0.7,
-                cursor: "pointer",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-            >
-              {emoji && <span style={{ fontSize: 11 }}>{emoji}</span>}
-              <span>{stage.tipo === "convertido" ? "Negócio" : stage.nome}</span>
-              <span style={{ fontWeight: 700, marginLeft: 1 }}>
-                {stageLeads.length}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
+      <div className="shrink-0" style={{ height: 10 }} />
 
       {/* Kanban scroll area */}
       <div className="relative flex-1 min-h-0">
@@ -1034,125 +989,49 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             return (
               <div
                 key={stage.id}
-                className="flex flex-col shrink-0 h-full"
+                className={colunaEstiloV2(stage, isDragOver).className}
                 data-stage-tipo={stage.tipo || undefined}
                 data-drop-target={isDragOver || undefined}
                 style={{
+                  ...colunaEstiloV2(stage, isDragOver).style,
                   width: `${getColumnWidth()}px`,
                   scrollSnapAlign: "start",
                   animation: `pipelineFadeUp 0.35s cubic-bezier(0.25,0.46,0.45,0.94) ${colIdx * 0.05}s both`,
                   transition: "all 0.2s ease",
-                  background: isDragOver ? "rgba(34,197,94,0.06)" : undefined,
-                  borderRadius: isDragOver ? 12 : undefined,
-                  outline: isDragOver ? "2px dashed rgba(34,197,94,0.5)" : undefined,
-                  outlineOffset: isDragOver ? "2px" : undefined,
-                  boxShadow: isDragOver ? "0 8px 24px rgba(34,197,94,0.12)" : undefined,
                 }}
 
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
-                {/* Column header card */}
-                <div
-                  className="shrink-0"
-                  style={{
-                    background: "hsl(var(--pipeline-column-bg))",
-                    border: isDragOver ? "1px solid #22c55e" : "1px solid hsl(var(--pipeline-column-border))",
-                    borderRadius: 12,
-                    padding: "10px 12px",
-                    boxShadow: isDragOver ? "0 4px 16px rgba(34,197,94,0.12)" : "0 1px 2px rgba(0,0,0,0.04)",
-                    marginBottom: 8,
-                    animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
-                    ["--flash-color" as any]: "hsl(var(--primary))",
-                    transition: "all 0.2s ease",
-                  }}
+                <ColunaCabecalhoV2
+                  stage={stage}
+                  destacar={isDragOver}
+                  qtd={(() => {
+                    const total = stageTotalsRef.current.get(stage.id) ?? stageLeads.length;
+                    return total !== stageLeads.length ? `${stageLeads.length} de ${total}` : stageLeads.length;
+                  })()}
                 >
-                  {/* Top: emoji + name + badge */}
-                  <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
-                    <div style={{
-                      width: 26, height: 26, borderRadius: 7,
-                      background: theme.emojiBg,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 13, flexShrink: 0,
-                    }}>
-                      {emoji}
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: isDragOver ? "#16a34a" : "hsl(var(--pipeline-text-primary))", flex: 1, transition: "color 0.2s ease" }}>
-                      {stage.tipo === "convertido" ? "Negócio" : stage.nome}
-                    </span>
-                    <span style={{
-                      fontSize: 13, fontWeight: 700,
-                      color: isDragOver ? "#16a34a" : "hsl(var(--primary))",
-                      background: isDragOver ? "rgba(34,197,94,0.12)" : undefined,
-                      borderRadius: isDragOver ? 6 : undefined,
-                      padding: isDragOver ? "0 6px" : undefined,
-                      transition: "all 0.2s ease",
-                    }}>
-                      {(() => {
-                        const total = stageTotalsRef.current.get(stage.id) ?? stageLeads.length;
-                        return total !== stageLeads.length ? `${stageLeads.length} de ${total}` : stageLeads.length;
-                      })()}
-                    </span>
-                    {stage.tipo !== "descarte" && stage.tipo !== "convertido" && (
-                      <StageSortFilterMenu
-                        stageNome={stage.nome}
-                        view={stageViews[stage.id] ?? { sort: "padrao", sub: [] }}
-                        opcoes={substatusDaEtapa(stage.tipo, stage.nome)?.opcoes ?? null}
-                        onChange={(v) => updateStageView(stage.id, v)}
-                      />
-                    )}
-                    {stage.tipo === "descarte" && stageLeads.length > 0 && (isGestor || isAdmin) && (
-                      <button
-                        onClick={() => setSweepConfirmOpen(true)}
-                        disabled={isSweeping}
-                        aria-label="Limpar descartados e enviar para Oferta Ativa"
-                        title="Limpar descartados → Oferta Ativa"
-                        className="ml-1 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                        style={{ fontSize: 11 }}
-                      >
-                        {isSweeping ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Progress bar — unified #4969FF */}
-                  <div style={{
-                    height: 2, borderRadius: 100, background: "hsl(var(--pipeline-progress-track))",
-                    marginBottom: 6, overflow: "hidden",
-                  }}>
-                    <div style={{
-                      height: "100%", borderRadius: 100,
-                      background: "hsl(var(--primary))",
-                      width: `${progressPct}%`,
-                      transition: "width 0.3s ease",
-                    }} />
-                  </div>
-
-                  {/* Stats row */}
-                  <div className="flex items-center justify-between">
-                    {totalVGV > 0 ? (
-                      <span style={{
-                        fontSize: 11, fontWeight: 600, color: "hsl(var(--pipeline-text-muted))",
-                        fontFamily: "'DM Mono', monospace",
-                      }}>
-                        {formatVGV(totalVGV)}
-                      </span>
-                    ) : <span />}
-                    <div className="flex items-center gap-2">
-                      {avgTime && (
-                        <span style={{ fontSize: 11, color: "hsl(var(--pipeline-text-muted))" }}>
-                          ⏱ {avgTime}
-                        </span>
-                      )}
-                      {alerts.semCorretor > 0 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "hsl(var(--primary))" }}>
-                          👤{alerts.semCorretor}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  {stage.tipo !== "descarte" && stage.tipo !== "convertido" && (
+                    <StageSortFilterMenu
+                      stageNome={stage.nome}
+                      view={stageViews[stage.id] ?? { sort: "padrao", sub: [] }}
+                      opcoes={substatusDaEtapa(stage.tipo, stage.nome)?.opcoes ?? null}
+                      onChange={(v) => updateStageView(stage.id, v)}
+                    />
+                  )}
+                  {stage.tipo === "descarte" && stageLeads.length > 0 && (isGestor || isAdmin) && (
+                    <button
+                      onClick={() => setSweepConfirmOpen(true)}
+                      disabled={isSweeping}
+                      aria-label="Limpar descartados e enviar para Oferta Ativa"
+                      title="Limpar descartados → Oferta Ativa"
+                      className="ml-1 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      {isSweeping ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    </button>
+                  )}
+                </ColunaCabecalhoV2>
 
                 {/* Drop placeholder pulsante */}
                 {isDragOver && (
