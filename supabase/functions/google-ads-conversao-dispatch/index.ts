@@ -4,14 +4,14 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const CUSTOMER_ID = "1041226095";
-const CONVERSION_ACTION = `customers/${CUSTOMER_ID}/conversionActions/7903119344`;
+const CONVERSION_ACTION_ID = "7903119344";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_ads";
 
-/** timestamptz → "yyyy-mm-dd hh:mm:ss-03:00" em BRT */
+/** timestamptz → "yyyy-mm-ddThh:mm:ss-03:00" em BRT (RFC 3339) */
 export function formatarDataBRT(iso: string): string {
   const d = new Date(new Date(iso).getTime() - 3 * 3600 * 1000);
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}-03:00`;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}-03:00`;
 }
 
 Deno.serve(async (req) => {
@@ -22,8 +22,10 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
-  // Apenas service role (cron) ou admin
-  if (auth !== `Bearer ${serviceKey}`) {
+  // Apenas agendamento (x-cron-secret, mesmo segredo do CAPI), service role ou admin
+  const cronSecret = Deno.env.get("CAPI_CRON_SECRET");
+  const porCron = !!cronSecret && req.headers.get("x-cron-secret") === cronSecret;
+  if (!porCron && auth !== `Bearer ${serviceKey}`) {
     const { data: u } = await sb.auth.getUser(auth.replace("Bearer ", ""));
     if (!u?.user) return json({ error: "unauthorized" }, 401);
     const { data: isAdmin } = await sb.rpc("has_role", { _user_id: u.user.id, _role: "admin" });
@@ -44,32 +46,33 @@ Deno.serve(async (req) => {
 
   const resultados: unknown[] = [];
   for (const item of fila ?? []) {
+    // Google exige a Data Manager API para novas integrações de conversão offline.
     const body = {
-      conversions: [{
-        gclid: item.gclid,
-        conversionAction: CONVERSION_ACTION,
-        conversionDateTime: formatarDataBRT(item.conversao_em),
+      destinations: [{ operatingAccount: { accountType: "GOOGLE_ADS", accountId: CUSTOMER_ID }, productDestinationId: CONVERSION_ACTION_ID }],
+      events: [{
+        transactionId: `visita-${item.pipeline_lead_id}`,
+        eventTimestamp: formatarDataBRT(item.conversao_em),
+        eventSource: "OTHER",
+        adIdentifiers: { gclid: item.gclid },
         conversionValue: Number(item.valor),
-        currencyCode: "BRL",
-        orderId: `visita-${item.pipeline_lead_id}`,
+        currency: "BRL",
       }],
-      partialFailure: true,
       validateOnly,
     };
-    const resp = await fetch(`${GATEWAY}/v25/customers/${CUSTOMER_ID}:uploadClickConversions`, {
+    const resp = await fetch(`${GATEWAY}/datamanager/v1/events:ingest`, {
       method: "POST",
       headers: { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": adsKey, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     const texto = await resp.text();
     let parsed: any = texto; try { parsed = JSON.parse(texto); } catch { /* texto */ }
-    const falha = !resp.ok || parsed?.partialFailureError;
-    const motivo = falha ? (parsed?.partialFailureError?.message ?? parsed?.error?.message ?? `HTTP ${resp.status}`) : null;
+    const falha = !resp.ok;
+    const motivo = falha ? (parsed?.error?.message ?? `HTTP ${resp.status}`) : null;
     resultados.push({ id: item.id, ok: !falha, motivo, validateOnly });
     if (validateOnly) continue;
 
     const tentativas = item.tentativas + 1;
-    const recusado = falha && (resp.ok || tentativas >= 5); // recusa do Google não se resolve sozinha
+    const recusado = falha && ((resp.status >= 400 && resp.status < 500 && resp.status !== 429) || tentativas >= 5); // recusa do Google não se resolve sozinha
     await sb.from("google_ads_conversoes").update({
       status: !falha ? "enviado" : recusado ? "erro" : "pendente",
       tentativas, resposta: parsed, enviado_em: !falha ? new Date().toISOString() : null,
