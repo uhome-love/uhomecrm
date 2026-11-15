@@ -38,7 +38,4 @@
 - Keep `homi_consulta` CLOSED with its hash table empty; never register a hash or reopen it without Lucas's new explicit approval. Why: the owner change failed and function calls/http/pg_net bypass the table check; any future external consumer uses direct read-only homi_ro login.
 - HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
 <!-- LOVABLE:END -->
-- site-events never changes lead stage/owner (only a daily notice); only a new site signup returns a discarded lead to the Roleta. Why: browsing is a signal.
-- Reengagement SIM keeps active owned leads: RPCs return `already_active`, webhooks honor it; owner notice closes by X or any button. Why: no wrong redistribution.
 - Stage display names come from pipeline_stages.nome; code that needs a specific stage matches by `tipo`, never by name. Why: renames (Qualificação→Atendimento) must not break logic.
-- Google Ads visit conversions: once per lead with gclid via `google_ads_conversoes` + `google-ads-conversao-dispatch` (Data Manager API). Why: no duplicates, never blocks visits.
