@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
 import { brtMinutesOfDay, todayBRT } from "@/lib/brtTime";
 import { empreendimentoFromTemplate } from "@/lib/reengajamentoEmpreendimento";
+import { resumirInteresseDeclarado } from "@/lib/resumirInteresseDeclarado";
 import FilaCeoRepassarDialog from "./FilaCeoRepassarDialog";
 
 interface CampanhaMap {
@@ -483,7 +484,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Rocket className="h-5 w-5 text-primary" />
@@ -654,7 +655,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                           ) : (
                             <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
                           )}
-                          <span className="text-sm font-semibold truncate">{g.nome}</span>
+                          <span className="text-sm font-semibold truncate" title={g.nome}>{resumirInteresseDeclarado(g.nome)}</span>
                         </div>
                         <Badge variant="secondary" className="font-bold shrink-0">
                           {g.leads.length} {g.leads.length === 1 ? "lead" : "leads"}
