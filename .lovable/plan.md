@@ -8,7 +8,20 @@
 1. **Linha do tempo acompanha os dados novos:** quando o site completar as informações do lead depois, o registro "Lead gerado via Site" é atualizado com a origem, página e aparelho certos. Nada é duplicado; só substitui as linhas que estavam "não informada".
 2. **Reconhecer Google Ads pela primeira página:** se o código do Google (gclid/gbraid/wbraid ou gad_source) estiver no link da primeira página, a origem vira "Google Ads". Vale para a caixa e para a linha do tempo, pela mesma regra.
 3. **Corrigir os leads antigos do site** que estão com "não informada" e já têm os dados: reescrever o texto desse registro de entrada.
-4. Testar com a Caroline no computador e no celular.
+4. **Texto da linha do tempo mais limpo, sem repetição:**
+   - Título diz onde clicou (ex.: "Lead do site — Formulário do imóvel"); essa informação não se repete embaixo.
+   - "Interesse" só aparece se for diferente do imóvel.
+   - Linhas sem dado não aparecem (some o "não informada pelo site").
+   - Página aparece curta (ex.: "/imovel/comercial-floresta-71533"), não o link inteiro.
+   - Formato:
+     ```text
+     Lead do site — Formulário do imóvel
+     Origem: Google Ads
+     Imóvel: Comercial para Venda — Floresta (cód. 71533-UH)
+     Página: /imovel/comercial-para-venda-floresta-71533-UH
+     Aparelho: Celular
+     ```
+5. Testar com a Caroline no computador e no celular.
 
 Não muda distribuição, corretor, etapa nem envio de conversões.
 
