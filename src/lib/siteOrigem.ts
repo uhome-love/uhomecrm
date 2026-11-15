@@ -97,7 +97,7 @@ export function classificarFonte(d: Dados, pagina: string | null): FonteTrafego 
   if (ref && !ref.includes("uhome.com.br")) return "Indicação/outro site";
   if (src) return "Indicação/outro site";
   const origemRef = (g("origem_ref") ?? "").toLowerCase();
-  if (ref === "" && (g("referrer") !== null || origemRef === "direto")) return "Direto";
+  if (ref === "" && ((d != null && "referrer" in d) || origemRef === "direto")) return "Direto";
   return "Não informada";
 }
 
