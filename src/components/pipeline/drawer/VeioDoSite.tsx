@@ -13,6 +13,16 @@ function Item({ rotulo, children }: { rotulo: string; children: React.ReactNode 
   );
 }
 
+function Chips({ itens }: { itens: string[] }) {
+  const vis = itens.slice(0, 3);
+  return (
+    <span className="flex min-w-0 flex-wrap gap-1">
+      {vis.map((f) => <span key={f} className="max-w-full truncate rounded-md bg-muted px-1.5 py-0.5 text-[12px]" title={f}>{f}</span>)}
+      {itens.length > 3 && <span className="rounded-md bg-muted px-1.5 py-0.5 text-[12px] text-muted-foreground" title={itens.slice(3).join(", ")}>+{itens.length - 3}</span>}
+    </span>
+  );
+}
+
 export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId: string; origem?: string | null; empreendimento?: string | null }) {
   const [info, setInfo] = useState<SiteOrigem | null>(null);
   const ehSite = (origem ?? "").toLowerCase().includes("site");
@@ -35,7 +45,12 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
       <h2 className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
         <Globe className="h-3.5 w-3.5" aria-hidden /> Veio do site
       </h2>
-      <Item rotulo="Fonte">{info.fonte}{info.campanha ? ` · ${info.campanha}` : ""}</Item>
+      <div className="mb-1 mt-1 flex flex-wrap items-center gap-1.5">
+        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[12px] font-semibold text-primary">{info.fonteTexto}</span>
+        {info.conversouLia && <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-foreground">Conversou com a LIA</span>}
+        {info.clienteVoltou && <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">Cliente que voltou</span>}
+      </div>
+      {info.palavraPesquisada && <Item rotulo="Pesquisou">"{info.palavraPesquisada}"</Item>}
       <Item rotulo="Onde clicou">{info.ondeClicou ?? "Não informado pelo site"}</Item>
       <Item rotulo="Página">
         {info.pagina ? (
@@ -44,6 +59,11 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
           </a>
         ) : "Não informada pelo site"}
       </Item>
+      {info.entrouPor && <Item rotulo="Entrou por">{info.entrouPor}</Item>}
+      {info.visitas && <Item rotulo="Visitas">{info.visitas}</Item>}
+      {info.imoveisVistos.length > 0 && <Item rotulo="Imóveis vistos"><Chips itens={info.imoveisVistos} /></Item>}
+      {info.favoritos.length > 0 && <Item rotulo="Favoritos"><Chips itens={info.favoritos} /></Item>}
+      {info.buscas.length > 0 && <Item rotulo="Buscas"><Chips itens={info.buscas} /></Item>}
       {info.imovel && <Item rotulo="Imóvel">{info.imovel}</Item>}
       {info.filtros.length > 0 && (
         <Item rotulo="Interesse">
