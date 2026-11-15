@@ -2,3 +2,4 @@
 - Keep contact WhatsApp suggestions in the shared stage/product composer and read-only product hook; render the message picker in a nested Radix Dialog and keep next-task persistence in the existing flow. Why: keyboard focus, draft text and canonical product facts must agree without changing contact or distribution rules.
 - The lead path (UltimoMovimento) and the timeline share timelineNarrativa.direcaoEtapa and the drawer's stage list; stage gaps without an entry record show as 'sem registro'. Why: path and timeline must never disagree about direction.
 - Pipeline card bottom line shows last activity ("última atividade · há Xd"); task state lives only in the header task shortcuts. Why: the owner rejected task text on cards as noisy.
+- Stage display names come from pipeline_stages.nome; code that needs a specific stage matches by `tipo`, never by name. Why: renames (Qualificação→Atendimento) must not break logic.
