@@ -502,20 +502,20 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
         ) : (
           <>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="novos" className="gap-2">
+            <TabsList className="grid w-full grid-cols-3 h-auto">
+              <TabsTrigger value="novos" className="gap-1 sm:gap-2 min-w-0 px-1 sm:px-3">
                 <Sparkles className="h-3.5 w-3.5" />
                 Novos
                 <Badge variant="secondary" className="ml-1 h-5">{leadsNovos.length}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="quiz" className="gap-2">
+              <TabsTrigger value="quiz" className="gap-1 sm:gap-2 min-w-0 px-1 sm:px-3">
                 <Flame className="h-3.5 w-3.5" />
                 LIA
                 <Badge variant="secondary" className="ml-1 h-5">{leadsQuiz.length}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="reengajamento" className="gap-2">
-                <HeartHandshake className="h-3.5 w-3.5" />
-                Reengajamento
+              <TabsTrigger value="reengajamento" className="gap-1 sm:gap-2 min-w-0 px-1 sm:px-3">
+                <HeartHandshake className="h-3.5 w-3.5 hidden sm:block" />
+                <span className="sm:hidden">Reeng.</span><span className="hidden sm:inline">Reengajamento</span>
                 <Badge variant="secondary" className="ml-1 h-5">{leadsReengajamento.length}</Badge>
               </TabsTrigger>
             </TabsList>
