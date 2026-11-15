@@ -47,8 +47,8 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
       {info.imovel && <Item rotulo="Imóvel">{info.imovel}</Item>}
       {info.filtros.length > 0 && (
         <Item rotulo="Interesse">
-          <span className="flex flex-wrap gap-1">
-            {info.filtros.map((f) => <span key={f} className="rounded-full bg-primary/10 px-2 py-0.5 text-[12px] font-medium text-primary">{f}</span>)}
+          <span className="flex min-w-0 flex-wrap gap-1">
+            {info.filtros.map((f) => <span key={f} className="max-w-full break-words rounded-full bg-primary/10 px-2 py-0.5 text-[12px] font-medium text-primary">{f}</span>)}
           </span>
         </Item>
       )}
