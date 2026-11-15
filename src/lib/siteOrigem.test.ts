@@ -24,3 +24,12 @@ describe("classificarFonte", () => {
   it("referrer vazio informado é Direto", () => expect(classificarFonte({ referrer: "" }, null)).toBe("Direto"));
   it("sem nada é Não informada", () => expect(classificarFonte({}, null)).toBe("Não informada"));
 });
+
+describe("classificarFonte — código do Google na primeira página", () => {
+  it("gclid na landing_url vira Google Ads mesmo com referrer do Google", () => {
+    expect(classificarFonte({ referrer: "https://www.google.com/", landing_url: "/busca?cidade=X&gad_source=1&gclid=abc" }, null)).toBe("Google Ads");
+  });
+  it("sem código na landing continua Google orgânico", () => {
+    expect(classificarFonte({ referrer: "https://www.google.com/", landing_url: "/busca?cidade=X" }, null)).toBe("Google orgânico");
+  });
+});
