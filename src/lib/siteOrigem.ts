@@ -70,7 +70,7 @@ export function lerBusca(url: string | null): { filtros: string[]; bairros: stri
   const p = u.searchParams;
   const filtros: string[] = [];
   const tipos = (p.get("tipo") ?? "").split(",").filter(Boolean).map((t) => TIPOS[t] ?? t);
-  if (tipos.length) filtros.push(tipos.length > 2 ? `${tipos.slice(0, 2).join("/")} +${tipos.length - 2}` : tipos.join("/"));
+  if (tipos.length) filtros.push(tipos.length > 2 ? `${tipos.slice(0, 2).join(", ")} +${tipos.length - 2}` : tipos.join(", "));
   if (p.get("quartos")) filtros.push(`${p.get("quartos")}+ quartos`);
   if (p.get("vagas")) filtros.push(`${p.get("vagas")}+ vaga${p.get("vagas") === "1" ? "" : "s"}`);
   if (p.get("preco_min")) filtros.push(`a partir de ${moeda(p.get("preco_min")!)}`);
