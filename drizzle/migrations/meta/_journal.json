@@ -729,6 +729,13 @@
       "when": 1794685392924,
       "tag": "0103_google_ads_conversao_visita",
       "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1794763487895,
+      "tag": "0104_historico_site_rastreamento",
+      "breakpoints": true
     }
   ]
 }
