@@ -442,7 +442,7 @@ Deno.serve(async (req) => {
         }
 
         pipelineLeadId = newLead.id
-        await registrarHistoricoSite(newLead.id, `Lead gerado via Site — ${onde}`, newLead.corretor_id)
+        // Histórico de entrada é gravado pelo gatilho trg_site_historico_ai (vale para todas as portas do site)
         existingCorretorId = newLead.corretor_id // may be set by trigger
         console.log(`[crm-webhook] New lead ${newLead.id} → Novo Lead stage, corretor from trigger: ${existingCorretorId || 'fila_ceo'}`)
 
