@@ -17,10 +17,14 @@ Os dados chegaram, mas ficaram escondidos num texto de observação e não viram
 3. **Corrigir os leads antigos do site** sem essas informações (últimos 90 dias), com anotação no histórico. Corretor e etapa não mudam.
 4. **Padrão para o site**: entregar ao site um ajuste para enviar também os filtros da busca e o nome do formulário de forma separada (não só dentro do link), garantindo que nunca chegue lead sem origem.
 
+5. **Histórico sempre registrado**: todo lead do site ganha, na entrada, uma anotação na linha do tempo com onde clicou, página, imóvel/interesse e aparelho — o corretor abre e já tem o contexto.
+6. **De onde veio a pessoa**: o CRM identifica e mostra a fonte do tráfego — **Google Ads** (gclid/utm), **Meta** (fbclid/utm facebook/instagram), **Google orgânico**, **Direto**, **Indicação/outro site** (pelo site de origem). Aparece no quadro e no histórico. Para isso, o ajuste do site passa a enviar utm_source/medium/campaign, fbclid, gclid e o site de origem (guardados na primeira visita).
+
 ## Ordem (seu fluxo obrigatório)
 Mockup do quadro → sua aprovação → construir → validar ao vivo no computador e celular 390px com a Vitória.
 
 ## Detalhes técnicos
 - Fonte: `pipeline_leads.dados_site` (origem_componente) + `observacoes` (Página/Device); `receive-landing-lead` passa a gravar `pagina_url`, `filtros_busca`, `formulario` estruturados em `dados_site`.
 - Função pura `src/lib/siteOrigem.ts` (parse da URL `/busca` e `/imovel/...`, rótulos de componente) com testes.
+- Classificação de fonte em `siteOrigem.ts` (gclid/gbraid→Google Ads; fbclid ou utm_source facebook/instagram/meta→Meta; referrer google sem clique→orgânico; sem referrer→direto). Anotação em `pipeline_anotacoes` criada em `receive-landing-lead`.
 - Backfill só UPDATE de `empreendimento` quando vazio (texto "Interesse declarado: …", sem tocar `campanha` para não disparar re-rotulagem errada) + anotação.
