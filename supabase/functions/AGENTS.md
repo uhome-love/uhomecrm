@@ -2,3 +2,4 @@
 - /vaga updates need the creation HMAC token (`_shared/rhToken.ts`); intake secrets stay log-only until configured. Why: no tampering, no lost leads.
 - Every Lia 360dialog send path calls `liaPodeEnviarModoTeste` (`_shared/liaModoTeste.ts`, ia_config.modo_teste/numero_teste) before sending; config read failure blocks. Why: one test lock covers replies, follow-ups, recovery and form bridge.
 - WhatsApp unknown-sender free-text naming another city than the sent product stores 'Interesse declarado: …' (`_shared/interesseDeclarado.ts`). Why: lead reflects what the client said.
+- Site leads: entry history, declared interest and traffic source come only from DB triggers `trg_site_interesse_bi`/`trg_site_historico_ai` (`fn_site_resumo`), mirrored for display by `src/lib/siteOrigem.ts`; edge functions must not insert a second entry record. Why: every site door (webhook or direct insert) gets the same context once.
