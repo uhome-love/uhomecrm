@@ -45,6 +45,7 @@ import DrawerAgora from "./drawer/DrawerAgora";
 import HomiSugestaoRecolhida from "./drawer/HomiSugestaoRecolhida";
 import { UltimoMovimento } from "./drawer/CaminhoDoLead";
 import ResumoLeadLateral from "./drawer/ResumoLeadLateral";
+import VeioDoSite from "./drawer/VeioDoSite";
 import { telefoneForaDoRS } from "@/lib/dddUf";
 import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
 import { VISITA_SUBSTATUS, AQUECIMENTO_SUBSTATUS } from "@/lib/leadHelpers";
@@ -810,6 +811,8 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           />
         }
       />
+
+      <VeioDoSite leadId={lead.id} origem={lead.origem} empreendimento={lead.empreendimento} />
 
       <ResumoLeadLateral lead={lead} esconderOrcamento={stageTipoAtual === "venda"} />
 

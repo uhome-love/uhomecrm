@@ -18087,6 +18087,15 @@ export type Database = {
           subtipo: string
         }[]
       }
+      fn_site_registrar_historico: {
+        Args: { _lead_id: string }
+        Returns: undefined
+      }
+      fn_site_resumo: {
+        Args: { _dados: Json; _emp: string; _obs: string }
+        Returns: Record<string, unknown>
+      }
+      fn_url_param: { Args: { _k: string; _url: string }; Returns: string }
       get_academia_time: {
         Args: never
         Returns: {
