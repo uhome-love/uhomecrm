@@ -15,6 +15,75 @@ export interface SiteOrigem {
   fonte: FonteTrafego;
   campanha: string | null;
   formulario: string | null;
+  /** Fonte pronta enviada pelo site (ex.: "Google Ads — Natal"); senão a calculada. */
+  fonteTexto: string;
+  palavraPesquisada: string | null;
+  entrouPor: string | null;
+  visitas: string | null;
+  imoveisVistos: string[];
+  favoritos: string[];
+  buscas: string[];
+  conversouLia: boolean;
+  clienteVoltou: boolean;
+}
+
+function lista(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => {
+    if (typeof x === "string") return x.trim();
+    if (x && typeof x === "object") {
+      const o = x as Record<string, unknown>;
+      return str(o.titulo) ?? str(o.nome) ?? str(o.termo) ?? str(o.resumo) ?? str(o.label) ?? str(o.codigo) ?? "";
+    }
+    return "";
+  }).filter(Boolean);
+}
+
+const sim = (v: unknown) => v === true || v === "true" || v === 1 || v === "sim";
+
+function dataBR(v: unknown): string | null {
+  const t = str(v);
+  if (!t) return null;
+  const d = new Date(t);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+}
+
+function tempo(v: unknown, emSegundos: boolean): string | null {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const min = Math.round(emSegundos ? n / 60 : n);
+  return min < 1 ? "menos de 1 min" : `${min} min`;
+}
+
+function rotuloPagina(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.pathname === "/" ? `${u.host} (página inicial)` : `${u.host}${u.pathname}`;
+  } catch { return url; }
+}
+
+function lerExtras(d: Record<string, unknown>) {
+  const ctx = (d.contexto && typeof d.contexto === "object" ? (d.contexto as Record<string, unknown>).rastreamento : null) as Record<string, unknown> | null;
+  const r = { ...(ctx ?? {}), ...d } as Record<string, unknown>;
+  const n = Number(r.numero_visitas ?? r.visitas);
+  const partes: string[] = [];
+  if (Number.isFinite(n) && n > 0) partes.push(`${n} visita${n === 1 ? "" : "s"}`);
+  const prim = dataBR(r.primeira_visita ?? r.primeira_visita_em ?? r.first_visit);
+  if (prim) partes.push(`1ª em ${prim}`);
+  const t = tempo(r.tempo_site_segundos ?? r.tempo_no_site_segundos, true) ?? tempo(r.tempo_site_min ?? r.tempo_site_minutos, false);
+  if (t) partes.push(`${t} no site`);
+  const landing = str(r.landing_url) ?? str(r.primeira_pagina);
+  return {
+    fonteSite: str(d.fonte) ?? str(ctx?.fonte),
+    palavraPesquisada: str(r.utm_term) ?? str(r.palavra_chave) ?? str(r.termo_busca_google),
+    entrouPor: landing ? rotuloPagina(landing) : null,
+    visitas: partes.length ? partes.join(" · ") : null,
+    imoveisVistos: lista(r.imoveis_vistos ?? r.ultimos_imoveis),
+    favoritos: lista(r.favoritos),
+    buscas: lista(r.buscas ?? r.buscas_feitas),
+    conversouLia: sim(r.conversou_lia) || sim(r.lia),
+    clienteVoltou: sim(r.retorno) || sim(r.cliente_retorno) || sim(r.cliente_voltou) || (Number.isFinite(n) && n > 1),
+  };
 }
 
 const COMPONENTES: Record<string, string> = {
@@ -119,7 +188,19 @@ export function lerSiteOrigem(dados: Dados, observacoes?: string | null, empreen
   const busca = lerBusca(pagina);
   const device = (str(d.device) ?? obsCampo(observacoes, "Device") ?? "").toLowerCase();
   const aparelho = device ? (device.includes("mob") ? "Celular" : device.includes("tab") ? "Tablet" : "Computador") : null;
+  const ex = lerExtras(d);
+  const fonte = classificarFonte(d, pagina);
+  const campanha = str(d.utm_campaign);
   return {
+    fonteTexto: ex.fonteSite ?? (fonte === "Direto" ? "Acesso direto" : `${fonte}${campanha ? ` — ${campanha}` : ""}`),
+    palavraPesquisada: ex.palavraPesquisada,
+    entrouPor: ex.entrouPor,
+    visitas: ex.visitas,
+    imoveisVistos: ex.imoveisVistos,
+    favoritos: ex.favoritos,
+    buscas: ex.buscas,
+    conversouLia: ex.conversouLia,
+    clienteVoltou: ex.clienteVoltou,
     ondeClicou,
     pagina,
     paginaRotulo,
@@ -128,8 +209,8 @@ export function lerSiteOrigem(dados: Dados, observacoes?: string | null, empreen
     bairros: busca.bairros,
     filtros: busca.filtros,
     aparelho,
-    fonte: classificarFonte(d, pagina),
-    campanha: str(d.utm_campaign),
+    fonte,
+    campanha,
     formulario: str(d.formulario) ?? str(d.form_nome) ?? (comp ? COMPONENTES[comp] ?? null : null),
   };
 }
