@@ -743,6 +743,13 @@
       "when": 1794765094184,
       "tag": "0105_site_resumo_fonte_enviada",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1794785481625,
+      "tag": "0106_site_entrada_texto_limpo",
+      "breakpoints": true
     }
   ]
 }

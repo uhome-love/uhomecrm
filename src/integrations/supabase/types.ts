@@ -18095,6 +18095,10 @@ export type Database = {
         Args: { _dados: Json; _emp: string; _obs: string }
         Returns: Record<string, unknown>
       }
+      fn_site_texto_entrada: {
+        Args: { _lead_id: string }
+        Returns: Record<string, unknown>
+      }
       fn_url_param: { Args: { _k: string; _url: string }; Returns: string }
       get_academia_time: {
         Args: never
