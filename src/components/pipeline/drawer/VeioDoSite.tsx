@@ -40,7 +40,7 @@ function Link({ url, rotulo }: { url: string; rotulo: string }) {
   );
 }
 
-const juntar = (...p: (string | null | undefined)[]) => p.filter(Boolean).join(" · ") || null;
+const juntar = (...p: (string | null | undefined)[]) => { const t = p.filter(Boolean).join(" · "); return t ? t[0].toUpperCase() + t.slice(1) : null; };
 
 export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId: string; origem?: string | null; empreendimento?: string | null }) {
   const [info, setInfo] = useState<SiteOrigem | null>(null);
