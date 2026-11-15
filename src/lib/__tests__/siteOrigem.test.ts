@@ -1,3 +1,5 @@
+import { describe, it, expect } from "vitest";
+import { lerSiteOrigem } from "../siteOrigem";
 
 describe("lerSiteOrigem — dados extras do site", () => {
   const real = { fonte: "Google Ads — Natal", gclid: "teste", device: "mobile", contexto: { rastreamento: { fonte: "Google Ads — Natal", numero_visitas: 2 } }, referrer: "", formulario: "Pop-up de saída", pagina_url: "https://uhome.com.br/busca?x=1", utm_source: "google", landing_url: "https://uhome.com.br/?gclid=teste", utm_campaign: "Natal", origem_componente: "exit_intent" };
