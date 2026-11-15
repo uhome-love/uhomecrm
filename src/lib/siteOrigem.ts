@@ -154,7 +154,10 @@ export function classificarFonte(d: Dados, pagina: string | null): FonteTrafego 
   let params: URLSearchParams | null = null;
   try { params = pagina ? new URL(pagina).searchParams : null; } catch { params = null; }
   const pick = (k: string) => g(k) ?? params?.get(k) ?? null;
-  if (pick("gclid") || pick("gbraid") || pick("wbraid")) return "Google Ads";
+  const landing = g("landing_url") ?? "";
+  const landingParams = new URLSearchParams(landing.includes("?") ? landing.slice(landing.indexOf("?") + 1) : "");
+  const noLanding = (k: string) => landingParams.get(k);
+  if (pick("gclid") || pick("gbraid") || pick("wbraid") || noLanding("gclid") || noLanding("gbraid") || noLanding("wbraid") || noLanding("gad_source")) return "Google Ads";
   const src = (pick("utm_source") ?? "").toLowerCase();
   const med = (pick("utm_medium") ?? "").toLowerCase();
   if (pick("fbclid") || /facebook|instagram|meta|^fb$|^ig$/.test(src)) return "Meta";
