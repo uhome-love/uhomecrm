@@ -1,4 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
+import { resumirInteresseDeclarado } from "@/lib/resumirInteresseDeclarado";
 // CardMinimal — Card minimalista do Pipeline v2 (Fase 5)
 //
 // Princípio: card é APENAS visualização + drag + abrir drawer.
@@ -489,8 +490,8 @@ const CardMinimal = memo(function CardMinimal({
             )}
           </div>
           {empreendimento && (
-            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-              {empreendimento}
+            <div className="text-[11px] text-muted-foreground truncate mt-0.5" title={empreendimento}>
+              {resumirInteresseDeclarado(empreendimento)}
             </div>
           )}
           {negocioBadge && (
