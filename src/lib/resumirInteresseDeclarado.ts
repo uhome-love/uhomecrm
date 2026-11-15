@@ -23,7 +23,7 @@ export function resumirInteresseDeclarado(nome: string): string {
   const corpo = nome.replace(PREFIXO, "").trim();
   const [antesEm, ...resto] = corpo.split(/\s+em\s+/i);
   const lugarTxt = resto.join(" em ").trim();
-  const partes = antesEm.split(",").map((p) => p.trim()).filter(Boolean);
+  const partes = antesEm.split(/,\s+/).map((p) => p.trim()).filter(Boolean);
   const tipo = (partes[0] || "").split("/")[0].trim();
   const preco = partes.find((p) => /r\$/i.test(p));
 
