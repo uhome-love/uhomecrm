@@ -484,7 +484,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden [&>*]:min-w-0">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Rocket className="h-5 w-5 text-primary" />
@@ -502,20 +502,20 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
         ) : (
           <>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="novos" className="gap-2">
+            <TabsList className="grid w-full grid-cols-3 h-auto">
+              <TabsTrigger value="novos" className="gap-1 sm:gap-2 min-w-0 px-1 sm:px-3">
                 <Sparkles className="h-3.5 w-3.5" />
                 Novos
                 <Badge variant="secondary" className="ml-1 h-5">{leadsNovos.length}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="quiz" className="gap-2">
+              <TabsTrigger value="quiz" className="gap-1 sm:gap-2 min-w-0 px-1 sm:px-3">
                 <Flame className="h-3.5 w-3.5" />
                 LIA
                 <Badge variant="secondary" className="ml-1 h-5">{leadsQuiz.length}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="reengajamento" className="gap-2">
-                <HeartHandshake className="h-3.5 w-3.5" />
-                Reengajamento
+              <TabsTrigger value="reengajamento" className="gap-1 sm:gap-2 min-w-0 px-1 sm:px-3">
+                <HeartHandshake className="h-3.5 w-3.5 hidden sm:block" />
+                <span className="sm:hidden">Reeng.</span><span className="hidden sm:inline">Reengajamento</span>
                 <Badge variant="secondary" className="ml-1 h-5">{leadsReengajamento.length}</Badge>
               </TabsTrigger>
             </TabsList>
@@ -648,14 +648,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                       key={g.key}
                       className={`rounded-lg border ${isUnident ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-card"} border-l-[3px] ${isUnident ? "border-l-amber-500" : "border-l-primary"}`}
                     >
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
-                        <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-start justify-between gap-2 px-3 py-2 border-b border-border/60">
+                        <div className="flex items-start gap-2 min-w-0 flex-1">
                           {isUnident ? (
                             <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
                           ) : (
                             <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
                           )}
-                          <span className="text-sm font-semibold truncate" title={g.nome}>{resumirInteresseDeclarado(g.nome)}</span>
+                          <span className="text-sm font-semibold line-clamp-2 break-words min-w-0" title={g.nome}>{resumirInteresseDeclarado(g.nome).replace(/^[\p{Extended_Pictographic}\uFE0F\s]+/u, "")}</span>
                         </div>
                         <Badge variant="secondary" className="font-bold shrink-0">
                           {g.leads.length} {g.leads.length === 1 ? "lead" : "leads"}
@@ -664,7 +664,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                       <div className="divide-y divide-border/40">
                         {g.leads.map((l) => (
                           <div key={l.id} className="flex items-center justify-between gap-2 px-3 py-2">
-                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                            <div className="flex items-center gap-x-2 gap-y-1 min-w-0 flex-1 flex-wrap">
                               <span className="text-sm font-medium truncate">{l.nome || "Sem nome"}</span>
                               {l.origem && (
                                 <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-normal">
