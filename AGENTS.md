@@ -42,3 +42,4 @@
 - Reengagement SIM keeps active owned leads: RPCs return `already_active`, webhooks honor it; owner notice closes by X or any button. Why: no wrong redistribution.
 - Stage display names come from pipeline_stages.nome; code that needs a specific stage matches by `tipo`, never by name. Why: renames (Qualificação→Atendimento) must not break logic.
 - Google Ads visit conversions: once per lead with gclid via `google_ads_conversoes` + `google-ads-conversao-dispatch` (Data Manager API). Why: no duplicates, never blocks visits.
+- Site leads: entry history, declared interest and traffic source come only from DB triggers `trg_site_interesse_bi`/`trg_site_historico_ai` (`fn_site_resumo`), mirrored for display by `src/lib/siteOrigem.ts`; edge functions must not insert a second entry record. Why: every site door (webhook or direct insert) gets the same context once.
