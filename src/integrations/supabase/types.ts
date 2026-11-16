@@ -19590,6 +19590,8 @@ export type Database = {
           motivo: Json
           nome: string
           user_id: string
+          visitas_dia: Json
+          visitas_marcadas_semana: number
           visitas_semana_atual: number
           visitas_semana_passada: number
         }[]

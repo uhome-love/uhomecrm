@@ -7,6 +7,7 @@ export interface Motivo { bloqueado: boolean; codigo: string; texto: string; tit
 export interface CorretorPerf {
   user_id: string; nome: string; equipe: string; gerente_id: string | null;
   crm: CrmSaude; motivo: Motivo; visitas_semana_passada: number; visitas_semana_atual: number;
+  visitas_marcadas_semana: number; visitas_dia: number[];
 }
 
 export function usePerformanceRoleta() {
