@@ -19589,6 +19589,7 @@ export type Database = {
           gerente_id: string
           motivo: Json
           nome: string
+          proxima_visita_marcada: string
           user_id: string
           visitas_dia: Json
           visitas_marcadas_semana: number
