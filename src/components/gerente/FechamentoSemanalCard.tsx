@@ -19,7 +19,7 @@ const fmtSemana = (ini: string) => {
   return `${p(d)} a ${p(f)}`;
 };
 
-export default function FechamentoSemanalCard() {
+export default function FechamentoSemanalCard({ corretorIds }: { corretorIds?: string[] } = {}) {
   const { data: semanas = [] } = useQuery({
     queryKey: ["fechamento-semanas"],
     queryFn: async () => {
@@ -31,7 +31,7 @@ export default function FechamentoSemanalCard() {
   const [sel, setSel] = useState<string | null>(null);
   const semana = sel ?? semanas[0] ?? null;
 
-  const { data: linhas = [], isLoading } = useQuery({
+  const { data: todasLinhas = [], isLoading } = useQuery({
     queryKey: ["fechamento-semanal", semana],
     enabled: !!semana,
     queryFn: async (): Promise<Linha[]> => {
@@ -45,6 +45,8 @@ export default function FechamentoSemanalCard() {
         .sort((a, b) => b.visitas_validas - a.visitas_validas || a.nome.localeCompare(b.nome));
     },
   });
+
+  const linhas = useMemo(() => { if (!corretorIds) return todasLinhas; const ids = new Set(corretorIds); return todasLinhas.filter((l) => ids.has(l.corretor_id)); }, [todasLinhas, corretorIds]);
 
   const tot = useMemo(() => ({
     apto: linhas.filter((l) => l.situacao === "apto").length,
