@@ -750,6 +750,13 @@
       "when": 1794785481625,
       "tag": "0106_site_entrada_texto_limpo",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1794790438951,
+      "tag": "0107_guarda_site_nao_tira_corretor",
+      "breakpoints": true
     }
   ]
 }
