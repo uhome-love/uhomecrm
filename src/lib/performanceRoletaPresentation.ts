@@ -70,3 +70,33 @@ export function kpis(l: CorretorPerf[]) {
     marcadas: l.reduce((a, c) => a + n(c.visitas_marcadas_semana), 0),
   };
 }
+
+export interface LinhaEvolucao { c: CorretorPerf; fora: boolean; situacao: string; tom: "fora" | "perto" | "apto"; realizadas: number; marcadas: number; falta: string; faltaDetalhe: string; faltaVisitas: number; precisaCrm: boolean; ordem: number }
+
+const diaCurto = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", timeZone: "America/Sao_Paulo" }).replace(".", "").replace(",", "");
+
+export function linhaEvolucao(c: CorretorPerf): LinhaEvolucao {
+  const atual = n(c.visitas_semana_atual), marc = n(c.visitas_marcadas_semana);
+  const faltaVis = Math.max(0, META_VISITAS - atual);
+  const plural = (x: number) => `${fmt(x)} visita${x > 1 ? "s" : ""}`;
+  const base = { c, realizadas: atual, marcadas: marc };
+  if (c.motivo?.bloqueado) {
+    const f = linhaFora(c);
+    const g = MOTIVO_GRUPO(c.motivo.codigo);
+    if (g === "visitas") {
+      const quando = c.proxima_visita_marcada ? `marcada ${diaCurto(c.proxima_visita_marcada)}` : "";
+      return { ...base, fora: true, situacao: "Fora", tom: f.selo === "perto" ? "perto" : "fora", falta: plural(faltaVis),
+        faltaDetalhe: marc ? quando || `${marc} marcada${marc > 1 ? "s" : ""}` : "marcar agenda", faltaVisitas: faltaVis, precisaCrm: false, ordem: f.distancia };
+    }
+    if (g === "crm") return { ...base, fora: true, situacao: "Fora", tom: "fora", falta: `CRM até ${META_CRM}%`, faltaDetalhe: `atualizar ${c.crm?.a_atualizar ?? 0} clientes`, faltaVisitas: 0, precisaCrm: true, ordem: f.distancia };
+    return { ...base, fora: true, situacao: "Fora", tom: "fora", falta: f.falta, faltaDetalhe: f.detalhe, faltaVisitas: 0, precisaCrm: false, ordem: f.distancia };
+  }
+  const a = aptosAgora([c])[0];
+  const garantido = atual >= META_VISITAS;
+  return { ...base, fora: false, situacao: a.voltouHoje ? "Apto · voltou hoje" : "Apto", tom: "apto",
+    falta: garantido ? "" : `manter: ${plural(faltaVis)}`, faltaDetalhe: garantido ? "" : "para a próxima semana", faltaVisitas: 0, precisaCrm: false, ordem: 100 };
+}
+
+export const linhasEvolucao = (l: CorretorPerf[]) => l.map(linhaEvolucao).sort((a, b) => a.ordem - b.ordem || a.c.nome.localeCompare(b.c.nome));
+
+export const faltamParaTodos = (l: LinhaEvolucao[]) => ({ visitas: l.reduce((s, x) => s + x.faltaVisitas, 0), crm: l.filter((x) => x.precisaCrm).length });
