@@ -204,6 +204,7 @@ export function usePipeline(
     const allBrokerIds = [...new Set([
       ...rows.map(l => l.corretor_id).filter(Boolean),
       ...rows.map(l => l.gerente_id).filter(Boolean),
+      ...rows.map(l => l.herdado_de_corretor_id).filter(Boolean),
     ])] as string[];
     if (allBrokerIds.length === 0) return;
 
