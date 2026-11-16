@@ -11603,6 +11603,9 @@ export type Database = {
           formulario: string | null
           gclid: string | null
           gerente_id: string | null
+          herdado_de_corretor_id: string | null
+          herdado_decidido_em: string | null
+          herdado_em: string | null
           hora_proxima_acao: string | null
           id: string
           imovel_codigo: string | null
@@ -11722,6 +11725,9 @@ export type Database = {
           formulario?: string | null
           gclid?: string | null
           gerente_id?: string | null
+          herdado_de_corretor_id?: string | null
+          herdado_decidido_em?: string | null
+          herdado_em?: string | null
           hora_proxima_acao?: string | null
           id?: string
           imovel_codigo?: string | null
@@ -11841,6 +11847,9 @@ export type Database = {
           formulario?: string | null
           gclid?: string | null
           gerente_id?: string | null
+          herdado_de_corretor_id?: string | null
+          herdado_decidido_em?: string | null
+          herdado_em?: string | null
           hora_proxima_acao?: string | null
           id?: string
           imovel_codigo?: string | null
@@ -17920,6 +17929,10 @@ export type Database = {
           p_motivo?: string
         }
         Returns: Json
+      }
+      decidir_lead_herdado_manter: {
+        Args: { p_lead_id: string }
+        Returns: boolean
       }
       detectar_leads_parados: { Args: never; Returns: number }
       distribuir_lead_atomico: {
