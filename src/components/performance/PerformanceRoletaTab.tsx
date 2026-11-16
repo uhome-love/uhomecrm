@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { usePerformanceRoleta } from "@/hooks/usePerformanceRoleta";
 import FechamentoSemanalCard from "@/components/gerente/FechamentoSemanalCard";
 import { gerarPdfPerformance, type LinhaFechamento } from "@/lib/performancePdf";
-import { kpis, foraDaRoleta, aptosAgora, evolucaoSemana } from "@/lib/performanceRoletaPresentation";
-import { Kpi, ForaDaRoleta, AptosAgora, EvolucaoSemana, UltimasSemanas, type SemanaAgg } from "./roleta/Blocos";
+import { kpis, evolucaoSemana, linhasEvolucao, faltamParaTodos } from "@/lib/performanceRoletaPresentation";
+import { Kpi, EvolucaoSemana, UltimasSemanas, type SemanaAgg } from "./roleta/Blocos";
+import EvolucaoCorretores from "./roleta/EvolucaoCorretores";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const p2 = (x: Date) => x.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 const labelSemana = (ini: string) => { const d = new Date(`${ini}T12:00:00`); const f = new Date(d); f.setDate(d.getDate() + 6); return `${p2(d)} a ${p2(f)}`; };
@@ -18,13 +20,13 @@ export default function PerformanceRoletaTab() {
   const { data = [], isLoading, error, dataUpdatedAt } = usePerformanceRoleta();
   const [equipe, setEquipe] = useState("todas");
   const [gerando, setGerando] = useState(false);
-  const [aberto, setAberto] = useState(false);
 
   const equipes = useMemo(() => Array.from(new Set(data.map((c) => c.equipe))).sort(), [data]);
   const lista = useMemo(() => (equipe === "todas" ? data : data.filter((c) => c.equipe === equipe)), [data, equipe]);
   const k = useMemo(() => kpis(lista), [lista]);
-  const fora = useMemo(() => foraDaRoleta(lista), [lista]);
-  const aptos = useMemo(() => aptosAgora(lista), [lista]);
+  const linhas = useMemo(() => linhasEvolucao(lista), [lista]);
+  const faltam = useMemo(() => faltamParaTodos(linhas), [linhas]);
+  const ids = useMemo(() => lista.map((c) => c.user_id), [lista]);
   const evol = useMemo(() => evolucaoSemana(lista), [lista]);
   const seg = useMemo(segundaBRT, []);
 
@@ -86,22 +88,23 @@ export default function PerformanceRoletaTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Aptos agora" value={k.aptos} extra={`de ${k.total}`} sub={k.voltaram ? `${k.voltaram} voltaram nesta semana` : undefined} tone="text-success-500" />
-        <Kpi label="Fora da roleta" value={k.fora} sub={`${k.foraVis} visitas · ${k.foraCrm} CRM${k.foraOutros ? ` · ${k.foraOutros} outros` : ""}`} tone="text-destructive" />
-        <Kpi label="Perto de voltar" value={k.perto} sub="visita marcada completa as 2" tone="text-warning" />
-        <Kpi label="Visitas na semana" value={Number(k.realizadas.toFixed(1))} sub={`+ ${k.marcadas} marcadas até domingo`} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
-        <ForaDaRoleta rows={fora} />
-        <AptosAgora rows={aptos} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <EvolucaoSemana pontos={evol} total={k.total} seg={seg} />
-        <UltimasSemanas semanas={semanas} aberto={aberto} onToggle={() => setAberto((v) => !v)}><FechamentoSemanalCard /></UltimasSemanas>
-      </div>
+      <Tabs defaultValue="agora" className="min-w-0 space-y-4">
+        <TabsList><TabsTrigger value="agora">Agora</TabsTrigger><TabsTrigger value="fechamento">Fechamento semanal</TabsTrigger></TabsList>
+        <TabsContent value="agora" className="mt-0 space-y-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Kpi label="Aptos agora" value={k.aptos} extra={`de ${k.total}`} sub={k.voltaram ? `${k.voltaram} voltaram nesta semana` : undefined} tone="text-success-500" />
+            <Kpi label="Fora da roleta" value={k.fora} sub={`${k.foraVis} visitas · ${k.foraCrm} CRM${k.foraOutros ? ` · ${k.foraOutros} outros` : ""}`} tone="text-destructive" />
+            <Kpi label="Perto de voltar" value={k.perto} sub="visita marcada completa as 2" tone="text-warning" />
+            <Kpi label="Faltam para todos voltarem" value={`${Number(faltam.visitas.toFixed(1)).toLocaleString("pt-BR")} visita${faltam.visitas === 1 ? "" : "s"}`} sub={faltam.crm ? `+ ${faltam.crm} com CRM a atualizar` : undefined} />
+          </div>
+          <EvolucaoCorretores linhas={linhas} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <EvolucaoSemana pontos={evol} total={k.total} seg={seg} />
+            <UltimasSemanas semanas={semanas} />
+          </div>
+        </TabsContent>
+        <TabsContent value="fechamento" className="mt-0"><FechamentoSemanalCard corretorIds={equipe === "todas" ? undefined : ids} /></TabsContent>
+      </Tabs>
     </div>
   );
 }

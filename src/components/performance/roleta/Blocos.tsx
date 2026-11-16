@@ -108,7 +108,7 @@ export function EvolucaoSemana({ pontos, total, seg }: { pontos: { i: number; va
 }
 
 export interface SemanaAgg { ini: string; label: string; aptos: number; total: number; visitas: number }
-export function UltimasSemanas({ semanas, aberto, onToggle, children }: { semanas: SemanaAgg[]; aberto: boolean; onToggle: () => void; children: React.ReactNode }) {
+export function UltimasSemanas({ semanas }: { semanas: SemanaAgg[] }) {
   return (
     <Card title="Últimas semanas">
       {semanas.length === 0 ? <p className="text-sm text-muted-foreground">Sem fechamentos ainda.</p> : (
@@ -121,8 +121,7 @@ export function UltimasSemanas({ semanas, aberto, onToggle, children }: { semana
           </tbody>
         </table>
       )}
-      <button onClick={onToggle} className="mt-2 text-xs font-medium text-primary">{aberto ? "Fechar corretor por corretor" : "Ver corretor por corretor →"}</button>
-      {aberto && <div className="mt-3">{children}</div>}
+      <p className="mt-2 text-xs text-muted-foreground">Corretor por corretor na aba "Fechamento semanal".</p>
     </Card>
   );
 }
