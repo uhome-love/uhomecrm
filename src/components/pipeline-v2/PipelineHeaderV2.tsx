@@ -30,7 +30,7 @@ import { NegociosLensToggle } from "@/components/pipeline/negocio/NegociosLensTo
 import type { NegociosLens } from "@/components/pipeline/negocio/boardPresentation";
 
 export interface PipelineHeaderV2Props extends PipelineHeaderProps {
-  acaoCounts?: { atrasada: number; hoje: number; sem: number };
+  acaoCounts?: { atrasada: number; hoje: number; sem: number; herdados?: number };
   acaoFilter?: FiltroAcao;
   setAcaoFilter?: (v: FiltroAcao) => void;
   negociosLens?: NegociosLens;
@@ -93,10 +93,11 @@ export default function PipelineHeaderV2(props: PipelineHeaderV2Props) {
     { key: "atrasada", emoji: "⏰", rotulo: isAdmin || isGestor ? "Tarefa atrasada" : "Atrasadas", n: acaoCounts?.atrasada },
     { key: "hoje", emoji: "📌", rotulo: "Para hoje", n: acaoCounts?.hoje },
     { key: "sem", emoji: "⚠️", rotulo: "Sem próxima ação", n: acaoCounts?.sem },
+    ...(acaoCounts?.herdados ? [{ key: "herdados" as const, emoji: "🔁", rotulo: "Herdados para decidir", n: acaoCounts.herdados }] : []),
   ];
 
   // Filtros ativos (mesma regra do PipelineHeader), mais o atalho de ação.
-  const ACAO_LABEL: Record<string, string> = { atrasada: "Tarefa atrasada", hoje: "Para hoje", sem: "Sem próxima ação" };
+  const ACAO_LABEL: Record<string, string> = { atrasada: "Tarefa atrasada", hoje: "Para hoje", sem: "Sem próxima ação", herdados: "Herdados para decidir" };
   const SAUDE_LABEL: Record<string, string> = { em_dia: "Em dia", desatualizado: "Atenção", tarefa_atrasada: "Desatualizado", estagnado: "Estagnado" };
   const corretorNome =
     !corretorFilter || corretorFilter === "all" || corretorFilter === "todos"

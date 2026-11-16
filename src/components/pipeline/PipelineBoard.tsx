@@ -221,6 +221,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 onMoveLead={onMoveLead}
                 onTransferred={onTransferred}
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                herdadoDeNome={lead.herdado_de_corretor_id && !lead.herdado_decidido_em ? (corretorNomes[lead.herdado_de_corretor_id] ?? "corretor que saiu") : undefined}
                 corretorAvatarUrl={lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}

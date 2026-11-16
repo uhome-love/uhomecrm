@@ -207,6 +207,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
                 stages={stages}
                 onMoveLead={onMoveLead}
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                herdadoDeNome={lead.herdado_de_corretor_id && !lead.herdado_decidido_em ? (corretorNomes[lead.herdado_de_corretor_id] ?? "corretor que saiu") : undefined}
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}
                 onDragStart={() => { /* mobile: sem drag */ }}

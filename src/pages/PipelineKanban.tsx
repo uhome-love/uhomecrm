@@ -43,7 +43,7 @@ import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type 
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import PipelineHeader from "@/components/pipeline-v2/PipelineHeaderV2";
-import { contarAcoes, filtrarPorAcao, type FiltroAcao } from "@/lib/pipelineV2/proximaAcao";
+import { contarAcoes, filtrarPorAcao, herdadoPendente, type FiltroAcao } from "@/lib/pipelineV2/proximaAcao";
 
 import ModoTimeView from "@/components/pipeline/modo-time/ModoTimeView";
 import { calcGestorOwnRow } from "@/lib/calcGestorOwnRow";
@@ -575,7 +575,7 @@ export default function PipelineKanban() {
   // Fonte única do pipeline ativo (topo = soma das bolinhas; Ganho/Descarte fora).
   const pipelineAtivo = useMemo(() => contarPipelineAtivo(filteredLeads, stageTypeById), [filteredLeads, stageTypeById]);
 
-  const acaoCounts = useMemo(() => contarAcoes(preFilteredLeads, kanbanTarefasMap, stageTypeById), [preFilteredLeads, kanbanTarefasMap, stageTypeById]);
+  const acaoCounts = useMemo(() => ({ ...contarAcoes(preFilteredLeads, kanbanTarefasMap, stageTypeById), herdados: preFilteredLeads.filter(herdadoPendente).length }), [preFilteredLeads, kanbanTarefasMap, stageTypeById]);
 
   const lastStableClientStatusCountsRef = useRef(clientStatusCounts);
   // Pronto quando: stages carregados E (sem leads OU tarefas não estão carregando).
