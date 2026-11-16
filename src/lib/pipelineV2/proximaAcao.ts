@@ -236,14 +236,19 @@ export function resolverProximaAcao(e: EntradaProximaAcao): ProximaAcaoV2 {
 
 // ─── Contadores dos atalhos "Tarefa atrasada · Para hoje · Sem próxima ação" ───
 
-export type FiltroAcao = "todos" | "atrasada" | "hoje" | "sem";
+export type FiltroAcao = "todos" | "atrasada" | "hoje" | "sem" | "herdados";
+
+/** Lead herdado de corretor inativado aguardando decisão do novo responsável. */
+export function herdadoPendente(l: { herdado_de_corretor_id?: string | null; herdado_decidido_em?: string | null }): boolean {
+  return !!l.herdado_de_corretor_id && !l.herdado_decidido_em;
+}
 
 export function acaoDoLead(
   stageTipo: string | null | undefined,
   tarefa: TarefaV2 | null | undefined,
   hoje: string = hojeBRT(),
   agoraHHMM: string = horaAgoraBRT(),
-): Exclude<FiltroAcao, "todos"> | null {
+): Exclude<FiltroAcao, "todos" | "herdados"> | null {
   const tipo = stageTipo ?? "";
   if (ETAPAS_TERMINAIS.has(tipo)) return null;
   const s = statusTarefa(tarefa, tipo, hoje, agoraHHMM);
@@ -277,6 +282,7 @@ export function filtrarPorAcao<L extends { id: string; stage_id: string }>(
   agora: Date = new Date(),
 ): L[] {
   if (filtro === "todos") return leads;
+  if (filtro === "herdados") return leads.filter((l) => herdadoPendente(l as { herdado_de_corretor_id?: string | null; herdado_decidido_em?: string | null }));
   const hoje = hojeBRT(agora);
   const hhmm = horaAgoraBRT(agora);
   return leads.filter((l) => acaoDoLead(stageTipoById[l.stage_id], tarefasMap[l.id] ?? null, hoje, hhmm) === filtro);

@@ -46,6 +46,7 @@ import HomiSugestaoRecolhida from "./drawer/HomiSugestaoRecolhida";
 import { UltimoMovimento } from "./drawer/CaminhoDoLead";
 import ResumoLeadLateral from "./drawer/ResumoLeadLateral";
 import VeioDoSite from "./drawer/VeioDoSite";
+import LeadHerdadoDecisao from "./drawer/LeadHerdadoDecisao";
 import { telefoneForaDoRS } from "@/lib/dddUf";
 import { grupoOrigem, rotuloOrigem } from "@/lib/leadOrigemUtils";
 import { VISITA_SUBSTATUS, AQUECIMENTO_SUBSTATUS } from "@/lib/leadHelpers";
@@ -811,6 +812,15 @@ export default function PipelineLeadDetail({ lead: leadProp, stages, segmentos, 
           />
         }
       />
+
+      {lead.herdado_de_corretor_id && !lead.herdado_decidido_em && (
+        <LeadHerdadoDecisao
+          leadId={lead.id}
+          herdadoDeNome={corretorNomes[lead.herdado_de_corretor_id] ?? "corretor que saiu"}
+          onManter={() => { void onUpdate(lead.id, { herdado_decidido_em: new Date().toISOString() }); }}
+          onDescartar={() => setInativarOpen(true)}
+        />
+      )}
 
       <VeioDoSite leadId={lead.id} origem={lead.origem} empreendimento={lead.empreendimento} />
 

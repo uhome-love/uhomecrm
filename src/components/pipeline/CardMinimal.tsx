@@ -77,6 +77,8 @@ interface CardMinimalProps {
   lead: PipelineLead;
   stage?: PipelineStage;
   corretorNome?: string;
+  /** Nome do corretor inativado de quem o lead foi herdado (pendente de decisão). */
+  herdadoDeNome?: string;
   corretorAvatarUrl?: string;
   parceiroNome?: string;
   proximaTarefa?: CardMinimalProximaTarefa | null;
@@ -193,6 +195,7 @@ const CardMinimal = memo(function CardMinimal({
   lead,
   stage,
   corretorNome,
+  herdadoDeNome,
   corretorAvatarUrl,
   parceiroNome,
   proximaTarefa,
@@ -492,6 +495,14 @@ const CardMinimal = memo(function CardMinimal({
           {empreendimento && (
             <div className="text-[11px] text-muted-foreground truncate mt-0.5" title={empreendimento}>
               {resumirInteresseDeclarado(empreendimento)}
+            </div>
+          )}
+          {herdadoDeNome && (
+            <div
+              className="inline-flex items-center mt-1 rounded-full border border-warning/40 bg-warning/10 px-1.5 py-px text-[11px] font-semibold text-warning"
+              title={`Lead herdado de ${herdadoDeNome} (corretor inativado). Abra o lead para decidir.`}
+            >
+              Era de {herdadoDeNome.split(" ")[0]} · decidir
             </div>
           )}
           {negocioBadge && (

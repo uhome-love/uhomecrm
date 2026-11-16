@@ -3,3 +3,4 @@
 - The lead path (UltimoMovimento) and the timeline share timelineNarrativa.direcaoEtapa and the drawer's stage list; stage gaps without an entry record show as 'sem registro'. Why: path and timeline must never disagree about direction.
 - Pipeline card bottom line shows last activity ("última atividade · há Xd"); task state lives only in the header task shortcuts. Why: the owner rejected task text on cards as noisy.
 - Stage display names come from pipeline_stages.nome; code that needs a specific stage matches by `tipo`, never by name. Why: renames (Qualificação→Atendimento) must not break logic.
+- Inherited leads: a DB trigger marks `herdado_de_corretor_id` when a lead leaves an inactive broker; the pending state clears on "keep" (`decidir_lead_herdado_manter`), any later broker change, or discard. Card badge and the "Herdados para decidir" shortcut read only that pending state. Why: one rule covers every transfer path without per-caller code.
