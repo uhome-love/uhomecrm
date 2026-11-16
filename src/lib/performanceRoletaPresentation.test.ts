@@ -31,3 +31,23 @@ describe("performance da roleta", () => {
     expect(e[2]).toMatchObject({ valor: 1, previsao: true });
   });
 });
+
+import { linhasEvolucao, faltamParaTodos } from "./performanceRoletaPresentation";
+describe("evolução por corretor", () => {
+  it("fora por visitas sem agenda pede marcar agenda", () => {
+    const [l] = linhasEvolucao([mk({ cod: "visitas_semana", visitas_semana_atual: 0 })]);
+    expect(l.falta).toBe("2 visitas"); expect(l.faltaDetalhe).toBe("marcar agenda");
+  });
+  it("apto pela semana passada mostra o que falta para manter", () => {
+    const [l] = linhasEvolucao([mk({ visitas_semana_passada: 2, visitas_semana_atual: 1 })]);
+    expect(l.falta).toBe("manter: 1 visita");
+  });
+  it("soma visitas faltantes e CRM pendente", () => {
+    const t = faltamParaTodos(linhasEvolucao([mk({ nome: "a", cod: "visitas_semana", visitas_semana_atual: 1 }), mk({ nome: "b", cod: "crm" })]));
+    expect(t).toEqual({ visitas: 1, crm: 1 });
+  });
+  it("fora vem antes de apto", () => {
+    const r = linhasEvolucao([mk({ nome: "A" }), mk({ nome: "Z", cod: "crm" })]);
+    expect(r[0].c.nome).toBe("Z");
+  });
+});
