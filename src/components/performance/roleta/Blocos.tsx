@@ -48,10 +48,10 @@ export function ForaDaRoleta({ rows }: { rows: ForaRow[] }) {
         <div className="divide-y divide-border text-sm">
           {vis.map((f) => (
             <div key={f.c.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-              <div className="min-w-0 flex-1"><p className="truncate font-medium">{f.c.nome}</p><p className="truncate text-xs text-muted-foreground">{f.c.equipe}</p></div>
-              <div className="min-w-0 text-right sm:w-56 sm:text-left">
+              <div className="w-full min-w-0 sm:w-auto sm:flex-1"><p className="truncate font-medium">{f.c.nome}</p><p className="truncate text-xs text-muted-foreground">{f.c.equipe}</p></div>
+              <div className="min-w-0 flex-1 sm:w-56 sm:flex-none">
                 <p className="text-xs font-semibold">Falta {f.falta}</p>
-                <p className="flex items-center justify-end gap-2 text-xs text-muted-foreground sm:justify-start">
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
                   {(f.selo === "perto" || f.selo === "sem_agenda") && <Barra r={Number(f.c.visitas_semana_atual)} m={f.c.visitas_marcadas_semana} />}
                   <span className="truncate">{f.detalhe}</span>
                 </p>
