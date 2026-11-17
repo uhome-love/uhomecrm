@@ -1,5 +1,5 @@
 // Parte "Jornada no site" dentro do quadro Veio do site: resumo curto + (no Ver mais) origem, interesse e sessões.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ROTULO, detalheEvento, type Jornada, type OrigemJornada } from "@/lib/siteJornada";
 
@@ -47,6 +47,9 @@ export function JornadaResumo({ j }: { j: Jornada }) {
 
 export function JornadaDetalhe({ j }: { j: Jornada }) {
   const [abertas, setAbertas] = useState<Set<string>>(() => new Set(j.sessoes[0] ? [j.sessoes[0].id] : []));
+  const recente = j.sessoes[0]?.id;
+  // Sessão nova chegou com a ficha aberta: abre a mais recente.
+  useEffect(() => { if (recente) setAbertas((s) => (s.has(recente) ? s : new Set(s).add(recente))); }, [recente]);
   const alternar = (id: string) => setAbertas((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const temInteresse = j.imoveis.length || j.procurou.length || j.favoritos.length || j.pedidos.length;
   return (
