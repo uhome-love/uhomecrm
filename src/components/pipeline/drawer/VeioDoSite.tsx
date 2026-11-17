@@ -5,6 +5,8 @@ import { Globe, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lerSiteOrigem, type SiteOrigem } from "@/lib/siteOrigem";
 import { resumirInteresseDeclarado } from "@/lib/resumirInteresseDeclarado";
+import { lerJornada, type Jornada } from "@/lib/siteJornada";
+import { JornadaResumo, JornadaDetalhe } from "./JornadaSite";
 
 function Item({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
@@ -44,19 +46,26 @@ const juntar = (...p: (string | null | undefined)[]) => { const t = p.filter(Boo
 
 export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId: string; origem?: string | null; empreendimento?: string | null }) {
   const [info, setInfo] = useState<SiteOrigem | null>(null);
+  const [jornada, setJornada] = useState<Jornada | null>(null);
   const [aberto, setAberto] = useState(false);
   const ehSite = (origem ?? "").toLowerCase().includes("site");
 
   useEffect(() => {
     if (!ehSite) { setInfo(null); return; }
     let cancel = false;
-    (async () => {
+    const carregar = async () => {
       const { data, error } = await supabase.from("pipeline_leads").select("dados_site, observacoes").eq("id", leadId).maybeSingle();
       if (cancel || error || !data) return;
       const row = data as { dados_site: Record<string, unknown> | null; observacoes: string | null };
       setInfo(lerSiteOrigem(row.dados_site, row.observacoes, empreendimento));
-    })();
-    return () => { cancel = true; };
+      setJornada(lerJornada(row.dados_site));
+    };
+    carregar();
+    // Nova jornada chega pela integração do site: recarrega a cada 30s com a ficha aberta e ao voltar à aba.
+    const t = window.setInterval(() => { if (document.visibilityState === "visible") carregar(); }, 30000);
+    const onVis = () => { if (document.visibilityState === "visible") carregar(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { cancel = true; window.clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
   }, [leadId, ehSite, empreendimento]);
 
   if (!ehSite || !info) return null;
@@ -66,7 +75,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
   const procura = declarado ?? info.interesse;
   const comoChegou = info.fonte === "Não informada" && !/—/.test(info.fonteTexto) ? "Origem do tráfego não disponível" : info.fonteTexto;
   const ondeClicou = juntar(info.ondeClicou, info.paginaRotulo?.toLowerCase());
-  const noSite = juntar(info.visitas, info.aparelho?.toLowerCase());
+  const noSite = juntar(jornada ? null : info.visitas, info.aparelho?.toLowerCase());
   const tipos = info.filtros.filter((f) => !/quarto|vaga|R\$/.test(f));
   const detalhes = juntar(...info.filtros.filter((f) => /quarto|vaga|R\$/.test(f)));
   const contexto = juntar(info.clienteVoltou ? "Cliente que voltou" : null, info.conversouLia ? "conversou com a LIA" : null);
@@ -85,6 +94,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
       <Item rotulo="Como chegou">{comoChegou}</Item>
       {ondeClicou && <Item rotulo="Onde clicou">{ondeClicou}</Item>}
       {noSite && <Item rotulo="No site">{noSite}</Item>}
+      {jornada && <JornadaResumo j={jornada} />}
 
       {aberto && (
         <>
@@ -105,7 +115,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
           </Bloco>
           {(info.visitas || info.aparelho || info.imoveisVistos.length || info.favoritos.length || info.buscas.length || contexto) ? (
             <Bloco titulo="O que fez no site">
-              {info.visitas && <Item rotulo="Visitas">{info.visitas}</Item>}
+              {info.visitas && !jornada && <Item rotulo="Visitas">{info.visitas}</Item>}
               {info.aparelho && <Item rotulo="Aparelho">{info.aparelho}</Item>}
               {info.imoveisVistos.length > 0 && <Item rotulo="Viu"><Chips itens={info.imoveisVistos} /></Item>}
               {info.favoritos.length > 0 && <Item rotulo="Favoritou"><Chips itens={info.favoritos} /></Item>}
@@ -113,6 +123,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
               {contexto && <Item rotulo="Contexto">{contexto}</Item>}
             </Bloco>
           ) : null}
+          {jornada && <JornadaDetalhe j={jornada} />}
         </>
       )}
 
