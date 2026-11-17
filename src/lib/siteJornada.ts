@@ -14,6 +14,7 @@ export interface Jornada {
   visitas: number; primeiraVisita: Date | null;
   imoveis: { titulo: string; vezes: number }[];
   procurou: string[]; favoritos: string[]; pedidos: PedidoJornada[];
+  bairros: string[]; tipos: string[]; faixaValor: string | null; diasAtePedido: number | null;
   sessoes: SessaoJornada[];
 }
 
@@ -112,11 +113,29 @@ export function lerJornada(dadosSite: unknown, agora = new Date()): Jornada | nu
   const pedidos = eventos.filter((e) => e.tipo === "visita_pedida" || e.tipo === "informacoes_pedidas")
     .map((e) => ({ tipo: e.tipo === "visita_pedida" ? "visita" as const : "informacoes" as const, texto: textoPedido(e), quando: e.quando }))
     .reverse().filter((p, i, a) => a.findIndex((x) => x.texto === p.texto) === i);
+  const bairros = new Set<string>(); const tipos = new Set<string>(); const valores: number[] = [];
+  for (const b of [...arr(j.buscas), ...arr(j.filtros)].map(obj)) {
+    const d = { ...obj(b.dados), ...b };
+    for (const [k, v] of Object.entries(d)) {
+      const vs = (Array.isArray(v) ? v : [v]).filter((x) => typeof x === "string" || typeof x === "number").map(String).filter((x) => x.trim());
+      if (/bairro|regiao|zona/i.test(k)) vs.forEach((x) => bairros.add(x));
+      else if (/^tipo/i.test(k)) vs.forEach((x) => tipos.add(x));
+      else if (/valor|preco|price/i.test(k)) vs.forEach((x) => { const n = Number(x.replace(/\D/g, "")); if (n > 1000) valores.push(n); });
+    }
+  }
+  const fmtV = (n: number) => n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(".0", "")}mi` : `${Math.round(n / 1e3)}mil`;
+  const faixaValor = valores.length ? (Math.min(...valores) === Math.max(...valores) ? `até ${fmtV(valores[0])}` : `${fmtV(Math.min(...valores))}–${fmtV(Math.max(...valores))}`) : null;
   const pv = str(j.primeira_visita);
   const sessoes = agruparSessoes(eventos);
-  return {
+  const out: Jornada = {
     primeira: fonteNome(obj(j.primeira_origem)), ultima: fonteNome(obj(j.ultima_origem)),
     visitas: Number(j.numero_visitas) || sessoes.length, primeiraVisita: pv ? new Date(pv) : eventos[0]?.quando ?? null,
     imoveis, procurou: [...procurou].slice(0, 8), favoritos, pedidos, sessoes,
+    bairros: [...bairros].slice(0, 5), tipos: [...tipos].slice(0, 4), faixaValor, diasAtePedido: null,
   };
+  if (out.primeiraVisita && pedidos.length) {
+    const prim = [...pedidos].sort((a, b) => +a.quando - +b.quando)[0];
+    out.diasAtePedido = Math.max(0, Math.floor((+prim.quando - +out.primeiraVisita) / 86400000));
+  }
+  return out;
 }

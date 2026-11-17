@@ -8189,6 +8189,7 @@ export type Database = {
           form_id: string | null
           form_name: string | null
           formulario: string | null
+          imoveis_vistos: Json | null
           lead_id: string
           lead_score: number | null
           lead_temperatura: string | null
@@ -8206,7 +8207,9 @@ export type Database = {
           negocio_em: string | null
           origem: string | null
           origem_detalhe: string | null
+          pedido_site: Json | null
           plataforma: string | null
+          primeira_origem: Json | null
           primeiro_contato_em: string | null
           qualificado_em: string | null
           refreshed_at: string | null
@@ -8222,12 +8225,14 @@ export type Database = {
           teve_visita_realizada: boolean | null
           tipo_descarte: string | null
           toques: number | null
+          ultima_origem: Json | null
           ultimo_toque_em: string | null
           venda_em: string | null
           vgv_rateado: number | null
           visita_marcada_em: string | null
           visita_realizada_em: string | null
           visitas_qtd: number | null
+          visitas_site: number | null
         }
         Insert: {
           ad_id?: string | null
@@ -8252,6 +8257,7 @@ export type Database = {
           form_id?: string | null
           form_name?: string | null
           formulario?: string | null
+          imoveis_vistos?: Json | null
           lead_id: string
           lead_score?: number | null
           lead_temperatura?: string | null
@@ -8269,7 +8275,9 @@ export type Database = {
           negocio_em?: string | null
           origem?: string | null
           origem_detalhe?: string | null
+          pedido_site?: Json | null
           plataforma?: string | null
+          primeira_origem?: Json | null
           primeiro_contato_em?: string | null
           qualificado_em?: string | null
           refreshed_at?: string | null
@@ -8285,12 +8293,14 @@ export type Database = {
           teve_visita_realizada?: boolean | null
           tipo_descarte?: string | null
           toques?: number | null
+          ultima_origem?: Json | null
           ultimo_toque_em?: string | null
           venda_em?: string | null
           vgv_rateado?: number | null
           visita_marcada_em?: string | null
           visita_realizada_em?: string | null
           visitas_qtd?: number | null
+          visitas_site?: number | null
         }
         Update: {
           ad_id?: string | null
@@ -8315,6 +8325,7 @@ export type Database = {
           form_id?: string | null
           form_name?: string | null
           formulario?: string | null
+          imoveis_vistos?: Json | null
           lead_id?: string
           lead_score?: number | null
           lead_temperatura?: string | null
@@ -8332,7 +8343,9 @@ export type Database = {
           negocio_em?: string | null
           origem?: string | null
           origem_detalhe?: string | null
+          pedido_site?: Json | null
           plataforma?: string | null
+          primeira_origem?: Json | null
           primeiro_contato_em?: string | null
           qualificado_em?: string | null
           refreshed_at?: string | null
@@ -8348,12 +8361,14 @@ export type Database = {
           teve_visita_realizada?: boolean | null
           tipo_descarte?: string | null
           toques?: number | null
+          ultima_origem?: Json | null
           ultimo_toque_em?: string | null
           venda_em?: string | null
           vgv_rateado?: number | null
           visita_marcada_em?: string | null
           visita_realizada_em?: string | null
           visitas_qtd?: number | null
+          visitas_site?: number | null
         }
         Relationships: []
       }
@@ -19657,6 +19672,7 @@ export type Database = {
       set_meta_ads_token: { Args: { p_token: string }; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      site_evento_max: { Args: { p: Json }; Returns: string }
       skip_oa_lead: {
         Args: {
           p_corretor_id: string

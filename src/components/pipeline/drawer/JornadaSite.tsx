@@ -39,7 +39,8 @@ export function JornadaResumo({ j }: { j: Jornada }) {
       <Rot>Jornada no site</Rot>
       <div className="rounded-lg bg-muted/60 px-3 py-2 text-[13px] leading-relaxed text-foreground">
         {j.primeira && <div>{j.primeira.fonte}{volta}</div>}
-        <div>{l2}{ped && <>{l2 && " · "}<strong>{ped.tipo === "visita" ? "Pediu visita" : "Pediu informações"} {dia(ped.quando)}</strong></>}</div>
+        <div>{l2}{ped && <>{l2 && " · "}<strong>{ped.texto}</strong>{j.diasAtePedido != null && <span className="text-muted-foreground"> · {j.diasAtePedido === 0 ? "pediu no 1º dia" : `${j.diasAtePedido}d até pedir`}</span>}</>}</div>
+        {j.imoveis.length > 0 && <div className="text-muted-foreground">Mais viu: {j.imoveis.slice(0, 2).map((i) => `${i.titulo} (${i.vezes}x)`).join(", ")}</div>}
       </div>
     </>
   );
@@ -65,6 +66,9 @@ export function JornadaDetalhe({ j }: { j: Jornada }) {
         <>
           <Rot>2. Interesse</Rot>
           {j.imoveis.length > 0 && <Linha rotulo="Viu">{j.imoveis.map((i) => <Chip key={i.titulo}>{i.titulo} · {i.vezes}x</Chip>)}</Linha>}
+          {j.bairros.length > 0 && <Linha rotulo="Bairros">{j.bairros.join(", ")}</Linha>}
+          {j.tipos.length > 0 && <Linha rotulo="Tipos">{j.tipos.join(", ")}</Linha>}
+          {j.faixaValor && <Linha rotulo="Valor">{j.faixaValor}</Linha>}
           {j.procurou.length > 0 && <Linha rotulo="Procurou">{j.procurou.map((p) => <Chip key={p}>{p}</Chip>)}</Linha>}
           {j.favoritos.length > 0 && <Linha rotulo="Favoritou">{j.favoritos.join(", ")}</Linha>}
           {j.pedidos.length > 0 && (

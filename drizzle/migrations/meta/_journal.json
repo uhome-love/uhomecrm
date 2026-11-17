@@ -785,6 +785,20 @@
       "when": 1794877532149,
       "tag": "0111_site_captacao_imovel_rotulo",
       "breakpoints": true
+    },
+    {
+      "idx": 112,
+      "version": "7",
+      "when": 1794938552738,
+      "tag": "0112_jornada_site_aviso_e_midia",
+      "breakpoints": true
+    },
+    {
+      "idx": 113,
+      "version": "7",
+      "when": 1794938574740,
+      "tag": "0113_jornada_site_aviso_dedup_fix",
+      "breakpoints": true
     }
   ]
 }
