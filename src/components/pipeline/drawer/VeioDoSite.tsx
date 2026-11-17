@@ -75,7 +75,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
   const procura = declarado ?? info.interesse;
   const comoChegou = info.fonte === "Não informada" && !/—/.test(info.fonteTexto) ? "Origem do tráfego não disponível" : info.fonteTexto;
   const ondeClicou = juntar(info.ondeClicou, info.paginaRotulo?.toLowerCase());
-  const noSite = juntar(info.visitas, info.aparelho?.toLowerCase());
+  const noSite = juntar(jornada ? null : info.visitas, info.aparelho?.toLowerCase());
   const tipos = info.filtros.filter((f) => !/quarto|vaga|R\$/.test(f));
   const detalhes = juntar(...info.filtros.filter((f) => /quarto|vaga|R\$/.test(f)));
   const contexto = juntar(info.clienteVoltou ? "Cliente que voltou" : null, info.conversouLia ? "conversou com a LIA" : null);
@@ -115,7 +115,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
           </Bloco>
           {(info.visitas || info.aparelho || info.imoveisVistos.length || info.favoritos.length || info.buscas.length || contexto) ? (
             <Bloco titulo="O que fez no site">
-              {info.visitas && <Item rotulo="Visitas">{info.visitas}</Item>}
+              {info.visitas && !jornada && <Item rotulo="Visitas">{info.visitas}</Item>}
               {info.aparelho && <Item rotulo="Aparelho">{info.aparelho}</Item>}
               {info.imoveisVistos.length > 0 && <Item rotulo="Viu"><Chips itens={info.imoveisVistos} /></Item>}
               {info.favoritos.length > 0 && <Item rotulo="Favoritou"><Chips itens={info.favoritos} /></Item>}
