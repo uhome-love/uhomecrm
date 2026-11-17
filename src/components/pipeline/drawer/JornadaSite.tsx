@@ -31,7 +31,7 @@ function Origem({ o }: { o: OrigemJornada }) {
 }
 
 export function JornadaResumo({ j }: { j: Jornada }) {
-  const volta = j.ultima && j.primeira && j.ultima.fonte !== j.primeira.fonte ? ` → voltou pelo ${j.ultima.fonte}` : "";
+  const volta = j.ultima && j.primeira && j.ultima.fonte !== j.primeira.fonte && j.ultima.fonte !== "Direto" ? ` → voltou pelo ${j.ultima.fonte}` : "";
   const ped = j.pedidos[0];
   const l2 = [j.visitas ? `${j.visitas} ${j.visitas === 1 ? "visita" : "visitas"}${j.primeiraVisita ? ` desde ${dia(j.primeiraVisita)}` : ""}` : null].filter(Boolean).join("");
   return (
