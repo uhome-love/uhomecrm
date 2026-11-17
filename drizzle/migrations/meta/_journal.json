@@ -778,6 +778,13 @@
       "when": 1794854848199,
       "tag": "0110_leads_herdados_corretor_inativo",
       "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1794877532149,
+      "tag": "0111_site_captacao_imovel_rotulo",
+      "breakpoints": true
     }
   ]
 }
