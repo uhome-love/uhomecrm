@@ -111,7 +111,7 @@ export function lerJornada(dadosSite: unknown, agora = new Date()): Jornada | nu
   const favoritos = [...new Set(arr(j.favoritos).map((f) => str(obj(obj(f).imovel).titulo)).filter((t): t is string => !!t))];
   const pedidos = eventos.filter((e) => e.tipo === "visita_pedida" || e.tipo === "informacoes_pedidas")
     .map((e) => ({ tipo: e.tipo === "visita_pedida" ? "visita" as const : "informacoes" as const, texto: textoPedido(e), quando: e.quando }))
-    .reverse();
+    .reverse().filter((p, i, a) => a.findIndex((x) => x.texto === p.texto) === i);
   const pv = str(j.primeira_visita);
   const sessoes = agruparSessoes(eventos);
   return {
