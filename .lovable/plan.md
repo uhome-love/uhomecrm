@@ -8,13 +8,21 @@
 ## Fase 0 — Desenho para aprovação
 Antes de qualquer código, um desenho (computador e celular 390px) da nova parte "Jornada no site" dentro do quadro "Veio do site". Só seguimos depois de você aprovar.
 
-## Fase 1 — O que aparece na ficha
-Dentro de "Veio do site", em "Ver mais", uma parte nova **Jornada no site**:
-- **Origem**: primeira e última (fonte, campanha, data), com selos de anúncio (Google gclid/gbraid/wbraid, Meta fbclid).
-- **Números**: visitas, primeira visita, imóveis vistos com contagem ("Open Arvoredo · 3x").
-- **Interesse**: buscas, filtros, favoritos salvos e pedidos de visita/informações (dia, período, horário, planta, assunto). Último pedido em destaque.
-- **Linha do tempo de 90 dias**, agrupada por sessão (data, início–fim, nº de eventos), cada evento com horário, nome legível ("Viu imóvel", "Pediu visita"…), página, imóvel e detalhes. Sessões recolhidas, a mais recente aberta.
-- Leads antigos sem jornada: a parte simplesmente não aparece; o resto do quadro continua igual.
+## Fase 1 — O que aparece na ficha (organizado, sem excesso)
+Dentro de "Veio do site", uma parte **Jornada no site** em 3 níveis:
+
+```text
+Resumo (sempre visível, 2 linhas)
+  Google -> voltou pelo Meta · 8 visitas desde 10/11 · Pediu visita 18/11 tarde
+Ver mais
+  1. Origem       primeira e última (fonte + campanha); selo "Anúncio Google/Meta"
+  2. Interesse    imóveis vistos com contagem (top 5) · favoritos · pedidos
+                  buscas e filtros num único item "Procurou"
+  3. Sessões      lista recolhida: data · duração · nº de ações (mais recente aberta)
+                  dentro: horário · ação legível · imóvel ou página
+```
+
+O que **não** aparece: códigos técnicos (gclid, ids, visitor_id), rolagem 50%, fotos abertas e páginas repetidas seguidas (viram "viu 3 páginas"). Sem dado, a linha some. Leads antigos sem jornada: a parte não aparece.
 
 ## Regras de leitura
 - Usa **só uma** lista: `dados_site.jornada.site_events` (se faltar, `dados_site.site_events`). Remove repetidos pelo `event_id`.
