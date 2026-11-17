@@ -11627,6 +11627,7 @@ export type Database = {
           imovel_troca: boolean | null
           imovel_url: string | null
           is_redistribuicao: boolean
+          is_teste: boolean
           jetimob_lead_id: string | null
           last_escalation_at: string | null
           lead_score: number | null
@@ -11749,6 +11750,7 @@ export type Database = {
           imovel_troca?: boolean | null
           imovel_url?: string | null
           is_redistribuicao?: boolean
+          is_teste?: boolean
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
           lead_score?: number | null
@@ -11871,6 +11873,7 @@ export type Database = {
           imovel_troca?: boolean | null
           imovel_url?: string | null
           is_redistribuicao?: boolean
+          is_teste?: boolean
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
           lead_score?: number | null
