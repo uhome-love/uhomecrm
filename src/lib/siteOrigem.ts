@@ -97,6 +97,7 @@ const COMPONENTES: Record<string, string> = {
   detalhe_mobile_sticky: "Botão fixo do imóvel (celular)",
   hero_form: "Formulário da página inicial",
   contact_form: "Formulário de contato",
+  captacao_imovel: "Quer anunciar imóvel (proprietário)",
 };
 
 const TIPOS: Record<string, string> = {
