@@ -1,12 +1,9 @@
 # Roadmap
-## Central — regressão após publicação (18/11/2026)
-- [x] Conferir pedidos e notas dos dois testes, dono, avisos e histórico de distribuição, somente leitura
-- [x] Aprovar desenho dos pedidos sem cartão e no cartão (Lucas, 18/11 01:53 UTC)
-- [ ] Aprovar plano da correção antes de alterar aplicativo e banco
-- [ ] Impedir reativação, distribuição e avisos de testes em todas as entradas do site, preservando os dados
-- [ ] Arquivar novamente somente os dois testes identificados, sem apagar
-- [ ] Validar notas por pedido, reenvio, ausência de avisos/distribuição e exclusão da mídia somente com dados fictícios em transação revertida; não criar lead persistente em produção; revisar diff
-- [ ] Conferir leitura autorizada ao vivo no computador/celular e informar publicação
+## Central — cancelamento da trava e exclusão autorizada (18/11/2026 02:08 UTC)
+- [x] Remover somente o plano da trava e sua memória; manter pedidos publicados e regras do CRM intactos
+- [x] Identificar todos os TESTE CENTRAL e dependências, confirmar ausência de corretor e informar contagem por tabela antes de apagar
+- [x] Apagar 1 leads, 1 pipeline_leads e 1 atividade em transação protegida; preservar Base Única histórica e suas 3 conversões, retirando só vínculo do teste
+- [x] Conferir zero nos cadastros, mídia/views e dependências (80 tabelas por vínculo, 97 por JSON/arrays); nada exige publicação
 
 ## Complemento — jornada antes do cartão (mesma aprovação)
 - [x] Conferir leads.dados_site já criado e contrato do site, sem alterar o site
