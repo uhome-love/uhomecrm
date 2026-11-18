@@ -1,10 +1,11 @@
 # Roadmap
 ## Central — regressão após publicação (18/11/2026)
 - [x] Conferir pedidos e notas dos dois testes, dono, avisos e histórico de distribuição, somente leitura
-- [ ] Aprovar desenho dos pedidos sem cartão e no cartão; depois aprovar plano da correção
+- [x] Aprovar desenho dos pedidos sem cartão e no cartão (Lucas, 18/11 01:53 UTC)
+- [ ] Aprovar plano da correção antes de alterar aplicativo e banco
 - [ ] Impedir reativação, distribuição e avisos de testes em todas as entradas do site, preservando os dados
 - [ ] Arquivar novamente somente os dois testes identificados, sem apagar
-- [ ] Validar notas por pedido, reenvio, ausência de avisos/distribuição e exclusão da mídia; revisar diff
+- [ ] Validar notas por pedido, reenvio, ausência de avisos/distribuição e exclusão da mídia somente com dados fictícios em transação revertida; não criar lead persistente em produção; revisar diff
 - [ ] Conferir leitura autorizada ao vivo no computador/celular e informar publicação
 
 ## Complemento — jornada antes do cartão (mesma aprovação)
