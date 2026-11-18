@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { normalizeTelefone } from "@/hooks/useOfertaAtiva";
+import { siteLeadNaBusca } from "@/lib/siteLeadSemCartao";
 
 export interface BuscaFilters {
   telefone?: string;
@@ -17,7 +18,7 @@ export interface BuscaFilters {
   dataFim?: string;
 }
 
-export type BuscaSource = "oferta_ativa" | "pipeline";
+export type BuscaSource = "oferta_ativa" | "pipeline" | "site";
 
 export interface BuscaLead {
   id: string;
@@ -126,6 +127,19 @@ export function useBuscaLeads() {
       if (filters.dataInicio) plQuery = plQuery.gte("created_at", filters.dataInicio);
       if (filters.dataFim) plQuery = plQuery.lte("created_at", filters.dataFim);
 
+      // Site ainda sem cartão: somente leitura, sob as permissões existentes de leads.
+      let siteQuery = supabase.from("leads")
+        .select("id, nome, telefone, email, imovel_interesse, origem, status, observacoes, created_at, updated_at, pipeline_lead_id, is_teste")
+        .is("pipeline_lead_id", null).eq("is_teste", false).neq("status", "arquivado")
+        .order("updated_at", { ascending: false }).limit(200);
+      if (filters.nome) siteQuery = siteQuery.ilike("nome", `%${filters.nome}%`);
+      if (filters.telefone) siteQuery = siteQuery.ilike("telefone", `%${normalizeTelefone(filters.telefone)}%`);
+      if (filters.email) siteQuery = siteQuery.ilike("email", `%${filters.email}%`);
+      if (filters.empreendimento) siteQuery = siteQuery.ilike("imovel_interesse", `%${filters.empreendimento}%`);
+      if (filters.origem) siteQuery = siteQuery.ilike("origem", `%${filters.origem}%`);
+      if (filters.dataInicio) siteQuery = siteQuery.gte("created_at", filters.dataInicio);
+      if (filters.dataFim) siteQuery = siteQuery.lte("created_at", filters.dataFim);
+
       // Skip OA if filtering only pipeline
       const skipOA = filters.status === "pipeline";
       const skipPL = filters.status && filters.status !== "todos" && filters.status !== "pipeline";
@@ -137,15 +151,17 @@ export function useBuscaLeads() {
             p_data_inicio: filters.dataInicio || undefined, p_data_fim: filters.dataFim || undefined,
           })
         : Promise.resolve({ data: [], error: null });
-      const [oaRes, plRes, livresRes] = await Promise.all([
+      const [oaRes, plRes, livresRes, siteRes] = await Promise.all([
         skipOA ? Promise.resolve({ data: [], error: null }) : oaQuery,
         skipPL ? Promise.resolve({ data: [], error: null }) : plQuery,
         livresQuery,
+        (isAdmin || isGestor) && !filters.status ? siteQuery : Promise.resolve({ data: [], error: null }),
       ]);
       if (livresRes.error) console.error("[Busca] livres", livresRes.error);
 
       if (oaRes.error) throw oaRes.error;
       if (plRes.error) throw plRes.error;
+      if (siteRes.error) throw siteRes.error;
 
       const oaData = (oaRes.data || []) as any[];
       const plData = (plRes.data || []) as any[];
@@ -223,7 +239,8 @@ export function useBuscaLeads() {
       }
 
       // Combine and sort by updated_at desc
-      const combined = [...oaMapped, ...plMapped].sort((a, b) =>
+      const siteMapped = (siteRes.data ?? []).map(siteLeadNaBusca).filter((r): r is BuscaLead => r !== null);
+      const combined = [...oaMapped, ...plMapped, ...siteMapped].sort((a, b) =>
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
 
@@ -235,7 +252,7 @@ export function useBuscaLeads() {
     } finally {
       setIsSearching(false);
     }
-  }, [user, soGestor]);
+  }, [user, soGestor, isAdmin, isGestor]);
 
   const fetchTentativas = useCallback(async (leadId: string): Promise<LeadTentativa[]> => {
     const { data, error } = await supabase

@@ -216,6 +216,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           supabase
             .from("pipeline_leads")
             .select("id, stage_id, empreendimento, empreendimento_canonico_id, updated_at, created_at, origem, corretor_id")
+            .eq("is_teste", false)
             // (vendas fechadas são excluídas por TIPO logo abaixo — sem UUID fixo)
             .gte("created_at", startUtc)
             .lt("created_at", endUtc)
@@ -236,6 +237,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           supabase
             .from("pipeline_leads")
             .select("id, stage_id, empreendimento, empreendimento_canonico_id, updated_at, created_at, origem, corretor_id, reativado_em")
+            .eq("is_teste", false)
             .eq("reativado_por_nutricao", true)
             .gte("reativado_em", startUtc)
             .lt("reativado_em", endUtc)

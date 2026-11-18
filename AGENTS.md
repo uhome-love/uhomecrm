@@ -39,5 +39,5 @@
 - HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
 <!-- LOVABLE:END -->
 - Site journey in the drawer is read-only via `src/lib/siteJornada.ts` (jornada.site_events, dedupe event_id, no bots, 90 days, 30s poll). Why: the site resends the whole window.
-- Site-return alerts: only trigger `trg_site_voltou_aviso` (owner, 1/h/lead, never fails writes). Why: one rule, no distribution impact.
+- Site requests: unique system note per lead/UUID; `trg_site_voltou_aviso` shares owner-only 1/h alerts with returns. Why: no duplicates or distribution changes.
 - Test leads (`pipeline_leads.is_teste`) skip auto-distribution and are filtered from lead report views and `midia_refresh_jornada`; new report sources must filter them. Why: test data never reaches Roleta or reports.

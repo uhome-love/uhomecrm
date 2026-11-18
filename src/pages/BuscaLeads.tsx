@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
+import VeioDoSite from "@/components/pipeline/drawer/VeioDoSite";
 
 const STATUS_OPTIONS = [
   { value: "todos", label: "Todos" },
@@ -100,7 +101,7 @@ export default function BuscaLeads() {
 
   const openDetail = useCallback(async (lead: BuscaLead) => {
     setSelectedLead(lead);
-    if (lead.source === "pipeline") {
+    if (lead.source !== "oferta_ativa") {
       setTentativas([]);
       return;
     }
@@ -390,7 +391,7 @@ export default function BuscaLeads() {
                               : "bg-purple-500/15 text-purple-400 border-purple-500/30"
                           }`}
                         >
-                          {isPipeline ? "📋 Pipeline" : "📞 OA"}
+                          {isPipeline ? "📋 Pipeline" : lead.source === "site" ? "Site" : "📞 OA"}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium text-sm">
@@ -470,6 +471,8 @@ export default function BuscaLeads() {
                                 Abrir
                               </Button>
                             </>
+                          ) : lead.source === "site" ? (
+                            <Button size="sm" variant="ghost" onClick={() => openDetail(lead)}>Ver detalhes</Button>
                           ) : (
                             <>
                               <Button
@@ -606,6 +609,10 @@ export default function BuscaLeads() {
                 </div>
               )}
 
+              {selectedLead.source !== "oferta_ativa" && (
+                <VeioDoSite key={selectedLead.id} leadId={selectedLead.id} origem={selectedLead.origem} empreendimento={selectedLead.empreendimento} />
+              )}
+
               <Separator />
 
               {/* Action buttons — diferentes por origem */}
@@ -637,7 +644,7 @@ export default function BuscaLeads() {
                       Abrir no Pipeline
                     </Button>
                   </>
-                ) : (
+                ) : selectedLead.source === "site" ? null : (
                   <>
                     <Button
                       size="sm"

@@ -7,6 +7,7 @@ import { lerSiteOrigem, type SiteOrigem } from "@/lib/siteOrigem";
 import { resumirInteresseDeclarado } from "@/lib/resumirInteresseDeclarado";
 import { lerJornada, type Jornada } from "@/lib/siteJornada";
 import { JornadaResumo, JornadaDetalhe } from "./JornadaSite";
+import { Button } from "@/components/ui/button";
 
 function Item({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
@@ -51,14 +52,17 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
   const ehSite = (origem ?? "").toLowerCase().includes("site");
 
   useEffect(() => {
-    if (!ehSite) { setInfo(null); return; }
+    setInfo(null); setJornada(null); setAberto(false);
     let cancel = false;
     const carregar = async () => {
-      const { data, error } = await supabase.from("pipeline_leads").select("dados_site, observacoes").eq("id", leadId).maybeSingle();
+      const { data, error } = await supabase.rpc("ler_dados_site_lead", { p_lead_id: leadId });
       if (cancel || error || !data) return;
-      const row = data as { dados_site: Record<string, unknown> | null; observacoes: string | null };
+      const row = data[0];
+      if (!row) return;
+      const j = lerJornada(row.dados_site);
+      if (!ehSite && !j) return;
       setInfo(lerSiteOrigem(row.dados_site, row.observacoes, empreendimento));
-      setJornada(lerJornada(row.dados_site));
+      setJornada(j);
     };
     carregar();
     // Nova jornada chega pela integração do site: recarrega a cada 30s com a ficha aberta e ao voltar à aba.
@@ -68,7 +72,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
     return () => { cancel = true; window.clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
   }, [leadId, ehSite, empreendimento]);
 
-  if (!ehSite || !info) return null;
+  if (!info) return null;
 
   const declarado = empreendimento && /^interesse declarado/i.test(empreendimento)
     ? resumirInteresseDeclarado(empreendimento).replace(/^Interesse:\s*/i, "") : null;
@@ -128,10 +132,10 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
       )}
 
       <div className="mt-3 border-t border-border pt-2">
-        <button type="button" onClick={() => setAberto((v) => !v)} aria-expanded={aberto}
-          className="inline-flex min-h-[36px] items-center gap-1 text-[13px] font-semibold text-primary hover:underline">
+        <Button variant="link" type="button" onClick={() => setAberto((v) => !v)} aria-expanded={aberto}
+          className="min-h-[36px] p-0 text-[13px]">
           {aberto ? <>Ver menos <ChevronUp className="h-4 w-4" aria-hidden /></> : <>Ver mais <ChevronDown className="h-4 w-4" aria-hidden /></>}
-        </button>
+        </Button>
       </div>
     </section>
   );

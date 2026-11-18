@@ -6267,12 +6267,14 @@ export type Database = {
           atribuido_para: string | null
           bairro_interesse: string | null
           created_at: string | null
+          dados_site: Json | null
           email: string | null
           id: string
           imovel_codigo: string | null
           imovel_id_site: string | null
           imovel_interesse: string | null
           imovel_slug: string | null
+          is_teste: boolean
           nome: string
           observacoes: string | null
           origem: string | null
@@ -6292,12 +6294,14 @@ export type Database = {
           atribuido_para?: string | null
           bairro_interesse?: string | null
           created_at?: string | null
+          dados_site?: Json | null
           email?: string | null
           id?: string
           imovel_codigo?: string | null
           imovel_id_site?: string | null
           imovel_interesse?: string | null
           imovel_slug?: string | null
+          is_teste?: boolean
           nome: string
           observacoes?: string | null
           origem?: string | null
@@ -6317,12 +6321,14 @@ export type Database = {
           atribuido_para?: string | null
           bairro_interesse?: string | null
           created_at?: string | null
+          dados_site?: Json | null
           email?: string | null
           id?: string
           imovel_codigo?: string | null
           imovel_id_site?: string | null
           imovel_interesse?: string | null
           imovel_slug?: string | null
+          is_teste?: boolean
           nome?: string
           observacoes?: string | null
           origem?: string | null
@@ -11163,6 +11169,7 @@ export type Database = {
           prioridade: string
           responsavel_id: string | null
           resultado: string | null
+          site_pedido_id: string | null
           status: string
           tipo: string
           tipo_contato: string | null
@@ -11180,6 +11187,7 @@ export type Database = {
           prioridade?: string
           responsavel_id?: string | null
           resultado?: string | null
+          site_pedido_id?: string | null
           status?: string
           tipo?: string
           tipo_contato?: string | null
@@ -11197,6 +11205,7 @@ export type Database = {
           prioridade?: string
           responsavel_id?: string | null
           resultado?: string | null
+          site_pedido_id?: string | null
           status?: string
           tipo?: string
           tipo_contato?: string | null
@@ -18928,6 +18937,13 @@ export type Database = {
       lead_tem_acao_futura: { Args: { p_lead_id: string }; Returns: boolean }
       lead_teve_contato_v3: { Args: { p_lead_id: string }; Returns: boolean }
       leads_com_acao_futura: { Args: { p_ids: string[] }; Returns: string[] }
+      ler_dados_site_lead: {
+        Args: { p_lead_id: string }
+        Returns: {
+          dados_site: Json
+          observacoes: string
+        }[]
+      }
       lia_avaliar_cenario: {
         Args: { p_avaliacao: string; p_comentario?: string; p_id: string }
         Returns: undefined
@@ -19676,6 +19692,7 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       site_evento_max: { Args: { p: Json }; Returns: string }
+      site_pedido_texto: { Args: { p: Json }; Returns: string }
       skip_oa_lead: {
         Args: {
           p_corretor_id: string
