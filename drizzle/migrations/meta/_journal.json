@@ -820,6 +820,13 @@
       "when": 1794965325728,
       "tag": "0116_site_dados_vinculo_seguro",
       "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1795007873247,
+      "tag": "0117_site_pedido_aviso_preco_e_generico",
+      "breakpoints": true
     }
   ]
 }
