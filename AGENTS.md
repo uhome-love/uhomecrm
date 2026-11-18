@@ -38,6 +38,6 @@
 - Keep `homi_consulta` CLOSED with its hash table empty; never register a hash or reopen it without Lucas's new explicit approval. Why: the owner change failed and function calls/http/pg_net bypass the table check; any future external consumer uses direct read-only homi_ro login.
 - HOMI dossier uses an authenticated SECURITY DEFINER RPC with can_access_lead first, database health, source/cycle/status per block and server-side system_flags gating; confirmed per-author memory stays separate from activities. Why: restricted source RLS must not silently erase context, reveal prior OA feedback or activate an unapproved pilot.
 <!-- LOVABLE:END -->
-- Site journey in the drawer is read-only via `src/lib/siteJornada.ts` (jornada.site_events, dedupe event_id, no bots, 90 days, 30s poll). Why: the site resends the whole window.
-- Site requests: unique system note per lead/UUID; `trg_site_voltou_aviso` shares owner-only 1/h alerts with returns. Why: no duplicates or distribution changes.
+- Site journey is read-only, deduped by event_id, no bots, 90 days, 30s poll. Why: the site resends the window.
+- Site data writes are server-only; explicit lead links merge requests by UUID and generate system notes; `trg_site_voltou_aviso` shares owner-only 1/h alerts. Why: no loss, duplicates or distribution changes.
 - Test leads (`pipeline_leads.is_teste`) skip auto-distribution and are filtered from lead report views and `midia_refresh_jornada`; new report sources must filter them. Why: test data never reaches Roleta or reports.

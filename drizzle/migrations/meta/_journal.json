@@ -813,6 +813,13 @@
       "when": 1794964775881,
       "tag": "0115_site_pedidos_notas_unicas",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1794965325728,
+      "tag": "0116_site_dados_vinculo_seguro",
+      "breakpoints": true
     }
   ]
 }

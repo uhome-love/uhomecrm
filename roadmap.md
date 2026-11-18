@@ -1,4 +1,11 @@
 # Roadmap
+## Complemento — jornada antes do cartão (mesma aprovação)
+- [x] Conferir leads.dados_site já criado e contrato do site, sem alterar o site
+- [x] Transferir/mesclar jornada e pedidos por id ao vincular cartão, sem alterar dono ou etapa
+- [x] Registrar pedidos nas duas entradas, preservar financiamento e restringir escrita à sincronização
+- [x] Validar transferência, reenvio, serviço, dono, outro corretor e visitante em testes transacionais; 23 testes de leitura passaram
+- [ ] Validação visual autenticada no computador/celular — mesma pendência de sessão do pedido anterior
+
 ## Central Uhome — pedidos do site e limpeza de testes (aprovado)
 - [x] Registrar uma nota por pedido único do site, sem alterar dono ou etapa (regressão transacional passou)
 - [x] Compartilhar o limite de um aviso por hora com o aviso de retorno ao site (regressão transacional passou)

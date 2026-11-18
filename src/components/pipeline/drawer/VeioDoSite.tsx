@@ -8,6 +8,7 @@ import { resumirInteresseDeclarado } from "@/lib/resumirInteresseDeclarado";
 import { lerJornada, type Jornada } from "@/lib/siteJornada";
 import { JornadaResumo, JornadaDetalhe } from "./JornadaSite";
 import { Button } from "@/components/ui/button";
+import { lerNotasPedidoSite, type NotaPedidoSite } from "@/lib/sitePedidoNotas";
 
 function Item({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
@@ -48,11 +49,12 @@ const juntar = (...p: (string | null | undefined)[]) => { const t = p.filter(Boo
 export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId: string; origem?: string | null; empreendimento?: string | null }) {
   const [info, setInfo] = useState<SiteOrigem | null>(null);
   const [jornada, setJornada] = useState<Jornada | null>(null);
+  const [notas, setNotas] = useState<NotaPedidoSite[]>([]);
   const [aberto, setAberto] = useState(false);
   const ehSite = (origem ?? "").toLowerCase().includes("site");
 
   useEffect(() => {
-    setInfo(null); setJornada(null); setAberto(false);
+    setInfo(null); setJornada(null); setNotas([]); setAberto(false);
     let cancel = false;
     const carregar = async () => {
       const { data, error } = await supabase.rpc("ler_dados_site_lead", { p_lead_id: leadId });
@@ -63,6 +65,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
       if (!ehSite && !j) return;
       setInfo(lerSiteOrigem(row.dados_site, row.observacoes, empreendimento));
       setJornada(j);
+      setNotas(lerNotasPedidoSite(row.dados_site));
     };
     carregar();
     // Nova jornada chega pela integração do site: recarrega a cada 30s com a ficha aberta e ao voltar à aba.
@@ -128,6 +131,16 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
             </Bloco>
           ) : null}
           {jornada && <JornadaDetalhe j={jornada} />}
+          {notas.length > 0 && (
+            <Bloco titulo="Pedidos no site">
+              {notas.map(nota => (
+                <div key={nota.id} className="border-b border-border py-2 text-[13px] last:border-b-0">
+                  <p className="break-words font-semibold text-foreground">{nota.titulo}</p>
+                  {nota.descricao && <p className="whitespace-pre-line break-words text-muted-foreground">{nota.descricao}</p>}
+                </div>
+              ))}
+            </Bloco>
+          )}
         </>
       )}
 

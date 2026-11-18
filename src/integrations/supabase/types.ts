@@ -6282,6 +6282,7 @@ export type Database = {
           pipeline_lead_id: string | null
           preco_interesse: number | null
           site_lead_id: string | null
+          site_pedido_notas: Json
           site_user_id: string | null
           status: string | null
           telefone: string
@@ -6309,6 +6310,7 @@ export type Database = {
           pipeline_lead_id?: string | null
           preco_interesse?: number | null
           site_lead_id?: string | null
+          site_pedido_notas?: Json
           site_user_id?: string | null
           status?: string | null
           telefone: string
@@ -6336,6 +6338,7 @@ export type Database = {
           pipeline_lead_id?: string | null
           preco_interesse?: number | null
           site_lead_id?: string | null
+          site_pedido_notas?: Json
           site_user_id?: string | null
           status?: string | null
           telefone?: string
@@ -19692,6 +19695,11 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       site_evento_max: { Args: { p: Json }; Returns: string }
+      site_mesclar_dados: {
+        Args: { p_anterior: Json; p_recebido: Json }
+        Returns: Json
+      }
+      site_pedido_descricao: { Args: { p: Json }; Returns: string }
       site_pedido_texto: { Args: { p: Json }; Returns: string }
       skip_oa_lead: {
         Args: {
