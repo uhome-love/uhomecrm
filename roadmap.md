@@ -1,4 +1,12 @@
 # Roadmap
+## Central — regressão após publicação (18/11/2026)
+- [x] Conferir pedidos e notas dos dois testes, dono, avisos e histórico de distribuição, somente leitura
+- [ ] Aprovar desenho dos pedidos sem cartão e no cartão; depois aprovar plano da correção
+- [ ] Impedir reativação, distribuição e avisos de testes em todas as entradas do site, preservando os dados
+- [ ] Arquivar novamente somente os dois testes identificados, sem apagar
+- [ ] Validar notas por pedido, reenvio, ausência de avisos/distribuição e exclusão da mídia; revisar diff
+- [ ] Conferir leitura autorizada ao vivo no computador/celular e informar publicação
+
 ## Complemento — jornada antes do cartão (mesma aprovação)
 - [x] Conferir leads.dados_site já criado e contrato do site, sem alterar o site
 - [x] Transferir/mesclar jornada e pedidos por id ao vincular cartão, sem alterar dono ou etapa
