@@ -354,6 +354,18 @@ export default function PlacarDoDia() {
   const totalGeral = EQUIPES.reduce((sum, e) => sum + (totais[e.id] || 0), 0);
   const metaGeralAtingida = totalGeral >= meta;
 
+  const [escalaTv, setEscalaTv] = useState<number | null>(null);
+  useEffect(() => {
+    const calc = () => {
+      const w = window.innerWidth, h = window.innerHeight;
+      setEscalaTv(w >= 700 ? Math.min(w / 1280, h / 720) : null);
+    };
+    calc();
+    window.addEventListener("resize", calc);
+    return () => window.removeEventListener("resize", calc);
+  }, []);
+  const palco = escalaTv !== null;
+
   const medalhas = ["🥇", "🥈", "🥉", "4º", "5º"];
   const ordemEquipes = [...EQUIPES].sort((a, b) => totais[b.id] - totais[a.id]);
   const liderEquipe = ordemEquipes[0]?.id;
@@ -413,8 +425,9 @@ export default function PlacarDoDia() {
         }
         @keyframes announceBackdrop { 0%{opacity:0} 12%{opacity:1} 88%{opacity:1} 100%{opacity:0} }
       `}</style>
+      <div style={palco ? { position: "fixed", inset: 0, overflow: "hidden", background: "#05060f" } : undefined}>
       <div style={{
-        height: "100vh",
+        ...(palco ? { position: "absolute", left: "50%", top: "50%", width: 1280, height: 720, transform: `translate(-50%, -50%) scale(${escalaTv})`, transformOrigin: "center center" } : { height: "100vh" }),
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
@@ -623,7 +636,7 @@ export default function PlacarDoDia() {
                         : "#0d0d20",
                       border: `2px solid ${isFlash ? equipe.cor : metaBatida ? equipe.cor + "88" : equipe.corBorda + "44"}`,
                       borderRadius: 16,
-                      padding: "10px 14px",
+                      padding: natal ? "22px 14px 10px" : "10px 14px",
                       transition: "all 0.3s",
                       position: "relative",
                       overflow: "hidden",
@@ -649,7 +662,7 @@ export default function PlacarDoDia() {
                         textShadow: `0 0 20px ${equipe.cor}`,
                       }}>+1 🎯</div>
                     )}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative", zIndex: 2 }}>
                       <span style={{ fontSize: 24 }}>{equipe.emoji}</span>
                       <h2 style={{ fontSize: "clamp(16px, 2.5vw, 24px)", letterSpacing: 2, textTransform: "uppercase", margin: "0 0 2px", color: equipe.cor }}>{equipe.nome}</h2>
                     </div>
@@ -677,7 +690,7 @@ export default function PlacarDoDia() {
             {ranking.length > 0 && (
               <div style={{ flexShrink: 0 }}>
                 <div style={{ fontSize: "clamp(12px, 1.8vw, 16px)", letterSpacing: 4, textTransform: "uppercase", color: "#ffffff77", marginBottom: 6, textAlign: "center" }}>🏅 Top 5 — Quem mais marcou hoje</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${ranking.length}, minmax(0, 260px))`, justifyContent: "center", gap: 12 }}>
                   {ranking.map((c, i) => (
                     <div key={c.nome} style={{
                       background: i === 0 ? "#1a1400" : "#0d0d14",
@@ -708,7 +721,7 @@ export default function PlacarDoDia() {
             overflow: "hidden",
             minHeight: 0,
           }}>
-            <style>{`@media (max-width: 1024px) { .placar-feed-lateral { display: none !important; } }`}</style>
+            {!palco && <style>{`@media (max-width: 1024px) { .placar-feed-lateral { display: none !important; } }`}</style>}
             <div style={{
               fontSize: "clamp(12px, 1.5vw, 16px)",
               letterSpacing: 3,
@@ -816,6 +829,7 @@ export default function PlacarDoDia() {
           AO VIVO · REALTIME + POLLING 30S
           {ultimaAtualizacao && ` · ${formatTime(ultimaAtualizacao)}`}
         </div>
+      </div>
       </div>
     </>
   );
