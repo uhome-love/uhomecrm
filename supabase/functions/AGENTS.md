@@ -7,3 +7,4 @@
 - Reengagement SIM keeps active owned leads: RPCs return `already_active`, webhooks honor it; owner notice closes by X or any button. Why: no wrong redistribution.
 - Google Ads visit conversions: once per lead with gclid via `google_ads_conversoes` + `google-ads-conversao-dispatch` (Data Manager API). Why: no duplicates, never blocks visits.
 - A site contact for an accepted lead with an owner never removes the broker: trigger trg_site_nao_tira_corretor keeps owner/stage/aceite when motivo_pendencia='fila_ceo_site'. Why: a returning client must stay with the broker who accepted her.
+- Site leads arriving via a broker personal link (/c/<profiles.slug_ref>) are inserted already owned/accepted by that active broker in crm-webhook, skipping Roleta; existing leads keep their owner. Why: the link's owner earned the lead.

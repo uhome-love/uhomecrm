@@ -430,6 +430,38 @@ Deno.serve(async (req) => {
           aceite_status: 'pendente_distribuicao',
         }
 
+        // ── Link pessoal do corretor (/c/<slug>): entrega direto ao dono do link, sem Roleta ──
+        let corretorDoLink: { user_id: string; nome: string | null } | null = null
+        try {
+          const caminhos = [record.landing_url, record.pagina_url, record.origem_pagina, paginaUrl]
+            .filter((v: unknown): v is string => typeof v === 'string' && v.length > 0)
+          let slugCorretor: string | null = null
+          for (const c of caminhos) {
+            const m = c.match(/(?:^|\/\/[^/]+)?\/c\/([a-z0-9-]+)/i)
+            if (m) { slugCorretor = m[1].toLowerCase(); break }
+          }
+          if (slugCorretor) {
+            const { data: perfil } = await supabase
+              .from('profiles')
+              .select('user_id, nome, ativo')
+              .eq('slug_ref', slugCorretor)
+              .maybeSingle()
+            if (perfil?.user_id && perfil.ativo === true) {
+              corretorDoLink = { user_id: perfil.user_id, nome: perfil.nome }
+            }
+          }
+        } catch (e) {
+          console.warn('[crm-webhook] link do corretor não resolvido (segue Roleta)', e)
+        }
+        if (corretorDoLink) {
+          const agora = new Date().toISOString()
+          insertData.corretor_id = corretorDoLink.user_id
+          insertData.aceite_status = 'aceito'
+          insertData.aceito_em = agora
+          insertData.distribuido_em = agora
+          insertData.origem_ref = 'link_corretor'
+        }
+
         const { data: newLead, error: insertErr } = await supabase
           .from('pipeline_leads')
           .insert(insertData)
@@ -446,8 +478,13 @@ Deno.serve(async (req) => {
         existingCorretorId = newLead.corretor_id // may be set by trigger
         console.log(`[crm-webhook] New lead ${newLead.id} → Novo Lead stage, corretor from trigger: ${existingCorretorId || 'fila_ceo'}`)
 
-        // ── Auto-distribute new lead ──
-        try {
+        if (corretorDoLink) {
+          existingCorretorId = corretorDoLink.user_id
+          await registrarHistoricoSite(newLead.id, `🔗 Entrou pelo link de ${corretorDoLink.nome || 'corretor'} — entregue direto, sem Roleta`, corretorDoLink.user_id)
+        }
+
+        // ── Auto-distribute new lead (só quando não veio de link de corretor) ──
+        if (!corretorDoLink) try {
           const distResult = await distributeLeadDirect(
             Deno.env.get('SUPABASE_URL')!,
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
