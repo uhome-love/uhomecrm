@@ -3,6 +3,8 @@
 > Levantamento feito em **19/11/2026**. O Airbnb foi navegado ao vivo (airbnb.com.br) em **desktop 1440×900** e **mobile iPhone 14 (390×664)**, passo a passo: home, busca, calendário, hóspedes, resultados com mapa, filtros, página do anúncio, galeria, login.
 > O objetivo não é clonar o Airbnb. A ideia é **traduzir os padrões de interface que fazem ele ser rápido, bonito e fácil** para o contexto de imobiliária (compra de imóvel em Porto Alegre), com a marca da Uhome.
 
+> **Escopo: o uhome.com.br é e continua sendo um site de VENDA de imóveis.** Não existe nenhuma intenção de locação por temporada. O Airbnb entra só como **referência de modelo, estrutura, qualidade, organização e uso**. Datas, hóspedes, "Reservar" e avaliações de estadia aparecem nas seções 3 a 5 apenas para explicar o padrão do Airbnb. No comparativo e no plano (seções 7 e 8), tudo já está traduzido para compra: tipo, quartos, preço, condomínio, financiamento, visita e corretor. A seção 7.3 lista o que um site de vendas precisa e o Airbnb não ensina.
+
 ---
 
 ## 0. Como foi feito, e o que ficou de fora
@@ -13,7 +15,7 @@
 | **PageSpeed (Google Lighthouse) via Ubersuggest**, hoje, para os dois sites | Core Web Vitals de laboratório e de campo, desktop e mobile, oportunidades de melhoria | Alta |
 | **Páginas indexadas do uhome.com.br** (Ubersuggest, Brasil) | Estrutura de URLs e títulos atuais | Alta |
 | **Código do CRM que espelha o site** (`SitePropertyCard.tsx` diz no cabeçalho que reproduz o card do uhome.com.br, `SearchMapBox.tsx` reproduz o mapa do site, `siteJornada.ts` lista os eventos que o site envia) | Card de imóvel, mapa, filtros e recursos existentes no site | Média: é um espelho, pode ter diferenças pequenas |
-| **Navegação visual do uhome.com.br atual** | **Não foi possível.** O Cloudflare do site responde 403 para navegador automatizado e para leitores de página. O acesso ao repositório do site (`uhome-siteia`) foi negado nesta sessão | — |
+| **Navegação visual do uhome.com.br atual** | **Não foi possível.** O Cloudflare da própria Uhome (não o Lovable) responde "Sorry, you have been blocked" para acessos vindos de servidores. O acesso ao repositório do site (`uhome-siteia`) foi negado nesta sessão. Diagnóstico completo na seção 6.6 | — |
 
 Por isso, no lado da Uhome, cada afirmação traz a fonte. Onde aparece **(confirmar)**, o ponto precisa ser olhado no site antes de virar tarefa. A seção 9 explica como liberar o acesso para fazer a auditoria visual e de código completa.
 
@@ -383,9 +385,19 @@ Em recursos de conversão, a Uhome **já tem mais que o Airbnb** para o próprio
 
 **Leitura:** a Uhome vence em leveza. Os pontos a atacar são **LCP mobile 5,6 s** (meta: menos de 2,5 s), **CLS mobile 0,100** (meta: menos de 0,05, idealmente zero como o Airbnb), **Speed Index** (a página "monta" devagar) e os **601 ms de redirecionamento**.
 
-### 6.6 Bloqueio de robôs
-- Navegador automatizado e leitores de página recebem **403 do Cloudflare**. O Google (PageSpeed) passou normalmente.
-- Se o "Bot Fight Mode" ou o bloqueio de robôs de IA estiver ligado, **ChatGPT, Claude, Perplexity e Gemini podem não conseguir ler os imóveis** e não vão citar a Uhome quando alguém perguntar "imóveis à venda no Moinhos de Vento". Decidir de forma consciente: liberar os robôs de busca e IA nas páginas `/imovel`, `/venda`, `/blog` e manter o bloqueio só onde houver abuso.
+### 6.6 Bloqueio de robôs (diagnóstico)
+**Quem bloqueia é o Cloudflare da conta da Uhome, não o Lovable.**
+- Os servidores de nome do domínio são `weston.ns.cloudflare.com` e `iris.ns.cloudflare.com`, e os IPs (`104.21.54.39`, `172.67.223.105`) são do proxy do Cloudflare (nuvem laranja). Ou seja, o domínio está numa conta Cloudflare e passa pelo proxy dela antes de chegar na hospedagem do Lovable.
+- A página de bloqueio é **"Sorry, you have been blocked" / "Attention Required!"**, com Ray ID (ex.: `a5cb57250cd6452a`). Isso é um **bloqueio de regra de segurança** (WAF, Bot Fight Mode ou bloqueio de robôs de IA), não um desafio de "verificando seu navegador".
+- O `robots.txt` do site (feito pelo Lovable) diz o contrário: libera todo mundo (`User-agent: * Allow: /`, além de Googlebot, Bingbot, Twitterbot e facebookexternalhit). O próprio `robots.txt` abre normalmente, mas as páginas não. **A intenção do site é estar aberto e a configuração do Cloudflare está fechando.**
+- **Visitantes reais não são afetados**: há dados de campo do Chrome (usuários de verdade) e o Google conseguiu medir o site. O bloqueio pega acessos de data center: ferramentas de auditoria, monitoramento e **robôs de IA (ChatGPT, Claude, Perplexity)**. Esses robôs não conseguem ler os imóveis e não vão citar a Uhome quando alguém perguntar "apartamento à venda no Moinhos de Vento".
+- **Risco a testar já**: a prévia de link do WhatsApp (foto e título quando o corretor manda `/imovel/...`). Ela é gerada pelos servidores da Meta. Teste no [Sharing Debugger da Meta](https://developers.facebook.com/tools/debug/) com um link de imóvel. Se vier erro 403, os links que os corretores mandam estão chegando sem foto.
+
+**Como resolver (no painel do Cloudflare, zona uhome.com.br)**
+1. **Segurança → Eventos**: buscar pelo Ray ID da página de bloqueio. O painel mostra qual serviço bloqueou (regra personalizada do WAF, Bot Fight Mode, regras gerenciadas ou bloqueio de robôs de IA).
+2. **Segurança → Bots**: se o **Bot Fight Mode** estiver ligado, ele bloqueia qualquer robô que não seja "verificado". Avaliar desligar ou trocar por regras mais finas.
+3. **Robôs de IA (AI Crawl Control / "Block AI bots")**: o Cloudflare passou a vir com isso ligado para muitos domínios. Para imobiliária, o recomendado é **liberar os robôs de busca de IA** (OAI-SearchBot, ChatGPT-User, PerplexityBot, Claude-SearchBot) nas páginas públicas (`/`, `/venda`, `/busca`, `/imovel/*`, `/blog/*`). Se quiser, mantenha bloqueados os robôs que só coletam dados para treino.
+4. **Para auditorias**: criar uma regra temporária de "Ignorar" (Skip) para um cabeçalho secreto definido por vocês, e desligar depois.
 
 ### 6.7 Versão antiga
 O snapshot público de 16/03/2026 (Internet Archive) era um **Next.js** de template de imobiliária (`/property-list/[contract]/[...filters]`). O site atual, ligado ao banco Supabase com a tabela `imoveis`, substituiu esse modelo.
@@ -411,8 +423,27 @@ O snapshot público de 16/03/2026 (Internet Archive) era um **Next.js** de templ
 | Calendário de disponibilidade | **Escolher dia e horário da visita** embutido na página |
 | Tour por fotos por cômodo | Tour por cômodo e **planta baixa**, vídeo e tour 360° |
 | Experiências / Serviços | **Lançamentos / Prontos / Financiamento** |
+| "Torne-se um anfitrião" | **"Venda seu imóvel com a Uhome"** (captação, com avaliação gratuita) |
+| Favoritos (listas) | Favoritos **com alerta de baixa de preço** e listas para dividir com o cônjuge ou a família |
 
-### 7.2 Tabela de gaps por área
+### 7.3 O que um site de vendas precisa e o Airbnb não ensina
+A reserva no Airbnb se decide em minutos. A compra de um imóvel leva **semanas ou meses**, envolve mais de uma pessoa e o maior gasto da vida da família. A estrutura do Airbnb serve de base, mas estes blocos são próprios de imobiliária e entram no plano:
+
+| Necessidade da compra | Como aparece no site |
+|---|---|
+| Decisão longa, volta várias vezes | **Buscas salvas e alertas** ("novo imóvel no Petrópolis até R$ 900 mil", "baixou o preço"), "Vistos recentemente", favoritos sincronizados entre aparelhos |
+| Comparar antes de decidir | **Comparar até 3 imóveis lado a lado** (preço, m², R$/m², condomínio, vagas, idade do prédio, distância a pontos de interesse) |
+| Saber se o preço é justo | **R$/m² do imóvel contra a média do bairro**, histórico de preço do anúncio, selo "Preço abaixo da média" (só com dado real) |
+| Caber no bolso | **Simulador embutido** na página (entrada, FGTS, prazo e parcela por banco) e "parcela estimada" no card e no pino |
+| Custo total | Preço, **condomínio, IPTU** e estimativa de **ITBI e cartório** num quadro só |
+| Entender o espaço | **Planta baixa**, metragem por cômodo, posição solar, andar e vista, vídeo e tour 360° |
+| Lançamentos | **Estágio da obra e previsão de entrega**, tipologias, tabela de unidades disponíveis, condições da construtora |
+| Segurança jurídica | "O que você deve saber": documentação, matrícula, quitação, aceita financiamento, como funciona a proposta |
+| Conversa humana | **Corretor responsável** com foto e CRECI, **LIA** (IA) para dúvidas rápidas, WhatsApp, visita presencial ou por vídeo |
+| Mais de um decisor | Compartilhar com prévia bonita no WhatsApp, lista compartilhada, "Agendar visita para 2 pessoas" |
+| Proprietários (captação) | Página "Venda seu imóvel" com avaliação online e prova de resultado ("vendidos pela Uhome em 2026") |
+
+### 7.4 Tabela de gaps por área
 | Área | Airbnb | Uhome hoje | Gap | Prioridade |
 |---|---|---|---|---|
 | Header | Abas com ícone 3D, encolhe ao rolar | Confirmar | Header compacta e abas Comprar / Lançamentos / Financiar | P1 |
@@ -442,7 +473,7 @@ O snapshot público de 16/03/2026 (Internet Archive) era um **Next.js** de templ
 
 ## 8. Plano de reprodução
 
-> Ordem pensada para entregar valor desde a primeira semana. Cada fase tem critério de aceite verificável. As estimativas consideram 1 dev front-end com apoio de design.
+> Ordem pensada para entregar valor desde a primeira semana. São 9 fases (0 a 8). Cada fase tem critério de aceite verificável. As estimativas consideram 1 dev front-end com apoio de design.
 
 ### Fase 0: fundação do design system (3 a 5 dias)
 - **Tokens** (seção 10.1): raios 4/8/12/16/20/24/32, 4 níveis de elevação, molas `snappy/fast/standard/slow` com `linear()`, curva padrão `cubic-bezier(.2,0,0,1)`, materiais de vidro para headers e sheets.
@@ -457,7 +488,7 @@ O snapshot público de 16/03/2026 (Internet Archive) era um **Next.js** de templ
 - JSON-LD em `/imovel/*`: `RealEstateListing` + `Offer` (preço) + `Place` / `GeoCoordinates` + `BreadcrumbList`. Na home, `RealEstateAgent` com endereço e telefone.
 - Imagens: `srcset` com AVIF/WebP, `sizes` corretos, `fetchpriority="high"` na primeira foto do imóvel e no primeiro card, `width` e `height` sempre definidos (zera o CLS).
 - Mapa no mobile **carregado sob demanda** (só quando a pessoa abre o mapa ou ele entra na tela). Mapbox GL pesa mais de 200 KB.
-- Cloudflare: liberar Googlebot, Bingbot e robôs de IA nas páginas públicas.
+- Cloudflare: achar a regra que bloqueia (seção 6.6), liberar robôs de busca e de busca por IA nas páginas públicas e **testar a prévia de link do WhatsApp** no Sharing Debugger da Meta.
 - **Aceite**: LCP mobile < 2,5 s, CLS < 0,05 e zero redirecionamento no PageSpeed. Nenhum título com `_`.
 
 ### Fase 2: busca (1 a 1,5 semana)
@@ -498,7 +529,16 @@ O snapshot público de 16/03/2026 (Internet Archive) era um **Next.js** de templ
 - `prefers-reduced-motion`: todas as molas viram fade de 150 ms.
 - **Aceite**: nenhuma animação passa de 450 ms em interação direta e nenhuma anima `width`, `height` ou `top` (só `transform` e `opacity`).
 
-### Fase 7: confiança e conversão (contínuo)
+### Fase 7: recursos próprios de venda (seção 7.3, 2 a 3 semanas)
+- **Buscas salvas e alertas** por WhatsApp ou e-mail (novo imóvel e baixa de preço), "Vistos recentemente" e favoritos sincronizados.
+- **Comparar até 3 imóveis** lado a lado.
+- **R$/m² contra a média do bairro** e histórico de preço do anúncio.
+- **Quadro de custo total** (preço, condomínio, IPTU, ITBI e cartório estimados) e simulador embutido com parcela no card.
+- Lançamentos: estágio da obra, entrega, tipologias e unidades disponíveis.
+- Página **"Venda seu imóvel"** (captação) no lugar do "Torne-se um anfitrião".
+- **Aceite**: alerta salvo em 2 toques a partir da busca. Comparação abre a partir dos favoritos.
+
+### Fase 8: confiança e conversão (contínuo)
 - Prova social: "Vendido pela Uhome", depoimentos, nota no Google e número de famílias atendidas.
 - Selos com regra clara e explicação no hover: "Exclusivo Uhome", "Preço reduzido", "Novo", "Muito procurado".
 - Login "telefone primeiro" (com WhatsApp) só quando o valor já ficou claro (favoritar, alertas de preço).
@@ -518,7 +558,7 @@ O snapshot público de 16/03/2026 (Internet Archive) era um **Next.js** de templ
 
 ## 9. Próximo passo para fechar as lacunas
 1. **Liberar o acesso ao repositório `uhome-love/uhome-siteia`** nesta ou em outra sessão. Com o código, dá para marcar cada **(confirmar)** como feito ou a fazer, com arquivo e linha, e começar a Fase 1.
-2. **Ou liberar um acesso de auditoria no Cloudflare** (regra de exceção temporária por IP ou um token de pré-visualização). Assim dá para capturar o site atual em desktop e mobile com o mesmo roteiro usado no Airbnb e colocar as telas da Uhome ao lado das do Airbnb neste documento.
+2. **Ou liberar um acesso de auditoria no Cloudflare** (regra temporária de "Ignorar" por cabeçalho secreto, seção 6.6). Assim dá para capturar o site atual em desktop e mobile com o mesmo roteiro usado no Airbnb e colocar as telas da Uhome ao lado das do Airbnb neste documento.
 
 ---
 
