@@ -11,31 +11,41 @@ export const NATAL_FUNDO = "radial-gradient(ellipse at center, #141a4a 0%, #0a0a
 export const NATAL_CONFETE = ["#A8202A", "#D4AF37", "#16A34A", "#FFFFFF"];
 export const NATAL_NOTAS_MARCADA = [1319, 1568, 2093];
 
-/** Visita marcada no Natal: sinos tilintando e, em seguida, "Ho ho ho!". */
+/** Visita marcada no Natal: trecho de Jingle Bells com timbre de sino e, em seguida, "Ho ho ho!". */
 export function tocarVisitaMarcadaNatal(ctx: AudioContext) {
-  const t0 = ctx.currentTime;
-  const sinos = [1568, 2093, 1760, 2349, 2093];
-  sinos.forEach((f, i) => {
-    const start = t0 + i * 0.13;
+  void ctx.resume?.().catch(() => {});
+  const t0 = ctx.currentTime + 0.05;
+  const E = 1319, G = 1568, C = 1047, D = 1175;
+  const b = 0.24; // duração de um tempo
+  const melodia: [number, number][] = [
+    [E, 1], [E, 1], [E, 2],
+    [E, 1], [E, 1], [E, 2],
+    [E, 1], [G, 1], [C, 1.5], [D, 0.5], [E, 3],
+  ];
+  let t = t0;
+  melodia.forEach(([f, tempos]) => {
+    const dur = Math.max(0.5, tempos * b + 0.3);
     [1, 2.76, 5.4].forEach((mult, k) => {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = "sine";
       osc.frequency.value = f * mult;
-      g.gain.setValueAtTime(k === 0 ? 0.22 : 0.06, start);
-      g.gain.exponentialRampToValueAtTime(0.0001, start + 0.9);
+      g.gain.setValueAtTime(k === 0 ? 0.25 : 0.06, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       osc.connect(g).connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.95);
+      osc.start(t);
+      osc.stop(t + dur + 0.05);
     });
+    t += tempos * b;
   });
+  const fimMs = (t - ctx.currentTime) * 1000 + 300;
   window.setTimeout(() => {
     try {
       const a = new Audio(hoHoHo.url);
       a.volume = 0.9;
       void a.play().catch(() => {});
     } catch (_) { /* sem voz, fica só o sino */ }
-  }, 800);
+  }, fimMs);
 }
 export const NATAL_NOTAS_REALIZADA = [659, 659, 659, 659, 659, 659, 659, 784, 523, 587, 659];
 export const NATAL_TITULO_GRAD = "linear-gradient(90deg, #B8860B, #F5D77A, #D4AF37, #F5D77A, #B8860B)";

@@ -160,6 +160,27 @@ export default function PlacarDoDia() {
   };
 
   const audioCtxRef = useRef(null);
+  const [somLiberado, setSomLiberado] = useState(true);
+  useEffect(() => {
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (_) { return; }
+    const ctx = audioCtxRef.current;
+    const checar = () => setSomLiberado(ctx.state === "running");
+    const liberar = () => { void ctx.resume().then(checar).catch(() => {}); };
+    ctx.addEventListener?.("statechange", checar);
+    window.addEventListener("keydown", liberar);
+    window.addEventListener("click", liberar);
+    window.addEventListener("pointerdown", liberar);
+    liberar();
+    checar();
+    return () => {
+      ctx.removeEventListener?.("statechange", checar);
+      window.removeEventListener("keydown", liberar);
+      window.removeEventListener("click", liberar);
+      window.removeEventListener("pointerdown", liberar);
+    };
+  }, []);
   function tocarSom(tipo = "marcada") {
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -439,6 +460,11 @@ export default function PlacarDoDia() {
         position: "relative",
       }}>
         {natal && <PlacarNatalDecor />}
+        {!somLiberado && (
+          <div role="status" style={{ position: "absolute", bottom: 16, right: 16, zIndex: 50, background: "rgba(0,0,0,0.7)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 12, padding: "8px 14px", fontSize: 16 }}>
+            🔔 Toque OK no controle para ativar o som
+          </div>
+        )}
         <Confetti active={metaGeralAtingida} cores={natal ? NATAL_CONFETE : null} />
 
         {/* Anúncio no meio da tela */}
