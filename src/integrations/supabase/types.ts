@@ -15181,11 +15181,14 @@ export type Database = {
           google_event_link: string | null
           hora_visita: string | null
           id: string
+          invalidada_roleta_em: string | null
+          invalidada_roleta_por: string | null
           lead_id: string | null
           lead_site_id: string | null
           linked_attempt_id: string | null
           linked_pdn_id: string | null
           local_visita: string | null
+          motivo_invalida_roleta: string | null
           negocio_id: string | null
           nome_cliente: string
           objecao: string | null
@@ -15207,6 +15210,7 @@ export type Database = {
           toque_d1_at: string | null
           toque_marcacao_at: string | null
           updated_at: string
+          valida_roleta: boolean
         }
         Insert: {
           cancel_reason?: string | null
@@ -15227,11 +15231,14 @@ export type Database = {
           google_event_link?: string | null
           hora_visita?: string | null
           id?: string
+          invalidada_roleta_em?: string | null
+          invalidada_roleta_por?: string | null
           lead_id?: string | null
           lead_site_id?: string | null
           linked_attempt_id?: string | null
           linked_pdn_id?: string | null
           local_visita?: string | null
+          motivo_invalida_roleta?: string | null
           negocio_id?: string | null
           nome_cliente: string
           objecao?: string | null
@@ -15253,6 +15260,7 @@ export type Database = {
           toque_d1_at?: string | null
           toque_marcacao_at?: string | null
           updated_at?: string
+          valida_roleta?: boolean
         }
         Update: {
           cancel_reason?: string | null
@@ -15273,11 +15281,14 @@ export type Database = {
           google_event_link?: string | null
           hora_visita?: string | null
           id?: string
+          invalidada_roleta_em?: string | null
+          invalidada_roleta_por?: string | null
           lead_id?: string | null
           lead_site_id?: string | null
           linked_attempt_id?: string | null
           linked_pdn_id?: string | null
           local_visita?: string | null
+          motivo_invalida_roleta?: string | null
           negocio_id?: string | null
           nome_cliente?: string
           objecao?: string | null
@@ -15299,6 +15310,7 @@ export type Database = {
           toque_d1_at?: string | null
           toque_marcacao_at?: string | null
           updated_at?: string
+          valida_roleta?: boolean
         }
         Relationships: [
           {

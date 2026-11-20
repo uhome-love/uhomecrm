@@ -827,6 +827,13 @@
       "when": 1795007873247,
       "tag": "0117_site_pedido_aviso_preco_e_generico",
       "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1795217706393,
+      "tag": "0118_visita_valida_roleta",
+      "breakpoints": true
     }
   ]
 }
