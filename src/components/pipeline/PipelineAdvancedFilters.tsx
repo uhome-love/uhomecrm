@@ -1,3 +1,4 @@
+import { diasSemToque } from "@/lib/leadSaude";
 import { grupoOrigem, GRUPOS_ORIGEM } from "@/lib/leadOrigemUtils";
 import { normalizarTemperatura } from "@/lib/temperatura";
 import { useState, useMemo, useEffect } from "react";
@@ -15,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { SlidersHorizontal, X, Save, CalendarIcon } from "lucide-react";
 import { subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn, differenceInDaysSafe, differenceInHoursSafe } from "@/lib/utils";
+import { cn, differenceInHoursSafe } from "@/lib/utils";
 import { type ProximaTarefa } from "@/lib/taskQueryUtils";
 import { leadSaudeClientStatus } from "@/lib/leadSaude";
 import { todayBRT, dateToBRT } from "@/lib/brtTime";
@@ -215,8 +216,8 @@ export function applyFilters(
   if (filters.diasSemAcao) {
     const minDays = parseInt(filters.diasSemAcao);
     result = result.filter(l => {
-      const refDate = l.ultima_acao_at || l.stage_changed_at;
-      const days = differenceInDaysSafe(refDate);
+      // Mesmo relógio do cartão ("última atividade · há Xd"), para o filtro bater com o que o corretor vê.
+      const days = diasSemToque({ ultimo_toque_at: l.ultimo_toque_at, distribuido_em: l.distribuido_em, aceito_em: l.aceito_em, created_at: l.created_at });
       return days !== null && days >= minDays;
     });
   }
