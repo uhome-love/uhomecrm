@@ -834,6 +834,13 @@
       "when": 1795217706393,
       "tag": "0118_visita_valida_roleta",
       "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1795464528667,
+      "tag": "0119_seguranca_politicas_leitura_e_homi_consulta",
+      "breakpoints": true
     }
   ]
 }
