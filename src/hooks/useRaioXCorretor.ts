@@ -507,10 +507,8 @@ export function useRaioXCorretor(
           .select("id, distribuido_em, origem")
           .eq("corretor_id", uid).gte("distribuido_em", de).lt("distribuido_em", ate).range(f, t)),
         bucketIds.length > 0
-          ? fetchAll<any>((f, t) => supabase.from("pipeline_historico")
-              .select("pipeline_lead_id, stage_novo_id, created_at, pipeline_leads!inner(corretor_id)")
-              .eq("pipeline_leads.corretor_id", uid).in("stage_novo_id", bucketIds)
-              .gte("created_at", de).lt("created_at", ate).range(f, t))
+          ? supabase.rpc("raiox_movimentos_etapa", { p_corretor: uid, p_stages: bucketIds, p_de: de, p_ate: ate })
+              .then(({ data, error }) => { if (error) throw error; return data ?? []; })
           : Promise.resolve([] as any[]),
         fetchAll<VisitaRow>((f, t) => supabase.from("visitas")
           .select("data_visita, status, origem, empreendimento, empreendimento_canonico_id")

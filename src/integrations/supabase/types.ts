@@ -19257,6 +19257,19 @@ export type Database = {
         Args: { batch_size?: number }
         Returns: number
       }
+      raiox_movimentos_etapa: {
+        Args: {
+          p_ate: string
+          p_corretor: string
+          p_de: string
+          p_stages: string[]
+        }
+        Returns: {
+          created_at: string
+          pipeline_lead_id: string
+          stage_novo_id: string
+        }[]
+      }
       rate_marketplace_item: {
         Args: { p_comentario?: string; p_item_id: string; p_nota: number }
         Returns: undefined
