@@ -9,16 +9,20 @@ Venda entra → Intermediação gerada → Assinou (Ganho) → Parcelas criadas 
 → Financeiro "Pós-venda" → CEO dá check ao receber → totais atualizam
 ```
 
-## O que encontrei no banco hoje
-- 32 intermediações ativas com parcelas (R$ 378 mil a receber: NF R$ 104 mil, PIX R$ 115 mil, Zemo R$ 158 mil).
-- 50 intermediações ativas sem forma de pagamento; só 7 delas têm parcelas (R$ 49 mil). As outras 43 não aparecem em "A receber".
-- Nenhuma parcela marcada como recebida até hoje.
-- 2 intermediações "substituídas" ainda têm parcelas (R$ 66 mil) — precisam sair da conta para não somar em dobro.
-- 7 aguardando conferência, 18 duplicadas (já fora da conta).
+## Auditoria feita hoje (25/11)
+- 132 vendas ganhas ativas; só 55 têm intermediação valendo. **77 vendas sem intermediação.**
+- Nenhuma venda tem duas intermediações valendo (regra "uma por venda" ok hoje, mas sem trava no banco).
+- 80 intermediações valendo: 26 do histórico (Drive) e 54 do sistema; **23 do sistema não estão ligadas a nenhuma venda** e 36 estão sem valor da Uhome calculado.
+- **57 intermediações valendo sem parcelas** — por isso hoje "A receber" mostra só parte (R$ 427 mil de 32 + 7).
+- 3 com soma das parcelas diferente do valor da intermediação.
+- 2 parcelas presas em intermediações substituídas (R$ 66 mil) somando por engano.
+- Nenhuma parcela marcada como recebida: o que já entrou ainda não está registrado.
 
 ## Fases (uma por vez, cada uma validada antes da próxima)
 0. **Desenho** da tela no computador e no celular para aprovação do Lucas (regra obrigatória).
-1. **Conferência dos dados**: lista das 43 vendas sem parcelas e das 2 substituídas; Lucas decide o que vale. Nada é apagado.
+1. **Conferência ponta a ponta** (planilha para o Lucas, venda por venda): intermediação valendo, parcelas, valor total, parte Uhome, e coluna "já recebemos? quando?". Inclui as 77 vendas sem intermediação, as 23 soltas, as 57 sem parcelas e as 3 divergentes. Lucas marca o que já entrou; nada é apagado.
+1b. **Correção dos dados aprovada**: ligar intermediações às vendas, gerar parcelas que faltam, tirar as parcelas das substituídas, registrar os recebimentos confirmados (com auditoria).
+1c. **Trava no banco**: no máximo 1 intermediação valendo por venda; ao trocar, a anterior vira substituída e suas parcelas em aberto são canceladas.
 2. **Regra da parte da Uhome**: Open = 100% do valor; demais = valor da intermediação menos o repasse dos corretores (beneficiários), já com desconto de NF de 10%. Teste automático para cada regra.
 3. **Tela "Pós-venda"** (nova primeira aba do Financeiro):
    - Topo com 4 números: Total a receber · Recebido no mês · Vencido · Parte da Uhome a receber.
