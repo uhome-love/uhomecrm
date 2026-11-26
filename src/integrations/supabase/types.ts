@@ -19190,6 +19190,10 @@ export type Database = {
           visitas: number
         }[]
       }
+      oa_telefone_com_dono_pipeline: {
+        Args: { p_tel: string; p_tel2?: string }
+        Returns: boolean
+      }
       oferta_ativa_esta_em_cooldown: {
         Args: { p_corretor_id: string; p_pipeline_lead_id: string }
         Returns: boolean

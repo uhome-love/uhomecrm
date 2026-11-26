@@ -848,6 +848,13 @@
       "when": 1795538330113,
       "tag": "0120_raiox_movimentos_etapa",
       "breakpoints": true
+    },
+    {
+      "idx": 121,
+      "version": "7",
+      "when": 1795717131752,
+      "tag": "0121_oa_pula_cliente_com_dono_pipeline",
+      "breakpoints": true
     }
   ]
 }
