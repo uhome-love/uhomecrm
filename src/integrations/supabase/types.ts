@@ -5305,6 +5305,33 @@ export type Database = {
           },
         ]
       }
+      lead_descarte_eventos: {
+        Row: {
+          corretor_id: string | null
+          created_at: string
+          id: string
+          movido_por: string | null
+          origem: string
+          pipeline_lead_id: string
+        }
+        Insert: {
+          corretor_id?: string | null
+          created_at?: string
+          id?: string
+          movido_por?: string | null
+          origem?: string
+          pipeline_lead_id: string
+        }
+        Update: {
+          corretor_id?: string | null
+          created_at?: string
+          id?: string
+          movido_por?: string | null
+          origem?: string
+          pipeline_lead_id?: string
+        }
+        Relationships: []
+      }
       lead_imoveis_indicados: {
         Row: {
           criado_em: string
@@ -19462,6 +19489,7 @@ export type Database = {
       roleta_crm_apto: { Args: { p_auth_user_id: string }; Returns: boolean }
       roleta_crm_gate_ativo: { Args: never; Returns: boolean }
       roleta_crm_minimo_pct: { Args: never; Returns: number }
+      roleta_descartes_mes: { Args: { p_corretor_id: string }; Returns: number }
       roleta_expand_turnos: { Args: { p_turnos: string[] }; Returns: string[] }
       roleta_fechar_dia: { Args: { p_data?: string }; Returns: number }
       roleta_fechar_semana: {
