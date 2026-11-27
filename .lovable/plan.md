@@ -6,6 +6,9 @@
 - Rafaela Campos: a trava conta **101**, mas ela mesma descartou **85** clientes em novembro. Os outros 19 entram por engano: descartes feitos por gestor ou por rotina automática (estagnados, cadência Sem Contato) e clientes descartados meses atrás cuja data foi mexida agora.
 - O mesmo erro infla o número de todos: Douglas 91 (real 81), Ebert 86 (73), Thalia 74 (52), Luiza 67 (38), Gustavo 62 (35), entre outros. Rafaela é a única acima de 100 hoje.
 
+## Período
+A contagem continua sendo **só de novembro** (dia 1 até hoje, horário de Brasília), como você pediu. Os 101 de hoje são todos de novembro pela data, mas 16 não foram descartados por ela em novembro: foram movidos por gestor, por rotina automática ou eram descartes antigos que tiveram a data mexida.
+
 ## O que muda
 1. **Liberar a Rafaela agora**: registrar o desbloqueio de novembro para ela (o recurso de desbloqueio manual já existe), para ela se credenciar ainda hoje.
 2. **Nova régua, igual para todos**: descarte do mês = clientes diferentes que **o próprio corretor** moveu para Descarte neste mês (horário de Brasília), sem leads de teste. Não contam descartes feitos por gestor, CEO ou rotina automática, nem repetição do mesmo cliente.
