@@ -12,7 +12,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { PostgrestError } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
-import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
+import { reactivateDiscardedToRoleta, leadEstagnadoVaiFilaCeo } from "../_shared/reactivateDiscardedToRoleta.ts";
 import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
 import { parseFormRespostas, formatFormRespostas } from "../_shared/formRespostas.ts";
 import { capturarLeadLia } from "../_shared/liaCapture.ts";
@@ -700,7 +700,7 @@ Deno.serve(async (req) => {
 
       // Determine if lead needs to be moved out of Descarte/archived
       const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-      const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
+      const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true || await leadEstagnadoVaiFilaCeo(supabase, existing.id);
 
       const novoInteresse = buildNovoInteresseUpdate({
         empreendimentoNovo: empreendimento,
@@ -1039,7 +1039,7 @@ Deno.serve(async (req) => {
         if (dup && dup.corretor_id) {
           const todayStamp = new Date().toISOString().slice(0, 10);
           const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-          const isDiscarded = dup.stage_id === DESCARTE_STAGE_ID || dup.arquivado === true;
+          const isDiscarded = dup.stage_id === DESCARTE_STAGE_ID || dup.arquivado === true || await leadEstagnadoVaiFilaCeo(supabase, dup.id);
 
           const novoInteresseDup = buildNovoInteresseUpdate({
             empreendimentoNovo: empreendimento,

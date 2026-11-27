@@ -18,7 +18,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { PostgrestError } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
-import { reactivateDiscardedToRoleta } from "../_shared/reactivateDiscardedToRoleta.ts";
+import { reactivateDiscardedToRoleta, leadEstagnadoVaiFilaCeo } from "../_shared/reactivateDiscardedToRoleta.ts";
 import { buildNovoInteresseUpdate } from "../_shared/novoInteresseUpdate.ts";
 
 const corsHeaders = {
@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
         const todayStamp = new Date().toISOString().slice(0, 10);
 
         const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-        const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true;
+        const isDiscarded = existing.stage_id === DESCARTE_STAGE_ID || existing.arquivado === true || await leadEstagnadoVaiFilaCeo(supabase, existing.id);
 
         const novoInteresse = buildNovoInteresseUpdate({
           empreendimentoNovo: empreendimento,

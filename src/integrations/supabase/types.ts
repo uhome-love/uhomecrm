@@ -18910,6 +18910,10 @@ export type Database = {
         Returns: boolean
       }
       lead_em_estado_final: { Args: { p_lead_id: string }; Returns: boolean }
+      lead_estagnado_vai_fila_ceo: {
+        Args: { p_lead_id: string }
+        Returns: boolean
+      }
       lead_livre_para_repasse: { Args: { p_lead_id: string }; Returns: boolean }
       lead_saude_acao:
         | {

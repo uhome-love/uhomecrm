@@ -862,6 +862,20 @@
       "when": 1795785197710,
       "tag": "0122_site_nomes_anuncio_meta",
       "breakpoints": true
+    },
+    {
+      "idx": 123,
+      "version": "7",
+      "when": 1795809649902,
+      "tag": "0123_estagnado_novo_interesse_fila_ceo",
+      "breakpoints": true
+    },
+    {
+      "idx": 124,
+      "version": "7",
+      "when": 1795809756771,
+      "tag": "0124_estagnado_fila_ceo_mesma_regua_pagina",
+      "breakpoints": true
     }
   ]
 }

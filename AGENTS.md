@@ -41,3 +41,4 @@
 - Site journey is read-only, deduped by event_id, no bots, 90 days, 30s poll. Why: the site resends the window.
 - Site data writes are server-only; explicit lead links merge requests by UUID and generate system notes; `trg_site_voltou_aviso` shares owner-only 1/h alerts. Why: no loss, duplicates or distribution changes.
 - Test leads (`pipeline_leads.is_teste`) skip auto-distribution and are filtered from lead report views and `midia_refresh_jornada`; new report sources must filter them. Why: test data never reaches Roleta or reports.
+- Discarded/archived/stagnant lead with new interest → Novo Lead in Fila CEO via `_shared/reactivateDiscardedToRoleta.ts` + `lead_estagnado_vai_fila_ceo`; no auto-distribution, no notice to old broker. Why: owner decision.

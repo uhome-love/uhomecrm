@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
 import { distributeLeadDirect } from '../_shared/roleta-distribution.ts'
-import { reactivateDiscardedToRoleta, DESCARTE_STAGE_ID } from '../_shared/reactivateDiscardedToRoleta.ts'
+import { reactivateDiscardedToRoleta, leadEstagnadoVaiFilaCeo, DESCARTE_STAGE_ID } from '../_shared/reactivateDiscardedToRoleta.ts'
 
 const VALID_TIPOS = ['lead', 'agendamento', 'captacao', 'whatsapp_click'] as const
 const NOVO_LEAD_STAGE_ID = 'd3843b2f-2fa1-4c31-9129-4eb0ed21f019'
@@ -341,7 +341,8 @@ Deno.serve(async (req) => {
           ? `${existingLead.observacoes}\n${newObsLine}`
           : newObsLine
 
-        const estavaDescartado = existingLead.stage_id === DESCARTE_STAGE_ID || existingLead.arquivado === true
+        const estavaEstagnado = !!existingCorretorId && await leadEstagnadoVaiFilaCeo(supabase, existingLead.id)
+        const estavaDescartado = existingLead.stage_id === DESCARTE_STAGE_ID || existingLead.arquivado === true || estavaEstagnado
         if (existingCorretorId && estavaDescartado) {
           // Descartado/inativo que se cadastra de novo: volta como NOVO LEAD na Roleta
           // (não volta para quem descartou). Histórico do site segue no mesmo lead.
@@ -358,9 +359,11 @@ Deno.serve(async (req) => {
             corretorAnteriorId: existingCorretorId,
             origemLabel: 'Site',
             interesseLabel: imovelTitulo || onde,
+            mensagem: newObsLine,
+            motivo: estavaEstagnado ? 'estagnado' : 'descartado',
           })
           existingCorretorId = reac.corretor_id ?? null
-          await registrarHistoricoSite(existingLead.id, `🔄 Novo cadastro no Site (estava descartado) — ${onde}`, existingCorretorId)
+          await registrarHistoricoSite(existingLead.id, `🔄 Novo cadastro no Site (estava ${estavaEstagnado ? 'estagnado' : 'descartado'}) — ${onde} · Fila CEO`, existingCorretorId)
           console.log(`[crm-webhook] Descartado ${existingLead.id} voltou à Roleta, distribuído=${reac.distributed}`)
         } else if (existingCorretorId) {
           // Lead already has an owner — DO NOT reassign, DO NOT move stage.

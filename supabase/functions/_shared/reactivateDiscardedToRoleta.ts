@@ -1,18 +1,18 @@
 /**
  * _shared/reactivateDiscardedToRoleta.ts
  *
- * Regra: lead que estava em DESCARTE (ou arquivado) e recebe um novo touch de
- * origem externa (Meta, Landing, ImovelWeb, RD Station) volta como NOVO LEAD e
- * entra na roleta — NÃO volta para o corretor que o descartou.
+ * Regra (27/11/2026, Lucas): lead DESCARTADO, ARQUIVADO/INATIVADO ou ESTAGNADO
+ * (lead_estagnado_vai_fila_ceo) que recebe novo interesse externo volta como
+ * NOVO LEAD na FILA CEO (sem corretor, distribuição manual). NÃO volta para o
+ * corretor antigo e o corretor antigo NÃO é avisado. O histórico recebe o novo
+ * interesse completo, como num lead novo.
  *
- * Lead ATIVO no pipeline continua com o dono atual (apenas notificação de novo
- * interesse) — esse caminho fica nos receivers.
+ * Lead ATIVO e em dia continua com o dono atual — esse caminho fica nos receivers.
  *
  * IDs: pipeline_leads.corretor_id / gerente_id → auth.users.id
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { distributeLeadDirect } from "./roleta-distribution.ts";
 
 export const NOVO_LEAD_STAGE_ID = "d3843b2f-2fa1-4c31-9129-4eb0ed21f019";
 export const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
@@ -30,6 +30,8 @@ export interface ReactivateToRoletaOptions {
   /** Observações completas já montadas pelo receiver (opcional) */
   observacoes?: string | null;
   mensagem?: string | null;
+  /** Motivo do retorno, para o histórico */
+  motivo?: "descartado" | "estagnado";
   traceId?: string;
   logger?: {
     info?: (msg: string, ctx?: Record<string, unknown>) => void;
@@ -54,6 +56,13 @@ export async function reactivateDiscardedToRoleta(
   const nowIso = new Date().toISOString();
   const todayStamp = nowIso.slice(0, 10);
 
+  let motivo = opts.motivo;
+  if (!motivo) {
+    const { data: antes } = await admin
+      .from("pipeline_leads").select("stage_id, arquivado").eq("id", opts.leadId).maybeSingle();
+    motivo = antes && antes.stage_id !== DESCARTE_STAGE_ID && antes.arquivado !== true ? "estagnado" : "descartado";
+  }
+
   const updatePayload: Record<string, unknown> = {
     stage_id: NOVO_LEAD_STAGE_ID,
     stage_changed_at: nowIso,
@@ -64,6 +73,8 @@ export async function reactivateDiscardedToRoleta(
     motivo_descarte: null,
     tipo_descarte: null,
     reengajamento_status: null,
+    estagnado: false,
+    estagnado_em: null,
     updated_at: nowIso,
   };
   if (opts.observacoes !== undefined && opts.observacoes !== null) {
@@ -80,20 +91,48 @@ export async function reactivateDiscardedToRoleta(
     return { ok: false, error: upErr.message, distributed: false };
   }
 
-  // Atividade de histórico (created_by pode ser nulo — lead sem dono agora)
+  // Histórico completo do novo interesse (como num lead novo). Sem notificação ao corretor antigo.
   try {
+    const { data: lr } = await admin
+      .from("pipeline_leads")
+      .select("nome, telefone, email, empreendimento, campanha, formulario, anuncio, origem, form_respostas")
+      .eq("id", opts.leadId)
+      .maybeSingle();
+    const linhas: string[] = [];
+    const add = (k: string, v: unknown) => {
+      const t = v === null || v === undefined ? "" : String(v).trim();
+      if (t) linhas.push(`${k}: ${t}`);
+    };
+    add("Nome", lr?.nome);
+    add("Telefone", lr?.telefone);
+    add("E-mail", lr?.email);
+    add("Produto", opts.interesseLabel || lr?.empreendimento);
+    add("Origem", opts.origemLabel);
+    add("Campanha", lr?.campanha);
+    add("Formulário", lr?.formulario);
+    add("Anúncio", lr?.anuncio);
+    const fr = lr?.form_respostas;
+    if (fr && typeof fr === "object") {
+      const pares = Array.isArray(fr)
+        ? fr.map((x: Record<string, unknown>) => [x?.pergunta ?? x?.name ?? x?.campo, x?.resposta ?? x?.value ?? x?.valor])
+        : Object.entries(fr as Record<string, unknown>);
+      const resp = pares
+        .filter(([k, v]) => k && v !== null && v !== undefined && String(v).trim() !== "")
+        .map(([k, v]) => `• ${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`);
+      if (resp.length) linhas.push(`Respostas do formulário:\n${resp.join("\n")}`);
+    }
+    if (opts.mensagem) linhas.push(`Mensagem: "${opts.mensagem}"`);
+    const situacao = motivo === "estagnado" ? "estagnado" : "em Descarte/inativado";
     await admin.from("pipeline_atividades").insert({
       pipeline_lead_id: opts.leadId,
       tipo: "entrada",
-      titulo: `🔄 Lead descartado retornou — enviado para a roleta`,
+      titulo: `🔄 Novo interesse — ${opts.interesseLabel} (${opts.origemLabel}) · enviado para a Fila CEO`,
       descricao:
-        `Novo interesse em ${opts.interesseLabel} (${opts.origemLabel}).` +
-        `${opts.mensagem ? `\nMensagem: "${opts.mensagem}"` : ""}` +
-        `\nLead estava em Descarte/arquivado e voltou como Novo Lead para distribuição na roleta.`,
+        `${linhas.join("\n")}\n\nLead estava ${situacao} e voltou como Novo Lead na Fila CEO para distribuição manual.`,
       data: todayStamp,
       prioridade: "alta",
       status: "completed",
-      created_by: opts.corretorAnteriorId,
+      created_by: null,
     });
   } catch (e) {
     L.warn?.("reactivateDiscardedToRoleta: atividade falhou", { leadId: opts.leadId }, e);
@@ -115,21 +154,17 @@ export async function reactivateDiscardedToRoleta(
     L.warn?.("reactivateDiscardedToRoleta: limpeza oferta ativa falhou", { leadId: opts.leadId }, e);
   }
 
-  // Distribui na roleta excluindo quem descartou
-  const dist = await distributeLeadDirect(
-    opts.supabaseUrl,
-    opts.serviceKey,
-    opts.leadId,
-    opts.traceId ?? crypto.randomUUID(),
-    L,
-    2,
-    opts.corretorAnteriorId ?? null,
-  );
+  // Fila CEO: sem distribuição automática.
+  return { ok: true, distributed: false, corretor_id: null, reason: "fila_ceo_novo_interesse" };
+}
 
-  return {
-    ok: true,
-    distributed: !!dist.success,
-    corretor_id: dist.corretor_id ?? null,
-    reason: dist.reason,
-  };
+/** true quando o lead ativo está estagnado e o novo interesse deve levá-lo à Fila CEO. Erro nunca bloqueia (false). */
+export async function leadEstagnadoVaiFilaCeo(admin: SupabaseClient, leadId: string): Promise<boolean> {
+  try {
+    const { data, error } = await admin.rpc("lead_estagnado_vai_fila_ceo", { p_lead_id: leadId });
+    if (error) return false;
+    return data === true;
+  } catch {
+    return false;
+  }
 }
