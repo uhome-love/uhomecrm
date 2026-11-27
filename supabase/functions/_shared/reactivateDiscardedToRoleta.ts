@@ -132,7 +132,7 @@ export async function reactivateDiscardedToRoleta(
       data: todayStamp,
       prioridade: "alta",
       status: "completed",
-      created_by: null,
+      created_by: "00000000-0000-0000-0000-000000000000",
     });
   } catch (e) {
     L.warn?.("reactivateDiscardedToRoleta: atividade falhou", { leadId: opts.leadId }, e);
