@@ -51,6 +51,7 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
   const [jornada, setJornada] = useState<Jornada | null>(null);
   const [notas, setNotas] = useState<NotaPedidoSite[]>([]);
   const [aberto, setAberto] = useState(false);
+  const [nomesMeta, setNomesMeta] = useState<Record<string, string>>({});
   const ehSite = (origem ?? "").toLowerCase().includes("site");
 
   useEffect(() => {
@@ -63,7 +64,13 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
       if (!row) return;
       const j = lerJornada(row.dados_site);
       if (!ehSite && !j) return;
-      setInfo(lerSiteOrigem(row.dados_site, row.observacoes, empreendimento));
+      const o = lerSiteOrigem(row.dados_site, row.observacoes, empreendimento);
+      setInfo(o);
+      const ids = [o.idsMeta.campanha, o.idsMeta.anuncio].filter((v): v is string => !!v);
+      if (ids.length) {
+        const { data: nomes } = await supabase.rpc("site_nomes_anuncio", { p_ids: ids });
+        if (!cancel && nomes) setNomesMeta(Object.fromEntries(nomes.map((n) => [n.id, n.nome])));
+      }
       setJornada(j);
       setNotas(lerNotasPedidoSite(row.dados_site));
     };
@@ -99,6 +106,8 @@ export default function VeioDoSite({ leadId, origem, empreendimento }: { leadId:
         </>
       )}
       <Item rotulo="Como chegou">{comoChegou}</Item>
+      {info.idsMeta.campanha && <Item rotulo="Campanha">{nomesMeta[info.idsMeta.campanha] ?? "Campanha do Meta (nome ainda não carregado)"}</Item>}
+      {info.idsMeta.anuncio && nomesMeta[info.idsMeta.anuncio] && <Item rotulo="Anúncio">{nomesMeta[info.idsMeta.anuncio]}</Item>}
       {ondeClicou && <Item rotulo="Onde clicou">{ondeClicou}</Item>}
       {noSite && <Item rotulo="No site">{noSite}</Item>}
       {jornada && <JornadaResumo j={jornada} />}

@@ -19728,6 +19728,14 @@ export type Database = {
         Args: { p_anterior: Json; p_recebido: Json }
         Returns: Json
       }
+      site_nome_meta: { Args: { p_id: string }; Returns: string }
+      site_nomes_anuncio: {
+        Args: { p_ids: string[] }
+        Returns: {
+          id: string
+          nome: string
+        }[]
+      }
       site_pedido_descricao: { Args: { p: Json }; Returns: string }
       site_pedido_texto: { Args: { p: Json }; Returns: string }
       skip_oa_lead: {

@@ -33,3 +33,12 @@ describe("classificarFonte — código do Google na primeira página", () => {
     expect(classificarFonte({ referrer: "https://www.google.com/", landing_url: "/busca?cidade=X" }, null)).toBe("Google orgânico");
   });
 });
+
+import { lerSiteOrigem as lso } from "./siteOrigem";
+describe("códigos do Meta", () => {
+  const o = lso({ utm_source: "instagram", utm_campaign: "120252489170700030", utm_term: "120252489170700031" });
+  it("pesquisou não mostra código", () => expect(o.palavraPesquisada).toBeNull());
+  it("como chegou sem código", () => expect(o.fonteTexto).toBe("Meta"));
+  it("guarda ids para trocar por nome", () => expect(o.idsMeta).toEqual({ campanha: "120252489170700030", anuncio: "120252489170700031" }));
+  it("palavra real continua", () => expect(lso({ utm_term: "apartamento petropolis" }).palavraPesquisada).toBe("apartamento petropolis"));
+});

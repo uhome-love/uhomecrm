@@ -855,6 +855,13 @@
       "when": 1795717131752,
       "tag": "0121_oa_pula_cliente_com_dono_pipeline",
       "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1795785197710,
+      "tag": "0122_site_nomes_anuncio_meta",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,12 @@
 
 export type FonteTrafego = "Google Ads" | "Meta" | "Google orgânico" | "Outro buscador" | "Indicação/outro site" | "Direto" | "Não informada";
 
+/** Código numérico de campanha/anúncio do Meta (nunca mostrar ao corretor). */
+export const ehIdMeta = (v: string | null | undefined) => !!v && /^\d{6,}$/.test(v.trim());
+
 export interface SiteOrigem {
+  /** Códigos do Meta (campanha/anúncio) a trocar pelo nome. */
+  idsMeta: { campanha: string | null; anuncio: string | null };
   ondeClicou: string | null;
   pagina: string | null;
   paginaRotulo: string | null;
@@ -75,7 +80,7 @@ function lerExtras(d: Record<string, unknown>) {
   const landing = str(r.landing_url) ?? str(r.primeira_pagina);
   return {
     fonteSite: str(d.fonte) ?? str(ctx?.fonte),
-    palavraPesquisada: str(r.utm_term) ?? str(r.palavra_chave) ?? str(r.termo_busca_google),
+    palavraPesquisada: [str(r.utm_term), str(r.palavra_chave), str(r.termo_busca_google)].find((v) => v && !ehIdMeta(v)) ?? null,
     entrouPor: landing ? rotuloPagina(landing) : null,
     visitas: partes.length ? partes.join(" · ") : null,
     imoveisVistos: lista(r.imoveis_vistos ?? r.ultimos_imoveis),
@@ -194,9 +199,13 @@ export function lerSiteOrigem(dados: Dados, observacoes?: string | null, empreen
   const aparelho = device ? (device.includes("mob") ? "Celular" : device.includes("tab") ? "Tablet" : "Computador") : null;
   const ex = lerExtras(d);
   const fonte = classificarFonte(d, pagina);
-  const campanha = str(d.utm_campaign);
+  const campBruta = str(d.utm_campaign);
+  const campanha = ehIdMeta(campBruta) ? null : campBruta;
+  const anuncioBruto = [str(d.utm_content), str(d.utm_term)].find((v) => ehIdMeta(v)) ?? null;
+  const fonteSite = ex.fonteSite ? ex.fonteSite.replace(/\s*[—·-]\s*\d{6,}/g, "").trim() || null : null;
   return {
-    fonteTexto: ex.fonteSite ?? (fonte === "Direto" ? "Acesso direto" : `${fonte}${campanha ? ` — ${campanha}` : ""}`),
+    idsMeta: { campanha: ehIdMeta(campBruta) ? campBruta : null, anuncio: anuncioBruto },
+    fonteTexto: fonteSite ?? (fonte === "Direto" ? "Acesso direto" : `${fonte}${campanha ? ` — ${campanha}` : ""}`),
     palavraPesquisada: ex.palavraPesquisada,
     entrouPor: ex.entrouPor,
     visitas: ex.visitas,
